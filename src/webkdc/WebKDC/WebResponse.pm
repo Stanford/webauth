@@ -1,4 +1,4 @@
-package WebKDC::LoginResponse;
+package WebKDC::WebResponse;
 
 use strict;
 use warnings;

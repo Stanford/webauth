@@ -7,8 +7,8 @@ use lib '../bindings/perl/WebAuth/blib/lib';
 use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 
 use WebAuth qw(:base64 :krb5 :const);
-use WebKDC::LoginRequest;
-use WebKDC::LoginResponse;
+use WebKDC::WebRequest;
+use WebKDC::WebResponse;
 use WebKDC::Token;
 
 BEGIN {
@@ -82,11 +82,11 @@ sub make_service_token_from_krb5_cred($) {
 #
 
 sub handle_id_request {
-    my ($lreq, $lresp, $service_token, $req_token, $key) = @_;
+    my ($wreq, $wresp, $service_token, $req_token, $key) = @_;
 
     my $server_principal = $service_token->subject();
 
-    my ($user,$pass) = ($lreq->user(), $lreq->pass());
+    my ($user,$pass) = ($wreq->user(), $wreq->pass());
     my $proxy_token_str;
 
     my ($et, $sad);
@@ -123,9 +123,9 @@ sub handle_id_request {
 	print $proxy_token;
 	my $proxy_token_str = 
 	    base64_encode($proxy_token->to_token(get_keyring()));
-	$lresp->proxy_cookie('krb5', $proxy_token_str);
+	$wresp->proxy_cookie('krb5', $proxy_token_str);
 
-    } elsif ($proxy_token_str = $lreq->proxy_cookie('krb5')) {
+    } elsif ($proxy_token_str = $wreq->proxy_cookie('krb5')) {
 	my $proxy_token = 
 	    new WebKDC::WebKDCProxyToken(base64_decode($proxy_token_str),
 					 get_keyring(), 0);
@@ -155,24 +155,24 @@ sub handle_id_request {
     $id_token->creation_time(time());
     $id_token->expiration_time($et);
 
-    $lresp->return_url($req_token->return_url());
-    $lresp->post_url($req_token->post_url());
-    $lresp->response_token(base64_encode($id_token->to_token($key)));
-    return $lresp;
+    $wresp->return_url($req_token->return_url());
+    $wresp->post_url($req_token->post_url());
+    $wresp->response_token(base64_encode($id_token->to_token($key)));
+    return $wresp;
 }
 
 
-# takes a WebKDC::LoginRequest and returns a WebKDC::LoginResponse
+# takes a WebKDC::WebRequest and returns a WebKDC::WebResponse
 
 sub process_login_request($) {
-    my ($lreq) = @_;
+    my ($wreq) = @_;
 
-    my $lresp = new WebKDC::LoginResponse;
+    my $wresp = new WebKDC::WebResponse;
 
     # first parse service-token to get session key
 
     my $service_token = 
-	new WebKDC::WebKDCServiceToken(base64_decode($lreq->service_token()), 
+	new WebKDC::WebKDCServiceToken(base64_decode($wreq->service_token()), 
 				       get_keyring(), 0);
 
     my $server_principal = $service_token->subject();
@@ -185,11 +185,11 @@ sub process_login_request($) {
     my $key = WebAuth::key_create(WA_AES_KEY, $service_token->session_key());
 
     my $req_token = 
-	new WebKDC::RequestToken(base64_decode($lreq->request_token()), 
+	new WebKDC::RequestToken(base64_decode($wreq->request_token()), 
 				 $key, $C_TOKEN_TTL);
 
     # FIXME: would normally poke through request to determine what to do next
-    return handle_id_request($lreq, $lresp, $service_token, $req_token, $key);
+    return handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
 }
 
 

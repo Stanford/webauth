@@ -102,6 +102,26 @@ sub new {
     return $self;
 }
 
+sub parse {
+    my ($token, $key, $ttl) = @_;
+    my $attrs = token_parse($token, $ttl, $key);
+    my $tt = $$attrs{&WA_TK_TOKEN_TYPE};
+    my $c;
+
+    if    ($tt eq 'app')   { $c = 'WebKDC::AppToken'; }
+    elsif ($tt eq 'id')    { $c = 'WebKDC::IdToken'; }
+    elsif ($tt eq 'proxy') { $c = 'WebKDC::ProxyToken'; }
+    elsif ($tt eq 'webkdc-proxy') { $c = 'WebKDC::WebKDCProxyToken'; }
+    elsif ($tt eq 'req') { $c = 'WebKDC::RequestToken'; }
+    elsif ($tt eq 'error') { $c = 'WebKDC::ErrorToken'; }
+    elsif ($tt eq 'webkdc-service') { $c = 'WebKDC::WebKDCServiceToken'; }
+    else { croak "unknown token type in WebKDC::Token::parse: $tt" }
+    my $t = new $c;
+    $t->{'attrs'} = $attrs;
+    $t->validate_token();
+    return $t;
+}
+
 sub init_from_token {
     my ($self, $token, $key, $ttl) = @_;
     $self->{'attrs'} = token_parse($token, $ttl, $key);
@@ -109,11 +129,11 @@ sub init_from_token {
 }
 
 sub validate_token() {
-    carp "someone didn't implement validate_token!";
+    croak "someone didn't implement validate_token!";
 }
 
 sub init {
-    carp "someone didn't implement init";
+    croak "someone didn't implement init";
 }
 
 sub token_type {
@@ -790,7 +810,17 @@ the same result.
 The new constructor for tokcns is used to create a token object. The
 first form is used to construct new tokens, while the second form
 is used to parse a binary token into a token object. Note, only
-subclasses of Token should be constructed using new.
+subclasses of Token should be constructed using new. To parse an
+unknown token, use the parse class method.
+
+=item parse
+
+ $token = WebKDC::Token::parse($binary_token, $key_or_ring, $ttl);
+
+Used to create a from a binary token when you don't know ahead
+of time what the resulting token type will be. The type of
+the returened token can be checked with token_type() or the
+UNIVERSAL isa method.
 
 =item validate_token
 

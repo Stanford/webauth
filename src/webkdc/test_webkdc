@@ -11,6 +11,9 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC;
 use WebKDC::Token;
 
+use Carp;
+use UNIVERSAL qw(isa);
+
 use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 
 $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
@@ -25,9 +28,12 @@ sub handle_response($$) {
 
     #FIXME: we don't know this is an id-token (may be an error), need to
     # call generic token parse method and then look at type
-    my $id_token = new WebKDC::IdToken(base64_decode($resp_token_str),
-				       $key, $WebKDC::C_TOKEN_TTL);
+    my $id_token = WebKDC::Token::parse(base64_decode($resp_token_str),
+					$key, $WebKDC::C_TOKEN_TTL);
 
+    if (!isa($id_token, 'WebKDC::IdToken')) {
+	croak "response not an IdToken";
+    }
     print $id_token;
 
     my $sad = $id_token->subject_auth_data();
@@ -82,7 +88,7 @@ eval {
 
     print "request_token b64'd length(".length($req_token_str).")\n";
 
-    my $req = new WebKDC::LoginRequest;
+    my $req = new WebKDC::WebRequest;
 
     $req->user("schemers/test");
     $req->pass("testing");
@@ -100,7 +106,7 @@ eval {
     # try again using proxy-token from response instead of
     # user/pass
 
-    $req = new WebKDC::LoginRequest;
+    $req = new WebKDC::WebRequest;
 
     $req->proxy_cookie('krb5', $resp->proxy_cookie('krb5'));
     $req->request_token($req_token_str);

@@ -1,4 +1,4 @@
-package WebKDC::LoginRequest;
+package WebKDC::WebRequest;
 
 use strict;
 use warnings;
