@@ -474,13 +474,13 @@ request_service_token(MWA_REQ_CTXT *rc)
 
     status = webauth_krb5_mk_req(ctxt, rc->sconf->webkdc_principal, 
                                  &k5_req, &k5_req_len);
-    webauth_krb5_free(ctxt);
-
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r, status, ctxt, mwa_func,
                               "webauth_krb5_mk_req");
+        webauth_krb5_free(ctxt);
         return 0;
     }
+    webauth_krb5_free(ctxt);
 
     bk5_req_len = apr_base64_encode_len(k5_req_len);
     bk5_req = (char*) apr_palloc(rc->r->pool, bk5_req_len);

@@ -270,10 +270,10 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     /* make sure its an app-token */
     tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r,
                           "check_cookie", NULL);
-    if (strcmp(tt, WA_TT_APP) != 0) {
+    if (tt == NULL || strcmp(tt, WA_TT_APP) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: check_cookie: token type(%s) not (%s)",
-                     (char*)alist->attrs[i].value, WA_TT_APP);
+                     tt ? tt : "(null)", WA_TT_APP);
         webauth_attr_list_free(alist);
         return NULL;
     }
@@ -850,8 +850,13 @@ check_user_id_hook(request_rec *r)
         r->ap_auth_type = (char*)at;
         return OK;
     } else {
-        /* FIXME: don't redirect for anything but a GET request */
-        return redirect_request_token(&rc);
+        if (r->method_number == M_GET) {
+            ap_discard_request_body(r);
+            return redirect_request_token(&rc);
+        } else {
+            /* FIXME: redirect to error handler? */
+            return HTTP_UNAUTHORIZED;
+        }
     }
 
 }
@@ -1151,6 +1156,7 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
                 break;
             case E_TokenMaxTTL:
                 sconf->token_max_ttl = val*60; /* convert from minutes */
+                sconf->token_max_ttl_ex = 1;
                 break;
             case E_InactiveExpire:
                 dconf->inactive_expire = val*60; /* convert from minutes */
