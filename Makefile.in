@@ -24,7 +24,7 @@ SUBDIRS = src
 ALLDIRS = src tests
 
 .PHONY: all check check-manifest clean dist distclean doc docs install
-.PHONY: test tests
+.PHONY: install-tests test tests
 
 all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -34,6 +34,9 @@ all install: Makefile
 
 check test tests:
 	cd tests && $(MAKE) all
+
+install-tests:
+	cd tests && $(MAKE) install
 
 clean depend:
 	@for subdir in $(ALLDIRS); do \

@@ -5,6 +5,8 @@ srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
+APACHE_ROOT	= @APACHE_ROOT@
+
 CC		= @CC@
 CFLAGS		= @CFLAGS@
 CPPFLAGS	= @CPPFLAGS@
@@ -30,11 +32,18 @@ clean:
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-depend install:
+depend:
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
+
+install:
+	cp mod_webauth/conf/tests.conf $(APACHE_ROOT)/conf/webauth-tests.conf
+	cp -r mod_webauth/htdocs/tests $(APACHE_ROOT)/htdocs/
+	@echo 'WebAuth tests have been installed in $(APACHE_ROOT)'
+	@echo 'Read $(APACHE_ROOT)/conf/webauth-tests.conf for more'
+	@echo 'information on how to configure the test suite.'
 
 runtests: runtests.o
 	$(CC) $(LDFLAGS) -o $@ runtests.o
