@@ -454,6 +454,7 @@ PPCODE:
     STRLEN vlen;
     WEBAUTH_ATTR_LIST *list;
     SV *output;
+    int iskey;
 
     if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
         croak("attrs must be reference to a hash");
@@ -483,12 +484,14 @@ PPCODE:
 	    IV tmp = SvIV((SV*)SvRV(key_or_ring));
 	    ring = INT2PTR(WEBAUTH_KEYRING *,tmp);
         s = webauth_token_create(list, hint, buff, &out_len, out_max, ring);
+        iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
 	    IV tmp = SvIV((SV*)SvRV(key_or_ring));
 	    key = INT2PTR(WEBAUTH_KEY *,tmp);
         s = webauth_token_create_with_key(list, hint, buff, 
                                           &out_len, out_max, key);
+        iskey = 1;
     } else {
         croak("key_or_ring must be a WEBAUTH_KEYRING or WEBAUTH_KEY");
     }
@@ -497,7 +500,9 @@ PPCODE:
 
     if (s != WA_ERR_NONE) {
         free(buff);
-        webauth_croak("webauth_token_create", s, NULL);    
+        webauth_croak(iskey ? 
+                      "webauth_token_create_with_key" : "webauth_token_create",
+                      s, NULL);    
     } else {
         output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
@@ -518,7 +523,7 @@ PPCODE:
     STRLEN n_input;
     unsigned char *p_input;
     WEBAUTH_ATTR_LIST *list;
-    int i, s;
+    int i, s, iskey;
     HV *hv;
     SV *output;
 
@@ -529,11 +534,13 @@ PPCODE:
 	    IV tmp = SvIV((SV*)SvRV(key_or_ring));
 	    ring = INT2PTR(WEBAUTH_KEYRING *,tmp);
         s = webauth_token_parse(p_input, n_input, ttl, ring, &list);
+        iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
 	    IV tmp = SvIV((SV*)SvRV(key_or_ring));
 	    key = INT2PTR(WEBAUTH_KEY *,tmp);
         s = webauth_token_parse_with_key(p_input, n_input, ttl, key, &list);
+        iskey = 1;
     } else {
         croak("key_or_ring must be a WEBAUTH_KEYRING or WEBAUTH_KEY");
     }
@@ -547,7 +554,9 @@ PPCODE:
         output = sv_2mortal(newRV_noinc((SV*)hv));
         webauth_attr_list_free(list);
     } else {
-        webauth_croak("webauth_token_parse", s, NULL);    
+        webauth_croak(iskey ? 
+                      "webauth_token_parse_with_key" : "webauth_token_parse", 
+                      s, NULL);    
     }
     EXTEND(SP,1);
     PUSHs(output);

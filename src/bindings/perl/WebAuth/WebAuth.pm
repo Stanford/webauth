@@ -86,6 +86,17 @@ sub krb5_error_message {
 sub error_message {
     my ($self) = @_;
     my $s = $self->{'status'};
+    return WebAuth::error_message($s);
+}
+
+sub detail_message {
+    my ($self) = @_;
+    return $self->{'detail'};
+}
+
+sub verbose_message {
+    my ($self) = @_;
+    my $s = $self->{'status'};
     my $line = $self->{'line'};
     my $file = $self->{'file'};
     my $msg = WebAuth::error_message($s);
@@ -106,12 +117,11 @@ sub error_message {
 
 sub to_string {
     my ($self) = @_;
-    return $self->error_message();
+    return $self->verbose_message();
 }
 
 1;
 __END__
-# Below is stub documentation for your module. You better edit it!
 
 =head1 NAME
 
@@ -120,8 +130,14 @@ WebAuth - Perl extension for WebAuth (version 3)
 =head1 SYNOPSIS
 
   use WebAuth;
-  
-  $key = WebAuth::random_key(WebAuth::WA_AES_128);
+
+  eval {  
+    $key = WebAuth::random_key(WebAuth::WA_AES_128);
+    ...
+  };
+  if (isa($@, "WebAuth::Exception")) {
+    # handle exception 
+  }
 
 =head1 DESCRIPTION
 
@@ -129,7 +145,10 @@ WebAuth is a low-level Perl interface into the WebAuth C API.
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
 
-All functions have the potential to croak with WebAuth::Exception object.
+All functions have the potential to croak with a WebAuth::Exception object,
+so an eval block should be placed around calls to WebAuth functions
+if you intend to recover from errors. See the WebAuth::Exception section
+for more information.
 
 =head1 EXPORT
 
@@ -143,7 +162,8 @@ None
 
 $message = error_message($status)
 
-Returns an error message for the specified status.
+Returns an error message for the specified status, which should
+be one of the WA_ERR_* values.
 
 =item base64_encode(input);
 
@@ -351,6 +371,73 @@ will be set on success, and will contain the result of the krb5_mk_req call.
 
 Used to read a request created with krb5_mk_req. On success $principal
 will be set to the client principal in the request.
+
+=back
+
+=head1 WebAuth::Exception
+
+The various WebAuth functions can all throw exceptions if something
+wrong happens. These exceptions will be of type WebAuth::Exception.
+
+For example:
+
+  eval {  
+    $data = WebAuth::base64_decode($buffer);
+    ...
+  };
+  if (isa($@, "WebAuth::Exception")) {
+    my $e = $@;
+    # you can call the following methods on an Exception object:
+    # $e->status()
+    # $e->error_message()
+    # $e->detail_message()
+    # $e->krb5_error_code()
+    # $e->krb5_error_message()
+    # $e->verbose_message()
+  }
+
+
+=over 4
+
+=item status()
+
+  This method returns the WebAuth status code for the exception,
+  which will be one of the WA_ERR_* codes.
+
+=item error_message()
+
+  This method returns the WebAuth error message for the status code,
+  using the WebAuth::error_message function.
+
+=item detail_message()
+
+  This method returns the "detail" message in the exception. The detail
+  message is additional information created with the exception when
+  it is raised, and is usually the name of the WebAuth C function that
+  raised the exception.
+
+=item krb5_error_code()
+
+  If the status of the exception is WA_ERR_KRB5, then this function
+  will return the Kerberos V5 error code that caused the exception.
+  There are currently no constants defined for these error codes.
+
+=item krb5_error_message()
+
+  If the status of the exception is WA_ERR_KRB5, then this function
+  will return the Kerberos V5 error message corresponding to the
+  krb5_error_code.
+
+=item verbose_message()
+
+  This method returns a verbose error message, which consists
+  of all information available in the exception, including the
+  status code, error message, line number and file, and any detail
+  message in the exception. It also will include the kerberos
+  error code and error message if status is WA_ERR_KRB5.
+
+  The verbose_message method is also called if the exception is
+  used as a string.
 
 =back
 
