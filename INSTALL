@@ -10,9 +10,8 @@ site, see doc/install-webkdc.
  1.  Make sure that you have all of the required packages installed.
      WebAuth is implemented as Apache 2.0 modules, and therefore requires
      an installation of Apache 2.0 built with SSL and dynamic modules.  It
-     also requires MIT Kerberos v5 (Heimdal may work but is not tested),
-     cURL, and OpenSSL 0.9.7 or later (for AES support).  See README for
-     more version dependencies.
+     also requires MIT Kerberos v5, cURL, and OpenSSL 0.9.7 or later (for
+     AES support).  See README for more version dependencies.
 
      Note that all of these packages should be installed on local disk.
      We do not recommend using libraries installed on shared file systems

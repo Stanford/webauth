@@ -62,8 +62,6 @@ REQUIREMENTS
       MIT Kerberos v5 1.2.x or later
       cURL (tested with 7.10.2)
 
-  Heimdal Kerberos v5 may also work, but has not been tested.
-
   Apache 2.0 must be built with --enable-ssl and --enable-so.  WebAuth
   uses apxs to build its Apache modules.
 
