@@ -123,6 +123,7 @@ typedef struct {
     int ldcount;
     apr_array_header_t* ldarray;
     apr_thread_mutex_t* ldmutex;
+    apr_thread_mutex_t* totalmutex;
 
 } MWAL_SCONF;
 

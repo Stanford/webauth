@@ -378,6 +378,12 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
                                 APR_THREAD_MUTEX_DEFAULT,
                                 pconf);
     }
+
+    if (sconf->totalmutex == NULL) {
+        apr_thread_mutex_create(&sconf->totalmutex,
+                                APR_THREAD_MUTEX_DEFAULT,
+                                pconf);
+    }
   
     if (sconf->ldarray == NULL) {
         sconf->ldcount = 0;
@@ -553,7 +559,7 @@ webauthldap_undup(apr_array_header_t* orig, int lowercase)
     eliminator = apr_table_make(pool, orig->nelts);
 
     newarray = apr_array_copy(pool, orig);
-    for(i=0; orig->nelts; i++) {
+    if (!apr_is_empty_array(newarray)) {
         popper = apr_array_pop(newarray);
         if (lowercase) {
             for (p = *popper; *p != '\0'; p++)
@@ -1272,6 +1278,7 @@ auth_checker_hook(request_rec * r)
 {
     MWAL_LDAP_CTXT* lc;
     int rc, i;
+    apr_array_header_t* newarray;
 
     const apr_array_header_t *reqs_arr = ap_requires(r);
     require_line *reqs;
@@ -1354,12 +1361,16 @@ auth_checker_hook(request_rec * r)
     // and search.
     //
 
+    apr_thread_mutex_lock(lc->sconf->totalmutex); /****** LOCKING! ************/
+
     webauthldap_init(lc);
 
     // This will get an available connection from the pool, or bind a new one
     // if needed.
-    if (webauthldap_getcachedconn(lc) != 0)
+    if (webauthldap_getcachedconn(lc) != 0) {
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /*** ERR UNLOCKING! ***/
         return HTTP_INTERNAL_SERVER_ERROR;
+    }
 
     rc = webauthldap_dosearch(lc);
 
@@ -1370,13 +1381,18 @@ auth_checker_hook(request_rec * r)
                   "webauthldap(%s): this connection expired",
                      lc->r->user);
 
-        if (webauthldap_bind(lc) != 0)
+        if (webauthldap_bind(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING! */
             return HTTP_INTERNAL_SERVER_ERROR;
+        }
 
-        if (webauthldap_dosearch(lc) != 0)
+        if (webauthldap_dosearch(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING! */
             return HTTP_INTERNAL_SERVER_ERROR;
+        }
 
     } else if (rc != 0) {
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /** ERR UNLOCKING! ****/
         return HTTP_INTERNAL_SERVER_ERROR;
     } 
 
@@ -1388,6 +1404,7 @@ auth_checker_hook(request_rec * r)
     if ((rc = webauthldap_validate_privgroups(lc, reqs_arr,
                                               &needs_further_handling)) != 0){
         webauthldap_returnconn(lc);
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /***ERR UNLOCKING! ****/
         return rc; // means not authorized, or error
     }
 
@@ -1406,6 +1423,7 @@ auth_checker_hook(request_rec * r)
     apr_table_do(webauthldap_envnotfound, lc, lc->envvars, NULL);
 
     webauthldap_returnconn(lc);
+    apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
 
     if (lc->sconf->debug) {
         if (needs_further_handling)
