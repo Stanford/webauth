@@ -2,6 +2,14 @@
 
 WebAuth 3.1.2 (in progress)
 
+ *) mod_webauthldap: Added mutexes around the entire ldap operation to 
+    avoid GSSAPI thread safety issues. All server_rec structures are now 
+    initialized, correctly supporting multiple virtual host 
+    configurations. Refactored ldap binds for better failback support,
+    fixing a double free memory error. Additional memory cleanup for 
+    krb5 TGT operations. Fixed memory leak related to unbind after 
+    connection expiry, via ignoring SIGPIPE.
+
  *) mod_webauth: Correctly construct the return url for reverse proxies 
    (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
    for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.

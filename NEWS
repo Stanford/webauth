@@ -2,6 +2,9 @@
 
 WebAuth 3.1.2 (in progress)
 
+ *) mod_webauthldap has several bugfixes, supports multiple virtualhosts,
+    better memory utilization and thread safety improvements.
+
  *) Correctly construct the return URL for reverse proxies.
 
 WebAuth 3.1.1 (2003-05-08)
