@@ -268,17 +268,17 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     for (i=0; status==WA_ERR_NONE && i < ring->num_entries; i++) {
         attrs->num_attrs = 0;
         webauth_attr_list_add_time(attrs, "creation_time", 
-                                   ring->entries[i].creation_time);
+                                   ring->entries[i].creation_time, 0);
         webauth_attr_list_add_time(attrs, "valid_from",
-                                   ring->entries[i].valid_from);
+                                   ring->entries[i].valid_from, 0);
         webauth_attr_list_add_time(attrs, "valid_till",
-                                   ring->entries[i].valid_till);
+                                   ring->entries[i].valid_till, 0);
 
         webauth_attr_list_add_uint32(attrs, "key_type",
-                                     ring->entries[i].key->type);
+                                     ring->entries[i].key->type, 0);
 
         webauth_attr_list_add(attrs, "key_data", ring->entries[i].key->data,
-                              ring->entries[i].key->length);
+                              ring->entries[i].key->length, 0);
 
         attr_len = webauth_attrs_encoded_length(attrs);
         attr_buff = realloc(attr_buff, attr_len > 2048 ? attr_len : 2048);

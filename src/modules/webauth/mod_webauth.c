@@ -538,7 +538,6 @@ mod_webauth_cleanup(void *data)
 {
     MWA_SCONF *sconf = (MWA_SCONF*) data;
 
-    
     if (sconf->ctxt == NULL)
         return APR_SUCCESS;
 
@@ -930,12 +929,12 @@ make_app_token(char *subject,
         expiration_time = curr+dconf->app_token_lifetime;
     }
 
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0);
-    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0);
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 0);
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0, 0);
     webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
-                               expiration_time);
+                               expiration_time, 0);
 
-    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr);
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, 0);
     
     /* FIXME: handle it/lt app_token_lifetime, inactive/etc */
 

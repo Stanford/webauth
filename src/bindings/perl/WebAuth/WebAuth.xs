@@ -263,7 +263,7 @@ PPCODE:
 
     while((sv_val = hv_iternextsv(h, &key, &klen))) {
         val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, key, val, vlen);
+        webauth_attr_list_add(list, key, val, vlen, WA_COPY_NONE);
     }
 
     out_max = webauth_attrs_encoded_length(list);
@@ -465,7 +465,7 @@ PPCODE:
 
     while((sv_val = hv_iternextsv(h, &akey, &klen))) {
         val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, akey, val, vlen);
+        webauth_attr_list_add(list, akey, val, vlen, WA_COPY_NONE);
     }
 
     out_max = webauth_token_encoded_length(list);
@@ -520,8 +520,9 @@ PPCODE:
     int i, s, iskey;
     HV *hv;
     SV *output;
+    SV *copy = sv_2mortal(newSVsv(buffer));
 
-    p_input = SvPV(buffer, n_input);
+    p_input = SvPV(copy, n_input);
 
 	if (sv_derived_from(key_or_ring, "WEBAUTH_KEYRINGPtr")) {
         WEBAUTH_KEYRING *ring;

@@ -25,22 +25,23 @@ int main(int argc, char *argv[])
     }
    
     attrs_in = webauth_attr_list_new(64);
-    webauth_attr_list_add(attrs_in, "bin", binary_data, sizeof(binary_data));
-    webauth_attr_list_add_str(attrs_in, "0", "1", 0);
-    webauth_attr_list_add_str(attrs_in, "1", ";", 0);
-    webauth_attr_list_add_str(attrs_in, "2", "", 0);
-    webauth_attr_list_add_str(attrs_in, "3", ";a", 0);
-    webauth_attr_list_add_str(attrs_in, "4", ";aaa", 0);
-    webauth_attr_list_add_str(attrs_in, "5", "a;", 0);
-    webauth_attr_list_add_str(attrs_in, "6", "aaa;", 0);
-    webauth_attr_list_add_str(attrs_in, "7", ";aaa;", 0);
-    webauth_attr_list_add_str(attrs_in, "8", "a;a", 0);
-    webauth_attr_list_add_str(attrs_in, "9", "a;a;", 0);
-    webauth_attr_list_add_str(attrs_in, "10", "a;a;;", 0);
-    webauth_attr_list_add_str(attrs_in, "11", ";a;a;;", 0);
-    webauth_attr_list_add_str(attrs_in, "12", ";;", 0);
-    webauth_attr_list_add_str(attrs_in, "13", ";;;", 0);
-    webauth_attr_list_add_str(attrs_in, "14", ";;;;a", 0);
+    webauth_attr_list_add(attrs_in, "bin", 
+                          binary_data, sizeof(binary_data), 0);
+    webauth_attr_list_add_str(attrs_in, "0", "1", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "1", ";", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "2", "", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "3", ";a", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "4", ";aaa", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "5", "a;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "6", "aaa;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "7", ";aaa;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "8", "a;a", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "9", "a;a;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "10", "a;a;;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "11", ";a;a;;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "12", ";;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "13", ";;;", 0, 0);
+    webauth_attr_list_add_str(attrs_in, "14", ";;;;a", 0, 0);
 
     TEST_OK2(WA_ERR_NONE, webauth_attr_list_find(attrs_in, "4", &f));
     TEST_OK2(f, 5);

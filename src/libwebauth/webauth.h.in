@@ -114,6 +114,11 @@ typedef enum {
 #define WA_AES_192 24
 #define WA_AES_256 32
 
+/* flags to attr_list_add functions */
+#define WA_COPY_NONE 0x00
+#define WA_COPY_NAME 0x01
+#define WA_COPY_VALUE 0x02
+
 /******************** types ********************/
 
 /** A generic name/value attribute.
@@ -123,9 +128,12 @@ typedef enum {
  * data, since the length <b>must</b> be specified.
  */
 typedef struct {
-    char *name;                 /**< Name of attribute. */
+    const char *name;           /**< Name of attribute. */
+    int flags;                  /**< flags passed in during add */
     void *value;                /**< Value of attribute (binary data). */
     int length;                 /**< Length of attribute value in bytes. */
+    char val_buff[16];          /**< Temp buffer to avoid malloc
+                                   during encoding. */
 } WEBAUTH_ATTR;
 
 /** An attribute list.
@@ -313,13 +321,13 @@ WEBAUTH_ATTR_LIST *webauth_attr_list_new(int initial_capacity);
  *
  */
 int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
-                          const char *name, const void *value, int vlen);
+                          const char *name, void *value, int vlen,
+                          int flags);
 
 /** adds an attr string to the attr list.
  *
  * adds a new attribute to the given attr list, growing the list
- * if need be. Both the name and value are copied, and value
- * always has a null added to the end of it.
+ * if need be. name and value are *not* copied.
  *
  * if vlen is 0, then strlen(value) is used.
  *
@@ -327,25 +335,38 @@ int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
  *
  */
 int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
-                              const char *name, const char *value, int vlen);
+                              const char *name, const char *value, int vlen,
+                              int flags);
 
+
+/** uint32/int32/time all imply WA_COPY_VALUE
+ */
 
 int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
                                  const char *name,
-                                 uint32_t value);
+                                 uint32_t value, int flags);
 
 int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
                                 const char *name,
-                                int32_t value);
+                                int32_t value, int flags);
 
 int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
                                const char *name,
-                               time_t value);
+                               time_t value, int flags);
+
 
 int webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
                                const char *name,
                                void **value,
-                               int *value_len);
+                               int *value_len,
+                               int copy);
+
+
+int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list,
+                              const char *name,
+                               char **value,
+                               int *value_len,
+                               int copy);
 
 int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
                                  const char *name,
@@ -481,9 +502,8 @@ WEBAUTH_KEYRING * webauth_keyring_new(int initial_capacity);
 void webauth_keyring_free(WEBAUTH_KEYRING *ring);
 
 /*
- * add a new entry to a key ring. After the call, "key" will
- * be owned by the key ring, and will be freed when the 
- * the key ring is freed.
+ * add a new entry to a key ring. key is copied,
+ * and will be freed when the key ring is freed.
  *
  * If creation_time or valid_from time is 0, then the current time is used.
  */
@@ -579,6 +599,9 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  * on the ring will be tried first, and if that fails
  * all the remaining keys will be tried.
  *
+ * input is modified, and the returned attrs in list point into
+ * input.
+ *
  * the following checks are made:
  *
  *    if the token has a WA_TK_EXPIRATION_TIME attr then it
@@ -613,7 +636,7 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  *  WA_ERR_TOKEN_STALE
  */
 
-int webauth_token_parse(const unsigned char *input,
+int webauth_token_parse(unsigned char *input,
                         int input_len,
                         int ttl, 
                         const WEBAUTH_KEYRING *ring,
@@ -623,7 +646,7 @@ int webauth_token_parse(const unsigned char *input,
  * same as webauth_token_parse, but takes a key instead of a key ring.
  */
 
-int webauth_token_parse_with_key(const unsigned char *input,
+int webauth_token_parse_with_key(unsigned char *input,
                                  int input_len,
                                  int ttl,
                                  const WEBAUTH_KEY *key,

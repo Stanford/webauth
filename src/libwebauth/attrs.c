@@ -1,5 +1,4 @@
 #include "webauthp.h"
-
 #include <sys/types.h>
 #include <netinet/in.h>
 
@@ -10,6 +9,10 @@
 
 #define NAME_TERM '='
 #define VAL_TERM ';'
+
+
+#define FLAG_ISSET(flags, flag) ((flags & flag) == flag)
+#define FLAG_CLEAR(flags, flag) (flags &= ~flag)
 
 WEBAUTH_ATTR_LIST *
 webauth_attr_list_new(int initial_capacity)
@@ -29,46 +32,73 @@ webauth_attr_list_new(int initial_capacity)
     return al;
 }
 
-int
-webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
-                      const char *name, const void *value, int length)
+/*
+ * return next available entry or -1 if out of mem
+ */
+static
+int next_entry(WEBAUTH_ATTR_LIST *list)
 {
-    void *v;
-    char *n;
+    int i = list->num_attrs;
+
     assert(list != NULL);
     assert(list->attrs != NULL);
-    assert(length ? (value != NULL) : 1);
     if (list->num_attrs == list->capacity) {
         int new_capacity = list->capacity *2;
         int new_size = sizeof(WEBAUTH_ATTR) * new_capacity;
         WEBAUTH_ATTR *new_attrs = 
             (WEBAUTH_ATTR*) realloc(list->attrs, new_size);
         if (new_attrs == NULL) {
-            return WA_ERR_NO_MEM;
+            return -1;
         }
         list->capacity = new_capacity;
         if (list->attrs != new_attrs) {
             list->attrs = new_attrs;
         }
     }
-    n = strdup(name);
-    if (n == NULL) {
-        return WA_ERR_NO_MEM;
-    }
-
-    v = malloc(length+1);
-    if (v == NULL) {
-        free(n);
-        return WA_ERR_NO_MEM;
-    }
-
-    memcpy(v, value, length);
-    /* null terminate */
-    ((char*)v)[length] = '\0';
-    list->attrs[list->num_attrs].name = n;
-    list->attrs[list->num_attrs].value = v;
-    list->attrs[list->num_attrs].length = length;
     list->num_attrs++;
+    return i;
+}
+
+int
+webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
+                      const char *name, 
+                      void *value, int length,
+                      int flags)
+{
+    int i;
+    assert(list != NULL);
+    assert(list->attrs != NULL);
+    assert(length ? (value != NULL) : 1);
+    i = next_entry(list);
+    if (i == -1)
+        return WA_ERR_NO_MEM;
+
+    if (FLAG_ISSET(flags,WA_COPY_NAME)) {
+        list->attrs[i].name = strdup(name);
+        if (list->attrs[i].name == NULL)
+            return WA_ERR_NO_MEM;            
+    } else {
+        list->attrs[i].name = name;
+
+    }
+
+    if (FLAG_ISSET(flags, WA_COPY_VALUE)) {
+        if (length < sizeof(list->attrs[i].val_buff)) {
+            FLAG_CLEAR(flags, WA_COPY_VALUE);
+            memcpy(list->attrs[i].val_buff, value, length);
+            list->attrs[i].value = list->attrs[i].val_buff;
+        } else {
+            list->attrs[i].value = malloc(length);
+            if (list->attrs[i].value == NULL)
+                return WA_ERR_NO_MEM;
+            memcpy(list->attrs[i].value, value, length);
+        }
+    } else {
+        list->attrs[i].value = value;
+    }
+    list->attrs[i].length = length;
+
+    list->attrs[i].flags = flags;
     return WA_ERR_NONE;
 }
 
@@ -76,45 +106,43 @@ int
 webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
                           const char *name,
                           const char *value,
-                          int vlen)
+                          int vlen,
+                          int flags)
 {
-    assert(list != NULL);
-    assert(name != NULL);
     assert(value != NULL);
-    return webauth_attr_list_add(list, name, value, strlen(value));
+    return webauth_attr_list_add(list, name, (void*)value, 
+                                 vlen ? vlen : strlen(value), flags);
 }
 
 int
 webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
-                                 const char *name,
-                                 uint32_t value)
+                             const char *name,
+                             uint32_t value,
+                             int flags)
 {
-    assert(list != NULL);
-    assert(name != NULL);
     value = htonl(value);
-    return webauth_attr_list_add(list, name, &value, sizeof(value));
+    return webauth_attr_list_add(list, name, (void*)&value, 
+                                 sizeof(value),
+                                 flags | WA_COPY_VALUE);
 }
 
 int
 webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
                             const char *name,
-                            int32_t value)
+                            int32_t value,
+                            int flags)
 {
-    assert(list != NULL);
-    assert(name != NULL);
-    value = htonl((uint32_t)value);
-    return webauth_attr_list_add(list, name, &value, sizeof(value));
+
+    return webauth_attr_list_add_uint32(list, name, value, flags);
 }
 
 int
 webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
-                               const char *name,
-                               time_t value)
+                           const char *name,
+                           time_t value,
+                           int flags)
 {
-    assert(list != NULL);
-    assert(name != NULL);
-    value = htonl((uint32_t)value);
-    return webauth_attr_list_add(list, name, &value, sizeof(value));
+    return webauth_attr_list_add_uint32(list, name, value, flags);
 }
 
 void
@@ -124,9 +152,14 @@ webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
     assert(list != NULL);
     assert(list->attrs != NULL);
     for (i=0; i < list->num_attrs; i++) {
-        free(list->attrs[i].name);
-        free(list->attrs[i].value);
+        
+        if (FLAG_ISSET(list->attrs[i].flags, WA_COPY_NAME))
+            free((char*)list->attrs[i].name);
+
+        if (FLAG_ISSET(list->attrs[i].flags, WA_COPY_VALUE))
+            free(list->attrs[i].value);
     }
+
     free(list->attrs);
     free(list);
 }
@@ -153,7 +186,8 @@ int
 webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
                            const char *name,
                            void **value,
-                           int *value_len)
+                           int *value_len,
+                           int copy)
 {
     int i, s;
 
@@ -167,10 +201,47 @@ webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
         return s;
 
     *value_len = list->attrs[i].length;
-    *value = malloc(*value_len);
-    if (*value == NULL)
-        return WA_ERR_NO_MEM;
-    memcpy(*value, list->attrs[i].value, *value_len);
+    if (copy) {
+        *value = malloc(*value_len);
+        if (*value == NULL)
+            return WA_ERR_NO_MEM;
+        memcpy(*value, list->attrs[i].value, *value_len);
+    } else {
+        *value = list->attrs[i].value;
+    }
+    return WA_ERR_NONE;
+}
+
+
+int
+webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list,
+                           const char *name,
+                           char **value,
+                           int *value_len,
+                           int copy)
+{
+    int i, s, len;
+
+    assert(list != NULL);
+    assert(name != NULL);
+    assert(value!= NULL);
+
+    s = webauth_attr_list_find(list, name, &i);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    len = list->attrs[i].length;
+
+    if (value_len)
+        *value_len = len;
+    if (copy) {
+        *value = malloc(len+1);
+        if (*value == NULL)
+            return WA_ERR_NO_MEM;
+        memcpy(*value, list->attrs[i].value, len+1); /*include null */
+    } else {
+        *value = list->attrs[i].value;
+    }
     return WA_ERR_NONE;
 }
 
@@ -335,7 +406,7 @@ webauth_attrs_decode(unsigned char *buffer,
     assert(input_len > 0);
     assert(list != NULL);
 
-    *list = webauth_attr_list_new(64);
+    *list = webauth_attr_list_new(16);
     if (*list == NULL) {
         return WA_ERR_NO_MEM;
     }
@@ -381,7 +452,7 @@ webauth_attrs_decode(unsigned char *buffer,
                     in_val = 0;
                     length = d - (unsigned char*)value;
                     *d = '\0';
-                    s = webauth_attr_list_add(*list, name, value, length);
+                    s = webauth_attr_list_add(*list, name, value, length, 0);
                     if (s!=WA_ERR_NONE) {
                         webauth_attr_list_free(*list);
                         *list = NULL;

@@ -292,17 +292,13 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
  */
 
 int
-webauth_token_parse(const unsigned char *input,
+webauth_token_parse(unsigned char *input,
                     int input_len,
                     int ttl,
                     const WEBAUTH_KEYRING *ring,
                     WEBAUTH_ATTR_LIST **list)
 {
     int dlen, s, i;
-    uint32_t temp;
-    time_t hint;
-    unsigned char *buff;
-
     WEBAUTH_KEY *hkey;
 
     assert(input != NULL);
@@ -320,40 +316,54 @@ webauth_token_parse(const unsigned char *input,
         return WA_ERR_CORRUPT;
     }
 
-    buff = malloc(input_len);
-    if (buff == NULL) {
-        return WA_ERR_NO_MEM;
-    }
+    if (ring->num_entries > 1) {
+        unsigned char *buff;
+        int input_dirty;
+        uint32_t temp;
+        time_t hint;
 
-    /* use hint first */
-    memcpy(&temp, input, sizeof(temp));
-    hint = (time_t)ntohl(temp);
-    hkey = webauth_keyring_best_key(ring, 0, hint);
-
-    if (hkey != NULL) {
+        buff = malloc(input_len);
+        if (buff == NULL) {
+            return WA_ERR_NO_MEM;
+        }
         memcpy(buff, input, input_len);
-        s = decrypt_token(hkey, buff, input_len, &dlen);
-    } else {
-        s = WA_ERR_BAD_HMAC;
-    }
+        input_dirty =0;
 
-    if (s != WA_ERR_NONE) {
-        /* hint failed, try all keys, skipping hint */
-        for (i=0; i < ring->num_entries; i++) {
-            if (ring->entries[i].key != hkey) {
-                memcpy(buff, input, input_len);
-                s = decrypt_token(ring->entries[i].key, 
-                                  buff, input_len, &dlen);
-                if (s == WA_ERR_NONE)
-                    break;
+        /* use hint first */
+        memcpy(&temp, input, sizeof(temp));
+        hint = (time_t)ntohl(temp);
+        hkey = webauth_keyring_best_key(ring, 0, hint);
+
+        if (hkey != NULL) {
+            if (input_dirty)
+                memcpy(input, buff, input_len);
+            s = decrypt_token(hkey, input, input_len, &dlen);
+            input_dirty = 1;
+        } else {
+            s = WA_ERR_BAD_HMAC;
+        }
+
+        if (s != WA_ERR_NONE) {
+            /* hint failed, try all keys, skipping hint */
+            for (i=0; i < ring->num_entries; i++) {
+                if (ring->entries[i].key != hkey) {
+                    if (input_dirty)
+                        memcpy(input, buff, input_len);
+                    s = decrypt_token(ring->entries[i].key, 
+                                      input, input_len, &dlen);
+                    input_dirty = 1;
+                    if (s == WA_ERR_NONE)
+                        break;
+                }
             }
         }
+        free(buff);
+    } else {
+        s = decrypt_token(ring->entries[0].key, input, input_len, &dlen);
     }
 
     if (s == WA_ERR_NONE)
-        s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
-
-    free(buff);
+        s = webauth_attrs_decode(input+T_ATTR_O, dlen, list);
 
     if (s != WA_ERR_NONE)
         return s;
@@ -379,14 +389,13 @@ webauth_token_parse(const unsigned char *input,
  */
 
 int
-webauth_token_parse_with_key(const unsigned char *input,
+webauth_token_parse_with_key(unsigned char *input,
                              int input_len,
                              int ttl,
                              const WEBAUTH_KEY *key,
                              WEBAUTH_ATTR_LIST **list)
 {
     int dlen, s;
-    unsigned char *buff;
 
     assert(input != NULL);
     assert(list != NULL);
@@ -399,16 +408,9 @@ webauth_token_parse_with_key(const unsigned char *input,
         return WA_ERR_CORRUPT;
     }
 
-    buff = malloc(input_len);
-    if (buff == NULL) 
-        return WA_ERR_NO_MEM;
-
-    memcpy(buff, input, input_len);
-
-    s = decrypt_token(key, buff, input_len, &dlen);
+    s = decrypt_token(key, input, input_len, &dlen);
     if (s == WA_ERR_NONE)
-        s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
-    free(buff);
+        s = webauth_attrs_decode(input+T_ATTR_O, dlen, list);
 
     if (s != WA_ERR_NONE)
         return s;
