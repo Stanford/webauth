@@ -1,0 +1,120 @@
+                     WebKDC Installation Instructions
+
+These are supplemental installation instructions for installing a WebKDC.
+Each site running WebAuth only needs one WebKDC for the entire site, so
+normally users do not need to follow these steps.  They are here only for
+site WebAuth administrators.
+
+It is important to always keep in mind that the security of the entire
+WebAuth system depends on the security of the WebKDC.  A compromise of the
+WebKDC system would allow an attacker to steal usernames and passwords for
+anyone using the login server and to be able to forge arbitrary
+authentication credentials and use them to contact WebAuth servers.  This
+system should be locked down as tightly as possible and proactively
+monitored for security.
+
+ 1.  Follow the standard WebAuth installation instructions as given in the
+     INSTALL file at the top of the source tree.  This will install the
+     WebKDC module as well as the basic WebAuth module.
+
+ 2.  Add Apache directives for the WebKDC.  The basic set is:
+
+         LoadModule webkdc_module modules/mod_webkdc.so
+         WebKdcServiceTokenLifetime 30d
+         WebKdcKeyring conf/webkdc/keyring
+         WebKdcKeytab conf/webkdc/keytab
+         WebKdcTokenAcl conf/webkdc/token.acl
+
+     If you are testing a beta release, please also add:
+
+         WebKdcDebug on
+
+     so that your server will generate more complete logs if anything goes
+     wrong.  This may also be useful if this is the first time you've
+     installed a WebKdc.
+
+ 3.  Set up a script alias to run the login CGI service by adding the
+     following line to your Apache configuration:
+
+         ScriptAlias /login "<apache-root>/htdocs/webkdc/login.cgi"
+
+     You can change the path to wherever is convenient.  Replace
+     <apache-root> with the root of your Apache installation.
+
+ 4.  Tell Apache to allow CGI execution in that directory:
+
+         <Directory "/usr/local/apache2/htdocs/webkdc">
+             Options Indexes FollowSymLinks +ExecCGI
+             AddHandler cgi-script .cgi
+             AllowOverride All
+             Order allow,deny
+             Allow from all
+         </Directory>
+
+ 5.  Set up a <VirtualHost> directive using SSL for the WebKDC service ,
+     running on some port other than the standard port (since the login
+     server will run on the standard port).  Inside that directive, set a
+     handler for the URL /webkdc-service.  In other words, use a
+     configuration block like:
+
+         <VirtualHost _default_:8443>
+         ...
+         <Location /webkdc-service>
+            SetHandler webkdc
+         </Location>
+         ...
+         </VirtualHost>
+
+ 6.  Create the conf/webkdc directory and the webkdc htdocs directory:
+
+         cd <apache-root>
+         mkdir -p conf/webkdc htdocs/webkdc
+
+ 7.  Install the WebKDC files used by the login server, the portion that
+     runs on the regular SSL port.  cd to the root of the WebAuth source
+     tree and then run:
+
+         cd src/webkdc
+         cp login.cgi quad.gif WebKDC.pm <apache-root>/htdocs/webkdc
+         cp -r WebKDC <apache-root>/htdocs/webkdc
+
+ 8.  Edit <apache-root>/htdocs/WebKDC.pm and change the variables
+     $C_WEBKDC_KEYRING_PATH and $C_WEBKDC_URL to point to your install
+     locations:
+
+         our $C_WEBKDC_KEYRING_PATH = "<apache-root>/conf/webkdc/keyring";
+         our $C_WEBKDC_URL = "https://<webkdc-server>:8443/webkdc-service/";
+
+     where <webkdc-server> is the fully qualified name of the system on
+     which you're running the WebKDC service.
+
+ 9.  Install a keytab for the WebKDC.  This keytab must be for the same
+     identity as is mentioned in the WebAuthWebKdcPrincipal configuration
+     option in the Apache configuration of individual WebAuth servers.
+     The keytab should for the identity webauth/<webkdc-server> where, as
+     above, <webkdc-server> is the fully qualified hostname of your WebKDC
+     system and should be installed in <apache-root>/conf/webkdc/keytab.
+
+     At Stanford, this can be done with:
+
+         /usr/pubsw/sbin/leland_srvtab \
+             -f <apache-root>/conf/webkdc/srvtab \
+             -k <apache-root>/conf/webkdc/keytab \
+             webauth/<webkdc-server>
+
+     and then deleting the srvtab file (since it's not needed).
+
+10.  Create a file named token.acl in <apache-root>/conf/webkdc.  This
+     file specifies which tokens various server identities are allowed to
+     create.  There is an example file in src/modules/webkdc/token.acl, so
+     for an initial configuration at Stanford, just do:
+
+         cp src/modules/webkdc/token.acl <apache-root>/conf/webkdc/
+
+     At other sites, you'll need to at least change the ACL pattern to not
+     use @stanford.edu.
+
+11.  Restart the Apache web server.  You should now have a working WebKDC
+     and login server, which you can point a WebAuth server at.  You will
+     need to install a regular WebAuth server following the instructions
+     in INSTALL to be able to test your WebKDC.
