@@ -17,12 +17,18 @@ LDLIBS		= $(top_builddir)src/libwebauth/libwebauth.la \
 
 SOURCES		= mod_webkdc.c util.c acl.c
 
+.PHONY: all clean install install-webkdc
+
 all: mod_webkdc.o
 
 mod_webkdc.o: $(SOURCES) mod_webkdc.h
 	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
+# install does nothing, since normally people don't want to install this
+# module.  Only install on make install-webkdc.
 install:
+
+install-webkdc:
 	$(APXS) -i mod_webkdc.la
 
 clean:
