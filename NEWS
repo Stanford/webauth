@@ -2,6 +2,8 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) have the WebKDC re-read the token ACL file if its mtime changes
+
  *) Added WebAuthAuthType directive to help people transistion to
     mod_webauth. This directive allows you to specify an additional
     AuthType name that will be treated the same as WebAuth. If

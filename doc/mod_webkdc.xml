@@ -279,29 +279,24 @@ The format of this file is as follows:
 {subject} cred {cred-type} {service}
 </pre>
 </code>
-<p>
-For example:
-</p>
-
-<code>
-<pre>
-
+<p>For example:</p>
+<pre><code>
 # allow anyone with a webauth keytab to
 # request id tokens
 krb5:webauth/*@stanford.edu id
 # allow shred to request a service/foobar credential
-# (this is a single line)
-krb5:webauth/shred.stanford.edu@stanford.edu
-    cred krb5 service/foobar@stanford.edu
+krb5:webauth/shred.stanford.edu@stanford.edu cred krb5 service/foobar@stanford.edu
+</code></pre>
 
-</pre>
-</code>
-
+<p>The <code>krb5:</code> prefix on the subject is used to signify that the named principal was authenticated using Kerberos. Currently, krb5 is the only supported mechanism for WebAuth server's to initially authenticate with the WebKDC. Other types of authentication maybe supported in the future</p>
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
 <note><title>Note</title> 
     <p>This directive must be set.</p>
+
+    <p>The ACL file is cached in memory and will be re-read automatically if 
+       the mtime on the file changes.</p>
 </note>
 
 <example><title>Example</title>

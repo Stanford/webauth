@@ -91,6 +91,7 @@ static MWK_ACL *
 get_acl(MWK_REQ_CTXT *rc)
 {
     static MWK_ACL *acl = NULL;
+    static apr_time_t acl_mtime = 0;
     MWK_ACL *new_acl;
     const char *mwk_func="get_acl";
     apr_status_t astatus;
@@ -98,10 +99,27 @@ get_acl(MWK_REQ_CTXT *rc)
     apr_pool_t *acl_pool;
     int lineno, error; 
     char line[1024];
+    struct apr_finfo_t finfo;
 
-    /* FIXME: stat and free current acl if out-of-date */
-    if (acl != NULL) 
-        return acl;
+
+    if (acl != NULL) {
+        /* FIXME: stat and free current acl if out-of-date */
+        astatus = apr_stat(&finfo, rc->sconf->token_acl_path,
+                           APR_FINFO_MTIME, rc->r->pool);
+        
+        if (astatus != APR_SUCCESS) {
+            log_apr_error(rc, astatus, mwk_func, "apr_file_open",
+                          rc->sconf->token_acl_path);
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webkdc: %s: couldn't stat acl file(%s), "
+                         "using previously cached acl",
+                         mwk_func, rc->sconf->token_acl_path);
+            return acl;
+        }
+        /* no change, return current acl */
+        if (finfo.mtime == acl_mtime)
+            return acl;
+    }
 
     if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
@@ -125,6 +143,10 @@ get_acl(MWK_REQ_CTXT *rc)
                          "mod_webkdc: %s: couldn't open new acl file, "
                          "using previously cached acl",
                          mwk_func);
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+                         "mod_webkdc: %s: couldn't open acl file: %s",
+                         mwk_func, rc->sconf->token_acl_path);
         }
         return acl;
     }
