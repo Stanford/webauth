@@ -256,6 +256,8 @@ VC6 also allowed us to use our modules with the Apache Group binaries.
 {CURL_PATH}/lib/ca-bundle.crt {APACHE}/conf/webauth/
 {OPENSSL_PATH}/out32dll/libeay32.dll {APACHE}/bin/
 {OPENSSL_PATH}/out32dll/ssleay32.dll {APACHE}/bin/
+{APACHE_PATH}/modules/ssl/Release/mod_ssl.so {APACHE}/modules/
+
 {WEBAUTH_PATH/src/libwebauth/release-dll/libwebauth.dll {APACHE}/bin/
 {WEBAUTH_PATH}/src/modules/webauth/release-dll/mod_webauth.dll \
        {APACHE}/modules/mod_webauth.so

@@ -21,6 +21,7 @@
 	bin/libwebauth.dll \
 	modules/mod_webauth.so \
 	modules/mod_webauthldap.so \
+	modules/mod_ssl.so \
 	conf/stanford-webauth.conf \
 	conf/stanford-ldap.conf \
 	conf/webauth/ca-bundle.crt \
