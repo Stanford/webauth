@@ -1,0 +1,25 @@
+# $Id$
+#
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+CC		= @CC@
+INSTALL		= @INSTALL@
+RANLIB		= @RANLIB@
+
+CFLAGS		= @CFLAGS@
+
+CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
+                   -I@top_srcdir@/src/libwebauth @CPPFLAGS@
+
+LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@
+
+PROGS		= wa_keyring
+
+all: $(PROGS)
+
+wa_keyring: wa_keyring.o
+
+clean:
+	rm -f $(PROGS) *.o *~ core \#*
