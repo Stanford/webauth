@@ -221,8 +221,6 @@ sub request_token_request($$) {
 	if ($error_code) {
 	    my $wk_err = $pec_mapping{$error_code} || 
 		WK_ERR_UNRECOVERABLE_ERROR;
-	    print STDERR "ERROR: wk_err($wk_err)\n";
-
 	    die new WebKDC::WebKDCException($wk_err, 
 					    "Login error: $error_message ".
 					    "($error_code)", $error_code);
