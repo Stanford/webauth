@@ -65,6 +65,7 @@ WebAuthUseCreds
 </a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcsslcertfile">WebAuthWebKdcSSLCertFile</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcurl">WebAuthWebKdcURL</a></li>
 </ul>
 <h3>Topics</h3>
@@ -481,11 +482,14 @@ WebAuthCredCacheDir conf/webauth/credcache
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
-Whether or not we do extra debugging in error_log.
+Whether or not to do extra debugging in error_log. You should
+also set Apache's <code>LogLevel</code> to <code>debug</code> as
+well.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthDebug on<br />
+LogLevel debug<br />
 </code></p></div>
 
 </div>
@@ -1075,6 +1079,40 @@ the WebKDC. It used to request a service-token from the WebKDC. </p>
 <div class="example"><h3>Example</h3><p><code>
 # if realm isn't specified, the default realm will be used<br />
 WebAuthWebKdcPrincipal service/webkdc@stanford.edu
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertFile" id="WebAuthWebKdcSSLCertFile">WebAuthWebKdcSSLCertFile</a> <a name="webauthwebkdcsslcertfile" id="webauthwebkdcsslcertfile">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the WebKDC's certificate file.
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertFile <em>path</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+This is the name of a file holding one or more certificates to verify the 
+WebKDC's SSL Certificate with. This directive is only needed if you
+are using a self-signed certificate with your WebKDC. If you are using a
+self-signed certifcate, you should copy that certificate (the file
+mentioned in the WebKDC's Apache SSLCertificateFile directive) to a local
+file, and point to that file with this directive.
+</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<div class="note"><h3>Note</h3> 
+    <p>This directive is only needed when the <b>WebKDC</b> is using a
+self-signed certificate. It is not needed if your WebAuth server is using
+a self-signed ceritficate</p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 </code></p></div>
 
 </div>

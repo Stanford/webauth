@@ -885,11 +885,14 @@ authentication.
 
 <usage>
 <p>
-Whether or not we do extra debugging in error_log.
+Whether or not to do extra debugging in error_log. You should
+also set Apache's <code>LogLevel</code> to <code>debug</code> as
+well.
 </p>
 
 <example><title>Example</title>
 WebAuthDebug on<br />
+LogLevel debug<br />
 </example>
 </usage>
 </directivesynopsis>
@@ -1053,6 +1056,40 @@ specify that multiple credentials are required.</p>
   WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br/>
   &lt;/Location&gt; <br/>
   <br/>
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthWebKdcSSLCertFile</name>
+<description>Name of the WebKDC's certificate file.
+</description>
+<syntax>WebAuthWebkdcSSLCertFile <em>path</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of a file holding one or more certificates to verify the 
+WebKDC's SSL Certificate with. This directive is only needed if you
+are using a self-signed certificate with your WebKDC. If you are using a
+self-signed certifcate, you should copy that certificate (the file
+mentioned in the WebKDC's Apache SSLCertificateFile directive) to a local
+file, and point to that file with this directive.
+</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive is only needed when the <b>WebKDC</b> is using a
+self-signed certificate. It is not needed if your WebAuth server is using
+a self-signed ceritficate</p>
+</note>
+
+<example><title>Example</title>
+WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 </example>
 </usage>
 </directivesynopsis>

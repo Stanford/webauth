@@ -10,8 +10,7 @@
 <identifier>webkdc_module</identifier>
 
 <summary>
-<p>This module implements the server-side of the WebAuth V3 protocol.
-FIXME: BLAH BLAH BLAH.</p>
+<p>This module implements the server-side of the WebAuth V3 protocol.</p>
 
 <p>Further details are provided in the 
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -21,7 +20,6 @@ FIXME: BLAH BLAH BLAH.</p>
 <section><title>Setting up the WebKDC</title>
 
     <p>describe how to configure keyrings, acls, handler, etc.
-       FIXME: blah blah blah.
     </p>
 
 </section>

@@ -26,8 +26,7 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c and friends</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module implements the server-side of the WebAuth V3 protocol.
-FIXME: BLAH BLAH BLAH.</p>
+<p>This module implements the server-side of the WebAuth V3 protocol.</p>
 
 <p>Further details are provided in the 
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -55,7 +54,6 @@ FIXME: BLAH BLAH BLAH.</p>
 <h2>Setting up the WebKDC</h2>
 
     <p>describe how to configure keyrings, acls, handler, etc.
-       FIXME: blah blah blah.
     </p>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -128,7 +126,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyRing conf/webkdc/keyring
+WebKdcKeyring conf/webkdc/keyring
 </code></p></div>
 
 </div>
@@ -166,7 +164,7 @@ WebKdcKeyringAutoUdpate off<br />
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update
 </td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
@@ -234,7 +232,7 @@ WebKdcKeytab conf/webkdc/keytab
 </table>
 <p>
 This directive controls the lifetime of the webkdc-proxy token (the 
-main single-sign-oncookie containing the user's proxied credentials).
+main single-sign-on cookie containing the user's proxied credentials).
 If not specified, the lifetime time used is the expiration time of the 
 underlying credential (i.e., the lifetime of the Kerberos TGT for example).
 </p>
