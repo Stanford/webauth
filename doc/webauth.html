@@ -288,10 +288,10 @@ The WAS will need both to make future requests to the WebKDC. The whole
 transaction itself is protected with SSL.
 
 <p>The thing to note here is that there are no long term keys stored
-on WebKDC itself. Once the WAS obtains the sevice-token and session-key,
-it will cache them both until the service-token expires, which will
-most likely be 24 hours. Before the service-token expires, the WAS must
-request a new service-token.
+on the WebKDC itself other its own private key. Once the WAS obtains the 
+sevice-token and session-key, it will cache them both until the 
+service-token expires, which will most likely be 24 hours. Before 
+the service-token expires, the WAS must request a new service-token.
 
 <p>The protocol is also designed such that other authentication mechanisms
 may be used to bootstrap, such as the GSS-API, or SSL client authentication
