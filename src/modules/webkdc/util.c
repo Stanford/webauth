@@ -5,7 +5,6 @@
 
 #include "mod_webkdc.h"
 
-
 /* initiaized in child */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];
 

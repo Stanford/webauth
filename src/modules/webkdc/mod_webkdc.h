@@ -56,7 +56,7 @@
 
 /* enum for mutexes */
 enum mwk_mutex_type {
-    MWK_MUTEX_KEYRING = 0,
+    MWK_MUTEX_KEYRING,
     MWK_MUTEX_MAX /* MUST BE LAST! */
 };
 
@@ -205,7 +205,6 @@ mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
  */
 void
 mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
-
 
 /*
  * get a string from an attr list, log an error if not present.
