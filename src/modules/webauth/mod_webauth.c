@@ -607,6 +607,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->require_ssl = oconf->require_ssl_ex ? 
         oconf->require_ssl : bconf->require_ssl;
 
+    conf->ssl_redirect = oconf->ssl_redirect_ex ? 
+        oconf->ssl_redirect : bconf->ssl_redirect;
+
     conf->webkdc_cert_check = oconf->webkdc_cert_check_ex ? 
         oconf->webkdc_cert_check : bconf->webkdc_cert_check;
 
@@ -615,6 +618,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->keyring_key_lifetime = oconf->keyring_key_lifetime_ex ? 
         oconf->keyring_key_lifetime : bconf->keyring_key_lifetime;
+
+    conf->ssl_redirect_port = oconf->ssl_redirect_port_ex ? 
+        oconf->ssl_redirect_port : bconf->ssl_redirect_port;
 
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
@@ -822,10 +828,17 @@ handler_hook(request_rec *r)
     dd_dir_str("WebAuthProxyHeaders", sconf->proxy_headers ? "on" : "off", r);
     dd_dir_str("WebAuthServiceTokenCache", sconf->st_cache_path, r);
     dd_dir_str("WebAuthSubjectAuthType", sconf->subject_auth_type, r);
+    dd_dir_str("WebAuthSSLRedirect", sconf->ssl_redirect ? "on" : "off", r);
+    if (sconf->ssl_redirect_port != 0) {
+        dd_dir_str("WebAuthSSLRedirectPort", 
+                   apr_psprintf(r->pool, "%d", sconf->ssl_redirect_port), r);
+    }
     dd_dir_str("WebAuthTokenMaxTTL", 
                apr_psprintf(r->pool, "%ds", sconf->token_max_ttl), r);
     dd_dir_str("WebAuthWebKdcPrincipal", sconf->webkdc_principal, r);
     dd_dir_str("WebAuthWebKdcSSLCertFile", sconf->webkdc_cert_file, r);
+    dd_dir_str("WebAuthWebKdcSSLCertCheck", 
+               sconf->webkdc_cert_check ? "on" : "off", r);
     dd_dir_str("WebAuthWebKdcURL", sconf->webkdc_url, r);
 
     ap_rputs("</dl>", r);
@@ -1758,12 +1771,13 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
 }
 
 static char *
-make_return_url(MWA_REQ_CTXT *rc)
+make_return_url(MWA_REQ_CTXT *rc, 
+                int check_dconf_return_url)
 {
     char *uri = rc->r->unparsed_uri;
 
     /* use explicit return_url if there is one */
-    if (rc->dconf->return_url) {
+    if (check_dconf_return_url && rc->dconf->return_url) {
         if (rc->dconf->return_url[0] != '/')
             return rc->dconf->return_url;
         else 
@@ -1860,7 +1874,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
                      mwa_func);
     }
 
-    return_url = make_return_url(rc);
+    return_url = make_return_url(rc, 1);
 
     /* never let return URL have  ?WEBAUTHR=...;;WEBUTHS=...; on the
        end of it, that could get ugly... */
@@ -1911,8 +1925,8 @@ static int
 extra_redirect(MWA_REQ_CTXT *rc)
 {
     char *redirect_url;
-    
-    redirect_url = make_return_url(rc);
+
+    redirect_url = make_return_url(rc, 0);
     /* always strip extra-redirect URL */
     strip_end(redirect_url, WEBAUTHR_MAGIC);
 
@@ -1921,6 +1935,52 @@ extra_redirect(MWA_REQ_CTXT *rc)
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: extra_redirect: redirect(%s)",
+                     redirect_url);
+
+    set_pending_cookies(rc);
+    return HTTP_MOVED_TEMPORARILY;
+}
+
+
+static int
+ssl_redirect(MWA_REQ_CTXT *rc)
+{
+    char *redirect_url;
+    apr_uri_t uri;
+
+    redirect_url = make_return_url(rc, 0);
+
+    apr_uri_parse(rc->r->pool, redirect_url, &uri);
+
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: ssl_redirect: redirect(%s)",
+                     redirect_url);
+
+    if (strcmp(uri.scheme, "http") == 0) {
+        uri.scheme = "https";
+        if (rc->sconf->ssl_redirect_port) {
+            uri.port_str = apr_psprintf(rc->r->pool, 
+                                        "%d", rc->sconf->ssl_redirect_port);
+            uri.port = rc->sconf->ssl_redirect_port;
+        } else {
+            uri.port_str = apr_psprintf(rc->r->pool, 
+                                        "%d", APR_URI_HTTPS_DEFAULT_PORT);
+            uri.port = APR_URI_HTTPS_DEFAULT_PORT;
+        }
+        redirect_url = apr_uri_unparse(rc->r->pool, &uri, 0);
+    } else {
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                         "mod_webauth: ssl_redirect: error with "
+                         "redirect url(%s) denying request", redirect_url);
+            return HTTP_UNAUTHORIZED;
+    }
+
+    apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: ssl_redirect: redirect(%s)",
                      redirect_url);
 
     set_pending_cookies(rc);
@@ -2244,9 +2304,14 @@ check_user_id_hook(request_rec *r)
 
     /* check to see if SSL is required */
     if (rc.sconf->require_ssl && !is_https(r)) {
-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
-                     "mod_webauth: connection is not https, denying request");
-        return HTTP_UNAUTHORIZED;
+        if (rc.sconf->ssl_redirect) {
+            return ssl_redirect(&rc);
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+                         "mod_webauth: connection is not https, "
+                         "denying request");
+            return HTTP_UNAUTHORIZED;
+        }
     }
 
     /* first check if we've already validated the user */
@@ -2598,6 +2663,10 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             sconf->keyring_key_lifetime = seconds(arg, &error_str);
             sconf->keyring_key_lifetime_ex = 1;
             break;
+        case E_SSLRedirectPort:
+            sconf->ssl_redirect_port = atoi(arg);
+            sconf->ssl_redirect_port_ex = 1;
+            break;
         case E_InactiveExpire:
             dconf->inactive_expire = seconds(arg, &error_str);
             break;
@@ -2663,6 +2732,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
         case E_RequireSSL:
             sconf->require_ssl = flag;
             sconf->require_ssl_ex = 1;
+            break;
+        case E_SSLRedirect:
+            sconf->ssl_redirect = flag;
+            sconf->ssl_redirect_ex = 1;
             break;
         case E_WebKdcSSLCertCheck:
             sconf->webkdc_cert_check = flag;
@@ -2806,9 +2879,11 @@ static const command_rec cmds[] = {
     SFLAG(CD_ProxyHeaders, E_ProxyHeaders, CM_ProxyHeaders),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
+    SFLAG(CD_SSLRedirect, E_SSLRedirect, CM_SSLRedirect),
     SFLAG(CD_WebKdcSSLCertCheck, E_WebKdcSSLCertCheck, CM_WebKdcSSLCertCheck),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
+    SSTR(CD_SSLRedirectPort, E_SSLRedirectPort, CM_SSLRedirectPort),
 
     /* directory */
 

@@ -113,6 +113,12 @@
 #define CM_RequireSSL "whether or not SSL is required"
 #define DF_RequireSSL 1
 
+#define CD_SSLRedirect "WebAuthSSLRedirect"
+#define CM_SSLRedirect "redirect to SSL when accessing a webauth-protected page"
+
+#define CD_SSLRedirectPort "WebAuthSSLRedirectPort"
+#define CM_SSLRedirectPort "used to specify SSL-port if not 443"
+
 #define CD_AppTokenLifetime "WebAuthAppTokenLifetime"
 #define CM_AppTokenLifetime "lifetime of app-tokens"
 
@@ -248,6 +254,8 @@ enum {
     E_ProxyHeaders,
     E_ReturnURL,
     E_RequireSSL,
+    E_SSLRedirect,
+    E_SSLRedirectPort,
     E_UseCreds,
     E_ServiceTokenCache,
     E_StripURL,
@@ -304,8 +312,12 @@ typedef struct {
     int debug_ex;
     int proxy_headers;
     int proxy_headers_ex;
-    int  require_ssl;
+    int require_ssl;
     int require_ssl_ex;
+    int ssl_redirect;
+    int ssl_redirect_ex;
+    int ssl_redirect_port;
+    int ssl_redirect_port_ex;
     char *subject_auth_type;
     int strip_url;
     int strip_url_ex; 

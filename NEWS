@@ -2,6 +2,11 @@
 
 WebAuth 3.1.0 (in progress)
 
+
+ *) Add WebAuthSSLRedirect and WebAuthSSLRedirectPort directives to
+    enable redirecting of users from http to https when accessing
+    a WebAuth-protected resource.
+
  *) Added a new Apache module mod_webauthldap for LDAP directory
     information lookups via Kerberos v5 GSS-API binds.  This module
     provides directory lookup capability like older versions of WebAuth,

@@ -2,6 +2,10 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) Add WebAuthSSLRedirect and WebAuthSSLRedirectPort directives to
+    enable redirecting of users from http to https when accessing
+    a WebAuth-protected resource.
+
  *) Add WebAuthWebKdcSSLCertCheck directive to enable/disable checking
     of the WebKDC SSL certificate. Defaults to "on" and should only
     be turned off for debugging/testing purposes.
