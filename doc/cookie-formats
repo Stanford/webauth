@@ -3,7 +3,8 @@ Type One (authentication cookie):
     Protocol Version            number          2 bytes
     Session ID                  data            8 bytes
     Local/Remote Flag           boolean         1 byte
-    Authentication Type         number          2 bytes
+    Authentication Length       number          2 bytes
+    Authentication Type         data            <specified above>
     Data Length                 number          2 bytes
     Data                        data            <specified above>
 
@@ -22,24 +23,12 @@ weblogin handoff).  This field is supposed to be unnecessary as the domain
 of the cookie conveys the same information, but is just there as a safety
 check and debugging aid.
 
-The authentication type would be a number specifying the type of
-authentication being used.  We can arbitrarily assign 1 to Kerberos v5
-service tickets.
+The authentication type is a counted string specifying the type of
+authentication being used.  When using Kerberos v5 service tickets, this
+authentication type is KERBEROS_V5.
 
 The data for our initial authentication protocol would be a service ticket
 for the web server in question.
-
-Do we want to leave the additional logging data for a future rev of the
-cookie format?  With the above specification and a guarantee that the
-initial fields will be constant for newer protocol revs, we could easily
-add it later.  (On the other hand, that would require decoding additional
-fields at variable offsets found by decoding the data length first, but
-that doesn't seem like a huge problem to me.)
-
-Do we need to store either the identity of the user or the identity of the
-server to which they're authenticating outside of the service ticket or
-outside of the data field in general?  I don't *think* we do, but does
-anyone have any other opinions?
 
 Any checksum or signature isn't useful unless it's encrypted somehow, so
 this is left to the authentication data for those authentication protocols
@@ -51,16 +40,42 @@ continue to use webauth to establish user identity rather than setting its
 own session cookie, which is always its option) is the local/remote flag
 setting.
 
+Type Two (authentication data used to obtain proxy tickets):
+
+    Protocol Version            number          2 bytes
+    Local/Remote Flag           boolean         1 byte
+    Authentication Length       number          2 bytes
+    Authentication Type         data            <specified above>
+    Data Length                 number          2 bytes
+    Data                        data            <specified above>
+
+This is the opaque cookie handed to servers that are allowed to obtain
+service tickets on behalf of other users.  The authentication type is a
+counted string as above specifying the type of authentication information
+contained in the data.  The data is an opaque, encrypted bit of data that
+should be passed to the web KDC by the webauth server along with its
+request for a service ticket on behalf of a user.
+
+The local/remote flag would just be 0 for local and 1 for remote (the
+weblogin handoff).  This field is supposed to be unnecessary as the domain
+of the cookie conveys the same information, but is just there as a safety
+check and debugging aid.
+
+The only difference between the cookie set by weblogin to pass this
+information and the cookie set by the webauth server to retain it is the
+local/remote flag setting.
+
 Type Three (preauthentication handoff to weblogin):
 
     Protocol Version            number          2 bytes
     Session ID                  data            8 bytes
-    Authentication Type         number          2 bytes
+    Authentication Length       number          2 bytes
+    Authentication Type         data            <specified above>
     Identity Length             number          2 bytes
     Identity Data               data            <specified above>
 
 The authentication type specifies the type of authentication that this
-webauth server wishes to use, using the same numbers as the previous
+webauth server wishes to use, using the same string values as the previous
 cookie format.  The identity data is the identity of the server to obtain
 authentication information for; for a Kerberos authentication type, this
 will be a principal name.  Identity length may be zero if the specified
