@@ -60,7 +60,7 @@ REQUIREMENTS
   WebAuth requires the following additional packages:
 
       Apache 2.0.43 or later
-      OpenSSL 0.9.6, 0.9.7, or later (0.9.7 preferred)
+      OpenSSL 0.9.7 or later
       MIT Kerberos v5 1.2.x or later
       cURL (tested with 7.10.2)
 
