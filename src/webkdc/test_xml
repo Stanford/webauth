@@ -11,7 +11,8 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use Dumpvalue;
 
 use WebKDC;
-use WebKDC::XmlUtil;
+use WebKDC::XmlInput;
+use WebKDC::XmlOutput;
 use WebKDC::Token;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
@@ -32,16 +33,40 @@ my $xml = <<'XML';
 </getTokensRequest>
 XML
 
-my $doc = WebKDC::XmlUtil::parse_input($xml, 1);
+my $doc = WebKDC::XmlInput::parse($xml);
 
 my $dumper = new Dumpvalue;
 $dumper->dumpValue($doc);
 
-print $doc->{'name'}, "\n";
+print "-------\n";
 
-my $child;
+#print $doc->{'name'}, "\n";
+#
+#my $child;
+#
+#foreach $child (@{$doc->{'children'}}) {
+#    print "$child\n";
+#    print $child->{'name'}, "\n";
+#}
 
-foreach $child (@{$doc->{'children'}}) {
-    print "$child\n";
-    print $child->{'name'}, "\n";
-}
+
+my $out = new WebKDC::XmlOutput;
+
+
+$out->start('getTokensRequest');
+$out->element('requestCredential', {'type' => 'krb5'},'{some-base64d-data}');
+$out->start('tokens');
+$out->element('token',{'type'=>'service', 'id'=> 0});
+$out->end('tokens');
+$out->end('getTokensRequest');
+
+#$dumper->dumpValue($out);
+
+print $out->output(1),"\n";
+
+#print scalar(%foo),"\n";
+#print scalar(%bar),"\n";
+__END__
+
+
+$out->output();

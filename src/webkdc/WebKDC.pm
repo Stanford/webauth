@@ -261,6 +261,7 @@ END { }       # module clean-up code here (global destructor)
 
 1;
 
+__END__
 
 =head1 NAME
 

@@ -743,6 +743,8 @@ sub validate_token {
 
 1;
 
+__END__
+
 =head1 NAME
 
 WebKDC::Token - token objects for use with WebAuth

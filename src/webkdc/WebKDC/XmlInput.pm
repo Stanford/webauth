@@ -1,4 +1,37 @@
-package WebKDC::XmlUtil;
+package WebKDC::XmlInputNode;
+
+use strict;
+use warnings;
+
+BEGIN {
+    use Exporter   ();
+    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
+
+    # set the version for version checking
+    $VERSION     = 1.00;
+    @ISA         = qw(Exporter);
+    @EXPORT      = qw();
+    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+
+    # your exported package globals go here,
+    # as well as any optionally exported functions
+    @EXPORT_OK   = qw();
+}
+
+our @EXPORT_OK;
+
+sub new {
+    my $type = shift;
+    my $self = { 'name' => shift};
+    if (@_) {
+	$self->{'root'} = shift;
+    }
+    bless $self, $type;
+    return $self;
+}
+
+
+package WebKDC::XmlInput;
 
 use strict;
 use warnings;
@@ -24,17 +57,17 @@ our @EXPORT_OK;
 
 sub convert_tree {
     my ($doc, $tree) = @_;
-    $$doc{"attrs"} = shift @$tree;
+    $doc->{"attrs"} = shift @$tree;
     my ($element, $content);
 
     while (defined($element = shift @$tree)) {
 	$content = shift @$tree;
 	if ($element eq '0') {
-	    $$doc{"content"} .= $content if $content ne '';
+	    $doc->{"content"} .= $content if $content ne '';
 	} elsif (ref $content eq 'ARRAY') {
 	    my $child = { "name" =>  $element };
 	    convert_tree($child, $content);
-	    push @{$$doc{'children'}}, $child;
+	    push @{$doc->{'children'}}, $child;
 	} else {
 	    die "convert tree error";
 	}
@@ -89,7 +122,7 @@ sub convert_tree {
 # in. It should be trim'd if needed.
 #
 
-sub parse_input {
+sub parse {
     my ($xml) = @_;
 
     my $parser = new XML::Parser(Style => 'Tree');
