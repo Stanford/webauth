@@ -1,5 +1,9 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.0.1pre (2003-02-20)
+
+    Remove the service token cache on restarts
+
 WebAuth 3.0.0 (2003-02-18)
 
     Initial public release of WebAuth v3.  This is a complete rewrite of

@@ -2,12 +2,14 @@
 
 WebAuth 3.0.1 (in progress)
 
-    Remove the service token cache in mod_webauth on restarts.
+ *) mod_{webauth,webkdc}.h - "module" declaration should be extern
 
-    Restructured the mod_webauth code to define a pluggable credential
+ *) Remove the service token cache in mod_webauth on restarts.
+
+ *) Restructured the mod_webauth code to define a pluggable credential
     interface, isolating all credential-related functions so that new
     credential types can easily be supported.
 
 WebAuth 3.0.0 (2003-02-18)
 
-    Initial public release.
+ *) Initial public release.
