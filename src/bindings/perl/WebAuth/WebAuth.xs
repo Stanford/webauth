@@ -2,10 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
-/* FIXME: should this be "webauth.h" and 
-          should -I{top_srcdir}/src/libwebauth be added in Makefile.PL?" */
-
-#include "../../../libwebauth/webauth.h"
+#include "webauth.h"
 
 void
 webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)

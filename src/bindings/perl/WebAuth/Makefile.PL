@@ -19,7 +19,7 @@ WriteMakefile(
     'LIBS'		=> ['-L../../../libwebauth -lwebauth -lcrypto -lkrb5 -lk5crypto -lcom_err'],
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
 	# Insert -I. if you add *.h files later:
-    'INC'		=> '', # e.g., '-I/usr/include/other'
+    'INC'		=> '-I../../../libwebauth', # e.g., '-I/usr/include/other'
 	# Un-comment this if you add C files to link with later:
     # 'OBJECT'		=> '$(O_FILES)', # link all the C files too
 );
