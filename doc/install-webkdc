@@ -25,6 +25,7 @@ monitored for security.
 
          HTML::Template
          FCGI
+         Crypt::SSLeay (for LWP https support)
 
      You'll probably also want to install and configure mod_fastcgi as
      well, though it's not a requirement.  If you decide to install it,
