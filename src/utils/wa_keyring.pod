@@ -1,66 +1,60 @@
-
-=pod
-
 =head1 NAME
 
-wa_keyring - WebAuth3 keyring command line tool
+wa_keyring - WebAuth3 keyring manipulation tool
 
 =head1 SYNOPSIS
 
-B<wa_keyring> [-v] [-h] -f {file} I<command> [ I<args> ]
+B<wa_keyring> [-B<-hv>] B<-f> I<file> I<command> [I<arg> ...]
 
-B<wa_keyring> -f keyring add I<{valid-after}>
+B<wa_keyring> B<-f> I<keyring> add I<valid-after>
 
-B<wa_keyring> -f keyring gc I<{oldest-valid-after-to-keep}>
+B<wa_keyring> B<-f> I<keyring> gc I<oldest-valid-after-to-keep>
 
-B<wa_keyring> -f keyring list
+B<wa_keyring> B<-f> I<keyring> list
 
-B<wa_keyring> -f keyring remove I<{id}>
+B<wa_keyring> B<-f> I<keyring> remove I<id>
 
 =head1 DESCRIPTION
 
-wa_keyring is a command line tool to manage WebAuth3 key ring files,
-which contain the private AES keys used by mod_webauth and mod_webkdc.
+B<wa_keyring> is a command line tool to manage WebAuth3 key ring files,
+which contain the private AES keys used by mod_webauth and mod_webkdc.  It
+supports the following individual commands:
 
-=head1 COMMANDS
+=over 4
 
-=head2 add command
+=item add I<valid-after>
 
-    add {valid-after}
+Adds a new key to the key ring.  I<valid-after> uses the format: 
 
-Adds a new key to the key ring. I<{valid-after}> uses the format: 
+    nnnn[s|m|h|d|w]
 
-nnnn[s|m|h|d|w]
+to indicate a time relative to the current time. The units for the time
+are specified by appending a single letter.  That letter can be any of s,
+m, h, d, or w, which correspond to seconds, minutes, hours, days, and
+weeks respectively.
 
-which indicates a time relative to the current time. The units for the time
-are specified by appending a single letter, which can either be s, m, h, d,
-or w, which correspond to seconds, minutes, hours, days, and weeks
-respectively. 
+For example: 10d is 10 days from the current time, and -60d is 60 days
+before the current time.
 
-For example: 10d is 10 days from the current time, and -60d is 60 days before 
-the current time.
+=item gc I<oldest-valid-after-to-keep>
 
-=head2 gc command
+Garbage collects (removes) old keys on the key ring.  Any keys with a
+I<valid-after> date older then the specified time will be removed from the
+key ring.
 
-    gc {oldest-valid-after-to-keep}
+The format for I<oldest-valid-after-to-keep> is the same as I<valid-after>
+from the add command.  Note that this means that times given to the gc
+command should generally be negative, to remove keys that have expired in
+the past.
 
-Garbage collects (removes) old keys on the key ring. Any keys with a
-I<{valid-after}> date older then the specified time will be removed
-from the key ring.
+=item list
 
-The format for I<{oldest-valid-after-to-keep}> is the same as 
-I<{valid-after}> from the B<add> command.
-
-=head2 list command
-
-    [-v] list
-
-Lists all the keys in the key ring. By default, a brief listing is
-used. Use "-v" to ge a verbose listing. 
+Lists all the keys in the key ring.  By default, a brief listing is
+used, but a verbose listing can be requested with the B<-v> option.
 
 The following fields are present in a short listing:
 
-=over 8
+=over 4
 
 =item B<id> 
 
@@ -72,18 +66,19 @@ The date the key was created.
 
 =item B<Valid after> 
 
-The date at which the key becomes valid (i.e., will be used for encrypting
-and decrypting new data).
+The date at which the key becomes valid (in other words, the point at
+which the WebAuth server will start using it to encrypt and decrypt new
+data).
 
 =item B<Fingerprint> 
 
-The MD5 digest of the key data. Used to compare keys in two key rings.
+The MD5 digest of the key data.  Used to compare keys in two key rings.
 
 =back 
 
 The following fields are present in the long listing:
 
-=over 8
+=over 4
 
 =item B<Key-Id> 
 
@@ -95,12 +90,13 @@ The date the key was created.
 
 =item B<Valid-After> 
 
-The date at which the key becomes valid (i.e., will be used for encrypting
-and decrypting new data).
+The date at which the key becomes valid (in other words, the point at
+which the WebAuth server will start using it to encrypt and decrypt new
+data).
 
 =item B<Key-Type> 
 
-The type of key, current AES is the only support key type.
+The type of key.  Currently, AES is the only supported key type.
 
 =item B<Key-Size> 
 
@@ -112,38 +108,53 @@ The MD5 digest of the key data. Used to compare keys in two key rings.
 
 =back 
 
+=item remove I<id>
 
-=head2 remove command
+Remove the key with ID I<id> from the key ring.
 
-    remove {id}
-
-Removes a key from the key ring. 
+=back
 
 =head1 EXAMPLES
 
- 1. add a key to the keyring valid as of the current time:
+Add a key to the keyring valid as of the current time:
 
- wa_keyring -f keyring add 0d
+    wa_keyring -f keyring add 0d
 
- 2. add a key to the keyring valid three days from now:
+Add a key to the keyring that will be valid three days from now:
 
- wa_keyring -f keyring add 3d
+    wa_keyring -f keyring add 3d
 
- 3. remove keys from key ring that have valid afters which are older then 
-    90 days ago:
+Remove keys from the key ring that became invalid more than 90 days ago:
 
- wa_keyring -f keyring gc -90d
+    wa_keyring -f keyring gc -90d
 
- 4. remove first key in the key ring:
+Remove the first key in the keyring.
 
- wa_keyring -f keyring remove 0
+    wa_keyring -f keyring remove 0
 
- 5. do a verbose listing of all the keys in the key ring:
+Display a verbose listing of all of the keys in the key ring:
 
- wa_keyring -f keyring -v list
+    wa_keyring -f keyring -v list
+
+Note that a WebAuth server will normally manage its keyring file by
+itself, and B<wa_keyring> is normally only used for debugging purposes.
+However, if you are setting up a load-balanced pool of servers that need
+to all share the same keys, turn off automatic keyring handling by putting
+the line:
+
+    WebAuthKeyringAutoUpdate off
+
+to your Apache configuration, running a script periodically from cron on
+one server that does something like:
+
+    wa_keyring -f keyring gc -90d
+    wa_keyring -f keyring add 2d
+
+and then copying (in a secure manner!) the new keyring file to all of the
+other servers.
 
 =head1 AUTHOR
 
-Roland Schemers (schemers@stanford.edu)
+Roland Schemers <schemers@stanford.edu>
 
 =cut
