@@ -1,0 +1,2 @@
+# anyone with a krb5 webauth/*@stanford.edu principal can get an id token
+krb5:webauth/*@stanford.edu id
