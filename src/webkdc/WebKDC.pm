@@ -2,14 +2,18 @@ package WebKDC;
 
 use strict;
 use warnings;
+use UNIVERSAL qw(isa);
 
+#FIXME: fix these
 use lib '../bindings/perl/WebAuth/blib/lib';
 use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 
 use WebAuth qw(:base64 :krb5 :const);
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
+use WebKDC::Exception;
 use WebKDC::Token;
+
 
 BEGIN {
     use Exporter   ();
@@ -97,7 +101,16 @@ sub handle_id_request {
 
 	my $c = krb5_new();
 
-	krb5_init_via_password($c, $user, $pass, $C_WEBKDC_KEYTAB);
+	eval {
+	    krb5_init_via_password($c, $user, $pass, $C_WEBKDC_KEYTAB);
+	};
+
+	if (WebAuth::Exception::match($@, WA_ERR_LOGIN_FAILED)) {
+	    die new WebKDC::Exception(WK_ERR_LOGIN_FAILED,
+				      "krb5_init_via_password", $@);
+	} elsif ($@) {
+	    die $@;
+	}
 
 	my $cp = krb5_get_principal($c);
 
@@ -126,27 +139,56 @@ sub handle_id_request {
 	$wresp->proxy_cookie('krb5', $proxy_token_str);
 
     } elsif ($proxy_token_str = $wreq->proxy_cookie('krb5')) {
-	my $proxy_token = 
-	    new WebKDC::WebKDCProxyToken(base64_decode($proxy_token_str),
-					 get_keyring(), 0);
-	
+	my $proxy_token;
+
+	eval {
+	    $proxy_token = 
+		new WebKDC::WebKDCProxyToken(base64_decode($proxy_token_str),
+					     get_keyring(), 0);
+	};
+
+	if (WebAuth::Exception::match($@, WA_ERR_TOKEN_EXPIRED)) {
+	    # nuke expired cookie
+	    $wresp->proxy_cookie('krb5', '');
+	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+				      "proxy_token was expired", $@);
+	} elsif ($@) {
+	    die $@;
+	}
+
 	if ($proxy_token->proxy_type() ne 'krb5') {
-	    die "need username/password";
+	    # nuke cookie
+	    $wresp->proxy_cookie('krb5', '');
+	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+				      "proxy_token type(".
+				      $proxy_token->proxy_type().
+				      ") not krb5 ");
 	}
 
 	$et =$proxy_token->expiration_time();
 
 	my $c = krb5_new();
 
-	krb5_init_via_tgt($c, $proxy_token->proxy_data());
+	eval {
+	    krb5_init_via_tgt($c, $proxy_token->proxy_data());
+	};
 
+	if (WebAuth::Exception::match($@)) {
+	    # nuke bogus cookie
+	    $wresp->proxy_cookie('krb5', '');
+	    #FIXME: log (this shouldn't be happening)
+	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+                    "error using proxy_token with krb5_init_via_tgt", $@);
+	} elsif ($@) {
+	    die $@;
+	}
 	# now get subject authenticator
 	$server_principal =~ s/^krb5://;
 	$sad = krb5_mk_req($c, $server_principal);
 
     } else {
-	# PLACE HOLDER
-	die "need username/password";
+	die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+				  "no user/pass or proxy token");
     }
 
     my $id_token = new WebKDC::IdToken;

@@ -73,7 +73,7 @@ eval {
 
     print "service_token b64'd length(".length($service_token_str).")\n";
 
-    my $key =key_create(WA_AES_KEY, $session_key);
+    my $key = key_create(WA_AES_KEY, $session_key);
 
     my $req_token = new WebKDC::RequestToken;
     $req_token->return_url("http://foo.bar.com/");
@@ -90,8 +90,8 @@ eval {
 
     my $req = new WebKDC::WebRequest;
 
-    $req->user("schemers/test");
-    $req->pass("testing");
+    #$req->user("schemers/test");
+    #$req->pass("testing2");
     $req->request_token($req_token_str);
     $req->service_token($service_token_str);
 
