@@ -24,6 +24,9 @@ TESTS		= attrs_test base64_test hex_test key_test krb5_test \
 
 all: $(TESTS)
 
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
 attrs_test: attrs_test.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ attrs_test.o $(LDLIBS)
 

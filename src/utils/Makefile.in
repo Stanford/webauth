@@ -33,6 +33,9 @@ install: $(PROGS)
 	$(INSTALL) -d $D$(bindir)
 	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $D$(bindir)/wa_keyring
 
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
 wa_keyring: wa_keyring.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ wa_keyring.o $(LDLIBS)
 
