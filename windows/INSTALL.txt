@@ -43,6 +43,7 @@ NOTE: There is currently an Apache bug under Windows where
 	bin/libwebauth.dll               WebAuth
 	modules/mod_webauth.so           WebAuth
 	modules/mod_webauthldap.so       WebAuth
+	modules/mod_ssl.so               Apache mod_ssl
 	conf/stanford-webauth.conf       WebAuth
 	conf/stanford-ldap.conf          WebAuth
 	conf/webauth/ca-bundle.crt       cURL
