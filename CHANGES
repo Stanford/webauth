@@ -1,5 +1,7 @@
                           WebAuth Change History
 
+WebAuth 3.2.0 (in progress)
+
 WebAuth 3.1.2 (2003-05-29)
 
  *) mod_webauthldap: Added mutexes around the entire ldap operation to 

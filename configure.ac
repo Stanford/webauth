@@ -15,7 +15,7 @@ m4_include([m4/ldap.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.57)
-AC_INIT([Webauth], [3.1.2], [webauth-team@lists.stanford.edu])
+AC_INIT([Webauth], [3.2.0pre], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
 
 dnl Store information about the time the package was configured and the person
