@@ -518,7 +518,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
         init_sconf(scheck, sconf, pconf, ptemp);
     }
 
-    version = apr_pstrcat(ptemp, "WebAuth3/", webauth_info_version(), NULL);
+    version = apr_pstrcat(ptemp, "WebAuth/", webauth_info_version(), NULL);
     ap_add_version_component(pconf, version);
 
     if (sconf->debug)
