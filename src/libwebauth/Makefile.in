@@ -42,9 +42,14 @@ install: $(LIBNAME).la
 .c.lo:
 	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
+# Work around an annoying problem trying to get the modules built without
+# hard-coding any rpath in the module by pointing the module builds at the
+# .libs directory.  This requires that there not be a .la file in the .libs
+# directory to confuse libtool.
 $(LIBNAME).la: $(LOBJS)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LOBJS) $(LDFLAGS) $(LDLIBS) \
 	    -rpath $(libdir) -version-info 2:1:1
+	rm -f .libs/$(LIBNAME).la
 
 clean:
 	rm -rf *.o $(LIBNAME).la *.lo .libs *~ core \#*
