@@ -93,6 +93,10 @@ if test "$GCC" = "yes" ; then
     CFLAGS="-Wall $CFLAGS"
 fi
 
+dnl Generate special flags for apxs, which doesn't understand compiler flags.
+APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
+AC_SUBST([APXS_CFLAGS])
+
 dnl Checks for library functions.
 dnl Checks for system services.
 

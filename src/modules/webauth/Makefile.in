@@ -8,6 +8,7 @@ VPATH		= @srcdir@
 
 APXS		= @APXS@
 
+APXS_CFLAGS	= @APXS_CFLAGS@
 CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
@@ -19,7 +20,7 @@ SOURCES		= mod_webauth.c util.c webkdc.c
 all: mod_webauth.o
 
 mod_webauth.o: $(SOURCES)
-	$(APXS) -c $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
+	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
 install:
 	$(APXS) -i mod_webauth.la
