@@ -2,6 +2,9 @@
 
 WebAuth 3.1.2 (in progress)
 
+ *) mod_webauth: don't try to attr decode a zero length service token 
+    cache file. log a warning and return NULL like there was no file.
+
  *) update configure.ac to check for netinet/in.h for windows build
 
  *) modify wa_keyring to not use getopt (not available on windows),

@@ -116,6 +116,13 @@ read_service_token_cache(server_rec *server,
         return NULL;
     }
 
+    if (finfo.size == 0) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
+                     "mod_webauth: %s: service token cache is zero length: ",
+                     mwa_func, sconf->st_cache_path);
+        return NULL;
+    }
+
     status = webauth_attrs_decode(buffer, finfo.size, &alist);
 
     if (status != WA_ERR_NONE) {
@@ -124,7 +131,6 @@ read_service_token_cache(server_rec *server,
                               sconf->st_cache_path);
         return NULL;
     }
-
 
     s_expires = webauth_attr_list_get_time(alist, "expires", &expires, 
                                            WA_F_FMT_STR);
