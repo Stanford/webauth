@@ -392,7 +392,7 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: filter template is %s", filter_template);
+                     "webauthldap(%s): filter template is %s", lc->r->user, filter_template);
     
     do {
         // Everytime we find a marker
@@ -567,15 +567,8 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 {
     int i;
     char** attrib;
-    char *p, *temp;
+    char *p;
     apr_array_header_t* attribs;
-    char* default_attribs[] = DF_Attribs;
-    
-    lc->dconf = (MWAL_DCONF*)
-        ap_get_module_config(lc->r->per_dir_config, &webauthldap_module);
-
-    lc->sconf = (MWAL_SCONF*) 
-        ap_get_module_config(lc->r->server->module_config,&webauthldap_module);
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, "%s %s",
@@ -587,23 +580,10 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: filter is %s", lc->filter);
+                     "webauthldap(%s): filter is %s", lc->r->user, lc->filter);
 
     // Allocate the table of attributes to later put into env vars
-    lc->envvars = apr_table_make(lc->r->pool, sizeof(default_attribs));
-
-    // Set some default env vars, such as name, mail, etc
-    for (i=0; default_attribs[i] != NULL; i++) {
-        temp = apr_pstrdup(lc->r->pool, default_attribs[i]);
-        for (p = temp; *p != '\0'; p++)
-            *p = tolower(*p);
-        apr_table_set(lc->envvars, temp, temp);
-        
-        if (lc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: default attribute to put into env: %s",
-                         temp);
-    }
+    lc->envvars = apr_table_make(lc->r->pool, 5);
 
     // Whatever else env vars the conf file added. This will override the 
     // defaults since apr_table_set is used here, and all names are lowercased.
@@ -617,14 +597,14 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: conf attribute to put into env: %s",
-                         *attrib);
+                         "webauthldap(%s): conf attribute to put into env: %s",
+                         lc->r->user, *attrib);
         }
     }
     
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: initialized sucessfully");
+                     "webauthldap(%s): initialized sucessfully", lc->r->user);
 
     return 0;
 }
@@ -649,14 +629,15 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: begins ldap bind");
+                     "webauthldap(%s): begins ldap bind", lc->r->user);
 
     // Initialize the connection
     lc->ld = ldap_init(lc->sconf->host, lc->port);
 
     if (lc->ld == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: ldap_init failure ld is NULL");
+                     "webauthldap(%s): ldap_init failure ld is NULL", 
+                     lc->r->user);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -664,7 +645,8 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     if (ldap_set_option(lc->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF)
         != LDAP_OPT_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: Could not set LDAP_OPT_REFERRALS");
+                     "webauthldap(%s): Could not set LDAP_OPT_REFERRALS", 
+                     lc->r->user);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -673,8 +655,8 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                         &lc->sconf->ldapversion)
         != LDAP_OPT_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: Could not set LDAP_OPT_PROTOCOL_VERSION %d",
-                     lc->sconf->ldapversion);
+                     "webauthldap(%s): Could not set LDAP_OPT_PROTOCOL_VERSION %d",
+                     lc->r->user, lc->sconf->ldapversion);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -683,8 +665,8 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         
         if (rc != LDAP_SUCCESS) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                         "webauthldap: Could not start tls: %s (%d)",
-                         ldap_err2string(rc), rc);
+                         "webauthldap(%s): Could not start tls: %s (%d)",
+                         lc->r->user, ldap_err2string(rc), rc);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
     }
@@ -702,12 +684,13 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                           lc->sconf->tktcache);
     if (putenv(tktenv) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                     "webauthldap: cannot set ticket cache env var");
+                     "webauthldap(%s): cannot set ticket cache env var", 
+                     lc->r->user);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: set ticket to %s", tktenv);
+                     "webauthldap(%s): set ticket to %s", lc->r->user, tktenv);
 
     // first try to bind with the current credentials
     rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
@@ -720,20 +703,22 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
 
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: getting new ticket");
+                         "webauthldap(%s): getting new ticket", lc->r->user);
 
         // so let's get a new ticket
         if (stat(lc->sconf->keytab, &keytab_stat) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                         "webauthldap: cannot stat the keytab: %s %s (%d)",
+                         "webauthldap(%s): cannot stat the keytab: %s %s (%d)",
+                         lc->r->user, 
                          lc->sconf->keytab, strerror(errno), errno);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
         if ((fd = open(lc->sconf->keytab, O_RDONLY, 0)) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                         "webauthldap: cannot read the keytab %s: %s (%d)", 
-                         lc->sconf->keytab,  strerror(errno), errno);
+                         "webauthldap(%s): cannot read the keytab %s: %s (%d)", 
+                         lc->r->user, lc->sconf->keytab, 
+                         strerror(errno), errno);
             close(fd);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -746,20 +731,22 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         if (rc == KRB5_REALM_CANT_RESOLVE) {
             if (princ_specified)
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                             "webauthldap: cannot get ticket: %s %s %s",
-                             "check if the keytab", lc->sconf->keytab,
+                             "webauthldap(%s): cannot get ticket: %s %s %s",
+                             lc->r->user, "check if the keytab", 
+                             lc->sconf->keytab,
                              "is valid for the specified principal");
             else
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                             "webauthldap: cannot get ticket: %s %s %s",
-                             "check if the keytab", lc->sconf->keytab,
+                             "webauthldap(%s): cannot get ticket: %s %s %s",
+                             lc->r->user, "check if the keytab", 
+                             lc->sconf->keytab,
                              "is valid and only contains the right principal");
 
             return HTTP_INTERNAL_SERVER_ERROR;
         } if (rc != 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                         "webauthldap: cannot get ticket: %s (%d)", 
-                         error_message(rc), rc);
+                         "webauthldap(%s): cannot get ticket: %s (%d)", 
+                         lc->r->user, error_message(rc), rc);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
@@ -771,19 +758,21 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     } else {
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: using existing ticket");
+                         "webauthldap(%s): using existing ticket", 
+                         lc->r->user);
     }
 
     if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: ldap_sasl_interactive_bind_s: %s (%d)",
-                     ldap_err2string(rc), rc);
+                     "webauthldap(%s): ldap_sasl_interactive_bind_s: %s (%d)",
+                     lc->r->user, ldap_err2string(rc), rc);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: bound sucessfully to %s", lc->sconf->host);
+                     "webauthldap(%s): bound sucessfully to %s", lc->r->user, 
+                     lc->sconf->host);
 
     return 0;
 }
@@ -812,11 +801,17 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
     apr_table_add(attr_table, DN_ATTRIBUTE, dn);
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                 "webauthldap: retrieved entry for DN: %s", dn);
+                 "webauthldap(%s): retrieved entry DN = %s", 
+                 lc->r->user, dn);
 
     // attributes and values are stored in a table
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
          a = ldap_next_attribute(lc->ld, entry, ber)) {
+
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                         "webauthldap(%s): got attrib: %s", lc->r->user, a);
+
         if ((bvals = ldap_get_values_len(lc->ld, entry, a)) != NULL) {
             for (i = 0; bvals[i] != NULL; i++) {
                 val = apr_pstrndup(lc->r->pool, (char *)bvals[i]->bv_val,
@@ -854,8 +849,8 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
 
     if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: ldap_search_ext: %s (%d)",
-                     ldap_err2string(rc), rc);
+                     "webauthldap(%s): ldap_search_ext: %s (%d)",
+                     lc->r->user, ldap_err2string(rc), rc);
         ldap_unbind(lc->ld);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -867,8 +862,8 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
         
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: search returned %d messages", 
-                         numMessages);
+                         "webauthldap(%s): search returned %d messages", 
+                         lc->r->user, numMessages);
         
         if (numMessages > 0) {
             lc->entries = (apr_table_t **) 
@@ -888,16 +883,16 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
             }
             if (lc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                             "webauthldap: search returned %d entries", 
-                             lc->numEntries);
+                             "webauthldap(%s): search returned %d entries", 
+                             lc->r->user, lc->numEntries);
         }
         ldap_msgfree(res);
     }
 
     if ((rc == -1) || (rc == 0)) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap: ldap_result: %s (%d)",
-                     ldap_err2string(rc), rc);
+                     "webauthldap(%s): ldap_result: %s (%d)",
+                     lc->r->user, ldap_err2string(rc), rc);
         ldap_unbind(lc->ld);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -928,15 +923,15 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
 
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: comparing %s=%s for %s", 
-                         attr, value, dn);
+                         "webauthldap(%s): comparing %s=%s", 
+                         lc->r->user, attr, value);
 
         rc = ldap_compare_ext_s(lc->ld, dn, attr, &bvalue, NULL, NULL);
 
         if (rc != LDAP_COMPARE_FALSE) {
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: authn SUCCEEDED %s=%s for %s", 
-                         attr, value, dn);
+                         "webauthldap(%s): authn SUCCEEDED %s=%s", 
+                         lc->r->user, attr, value);
             return rc;
         }
 
@@ -971,10 +966,6 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     if ((key == NULL) || (val == NULL))
         return 1;
 
-    if (lc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: got attribute: %s", key);
-
     // conf directive could have been in different capitalization, 
     // simpler to just lowercase for the comparison
     newkey = apr_psprintf(lc->r->pool, key);
@@ -986,7 +977,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         return 1;
 
     // to keep track which ones we have already seen
-    apr_table_unset(lc->envvars, newkey);
+    apr_table_setn(lc->envvars, newkey, "placed in env vars");
     
     newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
 
@@ -1000,7 +991,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     if (existing_val == NULL) {
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap: setting %s as single valued", newkey);
+                         "webauthldap(%s): setting %s as single valued", 
+                         lc->r->user, newkey);
         apr_table_set(lc->r->subprocess_env, newkey, val);
     } else {
         // set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH
@@ -1008,7 +1000,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
             if (lc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                             "webauthldap: setting %s", numbered_key);
+                             "webauthldap(%s): setting %s", lc->r->user, 
+                             numbered_key);
             apr_table_set(lc->r->subprocess_env, numbered_key, existing_val);
         }
 
@@ -1018,7 +1011,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
             if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
                 if (lc->sconf->debug)
                     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                                 "webauthldap: setting %s", numbered_key);
+                                 "webauthldap(%s): setting %s", lc->r->user,
+                                 numbered_key);
 
                 apr_table_setn(lc->r->subprocess_env, numbered_key, val);
                 break;
@@ -1043,11 +1037,135 @@ webauthldap_envnotfound(void* lcp, const char *key, const char *val)
 {
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
 
-    ap_log_error(APLOG_MARK, APLOG_WARNING, 0, lc->r->server, 
-                 "webauthldap: requested attribute not found: %s", key);
+
+    if (strcmp(val, "placed in env vars"))
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, lc->r->server, 
+                     "webauthldap(%s): requested attribute not found: %s", 
+                     lc->r->user, key);
 
     return 1; // means keep going thru all available entries
 }
+
+
+
+int
+webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc, 
+                                const apr_array_header_t *reqs_arr,
+                                int legacymode,
+                                int* needs_further_handling)
+{
+    int authorized, i, m, rc;
+    require_line *reqs;
+    const char *t;
+    char *w;
+    request_rec * r = lc->r;
+
+    m = r->method_number;
+    authorized = 1;
+
+    if (reqs_arr) {
+        reqs = (require_line *)reqs_arr->elts;
+
+        authorized = 0;
+        for (i = 0; i < reqs_arr->nelts; i++) {
+            if (!(reqs[i].method_mask & (AP_METHOD_BIT << m))) {
+                continue;
+            }
+
+            // short circuit on the first directive to positively validate
+            if (authorized)
+                break;
+            
+            t = reqs[i].requirement;
+            w = ap_getword_white(r->pool, &t);
+            
+            if (!strcmp(w, "valid-user")) {
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                             "webauthldap(%s): authn SUCCEEDED on require valid-user", r->user);
+                authorized = 1;
+                break;
+            } else if (!strcmp(w, "user")) {
+                while (t[0]) {
+                    w = ap_getword_conf(r->pool, &t);
+                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                 "webauthldap: authn SUCCEEDED on require user %s", w);
+                    
+                    if (!strcmp(r->user, w)) {
+                        authorized = 1;
+                        break;
+                    }
+                }
+            }
+            else if (!strcmp(w, PRIVGROUP_DIRECTIVE)) {
+                while (t[0]) {
+                    w = ap_getword_conf(r->pool, &t);
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap(%s): found require %s %s", 
+                                     r->user, PRIVGROUP_DIRECTIVE, w);
+                    
+                    rc = webauthldap_docompare(lc, w);
+                    if (rc == LDAP_COMPARE_TRUE) {
+                        authorized = 1;
+                        break;
+                    } else if (rc != LDAP_COMPARE_FALSE) {
+                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                                     "webauthldap(%s): error while %s %s %s (%d)",
+                                     r->user, "checking priviledge groups",
+                                     "ldap_compare_ext_s:",
+                                     ldap_err2string(rc), rc);
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                }
+#ifndef NO_STANFORD_SUPPORT
+            } else if ((!strcmp(w, "group")) && legacymode) {
+                
+                while (t[0]) {
+                    w = ap_getword_conf(r->pool, &t);
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap(%s): StanfordAuth: found require group %s", 
+                                     r->user, w);
+                    
+                    rc = webauthldap_docompare(lc, w);
+                    if (rc == LDAP_COMPARE_TRUE) {
+                        authorized = 1;
+                        break;
+                    } else if (rc != LDAP_COMPARE_FALSE) {
+                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                                     "webauthldap(%s): error while %s %s %s (%d)",
+                                     r->user, 
+                                     "checking StanfordAuth priviledge groups",
+                                     "ldap_compare_ext_s:",
+                                     ldap_err2string(rc), rc);
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                }
+#endif
+            } else {
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                             "webauthldap(%s): found require %s",  r->user, w);
+            
+            // This means some other require directive like "group" is 
+            // encountered. Notice that we continue looking for the ones
+            // that matter to us anyway.
+            *needs_further_handling = 1;
+            }
+        }
+    }
+
+    if (!authorized) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server, 
+                     "webauthldap: user %s UNAUTHORIZED", r->user);
+        ldap_unbind(lc->ld);
+        return HTTP_UNAUTHORIZED;
+    }
+
+    return 0;
+}
+
+
 
 /**
  * This is the API hook for this module, it gets called first in the 
@@ -1072,8 +1190,14 @@ auth_checker_hook(request_rec * r)
     char *w;
     int m = r->method_number;
     int needs_further_handling;
-    int authorized;
+    int legacymode = 0;
 
+#ifndef NO_STANFORD_SUPPORT
+
+    if (apr_table_get(r->subprocess_env, "SU_AUTH_USER")) 
+        legacymode = 1;
+    else
+#endif
     if (apr_table_get(r->subprocess_env, "WEBAUTH_USER") == NULL) {
         return DECLINED;
     }
@@ -1086,6 +1210,58 @@ auth_checker_hook(request_rec * r)
 
     lc = (MWAL_LDAP_CTXT*) apr_pcalloc(r->pool, sizeof(MWAL_LDAP_CTXT));
     lc->r = r;
+    lc->dconf = (MWAL_DCONF*)
+        ap_get_module_config(lc->r->per_dir_config, &webauthldap_module);
+
+    lc->sconf = (MWAL_SCONF*) 
+        ap_get_module_config(lc->r->server->module_config,&webauthldap_module);
+
+
+    //
+    // See if there is anything for us to do
+    //
+
+    needs_further_handling = 0;
+    // if we have attributes to set, we need to keep going
+    if (!apr_is_empty_table((const apr_table_t *)lc->dconf->attribs))
+        needs_further_handling = 1;
+    else if (reqs_arr) {
+        reqs = (require_line *)reqs_arr->elts;
+
+        for (i = 0; i < reqs_arr->nelts; i++) {
+            if (!(reqs[i].method_mask & (AP_METHOD_BIT << m))) {
+                continue;
+            }
+
+            t = reqs[i].requirement;
+            w = ap_getword_white(r->pool, &t);
+
+            // if we see PRIVGROUP_DIRECTIVEs we will need to process them
+            if (!strcmp(w, PRIVGROUP_DIRECTIVE)) {
+                needs_further_handling = 1;
+                break;
+            }
+#ifndef NO_STANFORD_SUPPORT
+            // if we see oldschool stanford:groupname, process them as well
+            if ((!strcmp(w, "group")) && legacymode) {
+                needs_further_handling = 1;
+                break;
+            }
+#endif
+        }
+    }
+
+    if (!needs_further_handling) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                         "webauthldap(%s): nothing to check, finishing", 
+                         r->user);
+        return DECLINED;
+    }
+
+    //
+    // So there is something for us to do. Let's init, bind, and search.
+    //
 
     if ((rc = webauthldap_init(lc)) != 0)
         return rc;
@@ -1097,87 +1273,16 @@ auth_checker_hook(request_rec * r)
         return rc;
 
     //
-    // Validate privgroups. this code mostly stolen from mod_auth.c
+    // Validate privgroups.
     //
     needs_further_handling = 0;
-    authorized = 1;
-    if (reqs_arr) {
-        reqs = (require_line *)reqs_arr->elts;
-        
-        authorized = 0;
-        for (i = 0; i < reqs_arr->nelts; i++) {
-            if (!(reqs[i].method_mask & (AP_METHOD_BIT << m))) {
-                continue;
-            }
-
-            // short circuit on the first directive to positively validate
-            if (authorized)
-                break;
-
-            t = reqs[i].requirement;
-            w = ap_getword_white(r->pool, &t);
-
-            if (!strcmp(w, "valid-user")) {
-                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                             "webauthldap: authn SUCCEEDED on require valid-user");
-                authorized = 1;
-                break;
-            } else if (!strcmp(w, "user")) {
-                while (t[0]) {
-                    w = ap_getword_conf(r->pool, &t);
-                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                 "webauthldap: authn SUCCEEDED on require user %s", w);
-
-                    if (!strcmp(r->user, w)) {
-                        authorized = 1;
-                        break;
-                    }
-                }
-            }
-            else if (!strcmp(w, PRIVGROUP_DIRECTIVE)) {
-                while (t[0]) {
-                    w = ap_getword_conf(r->pool, &t);
-                    if (lc->sconf->debug)
-                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                     "webauthldap: REQUIRE: %s %s", 
-                                     PRIVGROUP_DIRECTIVE, w);
-
-                    rc = webauthldap_docompare(lc, w);
-                    if (rc == LDAP_COMPARE_TRUE) {
-                        authorized = 1;
-                        break;
-                    } else if (rc != LDAP_COMPARE_FALSE) {
-                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                                     "webauthldap: error while %s %s %s (%d)",
-                                     "checking priviledge groups",
-                                     "ldap_compare_ext_s:",
-                                     ldap_err2string(rc), rc);
-                        return HTTP_INTERNAL_SERVER_ERROR;
-                    }
-                }
-            } else {
-                if (lc->sconf->debug)
-                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                 "webauthldap: REQUIRE: %s", w);
-
-                // This means some other require directive like "group" is 
-                // encountered. Notice that we continue looking for the ones
-                // that matter to us anyway.
-                needs_further_handling = 1;
-            }
-        }
-    }
-
-    if (!authorized) {
-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server, 
-                     "webauthldap: user %s UNAUTHORIZED", r->user);
-        ldap_unbind(lc->ld);
-        return HTTP_UNAUTHORIZED;
-    }
+    if ((rc = webauthldap_validate_privgroups(lc, reqs_arr, legacymode,
+                                              &needs_further_handling)) != 0)
+        return rc; // means not authorized, or error
 
 
     //
-    // Set the env vars
+    // Now set the env vars
     //
     for (i=0; i<lc->numEntries; i++) {
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
@@ -1187,10 +1292,10 @@ auth_checker_hook(request_rec * r)
     if (lc->sconf->debug) {
         if (needs_further_handling)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                         "webauthldap: returning DECLINED");
+                         "webauthldap(%s): returning DECLINED", r->user);
         else
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                         "webauthldap: returning OK");
+                         "webauthldap(%s): returning OK", r->user);
 
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, "%s %s",
                      "webauthldap: finished for user", lc->r->user);

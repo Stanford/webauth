@@ -51,7 +51,6 @@
 
 #define CD_Attribs "WebAuthLdapAttribute"
 #define CM_Attribs "additional ldap attributes to place into the environment"
-#define DF_Attribs {"displayName", "mail", NULL}
 
 #define CD_Host "WebAuthLdapHost"
 #define CM_Host "LDAP Host for LDAP lookup"
