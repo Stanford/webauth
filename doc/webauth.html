@@ -1210,9 +1210,9 @@ then an &lt;errorResponse> message will be returned.
 
 <p>If a login-related error occurs then a &lt;requestTokenResponse> will 
 be returned, but &lt;requestedToken> will be unset, and &lt;loginErrorCode> 
-will be set. These error codes are a subset of the ones for &lt;errorCode>,
-in particular, only these error codes will be returned as a 
-loginErrorCode:
+will be set. The error codes used by &lt;loginErrorCode> are a subset of 
+those used by &lt;errorCode>:
+
 <p>
 <table border>
  <tr align=center>
@@ -1250,7 +1250,7 @@ requested token (WEBAUTHR in the return URL) if the user hits
 the cancel button.
 
 <p>If the request option "fa" attribute is set, then this command
-will return an &lt;errorMessage> with the &lt;errorCode> set to 17,
+will return a &lt;loginErrorCode> of 17,
 which indicates that the user is being forced to (re)login.
 
 <H3>4.4 <a name="xmlpost">Posting XML to WebKDC</a></H3>
