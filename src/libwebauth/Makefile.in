@@ -32,6 +32,7 @@ LOBJS		= $(OBJS:.o=.lo)
 all: $(LIBNAME).la
 
 install: $(LIBNAME).la
+	$(INSTALL) -d $D$(libdir)
 	$(LIBTOOL) --mode=install \
 	    $(INSTALL) $(LIBNAME).la $D$(libdir)/$(LIBNAME).la
 
