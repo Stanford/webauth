@@ -24,7 +24,7 @@ my $apachedir = $root;
 $apachedir =~ s%/+$%%;
 $apachedir =~ s%^.*/%%;
 my @files = map { "$apachedir/$_" } @ARGV;
-my $tarname = getcwd . '/' . $tarname;
+$tarname = getcwd . '/' . $tarname;
 chdir $root or die "$0: cannot chdir to $root: $!\n";
 system ("tar cf '$tarname' @files") == 0
     or die "$0: tar exited with status ", ($? >> 8), "\n";
