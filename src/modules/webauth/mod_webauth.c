@@ -558,6 +558,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->require_ssl = DF_RequireSSL;
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
+    sconf->webkdc_cert_check = DF_WebKdcSSLCertCheck;
     return (void *)sconf;
 }
 
@@ -603,6 +604,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->require_ssl = oconf->require_ssl_ex ? 
         oconf->require_ssl : bconf->require_ssl;
+
+    conf->webkdc_cert_check = oconf->webkdc_cert_check_ex ? 
+        oconf->webkdc_cert_check : bconf->webkdc_cert_check;
 
     conf->keyring_auto_update = oconf->keyring_auto_update_ex ? 
         oconf->keyring_auto_update : bconf->keyring_auto_update;
@@ -2658,6 +2662,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->require_ssl = flag;
             sconf->require_ssl_ex = 1;
             break;
+        case E_WebKdcSSLCertCheck:
+            sconf->webkdc_cert_check = flag;
+            sconf->webkdc_cert_check_ex = 1;
+            break;
             /* start of dconfigs */
         case E_DoLogout:
             dconf->do_logout = flag;
@@ -2796,6 +2804,7 @@ static const command_rec cmds[] = {
     SFLAG(CD_ProxyHeaders, E_ProxyHeaders, CM_ProxyHeaders),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
+    SFLAG(CD_WebKdcSSLCertCheck, E_WebKdcSSLCertCheck, CM_WebKdcSSLCertCheck),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
 

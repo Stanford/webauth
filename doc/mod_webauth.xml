@@ -1300,6 +1300,37 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 </directivesynopsis>
 
 <directivesynopsis>
+<name>WebAuthWebKdcSSLCertCheck</name>
+<description>Whether or not to peform SSL certificate checking on the WebKDC's
+certificate
+</description>
+<syntax>WebAuthWebkdcSSLCertCheck on|off</syntax>
+<default>on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive controls whether or not SSL certificate checking is performed
+on the certificate used by the WebKDC when mod_webauth communicates directly
+with the WebKDC.
+</p>
+
+<note><title>Note</title> 
+    <p>Setting this directive to <code>off</code> opens a security hole
+and should only be used in development when the 
+<a href="#webauthwebkdcsslcertfile"><code>WebAuthWebKdcSSLCertFile</code></a>
+directive cannot be used.
+</p>
+</note>
+
+<example><title>Example</title>
+WebAuthWebKdcSSLCertCheck off
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
 <name>WebAuthProxyHeaders</name>
 <description>Inserts extra headers into request
 </description>

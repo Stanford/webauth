@@ -63,6 +63,10 @@
 #define CD_WebKdcSSLCertFile "WebAuthWebKdcSSLCertFile"
 #define CM_WebKdcSSLCertFile "cert file containing the WebKDC's certificate"
 
+#define CD_WebKdcSSLCertCheck "WebAuthWebKdcSSLCertCheck"
+#define CM_WebKdcSSLCertCheck "whether or not to perform security checks on the SSL cert used by the WebKDC"
+#define DF_WebKdcSSLCertCheck 1
+
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"
 
@@ -252,6 +256,7 @@ enum {
     E_VarPrefix,
     E_WebKdcPrincipal,
     E_WebKdcSSLCertFile,
+    E_WebKdcSSLCertCheck,
     E_WebKdcURL,
 #ifndef NO_STANFORD_SUPPORT
     SE_ConfirmMsg,
@@ -287,6 +292,8 @@ typedef struct {
     char *webkdc_url;
     char *webkdc_principal;
     char *webkdc_cert_file;
+    int webkdc_cert_check;
+    int webkdc_cert_check_ex;
     char *login_url;
     char *keyring_path;
     char *keytab_path;

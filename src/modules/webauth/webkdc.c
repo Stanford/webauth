@@ -379,6 +379,14 @@ post_to_webkdc(char *post_data, int post_data_len,
         curl_easy_setopt(curl, CURLOPT_CAINFO, sconf->webkdc_cert_file);
     }
 
+    if (!sconf->webkdc_cert_check) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server,
+                     "mod_webauth: turning off WebKDC cert checking! "
+                     "this should only be done during testing/development");
+    }
+
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_gather);
 
     /* don't pre-allocate in case our write function never gets called */
