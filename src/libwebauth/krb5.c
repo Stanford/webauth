@@ -813,7 +813,8 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                     const unsigned char *req,
                     int length,
                     const char *keytab_path,
-                    char **client_principal)
+                    char **client_principal,
+                    int local)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_principal server;
@@ -841,9 +842,27 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
             krb5_authenticator *ka;
             c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
             if (c->code == 0) {
-                c->code = krb5_unparse_name(c->ctx, ka->client, 
-                                            client_principal);
+                int local_ok = 0;
+
+                if (local) {
+                    krb5_error_code tcode;
+                    char lname[256];
+
+                    tcode = krb5_aname_to_localname(c->ctx, ka->client,
+                                                    sizeof(lname)-1, lname);
+                    if (tcode == 0) {
+                        *client_principal = malloc(strlen(lname)+1);
+                        strcpy(*client_principal, lname);
+                        local_ok = 1;
+                    } 
+                }
+
+                if (!local_ok)
+                    c->code = krb5_unparse_name(c->ctx, ka->client, 
+                                                client_principal);
+
                 krb5_free_authenticator(c->ctx, ka);
+
             } else {
                 *client_principal = NULL;
             }
@@ -1135,15 +1154,28 @@ webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
-                               char **principal)
+                               char **principal, int local)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
 
-    if (c->princ != NULL) {
-        c->code = krb5_unparse_name(c->ctx, c->princ, principal);
-        return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
-    } else {
+    if (c->princ == NULL)
         return WA_ERR_INVALID_CONTEXT;
+
+    if (local) {
+        krb5_error_code tcode;
+        char lname[256];
+
+        tcode = krb5_aname_to_localname(c->ctx, c->princ,
+                                        sizeof(lname)-1,
+                                        lname);
+        if (tcode == 0) {
+            *principal = malloc(strlen(lname)+1);
+            strcpy(*principal, lname);
+            return WA_ERR_NONE;
+        } 
     }
 
+    /* fall through to fully-qualified on krb5_aname_to_localname errors */
+    c->code = krb5_unparse_name(c->ctx, c->princ, principal);
+    return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }

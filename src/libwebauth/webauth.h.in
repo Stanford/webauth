@@ -787,10 +787,15 @@ int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
  * get the principal from the context. should only be called 
  * after a succesfull call to webauth_krb5_init_via*.
  *
+ * If local is 1, then krb5_aname_to_localname is called on the
+ * principal. If krb5_aname_to_localname returns an error then
+ * the fully-qualified principal name is returned.
+ *
  * principal should be freed when it is no longer needed.
  */
 int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
-                               char **principal);
+                               char **principal,
+                               int local);
 /*
  * export a ticket for the given server_principal. ticket should
  * be freed when no longer needed.
@@ -824,6 +829,10 @@ int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
  * client_principal should be freed when it is no longer
  * needed.
  *
+ * If local is 1, then krb5_aname_to_localname is called on the
+ * principal. If krb5_aname_to_localname returns an error then
+ * the fully-qualified principal name is returned.
+ *
  * can be called anytime after calling webauth_krb5_new.
  */
 
@@ -831,7 +840,8 @@ int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                         const unsigned char *req,
                         int length,
                         const char *keytab,
-                        char **client_principal);
+                        char **client_principal,
+                        int local);
 
 #ifdef  __cplusplus
     /*}*/

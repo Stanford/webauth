@@ -462,12 +462,14 @@ Used to construct a server principal for use with other calls such as
 krb5_mk_req and krb5_export_ticket. On success $principal will be set
 to the constructed principal, represented as a string.
 
-=item krb5_get_principal(context)
+=item krb5_get_principal(context, 1)
 
-    $principal = krb5_getprincipal($context);
+    $principal = krb5_getprincipal($context, 1);
 
 Used to get the principal associated with the context. Should only be
-called after a successful call to krb5_init_via*.
+called after a successful call to krb5_init_via*. If local is 1, then 
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+returns an error then the fully-qualified principal name is returned.
 
 =item krb5_mk_req(context, principal)
 
@@ -476,12 +478,14 @@ called after a successful call to krb5_init_via*.
 Used to construct a kerberos V5 request for the specified principal. $request
 will be set on success, and will contain the result of the krb5_mk_req call.
 
-=item krb5_rd_req(context, request, keytab)
+=item krb5_rd_req(context, request, keytab, local)
 
-    $principal = krb5_rd_req($context, $request, $keytab);
+    $principal = krb5_rd_req($context, $request, $keytab, 1);
 
 Used to read a request created with krb5_mk_req. On success $principal
-will be set to the client principal in the request.
+will be set to the client principal in the request. If local is 1, then 
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+returns an error then the fully-qualified principal name is returned.
 
 =back
 

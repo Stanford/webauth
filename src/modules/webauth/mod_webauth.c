@@ -412,7 +412,7 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                                  alist->attrs[i].value,
                                  alist->attrs[i].length,
                                  rc->sconf->keytab_path,
-                                 &principal);
+                                 &principal, 1);
 
     webauth_krb5_free(ctxt);
 
@@ -422,7 +422,8 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
         return NULL;
     }
 
-    subject = apr_pstrcat(rc->r->pool, "krb5:", principal, NULL);
+    /* subject = apr_pstrcat(rc->r->pool, "krb5:", principal, NULL);*/
+    subject = apr_pstrdup(rc->r->pool, principal);
     free(principal);
     return subject;
 }

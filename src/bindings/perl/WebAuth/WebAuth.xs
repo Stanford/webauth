@@ -751,14 +751,15 @@ PPCODE:
 }
 
 void
-webauth_krb5_get_principal(c)
+webauth_krb5_get_principal(c,local)
 WEBAUTH_KRB5_CTXT *c
-PROTOTYPE: $
+int local
+PROTOTYPE: $$
 PPCODE:
 {
     int s;
     char *princ;
-    s = webauth_krb5_get_principal(c, &princ);
+    s = webauth_krb5_get_principal(c, &princ, local);
 
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
@@ -822,18 +823,19 @@ PPCODE:
 }
 
 void
-webauth_krb5_rd_req(c,request,keytab)
+webauth_krb5_rd_req(c,request,keytab,local)
 WEBAUTH_KRB5_CTXT *c
 SV *request
 char *keytab
-PROTOTYPE: $$$
+int local
+PROTOTYPE: $$$$
 PPCODE:
 {       
     unsigned char *req;
     char *client_princ;
     int req_len, s;
     req = SvPV(request, req_len);
-    s = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ);
+    s = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ, local);
 
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();

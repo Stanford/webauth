@@ -865,7 +865,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         status = webauth_krb5_rd_req(ctxt, bin_req, blen,
                                      rc->sconf->keytab_path,
-                                     &client_principal);
+                                     &client_principal, 0);
 
         if (status != WA_ERR_NONE) {
             char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
@@ -1032,6 +1032,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
     int status;
     char *server_principal;
     unsigned char *temp_sad;
+    enum mwk_status ms;
 
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     if (ctxt == NULL) {
@@ -1064,25 +1065,24 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
 
     status = webauth_krb5_mk_req(ctxt, server_principal, &temp_sad, sad_len);
 
-    /* we can't free the krb5 ctxt yet as we might need it for logging */
-
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_mk_req");
-        webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
          */
-        return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg,
-                                 mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, 1);
+        ms = MWK_ERROR;
     } else {
-        webauth_krb5_free(ctxt);
         *sad = apr_palloc(rc->r->pool, *sad_len);
         memcpy(*sad,  temp_sad, *sad_len);
         free(temp_sad);
-        return MWK_OK;
+        ms = MWK_OK;
     }
+
+    webauth_krb5_free(ctxt);
+    return ms;
 }
 
 /*
@@ -1686,20 +1686,21 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         goto cleanup;
     } else {
         /* copy server_principal to request pool */
-        char *temp = apr_pstrdup(rc->r->pool, server_principal);
+        char *temp = apr_pstrcat(rc->r->pool, "krb5:", server_principal, NULL);
         free(server_principal);
         server_principal = temp;
     }
 
-    /* get subject */
-    status = webauth_krb5_get_principal(ctxt, &subject);
+
+    /* get subject, attempt local-name conversion */
+    status = webauth_krb5_get_principal(ctxt, &subject, 1);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_get_principal");
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
-        char *new_subject = apr_pstrcat(rc->r->pool, "krb5:", subject, NULL);
+        char *new_subject = apr_pstrdup(rc->r->pool, subject);
         free(subject);
         subject = new_subject;
     }

@@ -12,11 +12,11 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-#BEGIN { plan tests => 42 }
-#my $run_kerb = 0;
+BEGIN { plan tests => 42 }
+my $run_kerb = 0;
 
-BEGIN { plan tests => 46 }
-my $run_kerb = 1;
+#BEGIN { plan tests => 46 }
+#my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
 
@@ -24,7 +24,7 @@ if ($run_kerb) {
     # FIXME: need better way to config these
     # user/password to attempt to login as
     $kuser="schemers/test";
-    $kpass="testing";
+    $kpass="xxxxx";
     # path to keytab file used to verify tgt and also 
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
@@ -221,8 +221,7 @@ if ($run_kerb) {
 
 	my $sp = WebAuth::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);
 
-	my $ctx_princ = WebAuth::krb5_get_principal($c);
-
+	my $ctx_princ = WebAuth::krb5_get_principal($c, 1);
 	my ($tgt, $expiration) = WebAuth::krb5_export_tgt($c);
 
 	my $princ = WebAuth::krb5_service_principal($c, $kservice, $khost);
@@ -235,7 +234,7 @@ if ($run_kerb) {
 
 	my $request = WebAuth::krb5_mk_req($c, $rprinc);
 
-	my $client_princ = WebAuth::krb5_rd_req($c, $request, $kkeytab);
+	my $client_princ = WebAuth::krb5_rd_req($c, $request, $kkeytab, 1);
 	#print "client = ($client_princ)\n";
 
 	# nuke current context and import from tgt we created

@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     TEST_OK(c != NULL);
 
     /* test failure case */
-    s = webauth_krb5_get_principal(c, &cprinc);
+    s = webauth_krb5_get_principal(c, &cprinc, 1);
     TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
 
     s = webauth_krb5_init_via_password(c, username, password, 
@@ -58,7 +58,8 @@ int main(int argc, char *argv[])
     TEST_OK(server_principal != NULL);
     free(server_principal);
 
-    s = webauth_krb5_get_principal(c, &cprinc);
+    s = webauth_krb5_get_principal(c, &cprinc, 1);
+    printf("cprinc = %s\n", cprinc);
     TEST_OK2(WA_ERR_NONE, s);
     free(cprinc);
 
@@ -78,7 +79,8 @@ int main(int argc, char *argv[])
     free(server);
     TEST_OK2(WA_ERR_NONE, s);
 
-    s = webauth_krb5_rd_req(c, sa, salen, keytab_path, &cp);
+    s = webauth_krb5_rd_req(c, sa, salen, keytab_path, &cp, 1);
+    printf("cp = %s\n", cp);
     TEST_OK2(WA_ERR_NONE, s);
     if (cp) {
         free(cp);
