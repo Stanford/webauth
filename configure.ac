@@ -55,6 +55,9 @@ AC_PROG_RANLIB
 dnl Find apxs, which may be in a separate Apache 2.x installation location.
 WEBAUTH_APACHE
 
+dnl Find Perl, used to build the Perl bindings.
+AC_PATH_PROG([PERL], [perl])
+
 dnl Checks for libraries
 
 dnl The rat's nest of networking libraries.  The common cases are not to
@@ -105,6 +108,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    src/bindings/Makefile
+    src/bindings/perl/Makefile
     src/bindings/perl/WebAuth3/Makefile.PL
     src/libwebauth/Makefile
     src/libwebauth/webauth.h

@@ -1,4 +1,4 @@
-# Makefile for Webauth source
+# Makefile for Webauth language bindings
 # $Id$
 
 srcdir = @srcdir@
@@ -7,7 +7,7 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = libwebauth bindings modules utils
+SUBDIRS = perl
 
 .PHONY: all clean depend install
 
