@@ -1576,6 +1576,46 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 #undef MERGE_PTR
 #undef MERGE_INT
 
+static int
+seconds(const char *value, char **error_str)
+{
+    char temp[32];
+    int mult, len;
+    
+    len = strlen(value);
+    if (len > (sizeof(temp)-1)) {
+        *error_str = "error: value too long!";
+        return 0;
+    }
+
+    strcpy(temp, value);
+
+    switch(temp[len-1]) {
+        case 's': 
+            mult = 1;
+            break;
+        case 'm':
+            mult = 60;
+            break;
+        case 'h': 
+            mult = 60*60; 
+            break;
+        case 'd': 
+            mult = 60*60*24; 
+            break;
+        case 'w': 
+            mult = 60*60*24*7; 
+            break;
+        default:
+            *error_str = "error: value too long!";
+            return 0;
+            break;
+    }
+    
+    temp[len-1] = '\0';
+    return atoi(temp) * mult;
+}
+
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
@@ -1592,6 +1632,16 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_Keytab:
             sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
+            break;
+        case E_ProxyTokenMaxLifetime:
+            sconf->proxy_token_max_lifetime = seconds(arg, &error_str);
+            break;
+        case E_TokenMaxTTL:
+            sconf->token_max_ttl = seconds(arg, &error_str);
+            sconf->token_max_ttl_ex = 1;
+            break;
+        case E_ServiceTokenLifetime:
+            sconf->service_token_lifetime = seconds(arg, &error_str);
             break;
         default:
             error_str = 
@@ -1631,46 +1681,6 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
     return error_str;
 }
 
-static const char *
-cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
-{
-    int e = (int)cmd->info;
-    char *endptr;
-    char *error_str = NULL;
-
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    int val = (int) strtol(arg, &endptr, 10);
-
-    if ((*arg == '\0') || (*endptr != '\0')) {
-        error_str = apr_psprintf(cmd->pool,
-                     "Invalid value for directive %s, expected integer",
-                     cmd->directive->directive);
-    } else {
-        switch (e) {
-            case E_ProxyTokenMaxLifetime:
-                sconf->proxy_token_max_lifetime = val*60; /*convert from min */
-                break;
-            case E_TokenMaxTTL:
-                sconf->token_max_ttl = val*60; /* convert from minutes */
-                sconf->token_max_ttl_ex = 1;
-                break;
-            case E_ServiceTokenLifetime:
-                sconf->service_token_lifetime = val*60; /* convert from min */
-                break;
-            default:
-                error_str = 
-                    apr_psprintf(cmd->pool,
-                                "Invalid value cmd->info(%d) for directive %s",
-                                 e,
-                                 cmd->directive->directive);
-                break;
-        }
-    }
-    return error_str;
-}
-
 
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
@@ -1678,25 +1688,21 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
 #define SFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
 
-#define SINT(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_int, (void*)mconfig, RSRC_CONF, TAKE1, help}
-
 static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SINT(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
-    SINT(CD_ProxyTokenMaxLifetime, E_ProxyTokenMaxLifetime, 
+    SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
+    SSTR(CD_ProxyTokenMaxLifetime, E_ProxyTokenMaxLifetime, 
          CM_ProxyTokenMaxLifetime),
-    SINT(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
+    SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
          CM_ServiceTokenLifetime),
     { NULL }
 };
 
 #undef SSTR
 #undef SFLAG
-#undef SINT
 
 static void 
 register_hooks(apr_pool_t *p)

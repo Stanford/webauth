@@ -1025,6 +1025,46 @@ fixups_hook(request_rec *r)
 }
 
 
+static int
+seconds(const char *value, char **error_str)
+{
+    char temp[32];
+    int mult, len;
+    
+    len = strlen(value);
+    if (len > (sizeof(temp)-1)) {
+        *error_str = "error: value too long!";
+        return 0;
+    }
+
+    strcpy(temp, value);
+
+    switch(temp[len-1]) {
+        case 's': 
+            mult = 1;
+            break;
+        case 'm':
+            mult = 60;
+            break;
+        case 'h': 
+            mult = 60*60; 
+            break;
+        case 'd': 
+            mult = 60*60*24; 
+            break;
+        case 'w': 
+            mult = 60*60*24*7; 
+            break;
+        default:
+            *error_str = "error: value too long!";
+            return 0;
+            break;
+    }
+    
+    temp[len-1] = '\0';
+    return atoi(temp) * mult;
+}
+
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
@@ -1073,6 +1113,16 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_ReturnURL:
             dconf->return_url = apr_pstrdup(cmd->pool, arg);
             break;
+        case E_AppTokenLifetime:
+            dconf->app_token_lifetime = seconds(arg, &error_str);
+            break;
+        case E_TokenMaxTTL:
+            sconf->token_max_ttl = seconds(arg, &error_str);
+            sconf->token_max_ttl_ex = 1;
+            break;
+        case E_InactiveExpire:
+            dconf->inactive_expire = seconds(arg, &error_str);
+            break;
         default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -1084,7 +1134,6 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     }
     return error_str;
 }
-
 
 static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
@@ -1131,65 +1180,17 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
     return error_str;
 }
 
-static const char *
-cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
-{
-    int e = (int)cmd->info;
-    char *endptr;
-    char *error_str = NULL;
-    MWA_DCONF *dconf = (MWA_DCONF*) mconf;
-
-    MWA_SCONF *sconf = (MWA_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauth_module);
-
-    int val = (int) strtol(arg, &endptr, 10);
-
-    if ((*arg == '\0') || (*endptr != '\0')) {
-        error_str = apr_psprintf(cmd->pool,
-                     "Invalid value for directive %s, expected integer",
-                     cmd->directive->directive);
-    } else {
-        switch (e) {
-            case E_AppTokenLifetime:
-                dconf->app_token_lifetime = val*60; /*convert from minutes */
-                break;
-            case E_TokenMaxTTL:
-                sconf->token_max_ttl = val*60; /* convert from minutes */
-                sconf->token_max_ttl_ex = 1;
-                break;
-            case E_InactiveExpire:
-                dconf->inactive_expire = val*60; /* convert from minutes */
-                break;
-            default:
-                error_str = 
-                    apr_psprintf(cmd->pool,
-                                "Invalid value cmd->info(%d) for directive %s",
-                                 e,
-                                 cmd->directive->directive);
-                break;
-        }
-    }
-    return error_str;
-}
-
-
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
 
 #define SFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
 
-#define SINT(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_int, (void*)mconfig, RSRC_CONF, TAKE1, help}
-
 #define DSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, OR_AUTHCFG, TAKE1, help}
 
 #define DFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
-
-#define DINT(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_int, (void*)mconfig, OR_AUTHCFG, TAKE1, help}
 
 static const command_rec cmds[] = {
     /* server/vhost */
@@ -1206,10 +1207,10 @@ static const command_rec cmds[] = {
     SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_SecureCookie, E_SecureCookie, CM_SecureCookie),
-    SINT(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
+    SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     /* directory */
-    DINT(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
-    DINT(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
+    DSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
+    DSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
 
