@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 #
 # FIXME: will need some autoconf magic in here for libwebauth, 
-#        as well as libssl/crypto
+#        as well as libssl/crypto/krb5/k5crypto/com_err
 #
 #
 #
@@ -16,7 +16,7 @@ WriteMakefile(
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'WebAuth.pm', # retrieve abstract from module
        AUTHOR     => 'A. U. Thor <a.u.thor@a.galaxy.far.far.away>') : ()),
-    'LIBS'		=> ['-L../../../libwebauth -lwebauth -lcrypto'],
+    'LIBS'		=> ['-L../../../libwebauth -lwebauth -lcrypto -lkrb5 -lk5crypto -lcom_err'],
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
 	# Insert -I. if you add *.h files later:
     'INC'		=> '', # e.g., '-I/usr/include/other'

@@ -543,6 +543,227 @@ CODE:
     }
 }
 
+
+int
+webauth_krb5_new(OUT ctxt)
+WEBAUTH_KRB5_CTXT *ctxt;
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = webauth_krb5_new(&ctxt);
+}
+OUTPUT:
+    RETVAL
+    ctxt
+
+int
+webauth_krb5_error_code(c)
+WEBAUTH_KRB5_CTXT *c
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = webauth_krb5_error_code(c);
+}
+OUTPUT:
+    RETVAL
+
+char *
+webauth_krb5_error_message(c)
+WEBAUTH_KRB5_CTXT *c
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = (char*)webauth_krb5_error_message(c);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_init_via_password(c,name,password,keytab,...)
+WEBAUTH_KRB5_CTXT *c
+char *name
+char *password
+char *keytab
+PROTOTYPE: $$$$;$
+CODE:
+{
+    char *cred;
+    if (items==5) {
+        cred = (char *)SvPV(ST(4),PL_na);
+    } else {
+        cred = NULL;
+    }
+    RETVAL = webauth_krb5_init_via_password(c, name, password, keytab, cred);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_init_via_keytab(c,keytab,...)
+WEBAUTH_KRB5_CTXT *c
+char *keytab
+PROTOTYPE: $$;$
+CODE:
+{
+    char *cred;
+    if (items==3) {
+        cred = (char *)SvPV(ST(2),PL_na);
+    } else {
+        cred = NULL;
+    }
+    RETVAL = webauth_krb5_init_via_keytab(c, keytab, cred);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_init_via_tgt(c,tgt,...)
+WEBAUTH_KRB5_CTXT *c
+SV *tgt
+PROTOTYPE: $$;$
+CODE:
+{
+    char *cred;
+    unsigned char *ptgt;
+    int tgt_len;
+
+    ptgt = SvPV(tgt, tgt_len);
+
+    if (items==3) {
+        cred = (char *)SvPV(ST(2),PL_na);
+    } else {
+        cred = NULL;
+    }
+    RETVAL = webauth_krb5_init_via_tgt(c, ptgt, tgt_len, cred);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_import_ticket(c,ticket)
+WEBAUTH_KRB5_CTXT *c
+SV *ticket
+PROTOTYPE: $$
+CODE:
+{
+    unsigned char *pticket;
+    int ticket_len;
+
+    pticket = SvPV(ticket, ticket_len);
+    RETVAL = webauth_krb5_import_ticket(c, pticket, ticket_len);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_export_tgt(c,tgt,expiration)
+WEBAUTH_KRB5_CTXT *c
+time_t expiration
+PROTOTYPE: $$$
+CODE:
+{       
+    unsigned char *tgt;
+    int tgt_len;
+    RETVAL = webauth_krb5_export_tgt(c, &tgt, &tgt_len, &expiration);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpvn(ST(1), tgt, tgt_len);
+        free(tgt);
+        sv_setiv(ST(2), (IV)expiration);
+    }
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_service_principal(c,service,hostname,server_princ)
+WEBAUTH_KRB5_CTXT *c
+char *service
+char *hostname
+PROTOTYPE: $$$$
+CODE:
+{       
+    char *server_princ;
+    RETVAL = webauth_krb5_service_principal(c, service, 
+                                            hostname, &server_princ);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpv(ST(3), server_princ);
+        free(server_princ);
+    }
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_export_ticket(c,princ,ticket,expiration)
+WEBAUTH_KRB5_CTXT *c
+char *princ
+time_t expiration
+PROTOTYPE: $$$$
+CODE:
+{       
+    unsigned char *ticket;
+    int ticket_len;
+    RETVAL = webauth_krb5_export_ticket(c, princ, &ticket,
+                                        &ticket_len, &expiration);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpvn(ST(2), ticket, ticket_len);
+        free(ticket);
+        sv_setiv(ST(3), (IV)expiration);
+    }
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_mk_req(c,princ,req)
+WEBAUTH_KRB5_CTXT *c
+char *princ
+PROTOTYPE: $$$
+CODE:
+{       
+    unsigned char *req;
+    int req_len;
+    RETVAL = webauth_krb5_mk_req(c, princ, &req, &req_len);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpvn(ST(2), req, req_len);
+        free(req);
+    }
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_rd_req(c,request,keytab,cprinc)
+WEBAUTH_KRB5_CTXT *c
+SV *request
+char *keytab
+PROTOTYPE: $$$$
+CODE:
+{       
+    unsigned char *req;
+    char *client_princ;
+    int req_len;
+    req = SvPV(request, req_len);
+    RETVAL = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpv(ST(3), client_princ);
+        free(client_princ);
+    }
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_krb5_keep_cred_cache(c)
+WEBAUTH_KRB5_CTXT *c
+PROTOTYPE: $
+CODE:
+{       
+    RETVAL = webauth_krb5_keep_cred_cache(c);
+}
+OUTPUT:
+    RETVAL
+
 MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
 
 void
@@ -558,6 +779,14 @@ webauth_DESTROY(ring)
     WEBAUTH_KEYRING *ring
 CODE:
     webauth_keyring_free(ring);
+
+MODULE = WebAuth        PACKAGE = WEBAUTH_KRB5_CTXTPtr  PREFIX = webauth_
+
+void
+webauth_DESTROY(ctxt)
+    WEBAUTH_KRB5_CTXT *ctxt
+CODE:
+    webauth_krb5_free(ctxt);
 
  /*
  **  Local variables:

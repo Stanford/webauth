@@ -41,15 +41,13 @@ WebAuth - Perl extension for WebAuth (version 3)
 
   use WebAuth;
   
-  WebAuth::foobar();
+  $key = WebAuth::random_key(WebAuth::WA_AES_128);
 
 =head1 DESCRIPTION
 
 WebAuth is a low-level Perl interface into the WebAuth C API. 
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
-If such an inteface is needed, it will most likely be developed in Perl,
-using these functions.
 
 =head1 EXPORT
 
@@ -231,6 +229,108 @@ Takes as input a base64 encrypted token and a ring (created with
 keyring_new) and returns the attributes, or undef in the case of an error.
 $status is optional, and if present will get set to the
 result of the webauth_token_parse C function.
+
+=item krb5_new(context)
+
+  $status = krb5_new($context);
+
+Creates a new WEBAUTH_KRB5_CTXT reference in $context, and returns
+the webauth status code, which will be WA_ERR_NONE on success.
+
+=item krb5_error_code(context)
+
+  $krb5_error_code = krb5_error_code($context);
+
+Returns the internal kerberos V5 error code from the previous call
+using $context. If no error occured, the returned value will be zero.
+
+=item krb5_error_message(context)
+
+  $krb5_error_msg = krb5_error_message($context);
+
+Returns the internal kerberos V5 error message from the previous call
+using $context. If no error occured, the returned value will be "success".
+
+=item krb5_keep_cred_cache(context)
+
+  $status = krb5_keep_cred_cache($context);
+
+If called before $context is no longer in use, prevents the credential
+cache (created via one of the calls to krb5_init_via*) from being 
+destroyed. This should only be used you need to keep a file-based
+credential cache from being removed.
+
+=item krb5_init_via_password(context, user, password, keytab[, cache])
+
+  $status = krb5_init_via_password($context, $user, 
+                                      $password, $keytab[, $cache]);
+
+Initializes a context using the specified username/password to obtain
+a TGT. The TGT will be verified using the principal in the keytab by
+doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
+cache will be used and destroyed when the context is destroyed.
+
+=item krb5_init_via_keytab(context, keytab[, cache])
+
+  $status = krb5_init_via_keytab($context, $keytab[, $cache]);
+
+Initializes a context using the principal in the specified keytab
+by getting a TGT. If $cache is not specified, a memory
+cache will be used and destroyed when the context is destroyed.
+
+=item krb5_init_via_tgt(context, tgt[, cache])
+
+  $status = krb5_init_via_keytab($context, $tgt[, $cache]);
+
+Initializes a context using a TGT that was previously exported using
+krb5_export_tgt. If $cache is not specified, a memory
+cache will be used and destroyed when the context is destroyed.
+
+=item krb5_export_tgt(context, tgt, expiration)
+
+  $status = krb5_export_tgt($context, $tgt, $expiration);
+
+Used to "export" a TGT from the specified context, which should have
+been initialized via one of the krb5_init_via_* functions. On
+success both  $tgt and $expiration get set. $ticket is the ticket
+itself (binary data) and $expiration is the expiration time of the ticket.
+
+=item krb5_import_ticket(context, ticket)
+
+  $status = krb5_import_ticket($context, $ticket);
+
+Used to "import" a ticket that was created with krb5_export_ticket.
+
+=item krb5_export_ticket(context, principal, ticket, expiration)
+
+  $status = krb5_export_ticket($context, $principal, $ticket, $expiration);
+
+Used to "export" a ticket for the requested server principal. On success,
+both $ticket and $expiration will be set. $ticket is the ticket itself
+(binary data) and $expiration is the expiration time of the ticket.
+
+=item krb5_service_principal(context, service, hostname, principal)
+
+    $status = krb5_service_principal($context, $service,
+                                                  $hostname, $principal);
+
+Used to construct a server principal for use with other calls such as
+krb5_mk_req and krb5_export_ticket. On success $principal will be set
+to the constructed principal, represented as a string.
+
+=item krb5_mk_req(context, principal, request)
+
+  $status = krb5_mk_req($context, $principal, $request)
+
+Used to construct a kerberos V5 request for the specified principal. $request
+will be set on success, and will contain the result of the krb5_mk_req call.
+
+=item krb5_rd_req(context, request, keytab, principal);
+
+  $status = krb5_rd_req($context, $request, $keytab, $principal);
+
+Used to read a request created with krb5_mk_req. On success $principal
+will be set to the client principal in the request.
 
 =back
 
