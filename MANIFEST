@@ -65,7 +65,7 @@ src/libwebauth/openssl                  AES include files (Directory)
 src/libwebauth/openssl/aes.h
 src/libwebauth/random.c
 src/libwebauth/token.c
-src/libwebauth/webauth.h
+src/libwebauth/webauth.h.in
 src/libwebauth/webauthp.h
 src/utils                               Webauth utility programs (Directory)
 src/utils/Makefile.in
