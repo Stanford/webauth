@@ -23,8 +23,8 @@ clean install:
 	done
 
 distclean: clean
-	rm -f config.status config.cache config.log autom4te.cache \
-               common/include/config.h Makefile \
+	rm -rf config.status config.cache config.log autom4te.cache \
+               src/common/include/conf.h Makefile \
                src/Makefile src/libwebauth/Makefile \
                tests/Makefile tests/libwebauth/Makefile \
                *~ core \#*
