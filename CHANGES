@@ -2,6 +2,10 @@
 
 WebAuth 3.1.2 (in progress)
 
+ *) mod_webauth: correctly construct the return url for reverse proxies 
+   (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
+   for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
+
  *) mod_webauth: don't try to attr decode a zero length service token 
     cache file. log a warning and return NULL like there was no file.
 

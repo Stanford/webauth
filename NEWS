@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.1.2 (in progress)
+
+ *) mod_webauth: correctly construct the return url for reverse proxies 
+   (explicitely compare r->proxyreq to PROXYREQ_PROXY instead of testing 
+   for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
+
 WebAuth 3.1.1 (2003-05-08)
 
  *) Fixed HTML_TEMPLATE_ROOT in src/webkdc/logout.fcgi script by
