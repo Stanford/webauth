@@ -109,35 +109,18 @@ seconds(const char *value)
 char **
 read_options(int argc, char **argv)
 {
-  int c;
-  extern int opterr;
-  opterr = 0;
-
   prog = argv[0];
 
-  /* A quick hack to honor --help and --version */
-  if (argv[1])
-    if (argv[1][0] == '-' && argv[1][1] == '-' && argv[1][2] != '\0') {
-      switch(argv[1][2]) {
-      case 'h':
-	usage(0);
-	break;
-      default:
-	usage(1);
-	break;
-      }
-    }
- 
-  while ((c = getopt(argc, argv, "hvf:")) != EOF) {
-      switch (c) {
-          case 'f': /* keyring File */
-              keyring_path = optarg;
-              break;
-          case 'h': /* Help */
+  while (--argc && *++argv && argv[0][0] == '-') {
+      switch (argv[0][1]) {
+          case 'h':
               usage(0);
               break;
-          case 'v':
-              verbose=1;
+          case  'v':
+              verbose = 1;
+              break;
+          case 'f':
+              keyring_path = *++argv;
               break;
           default:
               usage(1);
@@ -145,11 +128,11 @@ read_options(int argc, char **argv)
       }
   }
 
-  if (keyring_path == NULL || optind > argc) {
+  if (keyring_path == NULL || argv == NULL) {
       usage(1);
   }
 
-  return argv+optind;
+  return argv;
 }
 
 void
@@ -158,7 +141,7 @@ print_time(time_t t)
     struct tm *tm;
     char buff[128];
     tm = localtime(&t);
-    strftime(buff, sizeof(buff), "%m/%d/%Y %T", tm);
+    strftime(buff, sizeof(buff), "%m/%d/%Y %H:%M:%S", tm);
     printf("%s", buff);
 }
 

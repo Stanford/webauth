@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <krb5.h>
 #include <com_err.h>
-#include <netdb.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 typedef struct {
     krb5_context ctx;
@@ -16,25 +17,6 @@ typedef struct {
 } WEBAUTH_KRB5_CTXTP;
 
 /*#define WA_CRED_DEBUG 1 */
-
-#if 0
-
-/* we don't need this now, though we did at one point. Keeping
-   it if'd out for now in case... */
-
-static char *
-get_hostname()
-{
-    static char hostname[MAXHOSTNAMELEN+1] = {0};
-    if (!hostname[0]) {
-        if (gethostname(hostname, sizeof(hostname)-1) < 0) {
-            return NULL;
-        }
-        hostname[sizeof(hostname)-1] = '\0';
-    }
-    return hostname;
-}
-#endif
 
 /* these names are kept to a minimum since encoded creds end up
    in cookies,etc */
@@ -649,6 +631,7 @@ webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
     c->cc = NULL;
     c->princ = NULL;
     c->keep_cache = 0;
+    c->ctx = NULL;
     c->code = krb5_init_context(&c->ctx);
     *ctxt = (WEBAUTH_KRB5_CTXT*)c;
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
@@ -789,7 +772,9 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
     if (c->princ) {
         krb5_free_principal(c->ctx, c->princ);
     }
-    krb5_free_context(c->ctx);
+    if (c->ctx != NULL) {
+        krb5_free_context(c->ctx);
+    }
     free(context);
     return WA_ERR_NONE;
 }
