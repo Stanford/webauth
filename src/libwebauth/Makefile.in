@@ -17,7 +17,7 @@ LIBTOOL		= $(top_builddir)libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= -I$(srcdir) -I$(top_builddir) @CPPFLAGS@ \
+CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) @CPPFLAGS@ \
 		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LDLIBS		= @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
