@@ -7,9 +7,9 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = libwebauth bindings modules utils
+SUBDIRS = libwebauth bindings modules utils @WEBKDC@
 
-.PHONY: all clean depend install install-webkdc
+.PHONY: all clean depend install
 
 all: Makefile
 	@for subdir in $(SUBDIRS); do \
@@ -22,7 +22,3 @@ clean depend install:
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
-
-install-webkdc:
-	cd modules && $(MAKE) install-webkdc
-	cd webkdc && $(MAKE) install
