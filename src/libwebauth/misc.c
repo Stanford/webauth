@@ -46,7 +46,7 @@ webauth_info_build(void)
 const char *
 webauth_info_version(void)
 {
-    return PACKAGE_STRING;
+    return PACKAGE_VERSION;
 }
 
 
