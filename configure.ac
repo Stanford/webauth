@@ -105,7 +105,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
-    src/bindings/perl/WebAuth/Makefile.PL
+    src/bindings/perl/WebAuth3/Makefile.PL
     src/libwebauth/Makefile
     src/libwebauth/webauth.h
     src/modules/Makefile
