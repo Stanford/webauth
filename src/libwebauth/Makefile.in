@@ -38,7 +38,7 @@ $(LIBNAME).la: $(LOBJS)
 	    -rpath $(libdir) -version-info 0:0:0
 
 clean:
-	rm -rf $(LIBNAME).la *.lo .libs *~ core \#*
+	rm -rf *.o $(LIBNAME).la *.lo .libs *~ core \#*
 
 depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c

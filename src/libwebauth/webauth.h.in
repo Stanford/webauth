@@ -536,6 +536,18 @@ int webauth_keyring_add(WEBAUTH_KEYRING *ring,
                          time_t valid_till,
                          WEBAUTH_KEY *key);
 
+
+/*
+ * removes (and frees) the key at the specified index, 
+ * shifts remaining keys down.
+ *
+ * Returns WA_ERR_NONE or WA_ERR_NOT_FOUND.
+ */
+
+int
+webauth_keyring_remove(WEBAUTH_KEYRING *ring, int index);
+
+
 /*
  * given a key ring, return the best key on the ring for
  * either encryption or decryption.

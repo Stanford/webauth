@@ -158,6 +158,29 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring,
     return WA_ERR_NONE;
 }
 
+int
+webauth_keyring_remove(WEBAUTH_KEYRING *ring, int index)
+{
+    int i;
+
+    assert(ring);
+
+    if (index < 0 || index >= ring->num_entries) {
+        return WA_ERR_NOT_FOUND;
+    }
+
+    /* free the key */
+    webauth_key_free(ring->entries[index].key);
+
+    /* shift everyone down one */
+    for (i = index+1; i < ring->num_entries; i++) {
+        ring->entries[i-1] = ring->entries[i];
+    }
+
+    ring->num_entries--;
+    return WA_ERR_NONE;
+}
+
 WEBAUTH_KEY *
 webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
                          int encryption,
