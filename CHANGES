@@ -1,5 +1,10 @@
                           WebAuth Change History
 
+WebAuth 3.1.2 (in progress)
+
+ *) Fixed the installation rule for the test suite to properly honor
+    DESTDIR.
+
 WebAuth 3.1.1 (2003-05-08)
 
  *) Fixed HTML_TEMPLATE_ROOT in src/webkdc/logout.fcgi script by
