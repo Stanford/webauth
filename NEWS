@@ -1,5 +1,20 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.2.3 (2004-06-23)
+
+ *) Long delays for some clients after redirects from mod_webauth should
+    improve.  The redirect was being returned without a body but also
+    without a Content-Length, forcing clients supporting keep-alive to
+    wait for a timeout.  This may (but hopefully won't) cause more looping
+    problems.
+
+ *) Replaced the sample weblogin server templates with generic templates
+    that don't use any Stanford-copyrighted logos or design.
+
+ *) Install a man page for wa_keyring.
+
+ *) Added configuration and rules for Debian packages.
+
 WebAuth 3.2.2 (2004-03-02)
 
  *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up

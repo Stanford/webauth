@@ -1,5 +1,20 @@
                           WebAuth Change History
 
+WebAuth 3.2.3 (2004-06-23)
+
+ *) Modified the redirect code in mod_webauth to not set the header-only
+    flag, since that was producing messages with no body but without a
+    Content-Length header, forcing browsers that implemented keep-alive to
+    time out before acting on the redirect.
+
+ *) Replaced the sample weblogin server templates with generic templates
+    that don't use any Stanford-copyrighted logos or design.
+
+ *) Added build rules for Debian packages and added Debian packaging to
+    the make dist target.
+
+ *) Added wa_keyring.1 to the distribution and to the installation rules.
+
 WebAuth 3.2.2 (2004-03-02)
 
  *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up
