@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+sub query_string_test {
+
+    my $QUERY_STRING = $ENV{'QUERY_STRING'};
+
+    print "<hr>\n";
+
+    &begin_tests("Performing Query String test");
+
+    &do_test("QUERY_STRING",
+	     $QUERY_STRING eq '',
+	     "set to nothing",
+	     "incorrect value: $QUERY_STRING");
+    &end_tests;
+    print "<hr>\n";
+}
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require 'util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>\n";
+
+test_title(11, "testing for no query params on initial redirect");
+
+print<<EOS;
+
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This test is to make sure query parameters work at the initial redirect.
+<br>
+<br>
+EOS
+
+&return_links;
+
+&query_string_test;
+
+&dump_stuff;
+
+print "</html>";
+

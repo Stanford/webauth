@@ -41,6 +41,20 @@
 
 
 /*
+ * remove a string from the end of another string
+ */
+static void
+strip_end(char *c, char *t)
+{
+    char *p;
+    if (c != NULL) {
+        p = ap_strstr(c, t);
+        if (p != NULL)
+            *p = '\0';
+    }
+}
+
+/*
  * return 1 if current request is "https"
  */
 static int
@@ -50,14 +64,19 @@ is_https(request_rec *r)
     return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
-/* remove any webauth_* cookies before proxying the request */
+/* remove any webauth_* cookies and tokens from Referer
+   before proxying the request */
 static void
-strip_webauth_cookies(MWA_REQ_CTXT *rc)
+strip_webauth_info(MWA_REQ_CTXT *rc)
 {
     char *c;
     int cookie_start, copy;
     char *d, *s;
     const char *mwa_func = "strip_webauth_cookies";
+
+    c = (char*) apr_table_get(rc->r->headers_in, "Referer");
+    if (c != NULL)
+        strip_end(c, WEBAUTHR_MAGIC);
 
     c = (char*) apr_table_get(rc->r->headers_in, "Cookie");
 
@@ -362,20 +381,6 @@ login_canceled_redirect(MWA_REQ_CTXT *rc)
 
     set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
-}
-
-/*
- * remove a string from the end of another string
- */
-static void
-strip_end(char *c, char *t)
-{
-    char *p;
-    if (c != NULL) {
-        p = ap_strstr(c, t);
-        if (p != NULL)
-            *p = '\0';
-    }
 }
 
 static int 
@@ -1584,7 +1589,7 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
 static char *
 make_return_url(MWA_REQ_CTXT *rc)
 {
-    const char *uri = rc->r->unparsed_uri;
+    char *uri = rc->r->unparsed_uri;
 
     /* use explicit return_url if there is one */
     if (rc->dconf->return_url) {
@@ -1592,9 +1597,19 @@ make_return_url(MWA_REQ_CTXT *rc)
             return rc->dconf->return_url;
         else 
             uri = rc->dconf->return_url;
+        return ap_construct_url(rc->r->pool, uri, rc->r);
     }
-    return ap_construct_url(rc->r->pool, uri, rc->r);
-}
+
+    /* if we are proxying or if the uri is parsed and scheme is non-null
+       just use unparsed_uri */
+    if ((rc->r->proxyreq != PROXYREQ_NONE) ||
+        (rc->r->parsed_uri.is_initialized && rc->r->parsed_uri.scheme != NULL)
+        ) {
+        return uri;
+    } else {
+        return ap_construct_url(rc->r->pool, uri, rc->r);
+    }
+ }
 
 static int
 redirect_request_token(MWA_REQ_CTXT *rc)
@@ -2035,11 +2050,9 @@ check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
     char *wte, *wtc, *wtlu;
-
     MWA_REQ_CTXT rc;
 
     memset(&rc, 0, sizeof(rc));
-
     rc.r = r;
 
     rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
@@ -2117,9 +2130,12 @@ check_user_id_hook(request_rec *r)
             apr_table_set(r->headers_in, "X-WebAuth-Token-Creation", wtc);
         if (wtlu != NULL) 
             apr_table_set(r->headers_in, "X-WebAuth-Token-LastUsed", wtlu);
+    }
 
+    if (r->proxyreq != PROXYREQ_NONE) {
         /* make sure any webauth_* cookies don't end up proxied */
-        strip_webauth_cookies(&rc);
+        /* also strip out stuff from Referer */
+        strip_webauth_info(&rc);
     }
 
     return OK;
@@ -2218,9 +2234,17 @@ translate_name_hook(request_rec *r)
         strip_end(r->filename, rmagic);
         strip_end(r->canonical_filename, rmagic);
         strip_end(r->path_info, rmagic);
+        /* make sure to try rmagic and rmagic+1, since if there were
+           no query args, rmagic ends up looking like query args and
+           the ? gets stripped */
         strip_end(r->args, rmagic);
+        strip_end(r->args, rmagic+1);
         strip_end(r->parsed_uri.path, rmagic);
+        /* make sure to try rmagic and rmagic+1, since if there were
+           no query args, rmagic ends up looking like query args and
+           the ? gets stripped */
         strip_end(r->parsed_uri.query, rmagic);
+        strip_end(r->parsed_uri.query, rmagic+1);
     }
 
     /* mwa_log_request(r, "after xlate"); */

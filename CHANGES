@@ -2,6 +2,18 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) when scrubbing tokens from r->args and r->parsed_uri.query, look
+    for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
+    query args, the tokens could get parsed as query args. This
+    caused tokens to show up as query args when we changed from ";WEBAUTHR="
+    to "?WEBAUTHR=".
+
+ *) if we are proxying a request, strip out all webauth_* cookies and
+    and webauth tokens from Referer header. Also, if we are proxying
+    or the URI passed to the server in the HTTP request has a scheme,
+    use it as the return URL instead of constructing one relative to the
+    server.
+
  *) Modify WebAuthKeytab and WebKdcKeytab directives so 
     you can optionally specify which principal to use with
     the specified keytab, instead of using the first principal found.

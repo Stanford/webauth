@@ -2,6 +2,12 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) when scrubbing tokens from r->args and r->parsed_uri.query, look
+    for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
+    query args, the tokens could get parsed as query args. This
+    caused tokens to show up as query args when we changed from ";WEBAUTHR="
+    to "?WEBAUTHR=".
+
  *) Modify WebAuthKeytab and WebKdcKeytab directives so 
     you can optionally specify which principal to use with
     the specified keytab, instead of using the first principal found.
