@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.85, Modified 11/08/02</b></H4>
+<H4><b>DRAFT Version  0.90, Modified 11/13/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -273,6 +273,31 @@ stored in URLs and cookie data. Shared symmetric keys (session-keys)
 are used to encrypt tokens between servers, and private keys are
 used to encrypt tokens meant for a only a single server to decrypt.
 
+<p>Also note that any tokens that appear in URLs are tokens that
+are only valid for a short-period of time (5 minutes by default).
+
+<p>Any attempt to re-use them after that will fail. If a user bookmarks a URL
+with a token in it (or hits their "back" button) then one of three things can
+happen:
+
+<OL>
+<LI> The user has a valid cookie. In this case, the token in the URL
+     is ignored (but still stripped out from the URL before passing it
+     to the app), so there is no problem.
+</LI>
+<LI> The user has no valid cookie, but the token in the URL is still 
+valid. In this case, the user will get granted access, and a cookie
+will be created. Note that this can only happen until the token
+is no longer "fresh" (as mentioned, 5 minutes by default).
+</LI>
+<LI>
+ The user has no valid cookie, and the token is too old. In this case,
+ the user will be redirected to the login page is usual (the token will
+ be stripped from the URL before the redirect).
+</LI>
+</OL
+
+
 <H4>1.3.1 <a name="kmsessionkeys">Distributing and Managing Session Keys</a></H3>
 
 <p>In order to exchange session-keys, a key distribution
@@ -427,14 +452,8 @@ present.
       re-request resource (with returned token in URL)
   7.  -----------------> WAS
 
-      set the app-token cookie, redirect to original request
+      set the app-token cookie, response from app 
   8.  <----------------- WAS
-
-      re-request resource
-  9.  -----------------> WAS
-
-      response
- 10.  <----------------- WAS
 
   ---------------------------------------------------------------
 
@@ -505,20 +524,11 @@ We will now go over each step in detail.
    id-token into an app-token, and create an app-token to be
    placed into a cookie for future requests.
 
-   <p>mod_webauth will then do a redirect to the original request 
-      (which is determined be removing the id-token from the end of the
-       URL), and also set the app-token cookie.
+   <p>mod_webauth will then strip off the token from the URL, and let
+      the original app handle the request. Note that the tokens will
+      not show up in the access_log.
    <p>
  </LI>
-
-<LI> The UA will save the app-token cookie, and then re-request the 
-     original request.
-   <p>
-</LI>
-<LI>
- The application will now serve the original request.
-   <p>
-</LI>
 </OL>
 
 <H3>2.2 <a name="sc2">Application Access, app-token</a></H3>
@@ -589,14 +599,8 @@ having to prompt the user for their password again.
       re-request resource (with returned token in URL)
   5.  -----------------> WAS
 
-      set the app-token cookie, redirect to original request
+      set the app-token cookie, response from app
   6.  <----------------- WAS
-
-      re-request resource
-  7.  -----------------> WAS
-
-      response
-  8.  <----------------- WAS
 
 </pre>
 
@@ -649,9 +653,8 @@ We will now go over each step in detail.
    id-token into an app-token, and create an app-token to be
    placed into a cookie for future requests.
 
-   <p>mod_webauth will then do a redirect to the original request 
-      (which is determined be removing the id-token from the end of the
-       URL), and also set the app-token cookie.
+   <p>mod_webauth will then strip off the token from the URL, and let
+      the original app handle the request.
    <p>
  </LI>
 
@@ -706,15 +709,8 @@ for itself.
                                  response
   7.                     WAS <------------- WebKDC
 
-      set the cookies, redirect to original request
+      set the cookies, response from app
   8.  <----------------- WAS
-
-      re-request resource
-  9.  -----------------> WAS
-
-      response
-  10. <----------------- WAS
-
 
 </pre>
 
@@ -772,8 +768,9 @@ We will now go over each step in detail.
    id-token into an app-token, and also rewrite the credential token(s)
    into app-tokens as well. All the app-tokens will be placed
    into cookies for future requests. The proxy-token can be discarded.
-   <p>mod_webauth will now do a redirect to the original request, 
-   setting all the cookies.
+
+   <p>mod_webauth will then strip off the token from the URL, and let
+      the original app handle the request.
    <p>
 <LI> The UA will save the cookies, and then re-request the 
      original request.
@@ -850,8 +847,6 @@ since those cookies are scoped to each application server.
 <p>
 
 <H2><B>3. <a name="httpconv">WAS and WebKDC Conventions</a></B></H2>
-<b>NOTE:</b/>this section will expanded to include more
-detail about redirect headers, doing a GET/POST on return, etc.
 
 <H3>3.1 Getting redirected to WebKDC</H3>
 
@@ -1228,9 +1223,6 @@ service-token used when the proxy-token was granted.
  <td>pt</td><td>string</td><td>proxy type (krb4/krb5)</td>
 </tr>
 <tr>
- <td>pu</td><td>string</td><td>post URL</td>
-</tr>
-<tr>
  <td>rr</td><td>string</td>
 <td>reason for request:
        na = no app-token,
@@ -1333,7 +1325,6 @@ both recent, and for the specified command.
   ct={creation-time}
   [as={binary-app-token-used-for-state}]
   ru={return-get-redirect-url}
-  [pu={return-post-url}]
   rr=na|ea|st|fa
   rtt=id|proxy
   # for rt=id
@@ -1679,6 +1670,18 @@ WebAuthEndSession redirect|clearLogin|on|off
    <td><ul>
          <li>Forgot to final webauth redirect in the usage scenarios that
              sets the cookies and re-requests original URL.
+       </ul>
+   </td>
+</tr>
+<tr>
+  <td>11/13/2002</td>
+  <td>0.90</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>undo 0.85, since after initial Apache prototyping I think
+             we can get away without doing the extra redirect.
+	 <li>add some text to "Security Model" section describing what
+             happens if a user bookmarks or replays a url with a token in it.
        </ul>
    </td>
 </tr>
