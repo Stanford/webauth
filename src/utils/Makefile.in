@@ -37,7 +37,7 @@ MAN		= wa_keyring.1
 all: $(PROGS)
 
 install: $(PROGS)
-	$(INSTALL) -d $D$(bindir)
+	$(INSTALL) -d $D$(bindir) $D$(man1dir)
 	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $D$(bindir)/wa_keyring
 	$(INSTALL_DATA) $(srcdir)/wa_keyring.1 $D$(man1dir)/wa_keyring.1
 
