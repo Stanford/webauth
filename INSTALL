@@ -124,6 +124,7 @@ site, see doc/install-webkdc.
      If you are testing a beta release, please also add:
 
          WebAuthDebug on
+         LogLevel debug  # change your existing setting to debug
 
      so that your server will generate more complete logs if anything goes
      wrong.  This may also be useful if this is the first time you've
