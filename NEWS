@@ -1,15 +1,25 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.2.1 (in progress)
+WebAuth 3.2.1 (2003-09-10)
 
- *) When AuthType is StanfordAuth, don't default to WebAuthDontCache. This
-    appears to break IE 6.0 downloads . 
+ *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.
+    This appears to break IE 6.0 downloads.
 
  *) Add WebAuthPostReturnURL directive to allow an app to deal with 
     handling a POST that didn't have authentication.
 
- *) Make sure ident_set_authflag call is made after ident_set_authtype
-    call.
+ *) When operating in legacy mode, only check LDAP for a group if it
+    contains a colon.  Otherwise, defer to Apache's normal group handling.
+    This fixes handling of user-defined groups in .htaccess files when
+    backward compatibility is turned on.
+
+ *) When a call to the LDAP server fails, try binding again and retrying
+    the call before actually failing.  The connection may have timed out
+    or something else may have temporarily gone wrong.  This will help
+    with error messages about the LDAP server not being available.
+
+ *) Fix the setting of the interactive flag on S/Ident queries in the
+    WebKDC.
 
  *) Corrected handling of successful S/Ident calls returning errors in
     mod_webkdc when debugging is turned off.
