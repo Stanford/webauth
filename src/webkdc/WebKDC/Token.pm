@@ -82,7 +82,9 @@ sub to_string {
 		 $key eq WA_TK_SUBJECT_AUTH_DATA ||
 		 $key eq WA_TK_WEBKDC_TOKEN) {
 	    $val = hex_encode($val);
-	} 
+	}  elsif ($key eq WA_TK_PASSWORD) {
+	    $val = "XXXXXXX";
+	}
 	$out .= sprintf($fmt, get_ta_desc($key), $val);
     }
     $out .= $hf;

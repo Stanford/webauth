@@ -134,7 +134,7 @@ sub request_token_request($$) {
 	$login_token->creation_time(time());
 
 	# FIXME: DEBUGGING!
-	print STDERR $login_token;
+	#print STDERR $login_token;
 
 	my $login_token_str = 
 	    base64_encode($login_token->to_token(get_keyring()));
