@@ -53,11 +53,11 @@
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
 
 /* defines for config directives */
-#define CD_WebKDCURL "WebAuthWebKDCURL"
-#define CM_WebKDCURL "URL for the WebKDC XML service"
+#define CD_WebKdcURL "WebAuthWebKdcURL"
+#define CM_WebKdcURL "URL for the WebKdc XML service"
 
-#define CD_WebKDCPrincipal "WebAuthWebKDCPrincipal"
-#define CM_WebKDCPrincipal "K5 WebKDC principal name"
+#define CD_WebKdcPrincipal "WebAuthWebKdcPrincipal"
+#define CM_WebKdcPrincipal "K5 WebKDC principal name"
 
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"
@@ -160,8 +160,8 @@ enum {
     E_SubjectAuthType,
     E_TokenMaxTTL,
     E_VarPrefix,
-    E_WebKDCPrincipal,
-    E_WebKDCURL,
+    E_WebKdcPrincipal,
+    E_WebKdcURL,
 };
 
 module webauth_module;

@@ -303,10 +303,9 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     CHECK_DIR(login_url, CD_LoginURL);
     CHECK_DIR(keyring_path, CD_Keyring);
-    CHECK_DIR(webkdc_url, CD_WebKDCURL);
+    CHECK_DIR(webkdc_url, CD_WebKdcURL);
     CHECK_DIR(keytab_path, CD_Keytab);
-    CHECK_DIR(webkdc_principal, CD_WebKDCPrincipal);
-    CHECK_DIR(webkdc_principal, CD_WebKDCPrincipal);
+    CHECK_DIR(webkdc_principal, CD_WebKdcPrincipal);
     CHECK_DIR(st_cache_path, CD_ServiceTokenCache);
 
 #undef CHECK_DIR
@@ -1479,10 +1478,10 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     
     switch (e) {
         /* server configs */
-        case E_WebKDCURL:
+        case E_WebKdcURL:
             sconf->webkdc_url = apr_pstrdup(cmd->pool, arg);
             break;
-        case E_WebKDCPrincipal:
+        case E_WebKdcPrincipal:
             sconf->webkdc_principal = apr_pstrdup(cmd->pool, arg);
             break;
         case E_LoginURL:
@@ -1615,8 +1614,8 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 
 static const command_rec cmds[] = {
     /* server/vhost */
-    SSTR(CD_WebKDCURL, E_WebKDCURL, CM_WebKDCURL),
-    SSTR(CD_WebKDCPrincipal, E_WebKDCPrincipal, CM_WebKDCPrincipal),
+    SSTR(CD_WebKdcURL, E_WebKdcURL, CM_WebKdcURL),
+    SSTR(CD_WebKdcPrincipal, E_WebKdcPrincipal, CM_WebKdcPrincipal),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),

@@ -45,8 +45,8 @@
   WebAuthKeytab conf/webauth_keytab<br/>
   WebAuthServiceTokenCache conf/service_token_cache<br/>
   WebAuthLoginURL https://webkdc/login/<br/>
-  WebAuthWebKDCURL https://webkdc/webkdc-service/<br/>
-  WebAuthWebKDCPrincipal   service/webkdc<br/>
+  WebAuthWebKdcURL https://webkdc/webkdc-service/<br/>
+  WebAuthWebKdcPrincipal   service/webkdc<br/>
 <br/>
   &lt;Location /private/&gt;<br />
   AuthType WebAuth<br />
@@ -228,10 +228,10 @@ WebAuthExtraRedirect on<br />
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthWebKDCURL</name>
+<name>WebAuthWebKdcURL</name>
 <description>The URL used to contact the WebKDC when posting XML.
 </description>
-<syntax>WebAuthWebKDCURL <em>url</em></syntax>
+<syntax>WebAuthWebKdcURL <em>url</em></syntax>
 <default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
@@ -246,16 +246,16 @@ should use always SSL. </p>
 </note>
 
 <example><title>Example</title>
-WebAuthWebKDCURL https://webkdc.stanford.edu/webkdc-service/
+WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 </example>
 </usage>
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthWebKDCPrincipal</name>
+<name>WebAuthWebKdcPrincipal</name>
 <description>The Kerberos V5 principal name of the WebKDC
 </description>
-<syntax>WebAuthWebKDCPrincipal <em>principal</em></syntax>
+<syntax>WebAuthWebKdcPrincipal <em>principal</em></syntax>
 <default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
@@ -271,7 +271,7 @@ the WebKDC. It used to request a service-token from the WebKDC. </p>
 
 <example><title>Example</title>
 # if realm isn't specified, the default realm will be used<br/>
-WebAuthWebKDCPrincipal service/webkdc@stanford.edu
+WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 </example>
 </usage>
 </directivesynopsis>
