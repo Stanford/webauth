@@ -178,9 +178,10 @@ if ($submit eq 'Cancel') {
 }
 
 # need to convert spaces back to +'s if they hosed by url-encode/decode
-
-$request_token_str =~ tr/ /+/;
-$service_token_str =~ tr/ /+/;
+if (defined($request_token_str)) {
+    $request_token_str =~ tr/ /+/;
+    $service_token_str =~ tr/ /+/;
+}
 
 my $username = $q->param('username');
 my $password = $q->param('password');
@@ -274,7 +275,9 @@ if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
     print_headers($q, $resp->proxy_cookies);
-    print "ok!\n";
+    print "ok!<br>";
+    my $sb = $resp->subject();
+    print "Logged in as $sb<br>";
     my $return_url = $resp->return_url();
     $return_url .= ";WEBAUTHR=".$resp->response_token().";";
     $return_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();

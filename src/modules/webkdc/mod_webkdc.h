@@ -128,7 +128,7 @@ typedef struct {
     char *subject;
 } MWK_SERVICE_TOKEN;
 
-/* interesting stuff from a parsed webkdc-service-token */
+/* interesting stuff from a parsed webkdc-proxy-token */
 typedef struct {
     char *proxy_type;
     char *proxy_subject;

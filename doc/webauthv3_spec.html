@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.01, Modified 12/12/02</b></H4>
+<H4><b>Version  1.02, Modified 1/14/03</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -1185,6 +1185,9 @@ The response message is:
     <i>&lt;!-- subject inside of service-token used to make request --></i>
     &lt;requesterSubject>...&lt;/requesterSubject>
 
+    <i>&lt;!-- subject from subjectCredential --></i>
+    &lt;subject>...&lt;/subject>
+
     <i>&lt;!-- requestedToken will either be an error, id, or proxy token. 
          not set if &lt;loginErrorCode> is set. --></i>
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
@@ -1977,6 +1980,17 @@ FIXME: Insert link to mod_webauth documentation
          <li>keys in the keyring no longer expire. The key with the most
              current (but not post-dated) valid_after will always be
              used to encrypt new keys.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>1/14/2003</td>
+  <td>1.02</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>return &lt;subject> in &lt;requestToken> response so web front-end
+          can display the authenticated username.
        </ul>
    </td>
 </tr>

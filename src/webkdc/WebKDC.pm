@@ -38,7 +38,7 @@ our @EXPORT_OK;
 # when one exists.
 #
 our $C_WEBKDC_KEYRING_PATH = "/usr/local/apache2/conf/webkdc/keyring";
-our $C_WEBKDC_URL = "https://lichen.stanford.edu:8443/webkdc-service/";
+our $C_WEBKDC_URL = "https://slapshot.stanford.edu:8443/webkdc-service/";
 #our $C_WEBKDC_URL = "http://lichen.stanford.edu:8080/webkdc-service/";
 
 our $DEBUG = 1;
@@ -197,6 +197,7 @@ sub request_token_request($$) {
     } elsif ($root->name() eq 'requestTokenResponse') {
 	my $return_url = get_child_value($root, 'returnUrl', 0);
 	my $requester_sub = get_child_value($root, 'requesterSubject', 0);
+	my $subject = get_child_value($root, 'subject', 1);
 	my $returned_token = get_child_value($root, 'requestedToken', 1);
 	my $app_state = get_child_value($root, 'appState', 1);
 	my $login_canceled_token = get_child_value($root, 'loginCanceledToken',
@@ -217,6 +218,7 @@ sub request_token_request($$) {
 	$wresp->app_state($app_state) if defined($app_state);
 	$wresp->login_canceled_token($login_canceled_token) 
 	    if defined($login_canceled_token);
+	$wresp->subject($subject) if defined($subject);
 
 	if ($error_code) {
 	    my $wk_err = $pec_mapping{$error_code} || 

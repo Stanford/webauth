@@ -63,6 +63,12 @@ sub requester_subject {
     return $self->{'requester_subject'};
 }
 
+sub subject {
+    my $self = shift;
+    $self->{'subject'} = shift if @_;
+    return $self->{'subject'};
+}
+
 sub app_state {
     my $self = shift;
     $self->{'app_state'} = shift if @_;

@@ -1631,7 +1631,8 @@ mwk_do_login(MWK_REQ_CTXT *rc,
              MWK_LOGIN_TOKEN *lt,
              MWK_SUBJECT_CREDENTIAL *sub_cred,
              MWK_RETURNED_PROXY_TOKEN rtokens[],
-             int *num_rtokens) 
+             int *num_rtokens,
+             char **subject_out) 
 {
     static const char*mwk_func = "mwk_do_login";
     WEBAUTH_KRB5_CTXT *ctxt;
@@ -1642,6 +1643,9 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     void *tgt;
     MWK_PROXY_TOKEN *pt;
     WEBAUTH_ATTR_LIST *alist;
+
+
+    *subject_out = NULL;
 
     ms = MWK_ERROR;
 
@@ -1691,6 +1695,8 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         free(subject);
         subject = new_subject;
     }
+
+    *subject_out = subject;
 
     /* export TGT for webkdc-proxy-token */
     status = webauth_krb5_export_tgt(ctxt, (unsigned char**)&tgt, 
@@ -1779,13 +1785,15 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     MWK_REQUEST_TOKEN req_token;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
-    int num_tokens, i, did_login;
+    int num_proxy_tokens, i, did_login;
     int login_ec;
     const char *login_em = NULL;
+    char *subject_out = NULL;
 
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
 
+    num_proxy_tokens = 0;
     login_ec = 0;
     request_token = NULL;
     memset(&req_cred, 0, sizeof(req_cred));
@@ -1854,8 +1862,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
      *
      */
     if (strcmp(parsed_sub_cred.type, "login") == 0) {
-        if (!mwk_do_login(rc, &parsed_sub_cred.u.lt, 
-                          &login_sub_cred, rptokens, &num_tokens)) {
+        if (!mwk_do_login(rc, &parsed_sub_cred.u.lt, &login_sub_cred, 
+                          rptokens, &num_proxy_tokens, &subject_out)) {
             if (rc->error_code == WA_PEC_LOGIN_FAILED) {
                 login_ec = rc->error_code;
                 login_em = rc->error_message;
@@ -1871,6 +1879,15 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     } else {
         sub_cred = &parsed_sub_cred;
         did_login = 0;
+        /* grab first subject from passed in proxy tokens as subject_out */
+        if (strcmp(parsed_sub_cred.type, "proxy") == 0) {
+            for (i=0; i < parsed_sub_cred.u.proxy.num_proxy_tokens; i++) {
+                if (parsed_sub_cred.u.proxy.pt[i].subject) {
+                    subject_out = parsed_sub_cred.u.proxy.pt[i].subject;
+                    break;
+                }
+            }
+        }
     }
 
     /* lets see if they requested forced-authentication, if so 
@@ -1923,9 +1940,9 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                    apr_xml_quote_string(rc->r->pool, login_em, 0));
     }
 
-    if (num_tokens) {
+    if (num_proxy_tokens) {
         ap_rvputs(rc->r, "<proxyTokens>", NULL);
-        for (i = 0; i < num_tokens; i++) {
+        for (i = 0; i < num_proxy_tokens; i++) {
             ap_rvputs(rc->r, "<proxyToken type='", rptokens[i].type,"'>", 
                       /* don't have to quote since base64'd data */
                       rptokens[i].token_data,
@@ -1944,6 +1961,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
               "<requesterSubject>",
               apr_xml_quote_string(rc->r->pool, req_cred.subject, 1),
               "</requesterSubject>", NULL);
+
+    /* subject */
+    if (subject_out != NULL) {
+        ap_rvputs(rc->r,
+                  "<subject>",
+                  apr_xml_quote_string(rc->r->pool, subject_out, 1),
+                  "</subject>", NULL);
+    }
 
     /* requestedToken, don't need to quote */
     if (rtoken.token_data)
