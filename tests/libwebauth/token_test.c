@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     TEST_OK(s != WA_ERR_NONE);
 
     webauth_attr_list_free(ain);
-    //webauth_attr_list_free(aout);
+    /*webauth_attr_list_free(aout);*/
     free(token);
 
     webauth_keyring_free(ring);
