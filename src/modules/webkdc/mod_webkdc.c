@@ -1746,7 +1746,8 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     int sub_cred_parsed = 0;
     int num_tokens, i;
 
-    MWK_RETURNED_PROXY_TOKEN rtokens[MAX_PROXY_TOKENS_RETURNED];
+    MWK_RETURNED_TOKEN rtoken;
+    MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
 
     request_token = NULL;
     memset(&req_cred, 0, sizeof(req_cred));
@@ -1816,7 +1817,7 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
      */
     if (strcmp(parsed_sub_cred.type, "login") == 0) {
         if (!mwk_do_login_er(rc, &parsed_sub_cred.u.lt, 
-                      &login_sub_cred, rtokens, &num_tokens))
+                      &login_sub_cred, rptokens, &num_tokens))
             return 0;
         sub_cred = &login_sub_cred;
     } else {
@@ -1826,9 +1827,14 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     /* now examine req_token to see what they asked for */
     
     if (strcmp(req_token.requested_token_type, "id") == 0) {
-
+        if (!create_id_token_from_req_er(rc, req_token.u.subject_auth_type,
+                                         &req_cred, sub_cred, &rtoken))
+            return OK;
+    } else if (strcmp(req_token.requested_token_type, "proxy") == 0) {
+        if (!create_proxy_token_from_req_er(rc, req_token.u.proxy_type,
+                                         &req_cred, sub_cred, &rtoken))
+            return OK;
     } else {
-        /* FIXME: support proxy */
         char *msg = apr_psprintf(rc->r->pool, 
                                  "unsupported requested-token-type: %s",
                                  req_token.requested_token_type);
@@ -1837,35 +1843,50 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         return OK;
     }
 
-
-#if 0
     /* if we got here, we made it! */
-    ap_rvputs(rc->r, "<requestTokenResponse><tokens>", NULL);
+    ap_rvputs(rc->r, "<requestTokenResponse>", NULL);
 
-    for (i = 0; i < num_tokens; i++) {
-        if (rtokens[i].id != NULL) {
-            ap_rprintf(rc->r, "<token id=\"%s\">",
-                        apr_xml_quote_string(rc->r->pool, rtokens[i].id, 1));
-        } else {
-            ap_rvputs(rc->r, "<token>", NULL);
+    if (num_tokens) {
+        ap_rvputs(rc->r, "<proxyTokens>", NULL);
+        for (i = 0; i < num_tokens; i++) {
+            ap_rvputs(rc->r, "<proxyToken type=\"", rptokens[i].type,">", 
+                      /* don't have to quote since base64'd data */
+                      rptokens[i].token_data,
+                      "</proxyToken>",
+                      NULL);
         }
-        /* don't have to quote these, since they are base64'd data
-           or numeric strings */
-        ap_rvputs(rc->r,"<tokenData>", rtokens[i].token_data, 
-                  "</tokenData>", NULL);
-        if (rtokens[i].session_key) {
-            ap_rvputs(rc->r,"<sessionKey>", rtokens[i].session_key,
-                  "</sessionKey>", NULL);
-        }
-        if (rtokens[i].expires) {
-            ap_rvputs(rc->r,"<expires>", rtokens[i].expires,
-                      "</expires>", NULL);
-        }
-        ap_rvputs(rc->r, "</token>", NULL);
+        ap_rvputs(rc->r, "</proxyTokens>", NULL);        
     }
-    ap_rvputs(rc->r, "</tokens></getTokensResponse>", NULL);
+    /* put out return-url */
+    ap_rvputs(rc->r,"<returnUrl>",
+              apr_xml_quote_string(rc->r->pool, req_token.return_url, 1),
+              "</returnUrl>", NULL);
+
+    /* requesterSubject */
+    ap_rvputs(rc->r,"<requesterSubject>",
+              apr_xml_quote_string(rc->r->pool, req_cred.subject, 1),
+              "</requesterSubject>", NULL);
+
+    /* requestedToken, don't need to quote */
+    ap_rvputs(rc->r,
+              "<requestedToken>", rtoken.token_data, "</requestedToken>", 
+              NULL);
+    
+    /* appState, need to base64-encode */
+    if (req_token.app_state_len) {
+        char *out_state = (char*) 
+            apr_palloc(rc->r->pool, 
+                       apr_base64_encode_len(req_token.app_state_len));
+        apr_base64_encode(out_state, req_token.app_state,
+                          req_token.app_state_len);
+        /*  don't need to quote */
+        ap_rvputs(rc->r,
+                  "<appState>", out_state , "</appState>", 
+                  NULL);
+    }
+    ap_rvputs(rc->r, "</getTokensResponse>", NULL);
     ap_rflush(rc->r);
-#endif
+
     return OK;
 }
 
