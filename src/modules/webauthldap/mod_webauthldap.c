@@ -374,6 +374,8 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 
     return OK;
 }
+
+
 /**
  * This inserts the userid in every marked spot in the filter string. So
  * e.g. if the marker is the string "USER", a filter like 
@@ -414,11 +416,12 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
             beg = end + match_length;
         }
     } while(*(++end) != '\0');
-
-    // if no substitutions needed, well, whatever
-    if (filter == NULL) 
-        filter = filter_template;
-
+    
+    // Append the last chunk. If no substitutions were done, this is the 
+    // entire template string.
+    if (end > beg)
+        filter = apr_pstrcat(p,filter, apr_pstrndup(p, beg, end - beg), NULL);
+    
     return filter;
 }
 
@@ -659,6 +662,17 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    if (lc->sconf->ssl) {
+        rc = ldap_start_tls_s(lc->ld, NULL, NULL);
+        
+        if (rc != LDAP_SUCCESS) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                         "webauthldap: Could not start tls: %s",
+                         ldap_err2string(rc), rc);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+
     // Set up SASL defaults.
     defaults = (MWAL_SASL_DEFAULTS*) apr_pcalloc(lc->r->pool, 
                                                  sizeof(MWAL_SASL_DEFAULTS));
@@ -737,7 +751,8 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
  * @return nothing
  */
 static void
-webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * attr_table)
+webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, 
+                        apr_table_t * attr_table)
 {
     char *a, *dn;
     int i, rc;
