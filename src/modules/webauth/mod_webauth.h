@@ -14,6 +14,9 @@
 
 #include "webauth.h"
 
+/* probably need a better place for this constant */
+#define WEBAUTH_VERSION "WebAuth/3"
+
 /* where to look in URL for returned tokens */
 #define WEBAUTHR_MAGIC ";WEBAUTHR="
 #define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
@@ -83,6 +86,7 @@
 #define N_WEBAUTHR "MWA_WEBAUTHR"
 #define N_WEBAUTHS "MWA_WEBAUTHS"
 #define N_SUBJECT  "MWA_SUBJECT"
+#define N_APP_COOKIE  "MWA_APP_COOKIE"
 
 /* enums for config directives */
 
