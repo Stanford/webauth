@@ -107,12 +107,16 @@ Making a Release
       subdirectory of the WebAuth web site.
 
   10. Based on the NEWS file, write up a release announcement.  Convert
-      that announcement to HTML and put it in the news subdirectory of the
-      WebAuth web site.  The naming convention for release announcements
-      is <version>-announce.html where <version> is the version of the
-      release without any periods.
+      that announcement to thread and put it in the news subdirectory of
+      the WebAuth web site.  The naming convention for release announcements
+      is <version>-announce.th where <version> is the version of the
+      release without any periods.  See the existing announcements for the
+      structure and the correct sidebar links.
 
-  11. Update the MD5 checksum and the links in download.html to correspond
+      Add a short news entry to the main page and also to the index.th file
+      in the news directory.
+
+  11. Update the MD5 checksum and the links in download.th to correspond
       to the current release.
 
   12. Post the release announcement to the appropriate newsgroups and
