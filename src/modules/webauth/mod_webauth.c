@@ -53,7 +53,6 @@ static int
 do_redirect(MWA_REQ_CTXT *rc)
 {
     dont_cache(rc);
-    rc->r->header_only = 1;
     return HTTP_MOVED_TEMPORARILY;
 }
 
