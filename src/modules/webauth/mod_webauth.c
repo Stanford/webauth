@@ -443,7 +443,6 @@ handler_hook(request_rec *r)
     return OK;
 }
 
-/* FIXME: this should probably return status */
 static void
 make_app_token(const char *subject, 
                time_t creation_time,
@@ -989,20 +988,6 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 
     } else if (strcmp(token_type, WA_TT_ERROR) == 0) {
 
-        /* FIXME: 
-         *   special handling for some errors code:
-         *
-         *    if ec = bad/expired-service-token, we need to
-         *    toss our in memory (and potentially file cached) service
-         *    token and get a new one
-         *
-         *    stale request?
-         *
-         *    other error codes? probably need to detect a rejected
-         *    request for a proxy-token
-         *
-         */
-
         code = handle_error_token(alist, rc);
 
     } else {
@@ -1113,7 +1098,6 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     SET_TOKEN_TYPE(WA_TT_REQUEST);
     SET_CREATION_TIME(curr);
-    /* FIXME: support login-canceled too */
     if (rc->dconf->force_login || rc->dconf->login_canceled_url != NULL) {
         int fl = rc->dconf->force_login;
         int lc = rc->dconf->login_canceled_url != NULL;
@@ -1265,7 +1249,9 @@ check_user_id_hook(request_rec *r)
         if (r->method_number == M_GET) {
             return redirect_request_token(&rc);
         } else {
-            /* FIXME: any better option? */
+            /* FIXME: any better option? Maybe need a special return-url
+               for method's other then GET?
+             */
             return failure_redirect(&rc);
         }
     }
