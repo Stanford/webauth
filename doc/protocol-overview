@@ -1,0 +1,172 @@
+The authentication protocol involves interactions between four basic
+components:  the user's browser, a webauth-enabled web server (webauth), a
+web login server (weblogin), and a credential distribution center
+(webkdc).  The purpose of the protocol is primarily to establish between
+the user's browser and a webauth-enabled web server an authentication
+credential attesting to the user's identity, and secondarily to enable
+certain registered webauth-enabled web servers to obtain credentials to
+act on behalf of the user with other authenticated services.
+
+
+A user is considered authenticated to a webauth service if the request to
+that service includes a cookie containing a valid authentication
+credential for that service.  Each service can use whatever it wishes as
+an authentication credential, but the default credential will consist of:
+
+ * The user identity (in the form of a Kerberos principal name).
+ * An expiration timestamp.
+ * (Optionally) A session ID for the internal use of the web application.
+
+encrypted in a private key known only to that webauth service.  The
+encryption method used will be AES.
+
+The possession of this authentication cookie is necessary and sufficient
+to establish the user's identity to a webauth service, and therefore this
+cookie is sensitive data that must be kept safe.  Accordingly, this cookie
+is marked secure (so that it will only be sent over SSL connections) and
+its domain is only the single webauth-enabled system for which the
+authenticator is valid.  As a side effect of this, all webauth-protected
+content that require authentication to view must be served out solely via
+SSL, so as not to ever send the cookie in cleartext across the network.
+Setting the secure property on the cookie should enforce this.
+
+
+The purpose of the weblogin server is to validate the identity of the user
+using a standard username/password pair provided by the user and then to
+communicate that identity information to the webauth server so that it can
+set and maintain its private authentication cookie.  The weblogin server
+is the only web server which ever sees usernames and passwords, in order
+to limit the exposure of passwords on the network.  It only accepts login
+connections via SSL.
+
+The first time a user, without a valid authentication cookie, attempts to
+access a webauth-protected service, the webauth server returns a redirect
+to weblogin.  Contained in the URL of that redirect is information about
+the user's session and the authentication that should be used, namely:
+
+ * The type of authentication that should be used.
+
+ * The identity of the webauth server, if required by the authentication
+   protocol (for some protocols, needed so that the identity information
+   can be encrypted in the key of the webauth server and thereby validated
+   by the webauth server).
+
+ * The URL that the user should be returned to after authentication is
+   complete.
+
+ * Optionally, the URL on the webauth server to which the authentication
+   data should be POSTed (this is separate from the URL that the user
+   should be returned to; see below).
+
+ * Optionally, additional session information that should be passed back
+   with the authentication data.
+
+This redirect is called the authentication referral.
+
+The only initially supported protocol will be Kerberos v5, which requires
+the webauth server identity (in the form of a Kerberos principal for which
+the webauth server has a keytab).
+
+When the user's browser loads that URL on the weblogin server, the
+weblogin server presents a username and password dialog box in a form,
+retaining the above information as hidden fields in the form.  Once the
+username and password have been entered, the weblogin server passes them
+to a separate system, the webkdc, along with a request for a login
+authenticator for the identity of the webauth server.  The connection to
+the webkdc is mutually authenticated, and weblogin presents is own
+credentials (in other words, weblogin authenticates to the webkdc as
+itself, not as the user, and then passes the username and password as data
+in the protocol).
+
+Note that a login authenticator, as it's termed in this protocol, is
+separate and distinct from the authenticator that will be maintained
+between the browser and the webauth-enabled service.  The login
+authenticator is used exclusively between weblogin and the webauth server
+to communicate the authenticated identity of the user from weblogin to the
+webauth server.  In the case of the Kerberos protocol, this login
+authenticator is the results of krb5_mk_req for the webauth server
+identity, using a TGT generated from the user's username/password pair.
+
+The login authenticator is passed back to weblogin from the webkdc, and is
+included as a hidden field in a form included in the login confirmation
+page sent back to the user (again, always over SSL).  Also included in
+that form, all as hidden fields, is the type of authenticator, the
+authentication data (as mentioned above), the server identity to which the
+user is authenticating, and the return URL and session data from the
+initial authentication referral.  The user is presented with a button to
+post this hidden form data back to the original requesting webauth server
+using the HTTP POST protocol.
+
+
+When the user completes the authentication by POSTing the data back to a
+special URL on the webauth server (either the one specified in the initial
+referral or a default one if none was specified), the server examines the
+authentication information and verifies the login authenticator (in the
+case of the Kerberos protocol, by using krb5_rd_req).  It then takes the
+user identity, an expiration time if any is provided in the login
+authenticator, and any session data it wants to include, and encrypts
+those in its own private key.  This forms the authenticator for the
+service.
+
+The result of the POST from the perspective of the browser is a simple
+page containing a link to the URL that they originally attempted to visit.
+(A full page rather than a redirect is returned here as required by the
+HTTP protocol; the result of a POST is not permitted to be a redirect.
+However, the page may have a very short refresh specified, redirecting the
+browser to the authenticated resource.)  Accompanying that page is the
+authenticator cookie for that webauth-protected service as described
+above.
+
+At this point, the user is authenticated to this webauth-protected service
+and all further interactions with it will carry the authenticator in a
+cookie.  With each access to authenticated portions of the service, that
+authenticator is verified by the webauth server.  No further login action
+should be needed until either the authenticator expires or the user closes
+the browser.
+
+
+Since entering one's username and password over again for each separate
+webauth-protected service one accesses is rather a pain, and also tends to
+encourage sloppy use of passwords as well as exposing the password over
+the network an undesirable number of times (even protected by SSL), the
+protocol contains a provision for web single sign-on, via a slight
+elaboration on what happens at the weblogin stage.
+
+For single sign-on, the weblogin server, when contacting the webkdc for a
+login authenticator, doesn't only request a login authenticator.  It also
+requests proxy authentication credentials for itself.  A proxy
+authentication credential is an opaque cookie encrypted in a private key
+held solely on the webkdc which can be presented to the webkdc to obtain
+login authenticators for other services on behalf of the user (and
+possibly also other types of credentials, depending on what the service is
+authorized to obtain).  The contents are opaque to weblogin and vary based
+on the type of authentication used, but for example in the case of
+Kerberos v5 authentication it would contain an encrypted Kerberos v5 TGT.
+
+The first visit to weblogin works exactly as described above from the user
+perspective, but in the confirmation page that contains the various form
+data to be posted back to the webauth server, weblogin also passes back
+this proxy authentication credential to the user's browser as a cookie,
+set to be secure (only sent over SSL connections) and only to be sent to
+the weblogin server.  The rest of the authentication event proceeds as
+before.
+
+The second time the user accesses a separate webauth-protected service,
+however, and is redirected to weblogin, the browser sends weblogin this
+proxy authentication credential along with the request.  Seeing that
+credential, weblogin does not present a username/password form.  Instead,
+it immediately uses the proxy authentication credentials to obtain the
+login authenticator and skips the username/password page, going directly
+to the confirmation page with its hidden form data.  The rest of the
+authentication event proceeds as before.
+
+(If, when contacting the webkdc, weblogin is informed that the proxy
+authentication credentials have expired, it instead clears that cookie and
+sends the user to the username/password form again.)
+
+
+TODO: Document proxy authentication credentials for services other than
+weblogin.
+
+TODO: Describe the additional special cases for proxy servers (that
+possibly should be a separate section entirely).
