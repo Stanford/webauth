@@ -40,13 +40,13 @@
 #define PACKAGE_BUGREPORT "webauth-team@lists.stanford.edu"
 
 /* Define to information about when and by whom the package was built. */
-#define PACKAGE_BUILD_INFO "Built by schemers@slapshot-xp.stanford.edu on 2003-06-02 21:22:55 UTC"
+#define PACKAGE_BUILD_INFO "Built by schemers@slapshot-xp.stanford.edu on 2003-07-28 21:22:55 UTC"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "Webauth"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Webauth 3.2.0pre"
+#define PACKAGE_STRING "Webauth 3.2.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "webauth"
