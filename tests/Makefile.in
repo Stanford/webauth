@@ -39,7 +39,7 @@ depend:
 	done
 
 install:
-	cp mod_webauth/conf/tests.conf $(APACHE_ROOT)/conf/webauth-tests.conf
+	cp mod_webauth/conf/webauth-tests.conf $(APACHE_ROOT)/conf/
 	cp -r mod_webauth/htdocs/tests $(APACHE_ROOT)/htdocs/
 	@echo 'WebAuth tests have been installed in $(APACHE_ROOT)'
 	@echo 'Read $(APACHE_ROOT)/conf/webauth-tests.conf for more'
