@@ -50,6 +50,16 @@ typedef enum {
     /* update webauth_error_message when adding */
 }  WEBAUTH_ERR;    
 
+
+/** protocol error codes (PEC) for error-token and XML messages.
+ */
+typedef enum {
+    WA_PEC_SERVICE_TOKEN_EXPIRED = 1,
+    WA_PEC_PROXY_TOKEN_EXPIRED = 1,
+    WA_PEC_UNSUPP_REQUESTED_TOKEN_TYPE,
+    WA_PEC_UNAUTHORIZED,
+}  WEBAUTH_ET_ERR;    
+
 /******************** constants for token attributes **********/
 
 #define WA_TK_CRED_DATA "crd"
