@@ -234,10 +234,9 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     status = WA_ERR_NONE;
 
     /* FIXME: locking */
-    /* FIXME: when we have logging support, should log errors */
     fd = open(path, O_WRONLY|O_TRUNC|O_CREAT, 0600);
     if (fd == -1) {
-        return WA_ERR_KEYRING_WRITE;
+        return WA_ERR_KEYRING_OPENWRITE;
     }
 
     /* version first */
@@ -330,11 +329,9 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     uint32_t version, num_entries;
 
     /* FIXME: locking */
-    /* FIXME: when we have logging support, should log errors */
-
     fd = open(path, O_RDONLY);
     if (fd < 0) {
-        return WA_ERR_KEYRING_READ;
+        return WA_ERR_KEYRING_OPENREAD;
     }
 
     if (fstat(fd, &sbuf) < 0) {

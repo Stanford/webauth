@@ -50,6 +50,12 @@ int main(int argc, char *argv[])
 
     TEST_OK2(WA_ERR_NONE, s);
 
+    /*
+    printf("code(%d) mess(%s)\n", 
+           webauth_krb5_error_code(c),
+           webauth_krb5_error_message(c));
+    */
+
     sa = NULL;
 
     s = webauth_krb5_service_principal(c, 

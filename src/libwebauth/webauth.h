@@ -33,7 +33,9 @@ typedef enum {
     WA_ERR_BAD_HMAC,         /**< HMAC check failed. */
     WA_ERR_RAND_FAILURE,     /**< Unable to get random data. */
     WA_ERR_BAD_KEY,          /**< Unable to use key. */
+    WA_ERR_KEYRING_OPENWRITE,/**< Unable to open key ring for writing. */
     WA_ERR_KEYRING_WRITE,    /**< Unable to write to key ring. */
+    WA_ERR_KEYRING_OPENREAD, /**< Unable to open key ring for reading. */
     WA_ERR_KEYRING_READ,     /**< Unable to read key ring file. */
     WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
@@ -531,6 +533,20 @@ WEBAUTH_KRB5_CTXT *webauth_krb5_new();
  * will only be closed with krb5_cc_close.
  */
 int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache);
+
+/*
+ * returns the internal kerberos error code from the last kerberos call,
+ * or 0 if there wasn't any error.
+ */
+int webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *content);
+
+/*
+ * returns an error message from the last kerberos call, or the
+ * string "success" if there error code was 0.
+ * The returned string points to internal storage and
+ * does not need to be freed.
+ */
+const char *webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *content);
 
 /*
  * initialize a context with username/password to obtain a TGT.

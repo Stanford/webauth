@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <krb5.h>
+#include <com_err.h>
 #include <netdb.h>
 #include <unistd.h>
 
@@ -146,7 +147,6 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 
     /* addresses */
     /* FIXME: We might never want to send these? */
-    /* they might not even exist if we got forwardable/proxiable tickets */
     if (creds->addresses) {
         int num = 0, i;
         char name[32];
@@ -592,6 +592,27 @@ webauth_krb5_new()
 }
 
 int
+webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *context)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    assert(c);
+    return c->code;
+}
+
+const char *
+webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    assert(c);
+    if (c->code == 0) {
+        return "success";
+    } else {
+        return error_message(c->code);
+    }
+}
+
+
+int
 webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username,
                                const char *password,
@@ -653,7 +674,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     free(tpassword);
 
     if (c->code != 0) {
-        /*printf("code = %d\n", c->code);*/
+        /*printf("code = %d (%s)\n", c->code, error_message(c->code));*/
         switch (c->code) {
             case KRB5KRB_AP_ERR_BAD_INTEGRITY:
             case KRB5KDC_ERR_PREAUTH_FAILED:
