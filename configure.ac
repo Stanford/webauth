@@ -57,13 +57,13 @@ fi
 AC_SUBST(MODULES)
 
 dnl Allow the user to indicate that the Perl modules should not be built.
-BINDINGS=perl
-build_perl=yes
+BINDINGS=
+build_perl=no
 AC_ARG_ENABLE([perl],
-    AC_HELP_STRING([--disable-perl], [Do not build Perl bindings]),
-    [if test x"$enableval" = xno ; then
-        build_perl=no
-        BINDINGS=
+    AC_HELP_STRING([--enable-perl], [Build Perl bindings (needed for WebKDC)]),
+    [if test x"$enableval" = xyes ; then
+        build_perl=yes
+        BINDINGS=perl
      fi])
 AC_SUBST(BINDINGS)
 
