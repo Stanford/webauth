@@ -155,7 +155,9 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 
     status = webauth_keyring_auto_update(sconf->keyring_path, 
                                          sconf->keyring_auto_update,
-                                         sconf->keyring_key_lifetime,
+                                         sconf->keyring_auto_update ?
+                                         sconf->keyring_key_lifetime :
+                                         0,
                                          &sconf->ring,
                                          &kau_status,
                                          &update_status);
