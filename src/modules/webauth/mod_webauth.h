@@ -9,6 +9,9 @@
 #include "ap_config.h"
 #include "apr.h"
 #include "apr_lib.h"
+#include "apr_file_io.h"
+#include "apr_file_info.h"
+#include "apr_errno.h"
 #include "apr_strings.h"
 #include "apr_tables.h"
 #include "apr_xml.h"
@@ -94,9 +97,6 @@
 #define N_SUBJECT  "mod_webauth_SUBJECT"
 #define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
 
-/* pool userdata */
-#define P_MWA_SCTXT "mod_webauth_MWA_SCTXT"
-
 /* enums for config directives */
 
 enum {
@@ -121,12 +121,13 @@ enum {
 module webauth_module;
 
 
-/* a service token and associated data */
+/* a service token and associated data, all memory (including key)
+ * is allocated from a pool
+ */
 typedef struct {
-    WEBAUTH_KEY *key; /* all memory allocated from a pool */
+    WEBAUTH_KEY key;
     time_t expires;
-    char *token;
-    time_t mtime; /* mtime of cache file */
+    unsigned char *token;
     time_t last_renewal_attempt; /* timed we last tried to renew */
 } MWA_SERVICE_TOKEN;
 
