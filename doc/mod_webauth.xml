@@ -520,6 +520,11 @@ be treated the same as <code>WebAuth</code> when used with the
 <code>AuthType</code> names to <code>WebAuth</code>. It is recommended
 that people transition over to using only <code>WebAuth</code> as soon
 as possible.</p>
+    <p>Setting this directive to <code>StanfordAuth</code> and then using
+<code>StanfordAuth</code> in an <code>AuthType</code> directive  will also 
+cause two additional environment variables to get set: 
+<code>SU_AUTH_USER</code> and <code>SU_AUTH_AGE</code>.
+</p>
 </note>
 
 <example><title>Example</title>
