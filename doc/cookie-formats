@@ -2,7 +2,6 @@ Type One (authentication cookie):
 
     Protocol Version            number          2 bytes
     Session ID                  data            8 bytes
-    Local/Remote Flag           boolean         1 byte
     Authentication Length       number          2 bytes
     Authentication Type         data            <specified above>
     Data Length                 number          2 bytes
@@ -15,35 +14,24 @@ the webauth release itself if we need to rev the cookie format.  All
 fields after the data field should be ignored, so we can tack new fields
 onto the end with a higher protocol rev.
 
-The session ID is provided by the webauth server (see the preauth protocol
-below) and sent back as-is to the webauth server from the weblogin server.
-
-The local/remote flag would just be 0 for local and 1 for remote (the
-weblogin handoff).  This field is supposed to be unnecessary as the domain
-of the cookie conveys the same information, but is just there as a safety
-check and debugging aid.
+The session ID contains whatever information the server wishes to put
+there.
 
 The authentication type is a counted string specifying the type of
 authentication being used.  When using Kerberos v5 service tickets, this
-authentication type is KERBEROS_V5.
+authentication type is KERBEROS_V5.  The authentication type is not case
+sensitive.
 
-The data for our initial authentication protocol would be a service ticket
-for the web server in question.
+The authentication data is some sort of identifier that can be checked by
+the web server to be valid and to represent a particular user.
 
 Any checksum or signature isn't useful unless it's encrypted somehow, so
 this is left to the authentication data for those authentication protocols
 that need something like this.
 
-The only difference between the cookie set by weblogin to pass this
-information and the cookie set by the webauth server (if it wishes to
-continue to use webauth to establish user identity rather than setting its
-own session cookie, which is always its option) is the local/remote flag
-setting.
-
 Type Two (authentication data used to obtain proxy tickets):
 
     Protocol Version            number          2 bytes
-    Local/Remote Flag           boolean         1 byte
     Authentication Length       number          2 bytes
     Authentication Type         data            <specified above>
     Data Length                 number          2 bytes
@@ -56,37 +44,32 @@ contained in the data.  The data is an opaque, encrypted bit of data that
 should be passed to the web KDC by the webauth server along with its
 request for a service ticket on behalf of a user.
 
-The local/remote flag would just be 0 for local and 1 for remote (the
-weblogin handoff).  This field is supposed to be unnecessary as the domain
-of the cookie conveys the same information, but is just there as a safety
-check and debugging aid.
+The two authentication types that we would be concerned with initially are
+KERBEROS_V4 and KERBEROS_V5, holding encrypted TGTs for the respective
+versions of Kerberos.
 
-The only difference between the cookie set by weblogin to pass this
-information and the cookie set by the webauth server to retain it is the
-local/remote flag setting.
+General Notes:
 
-Type Three (preauthentication handoff to weblogin):
+All cookies will be encoded in base64 before passing them to the client.
+Numeric values are in network byte order.
 
-    Protocol Version            number          2 bytes
-    Session ID                  data            8 bytes
-    Authentication Length       number          2 bytes
-    Authentication Type         data            <specified above>
-    Identity Length             number          2 bytes
-    Identity Data               data            <specified above>
+The name of the first type of cookie is formed by prepending
+"webauth-auth-" to the name of the service for which this cookie is an
+authenticator (initially, this service name will be formed by taking the
+Kerberos service principle and converting all /s to #).  For example, when
+authenticated to a server named webauth1.stanford.edu providing a service
+called service/stanford-you, the cookie name would be:
 
-The authentication type specifies the type of authentication that this
-webauth server wishes to use, using the same string values as the previous
-cookie format.  The identity data is the identity of the server to obtain
-authentication information for; for a Kerberos authentication type, this
-will be a principal name.  Identity length may be zero if the specified
-authentication type requires no server identity.
+    webauth-auth-service#stanford-you
 
-The session ID is any data that the webauth server wishes to use to track
-the client, passed in this cookie so that a matching value can be included
-in the authentication cookie.
+Similarly, the name of the second type of cookie is formed by prepending
+"webauth-tgtk4-" or "webauth-tgtk5-" to the service name (formed by
+similarly converting the Kerberos service principle as above), with the
+name depending on whether it holds the Kerberos v4 authenticator or the
+Kerberos v5 authenticator.
 
-Both cookies will be encoded in base64 before passing them to the client.
-The key for the Type One ticket will be webauth-auth.  The key for the
-Type Three ticket will be webauth-request.  The key for the Type Four
-ticket handoff from weblogin to the webauth server will also be
-webauth-auth.
+The domain of the cookies will in all cases be the name of the web service
+that is setting the cookie; in other words, there are no domain-wide
+cookies in thie protocol.  The expiration time will always be left
+unspecified, creating a session cookie.  The path of the cookie, in this
+initial implementation, will always be /.
