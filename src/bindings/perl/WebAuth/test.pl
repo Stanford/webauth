@@ -10,10 +10,10 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-BEGIN { plan tests => 73 }
+BEGIN { plan tests => 77 }
 $run_kerb = 0;
 
-#BEGIN { plan tests => 93 }
+#BEGIN { plan tests => 97 }
 #$run_kerb = 1;
 
 if ($run_kerb) {
@@ -191,6 +191,27 @@ $attrs2 = WebAuth::token_parse($token, $ring, $status);
 
 ok($status, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs), 1);
+
+
+$key = WebAuth::key_create(WebAuth::WA_AES_KEY,
+			   WebAuth::random_key(WebAuth::WA_AES_128));
+$attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
+
+$status = undef;
+$token = WebAuth::token_create_with_key($attrs, 0, $key, $status);
+
+ok(length($token));
+ok($status, WebAuth::WA_ERR_NONE);
+
+$status = undef;
+$attrs2 = WebAuth::token_parse_with_key($token, $key, $status);
+
+ok($status, WebAuth::WA_ERR_NONE);
+ok(compareHashes($attrs, $attrs), 1);
+
+
+
+######################################### key rings
 
 # FIXME: cleanup files, compare them, should probably use temp file names, etc.
 

@@ -76,31 +76,24 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] =
  * encrypts and base64 encodes attrs into a token
  */
 int
-webauth_token_create(const WEBAUTH_ATTR_LIST *list,
-                     time_t hint,
-                     unsigned char *output,
-                     int *output_len,
-                     int max_output_len,
-                     const WEBAUTH_KEYRING *ring)
+webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
+                              time_t hint,
+                              unsigned char *output,
+                              int *output_len,
+                              int max_output_len,
+                              const WEBAUTH_KEY *key)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i, s;
     uint32_t currt; /* sizeof MUST equal T_HINT_S */
 
     AES_KEY aes_key;
-    WEBAUTH_KEY *key;
 
     assert(list!= NULL);
     assert(list->num_attrs);
     assert(output != NULL);
     assert(max_output_len);
-    assert(ring != NULL);
-
-    /* find the best key */
-    key = webauth_keyring_best_key(ring, 1, 0);
-    if (key == NULL) {
-        return WA_ERR_BAD_KEY;
-    }
+    assert(key != NULL);
 
     if (AES_set_encrypt_key(key->data, key->length*8, &aes_key)) {
         return WA_ERR_BAD_KEY;
@@ -191,11 +184,42 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 
 
 /*
- * decrypt token, return length of decrypted data or an error
+ * encrypts and base64 encodes attrs into a token
+ */
+int
+webauth_token_create(const WEBAUTH_ATTR_LIST *list,
+                     time_t hint,
+                     unsigned char *output,
+                     int *output_len,
+                     int max_output_len,
+                     const WEBAUTH_KEYRING *ring)
+{
+    WEBAUTH_KEY *key;
+
+    assert(list!= NULL);
+    assert(list->num_attrs);
+    assert(output != NULL);
+    assert(max_output_len);
+    assert(ring != NULL);
+
+    /* find the best key */
+    key = webauth_keyring_best_key(ring, 1, 0);
+    if (key == NULL) {
+        return WA_ERR_BAD_KEY;
+    }
+
+    return webauth_token_create_with_key(list, hint, output, output_len, 
+                                         max_output_len, key);
+}
+
+
+/*
+ * decrypt token, return status
  */
 
 static int
-decrypt_token(WEBAUTH_KEY *key, unsigned char *input, int elen)
+decrypt_token(const WEBAUTH_KEY *key, 
+              unsigned char *input, int elen, int *dlen)
 {
     /* hmac we compute from data */
     unsigned char computed_hmac[T_HMAC_S];
@@ -242,7 +266,8 @@ decrypt_token(WEBAUTH_KEY *key, unsigned char *input, int elen)
         }
     }
 
-    return elen-T_ATTR_O-plen;
+    *dlen = elen-T_ATTR_O-plen;
+    return WA_ERR_NONE;
 }
 
 /*
@@ -265,6 +290,7 @@ webauth_token_parse(unsigned char *input,
 
     WEBAUTH_KEY *hkey;
 
+    assert(input != NULL);
     assert(list != NULL);
     assert(ring != NULL);
 
@@ -295,8 +321,8 @@ webauth_token_parse(unsigned char *input,
 
     if (hkey != NULL) {
         memcpy(buff, input, elen);
-        dlen = decrypt_token(hkey, buff, elen);
-        if (dlen > 0) {
+        s = decrypt_token(hkey, buff, elen, &dlen);
+        if (s == WA_ERR_NONE) {
             s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
             free(buff);
             return s;
@@ -307,17 +333,53 @@ webauth_token_parse(unsigned char *input,
     for (i=0; i < ring->num_entries; i++) {
         if (ring->entries[i].key != hkey) {
             memcpy(buff, input, elen);
-            dlen = decrypt_token(ring->entries[i].key, buff, elen);
-            if (dlen > 0) {
+            s = decrypt_token(ring->entries[i].key, buff, elen, &dlen);
+            if (s == WA_ERR_NONE) {
                 s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
                 free(buff);
                 return s;
             }
         }
     }
-
     free(buff);
     return WA_ERR_BAD_HMAC;
+}
+
+
+/*
+ * base64 decodes and decrypts attrs into a token
+ * input buffer is modified.
+ *
+ * {key-hint}{nonce}{hmac}{token-attributes}{padding}
+ */
+
+int
+webauth_token_parse_with_key(unsigned char *input,
+                             int input_len,
+                             WEBAUTH_ATTR_LIST **list,
+                             const WEBAUTH_KEY *key)
+{
+    int elen, dlen, s;
+
+    assert(input != NULL);
+    assert(list != NULL);
+    assert(key != NULL);
+
+    /** base64 decode (in place) first */
+    s = webauth_base64_decode(input, input_len, input, &elen, input_len);
+    if (s != WA_ERR_NONE) {
+        return s;
+    }
+
+    /* quick sanity check */
+    if (elen < T_HINT_S+T_NONCE_S+T_HMAC_S+AES_BLOCK_SIZE) {
+        return WA_ERR_CORRUPT;
+    }
+
+    s = decrypt_token(key, input, elen, &dlen);
+    if (s == WA_ERR_NONE)
+        s = webauth_attrs_decode(input+T_ATTR_O, dlen, list);
+    return s;
 }
 
 /*

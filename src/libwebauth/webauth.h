@@ -442,15 +442,6 @@ WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
                                       time_t hint);
 
 /*
- * given a key ring, return the best key on the ring for
- * encryption. The best key for encryption is the key with
- * a valid valid_from time, and the latest
- * valid valid_till time.
- */
-WEBAUTH_KEY *
- webauth_keyring_best_decryption_key(const WEBAUTH_KEYRING *ring, time_t hint);
-
-/*
  * write a key ring to a file. 
  *
  * returns WA_ERR_NONE on success, or an error.
@@ -495,9 +486,31 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          int max_output_len,
                          const WEBAUTH_KEYRING *ring);
 
+
+/*
+ * encrypts and base64 encodes attrs into a token, using the
+ * specified key.
+ *
+ * returns WA_ERR_NONE or an error.
+ *
+ * errors:
+ *  WA_ERR_NO_ROOM
+ *  WA_ERR_NO_MEM
+ *  WA_ERR_BAD_KEY
+ *  
+ */
+int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
+                                  time_t hint,
+                                  unsigned char *output,
+                                  int *output_len,
+                                  int max_output_len,
+                                  const WEBAUTH_KEY *key);
+
 /*
  * base64 decodes and decrypts attrs into a token
- * input buffer is modified.
+ * input buffer is modified. The best decryption key
+ * on the ring will be tried first, and if that fails
+ * all the remaining keys will be tried.
  *
  * list will point to the dynamically-allocated list
  * of attrs and must be freed when no longer needed.
@@ -516,6 +529,27 @@ int webauth_token_parse(unsigned char *input,
                         WEBAUTH_ATTR_LIST **list,
                         const WEBAUTH_KEYRING *ring);
 
+/*
+ * base64 decodes and decrypts attrs into a token
+ * input buffer is modified.
+ *
+ * list will point to the dynamically-allocated list
+ * of attrs and must be freed when no longer needed.
+ *
+ * returns WA_ERR_NONE on success.
+ *
+ * errors:
+ *  WA_ERR_NO_MEM
+ *  WA_ERR_CORRUPT
+ *  WA_ERR_BAD_HMAC
+ *  WA_ERR_BAD_KEY
+ */
+
+int webauth_token_parse_with_key(unsigned char *input,
+                                 int input_len,
+                                 WEBAUTH_ATTR_LIST **list,
+                                 const WEBAUTH_KEY *key);
+
 /******************** krb5 ********************/
 
 /*
@@ -523,6 +557,11 @@ int webauth_token_parse(unsigned char *input,
  * calls. context must be freed with webauth_krb5_free when finished.
  * one of the various webauth_krb5_init_via* calls should be made
  * before the context is fully usable, except when using webauth_krb5_rd_req.
+ *
+ * if this call return WA_ERR_KRB5, then the only calls that
+ * can be made using the context are webauth_krb5_error_code
+ * and webauth_krb5_error_message. The context still needs
+ * to be freed.
  *
  */
 int webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt);

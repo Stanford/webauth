@@ -510,6 +510,58 @@ CODE:
 }
 
 void
+webauth_token_create_with_key(attrs,hint,key,...)
+SV *attrs
+time_t hint
+WEBAUTH_KEY *key
+PROTOTYPE: $$$;$
+CODE:
+{
+    HV *h;
+    SV *sv_val;
+    int num_attrs, s, out_len, out_max;
+    char *akey, *val;
+    I32 klen;
+    STRLEN vlen;
+    WEBAUTH_ATTR_LIST *list;
+
+    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
+        croak("attrs must be reference to a hash");
+    }
+
+    h = (HV*)SvRV(attrs);
+
+    num_attrs = hv_iterinit(h);
+
+    list = webauth_attr_list_new(num_attrs);
+    if (list == NULL) {
+        croak("can't malloc attrs");
+    }
+
+    while((sv_val = hv_iternextsv(h, &akey, &klen))) {
+        val = SvPV(sv_val, vlen);
+        webauth_attr_list_add(list, akey, val, vlen);
+    }
+
+    out_max = webauth_token_encoded_length(list);
+    ST(0) = sv_2mortal(NEWSV(0, out_max));
+    s = webauth_token_create_with_key(list, hint, 
+                                      SvPVX(ST(0)), &out_len, out_max, key);
+    webauth_attr_list_free(list);
+
+    if (items > 3) {
+       sv_setiv(ST(3), s);
+    }
+
+    if (s != WA_ERR_NONE) {
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), out_len);
+        SvPOK_only(ST(0));
+    }
+}
+
+void
 webauth_token_parse(buffer,ring,...)
 SV *buffer
 WEBAUTH_KEYRING *ring
@@ -544,6 +596,40 @@ CODE:
     }
 }
 
+void
+webauth_token_parse_with_key(buffer,key,...)
+SV *buffer
+WEBAUTH_KEY *key
+PROTOTYPE: $$;$
+CODE:
+{
+    STRLEN n_input;
+    unsigned char *p_input;
+    WEBAUTH_ATTR_LIST *list;
+    int i, num_attrs;
+    HV *hv;
+    SV *copy = sv_2mortal(newSVsv(buffer));
+
+    p_input = SvPV(copy, n_input);
+
+    num_attrs = webauth_token_parse_with_key(p_input, n_input, &list, key);
+
+    if (items > 2) {
+       sv_setiv(ST(2), num_attrs);
+    }
+
+    if (num_attrs > 0) {
+        hv = newHV();
+        for (i=0; i < num_attrs; i++) {
+            hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
+                     newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
+        }
+        ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
+        webauth_attr_list_free(list);
+    } else {
+        ST(0) =  &PL_sv_undef;
+    }
+}
 
 int
 webauth_krb5_new(OUT ctxt)
