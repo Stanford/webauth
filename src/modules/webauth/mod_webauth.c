@@ -184,7 +184,7 @@ get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
 }
 
 /*
- * FIXME: all the data might not be in fist_data.first, need to investigate
+ * FIXME: all the data might not be in first_cdata.first, need to investigate
  */
 static const char *
 get_elem_text(apr_xml_elem *e, const char *def)
@@ -217,7 +217,7 @@ log_error_response(apr_xml_elem *e,
         } else {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                          "mod_webauth: log_error_response: "
-                         "unknown element in <errorResponse>: <%s>",
+                         "ignoring unknown element in <errorResponse>: <%s>",
                          sib->name);
         }
     }
@@ -229,17 +229,19 @@ log_error_response(apr_xml_elem *e,
 }
 
 /*
- * XXX
+ * pass in st_pool in case we want service token in process pool
  */
 static MWA_SERVICE_TOKEN *
 parse_service_token_response(apr_xml_doc *xd,
+                             apr_pool_t *st_pool,
                              request_rec *r, 
                              MWA_SCONF *sconf, MWA_DCONF *dconf)
 {
     MWA_SERVICE_TOKEN *st;
-    apr_xml_elem *e;
+    apr_xml_elem *e, *sib;
     static const char *mwa_func = "parse_service_token_response";
-
+    const char *expires, *session_key, *token_data;
+    
     e = xd->root;
 
     if (strcmp(e->name, "errorResponse") == 0) {
@@ -253,8 +255,70 @@ parse_service_token_response(apr_xml_doc *xd,
     }
 
     /* parse it already */
-    
+    e = e->first_child;
+    if (!e || strcmp(e->name, "tokens") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: can't find <tokens>", 
+                     mwa_func, e->name);
+        return NULL;
+    }
 
+    e = e->first_child;
+    if (!e || strcmp(e->name, "token") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: can't find <token>", 
+                     mwa_func, e->name);
+        return NULL;
+    }
+
+    session_key = expires = token_data = NULL;
+
+    for (sib = e->first_child; sib; sib = sib->next) {
+        if (strcmp(sib->name, "sessionKey") == 0) {
+            session_key = get_elem_text(sib, NULL);
+        } else if (strcmp(sib->name, "expires") == 0) {
+            expires = get_elem_text(sib, NULL);
+        } else if (strcmp(sib->name, "tokenData") == 0) {
+            token_data = get_elem_text(sib, NULL);
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                         "mod_webauth: %s: "
+                         "ignoring unknown element in <token>: <%s>",
+                         mwa_func, sib->name);
+        }
+    }
+
+    if ((session_key == NULL) || (expires == NULL) || (token_data == NULL)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: "
+                     "missing %s%s%s",
+                     mwa_func, 
+                     session_key == NULL ? "<sessionKey> " : "",
+                     expires == NULL ? "<expires> " : "",
+                     token_data == NULL ? "<tokenData> " : "");
+        return NULL;
+    }
+
+    st = (MWA_SERVICE_TOKEN *) apr_palloc(st_pool, sizeof(MWA_SERVICE_TOKEN));
+    st->expires = atoi(expires);
+    st->token = apr_pstrdup(st_pool, token_data);
+    st->key = (WEBAUTH_KEY*) apr_palloc(st_pool, sizeof(WEBAUTH_KEY));
+    /* FIXME: key type could be a conf file directive */
+    st->key->type = WA_AES_KEY;
+    st->key->data = (unsigned char*)
+        apr_palloc(st_pool, apr_base64_decode_len(session_key));
+    st->key->length = apr_base64_decode(st->key->data, session_key);
+    if (st->key->length != WA_AES_128 && 
+        st->key->length != WA_AES_192 &&
+        st->key->length != WA_AES_256) {
+        /* bummer, after all that work too :) */
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: "
+                     "invalid sessionKey length after base64 decode: %d",
+                     mwa_func, st->key->length);
+        return NULL;
+    }
+    return st;
 }
 
 /*
@@ -262,6 +326,7 @@ parse_service_token_response(apr_xml_doc *xd,
  */
 MWA_SERVICE_TOKEN *
 request_service_token(request_rec *r, 
+                      apr_pool_t *st_pool,
                       MWA_SCONF *sconf, MWA_DCONF *dconf)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
@@ -349,7 +414,7 @@ request_service_token(request_rec *r,
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                  "mod_webauth: xml doc root(%s)", xd->root->name);
 
-   return parse_service_token_response(xd, r, sconf, dconf);
+   return parse_service_token_response(xd, st_pool, r, sconf, dconf);
 }
 
 /*
@@ -671,7 +736,7 @@ parse_app_token(char *token,
     const char *tt;
 
     ap_unescape_url(token);
-    blen = apr_base64_decode_binary(token, token);
+    blen = apr_base64_decode(token, token);
 
     /* parse the token, TTL is zero because app-tokens don't have ttl,
      * just expiration
@@ -971,7 +1036,7 @@ parse_returned_token(char *token,
 
     /* if we successfully parse an id-token, write out new webauth_at cookie */
     ap_unescape_url(token);
-    blen = apr_base64_decode_binary(token, token);
+    blen = apr_base64_decode(token, token);
 
     status = webauth_token_parse_with_key(token, blen, 
                                  sconf->token_max_ttl, key, &alist);
@@ -1280,8 +1345,14 @@ fixups_hook(request_rec *r)
             name = ENV_WEBAUTH_USER;
         }
         apr_table_setn(r->subprocess_env, name, subject);
-
-        /* request_service_token(r, sconf, dconf);*/
+        {
+            MWA_SERVICE_TOKEN *st = 
+                request_service_token(r, r->pool, sconf, dconf);
+            if (st != NULL) {
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                             "mod_webauth: st->expires(%d)", st->expires);
+            }
+        }
     }
     return DECLINED;
 }
