@@ -23,8 +23,7 @@ LDLIBS		= @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 LIBNAME		= libwebauth
 
-OBJS		= attrs.o base64.o key.o krb5.o misc.o random.o \
-                  token.o @WEBAUTH_AES_OBJS@
+OBJS		= attrs.o base64.o key.o krb5.o misc.o random.o token.o
 LOBJS		= $(OBJS:.o=.lo)
 
 .SUFFIXES: .lo
@@ -49,13 +48,6 @@ depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-aes_cbc.o: aes_cbc.c aes_locl.h
-aes_cfb.o: aes_cfb.c aes_locl.h
-aes_core.o: aes_core.c aes_locl.h
-aes_ctr.o: aes_ctr.c aes_locl.h
-aes_ecb.o: aes_ecb.c aes_locl.h
-aes_misc.o: aes_misc.c aes_locl.h
-aes_ofb.o: aes_ofb.c aes_locl.h
 attrs.o: attrs.c webauthp.h $(top_builddir)/config.h webauth.h
 base64.o: base64.c webauthp.h $(top_builddir)/config.h webauth.h
 key.o: key.c webauthp.h $(top_builddir)/config.h webauth.h
