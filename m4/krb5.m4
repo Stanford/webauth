@@ -2,8 +2,8 @@ dnl krb5.m4 -- Find the Kerberos v5 libraries.
 dnl $Id$
 dnl
 dnl Defines the macro WEBAUTH_LIB_KRB5, which probes for the Kerberos v5
-dnl libraries and defines the output variable KRB5_LIBS to the appropriate
-dnl linker commands.
+dnl libraries and defines the output variables KRB5_LIBS and KRB5_CPPFLAGS to
+dnl the appropriate preprocessor and linker flags.
 
 AC_DEFUN([WEBAUTH_LIB_KRB5],
 [AC_ARG_WITH([krb5],
