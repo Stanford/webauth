@@ -71,7 +71,7 @@
 
 #define CD_Authrule "WebAuthLdapAuthrule"
 #define CM_Authrule "display the rule used to authorize user"
-#define DF_Authrule 0
+#define DF_Authrule 1
 
 enum {
     E_Attribs,
