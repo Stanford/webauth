@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require 'util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>\n";
+
+test_title(12, "test POST with expired cookie");
+
+print<<EOS;
+
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+If are you seeing this, then you returned from a POST without authentication
+to this page and everything is ok!
+<br>
+<br>
+EOS
+
+&return_links;
+
+&dump_stuff;
+
+print "</html>";
+

@@ -688,6 +688,7 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_INT(inactive_expire);
     MERGE_INT(last_use_update_interval);
     MERGE_PTR(return_url);
+    MERGE_PTR(post_return_url);
     MERGE_PTR(login_canceled_url);
     MERGE_PTR(failure_url);
     MERGE_PTR(var_prefix);
@@ -1790,6 +1791,24 @@ make_return_url(MWA_REQ_CTXT *rc,
     char *uri = rc->r->unparsed_uri;
 
     /* use explicit return_url if there is one */
+    if (check_dconf_return_url) {
+        if (rc->r->method_number == M_GET && rc->dconf->return_url) {
+            if (rc->dconf->return_url[0] != '/')
+                return rc->dconf->return_url;
+            else 
+                return ap_construct_url(rc->r->pool, 
+                                        rc->dconf->return_url, rc->r);
+        } else if (rc->r->method_number == M_POST && 
+                   rc->dconf->post_return_url) {
+            if (rc->dconf->post_return_url[0] != '/')
+                return rc->dconf->post_return_url;
+            else 
+                return ap_construct_url(rc->r->pool, 
+                                        rc->dconf->post_return_url, rc->r);
+        }
+    }
+
+    /* use explicit return_url if there is one */
     if (check_dconf_return_url && rc->dconf->return_url) {
         if (rc->dconf->return_url[0] != '/')
             return rc->dconf->return_url;
@@ -1797,6 +1816,9 @@ make_return_url(MWA_REQ_CTXT *rc,
             uri = rc->dconf->return_url;
         return ap_construct_url(rc->r->pool, uri, rc->r);
     }
+
+
+
 
     /* if we are proxying or if the uri is parsed and scheme is non-null
        just use unparsed_uri */
@@ -1820,8 +1842,19 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     time_t curr = time(NULL);
     const char *mwa_func="redirect_request_token";
 
-    if (rc->r->method_number != M_GET) {
-        return failure_redirect(rc);
+    if (rc->r->method_number != M_GET &&
+        (rc->r->method_number != M_POST ||
+         (rc->r->method_number == M_POST &&
+          rc->dconf->post_return_url == NULL))) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                     "mod_webauth: redirect_request_token: no auth during %s, "
+                     "denying request",  rc->r->method);
+        if (rc->r->method_number == M_POST) {
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                         "mod_webauth: use %s to specify a return URL",
+                         CD_PostReturnURL);
+        }
+        return HTTP_UNAUTHORIZED;
     }
 
     ap_discard_request_body(rc->r);
@@ -2673,6 +2706,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_ReturnURL:
             dconf->return_url = apr_pstrdup(cmd->pool, arg);
             break;
+        case E_PostReturnURL:
+            dconf->post_return_url = apr_pstrdup(cmd->pool, arg);
+            break;
         case E_AppTokenLifetime:
             dconf->app_token_lifetime = seconds(arg, &error_str);
             break;
@@ -2916,6 +2952,7 @@ static const command_rec cmds[] = {
     DFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
+    DSTR(CD_PostReturnURL, E_PostReturnURL, CM_PostReturnURL),
     DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
     DSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
 

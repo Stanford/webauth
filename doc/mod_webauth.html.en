@@ -52,6 +52,7 @@
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthlogincanceledurl">WebAuthLoginCanceledURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthpostreturnurl">WebAuthPostReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
@@ -218,7 +219,7 @@ in the Referer header.
 </div>
 
 <div class="note"><h3>Note: WebAuthDoLogout</h3> 
-If you are planning on use WebAuthDoLogout with your proxied server,
+If you are planning on using WebAuthDoLogout with your proxied server,
 you should be aware that once you tell Apache to proxy a URL namespace
 (like <code>/someplace/</code>), then you can't have local 
 <code>Location</code> directives for URLs within that namespace,
@@ -1118,6 +1119,30 @@ This should alway use SSL. </p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLoginURL https://webkdc.stanford.edu/login/
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthPostReturnURL" id="WebAuthPostReturnURL">WebAuthPostReturnURL</a> <a name="webauthpostreturnurl" id="webauthpostreturnurl">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating during a POST
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthPostReturnURL <em>url</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+This directive controls which URL the user is returned to after authenticating
+with the WebKDC when the HTTP method was a POST. By default, mod_webauth
+will return 401 (UNAUTHORIZED), as it is impractical to try and recover from a POST that failed due to no authentication.
+</p>
+
+<div class="example"><h3>Example</h3><p><code>
+# if unauthenticated when accessing a URL via a POST, <br xmlns="" />
+# authenticate and return to front-page<br xmlns="" />
+WebAuthPostReturnURL /myapp/
 </code></p></div>
 
 </div>

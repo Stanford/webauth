@@ -2,6 +2,9 @@
 
 WebAuth 3.2.1 (in progress)
 
+ *) Add WebAuthPostReturnURL directive to allow an app to deal with 
+    handling a POST that didn't have authentication.
+
  *) Make sure ident_set_authflag call is made after ident_set_authtype
     call.
 

@@ -900,6 +900,29 @@ WebAuthReturnURL /myapp/
 </directivesynopsis>
 
 <directivesynopsis>
+<name>WebAuthPostReturnURL</name>
+<description>URL to return to after authenticating during a POST
+</description>
+<syntax>WebAuthPostReturnURL <em>url</em></syntax>
+<default>(none)</default>
+<contextlist><context>directory</context><context>.htaccess</context></contextlist>
+
+<usage>
+<p>
+This directive controls which URL the user is returned to after authenticating
+with the WebKDC when the HTTP method was a POST. By default, mod_webauth
+will return 401 (UNAUTHORIZED), as it is impractical to try and recover from a POST that failed due to no authentication.
+</p>
+
+<example><title>Example</title>
+# if unauthenticated when accessing a URL via a POST, <br/>
+# authenticate and return to front-page<br/>
+WebAuthPostReturnURL /myapp/
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
 <name>WebAuthLoginCanceledURL</name>
 <description>URL to return to if user cancels out of login
 </description>

@@ -154,6 +154,9 @@
 #define CD_ReturnURL "WebAuthReturnURL"
 #define CM_ReturnURL "url to return to after logging in"
 
+#define CD_PostReturnURL "WebAuthPostReturnURL"
+#define CM_PostReturnURL "url to return to after a weblogin redirect on a POST"
+
 #define CD_LoginCanceledURL "WebAuthLoginCanceledURL"
 #define CM_LoginCanceledURL "url to return if user cancel's out of login"
 
@@ -249,6 +252,7 @@ enum {
     E_LastUseUpdateInterval,
     E_LoginURL,
     E_LoginCanceledURL,
+    E_PostReturnURL,
     E_ReturnURL,
     E_RequireSSL,
     E_SSLRedirect,
@@ -340,6 +344,7 @@ typedef struct {
     int do_logout;
     int do_logout_ex;
     char *return_url;
+    char *post_return_url;
     char *failure_url;
     char *login_canceled_url;
     int extra_redirect;
