@@ -15,6 +15,8 @@ AC_PROG_RANLIB
 AC_SEARCH_LIBS(gethostbyname, nsl)
 AC_SEARCH_LIBS(connect, socket)
 
+##### FIXME: these probably need to be cleaned up
+
 # openssl
 
 AC_CHECK_LIB(crypto, HMAC_Init, [AC_SUBST(OPENSSL_CRYPTO_LIB, [-lcrypto])])
@@ -24,6 +26,11 @@ AC_CHECK_LIB(crypto, AES_cbc_encrypt,
     [AC_MSG_NOTICE([using AES support in -lcrypto])],
     [ AC_MSG_NOTICE([building AES support in -lwebauth])
       AC_SUBST(WEBAUTH_AES_OBJS, ["aes_cbc.o  aes_cfb.o  aes_core.o  aes_ctr.o  aes_ecb.o aes_misc.o  aes_ofb.o"])])
+
+# krb5
+
+AC_CHECK_LIB(k5crypto, krb5_string_to_key, [AC_SUBST(KRB5_CRYPTO_LIB, [-lk5crypto])])
+AC_CHECK_LIB(krb5, krb5_init_context, [AC_SUBST(KRB5_LIB, [-lkrb5])])
 
 # checks for header files.
 AC_HEADER_STDC

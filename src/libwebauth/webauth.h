@@ -37,6 +37,7 @@ typedef enum {
     WA_ERR_KEYRING_READ,     /**< Unable to read key ring file. */
     WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
+    WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
@@ -125,6 +126,8 @@ typedef struct {
     WEBAUTH_KEYRING_ENTRY *entries;
 } WEBAUTH_KEYRING;
 
+/* krb5 context */
+typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
 
 /******************** base64 ********************/
 
@@ -491,6 +494,12 @@ int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR_LIST **list,
                         const WEBAUTH_KEYRING *ring);
+
+/******************** krb5 ********************/
+int webauth_krb5_init(WEBAUTH_KRB5_CTXT **context);
+int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
+
+
 
 #ifdef  __cplusplus
 }

@@ -4,3 +4,5 @@ base64_test
 hex_test
 random_test
 token_test
+key_test
+krb5_test

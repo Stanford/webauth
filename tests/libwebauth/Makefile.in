@@ -13,9 +13,9 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
                    -I@top_srcdir@/src/libwebauth @CPPFLAGS@
 
-LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@
+LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@ @KRB5_LIB@ @KRB5_CRYPTO_LIB@
 
-TESTS		= attrs_test base64_test key_test token_test hex_test random_test
+TESTS		= attrs_test base64_test key_test krb5_test token_test hex_test random_test
 
 all: $(TESTS)
 
@@ -26,6 +26,8 @@ base64_test: base64_test.o
 hex_test: hex_test.o
 
 key_test: key_test.o
+
+krb5_test: krb5_test.o
 
 token_test: token_test.o
 
