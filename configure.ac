@@ -37,6 +37,30 @@ AC_ARG_ENABLE([webkdc],
      fi])
 AC_SUBST(WEBKDC)
 
+dnl Normally, with --enable-webkdc, we don't build mod_webauth.  Sometimes
+dnl it's convenient to get everything at once, so add a --enable-mod_webauth
+dnl to turn that back on.  This doubles as the way to build just the libraries
+dnl (with ./configure --disable-mod_webauth).
+AC_ARG_ENABLE([mod_webauth],
+    AC_HELP_STRING([--disable-mod_webauth],
+        [Do not build the WebAuth Apache module]),
+    [AC_MSG_WARN([checkpoint one: $enableval])
+     if test x"$WEBKDC" != x ; then
+        MODULES=webkdc
+     else
+        MODULES=
+     fi
+     if test x"$enableval" = xyes ; then
+        MODULES="webauth $MODULES"
+     fi],
+    [AC_MSG_WARN([checkpoint two])
+     if test x"$WEBKDC" != x ; then
+        MODULES=webkdc
+     else
+        MODULES=webauth
+     fi])
+AC_SUBST(MODULES)
+
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
 dnl is set in the environment, always use it; otherwise, use -g unless
 dnl --disable-debug is given.  If it is, use -O2 -DNDEBUG.
@@ -53,22 +77,9 @@ AC_ARG_ENABLE([debug],
         CFLAGS=-g
      fi])
 
-dnl Allow the user to disable building the modules.
-if test x"$WEBKDC" != x ; then
-    MODULES=webkdc
-else
-    MODULES=webauth
-fi
-AC_ARG_ENABLE([modules],
-    AC_HELP_STRING([--disable-modules], [Do not build Apache modules]),
-    [if test x"$enableval" = xno ; then
-        MODULES=
-     fi])
-AC_SUBST(MODULES)
-
 dnl Allow the user to indicate that the Perl modules should not be built.
 AC_ARG_ENABLE([perl],
-    AC_HELP_STRING([--enable-perl], [Build Perl bindings (needed for WebKDC)]),
+    AC_HELP_STRING([--enable-perl], [Build Perl bindings]),
     [if test x"$enableval" = xyes ; then
         build_perl=yes
         BINDINGS=perl
