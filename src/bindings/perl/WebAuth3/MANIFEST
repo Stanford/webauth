@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+Makefile.PL.in
+MANIFEST
+README
+test.pl
+WebAuth3.pm
+WebAuth3.xs
