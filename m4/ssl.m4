@@ -17,7 +17,7 @@ LDFLAGS="$LDFLAGS $SSL_LDFLAGS"
 CRYPTO_LIBS=
 SSL_LIBS=
 AC_CHECK_LIB([crypto], [AES_cbc_encrypt], [CRYPTO_LIBS=-lcrypto],
-    AC_MSG_ERROR([WebAuth needs OpenSSL 0.9.7 or later for AES support])
+    AC_MSG_ERROR([WebAuth needs OpenSSL 0.9.7 or later for AES support]))
 AC_CHECK_LIB([ssl], [SSL_library_init], [SSL_LIBS=-lssl], , [-lcrypto])
 LDFLAGS="$WEBAUTH_LDFLAGS_save"
 CRYPTO_CPPFLAGS=$SSL_CPPFLAGS
