@@ -1884,7 +1884,7 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                   "<appState>", out_state , "</appState>", 
                   NULL);
     }
-    ap_rvputs(rc->r, "</getTokensResponse>", NULL);
+    ap_rvputs(rc->r, "</requestTokenResponse>", NULL);
     ap_rflush(rc->r);
 
     return OK;
