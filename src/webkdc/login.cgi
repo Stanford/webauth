@@ -109,7 +109,8 @@ sub login_form {
     print_headers($q, $resp->proxy_cookies);
     #print $q->Dump;
 
-    my $LC = length($can_url) ? base64_encode($can_url) : "";
+    my $LC = (defined($can_url) && length($can_url)) ? 
+	base64_encode($can_url) : "";
 
     print << "EOF";
 
