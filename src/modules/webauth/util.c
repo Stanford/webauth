@@ -239,158 +239,53 @@ mwa_log_webauth_error(server_rec *s,
     }
 }
 
-static WEBAUTH_KEYRING *
-auto_create(server_rec *serv, MWA_SCONF *sconf)
-{
-    time_t va;
-    WEBAUTH_KEY *key;
-    WEBAUTH_KEYRING *ring;
-    int s;
-    unsigned char key_material[WA_AES_128];
-    const char *mwa_func="auto_create";
-
-    time(&va);
-    
-    ring = webauth_keyring_new(32);
-    if (ring == NULL) {
-        mwa_log_webauth_error(serv, WA_ERR_NO_MEM, 
-                              NULL, mwa_func, "webauth_keyring_new", 
-                              sconf->keyring_path);
-        return NULL;
-    }
-    
-    s = webauth_random_key(key_material, WA_AES_128);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key",
-                              sconf->keyring_path);
-        webauth_keyring_free(ring);
-        return NULL;
-    }
-
-    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-
-    s = webauth_keyring_add(ring, va, va, key);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_add", sconf->keyring_path);
-        webauth_key_free(key);
-        webauth_keyring_free(ring);
-        return NULL;
-    }
-
-    webauth_key_free(key);
-
-    s = webauth_keyring_write_file(ring, sconf->keyring_path);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_write_file", 
-                              sconf->keyring_path);
-        webauth_keyring_free(ring);
-        return NULL;
-    }
-    return ring;
-}
-
-static int
-auto_update(server_rec *serv, MWA_SCONF *sconf, WEBAUTH_KEYRING *ring)
-{
-    time_t curr;
-    WEBAUTH_KEY *key;
-    int s, i;
-    unsigned char key_material[WA_AES_128];
-    const char *mwa_func="auto_update";
-
-    time(&curr);
-
-    /* see if we have at least one key whose valid_after+lifetime is
-       still greater then current time */
-    for (i=0; i < ring->num_entries; i++) {
-        if (ring->entries[i].valid_after+sconf->keyring_key_lifetime > curr) {
-            /* nothing to do */
-            return 1;
-        }
-    }
-
-    /* lets add a new key to the key ring and write it out */
-
-    s = webauth_random_key(key_material, WA_AES_128);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key",
-                              sconf->keyring_path);
-        return 0;
-    }
-
-    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-
-    s = webauth_keyring_add(ring, curr, curr, key);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_add", sconf->keyring_path);
-        webauth_key_free(key);
-        return 0;
-    }
-
-    webauth_key_free(key);
-
-    s = webauth_keyring_write_file(ring, sconf->keyring_path);
-    if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_write_file", 
-                              sconf->keyring_path);
-        return 0;
-    }
-
-    if (sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                     "mod_webauth: auto-updated key ring");
-    }
-
-    return 1;
-}
-
 int
 mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 {
     int status;
-    static const char *mwa_func = "mwa_init_keyring";
+    WEBAUTH_KAU_STATUS kau_status;
+    WEBAUTH_ERR update_status;
 
-    /* attempt to open up keyring */
-    status = webauth_keyring_read_file(sconf->keyring_path, &sconf->ring);
+    static const char *mwa_func = "mwa_cache_keyring";
+
+    status = webauth_keyring_auto_update(sconf->keyring_path, 
+                                         sconf->keyring_auto_update,
+                                         sconf->keyring_key_lifetime,
+                                         &sconf->ring,
+                                         &kau_status,
+                                         &update_status);
+
     if (status != WA_ERR_NONE) {
-        if (sconf->keyring_auto_update) {
-            sconf->ring = auto_create(serv, sconf);
-            if (sconf->ring == NULL) {
-                /* complain even more */
-                ap_log_error(APLOG_MARK, APLOG_EMERG, 0, serv,
-                             "mod_webauth: %s: auto_create of keyring failed!",
-                             mwa_func);
-            } else {
-                if (sconf->debug) {
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                                 "mod_webauth: auto-created key ring");
-                }
-            }
-        } else {
             mwa_log_webauth_error(serv, status, NULL,
                                   mwa_func, 
-                                  "webauth_keyring_read_file",
+                                  "webauth_keyring_auto_update",
                                   sconf->keyring_path);
-        }
-    } else {
-        if (sconf->keyring_auto_update) {
-            if (!auto_update(serv, sconf, sconf->ring)) {
-                ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
-                             "mod_webauth: can't add new key to keyring %s",
-                             sconf->keyring_path);
-            }
-        }
     }
 
-    if (sconf->ring != NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                     "mod_webauth: keyring ok: %s ", sconf->keyring_path);
-        return 1;
-    } else {
-        return 0;
+    if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
+            mwa_log_webauth_error(serv, status, NULL,
+                                  mwa_func, 
+                                  "webauth_keyring_auto_update",
+                                  sconf->keyring_path);
+            /* complain even more */
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
+                         "mod_webauth: %s: couldn't update ring: %s",
+                         mwa_func, sconf->keyring_path);
     }
+
+    if (sconf->debug) {
+        char *msg;
+        if (kau_status == WA_KAU_NONE) 
+            msg = "opened";
+        else if (kau_status == WA_KAU_CREATE)
+            msg = "create";
+        else if (kau_status == WA_KAU_UPDATE)
+            msg = "updated";
+        else
+            msg = "<unknown>";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webauth: %s key ring: %s", msg, sconf->keyring_path);
+    }
+
+    return status;
 }

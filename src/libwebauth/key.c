@@ -352,7 +352,7 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring,
 }
 
 int 
-webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
+webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
 {
     int fd, attr_len;
     unsigned char *attr_buff;
@@ -424,7 +424,6 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     return status;
 
 }
-
 
 int
 webauth_keyring_decode(unsigned char *buffer, int buffer_len,
@@ -525,7 +524,7 @@ webauth_keyring_decode(unsigned char *buffer, int buffer_len,
 }
 
 int
-webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
+webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
 {
     int fd, n, len, s;
     struct stat sbuf;
@@ -579,6 +578,134 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
 
     return s;
 
+}
+
+static int
+new_ring(const char *path, WEBAUTH_KEYRING **ring)
+{
+    WEBAUTH_KEY *key;
+    unsigned char key_material[WA_AES_128];
+    int s;
+    time_t curr = time(NULL);
+    key = NULL;
+
+    /* create new key ring */
+    *ring = webauth_keyring_new(5);
+    if (*ring == NULL) {
+        s =WA_ERR_NO_MEM;
+        goto done;
+    }
+
+    s = webauth_random_key(key_material, WA_AES_128);
+    if (s != WA_ERR_NONE)
+        goto done;
+
+    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+
+    if (key == NULL) {
+        s =WA_ERR_NO_MEM;
+        goto done;
+    }
+
+    s = webauth_keyring_add(*ring, curr, curr, key);
+
+    if (s != WA_ERR_NONE)
+        goto done;
+
+    s = webauth_keyring_write_file(*ring, path);
+
+ done:
+
+    if (key != NULL)
+        webauth_key_free(key);
+
+    if (s != WA_ERR_NONE && *ring != NULL)
+        webauth_keyring_free(*ring);
+    return s;
+}
+
+
+
+static int
+check_ring(const char *path, int lifetime, 
+           WEBAUTH_KEYRING *ring, 
+           WEBAUTH_KAU_STATUS *updated)
+{
+    time_t curr;
+    WEBAUTH_KEY *key;
+    int s, i;
+    unsigned char key_material[WA_AES_128];
+
+    time(&curr);
+
+    /* see if we have at least one key whose valid_after+lifetime is
+       still greater then current time */
+    for (i=0; i < ring->num_entries; i++) {
+        if (ring->entries[i].valid_after+lifetime > curr) {
+            /* nothing to do */
+            return WA_ERR_NONE;
+        }
+    }
+
+    *updated = WA_KAU_UPDATE;
+
+    /* lets add a new key to the key ring and write it out */
+
+    s = webauth_random_key(key_material, WA_AES_128);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+
+    if (key == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+
+    s = webauth_keyring_add(ring, curr, curr, key);
+    if (s != WA_ERR_NONE) {
+        webauth_key_free(key);
+        return s;
+    }
+
+    webauth_key_free(key);
+
+    return webauth_keyring_write_file(ring, path);
+}
+
+
+
+int 
+webauth_keyring_auto_update(const char *path, 
+                            int create,
+                            int lifetime,
+                            WEBAUTH_KEYRING **ring,
+                            WEBAUTH_KAU_STATUS *updated,
+                            WEBAUTH_ERR *update_status)
+{
+    int s;
+
+    assert(ring);
+    assert(updated);
+    assert(update_status);
+
+    *updated = WA_KAU_NONE;
+
+    *update_status = WA_ERR_NONE;
+
+    s = webauth_keyring_read_file(path, ring);
+
+    if (s != WA_ERR_NONE) {
+        if (!create) {
+            return s;
+        } else {
+            *updated = WA_KAU_CREATE;
+            return new_ring(path, ring);
+        }
+    }
+
+    if (lifetime)
+        *update_status = check_ring(path, lifetime, *ring, updated);
+    return s;
 }
 
 /*

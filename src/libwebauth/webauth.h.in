@@ -79,6 +79,16 @@ typedef enum {
     WA_PEC_LOGIN_FORCED = 17, /* user must re-login */
 }  WEBAUTH_ET_ERR;    
 
+
+/* 
+ * status for webauth_keyring_auto_update
+ */
+typedef enum {
+    WA_KAU_NONE = 0,
+    WA_KAU_CREATE,
+    WA_KAU_UPDATE
+}  WEBAUTH_KAU_STATUS;
+
 /******************** constants for token attributes **********/
 
 #define WA_TK_APP_STATE "as"
@@ -601,7 +611,7 @@ webauth_keyring_decode(unsigned char *buffer, int buffer_len,
  *
  * returns WA_ERR_NONE on success, or an error.
  */
-int webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path);
+int webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path);
 
 /*
  * reads a key ring from a file.
@@ -609,7 +619,35 @@ int webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path);
  * returns WA_ERR_NONE on success, or an error.
  */
 
-int webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring);
+int webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring);
+
+/*
+ * attempts to read a keyring file. if create is non-zero, then
+ * will create file if it doesn't exist. If lifetime is non-zero 
+ * then there must be at least one key in the ring where 
+ * valid_after+lifetime is greater then the 
+ * current time, otherwise a new key will be created with valid_after
+ * set to the current time, and the key ring file will be updated.
+ *
+ * this function does no file locking.
+ *
+ * kau_status will be set to WA_KAU_NONE if we didn't create or update
+ * the ring, WA_KAU_CREATE if we attempt to create it, and WA_KAU_UPDATE 
+ * if we attmept to update it.
+ *
+ * The return code applies to only the open and/or create. If the
+ * open and/or create succeed, then WA_ERR_NONE will always be
+ * returned, even if the update fails. If the update fails, then
+ * update_status will be set to someting other then WA_ERR_NONE.
+ *
+ */
+
+int webauth_keyring_auto_update(const char *path, 
+                                int create,
+                                int lifetime,
+                                WEBAUTH_KEYRING **ring,
+                                WEBAUTH_KAU_STATUS *kau_status,
+                                WEBAUTH_ERR *update_status);
 
 /******************** tokens ********************/
    

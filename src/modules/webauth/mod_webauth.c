@@ -401,12 +401,12 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
 
+    if (sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initializing");
+
     apr_pool_cleanup_register(pconf, s, 
                               mod_webauth_cleanup,
                               apr_pool_cleanup_null);
-
-    if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initializing");
 
     for (scheck=s; scheck; scheck=scheck->next) {
         init_sconf(scheck, sconf, ptemp);
@@ -429,6 +429,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 static void
 mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 {
+    /* can this be moved to parent? */
     mwa_init_mutexes(s);
 }
 
