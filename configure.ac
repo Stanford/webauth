@@ -31,6 +31,7 @@ AC_CHECK_LIB(crypto, AES_cbc_encrypt,
 
 AC_CHECK_LIB(k5crypto, krb5_string_to_key, [AC_SUBST(KRB5_CRYPTO_LIB, [-lk5crypto])])
 AC_CHECK_LIB(krb5, krb5_init_context, [AC_SUBST(KRB5_LIB, [-lkrb5])])
+AC_CHECK_LIB(com_err, error_message, [AC_SUBST(COM_ERR_LIB, [-lcom_err])])
 
 # checks for header files.
 AC_HEADER_STDC
