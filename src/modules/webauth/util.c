@@ -233,7 +233,7 @@ mwa_log_webauth_error(server_rec *s,
     }
 }
 
-static int
+static WEBAUTH_KEYRING *
 auto_create(server_rec *serv, MWA_SCONF *sconf)
 {
     time_t va;
@@ -249,14 +249,14 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
     if (ring == NULL) {
         mwa_log_webauth_error(serv, WA_ERR_NO_MEM, 
                               NULL, mwa_func, "webauth_keyring_new");
-        return 0;
+        return NULL;
     }
     
     s = webauth_random_key(key_material, WA_AES_128);
     if (s != WA_ERR_NONE) {
         mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key");
         webauth_keyring_free(ring);
-        return 0;
+        return NULL;
     }
 
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
@@ -267,7 +267,7 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
                               "webauth_keyring_add");
         webauth_key_free(key);
         webauth_keyring_free(ring);
-        return 0;
+        return NULL;
     }
 
     webauth_key_free(key);
@@ -277,9 +277,9 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
         mwa_log_webauth_error(serv, s, NULL, mwa_func,
                               "webauth_keyring_add");
         webauth_keyring_free(ring);
-        return 0;
+        return NULL;
     }
-    return 1;
+    return ring;
 }
 
 /*
@@ -296,7 +296,8 @@ mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf)
     status = webauth_keyring_read_file(sconf->keyring_path, &ring);
     if (status != WA_ERR_NONE) {
         if (sconf->keyring_auto_update) {
-            if (!auto_create(serv, sconf)) {
+            ring = auto_create(serv, sconf);
+            if (ring == NULL) {
                 /* complain even more */
                 ap_log_error(APLOG_MARK, APLOG_EMERG, 0, serv,
                              "mod_webauth: %s: auto_create of keyring failed!",
