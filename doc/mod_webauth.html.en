@@ -26,7 +26,7 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c and friends</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module provides WebAuth V3 support. FIXME: BLAH BLAH BLAH.</p>
+<p>This module provides WebAuth V3 support.</p>
 
 <p>Further details are provided in the 
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -70,9 +70,12 @@ WebAuthUseCreds
 <h3>Topics</h3>
 <ul id="topics">
 <li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
-<li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
 <li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> Environment Variables</li>
+<li><img alt="" src="../images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> Perl Integration</li>
+<li><img alt="" src="../images/down.gif" /> PHP 4.x Integration</li>
+<li><img alt="" src="../images/down.gif" /> Java/Tomcat/mod_jk Integration</li>
+<li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -88,57 +91,6 @@ WebAuthUseCreds
   AuthType WebAuth<br />
   Require valid-user<br />
   &lt;/Location&gt;
-</code></p></div>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
-<div class="section">
-<h2>Requesting Credentials</h2>
-
-<p>One of the features of WebAuth is the ability to request credentials
- for a particular request (or group of requests). </p>
-
-<p>Depending on the credential type, temporary files containing credentials
-  may need to be created. These credentials will be stored in the directory
-  specified by the <a href="#WebAuthCredCacheDir">WebAuthCredCacheDir</a> directive.</p>
-
-<p>The <a href="#WebAuthCred">WebAuthCred</a> directive is use to request which credentials a
-particular request may need. Credentials are not actually requested 
-from the WebKDC until a page with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive set to 
-"on" is served. At that point, they will be cached (encrypted) in cookies 
-and used to satisfy future requests.</p>
-
-<p>Saving credentials on every single request (for example, an image
-or static page) is expensive, since it may involve decrypting credentials
-stored in a cookie, processing them, and storing them in a temporary file.
-The <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive is used to control which requests will actually
-go through this process.</p>
-
-<p>The following example shows one scenario where every page under
-/myapp/ is WebAuth-protected, and every page under /myapp/commands/
-requires the use of two Kerberos V5 credentials.
-</p>
-
-<div class="example"><h3>Example</h3><p><code>
-  # this first WebAuthCred directive will cause us to<br />
-  # acquire a proxy-token on the initial redirect when<br />
-  # determining the user's identity. It saves an extra redirect<br />
-  # later on when we actually use/acquire credentials.<br />
-  <br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  require valid-user<br />
-  WebAuthCred krb5<br />
-  &lt;/Location&gt; <br />
-  <br />
-  # these next WebAuthCred directives will cause us to acquire<br />
-  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br />
-  <br />
-  &lt;Location /myapp/commands/&gt;<br />
-  WebAuthUseCreds on<br />
-  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
-  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br />
-  &lt;/Location&gt;
-  <br />
 </code></p></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -166,7 +118,7 @@ requires the use of two Kerberos V5 credentials.
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Environment Variables</h2>
+<h2><a name="sectionenv">Environment Variables</a></h2>
 
 <p>This module provides some information as additional environment
 variables to the SSI and CGI namespace. The generated variables are listed in
@@ -175,7 +127,6 @@ on the names of environment variables they can handle, you can use the
 <a href="#WebAuthVarPrefix">WebAuthVarPrefix</a> directive to have 
 additional environment variables set.
 </p>
-
 <p>Additionally, requesting credentials for a particular request may
 cause environment variables to get set. For example, request Kerberos V5
 credentials will result in the KRB5CCNAME environment variable being
@@ -217,6 +168,201 @@ WEBAUTH_USER=schemers<br />
 WEBAUTH_TOKEN_CREATION=103872393<br />
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
 WEBAUTH_TOKEN_LASTUSED=103872393<br />
+</code></p></div>
+
+<p>
+When checking for the authenticated username, using WEBAUTH_USER
+is preferred over REMOTE_USER. This is because WEBAUTH_USER
+will only ever get set by mod_webauth, while REMOTE_USER could potentially
+get set by another Apache module, depending on how Apache server has
+been configured. To safely use REMOTE_USER, you should also check AUTH_TYPE
+to make sure that it is set to WebAuth, or ensure that all pages
+you are serving for your application have their AuthType set to WebAuth.
+</p>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Perl Integration</h2>
+
+<p>In order to use mod_webauth with Perl, you need to first WebAuth-protect
+the pages that are served by the CGI Perl scripts. For example, lets
+assume that all pages under http://yourserver/private/ are to be protected:</p>
+
+<div class="example"><h3>Apache Directives Example</h3><p><code>
+  &lt;Location /private/&gt;<br />
+  AuthType WebAuth<br />
+  Require valid-user<br />
+  &lt;/Location&gt;
+</code></p></div>
+
+<p>Then, in order to determine the user's identity from
+the Perl script, it is simply a matter of accessing the evnrionment
+variables set by mod_webauth within your Perl script:</p>
+
+<div class="example"><h3>Perl Example</h3><p><code>
+<code>
+<pre>
+
+my $WEBAUTH_USER = $ENV{'WEBAUTH_USER'};
+print "The authenticated user is $WEBAUTH_USER\n";
+</pre>
+</code>
+</code></p></div>
+
+<p>
+Any of the environment variables described in the 
+<a href="#sectionenv">environment variables</a> section may be accessed this way.
+
+</p>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>PHP 4.x Integration</h2>
+
+<p>Using mod_webauth with PHP is very similar to using it from Perl.
+You need to first WebAuth-protect the pages that are served by the PHP scripts.
+For example:</p>
+
+<div class="example"><h3>Apache Directives Example</h3><p><code>
+  &lt;Location /private/&gt;<br />
+  AuthType WebAuth<br />
+  Require valid-user<br />
+  &lt;/Location&gt;
+</code></p></div>
+
+<p>Then, in order to determine the user's identity from
+the PHP script, you can either use the PHP getenv function, or access
+the special <code>$_SERVER</code> array variable. For eample:</p>
+
+<div class="example"><h3>PHP Example</h3><p><code>
+<code>
+<pre>
+
+$WEBAUTH_USER = getenv('WEBAUTH_USER');
+
+# alternative, using the $_SERVER 'superglobal' array:
+# $WEBAUTH_USER = $_SERVER['WEBAUTH_USER'];
+
+print "The authenticated user is $WEBAUTH_USER\n";
+
+</pre>
+</code>
+</code></p></div>
+
+<p>
+In looking at the source for PHP 4.3, it appears that the <code>getenv</code>
+is looking only in the <code>$_SERVER</code> array, so there is a one-to-one 
+mapping between the two. Oddly enough, getenv isn't looking the 
+<code>$_ENV</code> array. See the PHP documention for more information
+on <a href="http://www.php.net/manual/en/reserved.variables.php">predefined variables</a> in PHP.</p>
+<p>
+Any of the environment variables described in the 
+<a href="#sectionenv">environment variables</a> section may be accessed this way.
+</p>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Java/Tomcat/mod_jk Integration</h2>
+
+<p>Using mod_webauth with mod_jk requires some additional configuration
+of mod_jk in order to pass environment variables to the Java
+servlet. So, in addition to WebAuth-protecting the pages served
+by Tomcat, you also need to specify which environment variables
+you want to pass. For example:</p>
+
+<div class="example"><h3>Apache Directives Example</h3><p><code>
+# WebAuth-protect /private/
+&lt;Location /private/&gt;<br />
+AuthType WebAuth<br />
+Require valid-user<br />
+&lt;/Location&gt;<br />
+<br />
+ Send everything for context /private/ to worker1 (ajp13)<br />
+JkMount /private/* worker1 <br />
+# webauth-related environment variables to pass<br />
+JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"<br />
+JkEnvVar REMOTE_USER "&lt;UNSET&gt;"<br />
+JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"<br />
+JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"<br />
+JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"<br />
+</code></p></div>
+
+<p>If all you are interested in is WEBAUTH_USER, then you
+don't need to pass the other variables as well. </p>
+
+<p>In order to determine the user's identity from
+the servlet, you need use the <code>getAttribute</code> method
+on the <code>request</code> object.</p>
+
+<div class="example"><h3>JSP Example</h3><p><code>
+<code>
+<pre>
+WEBAUTH_USER is set to:
+&lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
+</pre>
+</code>
+</code></p></div>
+
+<p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code> will
+end up as a request attribute as opposed to being accessible by
+<code>java.lang.System.getenv</code>, which is <b>deprecated</b>.
+</p>
+
+<div class="note"><h3>Note</h3> 
+It appears
+that mod_jk requires you specify a default value for the environment
+variables in the event that they are unset. A value of "" was not
+allowed, so I picked the special value "&lt;UNSET&gt;" for this example.
+If all your pages are WebAuth-protected, then this default value
+will never be used.
+</div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Requesting Credentials</h2>
+
+<p>One of the features of WebAuth is the ability to request credentials
+ for a particular request (or group of requests). </p>
+
+<p>Depending on the credential type, temporary files containing credentials
+  may need to be created. These credentials will be stored in the directory
+  specified by the <a href="#WebAuthCredCacheDir">WebAuthCredCacheDir</a> directive.</p>
+
+<p>The <a href="#WebAuthCred">WebAuthCred</a> directive is used to specify 
+which credentials a
+particular request may need. Credentials are not actually requested 
+from the WebKDC until a page with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive set to 
+"on" is served. At that point, they will be cached (encrypted) in cookies 
+and used to satisfy future requests.</p>
+
+<p>Saving credentials on every single request (for example, an image
+or static page) is expensive, since it may involve decrypting credentials
+stored in a cookie, processing them, and storing them in a temporary file.
+The <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive is used to control which requests will actually
+go through this process.</p>
+
+<p>The following example shows one scenario where every page under
+/myapp/ is WebAuth-protected, and every page under /myapp/commands/
+requires the use of two Kerberos V5 credentials.
+</p>
+
+<div class="example"><h3>Example</h3><p><code>
+  # this first WebAuthCred directive will cause us to<br />
+  # acquire a proxy-token on the initial redirect when<br />
+  # determining the user's identity. It saves an extra redirect<br />
+  # later on when we actually use/acquire credentials.<br />
+  <br />
+  &lt;Location /myapp/&gt;<br />
+  AuthType WebAuth<br />
+  require valid-user<br />
+  WebAuthCred krb5<br />
+  &lt;/Location&gt; <br />
+  <br />
+  # these next WebAuthCred directives will cause us to acquire<br />
+  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br />
+  <br />
+  &lt;Location /myapp/commands/&gt;<br />
+  WebAuthUseCreds on<br />
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
+  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br />
+  &lt;/Location&gt;
+  <br />
 </code></p></div>
 
 </div>
