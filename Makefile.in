@@ -1,4 +1,4 @@
-# Makefile for the webauth software
+# Makefile for WebAuth
 # $Id$
 
 srcdir = @srcdir@
@@ -8,23 +8,21 @@ VPATH = @srcdir@
 @SET_MAKE@
 
 # The directory name and tar file to use when building a release.
-TARDIR_BASE = @PACKAGE_TARNAME@-base-@PACKAGE_VERSION@
-TARDIR_FULL = @PACKAGE_TARNAME@-full-@PACKAGE_VERSION@
-TAR_BASE    = $(TARDIR_BASE).tar
-TAR_FULL    = $(TARDIR_FULL).tar
+TARDIR		= @PACKAGE_TARNAME@-@PACKAGE_VERSION@
+TARNAME		= $(TARDIR).tar
 
 # DISTDIRS gets all directories from the MANIFEST, and DISTFILES gets all
 # regular files.  Anything not listed in the MANIFEST will not be included in
 # a distribution.  These are arguments to sed.
-DISTDIRS    = -e 1,2d -e '/(Directory)/!d' -e 's/ .*//'
-DISTFILES   = -e 1,2d -e '/(Directory)/d' -e 's/ .*//'
+DISTDIRS	= -e 1,2d -e '/(Directory)/!d' -e 's/ .*//'
+DISTFILES	= -e 1,2d -e '/(Directory)/d' -e 's/ .*//'
 
 
-SUBDIRS = src
-ALLDIRS = src tests
+SUBDIRS		= src
+ALLDIRS		= src tests
 
 .PHONY: all check check-manifest clean dist distclean doc docs install
-.PHONY: install-tests install-webkdc test tests
+.PHONY: install-tests test tests
 
 all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -37,9 +35,6 @@ check test tests:
 
 install-tests:
 	cd tests && $(MAKE) install
-
-install-webkdc:
-	cd src && $(MAKE) install-webkdc
 
 clean depend:
 	@for subdir in $(ALLDIRS); do \
@@ -66,28 +61,17 @@ distclean: clean
 dist:
 	rm -rf $(TARDIR)
 	rm -f webauth*.tar.gz
-	mkdir $(TARDIR_FULL)
+	mkdir $(TARDIR)
 	for d in `sed $(DISTDIRS) MANIFEST` ; do \
-	    mkdir -p $(TARDIR_FULL)/$$d || exit 1 ; \
+	    mkdir -p $(TARDIR)/$$d || exit 1 ; \
 	done
 	for f in `sed $(DISTFILES) MANIFEST` ; do \
-	    cp $$f $(TARDIR_FULL)/$$f || exit 1 ; \
+	    cp $$f $(TARDIR)/$$f || exit 1 ; \
 	done
-	find $(TARDIR_FULL) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
-	tar cf $(TAR_FULL) $(TARDIR_FULL)
-	gzip -9 $(TAR_FULL)
-	md5sum $(TAR_FULL) > $(TAR_FULL).md5
-	mkdir $(TARDIR_BASE)
-	for d in `grep -v 'WebKDC -- ' MANIFEST | sed $(DISTDIRS)` ; do \
-	    mkdir -p $(TARDIR_BASE)/$$d || exit 1 ; \
-	done
-	for f in `grep -v 'WebKDC -- ' MANIFEST | sed $(DISTFILES)` ; do \
-	    cp $$f $(TARDIR_BASE)/$$f || exit 1 ; \
-	done
-	find $(TARDIR_BASE) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
-	tar cf $(TAR_BASE) $(TARDIR_BASE)
-	gzip -9 $(TAR_BASE)
-	md5sum $(TAR_BASE) > $(TAR_BASE).md5
+	find $(TARDIR) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
+	tar cf $(TARNAME) $(TARDIR)
+	gzip -9 $(TARNAME)
+	md5sum $(TARNAME) > $(TARNAME).md5
 
 # Check the MANIFEST against the files present in the current tree, building a
 # list with tools/mkmanifest and running diff between the lists.
