@@ -55,7 +55,7 @@ AC_ARG_ENABLE([debug],
 
 dnl Allow the user to disable building the modules.
 if test x"$WEBKDC" != x ; then
-    MODULES="webauth webkdc"
+    MODULES=webkdc
 else
     MODULES=webauth
 fi
