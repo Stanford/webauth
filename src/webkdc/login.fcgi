@@ -236,7 +236,7 @@ while (my $q = new CGI::Fast) {
 	if ($status ==WK_SUCCESS && $q->cookie($TEST_COOKIE) ) {
 	    parse_uri(\%varhash, $resp);
 	    print_confirm_page($q, \%varhash, $resp );
-	    print STDERR ("WebKDC::make_request_token_request sucess\n") if $LOGGING;
+	    #print STDERR ("WebKDC::make_request_token_request sucess\n") if $LOGGING;
 
 	} elsif (($status == WK_ERR_USER_AND_PASS_REQUIRED)
 		 || ($status == WK_ERR_LOGIN_FAILED)|| !($q->cookie($TEST_COOKIE)) ) {
@@ -244,7 +244,7 @@ while (my $q = new CGI::Fast) {
             &set_page_error($q,$status);
 	    print_login_page ($q, \%varhash, $resp, 
 			      $req->request_token,$req->service_token);
-	    print STDERR ("WebKDC::make_request_token_request failed.Redisplay login page\n") if $LOGGING;
+	    #print STDERR ("WebKDC::make_request_token_request failed.Redisplay login page\n") if $LOGGING;
        } else {  #errmsg
 	    my $errmsg;
 	    if ($status == WK_ERR_UNRECOVERABLE_ERROR) {
