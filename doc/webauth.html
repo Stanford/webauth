@@ -216,11 +216,12 @@ is always included along with a request-token.
 <H4>1.2.6 response-token</h4>
 
 The response-token contains status information about the result of
-a request-token request. The requested token is sent separately.
+a request-token request, and also includes the requested token inside 
+of it.
 
 <p>The response-token will either contain error information, or
    will contain meta-information about the returned token, such
-   as its expiration date, etc. 
+   as its expiration date, and the requested token itself.
 
    The WAS will verify the response-token, then construct 
    an app-token from it and the requested token for future use. 
@@ -279,7 +280,7 @@ present.
       login form gets posted
   5.  -------------------------------> WebKDC
 
-      redirect with returned tokens
+      redirect with returned token
   6.  <------------------------------- WebKDC
 
       re-request resource
@@ -429,7 +430,7 @@ having to prompt the user for their password again.
       request-token for id-token
   3.  -------------------------------> WebKDC
 
-      redirect with returned tokens
+      redirect with returned token
   4.  <------------------------------- WebKDC
 
       re-request resource
@@ -468,7 +469,7 @@ We will now go over each step in detail.
 <LI> The WebKDC detects the user has a valid proxy-token, and uses
    it to construct a new id-token. The WebKDC will then construct
    the return URL, which will contain the response-token, and
-   the requested-token.
+   the requested-token (in the response-token).
 <p>
 </LI>
 
@@ -568,7 +569,7 @@ We will now go over each step in detail.
 <LI> The WebKDC detects the user has a valid proxy-token, and uses
    it to construct a new proxy-token. The WebKDC will then construct
    the return URL, which will contain the response-token, and
-   the requested-token.
+   the requested-token (inside the response-token).
 <p>
 </LI>
 
@@ -733,31 +734,28 @@ The request message is:
   &lt;getTokensRequest>
 
     &lt;requesterCredential type="service|krb5">
-       &lt;i>&lt;!-- for type="service" -->&lt;/i>
+       <i>&lt;!-- for type="service" --></i>
        &lt;serviceToken>{base64-service-token}&lt;/serviceToken>
-       &lt;i>&lt;!-- for type="krb5" -->&lt;/i>
+       <i>&lt;!-- for type="krb5" --></i>
        &lt;krb5AppReq>{base64-krb5-mk-req-data}&lt;/krb5AppReq>
     &lt;/requesterCredential>
 
     &lt;subjectCredential type="proxy">
-       &lt;i>&lt;!-- for type="proxy" -->&lt;/i>
+       <i>&lt;!-- for type="proxy" --></i>
        &lt;proxyToken>{base64-proxy-token}&lt;/proxyToken>
     &lt;/subjectCredential>
 
     &lt;token type="id|proxy|service|cred" id="{id-to-use-in-response}">
-      &lt;i>&lt;!-- for type="id" -->&lt;/i>
+      <i>&lt;!-- for type="id" --></i>
        &lt;serviceToken>{service-token}&lt;/serviceToken>
-       &lt;authenticator type="krb5|webkdc"> &lt;i>&lt;!-- optional, default is krb5 -->&lt;/i>
-         &lt;i>&lt;!-- for type="krb5" -->&lt;/i>
-         &lt;serviceName>webauth/as.stanford.edu&lt;/serviceName> &lt;i>&lt;!-- optional -->&lt;/i>
-       &lt;/authenticator>
-      &lt;i>&lt;!-- for type="proxy" -->&lt;/i>
+       &lt;authenticator type="krb5|webkdc"/> <i>&lt;!-- optional, default is krb5 --></i>
+      <i>&lt;!-- for type="proxy" --></i>
        &lt;proxyType>krb5|krb4&lt;/proxyType>
-      &lt;i>&lt;!-- for type="cred" -->&lt;/i>
+      <i>&lt;!-- for type="cred" --></i>
        &lt;credentialType>krb5|krb4&lt;/credentialType>
-       &lt;serviceName>{krb4/krb5-service}&lt;/serviceName>
+       &lt;serverPrincipal>{krb4/krb5-service}&lt;/serverPrincipal>
     &lt;/token>
-    &lt;i>&lt;!-- additional &lt;token>...&lt;/token> requests go here -->&lt;/i>
+    <i>&lt;!-- additional &lt;token>...&lt;/token> requests go here --></i>
   &lt;/getTokensRequest>
 </code></pre>
 
@@ -767,13 +765,13 @@ The response message is:
   &lt;getTokensResponse>
     &lt;token id="{id-from-request}">
       &lt;tokenData>{base64}&lt;/tokenData>
-      &lt;i>&lt;!-- for type="service" -->&lt;/i>
+      <i>&lt;!-- for type="service" --></i>
       &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
       &lt;expires>{expiration-time}&lt;/expires>
-      &lt;i>&lt;!-- for type="proxy" -->&lt;/i>
+      <i>&lt;!-- for type="proxy" --></i>
       &lt;expires>{expiration-time}&lt;/expires>
     &lt;/token>
-    &lt;i>&lt;!-- additional &lt;token>...&lt;/token> responses go here -->&lt;/i>
+    <i>&lt;!-- additional &lt;token>...&lt;/token> responses go here --></i>
   &lt;/getTokensResponse>
 </code></pre>
 
@@ -837,7 +835,7 @@ The proxy-token's type must match the requested credential's type.
 
   &lt;token type="credential" id="0"/>
     &lt;credentialType>krb5&lt;/credentialType>
-    &lt;serviceName>service/ldap&lt;/serviceName>
+    &lt;serverPrincipal>service/ldap&lt;/serverPrincipal>
   &lt;/token>
 &lt;/getTokensRequest>
 
@@ -927,14 +925,14 @@ prd      proxy data (i.e., a krb5 tgt)
 pro      proxy owner (name of user allowed to use proxy token)
 pu       post URL
 rr       reason for request
-rt       requested token type
-rth      requested token hash
+rtt      requested token type
+rt       requested token 
+rt-et    expiration-time of the requested token
 ru       return URL
 s        subject of authentication
 sa       subject authenticator type (krb5, webkdc)
-san      optional service name to use with authenticator
 t        token type ("service", "id", "app", "proxy", "cred", "req", "resp")
-ver      optional version, defaults to ASCII "1"
+
 x-nnn    application-specific attribute
 
 </pre>
@@ -948,8 +946,7 @@ with the WebKDC, using krb5 wire protocol, SSL cert, etc.
 They are used by WAS servers to communicate with the WebKDC.
 
 <pre><code>
-  [ver=1]                     
-  [t=service]
+  t=service
   k={session-key}
   s=krb5:{requesting-servers-k5-principal}
   ct={creation-time}
@@ -969,17 +966,15 @@ A request-token gets sent to the WebKDC server by WAS, along with the WAS's
 service-token. They are used to request tokens via the HTML interface.
 
 <pre><code>
-  [ver=1]                     
   t=req
   ct={creation-time}
   ru={return-as-url}
-  pu={return-post-url}
-  [rr=na|ea|st|fa]
-  [rt=id|proxy]
-  # for rt=id
+  [pu={return-post-url}]
+  rr=na|ea|st|fa
+  rtt=id|proxy
+  # for rtt=id
   sa=krb5|webkdc
-  [san={service-name}]
-  # for rt=proxy
+  # for rtt=proxy
   prt=krb5|krb4
 </code></pre>
 
@@ -987,19 +982,15 @@ service-token. They are used to request tokens via the HTML interface.
 
 <p>  All attributes are AES-encrypted in the service-token session-key
 
-<p>  <code>san</code> is optional, and defaults to the principal used to obtain
-  the service-token.
-
 <p>  The value of <code>ct</code> is used to prevent replay attacks. Values older then 
   a certain time (probably 5 minutes by default) should be rejected as
   a replay.
 
-<p>  <code>rr</code> (request-reason) is optional, and describes why
-     a request is being made.
+<p>  <code>rr</code> (request-reason) describes why a request is being made.
 
 <p>  Valid values for <code>rr</code> are:
 <pre>
-       na = no app-token (the default)
+       na = no app-token
        ea = expired app-token
        st = session timeout
        fa = forced authentication (app is requesting "live" authentication)
@@ -1007,16 +998,15 @@ service-token. They are used to request tokens via the HTML interface.
 
 <H4>5.3.3 response-token encoding</H4>
 
-A response-token gets sent from the WebKDC as a response to a request-token,
-along with the requested token.
+A response-token gets sent from the WebKDC as a response to a request-token.
 
 <pre><code>
-  [ver=1]                     
   t=resp
   ct={creation-time}
   [ec={error-code}]
   [em={error-message}]
-  [rth={sha1-hash-of-requested-token}]
+  [rt={the-requseted-token-in-binary-form}]
+  [rt-et={expiration-time-of-requested-token}]
 </code></pre>
 
 <p>notes:
@@ -1030,8 +1020,11 @@ along with the requested token.
   a certain time (probably 5 minutes by default) should be rejected as
   a replay.
 
-<p>  <code>rth</code> is the sha1-hash of the token that was returned
-     as a result of the original request.
+<p>  <code>rt</code> is the token (in binary form) that was returned as
+the result of the request, and is present if there were no errors.
+<p>  <code>rt-et</code> is the expiration-time of the requested token, if
+     the requested token was a proxy-token.
+
 
 <H4>5.3.4 id-token encoding</H4>
 
@@ -1039,13 +1032,11 @@ The id-token gets returned from WebKDC, as is bound to an WAS. They
 are used to express the identity of user. 
 
 <pre><code>
-  [ver=1]
   t=id
   sa=krb5|webkdc
   s={result-of-krb5-mk-req-for-webauth/hostname}|krb5:{users-krb5-principal}
   ct={creation-time}
   et={expiration-time}
-  an={app-name}
 </code></pre>
 
 <p>notes:
@@ -1068,14 +1059,13 @@ An app-token controlled/maintained by a WAS. The main use of an app-token
 is to cache the idenity within an id-token after it has been verified.
 
 <pre><code>
-  [ver=1]
   t=app
   s=krb5:{users-k5-principal}
   ct={creation-time}
   et={expiration-time}
   [it={inactivity-timeout}]
   [lt={last-use-time}]
-  an={app-name}
+  [an={app-name}]
   x-name1=value1  (app-specific-data)
   x-name2=value2  ...
 </code></pre>
@@ -1101,7 +1091,6 @@ the requesting server. For example, only the WebKDC can use the WebKDC's
 proxy-token.
 
 <pre><code>
-  [ver=1]
   t=proxy
   pro={subject-from-webkdc-token-used-to-get-proxy-ticket}
   prt=krb5|krb4|...
@@ -1126,7 +1115,6 @@ proxy-token.
 A credential-token is k4/k5 service ticket returned by the WebKDC for an WAS.
 
 <pre><code>
-  [ver=1]
   t=cred
   ct=krb5|krb4|...
   s=krb5:{users-k5-principal}
@@ -1239,6 +1227,13 @@ WebAuthEndSession redirect|clearLogin|on|off
    <td><ul>
          <li>Change time attributes inside of tokens back to 
              4 byte binary network byte order.
+         <li>get rid of default values for attributes
+
+         <li>requested token is now contained within the response-token
+         <li>got rid of uneeded/not-fleshed-out token attributes 
+             (rth, san, ver)
+         <li>add new token attributes (rt, rtt, rt-et)
+             
        </ul>
    </td>
 </tr>
