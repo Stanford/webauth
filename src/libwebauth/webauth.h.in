@@ -89,6 +89,21 @@ typedef enum {
 #define WA_TK_TOKEN_TYPE "t"
 #define WA_TK_WEBKDC_TOKEN "wt"
 
+/******************** constants for token types ****/
+#define WA_TT_PROXY "proxy"
+#define WA_TT_WEBKDC_SERVICE "webkdc-service"
+#define WA_TT_WEBKDC_PROXY "webkdc-proxy"
+#define WA_TT_REQUEST "req"
+#define WA_TT_ERROR "error"
+#define WA_TT_ID "id"
+#define WA_TT_PROXY "proxy"
+#define WA_TT_CRED "cred"
+#define WA_TT_APP "app"
+
+/******************** constants for subject auth type ****/
+#define WA_SA_KRB5 "krb5"
+#define WA_SA_WEBKDC "webkdc"
+
 /******************** other constants *****************/
 
 /* supported key types */
@@ -313,6 +328,36 @@ int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
  */
 int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
                               const char *name, const char *value, int vlen);
+
+
+int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 uint32_t value);
+
+int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
+                                const char *name,
+                                int32_t value);
+
+int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
+                               const char *name,
+                               time_t value);
+
+int webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
+                               const char *name,
+                               void **value,
+                               int *value_len);
+
+int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 uint32_t *value);
+
+int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 int32_t *value);
+
+int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, 
+                               const char *name,
+                               time_t *value);
 
 /** searches for the name attribute in the list and returns the
  * index in i and WA_ERR_NONE or sets i to -1 and returns WA_ERR_NOT_FOUND.

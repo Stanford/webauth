@@ -28,35 +28,6 @@
 
 #include "webauth.h"
 
-int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
-                                 const char *name,
-                                 uint32_t value);
-
-int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
-                                const char *name,
-                                int32_t value);
-
-int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
-                               const char *name,
-                               time_t value);
-
-int webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
-                               const char *name,
-                               void **value,
-                               int *value_len);
-
-int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
-                                 const char *name,
-                                 uint32_t *value);
-
-int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
-                                 const char *name,
-                                 int32_t *value);
-
-int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, 
-                               const char *name,
-                               time_t *value);
-
 /*
 **  Local variables:
 **  mode: c
