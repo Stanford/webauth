@@ -130,6 +130,14 @@ site, see doc/install-webkdc.
      wrong.  This may also be useful if this is the first time you've
      installed a WebAuth v3 server.
 
+     Also, if you are using a self-signed certificate with your WebKDC,
+     you'll need to copy it to a local file (like conf/webauth/webkdc.cert)
+     and add the following directive:
+
+     WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
+
+     This is not needed when using Stanford's WebKDC.
+
  7.  Make sure that the conf/webauth directory exists:
 
          cd <apache-root>
