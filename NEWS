@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.2.0 (in progress)
+WebAuth 3.2.0 (2003-08-07)
 
  *) Added S/Ident support to weblogin and the WebKDC.
 
