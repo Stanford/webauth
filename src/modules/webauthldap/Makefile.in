@@ -1,0 +1,28 @@
+# Makefile for webauthldap module
+# $Id$
+
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
+VPATH		= @srcdir@
+
+APXS		= @APXS@
+
+APXS_CFLAGS	= @APXS_CFLAGS@
+CPPFLAGS	= @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@ @LDAP_CPPFLAGS@ @LDFLAGS@
+
+LDFLAGS		= @LDFLAGS@
+LDLIBS		= @SSL_LIBS@ @KRB5_LIBS@ @LDAP_LIBS@ @LIBS@
+
+SOURCES		= mod_webauthldap.c
+
+all: mod_webauth.o
+
+mod_webauth.o: $(SOURCES) mod_webauthldap.h
+	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
+
+install:
+	$(APXS) -i mod_webauthldap.la
+
+clean:
+	rm -rf *.o *.la *.lo *.slo .libs *~ core \#*
