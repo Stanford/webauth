@@ -45,6 +45,9 @@
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL 300
 
+/* max number of <token>'s we will return. 128 is probably overkill */
+#define MAX_TOKENS_RETURNED 128
+
 /* enums for config directives */
 
 enum {
@@ -113,6 +116,14 @@ typedef struct {
         MWK_PROXY_TOKEN pt; /* when type is proxy */
     } u;
 } MWK_SUBJECT_CREDENTIAL;
+
+/* used to represent returned tokens */
+typedef struct {
+    const char *id;
+    const char *token_data;
+    const char *session_key; /* might be NULL */
+    const char *expires; /* might be NULL */
+} MWK_RETURNED_TOKEN;
 
 /* globals */
 WEBAUTH_KEYRING *mwk_g_ring;
