@@ -25,7 +25,7 @@ use File::Find qw(find);
 
 # A list of generated files that should be included in the manifest and
 # therefore included in releases, but which are listed in .cvsignore.
-%INCLUDE = map { $_ => 1 } qw(configure config.h.in);
+%INCLUDE = map { $_ => 1 } qw(configure config.h.in src/utils/wa_keyring.1);
 
 # Build a list of all the files ignored by rules in .cvsignore files.  Meant
 # to be run as the wanted sub of a call to File::Find.  Stuff in .cvsignore
