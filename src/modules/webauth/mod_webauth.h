@@ -491,6 +491,6 @@ mwa_find_cred_interface(server_rec *server,
                         const char *type);
 
 /* krb5.c */
-MWA_CRED_INTERFACE *mwa_krb5_cred_interface;
+extern MWA_CRED_INTERFACE *mwa_krb5_cred_interface;
 
 #endif
