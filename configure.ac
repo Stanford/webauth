@@ -28,6 +28,15 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
 
+dnl By default, we don't build the WebKDC or any of its components.
+WEBKDC=
+AC_ARG_ENABLE([webkdc],
+    AC_HELP_STRING([--enable-webkdc], [Compile and install the WebKDC])
+    [if test x"$enableval" != xno ; then
+        WEBKDC=webkdc
+     fi])
+AC_SUBST(WEBKDC)
+
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
 dnl is set in the environment, always use it; otherwise, use -g unless
 dnl --disable-debug is given.  If it is, use -O2 -DNDEBUG.
@@ -45,26 +54,35 @@ AC_ARG_ENABLE([debug],
      fi])
 
 dnl Allow the user to disable building the modules.
-MODULES=webauth
+if test x"$WEBKDC" != x ; then
+    MODULES="webauth webkdc"
+else
+    MODULES=webauth
+fi
 AC_ARG_ENABLE([modules],
     AC_HELP_STRING([--disable-modules], [Do not build Apache modules]),
     [if test x"$enableval" = xno ; then
         MODULES=
      fi])
-if test x"$MODULES" != x && test -d "$srcdir/src/modules/webkdc" ; then
-    MODULES="$MODULES webkdc"
-fi
 AC_SUBST(MODULES)
 
 dnl Allow the user to indicate that the Perl modules should not be built.
-BINDINGS=
-build_perl=no
 AC_ARG_ENABLE([perl],
     AC_HELP_STRING([--enable-perl], [Build Perl bindings (needed for WebKDC)]),
     [if test x"$enableval" = xyes ; then
         build_perl=yes
         BINDINGS=perl
-     fi])
+     else
+        build_perl=no
+        BINDINGS=
+     fi],
+     [if test x"$WEBKDC" != x ; then
+         BINDINGS=perl
+         build_perl=yes
+      else
+         BINDINGS=
+         build_perl=no
+      fi])
 AC_SUBST(BINDINGS)
 
 dnl Checks for programs.
@@ -140,10 +158,9 @@ if test x"$build_perl" = xyes ; then
     ])
 fi
 
-dnl Only create the WebKDC makefile if the directory exists, since the base
-dnl distribution doesn't include the WebKDC.
-if test -d "$srcdir/src/modules/webkdc" ; then
-    AC_CONFIG_FILES([src/modules/webkdc/Makefile])
+dnl Only create the WebKDC makefile if we're building the WebKDC.
+if test x"$WEBKDC" != x ; then
+    AC_CONFIG_FILES([src/modules/webkdc/Makefile src/webkdc/Makefile])
 fi
 
 dnl Link all of the Perl binding files into the build tree, since Perl doesn't
