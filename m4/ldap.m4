@@ -1,8 +1,8 @@
-dnl krb5.m4 -- Find the Kerberos v5 libraries.
+dnl ldap.m4 -- Find the OpenLDAP libraries
 dnl $Id$
 dnl
-dnl Defines the macro WEBAUTH_LIB_KRB5, which probes for the Kerberos v5
-dnl libraries and defines the output variables KRB5_LIBS and KRB5_CPPFLAGS to
+dnl Defines the macro WEBAUTH_LIB_LDAP, which probes for the OpenLDAP
+dnl libraries and defines the output variables LDAP_LIBS and LDAP_CPPFLAGS to
 dnl the appropriate preprocessor and linker flags.
 
 AC_DEFUN([WEBAUTH_LIB_LDAP],
