@@ -46,27 +46,8 @@ mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
     }
     memcpy(string->data+string->size, in_data, in_size);
     string->size = needed_size;
-}
-
-
-/*
- * concat all the text pieces together and return data 
- */
-char *
-mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, char *def)
-{
-    if (e->first_cdata.first &&
-        e->first_cdata.first->text) {
-        apr_text *t;
-        MWK_STRING string;
-        mwk_init_string(&string, rc->r->pool);
-        for (t = e->first_cdata.first; t != NULL; t = t->next) {
-            mwk_append_string(&string, t->text, 0);
-        }
-        return string.data;
-    } else {
-        return def;
-    }
+    /* always null-terminate, we have space becase of the +1 above */
+    string->data[string->size] = '\0';
 }
 
 /*

@@ -222,10 +222,5 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool);
 void 
 mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
 
-/*
- * concat all the text pieces together and return data
- */
-char *
-mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, char *def);
 
 #endif

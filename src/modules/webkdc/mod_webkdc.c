@@ -247,6 +247,34 @@ unknown_element_er(MWK_REQ_CTXT *rc,
     generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
 }
 
+
+/*
+ * concat all the text pieces together and return data, or
+ * NULL if an error occured.
+ */
+char *
+get_elem_text_er(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
+{
+    MWK_STRING string;
+    mwk_init_string(&string, rc->r->pool);
+
+    if (e->first_cdata.first &&
+        e->first_cdata.first->text) {
+        apr_text *t;
+         for (t = e->first_cdata.first; t != NULL; t = t->next) {
+            mwk_append_string(&string, t->text, 0);
+        }
+    }
+
+    if (!string.data || string.data[0] == '\0') {
+        char *msg = apr_psprintf(rc->r->pool, "<%s> does not contain data",
+                                 e->name);
+            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                   msg, mwk_func, 1);
+    }
+    return string.data;
+}
+
 /*
  * get an attr from an element. if required and not found, we
  * log an error and generate an errorResponse.
@@ -339,6 +367,12 @@ parse_service_token_er(MWK_REQ_CTXT *rc, char *token,
 
     ok = 0;
 
+    if (token == NULL) {
+        generate_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID, 
+                               "service token is NULL", mwk_func, 1);
+        return 0;
+    }
+
     blen = apr_base64_decode(token, token);
     status = WA_ERR_NONE;
 
@@ -428,7 +462,7 @@ parse_webkdc_proxy_token_er(MWK_REQ_CTXT *rc, char *token,
 
     if (token == NULL) {
             generate_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                                   "no proxy token present", mwk_func, 1);
+                                   "proxy token is NULL", mwk_func, 1);
             return 0;
     }
 
@@ -550,7 +584,7 @@ parse_login_token_er(MWK_REQ_CTXT *rc, char *token,
 
     if (token == NULL) {
             generate_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                                   "no login token present", mwk_func, 1);
+                                   "login token is NULL", mwk_func, 1);
             return 0;
     }
     
@@ -640,6 +674,12 @@ parse_request_token_er(MWK_REQ_CTXT *rc,
     int blen, status, i, ok;
     const char *tt;
     static const char *mwk_func = "parse_xml_request_token";
+
+    if (token == NULL) {
+            generate_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
+                                   "request token is NULL", mwk_func, 1);
+            return 0;
+    }
 
     blen = apr_base64_decode(token, token);
 
@@ -773,7 +813,8 @@ parse_request_token_er(MWK_REQ_CTXT *rc,
  */
 static int
 parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e, 
-                             MWK_REQUESTER_CREDENTIAL *req_cred)
+                             MWK_REQUESTER_CREDENTIAL *req_cred,
+                             int expecting_reqToken)
 {
     int status;
     apr_xml_elem *child;
@@ -790,7 +831,9 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         for (child = e->first_child; child; child = child->next) {
 	    if (strcmp(child->name, "serviceToken") == 0) {
-                const char *token = mwk_get_elem_text(rc, e, "");
+                const char *token = get_elem_text_er(rc, child, mwk_func);
+                if (token == NULL)
+                    return 0;
                 st_p = 1;
                 if (!parse_service_token_er(rc, (char*)token, 
                                             &req_cred->u.service.st)) {
@@ -799,7 +842,9 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 /* pull out subject from service token */
                 req_cred->subject = req_cred->u.service.st.subject;
 	    } else if (strcmp(child->name, "requestToken") == 0) {
-                const char *token = mwk_get_elem_text(rc, e, "");
+                const char *token = get_elem_text_er(rc, child, mwk_func);
+                if (token == NULL)
+                    return 0;
                 rt_p = 1;
                 if (!parse_request_token_er(rc, (char*)token, 
                                             &req_cred->u.service.st,
@@ -812,10 +857,17 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 	    }
 	}
 
-	if (!(rt_p && st_p)) {
+	if (!st_p) {
             generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
                                    "<requestCredential> must have "
-                                   "<serviceToken> and <requestToken>",
+                                   "<serviceToken>",
+                                   mwk_func, 1);
+            return 0;
+	}
+	if (!rt_p && expecting_reqToken) {
+            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                   "<requestCredential> must have "
+                                   "<requestToken>",
                                    mwk_func, 1);
             return 0;
 	}
@@ -832,7 +884,10 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return 0;
         }
 
-        req = mwk_get_elem_text(rc, e, "");
+        req = get_elem_text_er(rc, e, mwk_func);
+        if (req == NULL)
+            return 0;
+
         bin_req = (char*)apr_palloc(rc->r->pool, 
                                     apr_base64_decode_len(req));
         blen = apr_base64_decode(bin_req, req);
@@ -888,7 +943,9 @@ parse_subjectCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         /* attempt to parse each proxy token */
         for (child = e->first_child; child; child = child->next) {
             if (strcmp(child->name, "proxyToken") == 0) {
-                char *token = mwk_get_elem_text(rc, child, NULL);
+                char *token = get_elem_text_er(rc, child, mwk_func);
+                if (token == NULL)
+                    return 0;
                 if (!parse_webkdc_proxy_token_er(rc, token, 
                                                  &sub_cred->u.proxy.pt[n]))
                     return 0;
@@ -906,8 +963,9 @@ parse_subjectCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         if (login_token == NULL)
             return 0;
 
-        token = mwk_get_elem_text(rc, login_token, "");
-
+        token = get_elem_text_er(rc, login_token, mwk_func);
+        if (token == NULL)
+            return 0;
         if (!parse_login_token_er(rc, token, &sub_cred->u.lt))
             return 0;
     } else {
@@ -1076,6 +1134,14 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
     MWK_PROXY_TOKEN *sub_pt;
     const char *subject;
     unsigned char *sad;
+
+    /* make sure auth_type is not NULL */
+    if (auth_type == NULL) {
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                               "auth type is NULL",
+                               mwk_func, 1);
+        return 0;
+    }
     
     /* only create id tokens from service creds */
     if (strcmp(req_cred->type, "service") != 0) {
@@ -1168,6 +1234,14 @@ create_proxy_token_from_req_er(MWK_REQ_CTXT *rc,
     WEBAUTH_ATTR_LIST *alist;
     MWK_PROXY_TOKEN *sub_pt;
     unsigned char *wkdc_token;
+
+    /* make sure proxy_type is not NULL */
+    if (proxy_type == NULL) {
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                               "proxy type is NULL",
+                               mwk_func, 1);
+        return 0;
+    }
     
     /* only create proxy tokens from service creds */
     if (strcmp(req_cred->type, "service") != 0) {
@@ -1291,7 +1365,7 @@ create_cred_token_from_req_er(MWK_REQ_CTXT *rc,
     if (credential_type == NULL)
         return 0;
 
-    ct = mwk_get_elem_text(rc, credential_type, NULL);
+    ct = get_elem_text_er(rc, credential_type, mwk_func);
 
     if (ct == NULL) 
         return 0;
@@ -1301,7 +1375,7 @@ create_cred_token_from_req_er(MWK_REQ_CTXT *rc,
     if (server_principal == NULL)
         return 0;
 
-    sp = mwk_get_elem_text(rc, server_principal, NULL);
+    sp = get_elem_text_er(rc, server_principal, mwk_func);
 
     if (sp == NULL) 
         return 0;
@@ -1409,7 +1483,7 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     /* walk through each child element in <getTokensRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential_er(rc, child, &req_cred))
+            if (!parse_requesterCredential_er(rc, child, &req_cred, 1))
                 return OK; /* already logged err and generated errorResponse */
             req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
@@ -1417,7 +1491,9 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                 return OK; /* already logged err and generated errorResponse */
             sub_cred_parsed = 1;
         } else if (strcmp(child->name, "messageId") == 0) {
-            mid = mwk_get_elem_text(rc, child, NULL);
+            mid = get_elem_text_er(rc, child, mwk_func);
+            if (mid == NULL)
+                return OK;
         } else if (strcmp(child->name, "tokens") == 0) {
             tokens = child;
         } else {
@@ -1529,7 +1605,7 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
             if (proxy_type == NULL)
                 return 0;
 
-            pt = mwk_get_elem_text(rc, proxy_type, NULL);
+            pt = get_elem_text_er(rc, proxy_type, mwk_func);
             if (pt == NULL) 
                 return 0;
 
@@ -1630,7 +1706,7 @@ mwk_do_login_er(MWK_REQ_CTXT *rc,
 
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth_krb5_init_via_password");
+                                             "login failed");
         /* FIXME: we normally wouldn't log failures, would we? */
         generate_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
@@ -1644,7 +1720,6 @@ mwk_do_login_er(MWK_REQ_CTXT *rc,
         char *temp = apr_pstrdup(rc->r->pool, server_principal);
         free(server_principal);
         server_principal = temp;
-
     }
 
     /* get subject */
@@ -1721,6 +1796,8 @@ mwk_do_login_er(MWK_REQ_CTXT *rc,
         rtokens[0].type = pt->proxy_type;
         *num_rtokens = 1;
         sub_cred->u.proxy.num_proxy_tokens = 1;
+        /* make sure we fill in type! */
+        sub_cred->type = "proxy";
     }
 
     webauth_attr_list_free(alist);
@@ -1757,15 +1834,17 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential_er(rc, child, &req_cred))
+            if (!parse_requesterCredential_er(rc, child, &req_cred, 0))
                 return OK; /* already logged err and generated errorResponse */
             req_cred_parsed = 1;
-        } else if (strcmp(child->name, "subjectCredentials") == 0) {
+        } else if (strcmp(child->name, "subjectCredential") == 0) {
             if (!parse_subjectCredential_er(rc, child, &parsed_sub_cred))
                 return OK; /* already logged err and generated errorResponse */
             sub_cred_parsed = 1;
         } else if (strcmp(child->name, "requestToken") == 0) {
-            request_token = mwk_get_elem_text(rc, child, NULL);
+            request_token = get_elem_text_er(rc, child, mwk_func);
+            if (request_token == NULL)
+                return OK;
         } else {
             unknown_element_er(rc, mwk_func, e->name, child->name);
             return OK;
