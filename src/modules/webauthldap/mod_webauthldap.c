@@ -1065,22 +1065,28 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
     for (i=0; i<lc->numEntries; i++) {
         dn = (char*)apr_table_get(lc->entries[i], DN_ATTRIBUTE);
 
-        if (lc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap(%s): comparing %s=%s", 
-                         lc->r->user, attr, value);
-
         rc = ldap_compare_ext_s(lc->ld, dn, attr, &bvalue, NULL, NULL);
 
         if (rc == LDAP_COMPARE_TRUE) {
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap(%s): authn SUCCEEDED %s=%s", 
-                         lc->r->user, attr, value);
+                         "webauthldap(%s): SUCCEEDED comparing %s=%s in %s", 
+                         lc->r->user, attr, value, dn);
 	    lc->authrule = value;
-        }
-
-        if (rc != LDAP_COMPARE_FALSE)
             return rc;
+        } else if (rc == LDAP_COMPARE_FALSE) {
+            if (lc->sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                             "webauthldap(%s): FALSE comparing %s=%s in %s", 
+                             lc->r->user, attr, value, dn);
+            }
+        } else {
+            if (lc->sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                             "webauthldap(%s): %s(%d) comparing %s=%s in %s", 
+                             lc->r->user, ldap_err2string(rc), rc, 
+                             attr, value, dn);
+            }
+        }
     }
 
     return LDAP_COMPARE_FALSE;
@@ -1237,7 +1243,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
             
             if (!strcmp(w, "valid-user")) {
                 ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                             "webauthldap(%s): authn SUCCEEDED on require valid-user", r->user);
+                             "webauthldap(%s): SUCCEEDED on require valid-user", r->user);
                 authorized = 1;
                 lc->authrule = "valid-user";
                 break;
@@ -1245,7 +1251,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
                     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                 "webauthldap: authn SUCCEEDED on require user %s", w);
+                                 "webauthldap: SUCCEEDED on require user %s", w);
                     
                     if (!strcmp(r->user, w)) {
                         authorized = 1;
@@ -1259,20 +1265,13 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                     w = ap_getword_conf(r->pool, &t);
                     if (lc->sconf->debug)
                         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                     "webauthldap(%s): found require %s %s", 
+                                     "webauthldap(%s): found: require %s %s", 
                                      r->user, PRIVGROUP_DIRECTIVE, w);
                     
                     rc = webauthldap_docompare(lc, w);
                     if (rc == LDAP_COMPARE_TRUE) {
                         authorized = 1;
                         break;
-                    } else if (rc != LDAP_COMPARE_FALSE) {
-                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                                     "webauthldap(%s): error while %s %s %s (%d)",
-                                     r->user, "checking priviledge groups",
-                                     "ldap_compare_ext_s:",
-                                     ldap_err2string(rc), rc);
-                        return HTTP_INTERNAL_SERVER_ERROR;
                     }
                 }
 #ifndef NO_STANFORD_SUPPORT
@@ -1282,21 +1281,13 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                     w = ap_getword_conf(r->pool, &t);
                     if (lc->sconf->debug)
                         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                     "webauthldap(%s): StanfordAuth: found require group %s", 
+                                     "webauthldap(%s): StanfordAuth: found: require group %s", 
                                      r->user, w);
                     
                     rc = webauthldap_docompare(lc, w);
                     if (rc == LDAP_COMPARE_TRUE) {
                         authorized = 1;
                         break;
-                    } else if (rc != LDAP_COMPARE_FALSE) {
-                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                                     "webauthldap(%s): error while %s %s %s (%d)",
-                                     r->user, 
-                                     "checking StanfordAuth priviledge groups",
-                                     "ldap_compare_ext_s:",
-                                     ldap_err2string(rc), rc);
-                        return HTTP_INTERNAL_SERVER_ERROR;
                     }
                 }
 #endif
@@ -1306,7 +1297,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
 
                     if (lc->sconf->debug)
                         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                             "webauthldap(%s): found require %s",  r->user, w);
+                             "webauthldap(%s): found: require %s",  r->user, w);
             
                     // This means some other require directive like "group" is 
                     // encountered. Notice that we continue looking for the
