@@ -44,6 +44,29 @@ AC_ARG_ENABLE([debug],
         CFLAGS=-g
      fi])
 
+dnl Allow the user to disable building the modules.
+MODULES=webauth
+AC_ARG_ENABLE([modules],
+    AC_HELP_STRING([--disable-modules], [Do not build Apache modules]),
+    [if test x"$enableval" = xno ; then
+        MODULES=
+     fi])
+if test x"$MODULES" != x && test -d "$srcdir/src/modules/webkdc" ; then
+    MODULES="$MODULES webkdc"
+fi
+AC_SUBST(MODULES)
+
+dnl Allow the user to indicate that the Perl modules should not be built.
+BINDINGS=perl
+build_perl=yes
+AC_ARG_ENABLE([perl],
+    AC_HELP_STRING([--disable-perl], [Do not build Perl bindings]),
+    [if test x"$enableval" = xno ; then
+        build_perl=no
+        BINDINGS=
+     fi])
+AC_SUBST(BINDINGS)
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_LIBTOOL
@@ -56,7 +79,9 @@ dnl Find apxs, which may be in a separate Apache 2.x installation location.
 WEBAUTH_APACHE
 
 dnl Find Perl, used to build the Perl bindings.
-AC_PATH_PROG([PERL], [perl])
+if test x"$build_perl" = xyes ; then
+    AC_PATH_PROG([PERL], [perl])
+fi
 
 dnl Checks for libraries
 
@@ -100,8 +125,6 @@ AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/bindings/Makefile
-    src/bindings/perl/Makefile
-    src/bindings/perl/WebAuth3/Makefile.PL
     src/libwebauth/Makefile
     src/libwebauth/webauth.h
     src/modules/Makefile
@@ -110,6 +133,12 @@ AC_CONFIG_FILES([
     tests/Makefile
     tests/libwebauth/Makefile
 ])
+if test x"$build_perl" = xyes ; then
+    AC_CONFIG_FILES([
+        src/bindings/perl/Makefile
+        src/bindings/perl/WebAuth3/Makefile.PL
+    ])
+fi
 
 dnl Only create the WebKDC makefile if the directory exists, since the base
 dnl distribution doesn't include the WebKDC.
@@ -119,12 +148,14 @@ fi
 
 dnl Link all of the Perl binding files into the build tree, since Perl doesn't
 dnl support the VPATH thing.
-AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth3/WebAuth3.xs],
-[if test x"$ac_srcdir" != x. && test x"$ac_srcdir" != x ; then
-    for f in WebAuth3.pm WebAuth3.xs test.pl typemap ; do
-        $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth3/$f"
-    done
-fi], [LN_S="$LN_S"])
+if test x"$build_perl" = xyes ; then
+    AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth3/WebAuth3.xs],
+    [if test x"$ac_srcdir" != x. && test x"$ac_srcdir" != x ; then
+        for f in WebAuth3.pm WebAuth3.xs test.pl typemap ; do
+            $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth3/$f"
+        done
+    fi], [LN_S="$LN_S"])
+fi
 
 dnl Generate config.h.
 AC_OUTPUT
