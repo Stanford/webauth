@@ -566,6 +566,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
+    MERGE_PTR(webkdc_cert_file);
     MERGE_PTR(login_url);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
@@ -2367,6 +2368,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_FailureURL:
             dconf->failure_url = apr_pstrdup(cmd->pool, arg);
             break;
+        case E_WebKdcSSLCertFile:
+            sconf->webkdc_cert_file = ap_server_root_relative(cmd->pool, arg);
+            break;
         case E_Keyring:
             sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
             break;
@@ -2541,6 +2545,7 @@ static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_WebKdcURL, E_WebKdcURL, CM_WebKdcURL),
     SSTR(CD_WebKdcPrincipal, E_WebKdcPrincipal, CM_WebKdcPrincipal),
+    SSTR(CD_WebKdcSSLCertFile, E_WebKdcSSLCertFile, CM_WebKdcSSLCertFile),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),

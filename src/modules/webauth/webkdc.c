@@ -375,10 +375,9 @@ post_to_webkdc(char *post_data, int post_data_len,
 #endif
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_error_buff);
 
-    /* FIXME: turning this off for testing! */
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
-                 "mod_webauth: WARNING: USING CURLOPT_SSL_VERIFYPEER 0!");
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+    if (sconf->webkdc_cert_file) {
+        curl_easy_setopt(curl, CURLOPT_CAINFO, sconf->webkdc_cert_file);
+    }
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_gather);
 

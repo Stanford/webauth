@@ -56,6 +56,12 @@
 #define CD_WebKdcPrincipal "WebAuthWebKdcPrincipal"
 #define CM_WebKdcPrincipal "K5 WebKDC principal name"
 
+#define CD_WebKdcURL "WebAuthWebKdcURL"
+#define CM_WebKdcURL "URL for the WebKdc XML service"
+
+#define CD_WebKdcSSLCertFile "WebAuthWebKdcSSLCertFile"
+#define CM_WebKdcSSLCertFile "cert file containing the WebKDC's certificate"
+
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"
 
@@ -206,6 +212,7 @@ enum {
     E_TokenMaxTTL,
     E_VarPrefix,
     E_WebKdcPrincipal,
+    E_WebKdcSSLCertFile,
     E_WebKdcURL,
 };
 
@@ -230,6 +237,7 @@ typedef struct {
 typedef struct {
     char *webkdc_url;
     char *webkdc_principal;
+    char *webkdc_cert_file;
     char *login_url;
     char *keyring_path;
     char *keytab_path;
