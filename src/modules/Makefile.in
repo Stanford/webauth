@@ -17,6 +17,6 @@ all clean depend install: Makefile
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 	@if [ -d "webkdc" ] ; then \
-	    @echo "making $@ in webkdc"; \
+	    echo "making $@ in webkdc"; \
 	    ( cd webkdc && $(MAKE) $@ ) || exit 1; \
 	fi
