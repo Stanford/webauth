@@ -7,6 +7,8 @@ WebAuth 3.2.2 (in progress)
 
  *) Fix invalid HTML in the templates for the weblogin pages.
 
+ *) Support older 1.2.x Kerberos libraries in mod_webauthldap.
+
 WebAuth 3.2.1 (2003-09-10)
 
  *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.
