@@ -223,14 +223,14 @@ if ($status == WK_SUCCESS) {
     my $sb = $resp->subject();
     print "Logged in as $sb<br>";
     my $return_url = $resp->return_url();
-    $return_url .= ";WEBAUTHR=".$resp->response_token().";";
+    $return_url .= "?WEBAUTHR=".$resp->response_token().";";
     $return_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();
     print "click <a href=\"$return_url\">here</a> to return!<br>";
 
     my $lc = $resp->login_canceled_token;
     if (defined($lc)) {
 	my $can_url = $resp->return_url();
-	$can_url .= ";WEBAUTHR=$lc;";
+	$can_url .= "?WEBAUTHR=$lc;";
 	$can_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();
 	print "Click <a href=\"$can_url\">here</a> to return to the ".
 	    "application you came from without logging in.<br>";
@@ -250,7 +250,7 @@ if ($status == WK_SUCCESS) {
     my $lc = $resp->login_canceled_token;
     my $can_url;
     if ($lc) {
-	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url = $resp->return_url() . "?WEBAUTHR=$lc;";
 	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
 	    unless !$resp->app_state();
     }
@@ -265,7 +265,7 @@ if ($status == WK_SUCCESS) {
     my $lc = $resp->login_canceled_token;
     my $can_url;
     if ($lc) {
-	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url = $resp->return_url() . "?WEBAUTHR=$lc;";
 	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
 	    unless !$resp->app_state();
     }

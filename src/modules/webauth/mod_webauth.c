@@ -1633,7 +1633,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     return_url = make_return_url(rc);
 
-    /* never let return URL have  ;WEBAUTHR=...;;WEBUTHS=...; on the
+    /* never let return URL have  ?WEBAUTHR=...;;WEBUTHS=...; on the
        end of it, that could get ugly... */
     strip_end(return_url, WEBAUTHR_MAGIC);
 

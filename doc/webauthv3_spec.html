@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.03, Modified 1/20/03</b></H4>
+<H4><b>Version  1.04  Modified 1/29/03</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -870,19 +870,19 @@ the base64-encoded service-token.
 
 <p>When the WebKDC is ready to redirect the UA back to the WAS,
 it will construct a return URL by taking the return-url specified
-in the request token an appending ";WEBAUTHR=token;" to it, where
+in the request token an appending "?WEBAUTHR=token;" to it, where
 token is the requested token. If the "as" attribute was specified
-in the request token, then it is base64-encoded and appended to
-the URL as ";WEBAUTHS=token;".
+in the request token, then it is base64-encoded and then appended to
+the URL (always after WEBAUTHR) as ";WEBAUTHS=token;".
 
 <p>For example:
 
 <pre>
-  https://{return-url};WEBAUTHR=token;[;WEBAUTHS=token;]
+  https://{return-url}?WEBAUTHR=token;[;WEBAUTHS=token;]
 </pre>
 
-<p>The WebAuth Apache module will then strip ";WEBAUTHS=token;"
-and ";WEBAUTHR=token;" off the end of the URL. If the tokens are
+<p>The WebAuth Apache module will then strip "?WEBAUTHR=token;"
+and ";WEBAUTHS=token;" off the end of the URL. If the tokens are
 valid, the WebAuth module will construct the app-token cookie, 
 etc, then do another redirect back to the URL with the extra information
 stripped off.
@@ -2008,6 +2008,20 @@ FIXME: Insert link to mod_webauth documentation
          <li>fix typo in credential token encoding example, change
              "ct" to "crt".
          <li>add "crs" attribute to credential token
+       </ul>
+   </td>
+</tr>
+
+
+<tr>
+  <td>1/29/2003</td>
+  <td>1.04</td>
+  <td>schemers</td>
+   <td>
+       <ul>
+         <li>When appending WEBAUTHR to return URL, use "?WEBAUTHR=...;" 
+             instead of ";WEBAUTHR=...;" so browsers handle 
+             relative URLs correctly.
        </ul>
    </td>
 </tr>

@@ -36,7 +36,7 @@
 #define START_RENEWAL_ATTEMPT_PERCENT (0.90)
 
 /* where to look in URL for returned tokens */
-#define WEBAUTHR_MAGIC ";WEBAUTHR="
+#define WEBAUTHR_MAGIC "?WEBAUTHR="
 #define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
 
 #define WEBAUTHS_MAGIC ";WEBAUTHS="
