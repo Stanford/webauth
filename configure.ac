@@ -2,8 +2,10 @@ dnl Process this file with autoconf to produce a configure script.
 dnl $Id$
 
 dnl Put more complex macros into separate files to make them easier to
-dnl maintain.
+dnl maintain.  (Also good for macros that should be used in other projects as
+dnl well.)
 m4_include([m4/int32.m4])
+m4_include([m4/krb5.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
@@ -44,10 +46,7 @@ AC_CHECK_LIB(crypto, AES_cbc_encrypt,
       AC_SUBST(WEBAUTH_AES_OBJS, ["aes_cbc.o  aes_cfb.o  aes_core.o  aes_ctr.o  aes_ecb.o aes_misc.o  aes_ofb.o"])])
 
 dnl Kerberos v5
-
-AC_CHECK_LIB(k5crypto, krb5_string_to_key, [AC_SUBST(KRB5_CRYPTO_LIB, [-lk5crypto])])
-AC_CHECK_LIB(krb5, krb5_init_context, [AC_SUBST(KRB5_LIB, [-lkrb5])])
-AC_CHECK_LIB(com_err, error_message, [AC_SUBST(COM_ERR_LIB, [-lcom_err])])
+WEBAUTH_LIB_KRB5
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -71,6 +70,7 @@ AC_CONFIG_HEADERS([src/common/include/conf.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    src/bindings/perl/WebAuth/Makefile.PL
     src/libwebauth/Makefile
     src/libwebauth/webauth.h
     src/utils/Makefile

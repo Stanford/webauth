@@ -1,5 +1,8 @@
 Makefile
+Makefile.PL
 WebAuth.bs
 WebAuth.c
 blib
 pm_to_blib
+webauth_keyring
+webauth_keyring2

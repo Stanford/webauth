@@ -1,0 +1,14 @@
+# Makefile.PL for WebAuth Perl bindings.  -*- perl -*-
+# $Id$
+
+use ExtUtils::MakeMaker;
+WriteMakefile (
+    NAME                => 'WebAuth',
+    VERSION_FROM        => 'WebAuth.pm',
+    ($] >= 5.005 ?
+      (ABSTRACT_FROM    => 'WebAuth.pm',
+       AUTHOR           => 'Roland Schemers (schemers@stanford.edu)') : ()),
+    INC                 => '-I@top_srcdir@/src/libwebauth',
+    LIBS                => '-L@abs_top_builddir@/src/libwebauth -lwebauth'
+                           . ' @OPENSSL_CRYPTO_LIB@ @KRB5_LIBS@ @LIBS@',
+);
