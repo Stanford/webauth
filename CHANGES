@@ -2,6 +2,9 @@
 
 WebAuth 3.2.1 (in progress)
 
+ *) Make sure ident_set_authflag call is made after ident_set_authtype
+    call.
+
  *) Corrected handling of successful S/Ident calls returning errors in
     mod_webkdc when debugging is turned off.
 
