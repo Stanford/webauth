@@ -135,13 +135,6 @@
 #define N_LASTUSED   "mod_webauth_LASTUSED"
 #define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
 
-
-/* enum for mutexes */
-enum mwa_mutex_type {
-    MWA_MUTEX_SERVICE_TOKEN = 0,
-    MWA_MUTEX_MAX /* MUST BE LAST! */
-};
-
 /* enums for config directives */
 
 enum {
@@ -216,6 +209,7 @@ typedef struct {
     WEBAUTH_KEYRING *ring; /* our keyring */
     int free_ring;         /* set if we should free ring */
     MWA_SERVICE_TOKEN *service_token; /*cached service_token, always free */
+    apr_thread_mutex_t *mutex; /* mutex to use when modfiying sconf stuff */
 } MWA_SCONF;
 
 /* directory conf stuff */
@@ -256,27 +250,11 @@ typedef struct {
 /* webkdc.c */
 
 MWA_SERVICE_TOKEN *
-mwa_get_service_token(MWA_REQ_CTXT *rc);
+mwa_get_service_token(server_rec *server, 
+                      MWA_SCONF *sconf, apr_pool_t *pool,
+                      int local_cache_only);
 
 /* util.c */
-
-/*
- * initialize all our mutexes
- */
-void
-mwa_init_mutexes(server_rec *s);
-
-/*
- * lock a mutex
- */
-void
-mwa_lock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type);
-
-/*
- * unlock a mutex 
- */
-void
-mwa_unlock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type);
 
 /*
  * get a string from an attr list, log an error if not present.
@@ -316,7 +294,7 @@ mwa_log_request(request_rec *r, const char *msg);
  * get a WEBAUTH_KRB5_CTXT, log errors
  */
 WEBAUTH_KRB5_CTXT *
-mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func);
+mwa_get_webauth_krb5_ctxt(server_rec *s, const char *mwa_func);
 
 
 /*

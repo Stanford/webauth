@@ -5,83 +5,6 @@
 
 #include "mod_webauth.h"
 
-/* initiaized in child */
-static apr_thread_mutex_t *mwa_mutex[MWA_MUTEX_MAX];
-
-void
-mwa_init_mutexes(server_rec *s)
-{
-#if APR_HAS_THREADS
-    int i;
-    apr_status_t astatus;
-    char errbuff[512];
-
-    for (i=0; i < MWA_MUTEX_MAX; i++) {
-        astatus = apr_thread_mutex_create(&mwa_mutex[i],
-                                          APR_THREAD_MUTEX_DEFAULT,
-                                          s->process->pool);
-        if (astatus != APR_SUCCESS) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                         "mod_webauth: mwa_init_mutex: "
-                         "apr_thread_mutex_create(%d): %s (%d)",
-                         i,
-                         apr_strerror(astatus, errbuff, sizeof(errbuff)),
-                         astatus);
-            mwa_mutex[i] = NULL;
-        }
-    }
-#endif
-}
-
-static void
-lock_or_unlock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type, int lock)
-{
-#if APR_HAS_THREADS
-
-    apr_status_t astatus;
-
-    if (type < 0 || type >= MWA_MUTEX_MAX) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: lock_mutex: invalid type (%d) ignored", 
-                     type);
-        return;
-    }
-        
-    if (mwa_mutex[type] != NULL) {
-        if (lock)
-            astatus = apr_thread_mutex_lock(mwa_mutex[type]);
-        else 
-            astatus = apr_thread_mutex_unlock(mwa_mutex[type]);
-
-        if (astatus != APR_SUCCESS) {
-            char errbuff[512];
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: lock_mutex(%d,%d): %s (%d)",
-                         type, lock, 
-                         apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
-                         astatus);
-            /* FIXME: now what? */
-        }
-    } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: lock_mutex: mutex(%d) is NULL", type);
-        /* FIXME: now what? */
-        }
-#endif
-}
-
-void
-mwa_lock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type)
-{
-    lock_or_unlock_mutex(rc, type, 1);
-}
-
-void
-mwa_unlock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type)
-{
-    lock_or_unlock_mutex(rc, type, 0);
-}
-
 /*
  * get a required char* attr from a token, with logging if not present.
  * returns value or NULL on error,
@@ -193,14 +116,14 @@ mwa_log_request(request_rec *r, const char *msg)
  * get a WEBAUTH_KRB5_CTXT
  */
 WEBAUTH_KRB5_CTXT *
-mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
+mwa_get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
 
     status = webauth_krb5_new(&ctxt);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r->server, 
+        mwa_log_webauth_error(server, 
                               status, ctxt, mwa_func, "webauth_krb5_new",
                               NULL);
         if (status == WA_ERR_KRB5)

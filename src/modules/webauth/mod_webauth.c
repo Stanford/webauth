@@ -315,7 +315,7 @@ mod_webauth_cleanup(void *data)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: cleanup");
     }
 
-    /* walk through list of services and clean up */
+    /* walk through list of servers and clean up */
     for (t=s; t; t=t->next) {
         MWA_SCONF *tconf = (MWA_SCONF*)ap_get_module_config(t->module_config,
                                                             &webauth_module);
@@ -352,7 +352,8 @@ mod_webauth_cleanup(void *data)
  * also cache keyring
  */
 static void
-init_sconf(server_rec *s, MWA_SCONF *bconf, apr_pool_t *ptemp)
+init_sconf(server_rec *s, MWA_SCONF *bconf, 
+           apr_pool_t *pconf, apr_pool_t *ptemp)
 {
     MWA_SCONF *sconf;
 
@@ -371,8 +372,14 @@ init_sconf(server_rec *s, MWA_SCONF *bconf, apr_pool_t *ptemp)
 
 #undef CHECK_DIR
 
+    /* init mutex first */
+    if (sconf->mutex == NULL) {
+        apr_thread_mutex_create(&sconf->mutex,
+                                APR_THREAD_MUTEX_DEFAULT,
+                                pconf);
+    }
+
     /* load up the keyring */
-    
     if (sconf->ring == NULL) {
         if ((bconf->ring != NULL) &&
             (strcmp(sconf->keyring_path, bconf->keyring_path) == 0)) {
@@ -384,6 +391,9 @@ init_sconf(server_rec *s, MWA_SCONF *bconf, apr_pool_t *ptemp)
                 sconf->free_ring = 1;
         }
     }
+
+    /* load service token cache. must be done after we init keyring  */
+    (void)mwa_get_service_token(s, sconf, ptemp, 1);
 
 }
 
@@ -409,7 +419,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
                               apr_pool_cleanup_null);
 
     for (scheck=s; scheck; scheck=scheck->next) {
-        init_sconf(scheck, sconf, ptemp);
+        init_sconf(scheck, sconf, pconf, ptemp);
     }
 
     version = apr_pstrcat(ptemp, "WebAuth3/", webauth_info_version(), NULL);
@@ -429,8 +439,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 static void
 mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 {
-    /* can this be moved to parent? */
-    mwa_init_mutexes(s);
+    /* nothing for now */
 }
 
 /*
@@ -890,7 +899,7 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
         return NULL;
     }
 
-    ctxt = mwa_get_webauth_krb5_ctxt(rc->r, "validate_krb5_sad");
+    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, "validate_krb5_sad");
     if (ctxt == NULL)
         return NULL;
 
@@ -1105,7 +1114,7 @@ check_url(MWA_REQ_CTXT *rc)
 
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: check_url: found  WBEUATHR");
+                     "mod_webauth: check_url: found  WEBAUTHR");
 
     /* see if we have WEBAUTHS, which has the session key to use */
     ws = mwa_remove_note(rc->r, N_WEBAUTHS);
@@ -1117,7 +1126,9 @@ check_url(MWA_REQ_CTXT *rc)
             return OK;
         return parse_returned_token(wr, key, rc);
     } else {
-        MWA_SERVICE_TOKEN *st = mwa_get_service_token(rc);
+        MWA_SERVICE_TOKEN *st = mwa_get_service_token(rc->r->server,
+                                                      rc->sconf,
+                                                      rc->r->pool, 0);
         if (st != NULL)
             return parse_returned_token(wr, &st->key, rc);
     }
@@ -1151,7 +1162,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     ap_discard_request_body(rc->r);
 
-    st = mwa_get_service_token(rc);
+    st = mwa_get_service_token(rc->r->server, rc->sconf, rc->r->pool, 0);
     if (st == NULL) {
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
                      "mod_webauth: redirect_request_token: "
