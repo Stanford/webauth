@@ -34,7 +34,7 @@ sub get_was_keyring {
 sub handle_response($) {
     my ($resp) = @_;
 
-    my $as_token_str = $resp->app_state_token();
+    my $as_token_str = $resp->app_state();
 
     print "as_token_token b64'd length(".length($as_token_str).")\n";
 

@@ -80,7 +80,6 @@ typedef enum {
 #define WA_TK_PROXY_TYPE "pt"
 #define WA_TK_PROXY_DATA "pd"
 #define WA_TK_PROXY_SUBJECT "ps"
-#define WA_TK_POST_URL "pu"
 #define WA_TK_REQUEST_REASON "rr"
 #define WA_TK_REQUESTED_TOKEN_TYPE "rtt"
 #define WA_TK_RETURN_URL "ru"

@@ -238,8 +238,6 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
 
     # everything went ok
     # $resp->return_url  will have the return_url for a redirect
-    # FIXME: check post_url first?
-
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
     print_headers($q, $resp->proxy_cookies);

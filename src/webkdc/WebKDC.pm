@@ -267,7 +267,6 @@ sub handle_request_token($$) {
 
     # add return_url and post_url if present in request-token
     $wresp->return_url($req_token->return_url());
-    $wresp->post_url($req_token->post_url());
 
     # add app_state if present in request-token
     my $as = $req_token->app_state();
@@ -820,8 +819,7 @@ following fashion:
   } else {
 
     # everything went ok
-    # $resp->return_url  will have the return_url for a redirect
-    # FIXME: check post_url first?
+    # $resp->return_url  will have the return_url for a redirect/confirm
 
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies

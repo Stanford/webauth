@@ -33,12 +33,6 @@ sub return_url {
     return $self->{'return_url'};
 }
 
-sub post_url {
-    my $self = shift;
-    $self->{'post_url'} = shift if @_;
-    return $self->{'post_url'};
-}
-
 sub proxy_cookie {
     my $self = shift;
     my $type = shift;

@@ -45,7 +45,6 @@ our %ta_desc =
      &WA_TK_PROXY_TYPE => 'proxy-type',
      &WA_TK_PROXY_DATA => 'proxy-data',
      &WA_TK_PROXY_SUBJECT => 'proxy-subject',
-     &WA_TK_POST_URL => 'post-url',
      &WA_TK_REQUEST_REASON => 'request-reason',
      &WA_TK_REQUESTED_TOKEN_TYPE => 'req-token-type',
      &WA_TK_RETURN_URL => 'return-url',
@@ -676,12 +675,6 @@ sub return_url {
     return $self->{'attrs'}{&WA_TK_RETURN_URL};
 }
 
-sub post_url {
-    my $self = shift;
-    $self->{'attrs'}{&WA_TK_POST_URL} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_POST_URL};
-}
-
 sub command {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_COMMAND} = shift if @_;
@@ -1026,7 +1019,6 @@ The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
   $token->app_state([$new_value])
   $token->creation_time([$new_value])
   $token->proxy_type([$new_value])
-  $token->post_url([$new_value])
   $token->request_reason([$new_value])
   $token->requested_token_type([$new_value])
   $token->return_url([$new_value])
