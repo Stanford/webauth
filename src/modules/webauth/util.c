@@ -149,6 +149,8 @@ mwa_log_webauth_error(request_rec *r,
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: %s: %s failed: %s (%d)",
+                     mwa_func,
+                     func,
                      webauth_error_message(status), status);
     }
 }
