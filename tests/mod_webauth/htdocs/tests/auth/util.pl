@@ -3,6 +3,16 @@
 use CGI qw/:standard/;
 use CGI::Cookie;
 
+sub escapeHTML {
+    my $toencode = shift;
+
+    $toencode=~s/&/&amp;/g;
+    $toencode=~s/\"/&quot;/g;
+    $toencode=~s/>/&gt;/g;
+    $toencode=~s/</&lt;/g;
+    return $toencode;
+}
+
 sub test_title {
     my ($num, $desc) = @_;
     print <<EOS;
