@@ -3,9 +3,6 @@
 use strict;
 use warnings;
 
-#use lib '../bindings/perl/WebAuth/blib/lib';
-#use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
-
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC;
 
@@ -21,7 +18,7 @@ use vars qw($CONFIG_WAS_KEYTAB
 
 $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
 $CONFIG_WAS_KEYRING_PATH = "was.keyring";
-$CONFIG_WEBKDC_LOGIN_URL = "http://lichen.stanford.edu:8080/login";
+$CONFIG_WEBKDC_LOGIN_URL = "https://lichen.stanford.edu:8443/login";
 
 our $our_keyring = undef;
 
@@ -50,8 +47,6 @@ sub dump_stuff {
 
 sub handle_response($$$) {
     my ($q, $resp_token_str, $as_token_str) = @_;
-
-    print STDERR "in handle_response\n";
 
     $resp_token_str =~ tr/ /+/;
     $as_token_str =~ tr/ /+/;
@@ -83,14 +78,17 @@ sub handle_response($$$) {
     $app_token->creation_time(time());
     $app_token->expiration_time($id_token->expiration_time());
 
-    #print $app_token;
+    print STDERR $app_token;
 
     my $app_token_str = base64_encode($app_token->to_token(get_was_keyring()));
 
     print STDERR "returning new app_token and cookie!\n";
 
+    my $secure = (defined($ENV{'HTTPS'}) && $ENV{'HTTPS'} eq 'on') ? 1 : 0;
+
     return ($app_token, $q->cookie(-name => 'webauth_at', 
-				   -value => $app_token_str));
+				   -value => $app_token_str,
+	                           -secure => $secure));
 
 }
 
@@ -125,13 +123,19 @@ sub check_for_valid_app_token {
 sub redirect_for_webauth_cookie {
     my ($q, $cookie) = @_;
 
-    my $return_url = "http://".$ENV{'SERVER_NAME'}.":".$ENV{'SERVER_PORT'}.
+
+    my $proto = (defined($ENV{'HTTPS'}) &&
+		 $ENV{'HTTPS'} eq 'on') ? 'https' : 'http';
+
+    my $return_url = "$proto://".$ENV{'SERVER_NAME'}.":".$ENV{'SERVER_PORT'}.
 	$ENV{"REQUEST_URI"};
 
+    
     $return_url =~ s/;WEBAUTHR=.*;$//;
     $return_url =~ s/;WEBAUTHS=.*;$//;
 
     print STDERR "rfwc: redirect($return_url)\n";
+    print STDERR "rfwc: cookie($cookie)\n";
 
     print "Status: 302 Moved\n";
     print "Location: $return_url\n";
@@ -172,7 +176,9 @@ sub redirect_for_webauth_login {
 
     print STDERR $as_token;
 
-    my $return_url = "http://".$ENV{'SERVER_NAME'}.":".$ENV{'SERVER_PORT'}.
+    my $proto = ($ENV{'HTTPS'} eq 'on') ? 'https' : 'http';
+
+    my $return_url = "$proto://".$ENV{'SERVER_NAME'}.":".$ENV{'SERVER_PORT'}.
 	$ENV{"REQUEST_URI"};
 	
     my $req_token = new WebKDC::RequestToken;
@@ -189,6 +195,7 @@ sub redirect_for_webauth_login {
 
     my $redirect_url = 
 	"$CONFIG_WEBKDC_LOGIN_URL?RT=$req_token_str;ST=$service_token_str";
+
     print STDERR "redirect url($redirect_url)\n";
 
     print "Status: 302 Moved\n";
@@ -235,9 +242,11 @@ eval {
 };
 
 if ($@) {
-    print "OOPS: $@\n";
+    my $e = $@;
+    print STDERR "app.cgi OOPS: $e\n";
     print $q->header(-type => 'text/plain');
-
+    print "app.cgi OOPS: $e\n";
+    exit(1);
 }
 
 print "---------------\n";
@@ -245,7 +254,7 @@ print "---------------\n";
 print "REMOTE_USER = ",$ENV{'REMOTE_USER'},"\n";
 print "(note: REMOTE_USER is fully-qualified for now)\n";
 print "---------------\n";
-exit(1);
+exit(0);
 
 dump_stuff;
 print "---------------\n";

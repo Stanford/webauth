@@ -4,9 +4,7 @@ use strict;
 use warnings;
 use UNIVERSAL qw(isa);
 
-#FIXME: fix these
-use lib '../bindings/perl/WebAuth/blib/lib';
-use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
+#use blib '../bindings/perl/WebAuth';
 
 use WebAuth qw(:base64 :krb5 :const);
 use WebKDC::WebRequest;

@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-use lib '../bindings/perl/WebAuth/blib/lib';
-use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
+#use blib '../bindings/perl/WebAuth';
 
 use WebAuth;
 use WebKDC;

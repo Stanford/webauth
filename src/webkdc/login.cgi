@@ -3,9 +3,6 @@
 use strict;
 use warnings;
 
-#use lib '../bindings/perl/WebAuth/blib/lib';
-#use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
-
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC;
 use WebKDC::WebKDCException;
@@ -33,9 +30,12 @@ sub print_headers {
     my ($q, $cookies) = @_;
     my $ca;
 
+    my $secure = (defined($ENV{'HTTPS'}) && $ENV{'HTTPS'} eq 'on') ? 1 : 0;
+
     if ($cookies) {
 	while (my($name, $value) = each(%{$cookies})) {
-	    push(@$ca, $q->cookie(-name => $name, -value => $value));
+	    push(@$ca, $q->cookie(-name => $name, -value => $value, 
+				  -secure => $secure));
 	}
     }
 
@@ -147,7 +147,7 @@ sub login_form {
     <hr>
   </html>
 EOF
-exit(1);
+exit(0);
 }
 
 my $q = new CGI;
@@ -159,7 +159,7 @@ my $submit = $q->param('submit');
 
 if ($submit eq 'Cancel') {
     cancel_page($q);
-    exit(1);
+    exit(0);
 }
 
 # need to convert spaces back to +'s if they hosed by url-encode/decode
@@ -201,7 +201,7 @@ eval {
 
 #my $e = $@;
 
-print STDERR "FOOBAR ".$@."\n";
+print STDERR "login.cgi exception ".$@."\n";
 
 if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     # need to prompt again, also need to limit number of times
@@ -231,7 +231,7 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
  print $q->header(-type => 'text/html');
 print STDERR "FOOBAR ".$@."\n";
 print $@."\n";
-    print "oops, login failed, blah blah blah\n";
+    print "oops, login failed, come back later, blah blah blah\n";
 
 } else {
 
@@ -249,7 +249,7 @@ print $@."\n";
     print "click <a href=\"$return_url\">here</a> to return!\n";
 }
 
-exit(1);
+exit(0);
 
 print "---------------\n";
 dump_stuff;
