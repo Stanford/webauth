@@ -15,26 +15,6 @@ doc/mod_webauth.html.en                 Prebuilt version of mod_webauth.xml
 doc/mod_webauth.xml                     WebAuth Apache module documentation
 doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
-doc/old                                 Obsolete documentation (Directory)
-doc/old/addEncryptionKey.rng            Obsolete documentation
-doc/old/addKeyResponse.rng              Obsolete documentation
-doc/old/auth-post                       Obsolete documentation
-doc/old/cookie-formats                  Obsolete documentation
-doc/old/credAuthResponse.rng            Obsolete documentation
-doc/old/encryptedCredAuth.rng           Obsolete documentation
-doc/old/encryptedCredAuth.xsd           Obsolete documentation
-doc/old/errorResponse.rng               Obsolete documentation
-doc/old/passwordAuthResponse.rng        Obsolete documentation
-doc/old/preauth-get                     Obsolete documentation
-doc/old/protocol-overview               Obsolete documentation
-doc/old/sendEncryptionKeys.rng          Obsolete documentation
-doc/old/sendKeysResponse.rng            Obsolete documentation
-doc/old/skel.rng                        Obsolete documentation
-doc/old/skel.xsd                        Obsolete documentation
-doc/old/userPasswordAuth.rng            Obsolete documentation
-doc/old/userPasswordAuth.xsd            Obsolete documentation
-doc/old/webkdc-implementation           Obsolete documentation
-doc/old/webkdc-protocol                 Obsolete documentation
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
 doc/webauth.conf                        Sample WebAuth Apache configuration
