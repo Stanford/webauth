@@ -29,3 +29,8 @@ install:
 
 clean:
 	rm -rf *.o *.la *.lo *.slo .libs *~ core \#*
+
+depend:
+	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
