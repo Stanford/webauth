@@ -48,7 +48,7 @@ sub print_headers {
     if ($cookies) {
 	while (my($name, $value) = each(%{$cookies})) {
 	    push(@$ca, $q->cookie(-name => $name, -value => $value, 
-			  -secure => $secure));
+				  -secure => $secure));
 	}
     }
     if  (!$q->cookie($TEST_COOKIE)) {
@@ -227,7 +227,13 @@ while (my $q = new CGI::Fast) {
 		#print STDERR "found a cookie $q->cooki$name)\n"; 
 	   }	
 	}
- 	
+
+ 	# pass in info for S/Ident
+	$req->local_ip_addr($ENV{'SERVER_ADDR'});
+	$req->local_ip_port($ENV{'SERVER_PORT'});
+	$req->remote_ip_addr($ENV{'REMOTE_ADDR'});
+	$req->remote_ip_port($ENV{'REMOTE_PORT'});
+
 	($status, $exception) =
 	    WebKDC::make_request_token_request($req, $resp);
 	

@@ -2,6 +2,8 @@
 
 WebAuth 3.2.0 (in progress)
 
+ *) Add S/Ident to weblogin/webkdc
+
  *) Fixed bug when handling sub-requests (like in mod_autoindex).  Make
     sure to stash notes in the top-most main request.
 

@@ -4,6 +4,14 @@
 
 #include "mod_webkdc.h"
 
+#ifndef HAVE_SIDENT
+#include <errno.h>
+#include <sident.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif 
+
 /* attr list macros to make code easier to read and audit 
  * we don't need to check error codes since we are using
  * WA_F_NONE, which doesn't allocate any memory.
@@ -316,6 +324,202 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     return NULL;
 }
 
+#ifndef HAVE_SIDENT
+static MWK_PROXY_TOKEN *
+attempt_sident(MWK_REQ_CTXT *rc,
+               MWK_REQUEST_INFO *req_info,
+               int *num_proxy_tokens,
+               MWK_RETURNED_PROXY_TOKEN *rptokens)
+{
+    static const char *mwk_func="attempt_sident";
+    MWK_IDENT_AUTH_TYPE *iat;
+    IDENT *ident;
+    int i,s, resp_port, req_port, token_len, ms;
+    struct in_addr resp, req;
+    MWK_PROXY_TOKEN *pt;
+    WEBAUTH_ATTR_LIST *alist;
+    char *token_data;
+
+    if (rc->sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                     "mod_webkdc: %s: identInfo(req %s:%s, resp %s:%s)",
+                     mwk_func, 
+                     req_info->local_addr,
+                     req_info->local_port,
+                     req_info->remote_addr,
+                     req_info->remote_port);
+    }
+
+    resp.s_addr = inet_addr(req_info->remote_addr);
+    resp_port = atoi(req_info->remote_port);
+
+    req.s_addr = inet_addr(req_info->local_addr);
+    req_port = atoi(req_info->local_port);
+
+    ident = NULL;
+
+    iat = (MWK_IDENT_AUTH_TYPE*) rc->sconf->sident_auth_types->elts;
+    /* go in reverse order since we pushed them initially */
+    //for (i = rc->sconf->sident_auth_types->nelts-1; i >= 0; i--) {
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                 "mod_webkdc: %s: nelts: %d", mwk_func,
+                 rc->sconf->sident_auth_types->nelts);
+
+    for (i = 0; i < rc->sconf->sident_auth_types->nelts; i++) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: try ident: %d", mwk_func, i);
+
+        s  = ident_set_authtype(iat[i].type, iat[i].data);
+        if (s != IDENT_AUTH_OKAY) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                         "mod_webkdc: %s: ident_set_authtype failed: %s (%d)",
+                         mwk_func,
+                         (s >= 0  && s < IDENT_MAX_ERROR) ?
+                         ident_err_txt[s] : "unknown-error-code",
+                         s
+                         );
+        } else {
+            if (rc->sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                             "mod_webkdc: %s: ident_set_authtype(%s,%s, %d)",
+                             mwk_func,
+                             iat[i].type, 
+                             iat[i].data != NULL ? iat[i].data : "(null)",
+                             rc->sconf->sident_timeout);
+            }
+            ident = ident_query(&req, &resp,
+                                resp_port, req_port,
+                                rc->sconf->sident_timeout);
+            if (ident != NULL && ident->result_code == IDENT_AUTH_OKAY)
+                break;
+        
+            if (rc->sconf->debug) {
+                if (ident == NULL) {
+                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                               "mod_webkdc: %s: ident_query failed: errno: %d",
+                                 mwk_func, errno);
+                } else {
+                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                                 "mod_webkdc: %s: ident_query failed: %s (%d)",
+                                 mwk_func,
+                                 (ident->result_code >= 0  && 
+                                  ident->result_code < IDENT_MAX_ERROR) ?
+                                 ident_err_txt[s] : "unknown-error-code",
+                                 s);
+                    ident_free(ident);
+                    ident = NULL;
+                }
+            }
+        }
+    }
+
+    
+    if (ident == NULL)
+        return NULL;
+
+    if (rc->sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                     "mod_webkdc: %s: ident success: %s, %s, expires %d",
+                     mwk_func,
+                     ident->identifier,
+                     ident->principal,
+                     (int)ident->expires);
+    }
+
+    pt = (MWK_PROXY_TOKEN*)apr_pcalloc(rc->r->pool, sizeof(MWK_PROXY_TOKEN));
+
+    if (pt == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: pcalloc of MWK_PROXY_TOKEN failed",
+                     mwk_func);
+        goto finish;
+    }
+
+    pt->proxy_type = "sident";
+    pt->proxy_subject = "WEBKDC:sident";
+
+    if (ident->principal != NULL) {
+        pt->subject = apr_pstrdup(rc->r->pool, ident->principal);
+    } else {
+        char *c;
+        pt->subject = apr_pstrdup(rc->r->pool, ident->identifier);
+        c = ap_strchr(pt->subject, ':');
+        if (c != NULL)
+            *c = '\0';
+        
+    }
+    pt->proxy_data = apr_pstrdup(rc->r->pool, ident->identifier);
+    pt->proxy_data_len = strlen(pt->proxy_data);
+    time(&pt->creation);
+
+    /* if ProxyTokenLifetime is non-zero, use the min of it 
+       and the tgt, else just use the tgt  */
+    if (rc->sconf->proxy_token_lifetime) {
+        time_t pmax = pt->creation + rc->sconf->proxy_token_lifetime;
+        pt->expiration = (ident->expires < pmax) ? ident->expires : pmax;
+    } else {
+        pt->expiration = ident->expires;
+    }
+
+    alist = new_attr_list(rc, mwk_func);
+    if (alist == NULL)
+        goto finish;
+
+    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
+    SET_PROXY_SUBJECT(pt->proxy_subject);
+    SET_PROXY_TYPE(pt->proxy_type);
+    SET_SUBJECT(pt->subject);
+    SET_PROXY_DATA(pt->proxy_data, pt->proxy_data_len);
+    SET_CREATION_TIME(pt->creation);
+    SET_EXPIRATION_TIME(pt->expiration);
+    /*SET_EXPIRATION_TIME(pt->creation); FOR TESTING */
+
+    ms = make_token(rc, alist, pt->creation, &token_data, &token_len, 
+                    1, mwk_func);
+    webauth_attr_list_free(alist);
+
+    if (ms == MWK_OK) {
+        int j, found;
+        /* if there already is an outgoing "sident" token, then
+           replace it */
+        for (j=0, found=0; j < *num_proxy_tokens; j++) {
+            if (strcmp(rptokens[j].type, "sident") == 0) {
+                found = 1;
+                rptokens[j].token_data = token_data;
+                if (rc->sconf->debug) {
+                    ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                                 "mod_webkdc: %s: ident "
+                                 "replaced expired sident token",
+                                 mwk_func);
+                }
+                break;
+            }
+        }
+        if (!found) {
+            rptokens[*num_proxy_tokens].token_data = token_data;
+            rptokens[*num_proxy_tokens].type = "sident";
+            *num_proxy_tokens = *num_proxy_tokens + 1;
+        }
+
+        /*
+        if (rc->sconf->debug) {
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                         "mod_webkdc: %s: ident "
+                         "created webkdc-proxy-token: %d",
+                         mwk_func,
+                         *num_proxy_tokens);
+        }
+        */
+    }
+
+ finish:
+    ident_free(ident);
+
+    return pt;
+}
+
+#endif
+
 /*
  * search through subject credentials for a proxy-token of the requested
  * type.
@@ -324,7 +528,8 @@ static MWK_PROXY_TOKEN *
 find_proxy_token(MWK_REQ_CTXT *rc,
                  MWK_SUBJECT_CREDENTIAL *sub_cred, 
                  const char *type,
-                 const char *mwk_func) 
+                 const char *mwk_func,
+                 int set_error) 
 {
     int i;
     char *msg;
@@ -336,8 +541,11 @@ find_proxy_token(MWK_REQ_CTXT *rc,
             }
         }
     }
-    msg = apr_psprintf(rc->r->pool, "need a proxy-token of type: %s", type);
-    set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func, 1);
+    if (set_error) {
+        msg = apr_psprintf(rc->r->pool, 
+                           "need a proxy-token of type: %s", type);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func, 1);
+    }
     return NULL;
 }
 
@@ -869,7 +1077,9 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
  */
 static enum mwk_status
 parse_subjectCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e, 
-                        MWK_SUBJECT_CREDENTIAL *sub_cred)
+                        MWK_SUBJECT_CREDENTIAL *sub_cred,
+                         int *num_proxy_tokens,
+                        MWK_RETURNED_PROXY_TOKEN *rptokens)
 {
     static const char*mwk_func = "parse_subjectCredential";
 
@@ -891,9 +1101,24 @@ parse_subjectCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 if (token == NULL)
                     return MWK_ERROR;
                 if (!parse_webkdc_proxy_token(rc, token, 
-                                              &sub_cred->u.proxy.pt[n]))
-                    return MWK_ERROR;
-                n++;
+                                              &sub_cred->u.proxy.pt[n])) {
+                    if (rptokens != NULL) {
+                        /* caller wants us to accumulate bad proxy-tokens
+                           instead of bailing */
+                        const char *type = get_attr_value(rc, child, "type",
+                                                          0, mwk_func);
+                        if (type != NULL) {
+                            /* cause the front-end to nuke the cookie */
+                            rptokens[*num_proxy_tokens].token_data = "";
+                            rptokens[*num_proxy_tokens].type = type;
+                            *num_proxy_tokens = *num_proxy_tokens + 1;
+                        }
+                    } else {
+                        return MWK_ERROR;
+                    }
+                } else {
+                    n++;
+                }
             } else {
                 unknown_element(rc, mwk_func, e->name, child->name);
                 return MWK_ERROR;
@@ -1109,7 +1334,12 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                          const char *auth_type,
                          MWK_REQUESTER_CREDENTIAL *req_cred,
                          MWK_SUBJECT_CREDENTIAL *sub_cred,
-                         MWK_RETURNED_TOKEN *rtoken)
+                         MWK_RETURNED_TOKEN *rtoken,
+                         MWK_REQUEST_INFO *req_info,
+                         int *num_proxy_tokens,
+                         MWK_RETURNED_PROXY_TOKEN *rptokens,
+                         char **subject_out
+                         )
 {
     static const char *mwk_func="create_id_token_from_req";
     int tlen, sad_len;
@@ -1154,13 +1384,26 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
 
     sad = NULL;
     if (strcmp(auth_type, "webkdc") == 0) {
-        /* FIXME: are we going to have a webkc proxy type? */
-        sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func);
+        /* check krb5 or sident */
+        sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func, 0);
+#ifndef HAVE_SIDENT
         if (sub_pt == NULL)
+            sub_pt = find_proxy_token(rc, sub_cred, "sident", mwk_func, 0);
+        if (sub_pt == NULL && 
+            (req_info != NULL && req_info->local_addr != NULL) &&
+            rc->sconf->sident_auth_types != NULL) {
+            sub_pt = attempt_sident(rc, req_info,
+                                    num_proxy_tokens, rptokens);
+        }
+#endif
+        if (sub_pt == NULL) {
+            set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, 
+                              "need a proxy-token", mwk_func, 1);
             return MWK_ERROR;
+        }
     } else if (strcmp(auth_type, "krb5") == 0) {
         /* find a proxy-token of the right type */
-        sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func);
+        sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func, 1);
         if (sub_pt == NULL)
             return MWK_ERROR;
         if (!get_krb5_sad(rc, req_cred, sub_pt, &sad, &sad_len, mwk_func)) {
@@ -1209,6 +1452,9 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     rtoken->subject = sub_pt->subject;
     rtoken->info = 
         apr_pstrcat(rc->r->pool, " type=id sa=", auth_type, NULL);
+
+    if (subject_out)
+        *subject_out = (char*) rtoken->subject;
 
     return ms;
 }
@@ -1264,7 +1510,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
 
     /* make sure we are creating a proxy-tyoken that has
        the same type as the proxy-token we are using to create it */
-    sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func);
+    sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func, 1);
     if (sub_pt == NULL) 
         return MWK_ERROR;
 
@@ -1391,7 +1637,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 
     /* make sure we are creating a cred-token that has
        the same type as the proxy-token we are using to create it */
-    sub_pt = find_proxy_token(rc, sub_cred, ct, mwk_func);
+    sub_pt = find_proxy_token(rc, sub_cred, ct, mwk_func, 1);
     if (sub_pt == NULL)
         return MWK_ERROR;
 
@@ -1515,7 +1761,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return MWK_ERROR;
             req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
-            if (!parse_subjectCredential(rc, child, &sub_cred))
+            if (!parse_subjectCredential(rc, child, &sub_cred, NULL, NULL))
                 return MWK_ERROR;
             sub_cred_parsed = 1;
         } else if (strcmp(child->name, "messageId") == 0) {
@@ -1635,7 +1881,8 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return MWK_ERROR;
 
             if (!create_id_token_from_req(rc, at, &req_cred, &sub_cred,
-                                          &rtokens[num_tokens])) {
+                                          &rtokens[num_tokens], NULL,
+                                          NULL, NULL, NULL)) {
                 return MWK_ERROR;
             }
         } else if (strcmp(tt, "proxy") == 0) {
@@ -1870,6 +2117,46 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 }
 
 static enum mwk_status
+parse_requestInfo(MWK_REQ_CTXT *rc, 
+                  apr_xml_elem *e, MWK_REQUEST_INFO *req_info)
+{
+    apr_xml_elem *ie;
+    static const char *mwk_func="parse_identInfo";
+
+    for (ie = e->first_child; ie; ie = ie->next) {
+        if (strcmp(ie->name, "localIpAddr") == 0) {
+            req_info->local_addr = get_elem_text(rc, ie, mwk_func);
+            if (req_info->local_addr == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(ie->name, "localIpPort") == 0) {
+            req_info->local_port = get_elem_text(rc, ie, mwk_func);
+            if (req_info->local_port == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(ie->name, "remoteIpAddr") == 0) {
+            req_info->remote_addr = get_elem_text(rc, ie, mwk_func);
+            if (req_info->remote_addr == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(ie->name, "remoteIpPort") == 0) {
+            req_info->remote_port = get_elem_text(rc, ie, mwk_func);
+            if (req_info->remote_port == NULL)
+                return MWK_ERROR;
+        } else {
+            unknown_element(rc, mwk_func, e->name, ie->name);
+            return MWK_ERROR;
+        }
+    }
+    if (req_info->local_addr == NULL ||
+        req_info->local_port == NULL ||
+        req_info->remote_addr == NULL ||
+        req_info->remote_port == NULL) {
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                 "<requestInfo> missing data",
+                                 mwk_func, 1);
+    }
+    return MWK_OK;
+}
+
+static enum mwk_status
 handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                            char **req_subject_out,
                            char **subject_out)
@@ -1877,18 +2164,20 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
     char *request_token;
+    MWK_REQUEST_INFO req_info;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL parsed_sub_cred, login_sub_cred, *sub_cred;
     enum mwk_status ms;
     MWK_REQUEST_TOKEN req_token;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
-    int num_proxy_tokens, i, did_login;
+    int i, did_login;
     int login_ec;
     const char *login_em = NULL;
     char *req_token_info;
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
+    int num_proxy_tokens = 0;
 
     *subject_out = "<unknown>";
     *req_subject_out = "<unkknown>";
@@ -1903,6 +2192,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     memset(&req_cred, 0, sizeof(req_cred));
     memset(&req_token, 0, sizeof(req_token));
     memset(&rtoken, 0, sizeof(rtoken));
+    memset(&req_info, 0, sizeof(req_info));
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
@@ -1912,12 +2202,16 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return MWK_ERROR;
             req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
-            if (!parse_subjectCredential(rc, child, &parsed_sub_cred))
+            if (!parse_subjectCredential(rc, child, &parsed_sub_cred,
+                                         &num_proxy_tokens, rptokens))
                 return MWK_ERROR;
             sub_cred_parsed = 1;
         } else if (strcmp(child->name, "requestToken") == 0) {
             request_token = get_elem_text(rc, child, mwk_func);
             if (request_token == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(child->name, "requestInfo") == 0) {
+            if (!parse_requestInfo(rc, child, &req_info))
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
@@ -2009,7 +2303,11 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     
     if (strcmp(req_token.requested_token_type, "id") == 0) {
         ms = create_id_token_from_req(rc, req_token.u.subject_auth_type,
-                                      &req_cred, sub_cred, &rtoken);
+                                      &req_cred, sub_cred, &rtoken,
+                                      &req_info,
+                                      &num_proxy_tokens,
+                                      rptokens,
+                                      subject_out);
         req_token_info = apr_pstrcat(rc->r->pool,
                                      " sa=", 
                                      req_token.u.subject_auth_type,
@@ -2315,8 +2613,9 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     ms = make_token(rc, alist, creation,
                     (char**)&token_data, &token_len, 1, mwk_func);
-
     webauth_attr_list_free(alist);
+
+    if (ms != MWK_OK) goto cleanup;
 
     ap_rvputs(rc->r, "<webkdcProxyTokenResponse>", NULL);
 
@@ -2714,6 +3013,10 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
     ap_add_version_component(pconf, version);
 
+#ifndef HAVE_SIDENT
+    ident_set_authflag("USER-INTERACTION", "YES");
+#endif
+
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
                      "mod_webkdc: initialized (%s) (%s)",
@@ -2751,6 +3054,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
+    sconf->sident_timeout = DF_SIdentTimeout;
     return (void *)sconf;
 }
 
@@ -2791,6 +3095,8 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
+    MERGE_INT(sident_timeout);
+    MERGE_PTR(sident_auth_types);
     return (void *)conf;
 }
 
@@ -2872,6 +3178,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_ServiceTokenLifetime:
             sconf->service_token_lifetime = seconds(arg, &error_str);
             break;
+        case E_SIdentTimeout:
+            sconf->sident_timeout = seconds(arg, &error_str);
+            break;
         default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -2888,6 +3197,7 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
+    MWK_IDENT_AUTH_TYPE *iat;
 
     MWK_SCONF *sconf = (MWK_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webkdc_module);
@@ -2899,6 +3209,31 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
             sconf->keytab_principal = 
                 (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
             break;
+#ifndef HAVE_SIDENT
+        case E_SIdentAuthType:
+            if (sconf->sident_auth_types == NULL) {
+                sconf->sident_auth_types = 
+                    apr_array_make(cmd->pool, 5, sizeof(MWK_IDENT_AUTH_TYPE));
+            }
+            iat = apr_array_push(sconf->sident_auth_types);
+            iat->type = apr_pstrdup(cmd->pool, arg);
+            if (strcmp(arg, "KERBEROS_V4") == 0) {
+                iat->data = (arg2 == NULL) ? NULL : 
+                    ap_server_root_relative(cmd->pool, arg2);
+            } else if (strcmp(arg, "GSSAPI") == 0) {
+                char *ktenv;
+                iat->data = (arg2 == NULL) ? NULL : 
+                    ap_server_root_relative(cmd->pool, arg2);
+                ktenv = apr_psprintf(cmd->pool, 
+                                     "%s=FILE:%s", "KRB5_KTNAME",
+                                     iat->data);
+                putenv(ktenv);
+            } else {
+                iat->data = (arg2 == NULL) ? NULL : 
+                    apr_pstrdup(cmd->pool, arg2);
+            }
+            break;
+#endif
          default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -2955,12 +3290,16 @@ static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
+#ifndef HAVE_SIDENT
+    SSTR12(CD_SIdentAuthType, E_SIdentAuthType,  CM_SIdentAuthType),
+#endif
     SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime, 
          CM_ProxyTokenLifetime),
+    SSTR(CD_SIdentTimeout, E_SIdentTimeout, CM_SIdentTimeout),
     SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
          CM_ServiceTokenLifetime),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),

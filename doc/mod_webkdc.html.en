@@ -41,6 +41,8 @@
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
 </ul>
@@ -128,7 +130,7 @@ the <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a>
 directive:
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
-  WebKdcKeyringAutoUpdate off<br />
+  WebKdcKeyringAutoUpdate off<br xmlns="" />
 </code></p></div>
 
 </p>
@@ -228,7 +230,7 @@ Whether or not we do extra debugging in error_log.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcDebug on<br />
+WebKdcDebug on<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -288,7 +290,7 @@ That too will eventually be automated.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringAutoUpdate off<br />
+WebKdcKeyringAutoUpdate off<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -319,7 +321,7 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringKeyLifetime 60d<br />
+WebKdcKeyringKeyLifetime 60d<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -388,7 +390,7 @@ even if this directive is set higher then 25 hours.
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-# create a webkdc-proxy token valid for 2 hours<br />
+# create a webkdc-proxy token valid for 2 hours<br xmlns="" />
 WebKdcProxyTokenLifetime 2h
 </code></p></div>
 
@@ -425,8 +427,81 @@ hours, days, and weeks respectively.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-# create a webkdc-service token valid for 30 days<br />
+# create a webkdc-service token valid for 30 days<br xmlns="" />
 WebKdcServiceTokenLifetime 30d
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcSIdentAuthType" id="WebKdcSIdentAuthType">WebKdcSIdentAuthType</a> <a name="webkdcsidentauthtype" id="webkdcsidentauthtype">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable S/Ident checks
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentAuthType <em>type</em> <em>data</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none configured)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+<p>
+This directive enables S/Ident checking for the specified auth type and
+corresponding data. If multiple types are specified, then they are
+checked in the order specified until a successful S/Ident query
+is performed.
+</p>
+
+<table class="bordered">
+<tr>
+ <th>Auth Type:</th>
+ <th>Auth Data:</th>
+</tr>
+<tr><td><code>KERBEROS_V4</code></td>            
+    <td>The ident.* srvtab file to use. The srvtab must be specified.</td></tr>
+
+<tr><td><code>GSSAPI</code></td>            
+    <td>The ident/* keytab file to use. If not specified, then the default Kerberos V5 keytab file will be used.</td></tr>
+
+</table>
+
+<div class="note"><h3>Note</h3> 
+    <p>Specifying a keytab location with the <code>GSSAPI</code> auth type
+    will cause the <code>KRB5_KTNAME</code> environment variable to get set
+    to the specified location.
+   </p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"<br xmlns="" />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcSIdentTimeout" id="WebKdcSIdentTimeout">WebKdcSIdentTimeout</a> <a name="webkdcsidenttimeout" id="webkdcsidenttimeout">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Timeout value used with ident_query call
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcSIdentTimeout 10s</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+<p>
+This directive controls the value of the timeout used with the ident_query
+call when attempting to authenticate someone with S/Ident.
+</p>
+
+<p>S/Ident is only used if one or more 
+<a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a> directives
+are configured.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<div class="example"><h3>Example</h3><p><code>
+WebKdcSIdentTimeout 5s<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -510,7 +585,7 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# ten minute TTL<br />
+# ten minute TTL<br xmlns="" />
 WebKdcTokenMaxTTL 10m
 </code></p></div>
 

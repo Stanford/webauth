@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.05  Modified 7/16/03</b></H4>
+<H4><b>Version  1.05  Modified 7/24/03</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -1163,6 +1163,14 @@ The request message is:
    <i>&lt;!-- request token from WAS --></i>
    &lt;requestToken>{base64-request-token}&lt;/requestToken> 
 
+   <i>&lt;!-- request info from front-end, used with S/Ident support --></i>
+   &lt;requestInfo>
+     &lt;localIpAddr>n.n.n.n&lt;/localIpAddr>
+     &lt;localIpPort>nnnn&lt;/localIpPort>
+     &lt;remoteIpAddr>n.n.n.n&lt;/remoteIpAddr>
+     &lt;remoteIpPort>nnnn&lt;/remoteIport>
+   &lt;/requestInfo>
+
   &lt;/requestTokenRequest>
 </code></pre>
 The response message is:
@@ -2089,13 +2097,14 @@ FIXME: Insert link to mod_webauth documentation
 </tr>
 
 <tr>
-  <td>1/29/2003</td>
+  <td>7/24/2003</td>
   <td>1.05</td>
   <td>schemers</td>
    <td>
        <ul>
          <li>Added webkdcProxyToken command
          <li>Added webkdcProxyTokenInfo command
+         <li>Added requestInfo to requestToken command for S/Ident support
        </ul>
    </td>
 </tr>

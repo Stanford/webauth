@@ -64,4 +64,29 @@ sub service_token {
     return $self->{'service_token'};
 }
 
+
+sub local_ip_addr {
+    my $self = shift;
+    $self->{'local_ip_addr'} = shift if @_;
+    return $self->{'local_ip_addr'};
+}
+
+sub local_ip_port {
+    my $self = shift;
+    $self->{'local_ip_port'} = shift if @_;
+    return $self->{'local_ip_port'};
+}
+
+sub remote_ip_addr {
+    my $self = shift;
+    $self->{'remote_ip_addr'} = shift if @_;
+    return $self->{'remote_ip_addr'};
+}
+
+sub remote_ip_port {
+    my $self = shift;
+    $self->{'remote_ip_port'} = shift if @_;
+    return $self->{'remote_ip_port'};
+}
+
 1;

@@ -493,4 +493,78 @@ WebKdcKeyringKeyLifetime 60d<br/>
 </usage>
 </directivesynopsis>
 
+
+<directivesynopsis>
+<name>WebKdcSIdentTimeout</name>
+<description>Timeout value used with ident_query call
+</description>
+<syntax>WebKdcSIdentTimeout <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>WebKdcSIdentTimeout 10s</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive controls the value of the timeout used with the ident_query
+call when attempting to authenticate someone with S/Ident.
+</p>
+
+<p>S/Ident is only used if one or more 
+<a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a> directives
+are configured.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+WebKdcSIdentTimeout 5s<br/>
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcSIdentAuthType</name>
+<description>Enable S/Ident checks
+</description>
+<syntax>WebKdcSIdentAuthType <em>type</em> <em>data</em></syntax>
+<default>(none configured)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive enables S/Ident checking for the specified auth type and
+corresponding data. If multiple types are specified, then they are
+checked in the order specified until a successful S/Ident query
+is performed.
+</p>
+
+<table border="1">
+<tr>
+ <th>Auth Type:</th>
+ <th>Auth Data:</th>
+</tr>
+<tr><td><code>KERBEROS_V4</code></td>            
+    <td>The ident.* srvtab file to use. The srvtab must be specified.</td></tr>
+
+<tr><td><code>GSSAPI</code></td>            
+    <td>The ident/* keytab file to use. If not specified, then the default Kerberos V5 keytab file will be used.</td></tr>
+
+</table>
+
+<note><title>Note</title> 
+    <p>Specifying a keytab location with the <code>GSSAPI</code> auth type
+    will cause the <code>KRB5_KTNAME</code> environment variable to get set
+    to the specified location.
+   </p>
+</note>
+
+<example><title>Example</title>
+WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"<br/>
+</example>
+</usage>
+</directivesynopsis>
+
 </modulesynopsis>

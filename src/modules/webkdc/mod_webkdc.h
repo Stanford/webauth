@@ -65,6 +65,13 @@
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL (60*5)
 
+#define CD_SIdentAuthType "WebkdcSIdentAuthType"
+#define CM_SIdentAuthType "enable SIdent support"
+
+#define CD_SIdentTimeout "WebkdcSIdentTimeout"
+#define CM_SIdentTimeout "timeout to use with ident_query call"
+#define DF_SIdentTimeout (10)
+
 /* max number of <token>'s we will return. 64 is overkill */
 #define MAX_TOKENS_RETURNED 64
 
@@ -96,6 +103,8 @@ enum {
     E_Keytab,
     E_ProxyTokenLifetime,
     E_ServiceTokenLifetime,
+    E_SIdentAuthType,
+    E_SIdentTimeout,
     E_TokenMaxTTL,
 };
 
@@ -118,20 +127,26 @@ typedef struct {
     int keyring_auto_update_ex;
     int keyring_key_lifetime;
     int keyring_key_lifetime_ex;
+    apr_array_header_t *sident_auth_types; /* array of MWK_IDENT_AUTH_TYPE */
+    int sident_timeout;
     /* stuff we need to clean up on restarts and what not */
     WEBAUTH_KEYRING *ring; /* our keyring */
     int free_ring;         /* set if we should free ring */
 } MWK_SCONF;
 
-/* handy bunch of bits to pass around during a request */
+/* requestInfo */
 typedef struct {
-    request_rec *r;
-    MWK_SCONF *sconf;
-    int error_code; /* set if an error happened */
-    const char *error_message;
-    const char *mwk_func; /* function error occured in */
-    int need_to_log; /* set if we need to log error  */
-} MWK_REQ_CTXT;
+    char *local_addr;
+    char *local_port;
+    char *remote_addr;
+    char *remote_port;
+} MWK_REQUEST_INFO;
+
+/* configured sident auth type */
+typedef struct {
+    char *type;
+    char *data;
+} MWK_IDENT_AUTH_TYPE;
 
 /* interesting stuff from a parsed webkdc-service-token */
 typedef struct {
@@ -219,6 +234,16 @@ typedef struct {
     int capacity;
     apr_pool_t *pool;
 } MWK_STRING;
+
+/* handy bunch of bits to pass around during a request */
+typedef struct {
+    request_rec *r;
+    MWK_SCONF *sconf;
+    int error_code; /* set if an error happened */
+    const char *error_message;
+    const char *mwk_func; /* function error occured in */
+    int need_to_log; /* set if we need to log error  */
+} MWK_REQ_CTXT;
 
 /* acl.c */
 

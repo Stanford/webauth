@@ -141,7 +141,9 @@ sub request_token_request($$) {
     } elsif (defined($proxy_cookies)) {
 	$webkdc_doc->current->attr('type','proxy');
 	while (my($type,$token) = each(%{$proxy_cookies})) {
-	    $webkdc_doc->start('proxyToken',  undef, $token)->end;
+	    $webkdc_doc->start('proxyToken',  
+			       {"type" => $type}, 
+			       $token)->end;
 	}
     } else {
 	# we used to short-circuit here and just raise
@@ -154,6 +156,14 @@ sub request_token_request($$) {
     }
     $webkdc_doc->end('subjectCredential');
     $webkdc_doc->start('requestToken',  undef, $request_token)->end;
+    if ($wreq->local_ip_addr()) {
+	$webkdc_doc->start('requestInfo');
+	$webkdc_doc->add('localIpAddr', undef, $wreq->local_ip_addr());
+	$webkdc_doc->add('localIpPort', undef, $wreq->local_ip_port());
+	$webkdc_doc->add('remoteIpAddr', undef, $wreq->remote_ip_addr());
+	$webkdc_doc->add('remoteIpPort', undef, $wreq->remote_ip_port());
+	$webkdc_doc->end('requestInfo');
+    }
     $webkdc_doc->end('requestTokenRequest');
 
     # send the request to the webkdc
@@ -225,7 +235,9 @@ sub request_token_request($$) {
 	if (defined($proxy_tokens)) {
 	    foreach my $token (@{$proxy_tokens->children}) {
 		my $type = $token->attr('type');
-		$wresp->proxy_cookie("webauth_wpt_$type", $token->content);
+		my $cname = "webauth_wpt_$type";
+		my $cvalue  = $token->content || '';
+		$wresp->proxy_cookie($cname, $cvalue);
 	    }
 	}
 	$wresp->return_url($return_url);
