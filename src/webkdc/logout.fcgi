@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 #--------------------------------------------------------------------------
 # File   : Weblogin logout
@@ -12,6 +12,8 @@ $ENV{HTML_TEMPLATE_ROOT} = 'templates';
 %PAGES = ('logout' => 'logout.tmpl');
 
 use strict;
+use warnings;
+
 use CGI::Fast qw(-compile);
 use CGI::Cookie;
 use HTML::Template;
