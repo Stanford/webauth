@@ -53,7 +53,7 @@ sub print_headers {
     }
     if  (!$q->cookie($TEST_COOKIE)) {
 	push (@$ca, $q->cookie (-name    => $TEST_COOKIE,-value =>"True",
-				-expires => '+1y',-path    => '/'));
+				-path    => '/'));
     }
 
     if ($ca) {
