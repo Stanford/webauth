@@ -68,6 +68,7 @@ WebAuthUseCreds
 </a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcsslcertcheck">WebAuthWebKdcSSLCertCheck</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcsslcertfile">WebAuthWebKdcSSLCertFile</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcurl">WebAuthWebKdcURL</a></li>
 </ul>
@@ -1349,6 +1350,37 @@ the WebKDC. It used to request a service-token from the WebKDC. </p>
 <div class="example"><h3>Example</h3><p><code>
 # if realm isn't specified, the default realm will be used<br />
 WebAuthWebKdcPrincipal service/webkdc@stanford.edu
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertCheck" id="WebAuthWebKdcSSLCertCheck">WebAuthWebKdcSSLCertCheck</a> <a name="webauthwebkdcsslcertcheck" id="webauthwebkdcsslcertcheck">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to peform SSL certificate checking on the WebKDC's
+certificate
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertCheck on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+This directive controls whether or not SSL certificate checking is performed
+on the certificate used by the WebKDC when mod_webauth communicates directly
+with the WebKDC.
+</p>
+
+<div class="note"><h3>Note</h3> 
+    <p>Setting this directive to <code>off</code> opens a security hole
+and should only be used in development when the 
+<a href="#webauthwebkdcsslcertfile"><code>WebAuthWebKdcSSLCertFile</code></a>
+directive cannot be used.
+</p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthWebKdcSSLCertCheck off
 </code></p></div>
 
 </div>
