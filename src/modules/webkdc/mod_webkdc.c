@@ -2213,6 +2213,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
 
     /* init defaults */
     sconf->token_max_ttl = DF_TokenMaxTTL;
+    sconf->proxy_token_max_lifetime = DF_ProxyTokenMaxLifetime;
     return (void *)sconf;
 }
 
@@ -2234,11 +2235,13 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->token_max_ttl = oconf->token_max_ttl_ex ?
         oconf->token_max_ttl : bconf->token_max_ttl;
 
+    conf->proxy_token_max_lifetime = oconf->proxy_token_max_lifetime_ex ?
+        oconf->proxy_token_max_lifetime : bconf->proxy_token_max_lifetime;
+
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
 
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
-    MERGE_INT(proxy_token_max_lifetime);
     MERGE_INT(service_token_lifetime);
     return (void *)conf;
 }
@@ -2305,6 +2308,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_ProxyTokenMaxLifetime:
             sconf->proxy_token_max_lifetime = seconds(arg, &error_str);
+            sconf->proxy_token_max_lifetime_ex = 1;
             break;
         case E_TokenMaxTTL:
             sconf->token_max_ttl = seconds(arg, &error_str);

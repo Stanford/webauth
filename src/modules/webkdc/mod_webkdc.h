@@ -37,14 +37,15 @@
 #define CM_Debug "turn debugging on or off"
 
 #define CD_ProxyTokenMaxLifetime "WebKDCProxyTokenMaxLifetime"
-#define CM_ProxyTokenMaxLifetime "lifetime of app-tokens"
+#define CM_ProxyTokenMaxLifetime "lifetime of webdc-proxy-tokens"
+#define DF_ProxyTokenMaxLifetime (60*60*10)
 
 #define CD_ServiceTokenLifetime "WebKDCServiceTokenLifetime"
-#define CM_ServiceTokenLifetime "lifetime of app-tokens"
+#define CM_ServiceTokenLifetime "lifetime of webkdc-service-tokens"
 
 #define CD_TokenMaxTTL "WebKDCTokenMaxTTL"
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
-#define DF_TokenMaxTTL 300
+#define DF_TokenMaxTTL (60*5)
 
 /* max number of <token>'s we will return. 64 is overkill */
 #define MAX_TOKENS_RETURNED 64
@@ -86,6 +87,7 @@ typedef struct {
     int  debug;
     int debug_ex;
     int proxy_token_max_lifetime;
+    int proxy_token_max_lifetime_ex;
     int service_token_lifetime;
     int token_max_ttl; 
     int token_max_ttl_ex;
