@@ -42,6 +42,7 @@ our %ta_desc =
      &WA_TK_INACTIVITY_TIMEOUT => 'inactivity-timeout',
      &WA_TK_SESSION_KEY => 'session-key',
      &WA_TK_LASTUSED_TIME => 'lastused-time',
+     &WA_TK_PASSWORD => 'password',
      &WA_TK_PROXY_TYPE => 'proxy-type',
      &WA_TK_PROXY_DATA => 'proxy-data',
      &WA_TK_PROXY_SUBJECT => 'proxy-subject',
@@ -52,6 +53,7 @@ our %ta_desc =
      &WA_TK_SUBJECT_AUTH => 'subject-auth',
      &WA_TK_SUBJECT_AUTH_DATA => 'subject-auth-data',
      &WA_TK_TOKEN_TYPE => 'token-type',
+     &WA_TK_USERNAME => 'username',
      &WA_TK_WEBKDC_TOKEN => 'webkdc-token',
      );	       
 
@@ -333,6 +335,71 @@ sub validate_token {
 	  defined($self->subject()))) && 
 	defined($self->creation_time()) &&
 	defined($self->expiration_time());
+}
+
+############################################################
+
+package WebKDC::LoginToken;
+
+use strict;
+use warnings;
+
+use WebAuth qw(:const);
+use WebKDC::Token;
+use Carp;
+
+BEGIN {
+    use Exporter   ();
+    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
+
+    # set the version for version checking
+    $VERSION     = 1.00;
+    @ISA         = qw(Exporter WebKDC::Token);
+    @EXPORT      = qw();
+    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+
+    # your exported package globals go here,
+    # as well as any optionally exported functions
+    @EXPORT_OK   = qw();
+}
+
+our @EXPORT_OK;
+
+
+sub init {
+    my $self = shift;
+    $self->token_type('login');
+}
+
+sub username {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_USERNAME} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_USERNAME};
+}
+
+sub password {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_PASSWORD} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_PASSWORD};
+}
+
+sub creation_time {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_CREATION_TIME} = pack("N", shift) if @_;
+    my $time = $self->{'attrs'}{&WA_TK_CREATION_TIME};
+    if (defined($time)) {
+	return unpack('N', $time);
+    } else {
+	return $time;
+    }
+}
+sub validate_token {
+    my $self = shift;
+
+    croak "validate_token failed" unless
+	($self->token_type() eq 'login') && 
+	defined($self->username) && 
+	defined($self->password);
 }
 
 ############################################################
@@ -842,7 +909,7 @@ sub expiration_time {
 sub validate_token {
     my $self = shift;
 
-    croak "validate_token failed" unless
+    croak "validate_webkdc-service token failed" unless
 	($self->token_type() eq 'webkdc-service') && 
 	defined($self->session_key()) &&
 	defined($self->subject()) &&
@@ -998,6 +1065,17 @@ The WebKDC::IdToken object is used to represent WebAuth id-tokens.
   $token->subject_auth([$new_value])
   $token->subject_auth_data([$new_value])
   $token->subject_expiration_time([$new_value])
+
+=head1 WebKDC::LoginToken
+
+The WebKDC::LoginToken object is used to represent WebAuth login-tokens.
+
+  $token = new WebKDC::LoginToken;
+  $token = new WebKDC::LoginToken($binary_token, $key_or_ring, $ttl);
+
+  $token->creation_time([$new_value])
+  $token->password([$new_value])
+  $token->username([$new_value])
 
 =head1 WebKDC::ProxyToken
 

@@ -19,20 +19,21 @@ use UNIVERSAL qw(isa);
 
 use LWP::UserAgent;
 
-use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
+our $C_WAS_KEYTAB = "shred_webauth.keytab";
+#our $C_WAS_KEYRING_PATH = "was.keyring";
 
-$CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
-$CONFIG_WAS_KEYRING_PATH = "was.keyring";
+our $C_WEBKDC_K5SERVICE = "webauth";
+our $C_WEBKDC_HOST = "lichen.stanford.edu";
 
 
 eval {
 
     my $c = krb5_new();
 
-    krb5_init_via_keytab($c, $CONFIG_WAS_KEYTAB);
+    krb5_init_via_keytab($c, $C_WAS_KEYTAB);
 
-    my $princ = krb5_service_principal($c, $WebKDC::C_WEBKDC_K5SERVICE,
-				       $WebKDC::C_WEBKDC_HOST);
+    my $princ = krb5_service_principal($c, $C_WEBKDC_K5SERVICE,
+				       $C_WEBKDC_HOST);
     my $request = base64_encode(krb5_mk_req($c, $princ));
 
 
@@ -53,7 +54,7 @@ eval {
 
     my $ua = new LWP::UserAgent;
 
-    my $post_url = "http://lichen.stanford.edu:8080/service/webkdc/";
+    my $post_url = "https://lichen.stanford.edu:8443/webkdc-service/";
     my $http_req = new HTTP::Request(POST=> $post_url);
     $http_req->content_type('text/xml');
     $http_req->content($out->root->to_string());

@@ -51,6 +51,11 @@ sub response_token {
     return $self->{'response_token'};
 }
 
+sub requester_subject {
+    my $self = shift;
+    $self->{'requester_subject'} = shift if @_;
+    return $self->{'requester_subject'};
+}
 
 sub app_state {
     my $self = shift;

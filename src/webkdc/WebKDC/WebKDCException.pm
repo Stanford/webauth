@@ -25,21 +25,21 @@ BEGIN {
 
 our @EXPORT_OK;
 
-sub WK_ERR_USER_AND_PASS_REQUIRED      () {0;}
-sub WK_ERR_LOGIN_FAILED                () {1;}
-sub WK_ERR_UNRECOVERABLE_ERROR	       () {2;}
+sub WK_ERR_USER_AND_PASS_REQUIRED      () {1;}
+sub WK_ERR_LOGIN_FAILED                () {2;}
+sub WK_ERR_UNRECOVERABLE_ERROR	       () {32}
 
 our @ErrorNames = qw(USER_AND_PASS_REQUIRED
 		     LOGIN_FAILED
 		     UNRECOVERABLE_ERROR);
 
 sub new {
-    my ($type, $status, $mesg, $wrapped_exception) = @_;
+    my ($type, $status, $mesg, $pec) = @_;
     my $self = {};
     bless $self, $type;
     $self->{'status'} = $status;
     $self->{'mesg'} = $mesg;
-    $self->{'wrapped'} = $wrapped_exception;
+    $self->{'pec'} = $pec;
     return $self;
 }
 
@@ -53,18 +53,18 @@ sub message {
     return $self->{'mesg'};
 }
 
-sub wrapped_exception {
+sub error_code {
     my $self = shift;
-    return $self->{'wrapped'};
+    return $self->{'pec'};
 }
 
 sub verbose_message {
     my $self = shift;
     my $s = $self->{'status'};
     my $m = $self->{'mesg'};
-    my $w = $self->{'wrapped'};
+    my $pec = $self->{'pec'};
     my $msg = "WebKDC::WebKDCException ".$ErrorNames[$s].": $m";
-    $msg .= ": $w" if (defined($w));
+    $msg .= ": WebKDC errorCode: $pec" if (defined($pec));
     return $msg;
 }
 
@@ -95,7 +95,7 @@ WebKDC::WebKDCException - exceptions for WebKDC
 
   eval {  
     ...
-    WebKDC::process_web_request($req, $resp);
+    WebKDC::request_token_request($req, $resp);
     ...
   };
   if (WebKDC::WebKDCException::match($@)) {
@@ -103,7 +103,7 @@ WebKDC::WebKDCException - exceptions for WebKDC
     # you can call the following methods on a WebKDCException object:
     # $e->status()
     # $e->message()
-    # $e->wrapped_exception()
+    # $e->error_code()
     # $e->verbose_message()
   }
 
@@ -171,15 +171,14 @@ The following constants are exported:
   This method returns the error message that was
   used in the constructor.
 
-=item wrapped_exceptione()
+=item error_code()
 
-  This method returns the wrapped exception that was used in the
-  constructor (if there was one).
+  This method returns the WebKDC errorCode (if there was one).
 
 =item verbose_message()
 
   This method returns a verbose error message, which consists
-  of the status code, message, and any wrapped exception.
+  of the status code, message, and any error code.
 
   The verbose_message method is also called if the exception is
   used as a string.

@@ -194,7 +194,7 @@ $req->service_token($service_token_str);
 # make the request in an eval to catch errors
 
 eval {
-    WebKDC::handle_request_token($req, $resp);
+    WebKDC::request_token_request($req, $resp);
 };
 
 my $e = $@;
