@@ -295,7 +295,7 @@ None
 
 =over 4
 
-=make_request_token_request(req,resp)
+=item make_request_token_request(req,resp)
 
   ($status, $e) = WebKDC::make_request_token_request($req, $resp);
 
