@@ -24,6 +24,8 @@ BEGIN {
 
 our @EXPORT_OK;
 
+# convert the tree returned by XML::Parse into a tree of XmlElements.
+
 sub convert_tree {
     my ($doc, $tree) = @_;
     $doc->attrs(shift @$tree);
@@ -126,7 +128,7 @@ sub content {
 sub content_trimmed {
     my $self = shift;
     my $c = $self->{'content'};
-    $c =~ ~ s/^\s*(.*)\s*$/$1/;
+    $c =~ s/^\s*(.*)\s*$/$1/;
     return $c; 
 }
 
