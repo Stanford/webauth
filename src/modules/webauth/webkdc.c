@@ -846,7 +846,7 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
 
     apr_thread_mutex_unlock(sconf->mutex); /****** UNLOCKING! ************/
 
-    if (token == NULL) {
+    if (token == NULL && !local_cache_only) {
         /* really complain! */
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
                      "mod_webauth: mwa_get_service_token FAILD!!");
