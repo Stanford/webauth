@@ -4,10 +4,7 @@ dnl
 dnl Defines the macro WEBAUTH_LIB_SIDENT, which probes for the sident libraries
 dnl and defines the output variables SIDENT_CPPFLAGS and SIDENT_LIBS to the
 dnl appropriate preprocessor and linker flags.  --disable-sident is honored
-dnl and disables the checks and S/Ident support.  -DHAVE_SIDENT=1 is added to
-dnl SIDENT_CPPFLAGS if support is enabled so that mod_webkdc doesn't have to
-dnl include the config.h file (some of it conflicts with Apache's config.h
-dnl file since they don't rename symbols).
+dnl and disables the checks and S/Ident support.
 dnl
 dnl This macro uses the KRB5_LDFLAGS variable set by the WEBAUTH_LIB_KRB5 to
 dnl find the Kerberos libraries.
@@ -40,8 +37,7 @@ if test x"$enable_sident" != xno ; then
     AC_CHECK_LIB([sident], [ident_set_authtype],
         [SIDENT_LIBS="-lsident $SIDENT_LIBS"
          AC_DEFINE([HAVE_SIDENT], 1,
-             [Define to 1 to include S/Ident support.])
-         SIDENT_CPPFLAGS="-DHAVE_SIDENT=1 $SIDENT_CPPFLAGS"],
+             [Define to 1 to include S/Ident support.])],
         [if test x"$enable_sident" = xyes ; then
             AC_MSG_ERROR([No working S/Ident library found])
          else
