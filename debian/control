@@ -55,7 +55,7 @@ Description: Perl library for WebAuth authentication
 
 Package: libwebauth1
 Architecture: any
-Depends: ${shlib:Depends}
+Depends: ${shlibs:Depends}
 Description: Shared libraries for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
