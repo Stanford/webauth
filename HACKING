@@ -85,7 +85,7 @@ Making a Release
 
    8. Sign the .tar.gz file with the WebAuth signing key:
 
-        $ gnupg --detach-sign --armor -u webauth-team@lists <dist>.tar.gz
+        $ gpg --detach-sign --armor -u webauth-team@lists <dist>.tar.gz
 
       where <dist>.tar.gz is the distribution tarball.  Contact Russ about
       the signing key if you need to do this part and don't already have
