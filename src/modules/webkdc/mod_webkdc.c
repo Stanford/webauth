@@ -1174,6 +1174,7 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
         sub_pt = find_proxy_token_er(rc, sub_cred, "krb5", mwk_func);
         if (sub_pt == NULL)
             return 0;
+        subject = sub_pt->subject;
     } else if (strcmp(auth_type, "krb5") == 0) {
         /* find a proxy-token of the right type */
         sub_pt = find_proxy_token_er(rc, sub_cred, "krb5", mwk_func);
@@ -1928,7 +1929,7 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     if (num_tokens) {
         ap_rvputs(rc->r, "<proxyTokens>", NULL);
         for (i = 0; i < num_tokens; i++) {
-            ap_rvputs(rc->r, "<proxyToken type=\"", rptokens[i].type,">", 
+            ap_rvputs(rc->r, "<proxyToken type='", rptokens[i].type,"'>", 
                       /* don't have to quote since base64'd data */
                       rptokens[i].token_data,
                       "</proxyToken>",
