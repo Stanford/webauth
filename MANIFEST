@@ -130,6 +130,7 @@ tests/mod_webauth/htdocs/ldaptests/test1/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test2         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test2/test    WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test2/util.pl WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test3         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test4         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test4/test    WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test4/util.pl WebAuthLdap tests
