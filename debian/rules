@@ -88,11 +88,12 @@ install: build
 	cd src/bindings/perl/WebAuth3 \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic
 	cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
 	    install -m 755 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/$$f || exit 1 ; \
 	done
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
 	cd src/webkdc && for f in templates/*.tmpl ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
@@ -100,6 +101,7 @@ install: build
 	done
 	install -m 644 src/webkdc/templates/help.html \
 	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
 	cd src/webkdc && for f in images/*.png ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
