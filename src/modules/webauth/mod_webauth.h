@@ -120,10 +120,16 @@ enum {
 
 module webauth_module;
 
-/* server context */
+
+/* a service token and associated data */
 typedef struct {
-    WEBAUTH_KEYRING *ring; /* from keyring_path */
-} MWA_SCTXT;
+    WEBAUTH_KEY *key; /* all memory allocated from a pool */
+    time_t expires;
+    char *token;
+    time_t mtime; /* mtime of cache file */
+    time_t last_renewal_attempt; /* timed we last tried to renew */
+} MWA_SERVICE_TOKEN;
+
 
 /* server conf stuff */
 typedef struct {
@@ -140,8 +146,6 @@ typedef struct {
     int secure_cookie_ex; /* if it was explicitly specified in conf file */
     int token_max_ttl; 
     int token_max_ttl_ex; /* if it was explicitly specified in conf file */
-    /* end of conf */
-    MWA_SCTXT *ctxt;
 } MWA_SCONF;
 
 /* directory conf stuff */
@@ -167,13 +171,6 @@ typedef struct {
     request_rec *r;
 } MWA_CURL_POST_GATHER_CTXT;
 
-
-/* a service token and associated data */
-typedef struct {
-    WEBAUTH_KEY *key; /* all memory allocated from a pool */
-    time_t expires;
-    char *token;
-} MWA_SERVICE_TOKEN;
 
 
 #endif

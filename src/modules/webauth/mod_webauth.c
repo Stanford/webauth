@@ -39,9 +39,13 @@
 
 #include "mod_webauth.h"
 
+/*
+ * initialized only in mod_webauth_child_init
+ */
+static WEBAUTH_KEYRING *g_ring;
+
 
 #define CHUNK_SIZE 4096
-
 /*
  * gather up the POST data as it comes back from webkdc
  */
@@ -300,6 +304,8 @@ parse_service_token_response(apr_xml_doc *xd,
     }
 
     st = (MWA_SERVICE_TOKEN *) apr_palloc(st_pool, sizeof(MWA_SERVICE_TOKEN));
+    st->mtime = 0;
+    st->last_renewal_attempt = 0;
     st->expires = atoi(expires);
     st->token = apr_pstrdup(st_pool, token_data);
     st->key = (WEBAUTH_KEY*) apr_palloc(st_pool, sizeof(WEBAUTH_KEY));
@@ -417,6 +423,19 @@ request_service_token(request_rec *r,
    return parse_service_token_response(xd, st_pool, r, sconf, dconf);
 }
 
+
+/*
+ * this function should in memory first, the cache token file
+ * second, then make a request as a last-ditch-effort.
+ *
+ */
+MWA_SERVICE_TOKEN *
+get_service_token(request_rec *r,
+                  MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    return request_service_token(r, r->pool, sconf, dconf);
+}
+
 /*
  * get a required char* attr from a token, with logging if not present.
  * returns value or NULL on error,
@@ -529,24 +548,6 @@ die(const char *message, server_rec *s)
     exit(1);
 }
 
-
-/*
- * module cleanup
- */
-static apr_status_t
-mod_webauth_cleanup(void *data)
-{
-    MWA_SCONF *sconf = (MWA_SCONF*) data;
-
-    if (sconf->ctxt == NULL)
-        return APR_SUCCESS;
-
-    if (sconf->ctxt->ring != NULL) {
-        webauth_keyring_free(sconf->ctxt->ring);
-    }
-    return APR_SUCCESS;
-}
-
 /*
  * called after config has been loaded in parent process
  */
@@ -555,7 +556,6 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
-    MWA_SCTXT *sctxt;
     int status;
 
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
@@ -574,29 +574,6 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 
 #undef CHECK_DIR
 
-    /* register pool cleanup function */
-    apr_pool_cleanup_register(pconf, sconf, mod_webauth_cleanup, 
-                              apr_pool_cleanup_null);
-
-
-    sctxt = (MWA_SCTXT *) apr_palloc(pconf, sizeof(MWA_SCTXT));
-
-    /* attempt to open up keyring */
-    status = webauth_keyring_read_file(sconf->keyring_path, &sctxt->ring);
-    if (status != WA_ERR_NONE) {
-        die(apr_psprintf(ptemp, 
-                 "mod_webauth: webauth_keyring_read_file(%s) failed: %s (%d)",
-                         sconf->keyring_path, webauth_error_message(status), 
-                         status), s);
-    } else {
-        /* FIXME: should probably make sure we have at least one
-           valid (not expired/postdated) key in the ring */
-    }
-
-    /* stash the sctxt in the server's process pool */
-    apr_pool_userdata_set(sctxt, P_MWA_SCTXT, 
-                          apr_pool_cleanup_null, s->process->pool);
-
     ap_add_version_component(pconf, WEBAUTH_VERSION);
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initialized");
@@ -610,14 +587,23 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 static void
 mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 {
-    /*
-      MWA_SCONF *sconf;
+    MWA_SCONF *sconf;
+    int status;
 
-      sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-      &webauth_module);
+    sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
+                                             &webauth_module);
 
-     ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: child_init_hook");
-    */
+    /* attempt to open up keyring */
+    status = webauth_keyring_read_file(sconf->keyring_path, &g_ring);
+    if (status != WA_ERR_NONE) {
+        die(apr_psprintf(p, 
+                 "mod_webauth: webauth_keyring_read_file(%s) failed: %s (%d)",
+                         sconf->keyring_path, webauth_error_message(status), 
+                         status), s);
+    } else {
+        /* FIXME: should probably make sure we have at least one
+           valid (not expired/postdated) key in the ring */
+    }
 }
 
 /*
@@ -633,12 +619,9 @@ config_server_create(apr_pool_t *p, server_rec *s)
 
     sconf = (MWA_SCONF*)apr_pcalloc(p, sizeof(MWA_SCONF));
 
-    /* only one with a non-zero default */
+    /* init defaults */
     sconf->secure_cookie = DF_SecureCookie;
     sconf->token_max_ttl = DF_TokenMaxTTL;
-
-    /* grab server context too */
-    apr_pool_userdata_get((void*)&sconf->ctxt, P_MWA_SCTXT, s->process->pool);
 
     return (void *)sconf;
 }
@@ -686,8 +669,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(st_cache_path);
     MERGE_PTR(var_prefix);
     MERGE_INT(debug);
-    MERGE_PTR(ctxt);
-
     return (void *)conf;
 }
 
@@ -740,7 +721,7 @@ parse_app_token(char *token,
     /* parse the token, TTL is zero because app-tokens don't have ttl,
      * just expiration
      */
-    status = webauth_token_parse(token, blen, 0, sconf->ctxt->ring, &alist);
+    status = webauth_token_parse(token, blen, 0, g_ring, &alist);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: webauth_token_parse failed: %s (%d)",
@@ -838,7 +819,7 @@ get_session_key(char *token,
 {
     WEBAUTH_ATTR_LIST *alist;
     WEBAUTH_KEY *key;
-    int status, i;
+    int status, i , klen;
 
     alist = parse_app_token(token, r, sconf, dconf);
 
@@ -854,14 +835,25 @@ get_session_key(char *token,
         return NULL;
     }
 
-    key = webauth_key_create(WA_AES_KEY,
-                             (unsigned char*)alist->attrs[i].value,
-                             alist->attrs[i].length);
-    webauth_attr_list_free(alist);
-    if (key == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-           "mod_webauth: check_url: can't find session key in WEBAUTHS token");
+    klen = alist->attrs[i].length;
+
+    if (klen != WA_AES_128 && 
+        klen != WA_AES_192 &&
+        klen != WA_AES_256) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: get_session_key: invalid key length: %d",
+                     klen);
+        return NULL;
     }
+
+    key = (WEBAUTH_KEY*) apr_palloc(r->pool, sizeof(WEBAUTH_KEY));
+    key->type = WA_AES_KEY;
+    key->data = (unsigned char*) apr_palloc(r->pool, klen);
+    memcpy(key->data, alist->attrs[i].value, klen);
+    key->length = klen;
+
+    webauth_attr_list_free(alist);
+
     return key;
 }
 
@@ -941,8 +933,8 @@ make_app_token(char *subject,
     tlen = webauth_token_encoded_length(alist);
     token = (char*)apr_palloc(r->pool, tlen);
 
-    status = webauth_token_create(alist, curr, token, &olen, tlen,
-                                  sconf->ctxt->ring);
+    status = webauth_token_create(alist, curr, token, &olen, tlen, g_ring);
+
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
@@ -1104,11 +1096,11 @@ check_url(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
     ws = remove_note(r, N_WEBAUTHS);
 
     if (ws != NULL) {
+        /* don't have to free key, its allocated from a pool */
         key = get_session_key(ws, r, sconf, dconf);
         if (key == NULL)
             return NULL;
         subject = parse_returned_token(wr, key, r, sconf, dconf);
-        webauth_key_free(key);
     } else {
         /* FIXME: use key from session-token */
         /* subject = parse_returned_token(wr, key, r, sconf, dconf); */
@@ -1346,7 +1338,7 @@ fixups_hook(request_rec *r)
         apr_table_setn(r->subprocess_env, name, subject);
         {
             MWA_SERVICE_TOKEN *st = 
-                request_service_token(r, r->pool, sconf, dconf);
+                get_service_token(r, sconf, dconf);
             if (st != NULL) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                              "mod_webauth: st->expires(%d)", st->expires);
