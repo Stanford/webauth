@@ -22,6 +22,7 @@ SUBDIRS = src
 ALLDIRS = src tests
 
 .PHONY: all check check-manifest clean dist distclean doc docs install
+.PHONY: test tests
 
 all: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -29,7 +30,7 @@ all: Makefile
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-check:
+check test tests:
 	cd tests && $(MAKE) all
 
 clean depend install:
