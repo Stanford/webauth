@@ -200,16 +200,14 @@ sub handle_id_request {
     $wresp->return_url($req_token->return_url());
     $wresp->post_url($req_token->post_url());
     $wresp->response_token(base64_encode($id_token->to_token($key)));
-    return $wresp;
+    return;
 }
 
 
 # takes a WebKDC::WebRequest and returns a WebKDC::WebResponse
 
-sub process_login_request($) {
-    my ($wreq) = @_;
-
-    my $wresp = new WebKDC::WebResponse;
+sub process_login_request($$) {
+    my ($wreq, $wresp) = @_;
 
     # first parse service-token to get session key
 
@@ -231,7 +229,8 @@ sub process_login_request($) {
 				 $key, $C_TOKEN_TTL);
 
     # FIXME: would normally poke through request to determine what to do next
-    return handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
+    handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
+    return;
 }
 
 

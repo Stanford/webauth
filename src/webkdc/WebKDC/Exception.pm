@@ -14,7 +14,7 @@ BEGIN {
     # set the version for version checking
     $VERSION     = 1.00;
     @ISA         = qw(Exporter);
-    @EXPORT      = qw(WK_ERR_USERANDPASS_REQUIRED
+    @EXPORT      = qw(WK_ERR_USER_AND_PASS_REQUIRED
 		      WK_ERR_LOGIN_FAILED
 		      WK_ERR_UNRECOVERABLE_ERROR
 		      );

@@ -89,13 +89,14 @@ eval {
     print "request_token b64'd length(".length($req_token_str).")\n";
 
     my $req = new WebKDC::WebRequest;
+    my $resp = new WebKDC::WebResponse;
 
-    #$req->user("schemers/test");
-    #$req->pass("testing2");
+    $req->user("schemers/test");
+    $req->pass("testing");
     $req->request_token($req_token_str);
     $req->service_token($service_token_str);
 
-    my $resp = WebKDC::process_login_request($req);
+    WebKDC::process_login_request($req, $resp);
 
     handle_response($resp, $key);
 
@@ -106,13 +107,16 @@ eval {
     # try again using proxy-token from response instead of
     # user/pass
 
-    $req = new WebKDC::WebRequest;
+    my $proxy_cookie = $resp->proxy_cookie('krb5');
 
-    $req->proxy_cookie('krb5', $resp->proxy_cookie('krb5'));
+    $req = new WebKDC::WebRequest;
+    $resp = new WebKDC::WebResponse;
+
+    $req->proxy_cookie('krb5', $proxy_cookie);
     $req->request_token($req_token_str);
     $req->service_token($service_token_str);
 
-    $resp = WebKDC::process_login_request($req);
+    WebKDC::process_login_request($req, $resp);
 
     handle_response($resp, $key);
 
