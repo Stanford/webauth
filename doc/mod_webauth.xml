@@ -1222,7 +1222,7 @@ WebAuthSSLRedirect on<br />
 <description>port to use when redirecting the user to https
 </description>
 <syntax>WebAuthSSLRedirectPort <em>port</em></syntax>
-<default>WebAuthSSLRedirect 443</default>
+<default>WebAuthSSLRedirectPort 443</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 

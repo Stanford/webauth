@@ -1256,7 +1256,7 @@ WebAuthSSLRedirect on<br xmlns="" />
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>port to use when redirecting the user to https
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirectPort <em>port</em></code></td></tr>
-<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect 443</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirectPort 443</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
