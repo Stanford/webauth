@@ -41,12 +41,12 @@
 <example><title>Example</title>
   LoadModule webauth_module modules/mod_webauth.so<br/>
 <br/>
-  WebAuthKeyring           conf/webauth_keyring<br/>
-  WebAuthKeytab            conf/webauth_keytab<br/>
+  WebAuthKeyring conf/webauth_keyring<br/>
+  WebAuthKeytab conf/webauth_keytab<br/>
   WebAuthServiceTokenCache conf/service_token_cache<br/>
-  WebAuthLoginURL          https://webkdc.stanford.edu/login/<br/>
-  WebAuthWebKDCURL         https://webkdc.stanford.edu/webkdc-service/<br/>
-  WebAuthWebKDCPrincipal   service/webkdc@stanford.edu<br/>
+  WebAuthLoginURL https://webkdc/login/<br/>
+  WebAuthWebKDCURL https://webkdc/webkdc-service/<br/>
+  WebAuthWebKDCPrincipal   service/webkdc<br/>
 <br/>
   &lt;Location /private/&gt;<br />
   AuthType WebAuth<br />
@@ -69,23 +69,35 @@ additional environment  variables set.
 <table border="1">
 <tr>
  <th>Variable Name:</th>
- <th>Value Type:</th>
  <th>Description:</th>
 </tr>
-<tr><td><code>WEBAUTH_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user</td></tr>
+<tr><td><code>WEBAUTH_USER</code></td>            
+    <td>Name of the WebAuth authenticated user</td></tr>
 
-<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>                         <td>number</td>      <td>When the token was created</td></tr>
+<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>     
+     <td>When the token was created</td></tr>
 
-<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>                         <td>number</td>      <td>When the token will expire</td></tr>
-<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td>                         <td>number</td>      <td>When the token was last used, if WebAuthLastUseUpdateInterval is non-zero</td></tr>
+<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td> 
+<td>When the token will expire. Note: if
+<a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>
+is set then the token may expire sooner due to inactivity.
+</td></tr>
+<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td> 
+<td>When the token was last used. Only available if 
+<a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+ is non-zero</td></tr>
 
-<tr><td><code>REMOTE_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user</td></tr>
+<tr><td><code>REMOTE_USER</code></td>
+ <td>Name of the WebAuth authenticated user</td></tr>
 
-<tr><td><code>AUTH_TYPE</code></td>                         <td>string</td>      <td>Will be set to <code>WebAuth</code></td></tr>
+<tr><td><code>AUTH_TYPE</code></td>
+<td>Will be set to <code>WebAuth</code></td></tr>
 
 </table>
 
 <example><title>Example</title>
+REMOTE_USER=schemers<br/>
+AUTH_TYPE=WebAuth<br/>
 WEBAUTH_USER=schemers<br/>
 WEBAUTH_TOKEN_CREATION=103872393<br/>
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br/>
