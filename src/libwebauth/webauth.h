@@ -27,7 +27,8 @@
  * those functions, the error codes are chosen from the following enum.
  */
 typedef enum {
-    WA_ERR_NO_ROOM = -2000,  /**< Supplied buffer too small. */
+    WA_ERR_NONE = 0,         /**< No error occured. */
+    WA_ERR_NO_ROOM,          /**< Supplied buffer too small. */
     WA_ERR_CORRUPT,          /**< Data is incorrectly formatted. */
     WA_ERR_NO_MEM,           /**< No memory. */
     WA_ERR_BAD_HMAC,         /**< HMAC check failed. */
@@ -42,9 +43,9 @@ typedef enum {
     WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
     WA_ERR_INVALID_CONTEXT,  /**< Invalid context passed to function. */
     WA_ERR_LOGIN_FAILED,     /**< Bad username/password. */
-    /* must be last */
-    WA_ERR_NONE = 0          /**< No error occured. */
-    /* must be last */
+    WA_ERR_TOKEN_EXPIRED,    /**< Token has expired. */
+    WA_ERR_TOKEN_STALE,      /**< Token is stale. */
+
 }  WEBAUTH_ERR;    
 
 /******************** constants for token attributes **********/
@@ -292,10 +293,10 @@ int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
                               const char *name, const char *value, int vlen);
 
 /** searches for the name attribute in the list and returns the
- * index or WA_ERR_NOT_FOUND.
+ * index in i and WA_ERR_NONE or sets i to -1 and returns WA_ERR_NOT_FOUND.
  *
  */
-int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name);
+int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name, int *i);
 
 /** free's an attr list
  *
@@ -332,7 +333,7 @@ int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
  * decodes the given buffer into an array of attributes.
  * The buffer is modifed.
  *
- * returns the number of attributes decoded or an error
+ * returns WA_ERR_NONE or an error
  *
  * errors:
  *   WA_ERR_CORRUPT

@@ -160,7 +160,7 @@ verbose:
 
         key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
         time(&curr);
-        s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
+        s = webauth_keyring_add(ring, curr, curr, curr+3600*24*30, key);
 
         s = webauth_random_key(key_material, WA_AES_128);
         s = webauth_hex_encode(key_material, WA_AES_128, hex, &l, sizeof(hex));
@@ -168,7 +168,7 @@ verbose:
         /*printf("key[%s]\n", hex);*/
 
         key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-        s = webauth_keyring_add(ring, curr, curr+3600, curr+7200, key);
+        s = webauth_keyring_add(ring, curr, curr+1+3600*24*30, curr+1+3600*24*30*2, key);
         s = webauth_keyring_write_file(ring,"webauth_keyring");
     }
     webauth_keyring_free(ring);

@@ -394,7 +394,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     for (i=0; i < num_entries; i++) {
         time_t creation_time, valid_from, valid_till;
         uint32_t entry_length, key_type;
-        int key_data_index = WA_ERR_NOT_FOUND;
+        int key_data_index = -1;
         WEBAUTH_ATTR_LIST *list;
         WEBAUTH_KEY *key;
 
@@ -417,7 +417,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
         }
 
         s = webauth_attrs_decode(p, entry_length, &list);
-        if (s <0) {
+        if (s != WA_ERR_NONE) {
             free(buff);
             webauth_keyring_free(*ring);
             return s;
@@ -435,10 +435,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
         }
 
         if (s == WA_ERR_NONE) {
-            key_data_index = webauth_attr_list_find(list, "key_data");
-            if (key_data_index < 0) {
-                s = key_data_index;
-            }
+            s = webauth_attr_list_find(list, "key_data", &key_data_index);
         }
 
         if (s != WA_ERR_NONE) {

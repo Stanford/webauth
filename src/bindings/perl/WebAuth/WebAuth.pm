@@ -353,6 +353,7 @@ will be set to the client principal in the request.
 
 The following constants from webauth.h are available:
 
+  WA_ERR_NONE
   WA_ERR_NO_ROOM
   WA_ERR_CORRUPT
   WA_ERR_NO_MEM
@@ -368,7 +369,8 @@ The following constants from webauth.h are available:
   WA_ERR_KRB5
   WA_ERR_INVALID_CONTEXT
   WA_ERR_LOGIN_FAILED
-  WA_ERR_NONE
+  WA_ERR_TOKEN_EXPIRED
+  WA_ERR_TOKEN_STALE
 
   WA_AES_KEY
   WA_AES_128

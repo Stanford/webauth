@@ -263,8 +263,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
         return s;
 
     /* clent principal */
-    f = webauth_attr_list_find(list, CR_CLIENT);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_CLIENT, &f);
+    if (f != -1) {
         c->code = krb5_parse_name(c->ctx,
                                   (char *)list->attrs[f].value,
                                   &creds->client);
@@ -275,8 +275,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     }
 
     /* server principal */
-    f = webauth_attr_list_find(list, CR_SERVER);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_SERVER, &f);
+    if (f != -1) {
         c->code = krb5_parse_name(c->ctx,
                                   (char *)list->attrs[f].value,
                                   &creds->server);
@@ -328,8 +328,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     /* addresses */
     /* FIXME: We might never want to add these? */
     /* they might not even exist if we got forwardable/proxiable tickets */
-    f = webauth_attr_list_find(list, CR_NUMADDRS);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_NUMADDRS, &f);
+    if (f != -1) {
         int num = 0, i;
         char name[32];
         
@@ -370,8 +370,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     }
 
     /* ticket */
-    f = webauth_attr_list_find(list, CR_TICKET);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_TICKET, &f);
+    if (f != -1) {
         creds->ticket.magic = KV5M_DATA;
 
         s = webauth_attr_list_get_void(list, CR_TICKET,
@@ -382,8 +382,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     }
 
     /* second_ticket */
-    f = webauth_attr_list_find(list, CR_TICKET2);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_TICKET2, &f);
+    if (f != -1) {
         creds->ticket.magic = KV5M_DATA;
 
         s = webauth_attr_list_get_void(list, CR_TICKET2,
@@ -394,8 +394,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     }
 
     /* authdata */
-    f = webauth_attr_list_find(list, CR_NUMAUTHDATA);
-    if (f != WA_ERR_NOT_FOUND) {
+    webauth_attr_list_find(list, CR_NUMAUTHDATA, &f);
+    if (f != -1) {
         int num = 0, i;
         char name[32];
         

@@ -92,9 +92,9 @@ int main(int argc, char *argv[])
 
     /* now lets try and decode the token with ring instead of ring2 */
     aout = NULL;
-    dnum_attrs = webauth_token_parse(token, len, &aout, ring);
+    s = webauth_token_parse(token, len, &aout, ring);
 
-    TEST_OK(dnum_attrs < 0);
+    TEST_OK(s != WA_ERR_NONE);
 
     webauth_attr_list_free(ain);
     //webauth_attr_list_free(aout);

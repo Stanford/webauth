@@ -13,12 +13,12 @@ int main(int argc, char *argv[])
 {
     unsigned char *buff;
     WEBAUTH_ATTR_LIST *attrs_in, *attrs_out;
-    int len, i, rlen, s;
+    int len, i, rlen, s, f;
     int num_out;
     unsigned char binary_data[BUFSIZE];
     TEST_VARS;
 
-    START_TESTS(55);
+    START_TESTS(58);
 
     for (i=0; i < sizeof(binary_data); i++) {
         binary_data[i] = i % 256;
@@ -42,9 +42,14 @@ int main(int argc, char *argv[])
     webauth_attr_list_add_str(attrs_in, "13", ";;;", 0);
     webauth_attr_list_add_str(attrs_in, "14", ";;;;a", 0);
 
-    TEST_OK2(5, webauth_attr_list_find(attrs_in, "4"));
-    TEST_OK2(0, webauth_attr_list_find(attrs_in, "bin"));
-    TEST_OK2(WA_ERR_NOT_FOUND, webauth_attr_list_find(attrs_in, "foobar"));
+    TEST_OK2(WA_ERR_NONE, webauth_attr_list_find(attrs_in, "4", &f));
+    TEST_OK2(f, 5);
+
+    TEST_OK2(WA_ERR_NONE, webauth_attr_list_find(attrs_in, "bin", &f));
+    TEST_OK2(f, 0);
+
+    TEST_OK2(WA_ERR_NOT_FOUND, webauth_attr_list_find(attrs_in, "foobar", &f));
+    TEST_OK2(f, -1);
 
     rlen = webauth_attrs_encoded_length(attrs_in);
 

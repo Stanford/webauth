@@ -20,6 +20,7 @@ BOOT:
     /* constant subs for WebAuth */
     stash = gv_stashpv("WebAuth", TRUE);
 
+    IV_CONST(WA_ERR_NONE);
     IV_CONST(WA_ERR_NO_ROOM);
     IV_CONST(WA_ERR_CORRUPT);
     IV_CONST(WA_ERR_NO_MEM);
@@ -35,7 +36,9 @@ BOOT:
     IV_CONST(WA_ERR_KRB5);
     IV_CONST(WA_ERR_INVALID_CONTEXT);
     IV_CONST(WA_ERR_LOGIN_FAILED);
-    IV_CONST(WA_ERR_NONE);
+    IV_CONST(WA_ERR_TOKEN_EXPIRED);
+    IV_CONST(WA_ERR_TOKEN_STALE);
+
     IV_CONST(WA_AES_KEY);
     IV_CONST(WA_AES_128);
     IV_CONST(WA_AES_192);
@@ -355,7 +358,7 @@ CODE:
     int s;
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_bytes(SvPVX(ST(0)), length);
-    if (s<0) {
+    if (s != WA_ERR_NONE) {
         ST(0) = &PL_sv_undef;
     } else {
         SvCUR_set(ST(0), length);
@@ -372,7 +375,7 @@ CODE:
     int s;
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_key(SvPVX(ST(0)), length);
-    if (s<0) {
+    if (s != WA_ERR_NONE) {
         ST(0) = &PL_sv_undef;
     } else {
         SvCUR_set(ST(0), length);

@@ -132,19 +132,20 @@ webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
 }
 
 int
-webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name)
+webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name, int *index)
 {
     int i;
-
     assert(list != NULL);
     assert(name != NULL);
+    assert(index != NULL);
 
     for (i=0; i < list->num_attrs; i++) {
         if (strcmp(list->attrs[i].name, name) == 0) {
-            return i;
+            *index = i;
+            return WA_ERR_NONE;
         }
     }
-
+    *index = -1;
     return WA_ERR_NOT_FOUND;
 }
 
@@ -154,16 +155,16 @@ webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
                            void **value,
                            int *value_len)
 {
-    int i;
+    int i, s;
 
     assert(list != NULL);
     assert(name != NULL);
     assert(value!= NULL);
     assert(value_len != NULL);
 
-    i = webauth_attr_list_find(list, name);
-    if (i == WA_ERR_NOT_FOUND)
-        return i;
+    s = webauth_attr_list_find(list, name, &i);
+    if (s != WA_ERR_NONE)
+        return s;
 
     *value_len = list->attrs[i].length;
     *value = malloc(*value_len);
@@ -178,15 +179,15 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
                              const char *name,
                              uint32_t *value)
 {
-    int i;
+    int i, s;
 
     assert(list != NULL);
     assert(name != NULL);
     assert(value!= NULL);
 
-    i = webauth_attr_list_find(list, name);
-    if (i == WA_ERR_NOT_FOUND)
-        return i;
+    s = webauth_attr_list_find(list, name, &i);
+    if (s != WA_ERR_NONE)
+        return s;
     if (list->attrs[i].length != sizeof(uint32_t)) 
         return WA_ERR_CORRUPT;
     memcpy(value, list->attrs[i].value, sizeof(uint32_t));
@@ -200,20 +201,18 @@ webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
                             const char *name,
                             int32_t *value)
 {
-    int i;
+    int i, s;
     uint32_t temp;
 
     assert(list != NULL);
     assert(name != NULL);
     assert(value != NULL);
 
-    i = webauth_attr_list_find(list, name);
-    if (i == WA_ERR_NOT_FOUND) {
-        return i;
-    }
-    if (list->attrs[i].length != sizeof(uint32_t)) {
+    s = webauth_attr_list_find(list, name, &i);
+    if (s != WA_ERR_NONE)
+        return s;
+    if (list->attrs[i].length != sizeof(uint32_t))
         return WA_ERR_CORRUPT;
-    }
     memcpy(&temp, list->attrs[i].value, sizeof(uint32_t));
     *value = (int32_t)ntohl(temp);
     return WA_ERR_NONE;
@@ -224,19 +223,17 @@ webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list,
                            const char *name,
                            time_t *value)
 {
-    int i;
+    int i, s;
     uint32_t temp;
     assert(list != NULL);
     assert(name != NULL);
     assert(value != NULL);
 
-    i = webauth_attr_list_find(list, name);
-    if (i == WA_ERR_NOT_FOUND) {
-        return i;
-    }
-    if (list->attrs[i].length != sizeof(uint32_t)) {
+    s = webauth_attr_list_find(list, name, &i);
+    if (s != WA_ERR_NONE)
+        return s;
+    if (list->attrs[i].length != sizeof(uint32_t))
         return WA_ERR_CORRUPT;
-    }
     memcpy(&temp, list->attrs[i].value, sizeof(uint32_t));
     *value = (time_t)ntohl(temp);
     return WA_ERR_NONE;
