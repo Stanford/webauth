@@ -79,6 +79,7 @@ install: build
 	mkdir -p $(CURDIR)/debian/tmp/etc/webkdc
 	cp src/modules/webkdc/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
 	cp debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
+	mkdir -p $(CURDIR)/debian/tmp/etc/apache2/mods-available
 	cd conf/debian && for f in *.conf *.load ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f \
