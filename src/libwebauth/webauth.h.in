@@ -563,6 +563,28 @@ WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
                                       time_t hint);
 
 /*
+ * encodes a keyring into a buffer and returns the encoded length.
+ * buffer should be free'd when no longer needed.
+ *
+ * returns WA_ERR_NONE on success, or an error.
+ */
+
+int webauth_keyring_encode(WEBAUTH_KEYRING *ring, 
+                           unsigned char **buffer,
+                           int *buffer_len);
+
+/*
+ * deecodes a keyring from a buffer.
+ * ring should be free'd with webauth_keyring_free when no longer needed.
+ *
+ * returns WA_ERR_NONE on success, or an error.
+ */
+
+int
+webauth_keyring_decode(unsigned char *buffer, int buffer_len,
+                       WEBAUTH_KEYRING **ring);
+
+/*
  * write a key ring to a file. 
  *
  * returns WA_ERR_NONE on success, or an error.

@@ -263,41 +263,21 @@ read_fully(int fd, char *buff, int n)
 #define A_KEY_DATA "kd%d"
 
 int 
-webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
+webauth_keyring_encode(WEBAUTH_KEYRING *ring, 
+                       unsigned char **buffer,
+                       int *buffer_len)
 {
-    int fd, i, attr_len, len;
+    int i, attr_len;
     WEBAUTH_ATTR_LIST *alist;
-    unsigned char *attr_buff;
-    int status, retry;
+    int status;
     char name[32];
-    char *temp;
 
     assert(ring);
+    assert(buffer);
+    assert(buffer_len);
 
-    attr_buff = NULL;
-    temp = NULL;
-    fd = -1;
-    attr_buff = NULL;
+    *buffer = NULL;
     alist = NULL;
-
-    temp = malloc(strlen(path)+7+1); // .XXXXXX\0
-    if (temp == NULL)
-        return WA_ERR_NO_MEM;
-
-
-    retry = 0;
-    fd = -1;
-    while ((fd == -1) && (retry++ < 10)) {
-        sprintf(temp, "%s.XXXXXX", path);
-        mktemp(temp);
-
-        fd = open(temp, O_WRONLY|O_TRUNC|O_CREAT|O_EXCL, 0600);
-
-        if ((fd == -1) && (errno != EEXIST)) {
-            status = WA_ERR_KEYRING_OPENWRITE;
-            goto cleanup;
-        }
-    }
 
     alist = webauth_attr_list_new(ring->num_entries*5+2);
     if (alist == NULL) {
@@ -348,12 +328,63 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     }
 
     attr_len = webauth_attrs_encoded_length(alist);
-    attr_buff = malloc(attr_len);
-    if (attr_buff == NULL) {
+    *buffer = malloc(attr_len);
+    if (*buffer == NULL) {
         status = WA_ERR_NO_MEM;
         goto cleanup;
     }
-    status = webauth_attrs_encode(alist, attr_buff, &len, attr_len);
+    status = webauth_attrs_encode(alist, *buffer, buffer_len, attr_len);
+    if (status != WA_ERR_NONE)
+        goto cleanup;
+
+    status = WA_ERR_NONE;
+
+ cleanup:
+
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE && *buffer != NULL) {
+        free(*buffer);
+        *buffer = NULL;
+    }
+    return status;
+}
+
+int 
+webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
+{
+    int fd, attr_len;
+    unsigned char *attr_buff;
+    int status, retry;
+    char *temp;
+
+    assert(ring);
+
+    attr_buff = NULL;
+    temp = NULL;
+    fd = -1;
+
+    temp = malloc(strlen(path)+7+1); // .XXXXXX\0
+    if (temp == NULL)
+        return WA_ERR_NO_MEM;
+
+
+    retry = 0;
+    fd = -1;
+    while ((fd == -1) && (retry++ < 10)) {
+        sprintf(temp, "%s.XXXXXX", path);
+        mktemp(temp);
+
+        fd = open(temp, O_WRONLY|O_TRUNC|O_CREAT|O_EXCL, 0600);
+
+        if ((fd == -1) && (errno != EEXIST)) {
+            status = WA_ERR_KEYRING_OPENWRITE;
+            goto cleanup;
+        }
+    }
+
+    status = webauth_keyring_encode(ring, &attr_buff, &attr_len);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
@@ -378,9 +409,6 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
 
  cleanup:
 
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
-
     if (attr_buff != NULL)
         free(attr_buff);
 
@@ -397,50 +425,24 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
 
 }
 
+
 int
-webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
+webauth_keyring_decode(unsigned char *buffer, int buffer_len,
+                       WEBAUTH_KEYRING **ring)
 {
-    int fd, n, len, i, s;
-    struct stat sbuf;
-    char *buff;
+    int i, s;
     uint32_t version, num_entries;
     WEBAUTH_ATTR_LIST *alist;
     unsigned char *key_data;
     int key_len;
 
+    assert(buffer);
+    assert(ring);
+
     *ring = NULL;
     alist = NULL;
-    buff = NULL;
-    fd = -1;
 
-    /* FIXME: locking */
-    fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        s = WA_ERR_KEYRING_OPENREAD;
-        goto cleanup;
-    }
-
-    if (fstat(fd, &sbuf) < 0) {
-        close(fd);
-        s = WA_ERR_KEYRING_READ;
-        goto cleanup;
-    }
-
-    len = sbuf.st_size;
-
-    buff = malloc(len);
-    if (buff == NULL) {
-        s = WA_ERR_NO_MEM;
-        goto cleanup;
-    }
-
-    n = read_fully(fd, buff, len);
-    if (n != len) {
-        s = WA_ERR_KEYRING_READ;
-        goto cleanup;
-    }
-
-    s = webauth_attrs_decode(buff, len, &alist);
+    s = webauth_attrs_decode(buffer, buffer_len, &alist);
     if (s != WA_ERR_NONE)
         goto cleanup;
 
@@ -512,11 +514,62 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
 
  cleanup:
 
-    if (fd != -1)
-        close(fd);
-
     if (alist != NULL)
         webauth_attr_list_free(alist);
+
+    if (s != WA_ERR_NONE && *ring != NULL) 
+        webauth_keyring_free(*ring);
+
+    return s;
+
+}
+
+int
+webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
+{
+    int fd, n, len, s;
+    struct stat sbuf;
+    char *buff;
+
+    *ring = NULL;
+    buff = NULL;
+    fd = -1;
+
+    /* FIXME: locking */
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        s = WA_ERR_KEYRING_OPENREAD;
+        goto cleanup;
+    }
+
+    if (fstat(fd, &sbuf) < 0) {
+        close(fd);
+        s = WA_ERR_KEYRING_READ;
+        goto cleanup;
+    }
+
+    len = sbuf.st_size;
+
+    buff = malloc(len);
+    if (buff == NULL) {
+        s = WA_ERR_NO_MEM;
+        goto cleanup;
+    }
+
+    n = read_fully(fd, buff, len);
+    if (n != len) {
+        s = WA_ERR_KEYRING_READ;
+        goto cleanup;
+    }
+
+    s = webauth_keyring_decode(buff, len, ring);
+    if (s != WA_ERR_NONE)
+        goto cleanup;
+
+ cleanup:
+
+    if (fd != -1)
+        close(fd);
 
     if (s != WA_ERR_NONE && *ring != NULL) 
         webauth_keyring_free(*ring);
