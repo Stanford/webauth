@@ -235,14 +235,11 @@ typedef struct {
     char *keytab_path;
     char *cred_cache_dir;
     char *st_cache_path;
-    char *var_prefix;
     int  debug;
     int debug_ex;
     int  require_ssl;
     int require_ssl_ex;
     char *subject_auth_type;
-    int extra_redirect;
-    int extra_redirect_ex; /* if it was explicitly specified in conf file */
     int strip_url;
     int strip_url_ex; 
     int keyring_auto_update;
@@ -273,6 +270,9 @@ typedef struct {
     char *return_url;
     char *failure_url;
     char *login_canceled_url;
+    int extra_redirect;
+    int extra_redirect_ex; /* if it was explicitly specified in conf file */
+    char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
 } MWA_DCONF;
 

@@ -374,13 +374,13 @@ are removed if the user accesses this URL.
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthExtraRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthExtraRedirect off</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
 When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string "<code>;WEBAUTHR=...;;WEBAUTHS=...;</code>"
+returned in the URL, by appending the string "<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>"
 to the URL.</p>
 
 <p>This directive controls whether or not an extra redirect will be sent
@@ -400,10 +400,10 @@ under certain circumstances maybe also trigger a caching bug in the
 user's browser (though hopefully this should never happen).</p>
 
 <div class="example"><h3>Example</h3><p><code>
-&lt;VirtualHost _default_:443&gt;<br />
+&lt;Location /myapp/&gt;<br />
 WebAuthExtraRedirect on<br />
 ...<br />
-&lt;/VirtualHost&gt;
+&lt;/Location&gt;
 </code></p></div>
 
 </div>
@@ -885,7 +885,7 @@ the <a href="#WebAuthCred">WebAuthCred</a> directive.
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthVarPrefix <em>string</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthVarPrefix ""</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
@@ -900,9 +900,11 @@ module defines, and they will be set in addition to the standard "WEBAUTH"
 ones.</p>
 
 <div class="example"><h3>Example</h3><p><code>
+&lt;Location /myapp/&gt;<br />
 # this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br />
 # environment variables to get set.<br />
-WebAuthVarPrefix HTTP_
+WebAuthVarPrefix HTTP_<br />
+&lt;/Location&gt;
 </code></p></div>
 
 </div>

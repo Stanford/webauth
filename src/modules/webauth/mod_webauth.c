@@ -175,9 +175,9 @@ set_pending_env_var_cb(void *rec, const char *key, const char *value)
                          "mod_webauth: set_pending_env_cb: (%s) (%s)\n",
                          name, value);
         apr_table_setn(rc->r->subprocess_env, name, value);
-        if (rc->sconf->var_prefix != NULL) {
+        if (rc->dconf->var_prefix != NULL) {
             key = apr_pstrcat(rc->r->pool, 
-                              rc->sconf->var_prefix, name, NULL);
+                              rc->dconf->var_prefix, name, NULL);
             apr_table_setn(rc->r->subprocess_env, key, value);
         }
     }
@@ -553,9 +553,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->strip_url = oconf->strip_url_ex ?
         oconf->strip_url : bconf->strip_url;
 
-    conf->extra_redirect = oconf->extra_redirect_ex ?
-        oconf->extra_redirect : bconf->extra_redirect;
-
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
 
     conf->require_ssl = oconf->require_ssl_ex ? 
@@ -574,7 +571,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(keytab_path);
     MERGE_PTR(cred_cache_dir);
     MERGE_PTR(st_cache_path);
-    MERGE_PTR(var_prefix);
     return (void *)conf;
 }
 
@@ -599,12 +595,16 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->do_logout : bconf->do_logout;
     conf->do_logout_ex = oconf->do_logout_ex;
 
+    conf->extra_redirect = oconf->extra_redirect_ex ?
+        oconf->extra_redirect : bconf->extra_redirect;
+
     MERGE_INT(app_token_lifetime);
     MERGE_INT(inactive_expire);
     MERGE_INT(last_use_update_interval);
     MERGE_PTR(return_url);
     MERGE_PTR(login_canceled_url);
     MERGE_PTR(failure_url);
+    MERGE_PTR(var_prefix);
 
     if (bconf->creds == NULL) {
         conf->creds = oconf->creds;
@@ -2073,7 +2073,7 @@ gather_tokens(MWA_REQ_CTXT *rc)
     /* check if the WEBAUTHR crap was in the URL and we are configured
        to do a redirect. redirect now so we don't waste time doing saving
        creds if we are configured to saved creds for this request */
-    if (in_url && rc->sconf->extra_redirect)
+    if (in_url && rc->dconf->extra_redirect)
         return extra_redirect(rc);
 
     /* if use_creds is on, look for creds. If creds aren't found,
@@ -2389,7 +2389,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             sconf->st_cache_path = ap_server_root_relative(cmd->pool, arg);
             break;
         case E_VarPrefix:
-            sconf->var_prefix = apr_pstrdup(cmd->pool, arg);
+            dconf->var_prefix = apr_pstrdup(cmd->pool, arg);
             break;
         case E_SubjectAuthType:
             sconf->subject_auth_type = apr_pstrdup(cmd->pool, arg);
@@ -2474,8 +2474,8 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->strip_url_ex = 1;
             break;
         case E_ExtraRedirect:
-            sconf->extra_redirect = flag;
-            sconf->extra_redirect_ex = 1;
+            dconf->extra_redirect = flag;
+            dconf->extra_redirect_ex = 1;
             break;
         default:
             error_str = 
@@ -2552,10 +2552,8 @@ static const command_rec cmds[] = {
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_CredCacheDir, E_CredCacheDir,  CM_CredCacheDir),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
-    SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
-    SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
@@ -2568,9 +2566,11 @@ static const command_rec cmds[] = {
     ADFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     ADFLAG(CD_UseCreds, E_UseCreds, CM_UseCreds),
     ADFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
+    ADFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     ADSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
     ADSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
+    ADSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     ADTAKE12(CD_Cred, E_Cred, CM_Cred),
     { NULL }
 };

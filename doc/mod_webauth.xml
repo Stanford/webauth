@@ -250,13 +250,12 @@ WebAuthTokenMaxTTL 10m
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
 <default>WebAuthExtraRedirect off</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
+<contextlist><context>directory</context></contextlist>
 
 <usage>
 <p>
 When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string "<code>;WEBAUTHR=...;;WEBAUTHS=...;</code>"
+returned in the URL, by appending the string "<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>"
 to the URL.</p>
 
 <p>This directive controls whether or not an extra redirect will be sent
@@ -276,10 +275,10 @@ under certain circumstances maybe also trigger a caching bug in the
 user's browser (though hopefully this should never happen).</p>
 
 <example><title>Example</title>
-&lt;VirtualHost _default_:443&gt;<br />
+&lt;Location /myapp/&gt;<br />
 WebAuthExtraRedirect on<br />
 ...<br />
-&lt;/VirtualHost&gt;
+&lt;/Location&gt;
 </example>
 </usage>
 </directivesynopsis>
@@ -566,8 +565,8 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 </description>
 <syntax>WebAuthVarPrefix <em>string</em></syntax>
 <default>WebAuthVarPrefix ""</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
+<contextlist><context>directory</context>
+</contextlist>
 
 <usage>
 <p>
@@ -581,9 +580,11 @@ module defines, and they will be set in addition to the standard "WEBAUTH"
 ones.</p>
 
 <example><title>Example</title>
+&lt;Location /myapp/&gt;<br />
 # this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br/>
 # environment variables to get set.<br/>
-WebAuthVarPrefix HTTP_
+WebAuthVarPrefix HTTP_<br/>
+&lt;/Location&gt;
 </example>
 </usage>
 </directivesynopsis>
