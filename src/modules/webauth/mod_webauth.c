@@ -72,11 +72,18 @@ static void log_request(request_rec *r, const char *msg)
 }
 
 static int 
-webauth_die(const char *message)
+die(const char *message, server_rec *s)
 {
-    fprintf(stderr, "mod_webauth: fatal error: %s", message);
+    if (s) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                     "mod_webauth: fatal error: %s", message);
+    }
+    printf("mod_webauth: fatal error: %s\n", message);
     exit(1);
 }
+
+
+
 
 /*
  * called after config has been loaded in parent process
@@ -92,6 +99,12 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: post_config_hook");
 
+#define CHECK_DIR(field,dir) if (sconf->field == NULL) \
+             die(apr_psprintf(ptemp, "directive %s must be set", dir), s)
+
+    CHECK_DIR(login_url, CD_LoginURL);
+
+#undef CHECK_DIR
 
     return OK;
 }
@@ -202,6 +215,10 @@ static int
 check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
+    WEBAUTH_SCONF *sconf;
+
+    sconf = (WEBAUTH_SCONF*)ap_get_module_config(r->server->module_config,
+                                                 &webauth_module);
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                  "mod_webauth: in check_user_id hook");
@@ -214,7 +231,7 @@ check_user_id_hook(request_rec *r)
     if ((r->args != NULL) && (*(r->args) == 'Z')) {
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                  "mod_webauth: set Location, returning redirect...");
-        apr_table_setn(r->headers_out, "Location", "/realapp/hello.html");
+    apr_table_setn(r->headers_out, "Location", sconf->login_url);
         return HTTP_MOVED_TEMPORARILY;
     } else {
         return OK;
