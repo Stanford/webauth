@@ -299,6 +299,21 @@ allowed, so I picked the special value "&lt;UNSET>" for this example.
 If all your pages are WebAuth-protected, then this default value
 will never be used.
 </note>
+
+<p>You will also need to explicitly turn off Tomcat authentication in the
+<code>&lt;Connector&gt;</code> definition in the Tomcat
+<code>server.xml</code> file.  For example:</p>
+
+<example><title>Connector Example</title>
+<code>
+<pre>
+&lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
+    port="8009" minProcessors="5" maxProcessors="75"
+    tomcatAuthentication="false"
+    acceptCount="10" debug="0"/&gt;
+</pre>
+</code>
+</example>
 </section>
 
 <section><title>Requesting Credentials</title>
