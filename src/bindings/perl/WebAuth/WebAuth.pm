@@ -16,13 +16,86 @@ our @ISA = qw(Exporter DynaLoader);
 # This allows declaration	use WebAuth ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-) ] );
+our %EXPORT_TAGS = (
+		    'attrs' => [ qw(attrs_encode attrs_decode) ],
+		    'base64' => [ qw(base64_encode base64_decode) ],
+		    'const' => [ qw(WA_ERR_NONE
+				    WA_ERR_NO_ROOM
+				    WA_ERR_CORRUPT
+				    WA_ERR_NO_MEM
+				    WA_ERR_BAD_HMAC
+				    WA_ERR_RAND_FAILURE
+				    WA_ERR_BAD_KEY
+				    WA_ERR_KEYRING_OPENWRITE
+				    WA_ERR_KEYRING_WRITE
+				    WA_ERR_KEYRING_OPENREAD
+				    WA_ERR_KEYRING_READ
+				    WA_ERR_KEYRING_VERISON
+				    WA_ERR_NOT_FOUND
+				    WA_ERR_KRB5
+				    WA_ERR_INVALID_CONTEXT
+				    WA_ERR_LOGIN_FAILED
+				    WA_ERR_TOKEN_EXPIRED
+				    WA_ERR_TOKEN_STALE
+				    WA_AES_KEY
+				    WA_AES_128
+				    WA_AES_192
+				    WA_AES_256
+				    WA_TK_APP_NAME
+				    WA_TK_CRED_DATA
+				    WA_TK_CRED_TYPE
+				    WA_TK_CREATION_TIME
+				    WA_TK_ERROR_CODE
+				    WA_TK_ERROR_MESSAGE
+				    WA_TK_EXPIRATION_TIME
+				    WA_TK_INACTIVITY_TIMEOUT
+				    WA_TK_SESSION_KEY
+				    WA_TK_LASTUSED_TIME
+				    WA_TK_PROXY_TYPE
+				    WA_TK_PROXY_DATA
+				    WA_TK_PROXY_OWNER
+				    WA_TK_POST_URL
+				    WA_TK_REQUEST_REASON
+				    WA_TK_REQ_TOKEN
+				    WA_TK_REQ_TOKEN_EXPIRATION
+				    WA_TK_REQ_TOKEN_TYPE
+				    WA_TK_RETURN_URL
+				    WA_TK_SUBJECT
+				    WA_TK_SUBJECT_AUTH
+				    WA_TK_SUBJECT_AUTH_DATA
+				    WA_TK_SUBJECT_EXPIRATION_TIME
+				    WA_TK_TOKEN_TYPE
+				    )],
+		    'hex' => [ qw(hex_encode hex_decode) ],
+		    'key' => [ qw(key_create keyring_read_file
+				  keyring_writefile keyring_new
+				  keyring_add) ],
+		    'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
+				   krb5_init_via_password
+				   krb5_init_via_keytab
+				   krb5_init_via_tgt
+				   krb5_import_ticket
+				   krb5_export_tgt
+				   krb5_service_principal
+				   krb5_get_principal
+				   krb5_export_ticket
+				   krb5_mk_req krb5_rd_req
+				   krb5_keep_cred_cache)],
+		    'random' => [ qw(random_bytes random_key) ],
+		    'token' => [ qw(token_create token_parse) ],
+		    );
 
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
+		   @{ $EXPORT_TAGS{'base64'} },
+		   @{ $EXPORT_TAGS{'const'} },
+		   @{ $EXPORT_TAGS{'hex'} },
+		   @{ $EXPORT_TAGS{'key'} },
+		   @{ $EXPORT_TAGS{'krb5'} },
+		   @{ $EXPORT_TAGS{'random'} },
+		   @{ $EXPORT_TAGS{'token'} },
+		   );
 
-our @EXPORT = qw(
-);
+our @EXPORT = qw ();
 our $VERSION = '0.01';
 
 bootstrap WebAuth $VERSION;
@@ -50,7 +123,7 @@ BEGIN {
 
     # your exported package globals go here,
     # as well as any optionally exported functions
-    @EXPORT_OK   = qw();
+    @EXPORT_OK   = ();
 }
 
 our @EXPORT_OK;
@@ -152,7 +225,21 @@ for more information.
 
 =head1 EXPORT
 
-None
+Nothing is exported by default, but the following %EXPORT_TAGS are
+available:
+
+  attrs     the attr_* functions
+  base64    the base64_* functions
+  const     the wA_* constants
+  hex       the hex_* functions
+  key       the key_* and keyring_* functions
+  krb5      the krb5_* functions
+  random    the random_* functions
+  token     the token_* functions
+
+For example:
+
+  use WebAuth qw(:krb5 :const);
 
 =head1 FUNCTIONS
 
