@@ -1788,7 +1788,7 @@ make_return_url(MWA_REQ_CTXT *rc,
 
     /* if we are proxying or if the uri is parsed and scheme is non-null
        just use unparsed_uri */
-    if ((rc->r->proxyreq != PROXYREQ_NONE) ||
+    if ((rc->r->proxyreq == PROXYREQ_PROXY) ||
         (rc->r->parsed_uri.is_initialized && rc->r->parsed_uri.scheme != NULL)
         ) {
         return uri;
