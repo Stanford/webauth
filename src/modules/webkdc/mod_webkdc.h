@@ -147,6 +147,7 @@ typedef struct {
     void *proxy_data;
     int proxy_data_len;
     time_t expiration;
+    time_t creation;
 } MWK_PROXY_TOKEN;
 
 /* interesting stuff from a parsed login-token */

@@ -19,7 +19,7 @@ CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
 LDFLAGS		= -L$(top_builddir)src/libwebauth
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
-TESTS		= attrs_test base64_test key_test krb5_test token_test \
+TESTS		= attrs_test base64_test key_test krb5_test krb5_tgt_test token_test \
 		  hex_test random_test
 
 all: $(TESTS)
@@ -38,6 +38,9 @@ key_test: key_test.o
 
 krb5_test: krb5_test.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ krb5_test.o $(LDLIBS)
+
+krb5_tgt_test: krb5_tgt_test.o
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ krb5_tgt_test.o $(LDLIBS)
 
 token_test: token_test.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ token_test.o $(LDLIBS)
@@ -59,6 +62,7 @@ base64_test.o: base64_test.c $(top_srcdir)/src/libwebauth/webauth.h \
 hex_test.o: hex_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
 key_test.o: key_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
 krb5_test.o: krb5_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
+krb5_tgt_test.o: krb5_tgt_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
 random_test.o: random_test.c $(top_srcdir)/src/libwebauth/webauth.h \
  webauthtest.h
 token_test.o: token_test.c $(top_srcdir)/src/libwebauth/webauth.h \

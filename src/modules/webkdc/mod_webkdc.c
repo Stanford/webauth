@@ -529,6 +529,15 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
         goto cleanup;
     }
 
+    /* pull out creation */
+    status = webauth_attr_list_get_time(alist, WA_TK_CREATION_TIME,
+                                        &pt->creation, WA_F_NONE);
+    if (status != WA_ERR_NONE) {
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, 
+                          "missing creation", mwk_func, 1);
+        goto cleanup;
+    }
+
     ms = MWK_OK;
 
  cleanup:
@@ -1821,7 +1830,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     time(&creation);
 
-    /* if ProxyTopkenLifetime is non-zero, use the min of it 
+    /* if ProxyTokenLifetime is non-zero, use the min of it 
        and the tgt, else just use the tgt  */
     if (rc->sconf->proxy_token_lifetime) {
         time_t pmax = creation + rc->sconf->proxy_token_lifetime;
@@ -2132,6 +2141,282 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     return MWK_OK;
 }
 
+
+static enum mwk_status
+handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                               char **subject_out)
+{
+    apr_xml_elem *child;
+    static const char *mwk_func="handle_webkdcProxyTokenRequest";
+    enum mwk_status ms;
+    char *sc_data, *pd_data;
+    unsigned char *dpd_data, *token_data;
+    void *tgt;
+    int sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, status, token_len;
+    char *client_principal, *proxy_subject, *server_principal;
+    time_t tgt_expiration, creation;
+    WEBAUTH_KRB5_CTXT *ctxt;
+    WEBAUTH_ATTR_LIST *alist;
+
+    *subject_out = "<unknown>";
+    sc_data = NULL;
+    pd_data = NULL;
+
+    client_principal = NULL;
+    ctxt = NULL;
+    ms = MWK_ERROR;
+
+    /* walk through each child element in <requestTokenRequest> */
+    for (child = e->first_child; child; child = child->next) {
+        if (strcmp(child->name, "proxyData") == 0) {
+            pd_data = get_elem_text(rc, child, mwk_func);
+            if (pd_data == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(child->name, "subjectCredential") == 0) {
+            const char *at = get_attr_value(rc, child, "type",  1, mwk_func);
+            if (at == NULL)
+                return MWK_ERROR;
+
+            if (strcmp(at, "krb5") != 0) {
+                char *msg = apr_psprintf(rc->r->pool, 
+                                        "unknown <subjectCredential> type: %s",
+                                         at);
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
+                                         mwk_func, 1);
+            }
+            sc_data = get_elem_text(rc, child, mwk_func);
+            if (sc_data == NULL)
+                return MWK_ERROR;
+        } else {
+            unknown_element(rc, mwk_func, e->name, child->name);
+            return MWK_ERROR;
+        }
+    }
+
+    /* make sure we found proxyData */
+    if (pd_data == NULL) {
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                 "missing <proxyData>",
+                                 mwk_func, 1);
+    }
+
+    /* make sure we found subjectCredentials */
+    if (sc_data == NULL) {
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                 "missing <subjectCredential>",
+                                 mwk_func, 1);
+    }
+
+    sc_blen = strlen(sc_data);
+    status = webauth_base64_decode(sc_data, sc_blen,
+                                   sc_data, &sc_len,
+                                   sc_blen);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                              "webauth_base64_decode", 
+                                              "subjectCredential");
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
+                                 mwk_func, 1);
+    }
+
+    pd_blen = strlen(pd_data);
+    status = webauth_base64_decode(pd_data, pd_blen,
+                                   pd_data, &pd_len,
+                                   pd_blen);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                        "webauth__base64_decode", "proxyData");
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
+                                 mwk_func, 1);
+    }
+
+    ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
+    /* mwk_get_webauth_krb5_ctxt already logged error */
+    if (ctxt == NULL) {
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, 
+                                 "server failure", mwk_func, 0);
+    }
+
+    status = webauth_krb5_rd_req_with_data(ctxt,
+                                           sc_data, 
+                                           sc_len,
+                                           rc->sconf->keytab_path, 
+                                           rc->sconf->keytab_principal,
+                                           &server_principal,
+                                           &client_principal,
+                                           1,
+                                           pd_data,
+                                           pd_len,
+                                           &dpd_data,
+                                           &dpd_len);
+
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                             "webauth__krb5_rd_req_with_data", 
+                                              NULL);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        goto cleanup;
+    }
+
+    *subject_out = apr_pstrdup(rc->r->pool, client_principal);
+    free(client_principal);
+
+    proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:",
+                                server_principal, NULL);
+    free(server_principal);
+
+    status = webauth_krb5_init_via_cred(ctxt, dpd_data, dpd_len, NULL);
+    free(dpd_data);
+
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                             "webauth__krb5_init_via_cred", 
+                                              NULL);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        goto cleanup;
+    }
+
+    /* now export the tgt again, for sanity checking and to get
+       expiraiton */
+    status = webauth_krb5_export_tgt(ctxt, (unsigned char**)&tgt, 
+                                     &tgt_len, &tgt_expiration);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                              "webauth_krb5_export_tgt",
+                                              NULL);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        goto cleanup;
+    } else {
+        void *new_tgt = apr_palloc(rc->r->pool, tgt_len);
+        memcpy(new_tgt, tgt, tgt_len);
+        free(tgt);
+        tgt = new_tgt;
+    }
+
+    time(&creation);
+    /* if ProxyTopkenLifetime is non-zero, use the min of it 
+       and the tgt, else just use the tgt  */
+    if (rc->sconf->proxy_token_lifetime) {
+        time_t pmax = creation + rc->sconf->proxy_token_lifetime;
+        tgt_expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
+    }
+
+    alist = new_attr_list(rc, mwk_func);
+    if (alist == NULL)
+        goto cleanup;
+
+    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
+    SET_PROXY_SUBJECT(proxy_subject);
+    SET_PROXY_TYPE("krb5");
+    SET_SUBJECT(*subject_out);
+    SET_PROXY_DATA(tgt, tgt_len);
+    SET_CREATION_TIME(creation);
+    SET_EXPIRATION_TIME(tgt_expiration);
+
+    ms = make_token(rc, alist, creation,
+                    (char**)&token_data, &token_len, 1, mwk_func);
+
+    webauth_attr_list_free(alist);
+
+    ap_rvputs(rc->r, "<webkdcProxyTokenResponse>", NULL);
+
+    ap_rvputs(rc->r, 
+              "<webkdcProxyToken>", 
+              token_data,
+              "</webkdcProxyToken>", 
+              NULL);
+
+    /* subject */
+    if (*subject_out != NULL) {
+        ap_rvputs(rc->r,
+                  "<subject>",
+                  apr_xml_quote_string(rc->r->pool, *subject_out, 1),
+                  "</subject>", NULL);
+    }
+
+    ap_rvputs(rc->r, "</webkdcProxyTokenResponse>", NULL);
+    ap_rflush(rc->r);
+
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
+                 "mod_webkdc: event=webkdcProxyToken user=%s",
+                 *subject_out);
+    ms = MWK_OK;
+
+ cleanup:
+
+    if (ctxt != NULL)
+        webauth_krb5_free(ctxt);
+
+    return ms;
+
+}
+
+
+static enum mwk_status
+handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc, 
+                                   apr_xml_elem *e,
+                                   char **subject_out)
+{
+    apr_xml_elem *child;
+    static const char *mwk_func="handle_webkdcProxyTokenInfoRequest";
+    enum mwk_status ms;
+    MWK_PROXY_TOKEN pt;
+    char *pt_data;
+
+    pt_data = NULL;
+    *subject_out = "<unknown>";
+    ms = MWK_ERROR;
+
+    /* walk through each child element in <requestTokenRequest> */
+    for (child = e->first_child; child; child = child->next) {
+        if (strcmp(child->name, "webkdcProxyToken") == 0) {
+            pt_data = get_elem_text(rc, child, mwk_func);
+            if (pt_data == NULL)
+                return MWK_ERROR;
+        } else {
+            unknown_element(rc, mwk_func, e->name, child->name);
+            return MWK_ERROR;
+        }
+    }
+
+    /* make sure we found token */
+    if (pt_data == NULL) {
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                 "missing <webkdcProxyToken>",
+                                 mwk_func, 1);
+    }
+
+    if (!parse_webkdc_proxy_token(rc, pt_data, &pt))
+        return MWK_ERROR;
+
+    ap_rvputs(rc->r, "<webkdcProxyTokenInfoResponse>", NULL);
+
+    /* subject */
+    ap_rvputs(rc->r,
+             "<subject>",
+             apr_xml_quote_string(rc->r->pool, pt.subject, 1),
+             "</subject>", NULL);
+
+    ap_rvputs(rc->r,
+             "<proxyType>",
+             apr_xml_quote_string(rc->r->pool, pt.proxy_type, 1),
+             "</proxyType>", NULL);
+
+    ap_rprintf(rc->r, "<creationTime>%d</creationTime>", (int)pt.creation);
+    ap_rprintf(rc->r, "<expirationTime>%d</expirationTime>", (int)pt.expiration);
+
+    ap_rvputs(rc->r, "</webkdcProxyTokenInfoResponse>", NULL);
+    ap_rflush(rc->r);
+
+    *subject_out = pt.subject;
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
+                 "mod_webkdc: event=webkdcProxyTokenInfo user=%s",
+                 *subject_out);
+    ms = MWK_OK;
+    return ms;
+
+}
+
 static int
 parse_request(MWK_REQ_CTXT *rc)
 {
@@ -2217,6 +2502,37 @@ parse_request(MWK_REQ_CTXT *rc)
                          "mod_webkdc: event=requestToken "
                          "server=%s user=%s%s%s",
                          req,
+                         sub,
+                         rc->error_code == 0 ? "" : 
+                         apr_psprintf(rc->r->pool, 
+                                      " errorCode=%d", rc->error_code),
+                         rc->error_message == NULL ? "" :
+                         apr_psprintf(rc->r->pool, " errorMessage=%s", 
+                                      log_escape(rc, rc->error_message))
+                         );
+        }
+    } else if (strcmp(xd->root->name, "webkdcProxyTokenRequest") == 0) {
+        char *sub;
+        if (!handle_webkdcProxyTokenRequest(rc, xd->root, &sub)) {
+            generate_errorResponse(rc);
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
+                         "mod_webkdc: event=webkdcProxyToken "
+                         "user=%s%s%s",
+                         sub,
+                         rc->error_code == 0 ? "" : 
+                         apr_psprintf(rc->r->pool, 
+                                      " errorCode=%d", rc->error_code),
+                         rc->error_message == NULL ? "" :
+                         apr_psprintf(rc->r->pool, " errorMessage=%s", 
+                                      log_escape(rc, rc->error_message))
+                         );
+        }
+    } else if (strcmp(xd->root->name, "webkdcProxyTokenInfoRequest") == 0) {
+        char *sub;
+        if (!handle_webkdcProxyTokenInfoRequest(rc, xd->root, &sub)) {
+            generate_errorResponse(rc);
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
+                         "mod_webkdc: event=webkdcProxyToken user=%s%s%s",
                          sub,
                          rc->error_code == 0 ? "" : 
                          apr_psprintf(rc->r->pool, 

@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.04  Modified 1/29/03</b></H4>
+<H4><b>Version  1.05  Modified 7/16/03</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -40,6 +40,8 @@
   <UL>
      <LI><a href="#xmlgettokens">getTokens</a></LI>
      <LI><a href="#xmlrequesttoken">requestToken</a></LI>
+     <LI><a href="#xmlwebkdcproxytoken">webkdcProxyToken</a></LI>
+     <LI><a href="#xmlwebkdcproxytokeninfo">webkdcProxyTokenInfo</a></LI>
   </UL>
   <LI><a href="#xmlpost">Posting XML to WebKDC</a></LI>
   <LI><a href="#xmlex">Examples</a></LI>
@@ -1072,8 +1074,7 @@ WAS.
 <H4>4.3.1 <a name="xmlgettokens">getTokens</a></H4>
 
 The getTokens command is used to request tokens (service, id, proxy).
-The subject's credentials are the username/password of the user,
-or a proxy-token obtained on behalf of the user.
+The subject's credentials are a proxy-token obtained on behalf of the user.
 
 <p>
 The request message is:
@@ -1250,6 +1251,67 @@ the cancel button.
 we are not passing a login token, then this command will return a
 &lt;loginErrorCode> of 17, which indicates that the user is being 
 forced to (re)login. Any passed in proxy-tokens are ignored.
+
+<H4>4.3.3 <a name="xmlwebkdcproxytoken">webkdcProxyToken</a></H4>
+
+The webkdcProxyToken command is used to convert an existing credential 
+(like a Kerberos TGT) into a webkdc-proxy-token.
+<p>
+The request message is:
+<pre><code>
+  &lt;webkdcProxyTokenRequest>
+
+   &lt;subjectCredential type="krb5">
+       <i>&lt;!-- for type="krb5" --></i>
+       {base64-krb5-mk-req-data}
+   &lt;/subjectCredential>
+
+   &lt;proxyData>
+       <i>&lt;!-- for subjectCredential type="krb5" --></i>
+       {base64-krb5-mk-priv-on-tgt}
+   &lt;/proxyData>
+
+  &lt;/webkdcProxyTokenRequest>
+</code></pre>
+The response message is:
+<pre><code>
+  &lt;webkdcProxyTokenResponse>
+
+    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
+  
+    <i>&lt;!-- subject from subjectCredential --></i>
+    &lt;subject>...&lt;/subject>
+
+  &lt;/webkdcProxyTokenResponse>
+</code></pre>
+
+<p>If any errors occur an &lt;errorResponse> message will be returned.
+
+<H4>4.3.4 <a name="xmlwebkdcproxytokeninfo">webkdcProxyTokenInfo</a></H4>
+
+The webkdcProxyTokenInfo command is used to get information about an
+existing webkdc-proxy-token.
+<p>
+The request message is:
+<pre><code>
+  &lt;webkdcProxyTokenInfoRequest>
+
+    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
+
+  &lt;/webkdcProxyTokenRequest>
+</code></pre>
+The response message is:
+<pre><code>
+  &lt;webkdcProxyTokenInfoResponse>
+    &lt;subject>...&lt;/subject>
+    &lt;proxyType>...&lt;/proxyType>
+    &lt;creationTime>...&lt;/creationTime>
+    &lt;expirationTime>...&lt;/expirationTime>
+  &lt;/webkdcProxyTokenInfoResponse>
+</code></pre>
+
+<p>If any errors occur an &lt;errorResponse> message will be returned.
+
 
 <H3>4.4 <a name="xmlpost">Posting XML to WebKDC</a></H3>
 
@@ -2022,6 +2084,18 @@ FIXME: Insert link to mod_webauth documentation
          <li>When appending WEBAUTHR to return URL, use "?WEBAUTHR=...;" 
              instead of ";WEBAUTHR=...;" so browsers handle 
              relative URLs correctly.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>1/29/2003</td>
+  <td>1.05</td>
+  <td>schemers</td>
+   <td>
+       <ul>
+         <li>Added webkdcProxyToken command
+         <li>Added webkdcProxyTokenInfo command
        </ul>
    </td>
 </tr>

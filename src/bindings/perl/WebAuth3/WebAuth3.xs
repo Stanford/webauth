@@ -695,6 +695,27 @@ PPCODE:
     }
 }
 
+
+void
+webauth_krb5_init_via_cache(c,...)
+WEBAUTH_KRB5_CTXT *c
+PROTOTYPE: $;$
+PPCODE:
+{
+    char *cc;
+    int s;
+
+    if (items==2) {
+        cc = (char *)SvPV(ST(1),PL_na);
+    } else {
+        cc = NULL;
+    }
+    s = webauth_krb5_init_via_cache(c, cc);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_krb5_init_via_cache", s, c);
+    }
+}
+
 void
 webauth_krb5_import_cred(c,cred)
 WEBAUTH_KRB5_CTXT *c
@@ -811,55 +832,84 @@ PPCODE:
 }
 
 void
-webauth_krb5_mk_req(c,princ)
+webauth_krb5_mk_req(c,princ,...)
 WEBAUTH_KRB5_CTXT *c
 char *princ
-PROTOTYPE: $$
+PROTOTYPE: $$;$
 PPCODE:
 {       
-    unsigned char *req;
-    int req_len, s;
-    s = webauth_krb5_mk_req(c, princ, &req, &req_len);
+    unsigned char *req, *in_data, *out_data;
+    int req_len, in_len, out_len, s;
+
+    if (items == 3) {
+        in_data = SvPV(ST(2), in_len);
+    } else {
+        in_data = NULL;
+    }
+
+    s = webauth_krb5_mk_req_with_data(c, princ, &req, &req_len,
+                                      in_data, in_len, &out_data, &out_len);
 
     if (s == WA_ERR_NONE){
-        SV *out = sv_newmortal();
-        sv_setpvn(out, req, req_len);
+        SV *req_out, *data_out;
+        req_out = sv_newmortal();
+        sv_setpvn(req_out, req, req_len);
         free(req);
-        EXTEND(SP,1);
-        PUSHs(out);
+        EXTEND(SP, items == 2 ? 1 : 2);
+        PUSHs(req_out);
+        if (items == 3) {
+            data_out = sv_newmortal();
+            sv_setpvn(data_out, out_data, out_len);
+            free(out_data);
+            PUSHs(data_out);
+        }
     } else {
-        free(req);
         webauth_croak("webauth_krb5_mk_req", s, c);
     }
 }
 
 void
-webauth_krb5_rd_req(c,request,keytab,server_principal,local)
+webauth_krb5_rd_req(c,request,keytab,server_principal,local,...)
 WEBAUTH_KRB5_CTXT *c
 SV *request
 char *keytab
 char *server_principal
 int local
-PROTOTYPE: $$$$$
+PROTOTYPE: $$$$$;$
 PPCODE:
 {       
-    unsigned char *req;
+    unsigned char *req, *in_data, *out_data;
     char *client_princ;
-    int req_len, s;
+    int req_len, in_len, out_len, s;
     req = SvPV(request, req_len);
+
+    if (items == 6) {
+        in_data = SvPV(ST(5), in_len);
+    } else {
+        in_data = NULL;
+    }
 
     if (server_principal && *server_principal == '\0')
        server_principal = NULL;
 
-    s = webauth_krb5_rd_req(c, req, req_len, keytab, server_principal,
-                            &client_princ, local);
+    s = webauth_krb5_rd_req_with_data(c, req, req_len, keytab,
+                                      server_principal, NULL,
+                                      &client_princ, local,
+                                      in_data, in_len,
+                                      &out_data, &out_len);
 
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpv(out, client_princ);
         free(client_princ);
-        EXTEND(SP,1);
+        EXTEND(SP, items == 5 ? 1 : 2);
         PUSHs(out);
+        if (items == 6) {
+            SV *data_out = sv_newmortal();
+            sv_setpvn(data_out, out_data, out_len);
+            free(out_data);
+            PUSHs(data_out);
+        }
     } else {
         free(client_princ);
         webauth_croak("webauth_krb5_rd_req", s, c);

@@ -63,11 +63,14 @@ EXPORTS
 	webauth_krb5_init_via_password
 	webauth_krb5_init_via_keytab
 	webauth_krb5_init_via_cred
+	webauth_krb5_init_via_cache
 	webauth_krb5_export_tgt
 	webauth_krb5_import_cred
 	webauth_krb5_service_principal
 	webauth_krb5_get_principal
 	webauth_krb5_export_ticket
 	webauth_krb5_mk_req
+	webauth_krb5_mk_req_with_data
 	webauth_krb5_rd_req
+	webauth_krb5_rd_req_with_data
 

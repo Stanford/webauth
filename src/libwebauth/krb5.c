@@ -748,6 +748,28 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 }
 
 int
+webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *context,
+                            const char *cache_name)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+
+    assert(c != NULL);
+
+    if (cache_name != NULL) {
+        c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
+    } else {
+        c->code = krb5_cc_default(c->ctx, &c->cc);
+    }
+
+    if (c->code != 0) 
+        return WA_ERR_KRB5;
+
+    c->code = krb5_cc_get_principal(c->ctx, c->cc, &c->princ);
+
+    return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
+}
+
+int
 webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *context) 
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
@@ -785,6 +807,10 @@ webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
                     unsigned char **output,
                     int *length)
 {
+    return webauth_krb5_mk_req_with_data(context, 
+                                         server_principal, output, length,
+                                         NULL, 0, NULL, NULL);
+#if 0
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_auth_context auth;
     krb5_data outbuf;
@@ -819,7 +845,110 @@ webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
         memcpy(*output, outbuf.data, outbuf.length);
         s = WA_ERR_NONE;
     }
-    krb5_free_data_contents(c->ctx, &outbuf);    
+    krb5_free_data_contents(c->ctx, &outbuf);
+    return s;
+#endif 
+}
+
+
+int
+webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
+                              const char *server_principal,
+                              unsigned char **output,
+                              int *length,
+                              unsigned char *in_data,
+                              int in_length,
+                              unsigned char **out_data,
+                              int *out_length)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    krb5_auth_context auth;
+    krb5_data outbuf;
+    krb5_principal princ;
+    int s;
+
+    assert(c != NULL);
+    assert(server_principal != NULL);
+    assert(output != NULL);
+    assert(length != NULL);
+
+    memset(&outbuf, 0, sizeof(krb5_data));
+    *output = NULL;
+    if (out_data)
+        *output = NULL;
+
+    c->code = krb5_parse_name(c->ctx, server_principal, &princ);
+    if (c->code != 0)
+        return WA_ERR_KRB5;
+
+    auth = NULL;
+    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ,
+                                    NULL, c->cc, &outbuf);
+    krb5_free_principal(c->ctx, princ);
+
+    if (c->code != 0)
+        return WA_ERR_KRB5;
+
+    *output = malloc(outbuf.length);
+    if (*output == NULL) {
+        s = WA_ERR_NO_MEM;
+        krb5_free_data_contents(c->ctx, &outbuf);
+        goto cleanup;
+    } else {
+        *length = outbuf.length;
+        memcpy(*output, outbuf.data, outbuf.length);
+        s = WA_ERR_NONE;
+        krb5_free_data_contents(c->ctx, &outbuf);
+    }
+
+    if (in_data != NULL && out_data != NULL) {
+        krb5_data indata, outdata;
+        /*krb5_address **laddrs;*/
+        krb5_address laddr;
+        char lh[4] = {127, 0, 0, 1};
+
+        laddr.magic = KV5M_ADDRESS;
+        laddr.addrtype = ADDRTYPE_INET;
+        laddr.length = 4;
+        laddr.contents = (void*)&lh;
+
+        indata.data = in_data;
+        indata.length = in_length;
+
+        krb5_auth_con_setflags(c->ctx, auth, 0);
+        /*krb5_os_localaddr(c->ctx, &laddrs);*/
+        /*krb5_auth_con_setaddrs(c->ctx, auth, laddrs[0], NULL);*/
+        /*krb5_free_addresses(c->ctx, laddrs);*/
+        krb5_auth_con_setaddrs(c->ctx, auth, &laddr, NULL);
+
+        c->code = krb5_mk_priv(c->ctx, auth, &indata, &outdata, NULL);
+        if (c->code == 0) {
+            s = WA_ERR_NONE;
+
+            *out_data = malloc(outdata.length);
+            if (*out_data == NULL) {
+                s = WA_ERR_NO_MEM;
+            } else {
+                *out_length = outdata.length;
+                memcpy(*out_data, outdata.data, outdata.length);
+                s = WA_ERR_NONE;
+            }
+            krb5_free_data_contents(c->ctx, &outdata);
+        } else {
+            s = WA_ERR_KRB5;
+        }
+    }
+
+ cleanup:
+
+    if (s != WA_ERR_NONE) {
+        if (*output != NULL)
+            free(*output);
+    }
+        
+    if (auth != NULL)
+        krb5_auth_con_free(c->ctx, auth);
+
     return s;
 }
 
@@ -832,6 +961,13 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                     char **client_principal,
                     int local)
 {
+    return webauth_krb5_rd_req_with_data(context, req, length, 
+                                         keytab_path,
+                                         server_principal, 
+                                         NULL,
+                                         client_principal, local,
+                                         NULL, 0, NULL, NULL);
+#if 0
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_principal server;
     krb5_keytab keytab;
@@ -890,6 +1026,125 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
     krb5_free_principal(c->ctx, server);
 
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
+#endif
+}
+
+
+int
+webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
+                              const unsigned char *req,
+                              int length,
+                              const char *keytab_path,
+                              const char *server_principal,
+                              char **out_server_principal,
+                              char **client_principal,
+                              int local,
+                              unsigned char *in_data,
+                              int in_length,
+                              unsigned char **out_data,
+                              int *out_length)
+
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    krb5_principal server;
+    krb5_keytab keytab;
+    krb5_auth_context auth;
+    krb5_data buf;
+    int s;
+
+    assert(c != NULL);
+    assert(keytab_path != NULL);
+    assert(req != NULL);
+    assert(client_principal);
+
+    s = open_keytab(c, keytab_path, server_principal, &server, &keytab);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    auth = NULL;
+
+    if (out_server_principal)
+        *out_server_principal = NULL;
+
+    buf.data = (char*) req;
+    buf.length = length;
+    c->code = krb5_rd_req(c->ctx, &auth, &buf, server, keytab, NULL, NULL);
+    if (c->code == 0) {
+        if (out_server_principal)
+            krb5_unparse_name(c->ctx, server, out_server_principal);
+        if (auth != NULL) {
+            krb5_authenticator *ka;
+            c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
+            if (c->code == 0) {
+                int local_ok = 0;
+
+                if (local) {
+                    krb5_error_code tcode;
+                    char lname[256];
+
+                    tcode = krb5_aname_to_localname(c->ctx, ka->client,
+                                                    sizeof(lname)-1, lname);
+                    if (tcode == 0) {
+                        *client_principal = malloc(strlen(lname)+1);
+                        strcpy(*client_principal, lname);
+                        local_ok = 1;
+                    } 
+                }
+
+                if (!local_ok)
+                    c->code = krb5_unparse_name(c->ctx, ka->client, 
+                                                client_principal);
+
+                if (in_data != NULL && out_data != NULL) {
+                    krb5_data inbuf, outbuf;
+                    krb5_address raddr;
+                    char rh[4] = {127, 0, 0, 1};
+
+                    raddr.magic = KV5M_ADDRESS;
+                    raddr.addrtype = ADDRTYPE_INET;
+                    raddr.length = 4;
+                    raddr.contents = (void*)&rh;
+
+                    inbuf.data = in_data;
+                    inbuf.length = in_length;
+                    krb5_auth_con_setflags(c->ctx, auth, 0);
+                    krb5_auth_con_setaddrs(c->ctx, auth, NULL, &raddr);
+                    c->code = krb5_rd_priv(c->ctx, auth, 
+                                           &inbuf, &outbuf, NULL);
+                    if (c->code == 0) {
+                        *out_data = malloc(outbuf.length);
+                        if (*out_data == NULL) {
+                            s = WA_ERR_NO_MEM;
+                        } else {
+                            s = WA_ERR_NONE;
+                            *out_length = outbuf.length;
+                            memcpy(*out_data, outbuf.data, outbuf.length);
+                        }
+                        krb5_free_data_contents(c->ctx, &outbuf);
+                    }
+
+                }
+                krb5_free_authenticator(c->ctx, ka);
+
+            } else {
+                *client_principal = NULL;
+            }
+            krb5_auth_con_free(c->ctx, auth);
+        }
+    }
+
+    krb5_kt_close(c->ctx, keytab);
+    krb5_free_principal(c->ctx, server);
+
+    if (s == WA_ERR_NONE && c->code != 0)
+        s = WA_ERR_KRB5;
+
+    if (s != WA_ERR_NONE) {
+        if (out_server_principal && *out_server_principal != NULL)
+            free(*out_server_principal);
+    }
+
+    return s;
 }
 
 int

@@ -91,6 +91,7 @@ our %EXPORT_TAGS = (
 				   krb5_init_via_password
 				   krb5_init_via_keytab
 				   krb5_init_via_cred
+				   krb5_init_via_cache
 				   krb5_import_cred
 				   krb5_export_tgt
 				   krb5_service_principal
@@ -432,6 +433,13 @@ cache will be used and destroyed when the context is destroyed.
 If $server_princpal is undef or "", then the first princpal found in the
 keytab will be used.
 
+=item krb5_init_via_cache(context[, cache])
+
+   krb5_init_via_cache($context, "/tmp/krb5cc_foo");
+
+Initializes a context using the specified ticket cache. If $cache is not 
+specified, the default kerberos ticket cache is used.
+
 =item krb5_init_via_cred(context, cred[, cache])
 
    krb5_init_via_cred($context, $cred[, $cache]);
@@ -480,16 +488,20 @@ called after a successful call to krb5_init_via*. If local is 1, then
 krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
 returns an error then the fully-qualified principal name is returned.
 
-=item krb5_mk_req(context, principal)
+=item krb5_mk_req(context, principal[,data])
 
-    $request = krb5_mk_req($context, $principal);
+    ($request[, $edata]) = krb5_mk_req($context, $principal[,$data]);
 
 Used to construct a kerberos V5 request for the specified principal. $request
 will be set on success, and will contain the result of the krb5_mk_req call.
+If $data is passed in, tben it will be encrypted using krb5_mk_priv and
+returned as $edata.
 
-=item krb5_rd_req(context, request, keytab, server_principal, local)
+=item krb5_rd_req(context, request, keytab, server_principal, local[, edata])
 
-    $principal = krb5_rd_req($context, $request, $keytab, $server_princpal, 1);
+   ($principal[, $data]) 
+      = krb5_rd_req($context, $request, $keytab, 
+                              $server_princpal, 1[, $edata]);
 
 Used to read a request created with krb5_mk_req. On success $principal
 will be set to the client principal in the request. If local is 1, then 
@@ -498,6 +510,8 @@ returns an error then the fully-qualified principal name is returned.
 
 If $server_princpal is undef or "", then the first princpal found in the
 keytab will be used.
+
+If $edata is passed in, it is decrypted with krb5_rd_priv.
 
 =back
 

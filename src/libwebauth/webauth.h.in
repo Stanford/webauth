@@ -862,6 +862,13 @@ WEBAUTH_API int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
                                              const char *cache_name);
 
 /*
+ * initialize a context with an existing credential cache. If
+ * cache_name is NULL, then krb5_cc_default is used.
+ */
+WEBAUTH_API int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *context, 
+                                            const char *cache_name);
+
+/*
  * initialize a context with a credential that was created via 
  * webauth_krb5_export_tgt or webauth_krb5_export_ticket.
  */
@@ -964,6 +971,36 @@ WEBAUTH_API int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                                     const char *server_principal,
                                     char **client_principal,
                                     int local);
+/* 
+ * similar to webauth_krb5_mk_req, but additionally calls krb5_mk_priv
+ * on in_data, and places encrypted data in out_data buffer.
+ */
+WEBAUTH_API int webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
+                                              const char *server_principal,
+                                              unsigned char **req,
+                                              int *length,
+                                              unsigned char *in_data,
+                                              int in_length,
+                                              unsigned char **out_data,
+                                              int *out_length);
+
+/* 
+ * similar to webauth_krb5_rd_req, but additionally calls krb5_rd_priv
+ * on in_data, and places decrypted data in out_data buffer.
+ */
+WEBAUTH_API int webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
+                                              const unsigned char *req,
+                                              int length,
+                                              const char *keytab,
+                                              const char *server_principal,
+                                              char **out_server_princ,
+                                              char **client_principal,
+                                              int local,
+                                              unsigned char *in_data,
+                                              int in_length,
+                                              unsigned char **out_data,
+                                              int *out_length);
+
 
 #ifdef  __cplusplus
 }
