@@ -98,6 +98,6 @@ package-webauth: install
 	    'conf/stanford-*' 'modules/mod_webauth*'
 
 # Make a package of the WebKDC files and module.
-package-webkdc: install-webkdc
+package-webkdc: install install-webkdc
 	tools/mkpackage '$(APACHE_ROOT)' '$(WEBKDC_PKG)' \
 	    'modules/mod_webkdc*' 'webkdc'
