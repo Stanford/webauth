@@ -1,5 +1,12 @@
                           WebAuth Change History
 
+WebAuth 3.2.1 (in progress)
+
+ *) Corrected handling of successful S/Ident calls returning errors in
+    mod_webkdc when debugging is turned off.
+
+ *) Remove some unnecessary debugging code in mod_webkdc.
+
 WebAuth 3.2.0 (2003-08-07)
 
  *) Added S/Ident support to weblogin and the WebKDC.
