@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
     s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
     TEST_OK2(WA_ERR_NONE, s);
 
+    webauth_key_free(key);
+
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
 
@@ -51,6 +53,8 @@ int main(int argc, char *argv[])
 
     s = webauth_keyring_add(ring, curr, curr+3600, curr+7200, key);
     TEST_OK2(WA_ERR_NONE, s);
+
+    webauth_key_free(key);
 
     s = webauth_keyring_write_file(ring,"webauth_keyring");
     TEST_OK2(WA_ERR_NONE, s);

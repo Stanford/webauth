@@ -41,6 +41,8 @@ int main(int argc, char *argv[])
     s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
     TEST_OK2(WA_ERR_NONE, s);
 
+    webauth_key_free(key);
+
     rlen = webauth_token_encoded_length(ain);
 
     token = malloc(rlen+1);
@@ -80,6 +82,8 @@ int main(int argc, char *argv[])
     time(&curr);
     s = webauth_keyring_add(ring2, curr, curr, curr+3600, key);
     TEST_OK2(WA_ERR_NONE, s);
+
+    webauth_key_free(key);
 
     rlen = webauth_token_encoded_length(ain);
     token = malloc(rlen+1);
@@ -220,8 +224,6 @@ int main(int argc, char *argv[])
     webauth_attr_list_free(ain);
     free(token);
     webauth_key_free(key);
-
-
 
     END_TESTS;
     exit(NUM_FAILED_TESTS ? 1 : 0);

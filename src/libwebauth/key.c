@@ -150,7 +150,10 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring,
     ring->entries[ring->num_entries].creation_time = creation_time;
     ring->entries[ring->num_entries].valid_from = valid_from;
     ring->entries[ring->num_entries].valid_till = valid_till;
-    ring->entries[ring->num_entries].key = key;
+    ring->entries[ring->num_entries].key = webauth_key_copy(key);
+    if (ring->entries[ring->num_entries].key == NULL) {
+        return WA_ERR_NO_MEM;
+    }
     ring->num_entries++;
     return WA_ERR_NONE;
 }

@@ -240,6 +240,8 @@ void create_keyring()
     if (s != WA_ERR_NONE)
         croak(s);
 
+    webauth_key_free(key);
+
     s = webauth_keyring_write_file(ring, keyring_path);
     if (s != WA_ERR_NONE)
         croak(s);

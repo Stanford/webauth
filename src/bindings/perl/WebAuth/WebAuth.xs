@@ -423,19 +423,10 @@ WEBAUTH_KEY *key
 PROTOTYPE: $$$$$
 PPCODE:
 {
-    WEBAUTH_KEY *copy;
     int s;
 
-    copy = webauth_key_copy(key);
-    if (copy == NULL) {
-        s = WA_ERR_NO_MEM;    
-    } else {
-        s = webauth_keyring_add(ring, creation_time, 
-                                      valid_from, valid_till, copy);
-        if (s != WA_ERR_NONE) {
-            webauth_key_free(copy);
-        }
-    }
+    s = webauth_keyring_add(ring, creation_time, 
+                            valid_from, valid_till, key);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_keyring_write_file", s, NULL);
     }
