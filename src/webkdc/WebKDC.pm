@@ -206,7 +206,7 @@ sub handle_id_request {
 
 # takes a WebKDC::WebRequest and returns a WebKDC::WebResponse
 
-sub process_login_request($$) {
+sub process_web_request($$) {
     my ($wreq, $wresp) = @_;
 
     # first parse service-token to get session key

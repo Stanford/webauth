@@ -198,6 +198,7 @@ sub match {
 }
 
 1;
+
 __END__
 
 =head1 NAME
@@ -212,7 +213,7 @@ WebAuth - Perl extension for WebAuth (version 3)
     $key = WebAuth::random_key(WebAuth::WA_AES_128);
     ...
   };
-  if (isa($@, "WebAuth::Exception")) {
+  if (WebAuth::Exception::match($@)) {
     # handle exception 
   }
 

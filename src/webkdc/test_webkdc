@@ -96,7 +96,7 @@ eval {
     $req->request_token($req_token_str);
     $req->service_token($service_token_str);
 
-    WebKDC::process_login_request($req, $resp);
+    WebKDC::process_web_request($req, $resp);
 
     handle_response($resp, $key);
 
@@ -116,7 +116,7 @@ eval {
     $req->request_token($req_token_str);
     $req->service_token($service_token_str);
 
-    WebKDC::process_login_request($req, $resp);
+    WebKDC::process_web_request($req, $resp);
 
     handle_response($resp, $key);
 
