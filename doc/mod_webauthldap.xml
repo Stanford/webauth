@@ -52,23 +52,34 @@
 
 <section><title>Adhoc attributes lookup</title>
 
-    <p>By using the WebAuthLdapAttribute directive any attributes available
+    <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a 
+    Location block or a Directory block, any attributes available
     to the WebAuth server can be set into environment variables for use in 
     cgi scripts. In case the requested attribute is not available from the 
     LDAP server, there is no error and the environment variable is simply not 
     set for that attribute. The specified attributes will be set in addition 
     to the defaults, set in all cases when the data is available:</p>
     <ul>
-      <li><code>WEBAUTH_DISPLAYNAME</code> - User's name in "firstname lastname" format.</li>
-      <li><code>WEBAUTH_MAIL</code> - User's primary email address</li>
+      <li><code>WEBAUTH_LDAP_DISPLAYNAME</code> - User's name in "firstname lastname" format.</li>
+      <li><code>WEBAUTH_LDAP_MAIL</code> - User's primary email address</li>
     </ul>
 
-    <p>The name of the environment variable is formed by prepending WEBAUTH_
-    to the uppercased attribute name. In the case of mulivalued attributes, 
-    the WEBAUTH_ATTRIBUTENAME variable will contain one value randomly picked
-    from the set, and all the values of this attribute will also be set into 
-    WEBAUTH_ATTRIBUTENAME1,  WEBAUTH_ATTRIBUTENAME2, and so on, in no 
-    particular order.</p>
+    <p>The name of the environment variable is formed by prepending 
+    WEBAUTH_LDAP_ to the uppercased attribute name. In the case of mulivalued 
+    attributes, the WEBAUTH_LDAP_ATTRIBUTENAME variable will contain one value
+    randomly picked from the set, and all the values of this attribute will 
+    also be set into WEBAUTH_LDAP_ATTRIBUTENAME1,  WEBAUTH_LDAP_ATTRIBUTENAME2,
+    and so on, in no particular order.</p>
+
+<example><title>Example</title>
+  &lt;Location /private/&gt;<br />
+  AuthType WebAuth<br />
+  Require valid-user<br />
+  WebAuthLdapAttribute affiliation<br />
+  WebAuthLdapAttribute description<br />
+  WebAuthLdapAttribute phoneNumber<br />
+  &lt;/Location&gt;
+</example>
 
 </section>
 
@@ -232,23 +243,26 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
 <description>Specifies an LDAP attribute to place into environment variables</description>
 <syntax>WebAuthLdapAttribute <em>ldap_attribute_name</em></syntax>
 <default>"displayName", "mail"</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
+<contextlist><context>directory</context></contextlist>
 
 <usage>
 <p>One attribute per directive, but multiple directives can be used. The specified attributes will be set in addition to the default ones.</p>
 
-    <p>The name of the environment variable is formed by prepending WEBAUTH_
-    to the uppercased attribute name. In the case of mulivalued attributes, 
-    the WEBAUTH_ATTRIBUTENAME variable will contain one value randomly picked
-    from the set, and all the values of this attribute will also be set into 
-    WEBAUTH_ATTRIBUTENAME1,  WEBAUTH_ATTRIBUTENAME2, and so on, in no 
-    particular order.</p>
+    <p>The name of the environment variable is formed by prepending 
+    WEBAUTH_LDAP_ to the uppercased attribute name. In the case of mulivalued 
+    attributes, the WEBAUTH_LDAP_ATTRIBUTENAME variable will contain one value
+    randomly picked from the set, and all the values of this attribute will 
+    also be set into WEBAUTH_LDAP_ATTRIBUTENAME1,  WEBAUTH_LDAP_ATTRIBUTENAME2,
+    and so on, in no particular order.</p>
 
 <example><title>Example</title>
+&lt;Location /private/&gt;<br />
+AuthType WebAuth<br />
+Require privgroup stanford:staff<br />
 WebAuthLdapAttribute affiliation<br />
 WebAuthLdapAttribute description<br />
 WebAuthLdapAttribute phoneNumber<br />
+&lt;/Location&gt;<br/>
 </example>
 </usage>
 </directivesynopsis>
