@@ -43,7 +43,7 @@ site, see doc/install-webkdc.
          autoconf
          autoheader
 
-     to generate the configure script.  Autoconf 2.53 or later is
+     to generate the configure script.  Autoconf 2.57 or later is
      required.
 
  3.  Run configure.  The command will look something like:
