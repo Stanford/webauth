@@ -1,0 +1,135 @@
+# mswsock.lib, ws2_32.lib
+
+
+#############################################################
+#
+# Makefile for building libwebauth with MSVC. Copied from CURL
+#
+# Usage: see usage message below
+#        Should be invoked from \lib directory
+#        Edit the paths and desired library name
+#        SSL path is only required if you intend compiling
+#        with SSL.
+#
+# This make file leaves the result either a .lib or .dll file
+# in the \lib directory. It should be called from the \lib
+# directory.
+#
+# An option would have been to allow the source directory to
+# be specified, but I saw no requirement.
+#
+# Another option would have been to leave the .lib and .dll
+# files in the "cfg" directory, but then the make file
+# in \src would need to be changed.
+#
+##############################################################
+# CHANGE LOG
+# ------------------------------------------------------------
+# 05.11.2001   John Lask   Initial Release
+# 02.05.2002   Miklos Nemeth OPENSSL_PATH environment; no need
+#              for OpenSSL libraries when creating a 
+#              static libcurl.lib
+#
+#
+##############################################################
+
+LIB_NAME       = libwebauth
+
+!IFNDEF OPENSSL_PATH
+#OPENSSL_PATH   = ../../../httpd-2.0.46/srclib/openssl
+!ERROR please set OPENSSL_PATH before building
+!ENDIF
+
+!IFNDEF KRB5_PATH
+#KRB5_PATH   = ../../../krb5-1.2.8
+!ERROR please set KRB5_PATH before building
+!ENDIF
+ 
+#############################################################
+## Nothing more to do below this line!
+
+CCNODBG   = cl.exe /MD /O2 /D "NDEBUG"
+CCDEBUG   = cl.exe /MDd /Od /Gm /Zi  /D "_DEBUG" /GZ
+CFLAGSSSL = /I "$(OPENSSL_PATH)/inc32" /I "$(OPENSSL_PATH)/inc32/openssl"
+CFLAGSKRB5 = /I "$(KRB5_PATH)/src/include" 
+CFLAGS = /I "../.." /nologo /W3 /GX /D "WIN32" /D "VC6" /D "_MBCS" /D "_LIB" /YX /FD /c /D "MSDOS" /D "WEBAUTH_DLL_BUILD"
+
+LNKDLL    = link.exe /DLL  /def:libwebauth.def
+LNKLIB    = link.exe -lib
+LFLAGS    = /nologo
+###LINKLIBS  = ws2_32.lib winmm.lib 
+LINKLIBS  = ws2_32.lib winmm.lib mswsock.lib
+SSLLIBS   = libeay32.lib ssleay32.lib
+KRB5LIBS  = krb5_32.lib comerr32.lib
+CFGSET    = FALSE
+
+######################
+# release-dll
+
+!IF "$(CFG)" == "release-dll"
+TARGET   =$(LIB_NAME).dll
+DIROBJ   =.\$(CFG)
+LFLAGSSSL = "/LIBPATH:$(OPENSSL_PATH)/out32dll"
+LFLAGSKRB5 = "/LIBPATH:$(KRB5_PATH)/src/lib/obj/i386/rel"
+LNK      = $(LNKDLL) $(LFLAGSSSL) $(LFLAGSKRB5) /out:$(DIROBJ)/$(TARGET) /IMPLIB:"$(DIROBJ)/$(LIB_NAME).lib"
+LINKLIBS = $(LINKLIBS) $(SSLLIBS) $(KRB5LIBS)
+CC       = $(CCNODBG)  $(CFLAGSSSL) $(CFLAGSKRB5)
+CFGSET   = TRUE
+!ENDIF
+
+######################
+# debug-dll
+
+!IF "$(CFG)" == "debug-dll"
+TARGET   =$(LIB_NAME).dll
+DIROBJ   =.\$(CFG)
+LFLAGSSSL = "/LIBPATH:$(OPENSSL_PATH)/out32dll.dbg"
+LFLAGSKRB5 = "/LIBPATH:$(KRB5_PATH)/src/lib/obj/i386/dbg"
+LNK      = $(LNKDLL) $(LFLAGSSSL) $(LFLAGSKRB5) /DEBUG /out:$(DIROBJ)/$(TARGET) /IMPLIB:"$(DIROBJ)/$(LIB_NAME).lib" /PDB:"$(DIROBJ)/$(LIB_NAME).pdb"
+LINKLIBS = $(LINKLIBS) $(SSLLIBS) $(KRB5LIBS)
+CC       = $(CCDEBUG) $(CFLAGSSSL) $(CFLAGSKRB5)
+CFGSET   = TRUE
+!ENDIF
+
+#######################
+# Usage
+#
+!IF "$(CFGSET)" == "FALSE"
+!MESSAGE Usage: nmake -f makefile.vc6 CFG=<config> <target>
+!MESSAGE where <config> is one of:
+!MESSAGE   release-dll      - release dll
+!MESSAGE   debug-dll        - debug dll
+!MESSAGE <target> can be left blank in which case all is assumed
+!ERROR please choose a valid configuration "$(CFG)"
+!ENDIF
+
+#######################
+#
+X_OBJS= \
+	$(DIROBJ)\attrs.obj \
+	$(DIROBJ)\base64.obj \
+	$(DIROBJ)\key.obj \
+	$(DIROBJ)\krb5.obj \
+	$(DIROBJ)\misc.obj \
+	$(DIROBJ)\random.obj \
+	$(DIROBJ)\token.obj
+
+all : $(TARGET)
+
+
+$(TARGET): $(X_OBJS)
+	$(LNK) $(LFLAGS) $(LINKLIBS) $(X_OBJS)
+
+$(X_OBJS): $(DIROBJ)
+
+$(DIROBJ):
+	@if not exist "$(DIROBJ)" mkdir $(DIROBJ)
+
+.SUFFIXES: .c .obj
+
+{.\}.c{$(DIROBJ)\}.obj:
+	$(CC) $(CFLAGS) /Fo"$@"  $<
+
+clean:
+	-@rmdir /s/q $(DIROBJ)
+	-@erase /q/f vc70.*
