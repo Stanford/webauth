@@ -65,6 +65,9 @@
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"
 
+#define CD_AuthType "WebAuthAuthType"
+#define CM_AuthType "additional AuthType alias"
+
 #define CD_FailureURL "WebAuthFailureURL"
 #define CM_FailureURL "URL for serious webauth failures"
 
@@ -191,6 +194,7 @@
 /* enums for config directives */
 
 enum {
+    E_AuthType,
     E_AppTokenLifetime,
     E_Cred,
     E_CredCacheDir,
@@ -240,6 +244,7 @@ typedef struct {
 
 /* server conf stuff */
 typedef struct {
+    char *auth_type;
     char *webkdc_url;
     char *webkdc_principal;
     char *webkdc_cert_file;
@@ -433,12 +438,6 @@ mwa_setn_note(request_rec *r, const char *note, const char *val);
  */
 void 
 mwa_log_request(request_rec *r, const char *msg);
-
-/*
- * stores an env variable that will get set in fixups
- */
-void
-mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value);
 
 /*
  * log a webauth-related error

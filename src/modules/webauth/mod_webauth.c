@@ -234,54 +234,22 @@ fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
 }
 
 /*
- * set environment variables in the subprocess_env table
+ * set environment variables in the subprocess_env table.
+ * also handles WebAuthVarPrefix
  */
-static int
-set_pending_env_var_cb(void *rec, const char *key, const char *value)
+static void
+mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
-    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
-    if (strncmp(key, "mod_webauth_ENV_", 16) == 0) {
-        const char *name = key+16;
-
-        if (rc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                         "mod_webauth: set_pending_env_cb: (%s) (%s)\n",
-                         name, value);
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                     "mod_webauth: mwa_setenv: (%s) (%s)\n",
+                     name, value);
+    apr_table_setn(rc->r->subprocess_env, name, value);
+    if (rc->dconf->var_prefix != NULL) {
+        name = apr_pstrcat(rc->r->pool, 
+                          rc->dconf->var_prefix, name, NULL);
         apr_table_setn(rc->r->subprocess_env, name, value);
-        if (rc->dconf->var_prefix != NULL) {
-            key = apr_pstrcat(rc->r->pool, 
-                              rc->dconf->var_prefix, name, NULL);
-            apr_table_setn(rc->r->subprocess_env, key, value);
-        }
     }
-    return 1;
-}
-
-/* 
- * go through and find mod_webauth_ENV_ keys in the notes table,
- * and set environment variables for those we find.
- */
-static void
-set_pending_env_vars(MWA_REQ_CTXT *rc) 
-{
-    apr_table_t *t;
-    if (rc->r->main != NULL)
-        t = rc->r->main->notes;
-    else 
-        t = rc->r->notes;
-    apr_table_do(set_pending_env_var_cb, rc, t, NULL);
-}
-
-/*
- * stores an env variable that will get set in fixups
- */
-static void
-fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
-{
-    char *key;
-
-    key = apr_pstrcat(rc->r->pool, "mod_webauth_ENV_", name, NULL);
-    mwa_setn_note(rc->r, key, value);
 }
 
 /*
@@ -646,6 +614,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(webkdc_principal);
     MERGE_PTR(webkdc_cert_file);
     MERGE_PTR(login_url);
+    MERGE_PTR(auth_type);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
     /* always use oconf's keytab_principal if 
@@ -2064,7 +2033,10 @@ check_user_id_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: in check_user_id hook");
 
-    if ((at == NULL) || (strcmp(at, "WebAuth") != 0)) {
+    if ((at == NULL) ||
+        ((strcmp(at, "WebAuth") != 0) &&
+         (rc.sconf->auth_type == NULL || 
+          strcmp(at, rc.sconf->auth_type) != 0))) {
         return DECLINED;
     }
 
@@ -2100,10 +2072,11 @@ check_user_id_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: check_user_id_hook setting user(%s)",
                      rc.at.subject);
+
     r->user = (char*)rc.at.subject;
     r->ap_auth_type = (char*)at;
 
-    /* stash some envs for fixups */
+    /* set environment variables */
 
     wte = rc.at.expiration_time ? 
         apr_psprintf(rc.r->pool, "%d", (int)rc.at.expiration_time) : NULL;
@@ -2114,13 +2087,26 @@ check_user_id_hook(request_rec *r)
     wtlu = rc.at.last_used_time ?
         apr_psprintf(rc.r->pool, "%d", (int)rc.at.last_used_time) : NULL;
 
-    fixup_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
+    mwa_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
     if (wte != NULL) 
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, wte);
+        mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, wte);
     if (wtc != NULL)
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
+        mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
     if (wtlu != NULL) 
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
+        mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
+
+#ifndef NO_STANFORD_SUPPORT
+    if (strcmp(at, "StanfordAuth") == 0) {
+        mwa_setenv(&rc, "SU_AUTH_USER", rc.at.subject);
+        if (rc.at.creation_time) {
+            time_t age = time(NULL) - rc.at.creation_time;
+            if (age < 0) 
+                age = 0;
+            mwa_setenv(&rc, "SU_AUTH_AGE", 
+                       apr_psprintf(rc.r->pool, "%d", (int) age));
+        }
+    }
+#endif 
 
     if (rc.sconf->proxy_headers) {
         apr_table_set(r->headers_in, "X-WebAuth-User", rc.at.subject);
@@ -2273,10 +2259,6 @@ fixups_hook(request_rec *r)
     } else {
         set_pending_cookies(&rc);
     }
-
-    /* set environment variables */
-    set_pending_env_vars(&rc);
-
     return DECLINED;
 }
 
@@ -2341,6 +2323,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_LoginURL:
             sconf->login_url = apr_pstrdup(cmd->pool, arg);
+            break;
+        case E_AuthType:
+            sconf->auth_type = apr_pstrdup(cmd->pool, arg);
             break;
         case E_FailureURL:
             dconf->failure_url = apr_pstrdup(cmd->pool, arg);
@@ -2538,6 +2523,7 @@ static const command_rec cmds[] = {
     SSTR(CD_WebKdcPrincipal, E_WebKdcPrincipal, CM_WebKdcPrincipal),
     SSTR(CD_WebKdcSSLCertFile, E_WebKdcSSLCertFile, CM_WebKdcSSLCertFile),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
+    SSTR(CD_AuthType, E_AuthType, CM_AuthType),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_CredCacheDir, E_CredCacheDir,  CM_CredCacheDir),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),

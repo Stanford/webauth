@@ -190,8 +190,8 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
     }
     webauth_krb5_free(ctxt);
 
-    /* stash an env for fixups */
-    mwa_fixup_setenv(rc, ENV_KRB5CCNAME, temp_cred_file);
+    /* set environment variable */
+    apr_table_setn(rc->r->subprocess_env, ENV_KRB5CCNAME, temp_cred_file);
     return 1;
 }
 

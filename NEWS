@@ -2,6 +2,12 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) Added WebAuthAuthType directive to help people transistion to
+    mod_webauth. This directive allows you to specify an additional
+    AuthType name that will be treated the same as WebAuth. If
+    this directive is set to StanfordAuth, it will also set two
+    extra environment variables: SU_AUTH_USER and SU_AUTH_AGE.
+
  *) when scrubbing tokens from r->args and r->parsed_uri.query, look
     for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
     query args, the tokens could get parsed as query args. This

@@ -35,6 +35,7 @@
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthapptokenlifetime">WebAuthAppTokenLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthauthtype">WebAuthAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#&#10;webauthcred&#10;">
 WebAuthCred
 </a></li>
@@ -398,6 +399,33 @@ hours, days, and weeks respectively.</p>
 <div class="example"><h3>Example</h3><p><code>
 # create an app-token valid for 2 hours<br />
 WebAuthAppTokenLifetime 2h
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthAuthType" id="WebAuthAuthType">WebAuthAuthType</a> <a name="webauthauthtype" id="webauthauthtype">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional AuthType name to support</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAuthType <em>authtype</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>This sets an additional <code>AuthType</code> name that will
+be treated the same as <code>WebAuth</code> when used with the
+<code>AuthType</code> directive.
+</p>
+
+<div class="note"><h3>Note</h3> 
+    <p>This directive exists to help people transition from other
+<code>AuthType</code> names to <code>WebAuth</code>. It is recommended
+that people transition over to using only <code>WebAuth</code> as soon
+as possible.</p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthAuthType StanfordAuth
 </code></p></div>
 
 </div>

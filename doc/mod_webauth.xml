@@ -501,6 +501,33 @@ WebAuthLoginURL https://webkdc.stanford.edu/login/
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthAuthType</name>
+<description>Additional AuthType name to support</description>
+<syntax>WebAuthAuthType <em>authtype</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>This sets an additional <code>AuthType</code> name that will
+be treated the same as <code>WebAuth</code> when used with the
+<code>AuthType</code> directive.
+</p>
+
+<note><title>Note</title> 
+    <p>This directive exists to help people transition from other
+<code>AuthType</code> names to <code>WebAuth</code>. It is recommended
+that people transition over to using only <code>WebAuth</code> as soon
+as possible.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthAuthType StanfordAuth
+</example>
+</usage>
+</directivesynopsis>
+
 
 
 <directivesynopsis>
