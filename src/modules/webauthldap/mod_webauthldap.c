@@ -502,6 +502,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     if (code != 0) {
         tcode = krb5_kt_close(ctx, keytab);
+        krb5_free_principal(ctx, princ);
         return code;
     }
 
@@ -509,12 +510,14 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     cc_path = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->tktcache, NULL);
     if ((code = krb5_cc_resolve(ctx, cc_path, &cc)) != 0) {
         krb5_kt_close(ctx, keytab);
+        krb5_free_principal(ctx, princ);
         return code;
     }
     
     // initialize it if necessary
     if ((code != krb5_cc_initialize(ctx, cc, princ)) != 0) {
         krb5_kt_close(ctx, keytab);
+        krb5_free_principal(ctx, princ);
         return code;
     }
     
@@ -530,12 +533,16 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
                                       &opts);
 
     krb5_kt_close(ctx, keytab);
+    krb5_free_principal(ctx, princ);
 
     if (code == 0) {
         /* add the creds to the cache */
         code = krb5_cc_store_cred(ctx, cc, &creds);
         krb5_free_cred_contents(ctx, &creds);
+        krb5_cc_close(ctx, cc);
     }
+
+    krb5_free_context(ctx);
 
     return code;
 }
@@ -645,26 +652,18 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 }
 
 
+
 /**
  * This will set some LDAP options, initialize the ldap connection and
- * bind to the ldap server. If at first the bind fails with a "local error"
- * it will try to renew the kerberos ticket and try binding again.
+ * bind to the ldap server. 
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
 int
-webauthldap_bind(MWAL_LDAP_CTXT* lc) 
+webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error) 
 {
     int rc;
-    char* tktenv;
     MWAL_SASL_DEFAULTS *defaults;
-    struct stat keytab_stat;
-    int fd;
-    int princ_specified;
-
-    if (lc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap(%s): begins ldap bind", lc->r->user);
 
     // Initialize the connection
     lc->ld = ldap_init(lc->sconf->host, lc->port);
@@ -695,6 +694,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         return -1;
     }
 
+    // Turn on SSL if configured
     if (lc->sconf->ssl) {
         rc = ldap_start_tls_s(lc->ld, NULL, NULL);
         
@@ -717,6 +717,57 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     if (!defaults->mech)
         defaults->mech = "GSSAPI";
 
+    // the bind itself
+    rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
+                                      defaults->mech, NULL, NULL,
+                                      LDAP_SASL_QUIET, sasl_interact_stub,
+                                      defaults);
+
+    // a bit of cleanup
+    if (defaults->authcid != NULL) {
+        ldap_memfree (defaults->authcid);
+        defaults->authcid = NULL;
+    }
+
+    // this likely means the ticket is missing or expired, 
+    // so we signal to try again with a fresh ticket
+    if (rc == LDAP_LOCAL_ERROR) {
+        if (print_local_error)
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                         "webauthldap(%s): ldap_sasl_interactive_bind_s: %s (%d)",
+                         lc->r->user, ldap_err2string(rc), rc);
+        return -2;
+    } else if (rc != LDAP_SUCCESS) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                     "webauthldap(%s): ldap_sasl_interactive_bind_s: %s (%d)",
+                     lc->r->user, ldap_err2string(rc), rc);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/**
+ * This function does bind management. It sets the ticket variable and it will
+ * get a new ticket if the firt attempt to bind fails. On "local error" it will
+ * retry the bind.
+ * @param lc main context struct for this module, for passing things around
+ * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
+ */
+int
+webauthldap_managedbind(MWAL_LDAP_CTXT* lc) 
+{
+    int rc;
+    char* tktenv;
+    struct stat keytab_stat;
+    int fd;
+    int princ_specified;
+
+    if (lc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                     "webauthldap(%s): begins ldap bind", lc->r->user);
+
     // since SASL will look there, lets put the ticket location into env
     tktenv = apr_psprintf(lc->r->pool, "%s=FILE:%s", ENV_KRB5_TICKET, 
                           lc->sconf->tktcache);
@@ -730,20 +781,16 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap(%s): set ticket to %s", lc->r->user, tktenv);
 
-    // first try to bind with the current credentials
-    rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
-                                      defaults->mech, NULL, NULL,
-                                      LDAP_SASL_QUIET, sasl_interact_stub,
-                                      defaults);
+    rc = webauthldap_bind(lc, 0);
 
-    if (defaults->authcid != NULL) {
-        ldap_memfree (defaults->authcid);
-        defaults->authcid = NULL;
-    }
-
-    // this likely means the ticket is missing or expired
-    if (rc == LDAP_LOCAL_ERROR) {
-
+    if (rc == 0) { // all good
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                         "webauthldap(%s): using existing ticket", 
+                         lc->r->user);
+    } else if (rc == -1) { // some other problem
+        return -1;
+    } else if (rc == -2) { // ticket expired
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap(%s): getting new ticket", lc->r->user);
@@ -793,26 +840,19 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
             return -1;
         }
 
-        // and try to bind one more time
-        rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
-                                          defaults->mech, NULL, NULL,
-                                          LDAP_SASL_QUIET, sasl_interact_stub,
-                                          defaults);
-        if (defaults->authcid != NULL)
-            ldap_memfree (defaults->authcid);
+        // Trying the bind the second time.
 
-    } else {
-        if (lc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                         "webauthldap(%s): using existing ticket", 
-                         lc->r->user);
-    }
+        // TODO should clear the previous ld using unbind(lc->ld);
+        // but current ld->ld_error bug prevents it. 
+        // so for now it leaks memory:
+        lc->ld = NULL;
+        rc = webauthldap_bind(lc, 1);
+        if (rc != 0) { 
+            // now we fail totally. error messages are inside
+            // the webauthldap_bind function
+            return -1;
+        }
 
-    if (rc != LDAP_SUCCESS) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap(%s): ldap_sasl_interactive_bind_s: %s (%d)",
-                     lc->r->user, ldap_err2string(rc), rc);
-        return -1;
     }
 
     if (lc->sconf->debug)
@@ -823,6 +863,12 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     return 0;
 }
 
+
+/**
+ * This function gets a cached ldap connection from the array that stores them
+ * @param lc main context struct for this module, for passing things around
+ * @return zero if OK, managedbind's result if not
+ */
 int
 webauthldap_getcachedconn(MWAL_LDAP_CTXT* lc)
 {
@@ -844,10 +890,15 @@ webauthldap_getcachedconn(MWAL_LDAP_CTXT* lc)
 
     apr_thread_mutex_unlock(lc->sconf->ldmutex); /****** UNLOCKING! ********/
 
-    return (lc->ld != NULL) ? 0 : webauthldap_bind(lc);
+    return (lc->ld != NULL) ? 0 : webauthldap_managedbind(lc);
 
 }
 
+/**
+ * This puts the connection back into the array. If no more spaces on the
+ * storage array, it unbinds it.
+ * @param lc main context struct for this module, for passing things around
+ */
 void
 webauthldap_returnconn(MWAL_LDAP_CTXT* lc)
 {
@@ -1394,7 +1445,9 @@ auth_checker_hook(request_rec * r)
                   "webauthldap(%s): this connection expired",
                      lc->r->user);
 
-        if (webauthldap_bind(lc) != 0) {
+        // TODO ideally we should unbind the current ld, but current 
+        // openldap consistently issues broken pipes
+        if (webauthldap_managedbind(lc) != 0) {
             apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING! */
             return HTTP_INTERNAL_SERVER_ERROR;
         }
