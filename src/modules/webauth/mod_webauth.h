@@ -142,7 +142,7 @@
 #define N_EXPIRATION "mod_webauth_EXPIRAION"
 #define N_CREATION   "mod_webauth_CREATION"
 #define N_LASTUSED   "mod_webauth_LASTUSED"
-#define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
+#define N_APP_COOKIE  "mod_webauth_COOKIE_webauth_at"
 
 /* enums for config directives */
 
@@ -248,17 +248,55 @@ typedef struct {
     char *service;
 } MWA_WACRED;
 
+/* enums for MWA_TOKEN_DATA->type */
+enum {
+    MWA_T_APP,
+    MWA_T_PROXY,
+    MWA_T_CRED,
+};
+
+/* enums for MWA_TOKEN_DATA->source */
+enum {
+    MWA_TDS_COOKIE, /* data was in a cookie */
+    MWA_TDS_NOTE,   /* data was in a note, from a cookie */
+    MWA_TDS_URL,    /* data was from WEBAUTHR in URL */
+    MWA_TDS_TOKEN,  /* data was from newly-created token */
+};
+
+typedef struct {
+    const char *subject;
+    time_t creation_time;
+    time_t expiration_time;
+    time_t last_used_time;
+} MWA_APP_TOKEN;
+
+typedef struct {
+    const char *proxy_type;
+    const char *subject;
+    time_t creation_time;
+    time_t expiration_time;
+    void *wpt; /* webkdc-proxy-token */
+    int wpt_len;
+} MWA_PROXY_TOKEN;
+
+typedef struct {
+    const char *cred_type;
+    const char *cred_server_principal;
+    const char *subject;
+    void *cred_data;
+    int cred_data_len;
+    time_t creation_time;
+    time_t expiration_time;
+} MWA_CRED_TOKEN;
+
 /* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
-    /* subject from token, url, etc */
-    char *subject;
-    /* times from parsed/newly created app token */
-    time_t creation_time;
-    time_t expiration_time;
-    time_t last_used_time;
+    MWA_APP_TOKEN at;
+    apr_array_header_t *proxy_tokens; /* proxy token(s) */
+    apr_array_header_t *cred_tokens; /* cred token(s) */
 } MWA_REQ_CTXT;
 
 /* used to append a bunch of data together */
