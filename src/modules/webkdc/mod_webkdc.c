@@ -385,14 +385,14 @@ attempt_sident(MWK_REQ_CTXT *rc,
             if (ident != NULL && ident->result_code == IDENT_AUTH_OKAY)
                 break;
         
-            if (rc->sconf->debug) {
-                if (ident == NULL) {
-                    if (rc->sconf->debug) {
-                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                                     "mod_webkdc: %s: ident_query: errno: %d",
-                                     mwk_func, errno);
-                    }
-                } else {
+            if (ident == NULL) {
+                if (rc->sconf->debug) {
+                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                                 "mod_webkdc: %s: ident_query: errno: %d",
+                                 mwk_func, errno);
+                }
+            } else {
+                if (rc->sconf->debug) {
                     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                                  "mod_webkdc: %s: ident_query failed: %s (%d)",
                                  mwk_func,
@@ -400,9 +400,9 @@ attempt_sident(MWK_REQ_CTXT *rc,
                                   ident->result_code < IDENT_MAX_ERROR) ?
                                  ident_err_txt[s] : "unknown-error-code",
                                  s);
-                    ident_free(ident);
-                    ident = NULL;
                 }
+                ident_free(ident);
+                ident = NULL;
             }
         }
     }
