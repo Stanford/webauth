@@ -1,0 +1,73 @@
+WebAuth Server General Authentication and Authorization
+
+Activating general authentication in a Webauth server is as simple as adding
+the following two lines:
+
+    AuthType WebAuth
+    Require valid-user
+
+in the appropriate part of the Webauth server configuration file.
+This will require that the user's of the server authenticate using the
+central authentication system within which the Webauth server
+operates.
+
+Authentication controls for WebAuth match the basic authentication
+controls within Apache.  Control directives can be asserted from
+within Location and Directory containers.  For example, to require
+Webauth authentication for all documents being served from a Webauth
+server:
+
+     <Location / >
+       AuthType WebAuth
+       Require valid-user
+     </Location>
+or 
+     <Directory /webroot/ >
+       AuthType WebAuth
+       Require valid-user
+      </Directory>
+
+could be placed in the server configuration file.  Just as with basic
+authentication directives in Apache, the Webauth restrictions applied
+recurse downward through the document tree.
+
+Just as in basic authentication in Apache, the require directive can
+be also placed into an access control file (typically a file named
+.htaccess within most server configurations) within the document tree
+that the server is serving.  For example, the entire server could be
+set up to require authentication (see above) but further restrictions
+could be placed on file access within a sub-directory.  For example,
+to limit the subdirectory /webroot/personal/jdoe so that only the user
+id jdoe can access it, the following lines could be placed in an
+access control file in the /webroot/personal/jdoe directory:
+
+  AuthType WebAuth
+  Require user jdoe
+
+Any user id other than jdoe attempting to access files in the
+/webroot/personal/jdoe directory (or any subdirectories below it) will
+be forbidden access.
+
+The Webauth require directive will interoperate with host/domain
+directive controls.  This allows for access to be granted either based
+on from what machine the user is browsing (host/domain identification)
+or from the user's ability to uniquely authentication themselves
+(Webauth user authentication).  This is done using Apache's satisfy
+directive.  For example, to limit access to the directory
+/webroot/personal/jdoe so that anyone can access the files within that
+directory from a machine in the stanford.edu domain OR if the user can
+authenticate as jdoe, the following lines would be in an access
+control file in the /webroot/personal/jdoe directory:
+
+  AuthType WebAuth
+  Require user jdoe
+  Order deny,allow
+  Deny from all
+  Allow from stanford.edu
+  Satisfy any
+
+Further Documentation
+
+Webauth v3 documentation is located here [URL] Installations
+instructions are here [URL] Configuration directives are described in
+detail in the reference  manual [URL].
