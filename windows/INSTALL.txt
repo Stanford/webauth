@@ -138,9 +138,7 @@ NOTE: There is currently an Apache bug under Windows where
 
      NOTE: leland_srvtab is only available from a UNIX system, so 
            the keytab file needs to be generated from there
-           and securely transferred to your Windows system. The
-           rest of these instructions are based on a UNIX system.
-
+           and securely transferred to your Windows system. 
 
   5. version information
 
