@@ -41,6 +41,22 @@
 
 module AP_MODULE_DECLARE_DATA webauth_module;
 
+static void
+dont_cache(MWA_REQ_CTXT *rc)
+{
+    rc->r->no_cache = 1;
+    apr_table_addn(rc->r->err_headers_out, "Pragma", "no-cache");
+    apr_table_setn(rc->r->err_headers_out, "Cache-Control", "no-cache");
+}
+
+static int
+do_redirect(MWA_REQ_CTXT *rc)
+{
+    dont_cache(rc);
+    rc->r->header_only = 1;
+    return HTTP_MOVED_TEMPORARILY;
+}
+
 /*
  * remove a string from the end of another string
  */
@@ -318,7 +334,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
                      "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
 
     set_pending_cookies(rc);
-    return HTTP_MOVED_TEMPORARILY;
+    return do_redirect(rc);
 }
 
 static int
@@ -349,7 +365,7 @@ login_canceled_redirect(MWA_REQ_CTXT *rc)
                      "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
 
     set_pending_cookies(rc);
-    return HTTP_MOVED_TEMPORARILY;
+    return do_redirect(rc);
 }
 
 static int 
@@ -602,9 +618,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
 
-    conf->proxy_headers = oconf->proxy_headers_ex ? 
-        oconf->proxy_headers : bconf->proxy_headers;
-
     conf->require_ssl = oconf->require_ssl_ex ? 
         oconf->require_ssl : bconf->require_ssl;
 
@@ -826,7 +839,6 @@ handler_hook(request_rec *r)
                                 sconf->keytab_principal), r);
     }
     dd_dir_str("WebAuthLoginUrl", sconf->login_url, r);
-    dd_dir_str("WebAuthProxyHeaders", sconf->proxy_headers ? "on" : "off", r);
     dd_dir_str("WebAuthServiceTokenCache", sconf->st_cache_path, r);
     dd_dir_str("WebAuthSubjectAuthType", sconf->subject_auth_type, r);
     dd_dir_str("WebAuthSSLRedirect", sconf->ssl_redirect ? "on" : "off", r);
@@ -1918,7 +1930,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
                      redirect_url);
 
     set_pending_cookies(rc);
-    return HTTP_MOVED_TEMPORARILY;
+    return do_redirect(rc);
 }
 
 
@@ -1939,7 +1951,7 @@ extra_redirect(MWA_REQ_CTXT *rc)
                      redirect_url);
 
     set_pending_cookies(rc);
-    return HTTP_MOVED_TEMPORARILY;
+    return do_redirect(rc);
 }
 
 
@@ -1985,7 +1997,7 @@ ssl_redirect(MWA_REQ_CTXT *rc)
                      redirect_url);
 
     set_pending_cookies(rc);
-    return HTTP_MOVED_TEMPORARILY;
+    return do_redirect(rc);
 }
 
 
@@ -2363,8 +2375,8 @@ check_user_id_hook(request_rec *r)
     if (wtlu != NULL) 
         mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
 
-    if (rc.dconf->dont_cache_ex) 
-        r->no_cache = rc.dconf->dont_cache;
+    if (rc.dconf->dont_cache_ex && rc.dconf->dont_cache)
+        dont_cache(&rc);
 
 #ifndef NO_STANFORD_SUPPORT
 
@@ -2389,7 +2401,7 @@ check_user_id_hook(request_rec *r)
         /* if no_cache isn't already set, and it wasn't explicitly
            turned off, it should default to on */
         if (!r->no_cache && !rc.dconf->dont_cache_ex) {
-            r->no_cache = 1;
+            dont_cache(&rc);
         }
     }
 #endif 
@@ -2398,16 +2410,6 @@ check_user_id_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: check_user_id_hook: no_cache(%d) dont_cache(%d) dont_cache_ex(%d)", r->no_cache, 
                      rc.dconf->dont_cache, rc.dconf->dont_cache_ex);
-    }
-
-    if (rc.sconf->proxy_headers) {
-        apr_table_set(r->headers_in, "X-WebAuth-User", rc.at.subject);
-        if (wte != NULL) 
-            apr_table_set(r->headers_in, "X-WebAuth-Token-Expiration", wte);
-        if (wtc != NULL) 
-            apr_table_set(r->headers_in, "X-WebAuth-Token-Creation", wtc);
-        if (wtlu != NULL) 
-            apr_table_set(r->headers_in, "X-WebAuth-Token-LastUsed", wtlu);
     }
 
     if (r->proxyreq != PROXYREQ_NONE) {
@@ -2548,6 +2550,7 @@ fixups_hook(request_rec *r)
 
     if (rc.dconf->do_logout) {
         nuke_all_webauth_cookies(&rc);
+        dont_cache(&rc);
     } else {
         set_pending_cookies(&rc);
     }
@@ -2722,10 +2725,6 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->debug = flag;
             sconf->debug_ex = 1;
             break;
-        case E_ProxyHeaders:
-            sconf->proxy_headers = flag;
-            sconf->proxy_headers_ex = 1;
-            break;
         case E_KeyringAutoUpdate:
             sconf->keyring_auto_update = flag;
             sconf->keyring_auto_update_ex = 1;
@@ -2877,7 +2876,6 @@ static const command_rec cmds[] = {
     SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SFLAG(CD_ProxyHeaders, E_ProxyHeaders, CM_ProxyHeaders),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SFLAG(CD_SSLRedirect, E_SSLRedirect, CM_SSLRedirect),

@@ -62,7 +62,7 @@
 variables to the SSI and CGI namespace. The generated variables are listed in
 the table below. For CGI apps that have expectations about and/or restrictions
 on the names of environment variables they can handle, you can use the
-<a href="#WebAuthVarPrefix">WebAuthVarPrefix</a> directive to have 
+<a href="#webauthvarprefix">WebAuthVarPrefix</a> directive to have 
 additional environment variables set.
 </p>
 <p>Additionally, requesting credentials for a particular request may
@@ -83,12 +83,12 @@ set.
 
 <tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td> 
 <td>When the token will expire. Note: if
-<a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>
+<a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>
 is set then the token may expire sooner due to inactivity.
 </td></tr>
 <tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td> 
 <td>When the token was last used. Only available if 
-<a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+<a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
  is non-zero</td></tr>
 
 <tr><td><code>REMOTE_USER</code></td>
@@ -118,6 +118,53 @@ to make sure that it is set to WebAuth.
 </p>
 </section>
 
+<section><title>Using WebAuth with Proxy Servers</title>
+
+<p>Note that this option should only be used as a last resort when the target
+server is unable to directly run <code>mod_webauth</code>. 
+HTTP headers are not secure and can easily be forged. The target server should
+only accept connections from the proxy server running 
+<code>mod_webauth</code>.</p>
+
+<p>In order to use WebAuth V3 with a proxy (ProxyPass in particular), we
+recommend using 
+<a href="http://httpd.apache.org/docs-2.0/mod/mod_headers.html">mod_headers</a>
+to set extra headers based on the values of <code>WEBAUTH_</code> environment variables.</p>
+
+<p>For example, lets say you want to pass <code>WEBAUTH_USER</code> through
+to a proxy server. Assuming you've loaded <code>mod_headers</code> and can therefore use the <code>RequestHeader</code> directive, you could do the following:  </p>
+
+<example><title>Example</title>
+  &lt;Location /someplace><br/>
+    AuthType WebAuth<br/>
+    require valid-user<br/>
+    ProxyPass http://otherhost.stanford.edu/<br/>
+    ProxyPassReverse http://otherhost.stanford.edu/<br/>
+    RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
+  &lt;/Location><br/>
+</example>
+
+<p>The <code>RequestHeader</code> directive causes the <code>X-WEBAUTH-USER</code>
+header to get set with the value of the <code>WEBAUTH_USER</code> environment variable.</p>
+
+<note><title>Note: WebAuth Cookies and Referer Header</title> 
+<code>mod_webauth</code> strips out any cookies that start with
+the prefix <code>webauth_</code>, so they do not get forwarded to
+the target server, it also strips out any WebAuth-related information
+in the Referer header.
+</note>
+
+<note><title>Note: WebAuthDoLogout</title> 
+If you are planning on using WebAuthDoLogout with your proxied server,
+you should be aware that once you tell Apache to proxy a URL namespace
+(like <code>/someplace/</code>), then you can't have local 
+<code>Location</code> directives for URLs within that namespace,
+like <code>/location/logout</code>. Instead, you'll need to create a
+that script on the target server, and have it remove any cookie that
+starts with <code>webauth_</code>.
+</note>
+
+</section>
 
 <section><title>Perl Integration</title>
 
@@ -261,19 +308,19 @@ will never be used.
 
 <p>Depending on the credential type, temporary files containing credentials
   may need to be created. These credentials will be stored in the directory
-  specified by the <a href="#WebAuthCredCacheDir">WebAuthCredCacheDir</a> directive.</p>
+  specified by the <a href="#webauthcredcachedir">WebAuthCredCacheDir</a> directive.</p>
 
-<p>The <a href="#WebAuthCred">WebAuthCred</a> directive is used to specify 
+<p>The <a href="#webauthcred">WebAuthCred</a> directive is used to specify 
 which credentials a
 particular request may need. Credentials are not actually requested 
-from the WebKDC until a page with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive set to 
+from the WebKDC until a page with the <a href="#webauthusecreds">WebAuthUseCreds</a> directive set to 
 "on" is served. At that point, they will be cached (encrypted) in cookies 
 and used to satisfy future requests.</p>
 
 <p>Saving credentials on every single request (for example, an image
 or static page) is expensive, since it may involve decrypting credentials
 stored in a cookie, processing them, and storing them in a temporary file.
-The <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive is used to control which requests will actually
+The <a href="#webauthusecreds">WebAuthUseCreds</a> directive is used to control which requests will actually
 go through this process.</p>
 
 <p>The following example shows one scenario where every page under
@@ -482,7 +529,7 @@ by <em>type</em>:</p>
     be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
     <p>
     Specifying this also requires that 
-    <a href="#WebAuthKeytab">WebAuthKeytab</a> be set.
+    <a href="#webauthkeytab">WebAuthKeytab</a> be set.
     (FIXME: it is already always required for obtaining a service-token, though
      it will probably become optional at some point).</p>
 </li>
@@ -505,7 +552,7 @@ WebAuthSubjectAuthType krb5
 
 
 <directivesynopsis>
-<name><a name="WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a></name>
+<name>WebAuthTokenMaxTTL</name>
 <description>How old a token that was should be recently created is valid for.
 </description>
 <syntax>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></syntax>
@@ -533,7 +580,7 @@ WebAuthTokenMaxTTL 10m
 </directivesynopsis>
 
 <directivesynopsis>
-<name><a name="WebAuthExtraRedirect">WebAuthExtraRedirect</a></name>
+<name>WebAuthExtraRedirect</name>
 <description>Whether or not to do an extra redirect upon return from the WebKDC
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
@@ -553,7 +600,7 @@ is the user's won't see the extra WebAuth information in the URL, and
 won't be able to bookmark it, etc. Note that bookmarking a URL
 with the extra information shouldn't really cause any problems, as
 the tokens in the extra information will only be valid for a limited
-amount of time (see <a href="#WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a>), 
+amount of time (see <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a>), 
 after which they will be ignored.
 </p>
 
@@ -737,7 +784,7 @@ WebAuthKeyRing conf/webauth/keyring
 </directivesynopsis>
 
 <directivesynopsis>
-<name><a name="WebAuthKeytab">WebAuthKeytab</a></name>
+<name>WebAuthKeytab</name>
 <description>Name of the Kerberos V5 keytab file
 </description>
 <syntax>WebAuthKeytab <em>path</em> [<em>principal</em>]</syntax>
@@ -812,7 +859,7 @@ is the recommended configuration.
 </p>
 
 <p> To be effective, this directive should be used with the 
-<a href="#WebAuthForceLogin">WebAuthForceLogin</a>
+<a href="#webauthforcelogin">WebAuthForceLogin</a>
 directive, otherwise single-sign-on 
 will automatically log the user back in when the token expires.
 </p>
@@ -876,7 +923,7 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 </directivesynopsis>
 
 <directivesynopsis>
-<name><a name="WebAuthVarPrefix">WebAuthVarPrefix</a></name>
+<name>WebAuthVarPrefix</name>
 <description>Additional webauth-related environment variables to set
 </description>
 <syntax>WebAuthVarPrefix <em>string</em></syntax>
@@ -916,20 +963,27 @@ WebAuthVarPrefix HTTP_<br/>
 <usage>
 <p>
 This directive controls whether or not all WebAuth-related cookies
-are removed if the user accesses this URL.
-</p>
+are removed if the user accesses this URL. This directive also enables
+the <a href="#webauthdontcache">WebAuthDontCache</a> directive for the
+given location.</p>
 
 <example><title>Example</title>
   &lt;Location /myapp/logout&gt;<br />
   WebAuthDoLogout on<br />
   &lt;/Location&gt;
 </example>
+
+<note><title>Note</title> 
+WebAuth-related cookies are all cookis that start with
+the prefix "webauth_".
+</note>
+
 </usage>
 </directivesynopsis>
 
 
 <directivesynopsis>
-<name><a name="WebAuthInactiveExpire">WebAuthInactiveExpire</a></name>
+<name>WebAuthInactiveExpire</name>
 <description>Expires app-tokens that haven't been used recently
 </description>
 <syntax>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></syntax>
@@ -943,16 +997,16 @@ are removed if the user accesses this URL.
     is considered expired and re-auth occurs. Setting this requires 
     mod_webauth to periodically update the webauth_at cookie, based on the
     setting of the 
-  <a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+  <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
   directive.
 </p>
 
 <p> To be effective, this directive should be used with the 
-<a href="#WebAuthForceLogin">WebAuthForceLogin</a>
+<a href="#webauthforcelogin">WebAuthForceLogin</a>
 directive, otherwise single-sign-on will automatically log the
 user back in when the token expires due to inactivity. Additionally, 
 this value should be higher then the value of 
-  <a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>,
+  <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>,
 otherwise the cookie will expire before the last-used-time is updated.
 </p>
 
@@ -964,7 +1018,7 @@ hours, days, and weeks respectively.</p>
 # timeout an app-token if it isn't used for more <br/>
 # then 20 minutes<br/>
 WebAuthInactiveExpire 20m<br/>
-# update the last-used-time in the cookie if its older<br/>
+# update the last-used-time in the cookie if it's older<br/>
 # then 10 minutes<br/>
 WebAuthLastUseUpdateInterval 10m
 </example>
@@ -973,9 +1027,7 @@ WebAuthLastUseUpdateInterval 10m
 
 
 <directivesynopsis>
-<name>
-<a name="WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
-</name>
+<name>WebAuthLastUseUpdateInterval</name>
 <description>How often to update the main webauth cookie
 </description>
 <syntax>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></syntax>
@@ -992,7 +1044,7 @@ WebAuthLastUseUpdateInterval 10m
 </p>
 
 <p> This directive is normally only used with 
-   <a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>, though
+   <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>, though
 it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</code> 
  environment variable updated.
 </p>
@@ -1005,7 +1057,7 @@ hours, days, and weeks respectively.</p>
 # timeout an app-token if it isn't used for <br/>
 # more then 20 minutes<br/>
 WebAuthInactiveExpire 20m<br/>
-# update the last-used-time in the cookie if its older<br/>
+# update the last-used-time in the cookie if it's older<br/>
 # then 10 minutes<br/>
 WebAuthLastUseUpdateInterval 10m
 </example>
@@ -1013,7 +1065,7 @@ WebAuthLastUseUpdateInterval 10m
 </directivesynopsis>
 
 <directivesynopsis>
-<name><a name="WebAuthForceLogin">WebAuthForceLogin</a></name>
+<name>WebAuthForceLogin</name>
 <description>Forces username/password prompt when user is not authenticated
 </description>
 <syntax>WebAuthForceLogin on|off</syntax>
@@ -1140,11 +1192,24 @@ WebAuthSSLRedirectPort 8443<br />
 
 <usage>
 <p>
-Setting this to on will cause Apache to include an <code>Expires</code>
-header with the current time on it to tell browsers not to cache the 
-document. Internally, this is just setting <code>no_cache</code> in the
-Apache request structure to 1.
+Setting this to <code>on</code> will cause the following headers to be 
+included in the response to tell browsers not to cache the returned document.
 </p>
+
+<table border="1">
+<tr>
+ <th>Header Name</th>
+ <th>Header Value</th>
+</tr>
+<tr><td><code>Expires</code></td>            
+    <td>(current time)</td></tr>
+
+<tr><td><code>Pragma</code></td>     
+     <td>no-cache</td></tr>
+
+<tr><td><code>Cache-Control</code></td> 
+<td>no-cache</td></tr>
+</table>
 
 <p>
 It is recommended this only be turned on for sensitive documents and not
@@ -1224,9 +1289,7 @@ WebAuthKeyringKeyLifetime 60d<br/>
 
 
 <directivesynopsis>
-<name>
-<a name="WebAuthCredCacheDir">WebAuthCredCacheDir</a>
-</name>
+<name>WebAuthCredCacheDir</name>
 <description>Name of the directory containing cached credentials
 </description>
 <syntax>WebAuthCredCacheDir <em>path</em></syntax>
@@ -1243,7 +1306,7 @@ for the duration of a single request. </p>
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
 <note><title>Note</title> 
-    <p>This directive must be set if the <a href="#WebAuthCred">WebAuthCred</a> and <a href="#WebAuthUseCreds">WebAuthUseCreds</a>
+    <p>This directive must be set if the <a href="#webauthcred">WebAuthCred</a> and <a href="#webauthusecreds">WebAuthUseCreds</a>
 directives are used.</p>
 </note>
 
@@ -1256,9 +1319,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 
 
 <directivesynopsis>
-<name>
-<a name="WebAuthUseCreds">WebAuthUseCreds</a>
-</name>
+<name>WebAuthUseCreds</name>
 <description>Whether or not save credentials to the cache
 </description>
 <syntax>WebAuthUseCreds on|off</syntax>
@@ -1271,7 +1332,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 This directive controls whether or not any acquired credentials will
 actually be saved to the credential cache directory and made available
 as part of the current request. It should be used in conjunction with
-the <a href="#WebAuthCred">WebAuthCred</a> directive.
+the <a href="#webauthcred">WebAuthCred</a> directive.
 </p>
 
 <example><title>Example</title>
@@ -1285,9 +1346,7 @@ the <a href="#WebAuthCred">WebAuthCred</a> directive.
 
 
 <directivesynopsis>
-<name>
-<a name="WebAuthCred">WebAuthCred</a>
-</name>
+<name>WebAuthCred</name>
 <description>Which credentials to acquire
 </description>
 <syntax>WebAuthCred <em>type</em> [<em>service</em>]</syntax>
@@ -1298,14 +1357,14 @@ the <a href="#WebAuthCred">WebAuthCred</a> directive.
 <usage>
 <p>
 This directive specifies which credentials a particular request may need.
-It should be used should be used in conjunction with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> 
+It should be used should be used in conjunction with the <a href="#webauthusecreds">WebAuthUseCreds</a> 
 directive.
 </p>
 
 <p>Note that service is optional. If service is not present, then this is
 used to indicate that a page further down in the hierarchy will eventually
 acquire credentials of the specified type, by specifying credentials
-with a service name, and setting <a href="#WebAuthUseCreds">WebAuthUseCreds</a> to "on".</p>
+with a service name, and setting <a href="#webauthusecreds">WebAuthUseCreds</a> to "on".</p>
 
 <p>This directive may be used multiple times in the same location to
 specify that multiple credentials are required.</p>
@@ -1389,71 +1448,6 @@ WebAuthWebKdcSSLCertCheck off
 </usage>
 </directivesynopsis>
 
-<directivesynopsis>
-<name>WebAuthProxyHeaders</name>
-<description>Inserts extra headers into request
-</description>
-<syntax>WebAuthProxyHeaders on|off</syntax>
-<default>WebAuthProxyHeaders off</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
 
-<usage>
-<p>This directive is useful in conjunction with the <code>ProxyPass</code>
-directive. When enabled, it causes the following extra headers to be 
-inserted into the proxy request:</p>
-
-<table border="1">
-<tr>
- <th>Header Name:</th>
- <th>Description:</th>
-</tr>
-<tr><td><code>X-WebAuth-User</code></td>            
-    <td>Name of the WebAuth authenticated user</td></tr>
-
-<tr><td><code>X-WebAuth-Token-Creation</code></td>     
-     <td>When the token was created</td></tr>
-
-<tr><td><code>X-WebAuth-Token-Expiration</code></td> 
-<td>When the token will expire. Note: if
-<a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>
-is set then the token may expire sooner due to inactivity.
-</td></tr>
-<tr><td><code>X-WebAuth-Token-LastUsed</code></td> 
-<td>When the token was last used. Only available if 
-<a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
- is non-zero</td></tr>
-</table>
-
-<p>
-Note that this option should only be used as a last resort when the target
-server specified in <code>ProxyPass</code> is unable to directly
-run <code>mod_webauth</code>.  HTTP headers are not secure and can
-easily be forged. The target server should only accept connections
-from the proxy server running <code>mod_webauth</code>.
-</p>
-
-<p>
-Turning this directive on also strips out any cookies that start with
-the prefix <code>webauth_</code>, so they do not get forwarded to
-the target server.
-</p>
-<example><title>Example</title>
-&lt;VirtualHost vhost.stanford.edu><br/>
-  ...<br/>
-  WebAuthProxyHeaders on<br/>
-  ...<br/>
-  &lt;Location / ><br/>
-    AuthType WebAuth<br/>
-    require valid-user<br/>
-  &lt;/Location><br/>
-  ...<br/>
-  ProxyPass / http://otherhost.stanford.edu/<br/>
-  ProxyPassReverse / http://otherhost.stanford.edu/<br/>
-  ...<br/>
-&lt;/VirtualHost><br/>
-</example>
-</usage>
-</directivesynopsis>
 
 </modulesynopsis>
