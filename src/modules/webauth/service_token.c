@@ -7,9 +7,9 @@
 static MWA_SERVICE_TOKEN *
 new_service_token(apr_pool_t *pool,
                   int key_type, 
-                  const unsigned char *b64_kdata,
+                  const unsigned char *kdata,
                   int kd_len,
-                  const unsigned char *b64_tdata,
+                  const unsigned char *tdata,
                   int td_len,
                   time_t expires,
                   time_t last_renewal_attempt)
@@ -19,14 +19,14 @@ new_service_token(apr_pool_t *pool,
     token = (MWA_SERVICE_TOKEN*) apr_palloc(pool, sizeof(MWA_SERVICE_TOKEN));
     token->expires = expires;
 
-    token->token = apr_pstrmemdup(pool, b64_tdata, td_len);
+    token->token = apr_pstrmemdup(pool, tdata, td_len);
 
     token->last_renewal_attempt = last_renewal_attempt;
     token->key.type = key_type;
 
     token->key.data = (unsigned char *) 
-        apr_palloc(pool, apr_base64_decode_len(b64_kdata));
-    token->key.length = apr_base64_decode(token->key.data, b64_kdata);
+        apr_palloc(pool, apr_base64_decode_len(kdata));
+    token->key.length = apr_base64_decode(token->key.data, kdata);
     /* FIXME: should validate key.length */
     return token;
 }
@@ -42,7 +42,10 @@ read_service_token_cache(request_rec *r, apr_pool_t *st_pool,
     unsigned char *buffer;
     apr_status_t astatus;
     int status, num_read, tlen, klen;
-    char *v_expires, *v_token, *v_lra, *v_kt, *v_key;
+    int s_expires, s_token, s_lra, s_kt, s_key;
+    time_t expires, lra;
+    uint32_t key_type;
+    char *tok, *key;
 
     WEBAUTH_ATTR_LIST *alist;
     static char *mwa_func = "read_service_token_cache";
@@ -101,18 +104,35 @@ read_service_token_cache(request_rec *r, apr_pool_t *st_pool,
         return NULL;
     }
 
-    v_expires = mwa_get_str_attr(alist, "expires", r, mwa_func, NULL);
-    v_token = mwa_get_str_attr(alist, "token", r, mwa_func, &tlen);
-    v_lra = mwa_get_str_attr(alist, "last_renewal_attempt", r, mwa_func, NULL);
-    v_kt = mwa_get_str_attr(alist, "key_type", r, mwa_func, NULL);
-    v_key = mwa_get_str_attr(alist, "key", r, mwa_func, &klen);
 
-    if (!(v_expires && v_token && v_lra && v_kt && v_key))
+    s_expires = webauth_attr_list_get_time(alist, "expires", &expires, 
+                                           WA_F_FMT_STR);
+    s_token = webauth_attr_list_get_str(alist, "token", &tok, &tlen,
+                                        WA_F_NONE);
+    s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt", 
+                                       &lra, WA_F_FMT_STR);
+    s_kt = webauth_attr_list_get_uint32(alist, "key_type", &key_type,
+                                        WA_F_FMT_STR);
+    s_key = webauth_attr_list_get(alist, "key", (void*)&key, 
+                                  &klen, WA_F_FMT_HEX);
+
+    if ((s_expires != WA_ERR_NONE) || (s_token != WA_ERR_NONE) ||
+        (s_lra != WA_ERR_NONE) || (s_kt != WA_ERR_NONE) ||
+        (s_key != WA_ERR_NONE)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: attr_list_get failed for: %s%s%s%s%s",
+                     mwa_func,
+                     (s_expires != WA_ERR_NONE) ? "expires" : "",
+                     (s_token != WA_ERR_NONE) ? "token" : "",
+                     (s_lra != WA_ERR_NONE) ? "lasts_renewal_attempt" : "",
+                     (s_kt != WA_ERR_NONE) ? "key_type" : "",
+                     (s_key != WA_ERR_NONE) ? "key" : "");
         return NULL;
+    }
 
     /* be careful to alloc all memory for token from "st_pool" */
-    token = new_service_token(st_pool, atoi(v_kt), v_key, klen,
-                              v_token, tlen, atoi(v_expires), atoi(v_lra));
+    token = new_service_token(st_pool, key_type, key, klen, tok, tlen, expires,
+                              lra);
     webauth_attr_list_free(alist);
     return token;
 }
@@ -122,13 +142,12 @@ write_service_token_cache(request_rec *r, MWA_SERVICE_TOKEN *token,
                           MWA_SCONF *sconf) 
 {
     apr_file_t *cache;
-    unsigned char *buffer, *b64key;
+    unsigned char *buffer;
     apr_status_t astatus;
     time_t expires;
     int status, buff_len, ebuff_len, bytes_written;
     WEBAUTH_ATTR_LIST *alist;
     static char *prefix = "mod_webauth: write_service_token_cache";
-    char kt_buff[32], expires_buff[32], lra_buff[32];
 
     /* FIXME: need to do the whole "new.lock"/rename thingy */
 
@@ -149,22 +168,21 @@ write_service_token_cache(request_rec *r, MWA_SERVICE_TOKEN *token,
             return;
     }
 
-    sprintf(expires_buff, "%d", token->expires);
-    sprintf(kt_buff, "%d", token->key.type);
-    sprintf(lra_buff, "%d", token->last_renewal_attempt);
-
     alist = webauth_attr_list_new(10);
-    webauth_attr_list_add(alist, "token", token->token, strlen(token->token),
-                          WA_COPY_NONE);
-    webauth_attr_list_add_str(alist, "key_type", kt_buff, 0, WA_COPY_NONE);
-    webauth_attr_list_add_str(alist, "expires", expires_buff, 0, WA_COPY_NONE);
-    webauth_attr_list_add_str(alist, "last_renewal_attempt", 
-                              lra_buff, 0, WA_COPY_NONE);
 
-    b64key = apr_palloc(r->pool, 
-                        apr_base64_encode_len(token->key.length));
-    apr_base64_encode(b64key, token->key.data, token->key.length);
-    webauth_attr_list_add_str(alist, "key", b64key, 0, WA_COPY_NONE);
+    webauth_attr_list_add_str(alist, "token", token->token, 0, WA_F_NONE);
+
+    webauth_attr_list_add_uint32(alist, "key_type", 
+                                 token->key.type, WA_F_FMT_STR);
+
+    webauth_attr_list_add_time(alist, "expires", 
+                                 token->expires, WA_F_FMT_STR);
+
+    webauth_attr_list_add_time(alist, "last_renewal_attempt", 
+                                 token->last_renewal_attempt, WA_F_FMT_STR);
+
+    webauth_attr_list_add(alist, "key", token->key.data,
+                          token->key.length, WA_F_FMT_HEX);
 
     buff_len = webauth_attrs_encoded_length(alist);
     buffer = apr_palloc(r->pool, buff_len);

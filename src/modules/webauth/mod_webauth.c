@@ -433,12 +433,13 @@ make_app_token(char *subject,
         expiration_time = curr+dconf->app_token_lifetime;
     }
 
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 0);
-    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0, 0);
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
+                              WA_F_NONE);
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0, WA_F_NONE);
     webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
-                               expiration_time, 0);
+                               expiration_time, WA_F_NONE);
 
-    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, 0);
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, WA_F_NONE);
     
     /* FIXME: handle it/lt app_token_lifetime, inactive/etc */
 
@@ -501,7 +502,8 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist,
         /* wheeee! create an app-token! */
 
         status = webauth_attr_list_get_time(alist, WA_TK_EXPIRATION_TIME,
-                                            &expiration_time);
+                                            &expiration_time,
+                                            WA_F_NONE);
         if (status != WA_ERR_NONE) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                          "mod_webauth: parse_returned_token: "
