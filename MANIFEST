@@ -15,11 +15,14 @@ doc/doxygen.cfg                         Doxygen configuration file
 doc/install-webkdc                      WebKDC -- installation guide
 doc/mod_webauth.html.en                 Prebuilt version of mod_webauth.xml
 doc/mod_webauth.xml                     WebAuth Apache module documentation
+doc/mod_webauthldap.html.en             Prebuilt version of mod_webauthldap.xml
+doc/mod_webauthldap.xml                 WebAuthLdap Apache module documentation
 doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
 doc/webauth.conf                        Sample WebAuth Apache configuration
+doc/webauthldap-stanford.conf           Stanford-specific WebAuthLdap conf
 doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
@@ -63,6 +66,10 @@ src/modules/webauth/mod_webauth.c       Implementation of base module
 src/modules/webauth/mod_webauth.h       Internal API for base module
 src/modules/webauth/util.c              Utility functions for base module
 src/modules/webauth/webkdc.c            Interface to the WebKDC
+src/modules/webauthldap                 WebAuthLdap module (Directory)
+src/modules/webauthldap/Makefile.in     Makefile for ldap module
+src/modules/webauthldap/mod_webauthldap.c Implementation of ldap module
+src/modules/webauthldap/mod_webauthldap.h Internal API for ldap module
 src/modules/webkdc                      WebKDC -- Apache module (Directory)
 src/modules/webkdc/Makefile.in          WebKDC -- Makefile for module
 src/modules/webkdc/acl.c                WebKDC -- ACL file handling
@@ -112,6 +119,20 @@ tests/mod_webauth                       Test the WebAuth module (Directory)
 tests/mod_webauth/conf                  WebAuth test configuration (Directory)
 tests/mod_webauth/conf/webauth-tests.conf        Test configuration
 tests/mod_webauth/htdocs                         Module tests (Directory)
+tests/mod_webauth/htdocs/ldaptests               Module tests (Directory)
+tests/mod_webauth/htdocs/ldaptests/index.html    WebAuthLdap tests top file
+tests/mod_webauth/htdocs/ldaptests/test1/        WebAuthLdap tests (Directory)
+tests/mod_webauth/htdocs/ldaptests/test1/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test2/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test2/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test3/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test4/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test4/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test5/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test5/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test6/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test6/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/util.pl       WebAuthLdap module tests
 tests/mod_webauth/htdocs/tests                   Module tests (Directory)
 tests/mod_webauth/htdocs/tests/auth              Module tests (Directory)
 tests/mod_webauth/htdocs/tests/auth/logout       WebAuth module tests
