@@ -6,6 +6,8 @@ top_srcdir	= @top_srcdir@
 top_builddir	= @top_builddir@
 VPATH		= @srcdir@
 
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
 bindir		= @bindir@
 
 CC		= @CC@
