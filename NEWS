@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.2.2 (in progress)
+WebAuth 3.2.2 (2004-03-02)
 
  *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up
     via http at a webauth-protected page and gets redirected to weblogin,
