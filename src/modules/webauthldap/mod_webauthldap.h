@@ -69,8 +69,13 @@
 #define CM_SSL "use ssl or not"
 #define DF_SSL 0
 
+#define CD_Authrule "WebAuthLdapAuthrule"
+#define CM_Authrule "display the rule used to authorize user"
+#define DF_Authrule 0
+
 enum {
     E_Attribs,
+    E_Authrule,
     E_Base,
     E_Binddn,
     E_Debug,
@@ -108,6 +113,7 @@ typedef struct {
     char* port;
     char* principal;
     char* privgroupattr;
+    int   set_authrule;
     int   ssl;
     char* tktcache;
     int ldapversion;
@@ -140,6 +146,8 @@ typedef struct {
     char **attrs;            // attributes to retrieve from LDAP, (null = all)
     char*  filter;
     int    port;
+
+    char*  authrule; 	     // what group or rule was the user authorized on
 
 } MWAL_LDAP_CTXT;
 

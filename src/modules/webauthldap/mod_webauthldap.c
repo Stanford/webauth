@@ -135,6 +135,9 @@ cfg_flag(cmd_parms * cmd, void *mconfig, int flag)
     case E_Debug:
         sconf->debug = flag;
         break;
+    case E_Authrule:
+        sconf->set_authrule = flag;
+        break;
     default:
         error_str =
             apr_psprintf(cmd->pool,
@@ -238,6 +241,7 @@ static const command_rec cmds[] = {
 
     SFLAG(CD_SSL, E_SSL, CM_SSL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_Authrule, E_Authrule, CM_Authrule),
 
     DITSTR(CD_Attribs, E_Attribs, CM_Attribs),
     {NULL}
@@ -267,6 +271,7 @@ config_server_create(apr_pool_t * p, server_rec * s)
     sconf->filter_templ = DF_Filter_templ;
     sconf->port = DF_Port;
     sconf->ssl = DF_SSL;
+    sconf->set_authrule = DF_Authrule;
 
     return (void *)sconf;
 }
@@ -932,6 +937,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap(%s): authn SUCCEEDED %s=%s", 
                          lc->r->user, attr, value);
+	    lc->authrule = value;
             return rc;
         }
 
@@ -1062,6 +1068,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
 
     m = r->method_number;
     authorized = 1;
+    lc->authrule = NULL;
 
     if (reqs_arr) {
         reqs = (require_line *)reqs_arr->elts;
@@ -1083,6 +1090,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                 ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                              "webauthldap(%s): authn SUCCEEDED on require valid-user", r->user);
                 authorized = 1;
+                lc->authrule = "valid-user";
                 break;
             } else if (!strcmp(w, "user")) {
                 while (t[0]) {
@@ -1092,6 +1100,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                     
                     if (!strcmp(r->user, w)) {
                         authorized = 1;
+                        lc->authrule = apr_psprintf(lc->r->pool, "user %s", w);
                         break;
                     }
                 }
@@ -1281,6 +1290,11 @@ auth_checker_hook(request_rec * r)
         return rc; // means not authorized, or error
 
 
+    // This sets a envvar for the rule on which authorization succeeded.
+    if (lc->sconf->set_authrule && lc->authrule)
+        apr_table_setn(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE", 
+                       lc->authrule);
+
     //
     // Now set the env vars
     //
@@ -1288,6 +1302,7 @@ auth_checker_hook(request_rec * r)
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
     }
     apr_table_do(webauthldap_envnotfound, lc, lc->envvars, NULL);
+
 
     if (lc->sconf->debug) {
         if (needs_further_handling)
