@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.91, Modified 11/14/02</b></H4>
+<H4><b>DRAFT Version  0.92, Modified 11/27/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -39,6 +39,7 @@
   <LI><a href="#xmlcmd">Commands</a></LI>
   <UL>
      <LI><a href="#xmlgettokens">getTokens</a></LI>
+     <LI><a href="#xmlrequesttoken">requestToken</a></LI>
   </UL>
   <LI><a href="#xmlpost">Posting XML to WebKDC</a></LI>
   <LI><a href="#xmlex">Examples</a></LI>
@@ -56,6 +57,7 @@
      <LI><a href="#tokenid">id-token</a></LI>
      <LI><a href="#tokenproxy">proxy-token</a></LI>
      <LI><a href="#tokencred">credential-token</a></LI>
+     <LI><a href="#tokenlogin">login-token</a></LI>
      <LI><a href="#tokenapp">app-token</a></LI>
   </UL>
 </UL>
@@ -113,10 +115,7 @@ other application servers, and support future standards as they arise.
 
 <H4>1.1.3 <a name="compwkdc">WebKDC</a></H4>
 
-The WebKDC is also an Apache 2.0 server. It will initially be prototyped
-in Perl, with parts implemented in C for performance. All or parts of the
-WebKDC may later be rewritten into custom Apache modules for performance
-and/or other reasons.
+The WebKDC is also an Apache 2.0 server, running a custom Apache module.
 
 <p>All interactions between the UA and WebKDC <b>MUST</b> be
 protected via SSL to prevent disclosure of passwords, as well as sensitive
@@ -163,7 +162,7 @@ POST data, cookies, and XML documents. They are AES-encrypted using
 either a private key, or a shared session key. They also include
 a SHA1 HMAC used to detect data modification/tampering.
 
-<p>There are currently eight different type of tokens, which are
+<p>There are currently nine different type of tokens, which are
 described in the following table.
 <p>
 
@@ -247,6 +246,16 @@ its expiration, its type, etc.
   <td>session-key</td>
   <td>
   The credential-token contains a user's credential (K5/K4 service ticket).
+  </td>
+</tr>
+
+<tr>
+  <td>login</td>
+  <td>WebKDC's private AES-key</td>
+  <td>
+login-tokens are used by the WebKDC with the requestTokenRequest command.
+They contain the user's username and password and are used to obtain
+the inital webkdc-proxy-tokens.
   </td>
 </tr>
 
@@ -895,6 +904,16 @@ This section describes the XML protocol used to talk to the WebKDC.
 messages over a tcp-based connection. A protocol interaction 
 consists of a single XML message from the client and a single XML 
 message response from the server.
+<p> For any elements that require a base64-encoded value, there must
+    be no whitespace after the open element and before the close element.
+    For example, this is valid:
+<pre><code> &lt;requestToken>{base64-webkdc-service-token}&lt;/requestToken></code></pre>
+while this is not:
+<pre><code> &lt;requestToken>
+            {base64-webkdc-service-token}
+ &lt;/requestToken></code></pre>
+<p>Having said that, this spec uses whitespace in examples for readability.
+
 <p> The message is posted to the WebKDC using HTTPS.
 
 <p>
@@ -942,16 +961,108 @@ an error.
 
 <H4>4.2.3 &lt;errorCode></H4>
 This is a numeric error code that is present in an errorResponse message.
+<p>
+<table border>
+ <tr align=center>
+  <th>Error Code</th>
+  <th>Description</th>
+ </tr>
 
+<tr>
+  <td>1</td> <td> The service-token used was expired. </td>
+</tr>
+
+<tr>
+  <td>2</td> <td> The service-token used was corrupt and/or was unable to 
+                  be decrypted. 
+  </td>
+</tr>
+
+<tr>
+  <td>3</td> <td> The proxy-token used was expired. 
+  </td>
+</tr>
+<tr>
+  <td>4</td> <td> The proxy-token used was corrupt and/or was unable to 
+                  be decrypted. 
+  </td>
+</tr>
+
+<tr>
+  <td>5</td> <td> The request was invalid. For example, a required element
+                  was missing, an attribute value was incorrect, the server
+                  was unable to parse the XML request, etc. The generally
+                  indicates a bug in the client.
+  </td>
+</tr>
+
+<tr>
+ <td>6</td> <td> The request was unauthorized. An attempt was made to
+                  request a token type that was not authorized.
+ </td>
+</tr>
+
+<tr>
+ <td>7</td> <td> The server had an internal error (out of memory, etc). 
+                 If the client retries the request may succeed, though
+                 some external event might be causing the problem (Kerberos
+                 server being down, etc).
+ </td>
+</tr>
+
+<tr>
+ <td>8</td> <td> The request-token was stale.
+ </td>
+</tr>
+
+<tr>
+ <td>9</td> <td> The request-token was invalid.
+ </td>
+</tr>
+
+<tr>
+ <td>10</td> <td>Unable to obtain the requested credential.
+ </td>
+</tr>
+
+<tr>
+ <td>11</td> <td>The krb5 &lt;requesterCredential> was bad.
+ </td>
+</tr>
+
+<tr>
+ <td>12</td> <td>The login-token was stale.
+ </td>
+</tr>
+
+<tr>
+ <td>13</td> <td>The login-token was invalid.
+ </td>
+</tr>
+
+<tr>
+ <td>14</td> <td>Login failed due to bad password or invalid username.
+ </td>
+</tr>
+
+<tr>
+ <td>15</td> <td>A webkdc-proxy-token of a certain type was 
+             required and was not present in the request.
+ </td>
+</tr>
+
+</table>
 
 <H4>4.2.4 &lt;errorMessage></H4>
 This is a textual description of the error code, meant to be human readable, 
 but not actually displayed to the user (it is not localized). 
 
 <H3>4.3 <a name="xmlcmd">Commands</a></H3>
-There is currently a single command defined, getTokens.
-There will most likely be a few more commands added,
-probably for key management between multiple WebKDCs.
+There are currently two commands defined, getTokens and requestToken.
+The getTokens command is used directly by the WAS to request a service token,
+cred-tokens, etc. The requestToken command is used by the web front-end
+on the WebKDC itself to process a request-token sent in a URL from a
+WAS.
 
 <H4>4.3.1 <a name="xmlgettokens">getTokens</a></H4>
 
@@ -966,15 +1077,18 @@ The request message is:
 
     &lt;requesterCredential type="service|krb5">
        <i>&lt;!-- for type="service" --></i>
-       &lt;serviceToken>{base64-webkdc-service-token}&lt;/serviceToken>
-       &lt;requestToken>{base64-request-token}&lt;/requestToken>
+       {base64-webkdc-service-token}
        <i>&lt;!-- for type="krb5" --></i>
        {base64-krb5-mk-req-data}
     &lt;/requesterCredential>
 
     &lt;subjectCredential type="proxy">
-       {base64-webkdc-proxy-token}
+       &lt;proxyToken>{base64-webkdc-proxy-token}&lt;/proxyToken>
+       <i>&lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here --></i>
     &lt;/subjectCredential>
+
+    <i>&lt;!-- present when requestCredential is of type="service" --></i>
+    &lt;requestToken>{base64-request-token}&lt;/requestToken>
 
     &lt;tokens>
       &lt;token type="id|proxy|service|cred" id="{id-to-use-in-response}">
@@ -1007,8 +1121,7 @@ The response message is:
   &lt;/getTokensResponse>
 </code></pre>
 
-In the case of token-specific errors, each &lt;token> response may
-also include &lt;errorCode> and &lt;errorMessage> elements.
+<p>If any errors occur, then an &lt;errorResponse> message will be returned.
 
 <p>requesterCredentials of type "krb5" can only be used to obtain
 a service-token, they can't be used for obtaining any other tokens,
@@ -1018,12 +1131,67 @@ service-token.
 <p>subjectCredentials are required when requesting id, proxy, or cred
 tokens.
 
+<H4>4.3.2 <a name="xmlrequesttoken">requestToken</a></H4>
+
+The requestToken command is used by the web front-end running on the
+WebKDC to process a request-token sent in a URL from a WAS.
+<p>
+The request message is:
+<pre><code>
+  &lt;requestTokenRequest>
+
+   &lt;requesterCredential type="service">
+       {base64-webkdc-service-token}
+   &lt;/requesterCredential>
+
+   &lt;subjectCredential type="proxy|login">
+     <i>&lt;!-- for type="proxy" --></i>
+     <i>&lt;!-- need to pass in all the existing proxy-tokens, since
+          we (the web front-end) don't know which we might need --></i>
+     &lt;proxyToken>...&lt;/proxyToken>
+     <i>&lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here --></i>
+     <i>&lt;!-- for type="login" --></i>
+     &lt;loginToken>...&lt;/loginToken>     
+   &lt;/subjectCredential>
+
+   <i>&lt;!-- request token from WAS --></i>
+   &lt;requestToken>{base64-request-token}&lt;/requestToken> 
+
+  &lt;/requestTokenRequest>
+</code></pre>
+The response message is:
+<pre><code>
+  &lt;requestTokenResponse>
+    <i>&lt;!-- any updated/new proxy tokens created, only passed back
+         if subjectCredential was type="login"  --></i>
+    &lt;proxyTokens>
+      &lt;proxyToken type="...">{base64-proxy-token}&lt;/proxyToken>
+    &lt;/proxyTokens>
+
+    <i>&lt;!-- the url to return to the user to --></i>
+    &lt;returnUrl>...&lt;/returnUrl>
+
+    <i>&lt;!-- subject inside of service-token used to make request --></i>
+    &lt;requesterSubject>...&lt;/requesterSubject>
+
+    <i>&lt;!-- requestedToken will either be an error, id, or proxy token. --></i>
+    &lt;requestedToken>{base64-token}&lt;/requestedToken>
+
+    <i>&lt;!-- app state is the opaque app state passed in the
+         request token that we hand back to WAS --></i>
+    &lt;appState>{base64-state}&lt;/appState>
+
+  &lt;/requestTokenResponse>
+</code></pre>
+
+<p>If any errors occur, then an &lt;errorResponse> message will be returned.
+
 <H3>4.4 <a name="xmlpost">Posting XML to WebKDC</a></H3>
 
 The WebKDC will be an apache 2.0 module. The XML data should be POSTed to
 the following URL:
 
-<pre><code>https://{webkdc-server}/service/webkdc/</code></pre>
+<pre><code>https://{webkdc-server}/webkdc-service/</code></pre>
 
 <p>The <code>Content-Type</code> should be "text/xml".
 
@@ -1043,7 +1211,7 @@ point it will request a new one.
 <pre><code>
 &lt;getTokensRequest>
    &lt;requesterCredential type="krb5">
-       {base64-krb5-mk-req-data}
+      {base64-krb5-mk-req-data}
    &lt;/requesterCredential>
    &lt;tokens>
      &lt;token type="service" id="0"/>
@@ -1069,9 +1237,10 @@ The webkdc-proxy-token's type must match the requested credential's type.
 <pre><code>
  &lt;getTokensRequest>
    &lt;requesterCredential type="service">
-       &lt;serviceToken>{base64-webkdc-service-token}&lt;/serviceToken>
-       &lt;requestToken>{base64-request-token}&lt;/requestToken>
+       {base64-webkdc-service-token}
    &lt;/requesterCredential>
+
+   &lt;requestToken>{base64-request-token}&lt;/requestToken>
 
    &lt;subjectCredential type="proxy">
      {webkdc-proxy-token}
@@ -1213,6 +1382,10 @@ see if the token has timed out due to inactivity.
 an app-token, then it will be periodically updated as the token is used.</td>
 </tr>
 <tr>
+ <td>p</td><td>string</td><td>user's password</td>
+</tr>
+<tr>
+<tr>
  <td>pd</td><td>binary</td><td>proxy data (i.e., an encoded krb5 tgt)</td>
 </tr>
 <tr>
@@ -1260,9 +1433,9 @@ being used for the correct purpose. </td>
  <td>wt</td> <td>binary</td><td>webkdc-{proxy,service}-token (the webkdc tokens inside another token)</td>
 </tr>
 <tr>
- <td>x-nnn</td><td>string</td><td>application-specific attribute</td>
+ <td>u</td><td>string</td><td>user's username</td>
 </tr>
-
+<tr>
 </table>
 
 <H3>5.3 <a name="tokenspecific">Specific Token Encodings</a></H3>
@@ -1318,7 +1491,7 @@ and are also used with the XML interface (in a restricted form) to allow
 the WebKDC to verify that a request being made with a service-token is
 both recent, and for the specified command.
 
-<p> The first form is used with the HTML interface:
+<p> The first form is used with the requestTokenRequest command:
 
 <pre><code>
   t=req
@@ -1330,10 +1503,10 @@ both recent, and for the specified command.
   # for rt=id
   sa=krb5|webkdc
   # for rt=proxy
-  prt=krb5|krb4
+  pt=krb5|krb4
 </code></pre>
 
-<p> The second form is used with the XML interface:
+<p> The second form is used with the getTokensRequest command:
 
 <pre><code>
   t=req
@@ -1409,7 +1582,7 @@ from the WebKDC.
 
 <pre><code>
   t=proxy
-  prt=krb5|krb4|...
+  pt=krb5|krb4|...
   s=krb5:{users-k5-principal}
   wt={webkdc-proxy-token}
   ct={creation-time}
@@ -1441,9 +1614,23 @@ A credential-token is k4/k5 service ticket returned by the WebKDC for a WAS.
 
 <p> All attributes are AES-encrypted in the in a webkdc-service-token session-key
 
-<H4>5.3.8 <a name="tokenapp">app-token encoding</a></H4>
+<H4>5.3.8 <a name="tokenlogin">login-token encoding</a></H4>
 
-An app-token controlled/maintained by a WAS. The main use of an app-token
+A login-token is created by the web front-end running on the WebKDC
+when it needs to authenticate a user. 
+
+<pre><code>
+  t=login
+  ct={creation-time}
+  p={password}
+  u={username}
+</code></pre>
+
+<p>  All attributes are AES-encrypted in the WebKDC's private key.
+
+<H4>5.3.9 <a name="tokenapp">app-token encoding</a></H4>
+
+An app-token is controlled/maintained by a WAS. The main use of an app-token
 is to cache the idenity within an id-token after it has been verified.
 
 <pre><code>
@@ -1454,8 +1641,6 @@ is to cache the idenity within an id-token after it has been verified.
   [k=session-key]
   [it={inactivity-timeout}]
   [lt={last-use-time}]
-  [x-name1=value1]  (app-specific-data)
-  [x-name2=value2]  ...
 </code></pre>
 
 <p>  All attributes are AES-encrypted in the WAS's private key.
@@ -1691,6 +1876,28 @@ WebAuthEndSession redirect|clearLogin|on|off
              the WAS private key. This is so they can't be used
              as app-tokens.
          <li>change name of proxy/webkdc-proxy cookies
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>11/27/2002</td>
+  <td>0.92</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>document error codes for &lt;errorCode>
+         <li>add new requestToken command for the WebKDC web front-end
+             to use to talk to the WebKDC.
+         <li>url for webkdc post is now /webkdc-service/
+         <li>remove line that says an &lt;errorCode> can occur within
+            a &lt;token> returned in a  &lt;getTokensResponse>. The whole
+            request succeeds or fails.
+         <li>update format for &lt;SubjectCredential> to be consistent
+             across XML commands.
+         <li>update format for &lt;requesterCredential> by moving
+             &lt;requestToken> out into enclosing element, which also
+             removes the need for the &lt;serviceToken> element. Also
+             consistent across commands.
        </ul>
    </td>
 </tr>

@@ -827,50 +827,15 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     req_cred->type = apr_pstrdup(rc->r->pool, at);
 
     if (strcmp(at, "service") == 0) {
-        int st_p = 0, rt_p = 0;
-
-        for (child = e->first_child; child; child = child->next) {
-	    if (strcmp(child->name, "serviceToken") == 0) {
-                const char *token = get_elem_text_er(rc, child, mwk_func);
-                if (token == NULL)
-                    return 0;
-                st_p = 1;
-                if (!parse_service_token_er(rc, (char*)token, 
-                                            &req_cred->u.service.st)) {
-                    return 0;
-                }
-                /* pull out subject from service token */
-                req_cred->subject = req_cred->u.service.st.subject;
-	    } else if (strcmp(child->name, "requestToken") == 0) {
-                const char *token = get_elem_text_er(rc, child, mwk_func);
-                if (token == NULL)
-                    return 0;
-                rt_p = 1;
-                if (!parse_request_token_er(rc, (char*)token, 
-                                            &req_cred->u.service.st,
-                                            &req_cred->u.service.rt, 1)) {
-                    return 0;
-                }
-	    } else {
-                unknown_element_er(rc, mwk_func, e->name, child->name);
-                return 0;
-	    }
-	}
-
-	if (!st_p) {
-            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
-                                   "<requestCredential> must have "
-                                   "<serviceToken>",
-                                   mwk_func, 1);
+        const char *token = get_elem_text_er(rc, e, mwk_func);
+        if (token == NULL)
             return 0;
-	}
-	if (!rt_p && expecting_reqToken) {
-            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
-                                   "<requestCredential> must have "
-                                   "<requestToken>",
-                                   mwk_func, 1);
+        if (!parse_service_token_er(rc, (char*)token, 
+                                    &req_cred->u.st)) {
             return 0;
-	}
+        }
+        /* pull out subject from service token */
+        req_cred->subject = req_cred->u.st.subject;
         return 1;
     } else if (strcmp(at, "krb5") == 0) {
         const char *req;
@@ -1088,7 +1053,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
         return 0;
     }
 
-    server_principal = req_cred->u.service.st.subject;
+    server_principal = req_cred->u.st.subject;
     if (strncmp(server_principal, "krb5:", 5) == 0) {
         server_principal += 5;
     }
@@ -1210,7 +1175,7 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
 
-    ok = make_token_with_key_er(rc, &req_cred->u.service.st.key,
+    ok = make_token_with_key_er(rc, &req_cred->u.st.key,
                                 alist, creation,
                                 (char**)&rtoken->token_data, 
                                 &tlen, 1, mwk_func);
@@ -1288,7 +1253,7 @@ create_proxy_token_from_req_er(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
     SET_PROXY_TYPE(sub_pt->proxy_type);
-    SET_PROXY_SUBJECT(req_cred->u.service.st.subject);
+    SET_PROXY_SUBJECT(req_cred->u.st.subject);
     SET_SUBJECT(sub_pt->subject);
     SET_PROXY_DATA(sub_pt->proxy_data, sub_pt->proxy_data_len);
 
@@ -1311,7 +1276,7 @@ create_proxy_token_from_req_er(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
 
-    ok = make_token_with_key_er(rc, &req_cred->u.service.st.key,
+    ok = make_token_with_key_er(rc, &req_cred->u.st.key,
                                 alist, creation,
                                 (char**)&rtoken->token_data, 
                                 &tlen, 1, mwk_func);
@@ -1452,7 +1417,7 @@ create_cred_token_from_req_er(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
 
-    ok = make_token_with_key_er(rc, &req_cred->u.service.st.key,
+    ok = make_token_with_key_er(rc, &req_cred->u.st.key,
                                 alist, creation,
                                 (char**)&rtoken->token_data, 
                                 &tlen, 1, mwk_func);
@@ -1467,7 +1432,8 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     apr_xml_elem *child, *tokens, *token;
     static const char *mwk_func="handle_getTokensRequest";
     const char *mid = NULL;
-
+    char *request_token;
+    MWK_REQUEST_TOKEN req_token;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;
@@ -1494,6 +1460,10 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         } else if (strcmp(child->name, "messageId") == 0) {
             mid = get_elem_text_er(rc, child, mwk_func);
             if (mid == NULL)
+                return OK;
+        } else if (strcmp(child->name, "requestToken") == 0) {
+            request_token = get_elem_text_er(rc, child, mwk_func);
+            if (request_token == NULL)
                 return OK;
         } else if (strcmp(child->name, "tokens") == 0) {
             tokens = child;
@@ -1529,14 +1499,30 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     }
 
     /* if req_cred is of type "service", compare command name */
-    if (strcmp(req_cred.type, "service") == 0 &&
-        strcmp(req_cred.u.service.rt.cmd, "getTokensRequest") != 0) {
-        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
-                               "xml command in request-token doesn't match",
-                               mwk_func, 1);
-        return OK;
-    }
+    if (strcmp(req_cred.type, "service") == 0) {
 
+        /* make sure we found requestToken */
+        if (request_token == NULL) {
+            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                   "missing <requestToken>",
+                                   mwk_func, 1);
+            return OK;
+        }
+
+        /* parse request_token */
+        if (!parse_request_token_er(rc, request_token, 
+                                    &req_cred.u.st, &req_token, 0)) {
+            return OK;
+        }
+
+        if (strcmp(req_token.cmd, "getTokensRequest") != 0) {
+            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
+                                   "xml command in request-token "
+                                   "doesn't match",
+                                   mwk_func, 1);
+            return OK;
+        }
+    }
 
     num_tokens = 0;
     /* plow through each <token> in <tokens> */
@@ -1885,7 +1871,7 @@ handle_requestTokenRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     }
 
     if (!parse_request_token_er(rc, request_token, 
-                                &req_cred.u.service.st, &req_token, 0)) {
+                                &req_cred.u.st, &req_token, 0)) {
         return OK;
     }
 

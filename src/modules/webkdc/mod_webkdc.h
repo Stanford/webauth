@@ -123,16 +123,13 @@ typedef struct {
     } u;
 } MWK_REQUEST_TOKEN;
 
-/* used to represent <requesterCredential> */
+/* used to represent processed <requesterCredential> */
 typedef struct {
     char *type; /* krb5|service */
     char *subject; /* always set */
     union {
         /* when type is service */
-        struct {
-            MWK_SERVICE_TOKEN st;
-            MWK_REQUEST_TOKEN rt;
-        } service;
+        MWK_SERVICE_TOKEN st;
     } u;
 } MWK_REQUESTER_CREDENTIAL;
 
