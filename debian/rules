@@ -82,7 +82,7 @@ install: build
 	cd conf/debian && for f in *.conf *.load ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f \
-	            || exit 1 ;
+	            || exit 1 ; \
 	done
 	cd src/bindings/perl/WebAuth3 \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
