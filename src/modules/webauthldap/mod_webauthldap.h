@@ -1,6 +1,8 @@
 #ifndef MOD_WEBAUTHLDAP_H
 #define MOD_WEBAUTHLDAP_H
 
+#include "mod-config.h"
+
 #include "httpd.h"
 #include "http_config.h"
 #include "http_log.h"
