@@ -12,6 +12,7 @@ use WebKDC::LoginResponse;
 use WebKDC::IdToken;
 use WebKDC::ServiceToken;
 use WebKDC::RequestToken;
+use WebKDC::ProxyToken;
 
 BEGIN {
     use Exporter   ();
@@ -49,10 +50,10 @@ our $C_WEBKDC_KEYTAB = "lichen_webauth.keytab";
 #   $password
 #   $server_principal
 # returns:
-#   $s (webauth status)
 #   $sad (subject authenticator data)
 #   $prd  (proxy data, i.e., exported TGT)
 #   $et   (expiration time of proxy data)
+#   $cp   (client principal)
 #
 sub verify_pass_krb5($$$) {
     my ($username, $password, $server_principal) = @_;
@@ -62,18 +63,20 @@ sub verify_pass_krb5($$$) {
     WebAuth::krb5_init_via_password($c, $username, $password, 
 				    $C_WEBKDC_KEYTAB);
 
+    my $cp = WebAuth::krb5_get_principal($c);
+
     # now get subject authenticator
     my $sad = WebAuth::krb5_mk_req($c, $server_principal);
 
     # now get proxy data
     my ($prd, $et) = WebAuth::krb5_export_tgt($c);
-    return ($sad, $prd, $et);
+    return ($sad, $prd, $et, $cp);
 }
 
 # construct a service token given:
 #    $request    from krb5_mk_req (binary)
 # returns:
-#    $token (b64
+#    $token (b64)
 #    $session_key (binary)
 #    $expiration_time
 #    
@@ -99,6 +102,7 @@ sub make_service_token_from_krb5_cred($) {
     $service_token->set_creation_time($creation_time);
     $service_token->set_expiration_time($expiration_time);
 
+    print $service_token;
     return ($service_token->to_b64token($ring), 
 	    $session_key, $expiration_time);
 }
@@ -115,7 +119,7 @@ sub process_login_request($) {
     my $ring = WebAuth::keyring_read_file($C_WEBKDC_KEYRING_PATH);
 
     my $service_token = new WebKDC::ServiceToken($req->get_service_token(), 
-				       $ring, $C_TOKEN_TTL, 1);
+						 $ring, 0, 1);
 
     my $server_principal = $service_token->get_subject();
 
@@ -139,24 +143,39 @@ sub process_login_request($) {
     $resp->set_return_url($req_token->get_return_url());
     $resp->set_post_url($req_token->get_post_url());
 
-    my ($sad, $prd, $et) = verify_pass_krb5($req->get_user(),
-					    $req->get_pass(),
-					    $server_principal);
-    my ($id_token);
+    my ($sad, $prd, $et, $cp) = verify_pass_krb5($req->get_user(),
+						 $req->get_pass(),
+						 $server_principal);
+    my $id_token = new WebKDC::IdToken;
+    $id_token->set_subject_auth('krb5');
+    $id_token->set_subject_auth_data($sad);
+    $id_token->set_creation_time(time());
+    $id_token->set_subject_expiration_time($et);
 
-    my $ito = new WebKDC::IdToken;
-    $ito->set_subject_auth('krb5');
-    $ito->set_subject_auth_data($sad);
-    $ito->set_creation_time(time());
-    $ito->set_expiration_time($et);
+    my $webkdc_princ = 
+	WebAuth::krb5_service_principal(WebAuth::krb5_new(),
+					$WebKDC::C_WEBKDC_K5SERVICE,
+					$WebKDC::C_WEBKDC_HOST);
 
-    $id_token = $ito->to_token($key);
-				      
+    my $proxy_token = new WebKDC::ProxyToken;
+    $proxy_token->set_proxy_owner("krb5:$webkdc_princ");
+    $proxy_token->set_proxy_type('krb5');
+    $proxy_token->set_proxy_data($prd);
+    $proxy_token->set_subject("krb5:$cp");
+    $proxy_token->set_creation_time(time());
+    $proxy_token->set_expiration_time($et);
+
+    print $proxy_token;
+
+    my $proxy_token_str = $proxy_token->to_b64token($ring);
+
     my $resp_token = new WebKDC::ResponseToken;
 
-    $resp_token->set_req_token($id_token);
+    $resp_token->set_req_token($id_token->to_token($key));
     $resp_token->set_creation_time(time());
 
+
+    $resp->add_proxy_cookie('krb5', $proxy_token_str);
     $resp->set_response_token($resp_token->to_b64token($key));
     return $resp;
 }

@@ -9,13 +9,14 @@ use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 use WebAuth;
 use WebKDC;
 use WebKDC::IdToken;
+use WebKDC::AppToken;
 use WebKDC::ResponseToken;
 use WebKDC::RequestToken;
 
-use vars qw($CONFIG_WAS_KEYTAB);
+use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 
 $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
-
+$CONFIG_WAS_KEYRING_PATH = "was.keyring";
 
 sub was_get_krb5_mk_req($) {
     my $keytab = shift;
@@ -36,6 +37,8 @@ eval {
     my ($service_token_str, $session_key, $expiration_time) =
 	WebKDC::make_service_token_from_krb5_cred($request);
 
+    print "service_token b64'd length(".length($service_token_str).")\n";
+
     my $key = WebAuth::key_create(WebAuth::WA_AES_KEY, $session_key);
 
     my $req_token = new WebKDC::RequestToken;
@@ -49,6 +52,8 @@ eval {
 
     my $req_token_str = $req_token->to_b64token($key);
 
+    print "request_token b64'd length(".length($req_token_str).")\n";
+
     my $req = new WebKDC::LoginRequest;
 
     $req->set_user("schemers/test");
@@ -58,7 +63,11 @@ eval {
 
     my $resp = WebKDC::process_login_request($req);
 
-    my $resp_token = new WebKDC::ResponseToken($resp->get_response_token(), 
+    my $resp_token_str = $resp->get_response_token();
+
+    print "response_token b64'd length(".length($resp_token_str).")\n";
+
+    my $resp_token = new WebKDC::ResponseToken($resp_token_str,
 					       $key, $WebKDC::C_TOKEN_TTL, 1);
 
     print $resp_token;
@@ -75,7 +84,23 @@ eval {
 
     my $id_princ = WebAuth::krb5_rd_req(WebAuth::krb5_new(), $sad, 
 				     $CONFIG_WAS_KEYTAB);
+
     print "id = $id_princ\n";
+
+    my $app_token = new WebKDC::AppToken;
+
+    $app_token->set_subject("krb5:$id_princ");
+    $app_token->set_creation_time(time());
+    $app_token->set_expiration_time($id_token->get_subject_expiration_time());
+
+    print $app_token;
+
+    my $ring = WebAuth::keyring_read_file($CONFIG_WAS_KEYRING_PATH);
+
+    my $app_token_str = $app_token->to_b64token($ring);
+
+    print "app_token b64'd length(".length($app_token_str).")\n";
+
 };
 
 if ($@) {
