@@ -40,7 +40,7 @@ install: $(LIBNAME).la
 
 $(LIBNAME).la: $(LOBJS)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LOBJS) $(LDFLAGS) $(LDLIBS) \
-	    -rpath $(libdir) -version-info 0:0:0
+	    -rpath $(libdir) -version-info 1:0:0
 
 clean:
 	rm -rf *.o $(LIBNAME).la *.lo .libs *~ core \#*
