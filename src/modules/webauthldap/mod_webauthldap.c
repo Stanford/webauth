@@ -384,7 +384,8 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
         sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
     }
 
-    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, "WebAuthLdap: initialized");
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
+                 "mod_webauthldap: initialized");
 
     return OK;
 }
