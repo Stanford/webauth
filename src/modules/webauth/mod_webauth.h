@@ -107,6 +107,9 @@
 #define CD_ReturnURL "WebAuthReturnURL"
 #define CM_ReturnURL "url to return to after logging in"
 
+#define CD_LoginCanceledURL "WebAuthLoginCanceledURL"
+#define CM_LoginCanceledURL "url to return if user cancel's out of login"
+
 /* r->notes keys */
 #define N_WEBAUTHR "mod_webauth_WEBAUTHR"
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
@@ -138,8 +141,9 @@ enum {
     E_Keytab,
     E_LastUseUpdateInterval,
     E_LoginURL,
-    E_RequireSSL,
+    E_LoginCanceledURL,
     E_ReturnURL,
+    E_RequireSSL,
     E_ServiceTokenCache,
     E_StripURL,
     E_SubjectAuthType,
@@ -168,7 +172,6 @@ typedef struct {
     char *webkdc_url;
     char *webkdc_principal;
     char *login_url;
-    char *failure_url;
     char *keyring_path;
     char *keytab_path;
     char *st_cache_path;
@@ -197,6 +200,8 @@ typedef struct {
     int do_logout;
     int do_logout_ex;
     char *return_url;
+    char *failure_url;
+    char *login_canceled_url;
 } MWA_DCONF;
 
 /* handy bunch of bits to pass around during a request */

@@ -45,7 +45,7 @@ our %ta_desc =
      &WA_TK_PROXY_TYPE => 'proxy-type',
      &WA_TK_PROXY_DATA => 'proxy-data',
      &WA_TK_PROXY_SUBJECT => 'proxy-subject',
-     &WA_TK_REQUEST_REASON => 'request-reason',
+     &WA_TK_REQUEST_OPTIONS => 'request-options',
      &WA_TK_REQUESTED_TOKEN_TYPE => 'req-token-type',
      &WA_TK_RETURN_URL => 'return-url',
      &WA_TK_SUBJECT => 'subject',
@@ -713,10 +713,10 @@ sub subject_auth {
     return $self->{'attrs'}{&WA_TK_SUBJECT_AUTH};
 }
 
-sub request_reason {
+sub request_options {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_REQUEST_REASON} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_REQUEST_REASON};
+    $self->{'attrs'}{&WA_TK_REQUEST_OPTIONS} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_REQUEST_OPTIONS};
 }
 
 sub requested_token_type {
@@ -746,7 +746,7 @@ sub command {
 sub validate_token {
     my $self = shift;
 
-    # FIXME: more checks for request_reason, req_token_type (sa/prt)
+    # FIXME: more checks for request_options, req_token_type (sa/prt)
     croak "validate_token failed" unless
 	($self->token_type() eq 'req') && 
 	defined($self->creation_time());
@@ -757,7 +757,6 @@ sub validate_token {
     } else {
 	croak "validate_token failed" unless
 	    defined($self->return_url()) &&
-	    ($self->request_reason() eq 'na') && 
 	    ($self->requested_token_type() eq 'id') && 
 	    ($self->subject_auth() eq 'krb5' ||
 	     ($self->subject_auth() eq 'webkdc'));
@@ -1092,7 +1091,7 @@ The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
   $token->app_state([$new_value])
   $token->creation_time([$new_value])
   $token->proxy_type([$new_value])
-  $token->request_reason([$new_value])
+  $token->request_options([$new_value])
   $token->requested_token_type([$new_value])
   $token->return_url([$new_value])
   $token->subject_auth([$new_value])

@@ -129,7 +129,7 @@ typedef struct {
     void *app_state;
     int app_state_len;
     char *return_url;
-    char *request_reason;
+    char *request_options;
     char *requested_token_type;
     union {
         /* when requested_token_type is 'id' */

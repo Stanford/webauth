@@ -158,6 +158,7 @@ my $submit = $q->param('submit') || '';
 
 
 if ($submit eq 'Cancel') {
+    # FIXME: we need to check for a login canceled token too 
     cancel_page($q);
     exit(0);
 }

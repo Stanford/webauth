@@ -68,7 +68,7 @@
 #define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
 #define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
 #define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_REQUEST_REASON(r)        ADD_STR(WA_TK_REQUEST_REASON, r)
+#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
 #define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
 #define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
 #define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
@@ -204,7 +204,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
 {
     char *redirect_url, *uri;
     
-    uri = rc->sconf->failure_url;
+    uri = rc->dconf->failure_url;
 
     if (uri == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -369,7 +369,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
     MERGE_PTR(login_url);
-    MERGE_PTR(failure_url);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
     MERGE_PTR(st_cache_path);
@@ -396,6 +395,8 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_INT(inactive_expire);
     MERGE_INT(last_use_update_interval);
     MERGE_PTR(return_url);
+    MERGE_PTR(login_canceled_url);
+    MERGE_PTR(failure_url);
     return (void *)conf;
 }
 
@@ -986,6 +987,18 @@ make_return_url(MWA_REQ_CTXT *rc)
     return ap_construct_url(rc->r->pool, uri, rc->r);
 }
 
+static char *
+make_login_canceled_url(MWA_REQ_CTXT *rc)
+{
+    if (!rc->dconf->login_canceled_url)
+        return NULL;
+    else if (rc->dconf->login_canceled_url[0] != '/')
+        return rc->dconf->login_canceled_url;
+    else 
+        return ap_construct_url(rc->r->pool, 
+                                rc->dconf->login_canceled_url, rc->r);
+}
+
 static int
 redirect_request_token(MWA_REQ_CTXT *rc)
 {
@@ -1014,7 +1027,17 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     SET_TOKEN_TYPE(WA_TT_REQUEST);
     SET_CREATION_TIME(curr);
-    SET_REQUEST_REASON(rc->dconf->force_login ? "fa" : "na");
+    /* FIXME: support login-canceled too */
+    if (rc->dconf->force_login || rc->dconf->login_canceled_url != NULL) {
+        int fl = rc->dconf->force_login;
+        int lc = rc->dconf->login_canceled_url != NULL;
+
+        SET_REQUEST_OPTIONS(apr_pstrcat(rc->r->pool, 
+                                        fl ? "fa" : "",
+                                        fl && lc ? "," : "",
+                                        lc ? "lc" : "",
+                                        NULL));
+    }
     SET_REQUESTED_TOKEN_TYPE("id");
     SET_SUBJECT_AUTH(rc->sconf->subject_auth_type);
 
@@ -1394,13 +1417,16 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             sconf->login_url = apr_pstrdup(cmd->pool, arg);
             break;
         case E_FailureURL:
-            sconf->failure_url = apr_pstrdup(cmd->pool, arg);
+            dconf->failure_url = apr_pstrdup(cmd->pool, arg);
             break;
         case E_Keyring:
             sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
             break;
         case E_Keytab:
             sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
+            break;
+        case E_LoginCanceledURL:
+            dconf->login_canceled_url = apr_pstrdup(cmd->pool, arg);
             break;
         case E_ServiceTokenCache:
             sconf->st_cache_path = ap_server_root_relative(cmd->pool, arg);
@@ -1511,7 +1537,6 @@ static const command_rec cmds[] = {
     SSTR(CD_WebKDCURL, E_WebKDCURL, CM_WebKDCURL),
     SSTR(CD_WebKDCPrincipal, E_WebKDCPrincipal, CM_WebKDCPrincipal),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
-    SSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
@@ -1529,7 +1554,8 @@ static const command_rec cmds[] = {
     DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     DFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
-
+    DSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
+    DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
     { NULL }
 };
 

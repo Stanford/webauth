@@ -51,6 +51,12 @@ sub response_token {
     return $self->{'response_token'};
 }
 
+sub login_canceled_token {
+    my $self = shift;
+    $self->{'lc_token'} = shift if @_;
+    return $self->{'lc_token'};
+}
+
 sub requester_subject {
     my $self = shift;
     $self->{'requester_subject'} = shift if @_;

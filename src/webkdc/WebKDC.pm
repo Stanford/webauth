@@ -60,7 +60,11 @@ our %pec_mapping = (
 	     &WA_PEC_LOGIN_TOKEN_STALE  => WK_ERR_USER_AND_PASS_REQUIRED,
 	     &WA_PEC_LOGIN_TOKEN_INVALID => WK_ERR_USER_AND_PASS_REQUIRED,
 	     &WA_PEC_LOGIN_FAILED  => WK_ERR_LOGIN_FAILED,
-	     &WA_PEC_PROXY_TOKEN_REQUIRED  => WK_ERR_USER_AND_PASS_REQUIRED
+	     &WA_PEC_PROXY_TOKEN_REQUIRED  => WK_ERR_USER_AND_PASS_REQUIRED,
+	     # LOGIN_CANCELED SHOULD NEVER COME BACK in an errorCode,
+             # only inside a token which we can't decrypt
+	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
+	     &WA_PEC_LOGIN_FORCED  => WK_ERR_USER_AND_PASS_REQUIRED,
 	     );
 
 sub get_keyring {
@@ -194,6 +198,8 @@ sub request_token_request($$) {
 	my $requester_sub = get_child_value($root, 'requesterSubject', 1);
 	my $returned_token = get_child_value($root, 'requestedToken', 1);
 	my $app_state = get_child_value($root, 'appState', 0);
+	my $login_canceled_token = get_child_value($root, 'loginCanceledToken',
+						   0);
 	
 	my $proxy_tokens = $root->find_child('proxyTokens');
 	if (defined($proxy_tokens)) {
@@ -206,6 +212,8 @@ sub request_token_request($$) {
 	$wresp->response_token($returned_token);
 	$wresp->requester_subject($requester_sub);
 	$wresp->app_state($app_state) if defined($app_state);
+	$wresp->login_canceled_token($login_canceled_token) 
+	    if defined($login_canceled_token);
 	return;
     } else {
 	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,

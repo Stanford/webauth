@@ -32,7 +32,7 @@
 #define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
 #define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
 #define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_REQUEST_REASON(r)        ADD_STR(WA_TK_REQUEST_REASON, r)
+#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
 #define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
 #define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
 #define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
@@ -556,7 +556,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
     int blen, status, i;
     enum mwk_status ms;
     const char *tt;
-    static const char *mwk_func = "parse_login_token_er";
+    static const char *mwk_func = "parse_login_token";
 
     if (token == NULL) {
         return set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
@@ -722,15 +722,14 @@ parse_request_token(MWK_REQ_CTXT *rc,
     }
     rt->return_url = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
 
-    /* pull out request-reason */
-    status = webauth_attr_list_find(alist, WA_TK_REQUEST_REASON, &i);
+    /* pull out request-options, they are optional */
+    status = webauth_attr_list_find(alist, WA_TK_REQUEST_OPTIONS, &i);
     if (i == -1) {
-        set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID, 
-                          "missing request-reason", mwk_func, 1);
-        goto cleanup;
+        rt->request_options = "";
+    } else {
+        rt->request_options = 
+            apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
     }
-    rt->request_reason = 
-        apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
 
     /* pull out requested-token-type */
     status = webauth_attr_list_find(alist, WA_TK_REQUESTED_TOKEN_TYPE, &i);
@@ -923,7 +922,7 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                               MWK_REQUESTER_CREDENTIAL *req_cred,
                               MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_service_token_from_req_er";
+    static const char *mwk_func="create_service_token_from_req";
     unsigned char session_key[WA_AES_128];
     int status, len;
     enum mwk_status ms;
@@ -1052,6 +1051,41 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
     return ms;
 }
 
+
+/*
+ */
+static enum mwk_status
+create_error_token_from_req(MWK_REQ_CTXT *rc, 
+                            int error_code,
+                            const char *error_message,
+                            MWK_REQUESTER_CREDENTIAL *req_cred,
+                            MWK_RETURNED_TOKEN *rtoken)
+{
+    static const char *mwk_func="create_error_token_from_req";
+    WEBAUTH_ATTR_LIST *alist;
+    time_t creation;
+    enum mwk_status ms;
+    int tlen;
+
+    alist = new_attr_list(rc, mwk_func);
+    if (alist == NULL)
+        return MWK_ERROR;
+
+    time(&creation);
+
+    SET_TOKEN_TYPE(WA_TT_ERROR);
+    SET_CREATION_TIME(creation);
+    SET_ERROR_CODE(apr_psprintf(rc->r->pool, "%d", error_code));
+    SET_ERROR_MESSAGE(error_message);
+
+    ms = make_token_with_key(rc, &req_cred->u.st.key,
+                             alist, creation,
+                             (char**)&rtoken->token_data, 
+                             &tlen, 1, mwk_func);
+    webauth_attr_list_free(alist);
+    return ms;
+}
+
 /*
  */
 static enum mwk_status
@@ -1061,7 +1095,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                          MWK_SUBJECT_CREDENTIAL *sub_cred,
                          MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_id_token_from_req_er";
+    static const char *mwk_func="create_id_token_from_req";
     int tlen, sad_len;
     enum mwk_status ms;
     time_t creation, expiration;
@@ -1161,7 +1195,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                MWK_SUBJECT_CREDENTIAL *sub_cred,
                                MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_proxy_token_from_req_er";
+    static const char *mwk_func="create_proxy_token_from_req";
     int tlen, wkdc_len;
     enum mwk_status ms;
     time_t creation, expiration;
@@ -1260,7 +1294,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                            MWK_SUBJECT_CREDENTIAL *sub_cred,
                            MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_cred_token_from_req_er";
+    static const char *mwk_func="create_cred_token_from_req";
     int tlen,status, ticket_len;
     time_t creation, expiration, ticket_expiration;
     WEBAUTH_ATTR_LIST *alist;
@@ -1614,7 +1648,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
              MWK_RETURNED_PROXY_TOKEN rtokens[],
              int *num_rtokens) 
 {
-    static const char*mwk_func = "mwk_do_login_er";
+    static const char*mwk_func = "mwk_do_login";
     WEBAUTH_KRB5_CTXT *ctxt;
     char *subject, *server_principal;
     int status, tgt_len, len;
@@ -1842,13 +1876,12 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
        and we didn't just login, then we need
        to return an error that will cause the web front-end to 
        prompt for a username/password */
-    if ((strcmp(req_token.request_reason, "fa") == 0) &&
+    if ((ap_strstr(req_token.request_options, "fa") != 0) &&
         !did_login) {
         const char *msg = "forced authentication, need to login";
-        return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, 
+        return set_errorResponse(rc, WA_PEC_LOGIN_FORCED,
                                  msg, mwk_func, 1);
     }
-
 
     /* now examine req_token to see what they asked for */
     
@@ -1897,7 +1930,24 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     ap_rvputs(rc->r,
               "<requestedToken>", rtoken.token_data, "</requestedToken>", 
               NULL);
-    
+
+    if (ap_strstr(req_token.request_options, "lc")) {
+        MWK_RETURNED_TOKEN lc_token;
+        enum mwk_status ms;
+        memset(&lc_token, 0, sizeof(lc_token));
+        ms = create_error_token_from_req(rc, 
+                                         WA_PEC_LOGIN_CANCELED,
+                                         "user canceled login", 
+                                         &req_cred,
+                                         &lc_token);
+        if (ms == MWK_OK) 
+            ap_rvputs(rc->r,
+                      "<loginCanceledToken>", 
+                      lc_token.token_data, 
+                      "</loginCanceledToken>", 
+                      NULL);
+    }
+
     /* appState, need to base64-encode */
     if (req_token.app_state_len) {
         char *out_state = (char*) 
