@@ -943,7 +943,6 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                                             rc->r, "handle_id_token", NULL);
         subject = apr_pstrdup(rc->r->pool, tsub);
     } else {
-        /* FIXME: HUM.... */
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: handle_id_token: "
                      "unknown subject auth type: %s", sa);
@@ -980,7 +979,7 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                        rc->dconf->last_use_update_interval ? curr : 0,
                        rc);
     } else {
-        /* FIXME: everyone else should have logged something, right? */
+        /* everyone else should have logged something, right? */
     }
     return subject;
 }
@@ -1332,9 +1331,6 @@ check_user_id_hook(request_rec *r)
         if (r->method_number == M_GET) {
             return redirect_request_token(&rc);
         } else {
-            /* FIXME: any better option? Maybe need a special return-url
-               for method's other then GET?
-             */
             return failure_redirect(&rc);
         }
     }
@@ -1412,7 +1408,7 @@ translate_name_hook(request_rec *r)
         return DECLINED;
     }
 
-    mwa_log_request(r, "before xlate");
+    /* mwa_log_request(r, "before xlate"); */
 
     rp = ap_strstr(r->the_request, rmagic);
     if (rp == NULL) {
@@ -1473,7 +1469,7 @@ translate_name_hook(request_rec *r)
         strip_end(r->parsed_uri.query, rmagic);
     }
 
-    mwa_log_request(r, "after xlate");
+    /* mwa_log_request(r, "after xlate"); */
 
     /* still need to return DECLINED, so other modules (like mod_rerewrite)
        get a crack at things */

@@ -83,9 +83,6 @@ mwa_setn_note(request_rec *r, const char *note, const char *val)
 void 
 mwa_log_request(request_rec *r, const char *msg)
 {
-    /* FIXME: disabling for now */
-    return;
-
 #define LOG_S(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
               "mod_webauth: %s(%s)", a, (b != NULL)? b:"(null)");
 #define LOG_D(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \

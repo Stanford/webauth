@@ -391,6 +391,7 @@ post_to_webkdc(char *post_data, int post_data_len,
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
 #ifdef CURLOPT_NOSIGNAL
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+    /* FIXME: probably need directives for these */
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 45);
 #endif
@@ -688,7 +689,6 @@ request_service_token(server_rec *server,
 
 /*
  * generate our app-state blob once and re-use it
- * FIXME: this should probably return status, though we log errors...
  */
 static void
 set_app_state(server_rec *server, MWA_SCONF *sconf,
