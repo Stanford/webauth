@@ -28,7 +28,6 @@
 #define DN_ATTRIBUTE "dn"
 
 /* environment variables */
-#define ENV_WEBAUTH_USER "WEBAUTH_USER"
 #define ENV_KRB5_TICKET "KRB5CCNAME"
 
 /* defines for config directives */
@@ -100,7 +99,6 @@ typedef struct {
 
 /* server conf stuff */
 typedef struct {
-    apr_array_header_t* attribs;
 
     char* base;
     char* binddn;           // not used with the Stanford openldap server
@@ -121,6 +119,9 @@ typedef struct {
 
 /* directory conf stuff - looks like nothing so far*/
 typedef struct {
+
+    apr_array_header_t* attribs;
+
 } MWAL_DCONF;
 
 

@@ -154,20 +154,17 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    //MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
+    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
     char** attrib;
-
-    MWAL_SCONF *sconf = (MWAL_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauthldap_module);
 
     switch (e) {
         /* server configs */
     case E_Attribs:
-        if (sconf->attribs == NULL) {
-            sconf->attribs = apr_array_make(cmd->pool, 5, sizeof(char*));
+        if (dconf->attribs == NULL) {
+            dconf->attribs = apr_array_make(cmd->pool, 5, sizeof(char*));
         }
 
-        attrib = apr_array_push(sconf->attribs);
+        attrib = apr_array_push(dconf->attribs);
         *attrib = apr_pstrdup(cmd->pool, arg);
         break;
     default:
@@ -242,7 +239,7 @@ static const command_rec cmds[] = {
     SFLAG(CD_SSL, E_SSL, CM_SSL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
 
-    SITSTR(CD_Attribs, E_Attribs, CM_Attribs),
+    DITSTR(CD_Attribs, E_Attribs, CM_Attribs),
     {NULL}
 };
 
@@ -315,15 +312,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE(tktcache);
     MERGE(ssl);
 
-    if (bconf->attribs == NULL) {
-        conf->attribs = oconf->attribs;
-    } else if (oconf->attribs == NULL) {
-        conf->attribs = bconf->attribs;
-    } else {
-        // dups here are OK
-        conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
-    }
-
     return (void *)conf;
 }
 
@@ -333,9 +321,20 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 static void *
 config_dir_merge(apr_pool_t *p, void *basev, void *overv) 
 {
-    MWAL_DCONF *conf;
+    MWAL_DCONF *conf, *bconf, *oconf;
 
     conf = (MWAL_DCONF*) apr_pcalloc(p, sizeof(MWAL_DCONF));
+    bconf = (MWAL_DCONF*) basev;
+    oconf = (MWAL_DCONF*) overv;
+
+    if (bconf->attribs == NULL) {
+        conf->attribs = oconf->attribs;
+    } else if (oconf->attribs == NULL) {
+        conf->attribs = bconf->attribs;
+    } else {
+        // dups here are OK
+        conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
+    }
 
     return (void *)conf;
 }
@@ -608,8 +607,8 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
     // Whatever else env vars the conf file added. This will override the 
     // defaults since apr_table_set is used here, and all names are lowercased.
-    if (lc->sconf->attribs) {
-        attribs = apr_array_copy(lc->r->pool, lc->sconf->attribs);
+    if (lc->dconf->attribs) {
+        attribs = apr_array_copy(lc->r->pool, lc->dconf->attribs);
 
         for(i=0; ((attrib = apr_array_pop(attribs)) != NULL); i++) {
             for (p = *attrib; *p != '\0'; p++)
@@ -936,7 +935,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
  * This will set be called with every attribute value pair that was received
  * from the LDAP search. Only attributes that were requested through the conf 
  * directives as well as a few default attributes will be placed in 
- * environment variables starting with "WEBAUTH_".
+ * environment variables starting with "WEBAUTH_LDAP_".
  *
  * The single valued attributes go into appropriately named env vars, while
  * multivalued attributes have a env var for each value, with the name of the 
@@ -974,7 +973,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     if (!apr_table_get(lc->envvars, newkey))
         return 1;
     
-    newkey = apr_psprintf(lc->r->pool, "WEBAUTH_%s", key);
+    newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
 
     // environment var names should be uppercased
     for (p = newkey; *p != '\0'; p++)
@@ -989,7 +988,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                          "webauthldap: setting %s as single valued", newkey);
         apr_table_set(lc->r->subprocess_env, newkey, val);
     } else {
-        // set WEBAUTH_BLAH1 to be the same as WEBAUTH_BLAH
+        // set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH
         numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
         if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
             if (lc->sconf->debug)
@@ -998,7 +997,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
             apr_table_set(lc->r->subprocess_env, numbered_key, existing_val);
         }
 
-        // now set WEBAUTH_BLAH2 WEBAUTH_BLAH3 and so on
+        // now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on
         for (i=2; i<MAX_ENV_VALUES; i++) {
             numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, i);
             if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
@@ -1149,7 +1148,6 @@ auth_checker_hook(request_rec * r)
     //
     // Set the env vars
     //
-    apr_table_set(r->subprocess_env, ENV_WEBAUTH_USER, r->user);
     for (i=0; i<lc->numEntries; i++) {
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
     }
