@@ -51,7 +51,7 @@ sub cancel_page {
 
     my $can_stuff;
 
-    if (strlen($LC)) {
+    if (length($LC)) {
 	eval {
 	    my $can_url = base64_decode($LC);
 	    $can_stuff = "Click <a href=\"$can_url\">here</a> to return to the ".
