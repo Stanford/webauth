@@ -10,7 +10,7 @@ libdir		= @libdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
-LIBTOOL		= $(top_builddir)/libtool
+LIBTOOL		= $(top_builddir)libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
