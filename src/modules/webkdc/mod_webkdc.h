@@ -36,9 +36,9 @@
 #define CD_Debug "WebKdcDebug"
 #define CM_Debug "turn debugging on or off"
 
-#define CD_ProxyTokenMaxLifetime "WebKdcProxyTokenMaxLifetime"
-#define CM_ProxyTokenMaxLifetime "lifetime of webdc-proxy-tokens"
-#define DF_ProxyTokenMaxLifetime (60*60*10)
+#define CD_ProxyTokenLifetime "WebKdcProxyTokenLifetime"
+#define CM_ProxyTokenLifetime "lifetime of webdc-proxy-tokens"
+#define DF_ProxyTokenLifetime (60*60*10)
 
 #define CD_ServiceTokenLifetime "WebKdcServiceTokenLifetime"
 #define CM_ServiceTokenLifetime "lifetime of webkdc-service-tokens"
@@ -73,7 +73,7 @@ enum {
     E_Debug,
     E_Keyring,
     E_Keytab,
-    E_ProxyTokenMaxLifetime,
+    E_ProxyTokenLifetime,
     E_ServiceTokenLifetime,
     E_TokenMaxTTL,
 };
@@ -86,8 +86,8 @@ typedef struct {
     char *keytab_path;
     int  debug;
     int debug_ex;
-    int proxy_token_max_lifetime;
-    int proxy_token_max_lifetime_ex;
+    int proxy_token_lifetime;
+    int proxy_token_lifetime_ex;
     int service_token_lifetime;
     int token_max_ttl; 
     int token_max_ttl_ex;

@@ -1678,13 +1678,6 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "login failed");
-
-
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webkdc: %s: %s", mwk_func, msg);
-
-
-        /* FIXME: we normally wouldn't log failures, would we? */
         set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
     } else if (status != WA_ERR_NONE) {
@@ -1746,10 +1739,10 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     time(&creation);
 
-    /* if ProxyTopkenMaxLifetime is non-zero, use the min of it 
+    /* if ProxyTopkenLifetime is non-zero, use the min of it 
        and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_max_lifetime) {
-        time_t pmax = creation + rc->sconf->proxy_token_max_lifetime;
+    if (rc->sconf->proxy_token_lifetime) {
+        time_t pmax = creation + rc->sconf->proxy_token_lifetime;
         pt->expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
     } else {
         pt->expiration = tgt_expiration;
@@ -2157,7 +2150,8 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
                                              &webkdc_module);
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initializing");
+    if (sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initializing");
 
 #define CHECK_DIR(field,dir,v) if (sconf->field == v) \
              die(apr_psprintf(ptemp, "directive %s must be set", dir), s)
@@ -2182,7 +2176,8 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     ap_add_version_component(pconf, WEBKDC_VERSION);
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initialized");
+    if (sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initialized");
 
     return OK;
 }
@@ -2212,7 +2207,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
 
     /* init defaults */
     sconf->token_max_ttl = DF_TokenMaxTTL;
-    sconf->proxy_token_max_lifetime = DF_ProxyTokenMaxLifetime;
+    sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
     return (void *)sconf;
 }
 
@@ -2234,8 +2229,8 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->token_max_ttl = oconf->token_max_ttl_ex ?
         oconf->token_max_ttl : bconf->token_max_ttl;
 
-    conf->proxy_token_max_lifetime = oconf->proxy_token_max_lifetime_ex ?
-        oconf->proxy_token_max_lifetime : bconf->proxy_token_max_lifetime;
+    conf->proxy_token_lifetime = oconf->proxy_token_lifetime_ex ?
+        oconf->proxy_token_lifetime : bconf->proxy_token_lifetime;
 
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
 
@@ -2305,9 +2300,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_Keytab:
             sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
             break;
-        case E_ProxyTokenMaxLifetime:
-            sconf->proxy_token_max_lifetime = seconds(arg, &error_str);
-            sconf->proxy_token_max_lifetime_ex = 1;
+        case E_ProxyTokenLifetime:
+            sconf->proxy_token_lifetime = seconds(arg, &error_str);
+            sconf->proxy_token_lifetime_ex = 1;
             break;
         case E_TokenMaxTTL:
             sconf->token_max_ttl = seconds(arg, &error_str);
@@ -2367,8 +2362,8 @@ static const command_rec cmds[] = {
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
-    SSTR(CD_ProxyTokenMaxLifetime, E_ProxyTokenMaxLifetime, 
-         CM_ProxyTokenMaxLifetime),
+    SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime, 
+         CM_ProxyTokenLifetime),
     SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
          CM_ServiceTokenLifetime),
     { NULL }
