@@ -209,3 +209,38 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 
     return status;
 }
+
+apr_array_header_t *
+mwa_get_webauth_cookies(request_rec *r)
+{
+    char *c;
+    char *last, *val;
+    apr_array_header_t *a;
+    char **p;
+
+    c = (char*) apr_table_get(r->headers_in, "Cookie");
+
+    if (c == NULL || (ap_strstr(c, "webauth_") == NULL))
+        return NULL;
+
+    c = apr_pstrdup(r->pool, c);
+
+    last = NULL;
+    a = NULL;
+    val = apr_strtok(c, ";\0", &last);
+
+    while(val) {
+        while (*val && *val==' ') {
+            val++;
+        }
+        if (strncmp(val, "webauth_", 8) == 0) {
+            if (a == NULL) {
+                a = apr_array_make(r->pool, 5, sizeof(char*));
+            }
+            p = apr_array_push(a);
+            *p = val;
+        }
+        val = apr_strtok(NULL, ";\0", &last);
+    }
+    return a;
+}

@@ -314,4 +314,10 @@ mwa_log_webauth_error(server_rec *r,
 int
 mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf);
 
+/* 
+ * get all cookies that start with webauth_
+ */
+apr_array_header_t *
+mwa_get_webauth_cookies(request_rec *r);
+
 #endif

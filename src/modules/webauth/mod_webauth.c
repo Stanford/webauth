@@ -168,7 +168,29 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
 static void
 nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
 {
-    nuke_cookie(rc, AT_COOKIE_NAME, 1);
+    int i;
+    char **p;
+    apr_array_header_t *cookies;
+
+    cookies = mwa_get_webauth_cookies(rc->r);
+
+    if (cookies == NULL)
+        return;
+
+    p = (char**)cookies->elts;
+
+    for (i=0; i < cookies->nelts; i++) {
+        char *val;
+        val = ap_strchr(p[i], '=');
+        if (val) {
+            *val++ = '\0';
+            /* don't nuke any webkdc cookies, which noramlly wouldn't
+               show up, but due during development */
+            if (strncmp(p[i], "webauth_wpt", 11) != 0) {
+                nuke_cookie(rc, p[i], 1);
+            }
+        }
+    }
 }
 
 /*
@@ -996,7 +1018,7 @@ handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                                       rc->r, mwa_func, NULL);
     if (ec == NULL || em == NULL) {
         /* nothing, we already logged an error */
-        return NULL;
+        return OK;
     }
 
     error_code = atoi(ec);
