@@ -119,7 +119,8 @@ site, see doc/install-webkdc.
          WebAuthServiceTokenCache conf/webauth/service_token.cache
 
      In all instances above, replace <your-webkdc> with the hostname of
-     the WebKDC server at your site.
+     the WebKDC server at your site.  Stanford users should use the name
+     weblogin-new.stanford.edu.
 
      If you are testing a beta release, please also add:
 
