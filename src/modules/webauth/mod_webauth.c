@@ -151,6 +151,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->secure_cookie = DF_SecureCookie;
     sconf->token_max_ttl = DF_TokenMaxTTL;
     sconf->subject_auth_type = DF_SubjectAuthType;
+    sconf->strip_url = DF_StripURL;
     return (void *)sconf;
 }
 
@@ -192,6 +193,14 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->subject_auth_type = oconf->subject_auth_type_ex ?
         oconf->subject_auth_type : bconf->subject_auth_type;
 
+    conf->strip_url = oconf->strip_url_ex ?
+        oconf->strip_url : bconf->strip_url;
+
+    conf->extra_redirect = oconf->extra_redirect_ex ?
+        oconf->extra_redirect : bconf->extra_redirect;
+
+    conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
+
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
     MERGE_PTR(login_url);
@@ -200,7 +209,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(keytab_path);
     MERGE_PTR(st_cache_path);
     MERGE_PTR(var_prefix);
-    MERGE_INT(debug);
     return (void *)conf;
 }
 
@@ -213,9 +221,11 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     bconf = (MWA_DCONF*) basev;
     oconf = (MWA_DCONF*) overv;
 
+    conf->force_login = oconf->force_login_ex ? 
+        oconf->force_login : bconf->force_login;
+
     MERGE_INT(app_token_lifetime);
     MERGE_INT(inactive_expire);
-    MERGE_INT(force_login);
     MERGE_PTR(return_url);
     return (void *)conf;
 }
@@ -759,11 +769,31 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     return HTTP_MOVED_TEMPORARILY;
 }
 
+
+static int
+extra_redirect(MWA_REQ_CTXT *rc)
+{
+    char *redirect_url;
+    
+    redirect_url = make_return_url(rc);
+    /* always strip extra-redirect URL */
+    strip_end(redirect_url, WEBAUTHR_MAGIC);
+
+    apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                               
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: extra_redirect: redirect(%s)",
+                 redirect_url);
+
+    return HTTP_MOVED_TEMPORARILY;
+}
+
 static int 
 check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
     const char *subject, *cookie;
+    int in_url = 0;
     MWA_REQ_CTXT rc;
    
     rc.r = r;
@@ -791,9 +821,12 @@ check_user_id_hook(request_rec *r)
         if (subject == NULL) {
             /* if no valid app token, look for WEBAUTHR in url */
             subject = check_url(&rc);
+
+            if (subject != NULL)
+                in_url = 1;
         }
         /* stick it in note for future reference */
-        if (subject != NULL)
+        if (subject != NULL) 
             mwa_setn_note(r, N_SUBJECT, subject);
     }
 
@@ -806,6 +839,10 @@ check_user_id_hook(request_rec *r)
         apr_table_addn(r->err_headers_out, "Set-Cookie", cookie);
 
     if (subject != NULL) {
+
+        if (in_url && rc.sconf->extra_redirect) {
+            return extra_redirect(&rc);
+        }
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: check_user_id_hook setting user(%s)",
                      subject);
@@ -852,10 +889,13 @@ translate_name_hook(request_rec *r)
 {
     char *p, *s, *rp;
     char *wr, *ws;
-
+    MWA_SCONF *sconf;
     static char *rmagic = WEBAUTHR_MAGIC;
     static char *smagic = WEBAUTHS_MAGIC;
 
+
+    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
+                                             &webauth_module);
     /*
       ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
       "mod_webauth: translate_name_hook disabled for now");
@@ -904,20 +944,23 @@ translate_name_hook(request_rec *r)
         mwa_setn_note(r, N_WEBAUTHS, ws);
         s = p+1;
     }
-    /* move over remaining */
-    strcpy(rp, s);
-    
-    /* these are easier, we strip rmagic and everything after it, 
-       which might include smagic */
 
-    strip_end(r->unparsed_uri, rmagic);
-    strip_end(r->uri, rmagic);
-    strip_end(r->filename, rmagic);
-    strip_end(r->canonical_filename, rmagic);
-    strip_end(r->path_info, rmagic);
-    strip_end(r->args, rmagic);
-    strip_end(r->parsed_uri.path, rmagic);
-    strip_end(r->parsed_uri.query, rmagic);
+    if (sconf->strip_url) {
+        /* move over remaining */
+        strcpy(rp, s);
+    
+        /* these are easier, we strip rmagic and everything after it, 
+           which might include smagic */
+
+        strip_end(r->unparsed_uri, rmagic);
+        strip_end(r->uri, rmagic);
+        strip_end(r->filename, rmagic);
+        strip_end(r->canonical_filename, rmagic);
+        strip_end(r->path_info, rmagic);
+        strip_end(r->args, rmagic);
+        strip_end(r->parsed_uri.path, rmagic);
+        strip_end(r->parsed_uri.query, rmagic);
+    }
 
     mwa_log_request(r, "after xlate");
 
@@ -1017,6 +1060,11 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_SubjectAuthType:
             sconf->subject_auth_type = apr_pstrdup(cmd->pool, arg);
             sconf->subject_auth_type_ex = 1;
+            if (strcmp(arg, "krb5") && strcmp(arg,"webkdc")) {
+                error_str = apr_psprintf(cmd->pool,
+                                         "Invalid value directive %s: %s",
+                                         cmd->directive->directive, arg);
+            }
             break;
         case E_ReturnURL:
             dconf->return_url = apr_pstrdup(cmd->pool, arg);
@@ -1052,10 +1100,20 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             break;
         case E_Debug:
             sconf->debug = flag;
+            sconf->debug_ex = 1;
             break;
             /* start of dconfigs */
         case E_ForceLogin:
             dconf->force_login = flag;
+            dconf->force_login_ex = 1;
+            break;
+        case E_StripURL:
+            sconf->strip_url = flag;
+            sconf->strip_url_ex = 1;
+            break;
+        case E_ExtraRedirect:
+            sconf->extra_redirect = flag;
+            sconf->extra_redirect_ex = 1;
             break;
         default:
             error_str = 
@@ -1139,6 +1197,8 @@ static const command_rec cmds[] = {
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
     SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
+    SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
+    SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_SecureCookie, E_SecureCookie, CM_SecureCookie),
     SINT(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),

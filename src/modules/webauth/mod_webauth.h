@@ -82,6 +82,13 @@
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"
 #define DF_SubjectAuthType "krb5"
 
+#define CD_StripURL "WebAuthStripURL"
+#define CM_StripURL "strip returned webkdc tokens from URL"
+#define DF_StripURL 1
+
+#define CD_ExtraRedirect "WebAuthExtraRedirect"
+#define CM_ExtraRedirect "do extra redirect after getting returned from WebKDC"
+
 #define CD_InactiveExpire "WebAuthInactiveExpire"
 #define CM_InactiveExpire "duration of inactivity before an app-token expires"
 
@@ -101,26 +108,27 @@
 /* enums for config directives */
 
 enum {
-    E_SecureCookie,
-    E_WebKDCURL,
-    E_WebKDCPrincipal,
-    E_LoginURL,
+    E_AppTokenLifetime,
+    E_Debug,
+    E_ExtraRedirect,
     E_FailureURL,
+    E_ForceLogin,
+    E_InactiveExpire,
     E_Keyring,
     E_Keytab,
+    E_LoginURL,
+    E_ReturnURL,
+    E_SecureCookie,
     E_ServiceTokenCache,
-    E_VarPrefix,
-    E_Debug,
-    E_AppTokenLifetime,
-    E_TokenMaxTTL,
+    E_StripURL,
     E_SubjectAuthType,
-    E_InactiveExpire,
-    E_ForceLogin,
-    E_ReturnURL
+    E_TokenMaxTTL,
+    E_VarPrefix,
+    E_WebKDCPrincipal,
+    E_WebKDCURL,
 };
 
 module webauth_module;
-
 
 /* a service token and associated data, all memory (including key)
  * is allocated from a pool
@@ -134,7 +142,6 @@ typedef struct {
     int app_state_len;
 } MWA_SERVICE_TOKEN;
 
-
 /* server conf stuff */
 typedef struct {
     char *webkdc_url;
@@ -146,12 +153,17 @@ typedef struct {
     char *st_cache_path;
     char *var_prefix;
     int  debug;
+    int debug_ex;
     char *subject_auth_type;
-    int subject_auth_type_ex; /* if it was explicitly specified in conf file */
+    int extra_redirect;
+    int extra_redirect_ex; /* if it was explicitly specified in conf file */
+    int strip_url;
+    int strip_url_ex; 
+    int subject_auth_type_ex;
     int secure_cookie;
-    int secure_cookie_ex; /* if it was explicitly specified in conf file */
+    int secure_cookie_ex;
     int token_max_ttl; 
-    int token_max_ttl_ex; /* if it was explicitly specified in conf file */
+    int token_max_ttl_ex;
 } MWA_SCONF;
 
 /* directory conf stuff */
@@ -159,6 +171,7 @@ typedef struct {
     int app_token_lifetime;
     int inactive_expire;
     int force_login;
+    int force_login_ex;
     char *return_url;
 } MWA_DCONF;
 

@@ -243,8 +243,9 @@ post_gather(void *in_data, size_t size, size_t nmemb,
 }
 
 /*
- * check cookie for valid app-token. If an epxired one is found,
- * do a Set-Cookie (in fixups) to blank it out.
+ *post some xml to the webkdc and return response
+ *
+ * FIXME: need to think about retry/timeout policy
  */
 static char *
 post_to_webkdc(char *post_data, int post_data_len, MWA_REQ_CTXT *rc)
