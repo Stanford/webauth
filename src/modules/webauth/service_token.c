@@ -249,6 +249,8 @@ static void append_string(MWA_STRING *string, const char *in_data, int in_size)
     }
     memcpy(string->data+string->size, in_data, in_size);
     string->size = needed_size;
+    /* always null-terminate, we have space becase of the +1 above */
+    string->data[string->size] = '\0';
 }
 
 /*
