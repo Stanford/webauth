@@ -65,14 +65,14 @@ typedef enum {
 #define WA_TK_PROXY_OWNER "pro"
 #define WA_TK_POST_URL "pu"
 #define WA_TK_REQUEST_REASON "rr"
-#define WA_TK_REQUESTED_TOKEN_TYPE "rt"
-#define WA_TK_REQUESTED_TOKEN_HASH "rth"
+#define WA_TK_REQUESTED_TOKEN "rt"
+#define WA_TK_REQUESTED_TOKEN_EXPIRATION "rt-et"
+#define WA_TK_REQUESTED_TOKEN_TYPE "rt-t"
 #define WA_TK_RETURN_URL "ru"
 #define WA_TK_SUBJECT "s"
 #define WA_TK_SUBJECT_AUTHENTICATOR "sa"
-#define WA_TK_SERVICE_AUTHENTICATOR_NAME "san"
 #define WA_TK_TOKEN_TYPE "t"
-#define WA_TK_TOKEN_VERSION "ver"
+
 
 /******************** other constants *****************/
 
@@ -460,13 +460,13 @@ int webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring);
 /******************** tokens ********************/
    
 /*
- * returns length required to encrypt+base64 encode token,
+ * returns length required to encode+encrypt token,
  * not including null-termination.
  */
 int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
- * encrypts and base64 encodes attrs into a token, using the
+ * encodes and encrypts attrs into a token, using the
  * key from the key ring that has a valid valid_from time and
  * the latest valid_to time.
  *
@@ -489,7 +489,7 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 
 
 /*
- * encrypts and base64 encodes attrs into a token, using the
+ * encodes and encrypts attrs into a token, using the
  * specified key.
  *
  * returns WA_ERR_NONE or an error.
@@ -508,7 +508,7 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
                                   const WEBAUTH_KEY *key);
 
 /*
- * base64 decodes and decrypts attrs into a token
+ * decrypts and decodes attrs from a token
  * input buffer is modified. The best decryption key
  * on the ring will be tried first, and if that fails
  * all the remaining keys will be tried.

@@ -204,7 +204,7 @@ Reads a key ring from a file and returns it in $ring on success.
   ($status, $token) = token_create($attrs, $hint, $ring);
 
 Takes as input $attrs (which must be a reference to a hash) and a $ring
-(created with keyring_new) and returns the basse64 encrypted token.
+(created with keyring_new) and returns the encrypted token.
 If hint is 0, the current time will be used.
 
 The values in the $attrs hash table get converted to strings if they 
@@ -214,7 +214,7 @@ aren't already.
 
   ($status, $attrs) = token_parse($token, $ttl, $ring);
 
-Takes as input a base64 encrypted token and a ring (created with 
+Takes as input an encrypted token and a ring (created with 
 keyring_new) and returns the attributes.
 
 =item token_create_with_key(attrs, hint, key)
@@ -233,7 +233,7 @@ result of the webauth_token_create C function.
 
   ($status, $attrs) = token_parse_with_key($token, $ttl, $key);
 
-Takes as input a base64 encrypted token and a key (created with 
+Takes as input an encrypted token and a key (created with 
 key_new) and returns the attributes.
 
 =item krb5_new()
@@ -392,14 +392,13 @@ The following constants from webauth.h are available:
   WA_TK_PROXY_OWNER
   WA_TK_POST_URL
   WA_TK_REQUEST_REASON
+  WA_TK_REQUESTED_TOKEN
+  WA_TK_REQUESTED_TOKEN_EXPIRAITON
   WA_TK_REQUESTED_TOKEN_TYPE
-  WA_TK_REQUESTED_TOKEN_HASH
   WA_TK_RETURN_URL
   WA_TK_SUBJECT
   WA_TK_SUBJECT_AUTHENTICATOR
-  WA_TK_SERVICE_AUTHENTICATOR_NAME
   WA_TK_TOKEN_TYPE
-  WA_TK_TOKEN_VERSION
 
 =head1 AUTHOR
 

@@ -49,9 +49,6 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK2(len, rlen);
 
-    token[len] = '\0';
-
-    //printf("token[%s]\n", token);
     /* now lets try and decode the token */
     aout = NULL;
     s = webauth_token_parse(token, len, 0, ring, &aout);
@@ -89,8 +86,6 @@ int main(int argc, char *argv[])
     s = webauth_token_create(ain, 0, token, &len, rlen, ring2);
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK2(len, rlen);
-
-    token[len] = '\0';
 
     /* now lets try and decode the token with ring instead of ring2 */
     aout = NULL;
