@@ -13,7 +13,7 @@ CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LDLIBS		= $(top_builddir)src/libwebauth/libwebauth.la \
-		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@
+		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@ @LIBGCC_LIBS@
 
 SOURCES		= mod_webkdc.c util.c acl.c
 

@@ -8,6 +8,7 @@ m4_include([m4/apache.m4])
 m4_include([m4/curl.m4])
 m4_include([m4/int32.m4])
 m4_include([m4/krb5.m4])
+m4_include([m4/libgcc.m4])
 m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
@@ -126,6 +127,7 @@ WEBAUTH_LIB_KRB5
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 WEBAUTH_LIB_LDAP
+WEBAUTH_LIB_LIBGCC
 
 dnl Checks for header files.
 AC_HEADER_STDC
