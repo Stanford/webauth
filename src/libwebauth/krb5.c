@@ -12,6 +12,7 @@ typedef struct {
     krb5_ccache cc;
     krb5_principal princ;
     krb5_error_code code;
+    int keep_cache;
 } WEBAUTH_KRB5_CTXTP;
 
 /*#define WA_CRED_DEBUG 1 */
@@ -572,23 +573,24 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path)
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
-WEBAUTH_KRB5_CTXT *
-webauth_krb5_new()
+int
+webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
 {
     WEBAUTH_KRB5_CTXTP *c;
+    assert(ctxt);
+
+    *ctxt = NULL;
 
     c = malloc(sizeof(WEBAUTH_KRB5_CTXTP));
-    if (c != NULL) {
-        c->cc = NULL;
-        c->princ = NULL;
-        c->code = krb5_init_context(&c->ctx);
-        if (c->code != 0) {
-            free(c);
-            c = NULL;
-        }
-    }
+    if (c == NULL)
+        return WA_ERR_NO_MEM;
 
-    return (WEBAUTH_KRB5_CTXT*) c;
+    c->cc = NULL;
+    c->princ = NULL;
+    c->keep_cache = 0;
+    c->code = krb5_init_context(&c->ctx);
+    *ctxt = (WEBAUTH_KRB5_CTXT*)c;
+    return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
 int
@@ -698,18 +700,26 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     }
 }
 
+int
+webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *context) 
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    assert(c != NULL);
+    c->keep_cache = 1;
+    return WA_ERR_NONE;
+}
 
 int
-webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache)
+webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
 {    
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     assert(c != NULL);
 
     if (c->cc) {
-        if (destroy_cache) {
-            krb5_cc_destroy(c->ctx, c->cc);
-        } else {
+        if (c->keep_cache) {
             krb5_cc_close(c->ctx, c->cc);
+        } else {
+            krb5_cc_destroy(c->ctx, c->cc);
         }
     }
     if (c->princ) {

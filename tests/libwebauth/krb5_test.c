@@ -40,9 +40,10 @@ int main(int argc, char *argv[])
     service = argv[4];
     host = argv[5];
 
-    START_TESTS(16);
+    START_TESTS(19);
 
-    c = webauth_krb5_new();
+    s = webauth_krb5_new(&c);
+    TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(c != NULL);
 
     s = webauth_krb5_init_via_password(c, username, password, 
@@ -89,11 +90,12 @@ int main(int argc, char *argv[])
 
     TEST_OK2(WA_ERR_NONE, s);
 
-    s = webauth_krb5_free(c, 1);
+    s = webauth_krb5_free(c);
     TEST_OK2(WA_ERR_NONE, s);
         
     if (tgt != NULL) {
-        c = webauth_krb5_new();
+        s = webauth_krb5_new(&c);
+        TEST_OK2(WA_ERR_NONE, s);
         TEST_OK(c != NULL);
             
         s = webauth_krb5_init_via_tgt(c, tgt, tgtlen, NULL);
@@ -106,17 +108,18 @@ int main(int argc, char *argv[])
             TEST_OK2(WA_ERR_NONE, s);
         }
 
-        s = webauth_krb5_free(c, 1);
+        s = webauth_krb5_free(c);
         TEST_OK2(WA_ERR_NONE, s);
     }
 
-    c = webauth_krb5_new();
+    s = webauth_krb5_new(&c);
+    TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(c != NULL);
             
     s = webauth_krb5_init_via_keytab(c, keytab_path, NULL);
     TEST_OK2(WA_ERR_NONE, s);
 
-    s = webauth_krb5_free(c, 0);
+    s = webauth_krb5_free(c);
     TEST_OK2(WA_ERR_NONE, s);
 
     END_TESTS;

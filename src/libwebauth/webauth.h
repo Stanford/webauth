@@ -522,16 +522,26 @@ int webauth_token_parse(unsigned char *input,
  * calls. context must be freed with webauth_krb5_free when finished.
  * one of the various webauth_krb5_init_via* calls should be made
  * before the context is fully usable, except when using webauth_krb5_rd_req.
+ *
  */
-WEBAUTH_KRB5_CTXT *webauth_krb5_new();
+int webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt);
 
 /*
- * frees a context. If destroy_cache is non-zero, then any credential
- * cache created as the result of a call to webauth_krb5_init_via*
- * will be destroyed via krb5_cc_destroy, otherwise the the cache 
- * will only be closed with krb5_cc_close.
+ * causes webauth_krb5_free to close the credential cache
+ * instead of destroying it.This call
+ * is only useful when you need a file-based cache to 
+ * remain intact after a call to webauth_krb5_free.
  */
-int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache);
+int
+webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *context);
+
+
+/*
+ * frees a context. If the cred cache hasn't been closed, then it
+ * will be destroyed.
+ */
+int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
+
 
 /*
  * returns the internal kerberos error code from the last kerberos call,
@@ -627,7 +637,7 @@ int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
  * has been successfully called.
  */
 int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
-                        const char *service_principal,
+                        const char *server_principal,
                         unsigned char **req,
                         int *length);
 
