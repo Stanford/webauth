@@ -36,6 +36,20 @@ webauth_error_message(int errcode)
 }
 
 
+const char *
+webauth_info_build(void)
+{
+    return PACKAGE_BUILD_INFO;
+}
+
+
+const char *
+webauth_info_version(void)
+{
+    return PACKAGE_STRING;
+}
+
+
 int
 webauth_hex_encoded_length(int length)
 {
