@@ -161,6 +161,138 @@ CODE:
     }
 }
 
+void
+webauth_attrs_encoded_length(attrs)
+SV *attrs
+PROTOTYPE: $
+CODE:
+{
+    HV *h;
+    HE *entry;
+    SV *sv_val;
+    int num_attrs, s;
+    char *key, *val;
+    I32 klen, i;
+    STRLEN vlen;
+    WEBAUTH_ATTR *c_attrs;
+
+    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
+        croak("attrs must be reference to a hash");
+    }
+
+    h = (HV*)SvRV(attrs);
+
+    num_attrs = hv_iterinit(h);
+
+    c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+    i = 0;
+    while(sv_val = hv_iternextsv(h, &key, &klen)) {
+        val = SvPV(sv_val, vlen);
+        c_attrs[i].name = key;
+        c_attrs[i].value = val;
+        c_attrs[i].length = vlen;   
+        i++;
+    }
+
+    s = webauth_attrs_encoded_length(c_attrs, num_attrs);
+    free(c_attrs);
+    ST(0) = sv_2mortal(newSViv(s));
+}
+
+
+void
+webauth_attrs_encode(attrs)
+SV *attrs
+PROTOTYPE: $
+CODE:
+{
+    HV *h;
+    HE *entry;
+    SV *sv_val;
+    int num_attrs, s, out_len;
+    char *key, *val;
+    I32 klen, i;
+    STRLEN vlen;
+    WEBAUTH_ATTR *c_attrs;
+
+    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
+        croak("attrs must be reference to a hash");
+    }
+
+    h = (HV*)SvRV(attrs);
+
+    num_attrs = hv_iterinit(h);
+
+    c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+    i = 0;
+    while(sv_val = hv_iternextsv(h, &key, &klen)) {
+        val = SvPV(sv_val, vlen);
+        c_attrs[i].name = key;
+        c_attrs[i].value = val;
+        c_attrs[i].length = vlen;   
+        i++;
+    }
+
+    out_len = webauth_attrs_encoded_length(c_attrs, num_attrs);
+
+    ST(0) = sv_2mortal(NEWSV(0, out_len));
+    s = webauth_attrs_encode(c_attrs, num_attrs, SvPVX(ST(0)), out_len);
+    free(c_attrs);
+    if (s < 0) {
+        /* this should never happen, since the only error is WA_ERR_NO_ROOM
+           and we always have enough room */
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), out_len);
+        SvPOK_only(ST(0));
+    }
+}
+
+
+void
+webauth_attrs_decode(buffer,...)
+SV *buffer
+PROTOTYPE: $;$
+CODE:
+{
+    STRLEN n_input;
+    unsigned char *p_input;
+    WEBAUTH_ATTR *c_attrs;
+    int i, s, ok, num_attrs;
+    HV *hv;
+
+    p_input = SvPV(buffer, n_input);
+
+    num_attrs = webauth_attrs_decode(p_input, n_input, NULL, 0);
+
+    ok = (num_attrs > 0);
+    if (ok) {
+        c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+        i = 0;
+        s = webauth_attrs_decode(p_input, n_input, c_attrs, num_attrs);
+        num_attrs = s;
+        ok = (num_attrs > 0);
+        if (ok) {
+            hv = (HV*) sv_2mortal((SV*)newHV());
+            for (i=0; i < num_attrs; i++) {
+                hv_store(hv, c_attrs[i].name, strlen(c_attrs[i].name),
+                         newSVpvn(c_attrs[i].value, c_attrs[i].length), 0);
+            }       
+        }
+        free(c_attrs);
+    }
+
+    if (items > 1) {
+       sv_setiv(ST(1), num_attrs);
+    }
+
+    if (ok) {
+       ST(0) = newRV((SV*)hv);
+    } else {
+       ST(0) =  &PL_sv_undef;
+    }
+}
+
 BOOT:
 {
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))

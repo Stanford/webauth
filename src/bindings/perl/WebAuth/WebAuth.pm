@@ -127,9 +127,65 @@ base64 encodes the $input string and returns the result.
 
  $output = base64_decode($input[, $status] );
 
-base64 encodes the $input string and returns the result. $status
-is optional, and if present will get set to the result of the
-webauth_base64_decode C function.
+base64 decodes the $input string and returns the result, or undef
+in case of an error. $status is optional, and if present will get
+set to the result of the webauth_base64_decode C function. 
+
+=item hex_encoded_length(length)
+
+$hex_len = hex_encoded_length($length)
+
+Given data of the specified length, returns how long the resulting
+hex-encoded data would be.
+
+=item hex_decoded_length(input)
+
+$len = hex_decoded_length($input)
+
+Given the string $input, returns how long the resulting
+hex-encoded data would be, or an WA_ERR_CORRUPT error. 
+Note that this function doesn't actually attempt to ensure 
+that $input contains a valid hex-encoded string, though 
+it does a sanity check to make sure the length is greater
+then 0 and a multiple of 4. Call hex_decode to actually attempt
+to parse and decode $input.
+
+=item hex_encode(input);
+
+$output = hex_encode($input);
+
+hex encodes the $input string and returns the result.
+
+=item hex_decode(input[, status);
+
+ $output = hex_decode($input[, $status] );
+
+hex decodes the $input string and returns the result, or undef in the
+case of an error. $status is optional, and if present will get set to
+the result of the webauth_hex_decode C function.
+
+=item attrs_encoded_length(attrs)
+
+$len = attrs_encoded_length($attrs)
+
+Takes as input $attrs (which must be a reference to a hash) and returns
+the resulting length of encoding the attributes into a string.
+
+=item attrs_encode(attrs);
+
+$output = attrs_encode($attrs);
+
+Takes as input $attrs (which must be a reference to a hash) and returns
+a string of the encoded attributes.  The values in the
+hash table get converted to strings if they aren't already.
+
+=item attrs_decode(input[, status);
+
+ $attrs = attrs_decode($input[, $status] );
+
+attr decodes the $input string and returns the result as reference to a
+hash, or undef in the case of an error. $status is optional, and if 
+present will get set to the result of the webauth_attrs_decode C function.
 
 =back
 

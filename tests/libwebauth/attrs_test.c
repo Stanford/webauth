@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     WEBAUTH_ATTR attrs[MAX_ATTRS];
     WEBAUTH_ATTR decoded_attrs[MAX_ATTRS];
     int len, i, rlen;
-    int num_in, num_out;
+    int num_in, num_out1, num_out2;
     unsigned char binary_data[BUFSIZE];
 
     for (i=0; i < sizeof(binary_data); i++) {
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
     printf ("%d\n", rlen);
 
-    buff = malloc(rlen);
+    buff = malloc(rlen+1);
 
     len = webauth_attrs_encode(attrs, num_in, buff, rlen);
 
@@ -51,11 +51,17 @@ int main(int argc, char *argv[])
 
     printf ("%d = webauth_attrs_encode\n", len);
 
-    num_out = webauth_attrs_decode(buff, len, decoded_attrs, MAX_ATTRS);
+    num_out1 = webauth_attrs_decode(buff, len, NULL, 0);
 
-    printf ("%d = webauth_attrs_decode\n", num_out);
 
-    for (i=0; i < num_out; i++) {
+    printf ("%d = webauth_attrs_decode (NULL attrs)\n", num_out1);
+
+    num_out2 = webauth_attrs_decode(buff, len, decoded_attrs, MAX_ATTRS);
+
+
+    printf ("%d = webauth_attrs_decode\n", num_out2);
+
+    for (i=0; i < num_out2; i++) {
         /*printf("decoded (%s) = (%s)\n", decoded_attrs[i].name,
           (char*)decoded_attrs[i].value);*/
         if (strcmp(attrs[i].name, decoded_attrs[i].name) != 0) {

@@ -6,9 +6,11 @@
 # change 'tests => 1' to 'tests => last_test_to_print';
 
 use Test;
-BEGIN { plan tests => 37 };
+BEGIN { plan tests => 54 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
+
+sub compareHashes;
 
 #########################
 
@@ -77,6 +79,40 @@ $status = undef;
 ok(undef, WebAuth::hex_decode('FOOBAR', $status));
 ok(WebAuth::WA_ERR_CORRUPT, $status);
 
+######################################### attr tests
+
+ok(4, WebAuth::attrs_encoded_length({"x"=>"1"}));
+ok(5, WebAuth::attrs_encoded_length({"x"=>";"}));
+ok(6, WebAuth::attrs_encoded_length({"x"=>"1;"}));
+ok(8, WebAuth::attrs_encoded_length({"x"=>"1", "y"=>"2"}));
+ok(10, WebAuth::attrs_encoded_length({"x"=>"\000", "y"=>"123"}));
+
+ok("x=1;", WebAuth::attrs_encode({"x"=>"1"}));
+ok("x=;;;", WebAuth::attrs_encode({"x"=>";"}));
+ok("x=1;;;", WebAuth::attrs_encode({"x"=>"1;"}));
+ok("x=1;y=2;", WebAuth::attrs_encode({"x"=>"1", "y"=>"2"}));
+ok("x=\000;y=123;", WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"}));
+
+# try and encode, followed by a decode and compare the hashes
+$a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
+$ea = "x=1;y=hello;z=goodbye;";
+ok($ea, WebAuth::attrs_encode($a));
+
+$status = undef;
+$b = WebAuth::attrs_decode($ea, $status);
+ok(3, $status);
+ok(1, compareHashes($a,$b));
+
+# some failures
+$status = undef;
+ok(undef, WebAuth::attrs_decode('x=1;y=23', $status));
+ok(WebAuth::WA_ERR_CORRUPT, $status);
+
+$status = undef;
+ok(undef, WebAuth::attrs_decode('x=1;zr', $status));
+ok(WebAuth::WA_ERR_CORRUPT, $status);
+
+
 
 #  $output = webauth_attrs_encode(%attrs, [, $status]);
 #  %attrs = webauth_attrs_decode($data [, $status]);
@@ -84,10 +120,38 @@ ok(WebAuth::WA_ERR_CORRUPT, $status);
 #  $key = webauth_random_key($key_len [, $status]);
 
 # $wakey = webauth_key_create($key);
-# need a destroy to zap mem?
 
 # 
 
 # $token = webauth_token_create(%attrs, $wakey [, $status]);
 
 # %attrs = webauth_token_parse($token, $wakey [, $status]);
+
+sub compareHashes {
+    my $a = shift;
+    my $b = shift;
+
+    my @akeys = sort keys %$a;
+    my @bkeys = sort keys %$b;
+
+    my $an = scalar @akeys;
+    my $bn = scalar @bkeys;
+
+    if ($an != $bn) {
+	return 0;
+    }
+    # compare keys
+    for ($i=0; $i < $an; $i++) {
+	if ($akeys[$i] ne $bkeys[$i]) {
+	    return 0;
+	}
+    }
+
+    # compare values
+    foreach $key (@akeys) {
+	if ($$a{$key} ne $$b{$key}) {
+	    return 0;
+	}
+    }
+    return 1;
+}

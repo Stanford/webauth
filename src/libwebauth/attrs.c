@@ -108,52 +108,66 @@ webauth_attrs_decode(unsigned char *buffer,
 
     assert(buffer != NULL);
     assert(input_len > 0);
-    assert(attrs != NULL);
-    assert(max_num_attrs > 0);
 
     n = 0;
     i = input_len;
     p = buffer;
     in_val = 0;
 
-    while (i && n < max_num_attrs) {
-        attrs[n].name = p;
+    if (attrs == NULL) {
+        max_num_attrs = 999999; /* FIXME: use limit from sys header */
+    }
+
+    while (i >0 && n < max_num_attrs) {
+        if (attrs != NULL) {
+            attrs[n].name = p;
+        }
         p++; 
         i--;
         while (i && *p != NAME_TERM) {
             p++;
             i--;
         }
-        if (*p != NAME_TERM) {
+        if (i==0 || *p != NAME_TERM) {
             return WA_ERR_CORRUPT; /* no NAME_TERM found */
         }
-        *p++ = '\0'; /* null terminate name */
+        if (attrs != NULL) {
+            *p = '\0'; /* null terminate name */
+        }
+        p++;
         i--;
         if (!i) {
             return WA_ERR_CORRUPT; /* missing val term */
         }
 
-        attrs[n].value = p;
+        if (attrs != NULL) {
+            attrs[n].value = p;
+        }
         d = p;
         in_val = 1;
 
-        while(i--) {
+        while(i-- > 0) {
             if (*p != VAL_TERM) {
-                if (d != p) {
+                if (d != p && attrs != NULL) {
                     *d = *p;
                 }
             } else {
                 if (!i || *(p+1) != VAL_TERM) {
                     /* end of value */
                     in_val = 0;
-                    attrs[n].length = d - (unsigned char*)attrs[n].value;
-                    *d++ = '\0';
+                    if (attrs != NULL) {
+                        attrs[n].length = d - (unsigned char*)attrs[n].value;
+                        *d = '\0';
+                    }
+                    d++;
                     p++;
                     n++;
                     break; /* look for another value */
                 } else {
                     /* handle escaped VAL_TERM */
-                    *d = *p;
+                    if (attrs != NULL) {
+                        *d = *p;
+                    }
                     /* skip past escaped char */
                     p++;
                     i--;
@@ -172,7 +186,6 @@ webauth_attrs_decode(unsigned char *buffer,
         return n;
     }
 }
-
 
 /*
 **  Local variables:

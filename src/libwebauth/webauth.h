@@ -246,6 +246,10 @@ int webauth_attrs_encode(const WEBAUTH_ATTR *attrs,
  * All values will be null-terminated, for convenience
  * when dealing with values that are ASCII strings.
  *
+ * if attrs is NULL, only returns the number of attributes
+ * that would be decoded, or an error. In this case, buffer is
+ * not modified, and max_num_attrs is ignored.
+ *
  * returns the number of attributes decoded or an error
  *
  * errors:
