@@ -265,20 +265,6 @@ keyring_new or key_create) and returns the attributes.
 
 Creates a new WEBAUTH_KRB5_CTXT reference in $context.
 
-=item krb5_error_code(context)
-
-  $krb5_error_code = krb5_error_code($context);
-
-Returns the internal kerberos V5 error code from the previous call
-using $context. If no error occured, the returned value will be zero.
-
-=item krb5_error_message(context)
-
-  $krb5_error_msg = krb5_error_message($context);
-
-Returns the internal kerberos V5 error message from the previous call
-using $context. If no error occured, the returned value will be "success".
-
 =item krb5_keep_cred_cache(context)
 
   krb5_keep_cred_cache($context);

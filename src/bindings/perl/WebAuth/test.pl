@@ -15,7 +15,7 @@ use UNIVERSAL qw(isa);
 BEGIN { plan tests => 41 }
 my $run_kerb = 0;
 
-#BEGIN { plan tests => 47 }
+#BEGIN { plan tests => 45 }
 #my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
@@ -209,12 +209,6 @@ if ($run_kerb) {
 	my $c = WebAuth::krb5_new();
 
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
-
-	my $code = WebAuth::krb5_error_code($c);
-	ok($code, 0);
-
-	my $msg = WebAuth::krb5_error_message($c);
-	ok($msg eq "success");
 
 	#FIXME my $ctx_princ = WebAuth::krb5_get_principal($c);
 
