@@ -7,16 +7,15 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = webauth
+SUBDIRS = @MODULES@
 
 .PHONY: all clean depend install
 
 all clean depend install: Makefile
-	@for subdir in $(SUBDIRS); do \
+	@l='$(SUBDIRS)'; for subdir in $$l; do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
-	@if [ -d "webkdc" ] ; then \
-	    echo "making $@ in webkdc"; \
-	    ( cd webkdc && $(MAKE) $@ ) || exit 1; \
-	fi
+
+install-webkdc:
+	cd webkdc && $(MAKE) install-webkdc
