@@ -1,0 +1,104 @@
+File Name                               Description
+-------------------------------------------------------------------------------
+MANIFEST                                This shipping list
+Makefile.in                             The top-level Makefile
+configure                               Script to configure Webauth
+configure.ac                            Source file for configure
+doc                                     Webauth documentation (Directory)
+doc/doxygen.cfg                         Doxygen configuration file
+doc/old                                 Obsolete documentation (Directory)
+doc/old/addEncryptionKey.rng
+doc/old/addKeyResponse.rng
+doc/old/auth-post
+doc/old/cookie-formats
+doc/old/credAuthResponse.rng
+doc/old/encryptedCredAuth.rng
+doc/old/encryptedCredAuth.xsd
+doc/old/errorResponse.rng
+doc/old/passwordAuthResponse.rng
+doc/old/preauth-get
+doc/old/protocol-overview
+doc/old/sendEncryptionKeys.rng
+doc/old/sendKeysResponse.rng
+doc/old/skel.rng
+doc/old/skel.xsd
+doc/old/userPasswordAuth.rng
+doc/old/userPasswordAuth.xsd
+doc/old/webkdc-implementation
+doc/old/webkdc-protocol
+doc/webauth.html                        Webauth protocol documentation
+m4                                      Additional Autoconf macros (Directory)
+m4/int32.m4
+src                                     Webauth source code (Directory)
+src/Makefile.in
+src/bindings                            Webauth language bindings (Directory)
+src/bindings/perl                       Webauth Perl bindings (Directory)
+src/bindings/perl/WebAuth               Perl Webauth module (Directory)
+src/bindings/perl/WebAuth/Changes
+src/bindings/perl/WebAuth/MANIFEST
+src/bindings/perl/WebAuth/Makefile.PL
+src/bindings/perl/WebAuth/README
+src/bindings/perl/WebAuth/WebAuth.pm
+src/bindings/perl/WebAuth/WebAuth.xs
+src/bindings/perl/WebAuth/test.pl
+src/bindings/perl/WebAuth/typemap
+src/common                              Common source files (Directory)
+src/common/include                      Common C include files (Directory)
+src/common/include/conf.h.in
+src/libwebauth                          The Webauth library (Directory)
+src/libwebauth/Makefile.in
+src/libwebauth/aes_cbc.c
+src/libwebauth/aes_cfb.c
+src/libwebauth/aes_core.c
+src/libwebauth/aes_ctr.c
+src/libwebauth/aes_ecb.c
+src/libwebauth/aes_locl.h
+src/libwebauth/aes_misc.c
+src/libwebauth/aes_ofb.c
+src/libwebauth/attrs.c
+src/libwebauth/base64.c
+src/libwebauth/key.c
+src/libwebauth/krb5.c
+src/libwebauth/misc.c
+src/libwebauth/openssl
+src/libwebauth/openssl/aes.h
+src/libwebauth/random.c
+src/libwebauth/token.c
+src/libwebauth/webauth.h
+src/libwebauth/webauthp.h
+src/utils                               Webauth utility programs (Directory)
+src/utils/Makefile.in
+src/utils/wa_keyring.c
+src/webkdc                              The WebKDC (Directory)
+src/webkdc/WebKDC                       Perl WebKDC modules (Directory)
+src/webkdc/WebKDC.pm
+src/webkdc/WebKDC/ProtocolException.pm
+src/webkdc/WebKDC/Token.pm
+src/webkdc/WebKDC/WebKDCException.pm
+src/webkdc/WebKDC/WebRequest.pm
+src/webkdc/WebKDC/WebResponse.pm
+src/webkdc/WebKDC/XmlDoc.pm
+src/webkdc/WebKDC/XmlElement.pm
+src/webkdc/app.cgi
+src/webkdc/login.cgi
+src/webkdc/test_post
+src/webkdc/test_webkdc
+src/webkdc/test_webkdc_xml
+src/webkdc/test_xml
+src/webkdc/webkdc.cgi
+tests                                   Webauth test suite (Directory)
+tests/Makefile.in
+tests/libwebauth                        Webauth library tests (Directory)
+tests/libwebauth/Makefile.in
+tests/libwebauth/attrs_test.c
+tests/libwebauth/base64_test.c
+tests/libwebauth/hex_test.c
+tests/libwebauth/key_test.c
+tests/libwebauth/krb5_test.c
+tests/libwebauth/random_test.c
+tests/libwebauth/token_test.c
+tests/libwebauth/webauthtest.h
+tools                                   Build system tools (Directory)
+tools/install-sh
+tools/makedepend
+tools/mkmanifest
