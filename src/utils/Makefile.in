@@ -6,6 +6,8 @@ top_srcdir	= @top_srcdir@
 top_builddir	= @top_builddir@
 VPATH		= @srcdir@
 
+bindir		= @bindir@
+
 CC		= @CC@
 INSTALL		= @INSTALL@
 LIBTOOL		= $(top_builddir)libtool
@@ -22,6 +24,9 @@ LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 PROGS		= wa_keyring
 
 all: $(PROGS)
+
+install: $(PROGS)
+	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $(bindir)/wa_keyring
 
 wa_keyring: wa_keyring.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ wa_keyring.o $(LDLIBS)

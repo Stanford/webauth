@@ -29,6 +29,10 @@ LOBJS		= $(OBJS:.o=.lo)
 
 all: $(LIBNAME).la
 
+install: $(LIBNAME).la
+	$(LIBTOOL) --mode=install \
+	    $(INSTALL) $(LIBNAME).la $(libdir)/$(LIBNAME).la
+
 .c.lo:
 	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
