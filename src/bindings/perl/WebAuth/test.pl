@@ -13,14 +13,14 @@ use UNIVERSAL qw(isa);
 BEGIN { plan tests => 73 }
 $run_kerb = 0;
 
-#BEGIN { plan tests => 91 }
+#BEGIN { plan tests => 93 }
 #$run_kerb = 1;
 
 if ($run_kerb) {
     # FIXME: need better way to config these
     # user/password to attempt to login as
     $kuser="schemers";
-    $kpass="secret";
+    $kpass="xxxxx";
     # path to keytab file used to verify tgt and also 
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
@@ -226,7 +226,13 @@ if ($run_kerb) {
     $msg = WebAuth::krb5_error_message($c);
     ok($msg eq "success");
 
+    $s = WebAuth::krb5_get_principal($c, $ctx_princ);
+    ok($s, WebAuth::WA_ERR_INVALID_CONTEXT);
+
     $s = WebAuth::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);
+    ok($s, WebAuth::WA_ERR_NONE);
+
+    $s = WebAuth::krb5_get_principal($c, $ctx_princ);
     ok($s, WebAuth::WA_ERR_NONE);
 
     $s = WebAuth::krb5_export_tgt($c, $tgt, $expiration);

@@ -1098,3 +1098,18 @@ webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
 
     return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }
+
+int
+webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
+                               char **principal)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+
+    if (c->princ != NULL) {
+        c->code = krb5_unparse_name(c->ctx, c->princ, principal);
+        return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
+    } else {
+        return WA_ERR_INVALID_CONTEXT;
+    }
+
+}

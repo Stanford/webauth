@@ -40,6 +40,7 @@ typedef enum {
     WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
     WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
+    WA_ERR_INVALID_CONTEXT,  /**< Invalid context passed to function. */
     WA_ERR_LOGIN_FAILED,     /**< Bad username/password. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
@@ -614,6 +615,14 @@ int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
                                    const char *service,
                                    const char *hostname,
                                    char **server_principal);
+/*
+ * get the principal from the context. should only be called 
+ * after a succesfull call to webauth_krb5_init_via*.
+ *
+ * principal should be freed when it is no longer needed.
+ */
+int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
+                               char **principal);
 /*
  * export a ticket for the given server_principal. ticket should
  * be freed when no longer needed.

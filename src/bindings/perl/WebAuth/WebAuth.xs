@@ -33,6 +33,7 @@ BOOT:
     IV_CONST(WA_ERR_KEYRING_VERSION);
     IV_CONST(WA_ERR_NOT_FOUND);
     IV_CONST(WA_ERR_KRB5);
+    IV_CONST(WA_ERR_INVALID_CONTEXT);
     IV_CONST(WA_ERR_LOGIN_FAILED);
     IV_CONST(WA_ERR_NONE);
     IV_CONST(WA_AES_KEY);
@@ -688,6 +689,23 @@ CODE:
     if (RETVAL == WA_ERR_NONE){
         sv_setpv(ST(3), server_princ);
         free(server_princ);
+    }
+}
+OUTPUT:
+    RETVAL
+
+
+int
+webauth_krb5_get_principal(c,principal)
+WEBAUTH_KRB5_CTXT *c
+PROTOTYPE: $$
+CODE:
+{       
+    char *princ;
+    RETVAL = webauth_krb5_get_principal(c, &princ);
+    if (RETVAL == WA_ERR_NONE){
+        sv_setpv(ST(1), princ);
+        free(princ);
     }
 }
 OUTPUT:

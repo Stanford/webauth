@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
     unsigned char *tgt, *ticket;
     int tgtlen, ticketlen;
     time_t expiration;
+    char *cprinc;
 
     if (argc != 6) {
         usage();
@@ -40,16 +41,24 @@ int main(int argc, char *argv[])
     service = argv[4];
     host = argv[5];
 
-    START_TESTS(19);
+    START_TESTS(21);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(c != NULL);
 
+    /* test failure case */
+    s = webauth_krb5_get_principal(c, &cprinc);
+    TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
+
     s = webauth_krb5_init_via_password(c, username, password, 
                                        keytab_path, NULL);
 
     TEST_OK2(WA_ERR_NONE, s);
+
+    s = webauth_krb5_get_principal(c, &cprinc);
+    TEST_OK2(WA_ERR_NONE, s);
+    free(cprinc);
 
     /*
     printf("code(%d) mess(%s)\n", 

@@ -318,6 +318,13 @@ Used to construct a server principal for use with other calls such as
 krb5_mk_req and krb5_export_ticket. On success $principal will be set
 to the constructed principal, represented as a string.
 
+=item krb5_get_principal(context, principal)
+
+    $status = krb5_getprincipal($context, $principal);
+
+Used to get the principal associated with the context. Should only be
+called after a successful call to krb5_init_via*.
+
 =item krb5_mk_req(context, principal, request)
 
   $status = krb5_mk_req($context, $principal, $request)
@@ -351,6 +358,7 @@ The following constants from webauth.h are available:
   WA_ERR_KEYRING_VERISON
   WA_ERR_NOT_FOUND
   WA_ERR_KRB5
+  WA_ERR_INVALID_CONTEXT
   WA_ERR_LOGIN_FAILED
   WA_ERR_NONE
 
