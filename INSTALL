@@ -9,10 +9,10 @@ site, see doc/install-webkdc.
 
  1.  Make sure that you have all of the required packages installed.
      WebAuth is implemented as Apache 2.0 modules, and therefore requires
-     an installation of Apache 2.0 built with --enable-so and
-     --enable-ssl.  It also requires MIT Kerberos v5 (Heimdal may work but
-     is not tested), cURL, and OpenSSL 0.9.7 or later (for AES support).
-     See README for more version dependencies.
+     an installation of Apache 2.0 built with SSL and dynamic modules.  It
+     also requires MIT Kerberos v5 (Heimdal may work but is not tested),
+     cURL, and OpenSSL 0.9.7 or later (for AES support).  See README for
+     more version dependencies.
 
      Note that all of these packages should be installed on local disk.
      We do not recommend using libraries installed on shared file systems
@@ -20,6 +20,19 @@ site, see doc/install-webkdc.
      tied to the availability of that remote file system.  The required
      libraries aren't large, particularly given the average size of modern
      disks.
+
+     When building Apache 2.0, you'll want to use a configure invocation
+     like:
+
+         ./configure --enable-so --enable-ssl --with-ssl=/usr/local
+
+     (changing the last if your OpenSSL is installed somewhere else).
+
+     Stanford users who are building Apache with GCC from pubsw should
+     beware that Apache's build system tends to pick up Berkeley DB 4.0,
+     zlib, and GDBM from pubsw, and that you'll therefore need those
+     shared libraries available (preferrably on local disk) for the
+     resulting Apache 2.0 server to run.
 
  2.  If you are building a CVS pull of the WebAuth distribution (as
      opposed to a packaged release, which already includes the generated
@@ -122,13 +135,18 @@ site, see doc/install-webkdc.
          mkdir -p conf/webauth
 
      where <apache-root> is the root of your Apache 2.0 installation.
+     This directory must be writable by the running web server (and by the
+     child servers, not just the main server), so if you have User and
+     Group directives in your httpd.conf, <apache-root>/conf/webauth
+     should be writable by that user and group.
 
  8.  Install a keytab in <apache-root>/conf/webauth/keytab.  The
      recommended principal name is webauth/<your-system> where
      <your-system> is the fully qualified, all-lowercase name of your
      system.  For example, if you were installing WebAuth on a system
      named app-server at Stanford, the recommended principal name is
-     webauth/app-server.stanford.edu.
+     webauth/app-server.stanford.edu.  (Note that at Stanford, other
+     principals may not work.)
 
      Stanford users can request a keytab be created for their system by
      sending mail to srvtab-request@stanford.edu, specifying the SUNet ID
