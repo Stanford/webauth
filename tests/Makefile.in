@@ -24,7 +24,7 @@ all check: runtests
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
-	./runtests TESTS
+	./runtests $(srcdir)/TESTS
 
 clean:
 	rm -f runtests webauth_keyring*
