@@ -11,7 +11,7 @@
 require 5.005;
 
 use strict;
-use vars qw(%CVSIGNORE @FILES @IGNORE);
+use vars qw(%CVSIGNORE @FILES @IGNORE %INCLUDE);
 
 use File::Find qw(find);
 
@@ -22,6 +22,10 @@ use File::Find qw(find);
 @IGNORE = (qr%(\A|/)\.cvsignore\Z%, qr/\.[ao]\Z/, qr%(\A|/)CVS(/|\Z)%,
            qr%(\A|/)\.?\#%, qr/\.(old|bak|orig|rej)$/, qr%(\A|/)core\Z%,
            qr/~\Z/);
+
+# A list of generated files that should be included in the manifest and
+# therefore included in releases, but which are listed in .cvsignore.
+%INCLUDE = map { $_ => 1 } qw(configure config.h.in);
 
 # Build a list of all the files ignored by rules in .cvsignore files.  Meant
 # to be run as the wanted sub of a call to File::Find.  Stuff in .cvsignore
@@ -58,6 +62,10 @@ sub find_files {
     return if $_ eq '.';
     my $name = $File::Find::name;
     $name =~ s%^./%%;
+    if ($INCLUDE{$name}) {
+        push (@FILES, $name);
+        return;
+    }
     if ($CVSIGNORE{$name}) {
         $File::Find::prune = 1;
         return;
