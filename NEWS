@@ -2,6 +2,10 @@
 
 WebAuth 3.1.0 (in progress)
 
+ *) Add WebAuthWebKdcSSLCertCheck directive to enable/disable checking
+    of the WebKDC SSL certificate. Defaults to "on" and should only
+    be turned off for debugging/testing purposes.
+
  *) Add new WebAuthDontCache directive which sets r->no_cache. Defaults
     to 0 (allow documents to be cached).
 
