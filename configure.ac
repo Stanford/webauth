@@ -28,38 +28,25 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
 
-dnl By default, we don't build the WebKDC or any of its components.
-WEBKDC=
-AC_ARG_ENABLE([webkdc],
-    AC_HELP_STRING([--enable-webkdc], [Compile and install the WebKDC]),
+dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
+MODULES=
+AC_ARG_ENABLE([mod_webkdc],
+    AC_HELP_STRING([--enable-mod_webkdc],
+        [Build and install the WebKDC Apache module]),
     [if test x"$enableval" != xno ; then
-        WEBKDC=webkdc
+        MODULES=webkdc
      fi])
-AC_SUBST(WEBKDC)
+AC_SUBST(MODULES)
 
-dnl Normally, with --enable-webkdc, we don't build mod_webauth.  Sometimes
-dnl it's convenient to get everything at once, so add a --enable-mod_webauth
-dnl to turn that back on.  This doubles as the way to build just the libraries
-dnl (with ./configure --disable-mod_webauth).
+dnl Provide a way to disable building mod_webauth for systems that don't need
+dnl it, like the WebKDC, or for a pure library build.
 AC_ARG_ENABLE([mod_webauth],
     AC_HELP_STRING([--disable-mod_webauth],
         [Do not build the WebAuth Apache module]),
-    [AC_MSG_WARN([checkpoint one: $enableval])
-     if test x"$WEBKDC" != x ; then
-        MODULES=webkdc
-     else
-        MODULES=
-     fi
-     if test x"$enableval" = xyes ; then
+    [if test x"$enableval" = xyes ; then
         MODULES="webauth $MODULES"
      fi],
-    [AC_MSG_WARN([checkpoint two])
-     if test x"$WEBKDC" != x ; then
-        MODULES=webkdc
-     else
-        MODULES=webauth
-     fi])
-AC_SUBST(MODULES)
+    [MODULES="webauth $MODULES"])
 
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
 dnl is set in the environment, always use it; otherwise, use -g unless
@@ -87,13 +74,16 @@ AC_ARG_ENABLE([perl],
         build_perl=no
         BINDINGS=
      fi],
-     [if test x"$WEBKDC" != x ; then
+     [case "$MODULES" in
+      *webkdc*)
          BINDINGS=perl
          build_perl=yes
-      else
+         ;;
+      *)
          BINDINGS=
          build_perl=no
-      fi])
+         ;;
+      esac])
 AC_SUBST(BINDINGS)
 
 dnl Checks for programs.
@@ -159,6 +149,7 @@ AC_CONFIG_FILES([
     src/modules/Makefile
     src/modules/webauth/Makefile
     src/utils/Makefile
+    src/webkdc/Makefile
     tests/Makefile
     tests/libwebauth/Makefile
 ])
@@ -170,9 +161,11 @@ if test x"$build_perl" = xyes ; then
 fi
 
 dnl Only create the WebKDC makefile if we're building the WebKDC.
-if test x"$WEBKDC" != x ; then
-    AC_CONFIG_FILES([src/modules/webkdc/Makefile src/webkdc/Makefile])
-fi
+case "$MODULES" in
+*webkdc*)
+    AC_CONFIG_FILES([src/modules/webkdc/Makefile])
+    ;;
+esac
 
 dnl Link all of the Perl binding files into the build tree, since Perl doesn't
 dnl support the VPATH thing.
