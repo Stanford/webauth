@@ -1,5 +1,12 @@
                           WebAuth Change History
 
+WebAuth 3.2.5 (in progress)
+
+ *) Downgrade most of the messages from mod_webauthldap to info from
+    notice, including the messages about authorization.  Downgrade the
+    message about failed authorization from warning to notice.  This seems
+    more consistent with the Apache documentation of log levels.
+
 WebAuth 3.2.4 (2004-08-25)
 
  *) In the weblogin script, only check for cookies when the user is not
