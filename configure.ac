@@ -131,6 +131,7 @@ WEBAUTH_LIB_LIBGCC
 
 dnl Checks for header files.
 AC_HEADER_STDC
+AC_CHECK_HEADERS([netinet/in.h])
 
 dnl Checks for types.
 WEBAUTH_TYPE_INT32_T

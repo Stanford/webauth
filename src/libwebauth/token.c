@@ -2,7 +2,9 @@
 
 #include <sys/types.h>
 #include <time.h>
-#include <netinet/in.h>
+#if HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#endif
 
 #include <openssl/aes.h>
 #include <openssl/sha.h>

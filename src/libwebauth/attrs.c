@@ -1,6 +1,8 @@
 #include "webauthp.h"
 #include <sys/types.h>
-#include <netinet/in.h>
+#if HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#endif
 #include <stdio.h>
 /*
  * given an array of attributes, returns the amount

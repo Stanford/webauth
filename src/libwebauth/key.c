@@ -1,14 +1,15 @@
 #include "webauthp.h"
 
-/* FIXME: autoconf */
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-#include <netinet/in.h>
-#include <unistd.h>
+
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 /*
  * construct a new key. 

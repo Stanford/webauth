@@ -2,6 +2,8 @@
 
 WebAuth 3.1.2 (in progress)
 
+ *) update configure.ac to check for netinet/in.h for windows build
+
  *) modify wa_keyring to not use getopt (not available on windows),
     and change strftime format from %T to %H:%M:%S (%T also not available
     on windows strftime)

@@ -1,6 +1,7 @@
-#include <openssl/rand.h>
 
 #include "webauthp.h"
+
+#include <openssl/rand.h>
 
 int
 webauth_random_bytes(unsigned char *output, int num_bytes)
