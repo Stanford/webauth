@@ -3,7 +3,7 @@
 use CGI qw/:standard/;
 use CGI::Cookie;
 
-sub escapeHTML {
+sub my_escapeHTML {
     my $toencode = shift;
 
     $toencode=~s/&/&amp;/g;
@@ -184,7 +184,7 @@ foreach $var (sort(keys(%cookies))) {
 	$val = substr($val, 0, 40) . "...(truncated)";
     }
 
-    $val = escapeHTML($val);
+    $val = my_escapeHTML($val);
     print "<tr><td>${var}</td><td>${val}</td>\n";
 }
 
@@ -207,7 +207,7 @@ foreach $var (sort(keys(%ENV))) {
     if (length($val) > 80) {
 	$val = substr($val, 0, 80) . "...(truncated)";
     }
-    $val = escapeHTML($val);
+    $val = my_escapeHTML($val);
     
 #    $val =~ s|\n|\\n|g;
 #    $val =~ s|"|\\"|g;
