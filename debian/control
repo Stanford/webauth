@@ -1,0 +1,27 @@
+Source: webauth
+Section: unknown
+Priority: optional
+Maintainer: pod <pod@herald.ox.ac.uk>
+Build-Depends: debhelper (>> 3.0.0), apache2-dev, libcurl-ssl-dev
+Standards-Version: 3.5.2
+
+Package: webauth
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: webauth
+ webauth
+
+Package: webauth-kdc
+Architecture: any
+Depends: ${shlibs:Depends}, webauth, libwww-perl, libxml-parser-perl, libhtml-template-perl, libcgi-fast-perl, libio-socket-ssl-perl
+Suggests: webauth-kdc-site
+Description: webauth-kdc
+ webauth-kdc
+
+Package: webauth-kdc-site-stanford
+Architecture: all
+Depends: webauth-kdc
+Provides: webauth-kdc-site
+Description: HTML templates and data and CGI for web visible part of webkdc
+ HTML templates and data and CGI for web visible part of webkdc
+
