@@ -31,14 +31,76 @@ static void croak(int s)
 
 static void usage(int exitcode)
 {
-    fprintf(stderr, "usage: %s -f keyring [list|create]\n", prog);
-    fprintf(stderr, "  -f <keyring file>   keyring file to use\n");
-    fprintf(stderr, "  -h                  help\n");
-    fprintf(stderr, "  -v                  verbose listing\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  list (default) lists the keys in the ring\n");
-    fprintf(stderr, "  create will create two keys in the key ring\n");
+    fprintf(stderr, "usage: %s -f {keyring} [add|list|remove] ...\n", prog);
+    fprintf(stderr, "  -f {keyring} keyring file to use\n");
+    fprintf(stderr, "  -h           help\n");
+    fprintf(stderr, "  -v           verbose listing\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  add {valid_from} {valid_till}     # add a new key\n");
+    fprintf(stderr, "  gc {oldest-valid-till-to-keep}    # garbage collect\n");
+    fprintf(stderr, "  list                              # list keys\n");
+    fprintf(stderr, "  remove {id}                       # remove key by id\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "valid_from/valid_till/expired_since use the format: nnnn[s|m|h|d|w]\n");
+    fprintf(stderr, "which indicates a time relative to the current time. The units for the time\n");
+    fprintf(stderr, "are specified by appending a single letter, which can either be s, m, h, d,\n");
+    fprintf(stderr, "or w, which correspond to seconds, minutes, hours, days, and weeks\n");
+    fprintf(stderr, "respectively. For example: 10d is 10 days from the current time,\n");
+    fprintf(stderr, "and -60d is 60 days before the current time (negative realative times\n");
+    fprintf(stderr, "are useful with gc).\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Examples: (these will get moved to man page)\n");
+    fprintf(stderr, " # add a key to the keyring valid from now, expiring in 60 days\n");
+    fprintf(stderr, " %s -f keyring add 0d 60d\n", prog);
+    fprintf(stderr, " # add a key to the keyring valid three days from now, expiring in 63 days\n");
+    fprintf(stderr, " %s -f keyring add 3d 63d\n", prog);
+    fprintf(stderr, " # remove keys from key ring that have expired more then 60 days ago\n");
+    fprintf(stderr, " %s -f keyring gc -60d\n", prog);
+    fprintf(stderr, " # remove key first key in the key ring\n");
+    fprintf(stderr, " %s -f keyring remove 0\n", prog);
+    fprintf(stderr, "\n");
     exit(exitcode);
+}
+
+static int
+seconds(const char *value)
+{
+    char temp[32];
+    int mult=0, len;
+    
+    len = strlen(value);
+    if (len > (sizeof(temp)-1)) {
+        fprintf(stderr, "error: invalid units specified: %s", value);
+        usage(1);
+    }
+
+    strcpy(temp, value);
+
+    switch(temp[len-1]) {
+        case 's': 
+            mult = 1;
+            break;
+        case 'm':
+            mult = 60;
+            break;
+        case 'h': 
+            mult = 60*60; 
+            break;
+        case 'd': 
+            mult = 60*60*24; 
+            break;
+        case 'w': 
+            mult = 60*60*24*7; 
+            break;
+        default:
+            fprintf(stderr, "error: invalid units specified: %s", value);
+            usage(1);
+            break;
+    }
+    
+    temp[len-1] = '\0';
+    return atoi(temp) * mult;
 }
 
 char **
@@ -98,25 +160,31 @@ print_time(time_t t)
 }
 
 void
-print_fingerprint(WEBAUTH_KEY *key)
+get_fingerprint(WEBAUTH_KEY *key, char *hex, int hex_len)
 {
     char md5[MD5_DIGEST_LENGTH]; 
-    char hex[MD5_DIGEST_LENGTH*2+1];
     int len, s;
     MD5_CTX c;
     MD5_Init(&c);
     MD5_Update(&c, key->data, key->length);
     MD5_Final(md5, &c);
  
-
-    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &len, sizeof(hex));
+    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &len, hex_len);
     hex[len] = '\0';
+}
+
+void
+print_fingerprint(WEBAUTH_KEY *key)
+{
+    char hex[MD5_DIGEST_LENGTH*2+1];
+    get_fingerprint(key, hex, sizeof(hex));
     printf("%s", hex);
 }
 
 void
-print_short(WEBAUTH_KEYRING_ENTRY *e)
+print_short(WEBAUTH_KEYRING_ENTRY *e, int i)
 {
+    printf("%2d  ", i);
     print_time(e->valid_from);
     printf("  ");
     print_time(e->valid_till);
@@ -129,7 +197,7 @@ print_short(WEBAUTH_KEYRING_ENTRY *e)
 void
 print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
 {
-    printf("    Key-Index: %d\n", i);
+    printf("       Key-Id: %d\n", i);
     printf("      Created: ");
     print_time(e->creation_time);
     printf("\n");
@@ -173,7 +241,7 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
       Version: 1
          Keys: 1
 
-    Key-Index: 0
+       Key-Id: 0
       Created: 10/16/02 12:25:03
    Valid-From: 10/16/02 12:25:03
    Valid-Till: 10/17/02 12:25:03
@@ -199,44 +267,44 @@ void list_keyring()
     } else {
         printf("Path: %s\n", keyring_path);
         printf("\n");
-        printf("Valid from         Valid till         Fingerprint\n");
+        printf("id  Valid from         Valid till         Fingerprint\n");
     }
 
     for (i=0; i < ring->num_entries; i++) {
         if (verbose) {
             print_long(&ring->entries[i], i);
         } else {
-            print_short(&ring->entries[i]);
+            print_short(&ring->entries[i], i);
         }
     }
     webauth_keyring_free(ring);
 }
 
-void create_keyring()
+void add_key(char *valid_from, char *valid_till)
 {
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring;
     int s;
     unsigned char key_material[WA_AES_128];
-    time_t curr;
-     
-    ring = webauth_keyring_new(32);
+    time_t curr, vf, vt;
+    
+    s = webauth_keyring_read_file(keyring_path, &ring);
+    if (s != WA_ERR_NONE) {
+        ring = webauth_keyring_new(32);
+    }
+    
     s = webauth_random_key(key_material, WA_AES_128);
     if (s != WA_ERR_NONE)
         croak(s);
+
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+
     time(&curr);
-    s = webauth_keyring_add(ring, curr, curr, curr+3600*24*30, key);
-    if (s != WA_ERR_NONE)
-        croak(s);
 
-    s = webauth_random_key(key_material, WA_AES_128);
-    if (s != WA_ERR_NONE)
-        croak(s);
+    vf = seconds(valid_from);
+    vt = seconds(valid_till);
 
-    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-    s = webauth_keyring_add(ring, curr, 
-                            curr+1+3600*24*30, curr+1+3600*24*30*2, key);
+    s = webauth_keyring_add(ring, curr, curr+vf, curr+vt, key);
     if (s != WA_ERR_NONE)
         croak(s);
 
@@ -246,6 +314,62 @@ void create_keyring()
     if (s != WA_ERR_NONE)
         croak(s);
 
+    webauth_keyring_free(ring);
+}
+
+void remove_key(int index)
+{
+    WEBAUTH_KEYRING *ring;
+    int s;
+    
+    s = webauth_keyring_read_file(keyring_path, &ring);
+    if (s != WA_ERR_NONE) {
+        croak(s);
+    }
+
+    s = webauth_keyring_remove(ring, index);
+    if (s != WA_ERR_NONE) {
+        croak(s);
+    }
+
+    s = webauth_keyring_write_file(ring, keyring_path);
+    if (s != WA_ERR_NONE)
+        croak(s);
+
+    webauth_keyring_free(ring);
+}
+
+
+void gc_keys(char *oldest_valid_till)
+{
+    WEBAUTH_KEYRING *ring;
+    int s, i, removed;
+    time_t curr, ovt;
+
+    s = webauth_keyring_read_file(keyring_path, &ring);
+    if (s != WA_ERR_NONE) {
+        croak(s);
+    }
+
+    time(&curr);
+    ovt = curr+seconds(oldest_valid_till);
+
+    do {
+        removed = 0;
+        for (i=0; i < ring->num_entries; i++) {
+            if (ring->entries[i].valid_till < ovt) {
+                s = webauth_keyring_remove(ring, i);
+                if (s != WA_ERR_NONE) {
+                    croak(s);
+                }
+                removed = 1;
+            }
+        }
+    } while (removed);
+
+    s = webauth_keyring_write_file(ring, keyring_path);
+    if (s != WA_ERR_NONE)
+        croak(s);
     webauth_keyring_free(ring);
 }
 
@@ -261,14 +385,29 @@ int main(int argc, char **argv)
         cmd = *argv++;
     }
 
-    if (*argv) {
-        usage(1);
-    }
-
     if (strcmp(cmd, "list") == 0) {
+        if (*argv) usage(1);
         list_keyring();
-    } else if (strcmp(cmd, "create") == 0) {
-        create_keyring();
+    } else if (strcmp(cmd, "add") == 0) {
+        char *valid_from, *valid_till;
+        if (!*argv) usage(1);
+        valid_from = *argv++;
+        if (!*argv) usage(1);
+        valid_till = *argv++;
+        if (*argv) usage(1);
+        add_key(valid_from, valid_till);
+    } else if (strcmp(cmd, "gc") == 0) {
+        char *oldest_valid_till;
+        if (!*argv) usage(1);
+        oldest_valid_till = *argv++;
+        if (*argv) usage(1);
+        gc_keys(oldest_valid_till);
+    } else if (strcmp(cmd, "remove") == 0) {
+        int id;
+        if (!*argv) usage(1);
+        id = atoi(*argv++);
+        if (*argv) usage(1);
+        remove_key(id);
     } else {
         usage(1);
     }

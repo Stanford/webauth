@@ -1,0 +1,112 @@
+
+=pod
+
+=head1 NAME
+
+wa_keyring - WebAuth3 keyring command line tool
+
+=head1 SYNOPSIS
+
+B<wa_keyring> [-v] [-h] -f {file} I<command> [ I<args> ]
+
+B<wa_keyring> -f keyring add I<{valid-from}> I<{valid-till}>
+
+B<wa_keyring> -f keyring gc I<{oldest-valid-till}>
+
+B<wa_keyring> -f keyring list
+
+B<wa_keyring> -f keyring remove I<{id}>
+
+=head1 DESCRIPTION
+
+wa_keyring is a command line tool to manage WebAuth3 key ring files,
+which contain the private AES keys used by mod_webauth and mod_webkdc.
+
+=head1 COMMANDS
+
+=head2 add {valid-from} {valid-till}
+
+Adds a new key to the key ring. I<{valid-from}> and I<{valid-till}> use 
+the format: 
+
+nnnn[s|m|h|d|w]
+
+which indicates a time relative to the current time. The units for the time
+are specified by appending a single letter, which can either be s, m, h, d,
+or w, which correspond to seconds, minutes, hours, days, and weeks
+respectively. 
+
+For example: 10d is 10 days from the current time, and -60d is 60 days before 
+the current time.
+
+=head2 gc {oldest-valid-till}
+
+Garbage collects (removes) old keys on the key ring. Any keys with a
+I<{valid-till}> date older then the specified time will be removed
+from the key ring.
+
+The format for I<{oldest-valid-till}> is the same as I<{valid-from}> and 
+I<{valid-till}> from the B<add> command.
+
+=head2 list
+
+Lists all the keys in the key ring. By default, a brief listing is
+used. Use "-v" to ge a verbose listing. 
+
+The following fields are present in a short listing:
+
+=over 4
+
+=item B<id> 
+
+The index/position of the key in the key ring.
+
+=item B<Valid from> 
+
+The date at which the key becomes valid.
+
+=item B<Valid till> 
+
+The date at which the key becomes expires.
+
+=item B<Fingerprint> 
+
+The MD5 digest of the key data. Used to compare keys in two key ring.
+
+=back 
+
+The following fields are present in the long listing:
+
+
+
+=head2 remove {id}
+
+Removes a key from the key ring.
+
+=head1 EXAMPLES
+
+ 1. add a key to the keyring valid from now, expiring in 60 days
+
+ wa_keyring -f keyring add 0d 60d
+
+ 2. add a key to the keyring valid three days from now, expiring in 63 days
+
+ wa_keyring -f keyring add 3d 63d
+
+ 3. remove keys from key ring that have expired more then 60 days ago
+
+ wa_keyring -f keyring gc -60d
+
+ 4. remove first key in the key ring
+
+ wa_keyring -f keyring remove 0
+
+ 5. do a verbose listing of all the keys in the key ring
+
+ wa_keyring -f keyring -v list
+
+=head1 AUTHOR
+
+Roland Schemers (schemers@stanford.edu)
+
+=cut
