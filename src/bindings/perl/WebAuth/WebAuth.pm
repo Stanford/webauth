@@ -41,6 +41,7 @@ our %EXPORT_TAGS = (
 				    WA_PEC_PROXY_TOKEN_EXPIRED
 				    WA_PEC_INVALID_REQUEST
 				    WA_PEC_UNAUTHORIZED
+				    WA_PEC_SERVER_FAILURE
 				    WA_AES_KEY
 				    WA_AES_128
 				    WA_AES_192
@@ -570,6 +571,7 @@ The following constants from webauth.h are available:
   WA_PEC_PROXY_TOKEN_EXPIRED
   WA_PEC_INVALID_REQUEST
   WA_PEC_UNAUTHORIZED
+  WA_PEC_SERVER_FAILURE
 
   WA_AES_KEY
   WA_AES_128
