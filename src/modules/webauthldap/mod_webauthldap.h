@@ -25,6 +25,7 @@
 #define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1
 #define PRIVGROUP_DIRECTIVE "privgroup"
+#define DN_ATTRIBUTE "dn"
 
 /* environment variables */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
@@ -133,14 +134,12 @@ typedef struct {
     apr_table_t ** entries;  // retrieved ldap entries 
     int numEntries;
 
-    apr_table_t* privgroups; // retrieved privgroup attributes/values
     apr_table_t* envvars;    // which attributes to place into environment
 
     LDAP *ld;
     char **attrs;            // attributes to retrieve from LDAP, (null = all)
     char*  filter;
     int    port;
-    int    sizelimit;
 
 } MWAL_LDAP_CTXT;
 

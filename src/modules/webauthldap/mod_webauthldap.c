@@ -579,15 +579,12 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
         ap_get_module_config(lc->r->server->module_config,&webauthldap_module);
 
     if (lc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, "%s %s %s",
-                     "webauthldap: invoked for user", lc->r->user,
-                     "\n***************************************************");
+        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, "%s %s",
+                     "webauthldap: invoked for user", lc->r->user);
 
     // These come with defaults:
     lc->filter = webauthldap_make_filter(lc);
     lc->port = atoi(lc->sconf->port);
-    lc->sizelimit  = LDAP_SIZELIMIT;
-    lc->privgroups = apr_table_make(lc->r->pool, 10);
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
@@ -812,6 +809,10 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
     struct berval **bvals;
     char *val;
 
+    // the DN's are collected to be used in the ldap_compares of the privgroups
+    apr_table_add(attr_table, DN_ATTRIBUTE, ldap_get_dn( lc->ld, entry ));
+
+    // attributes and values are stored in a table
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
          a = ldap_next_attribute(lc->ld, entry, ber)) {
         if ((bvals = ldap_get_values_len(lc->ld, entry, a)) != NULL) {
@@ -819,10 +820,6 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
                 val = apr_pstrndup(lc->r->pool, (char *)bvals[i]->bv_val,
                                    (apr_size_t) bvals[i]->bv_len);
                 apr_table_add(attr_table, a, val);
-
-                if (!strcasecmp(a, lc->sconf->privgroupattr))
-                    apr_table_addn(lc->privgroups, val, val);
-
             }
             ber_bvecfree(bvals);
         }
@@ -850,8 +847,8 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
     int attrsonly = 0;
 
     rc = ldap_search_ext(lc->ld, lc->sconf->base, lc->sconf->scope, lc->filter,
-                         lc->attrs, attrsonly, NULL, NULL, NULL, lc->sizelimit,
-                         &msgid);
+                         lc->attrs, attrsonly, NULL, NULL, NULL, 
+                         LDAP_SIZELIMIT, &msgid);
 
     if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
@@ -906,6 +903,34 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
     return 0;
 }
 
+
+static int
+webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
+{
+    int i, rc;
+    char* dn, *attr;
+    struct berval bvalue = { 0, NULL };
+
+    attr = lc->sconf->privgroupattr;
+    bvalue.bv_val = value;
+    bvalue.bv_len = strlen(bvalue.bv_val);
+
+    for (i=0; i<lc->numEntries; i++) {
+        dn = (char*)apr_table_get(lc->entries[i], DN_ATTRIBUTE);
+
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                         "webauthldap: comparing %s=%s for %s", 
+                         attr, value, dn);
+
+        rc = ldap_compare_ext_s(lc->ld, dn, attr, &bvalue, NULL, NULL);
+
+        if (rc != LDAP_COMPARE_FALSE)
+            return rc;
+    }
+
+    return LDAP_COMPARE_FALSE;
+}
 
 /**
  * This will set be called with every attribute value pair that was received
@@ -1010,7 +1035,8 @@ auth_checker_hook(request_rec * r)
 
     const apr_array_header_t *reqs_arr = ap_requires(r);
     require_line *reqs;
-    const char *t, *w;
+    const char *t;
+    char *w;
     int m = r->method_number;
     int needs_further_handling;
     int authorized;
@@ -1085,9 +1111,17 @@ auth_checker_hook(request_rec * r)
                                      "webauthldap: REQUIRE: %s %s", 
                                      PRIVGROUP_DIRECTIVE, w);
 
-                    if (apr_table_get(lc->privgroups, w)) {
+                    rc = webauthldap_docompare(lc, w);
+                    if (rc == LDAP_COMPARE_TRUE) {
                         authorized = 1;
                         break;
+                    } else if (rc != LDAP_COMPARE_FALSE) {
+                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                                     "webauthldap: error while %s %s %s (%d)",
+                                     "checking priviledge groups",
+                                     "ldap_compare_ext_s:",
+                                     ldap_err2string(rc), rc);
+                        return HTTP_INTERNAL_SERVER_ERROR;
                     }
                 }
             } else {
@@ -1095,7 +1129,7 @@ auth_checker_hook(request_rec * r)
                     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                                  "webauthldap: REQUIRE: %s", w);
 
-                // This means some other require directive like group is 
+                // This means some other require directive like "group" is 
                 // encountered. Notice that we continue looking for the ones
                 // that matter to us anyway.
                 needs_further_handling = 1;
@@ -1128,9 +1162,8 @@ auth_checker_hook(request_rec * r)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                          "webauthldap: returning OK");
 
-        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, "%s %s %s",
-                     "webauthldap: finished for user", lc->r->user,
-                     "\n***************************************************");
+        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, "%s %s",
+                     "webauthldap: finished for user", lc->r->user);
     }
 
     ldap_unbind(lc->ld);
