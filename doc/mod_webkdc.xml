@@ -299,4 +299,65 @@ WebKdcDebug on<br />
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebKdcKeyringAutoUpdate</name>
+<description>Whether or not we auto-update the keyring file 
+</description>
+<syntax>WebKdcKeyringAutoUpdate on|off</syntax>
+<default>WebKdcKeyringAutoUpdate on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive controls whether or not we auto-update the keyring file.
+This includes creating it if it doesn't exist, and generating a new
+key before the old key expires, and periodically garbage collecting
+old keys. Note that auto updating only occurs on server startup and restarts.
+</p>
+
+<note><title>Note</title> 
+    <p>This directive should be turned off if multiple servers are
+sharing the same keyring file so the keyring file can be manually updated.
+That too will eventually be automated.</p>
+</note>
+
+<example><title>Example</title>
+WebKdcKeyringAutoUdpate off<br />
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebKdcKeyringKeyLifetime</name>
+<description>Lifetime of keys in the keyring if we auto-update
+</description>
+<syntax>WebKdcAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>WebKdcKeyringKeyLifetime 30d</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive controls how long keys we automatically create for
+the keyring are valid. Keys will be valid from the time they are
+created until the lifetime is reached. Note that key lifetime is only
+checked on server startup and restarts.
+</p>
+
+<p>This
+directive is only consulted if WebKdcKeyringAutoUpdate is enabled.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+WebKdcKeyringKeyLifetime 60d<br/>
+</example>
+</usage>
+</directivesynopsis>
+
 </modulesynopsis>
