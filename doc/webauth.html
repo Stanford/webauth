@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.3, Modified 10/7/02</b></H4>
+<H4><b>DRAFT Version  0.4, Modified 10/25/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -905,8 +905,9 @@ query parameter, or within XML data.
 
 <p>assigned token attributes
 
-All time values are the time in seconds since 00:00:00 UTC, January 1, 1970,
-stored as numeric strings.
+All time values are stored in network byte order, and are the number of
+seconds since 00:00:00 UTC, January 1, 1970.
+
 
 <pre>
 name     description
@@ -1227,6 +1228,17 @@ WebAuthEndSession redirect|clearLogin|on|off
   <td>schemers</td>
    <td><ul>
          <li>Major changes, combine LS and WKDC into WebKDC
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>10/25/2002</td>
+  <td>0.4</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>Change time attributes inside of tokens back to 
+             4 byte binary network byte order.
        </ul>
    </td>
 </tr>
