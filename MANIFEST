@@ -61,7 +61,7 @@ src/libwebauth/base64.c
 src/libwebauth/key.c
 src/libwebauth/krb5.c
 src/libwebauth/misc.c
-src/libwebauth/openssl
+src/libwebauth/openssl                  AES include files (Directory)
 src/libwebauth/openssl/aes.h
 src/libwebauth/random.c
 src/libwebauth/token.c
