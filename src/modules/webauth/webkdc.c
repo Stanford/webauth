@@ -874,3 +874,251 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
     return token;
 }
 
+
+char *
+make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
+{
+    WEBAUTH_ATTR_LIST *alist;
+
+    unsigned char *token, *btoken;
+    int tlen, olen, status;
+    time_t curr = time(NULL);
+    const char *mwa_func="make_request_token";
+
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+                     "mod_webauth: %s: webauth_attr_list_new failed",
+                     mwa_func);
+        return NULL;
+    }
+
+    SET_TOKEN_TYPE(WA_TT_REQUEST);
+    SET_CREATION_TIME(curr);
+    SET_COMMAND(cmd);
+
+    tlen = webauth_token_encoded_length(alist);
+    token = (char*)apr_palloc(rc->r->pool, tlen);
+
+    status = webauth_token_create_with_key(alist, curr,
+                                           token, &olen, tlen, &st->key);
+    webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE) {
+        mwa_log_webauth_error(rc->r->server, status, 
+                              NULL, mwa_func,
+                              "webauth_token_create_with_key", NULL);
+        return NULL;
+    }
+
+    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(btoken, token, olen);
+    return btoken;
+}
+
+
+
+static int
+parse_get_creds_response(apr_xml_doc *xd,
+                         MWA_REQ_CTXT *rc,
+                         MWA_SERVICE_TOKEN *st,
+                         MWA_WACRED *creds,
+                         int num_creds,
+                         apr_array_header_t **acquired_creds)
+{
+    apr_xml_elem *e, *tokens, *token;
+    static const char *mwa_func = "parse_service_token_response";
+    char *token_data;
+    MWA_CRED_TOKEN *ct;
+    
+    e = xd->root;
+
+    if (strcmp(e->name, "errorResponse") == 0) {
+        log_error_response(e, mwa_func, rc->r->server, rc->r->pool);
+        return 0;
+    } else if (strcmp(e->name, "getTokensResponse") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webauth: %s: unknown response(%s)", 
+                     mwa_func, e->name);
+        return 0;
+    }
+
+    /* parse it already */
+    tokens = e->first_child;
+    if (!tokens || strcmp(tokens->name, "tokens") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webauth: %s: can't find <tokens>", 
+                     mwa_func);
+        return 0;
+    }
+
+    for (token = tokens->first_child; token; token = token->next) {
+        if (!token || strcmp(token->name, "token") != 0) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                         "mod_webauth: %s: "
+                         "ignoring unknown element in <tokens>: <%s>",
+                         mwa_func, token->name);
+            continue;
+        }
+
+        token_data = NULL;
+
+        for (e = token->first_child; e; e = e->next) {
+            if (strcmp(e->name, "tokenData") == 0) {
+                token_data = (char*)get_elem_text(rc->r->pool, e, NULL);
+            } else {
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                             "mod_webauth: %s: "
+                             "ignoring unknown element in <token>: <%s>",
+                             mwa_func, e->name);
+            }
+        }
+
+        if (token_data == NULL) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                         "mod_webauth: %s: "
+                         "missing <tokenData>",
+                         mwa_func);
+            return 0;
+        }
+
+        /* take token_data, parse it, expecting a cred-token */
+        ct = mwa_parse_cred_token(token_data, &st->key, rc);
+        if (ct != NULL) {
+            MWA_CRED_TOKEN **nct;
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                         "mod_webauth: %s: "
+                         "parsed %s %s",
+                         mwa_func, ct->cred_type, ct->cred_server);
+
+            if (*acquired_creds == NULL) 
+                *acquired_creds = apr_array_make(rc->r->pool, 2,
+                                                 sizeof(MWA_CRED_TOKEN*));
+            nct = apr_array_push(*acquired_creds);
+            *nct = ct;
+        }
+    }
+    return 1;
+}
+
+/*
+ * request a service token from the WebKDC
+ */
+int
+mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
+                          MWA_PROXY_TOKEN *pt,
+                          MWA_WACRED *creds,
+                          int num_creds,
+                          apr_array_header_t **acquired_creds)
+{
+    apr_xml_parser *xp;
+    apr_xml_doc *xd;
+    char *xml_request, *xml_response, *b64_pt;
+    int status, i;
+    static const char *mwa_func = "mwa_get_creds_from_webkdc";
+    apr_status_t astatus;
+    MWA_SERVICE_TOKEN *st;
+    MWA_STRING cred_tokens;
+    char *request_token;
+
+    /* get service token first */
+    st = mwa_get_service_token(rc->r->server, rc->sconf, rc->r->pool, 0);
+
+    if (st == NULL)
+        return 0;
+
+    /* make a new request-token */
+    request_token = make_request_token(rc, st, "getTokensRequest");
+    if (request_token == NULL)
+        return 0;
+
+    /* now build up all the cred tokens we need */
+    init_string(&cred_tokens, rc->r->pool);
+
+    for (i=0; i < num_creds; i++) {
+        char *id = apr_psprintf(rc->r->pool, "%d", i);
+        append_string(&cred_tokens,
+                      apr_pstrcat(rc->r->pool,
+                                  "<token type='cred' id='",id,"'>",
+                                  "<credentialType>",
+                                  apr_xml_quote_string(rc->r->pool,
+                                                       creds[i].type, 0),
+                                  "</credentialType>",
+                                  "<serverPrincipal>",
+                                  apr_xml_quote_string(rc->r->pool,
+                                                       creds[i].service, 0),
+                                  "</serverPrincipal>",
+                                  "</token>",
+                                  NULL),
+                      0);
+    }
+
+    /* base64 encode the webkdc-proxy-token */
+    b64_pt = (char*) apr_palloc(rc->r->pool, 
+                                apr_base64_encode_len(pt->wpt_len));
+    apr_base64_encode(b64_pt, pt->wpt, pt->wpt_len);
+
+    /* build the actual request */
+    xml_request = apr_pstrcat(rc->r->pool, 
+                              "<getTokensRequest>"
+                              "<requesterCredential type='service'>",
+                              st->token, /* b64'd, don't need to quote */
+                              "</requesterCredential>"
+                              "<subjectCredential type='proxy'>",
+                              "<proxyToken>",
+                              b64_pt, /* b64'd, don't need to quote */
+                              "</proxyToken>",
+                              "</subjectCredential>",
+                              "<requestToken>",
+                              request_token,
+                              "</requestToken>",
+                              "<tokens>",
+                              cred_tokens.data,
+                              "</tokens>"
+                              "</getTokensRequest>",
+                              NULL);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                 "mod_webauth: xml_request(%s)", xml_request);
+
+
+    xml_response = post_to_webkdc(xml_request, 0, 
+                                  rc->r->server, rc->sconf, rc->r->pool);
+
+    if (xml_response == NULL)
+        return 0;
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                 "mod_webauth: xml_response(%s)", xml_response);
+
+    
+    xp = apr_xml_parser_create(rc->r->pool);
+    if (xp == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webauth: %s: apr_xml_parser_create failed", 
+                     mwa_func);
+        return 0;
+    }
+
+    astatus = apr_xml_parser_feed(xp, xml_response, strlen(xml_response));
+    if (astatus == APR_SUCCESS) {
+        astatus = apr_xml_parser_done(xp, &xd);
+    }
+
+    if (astatus != APR_SUCCESS) {
+        char errbuff[1024];
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webauth: %s: "
+                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+                     mwa_func,
+                     apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
+                     astatus);
+        return 0;
+    }
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                 "mod_webauth: xml doc root(%s)", xd->root->name);
+
+    return parse_get_creds_response(xd, rc, st, creds, num_creds, 
+                                    acquired_creds);
+}

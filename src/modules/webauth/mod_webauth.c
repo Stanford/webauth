@@ -39,42 +39,6 @@
 
 #include "mod_webauth.h"
 
-/* attr list macros to make code easier to read and audit 
- * we don't need to check error codes since we are using
- * WA_F_NONE, which doesn't allocate any memory.
- */
-
-#define ADD_STR(name,value) \
-       webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-
-#define ADD_PTR(name,value, len) \
-       webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-
-#define ADD_TIME(name,value) \
-       webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
-
-#define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
-#define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
-#define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
-#define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
-#define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
-#define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
-#define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
-#define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
-#define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
-#define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
-#define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
-#define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
-#define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
-#define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
-#define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
-#define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
-#define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
-#define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
 
 /*
  * return 1 if current request is "https"
@@ -149,6 +113,18 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
 }
 
+/*
+ * add set cookie header
+ */
+static int
+set_pending_cookie_cb(void *rec, const char *key, const char *value)
+{
+    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
+    if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0)
+        apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
+    return 1;
+}
+
 /* see if we have to update our cookie and save it in err_headers_out
  * so it always gets sent. check_cookie and check_url both will
  * set the N_APP_COOKIE note if they need a new cooke 
@@ -156,14 +132,12 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
 static void
 set_pending_cookies(MWA_REQ_CTXT *rc) 
 {
-    const char *cookie = mwa_get_note(rc->r, N_APP_COOKIE);
-    if (cookie != NULL)
-        apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
-    /* FIXME: HARDCODED, change to iterate through notes and
-       set cookies for notes starting with mod_webauth_COOKIE_  */
-    cookie = mwa_get_note(rc->r, "mod_webauth_COOKIE_webauth_pt_krb5");
-    if (cookie != NULL)
-        apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
+    apr_table_t *t;
+    if (rc->r->main != NULL)
+        t = rc->r->main->notes;
+    else 
+        t = rc->r->notes;
+    apr_table_do(set_pending_cookie_cb, rc, t, NULL);
 }
 
 /*
@@ -624,8 +598,36 @@ proxy_cookie_name(const char *proxy_type, MWA_REQ_CTXT *rc)
 static char *
 proxy_cookie_note_name(const char *proxy_type, MWA_REQ_CTXT *rc) 
 {
+    /* must start with mod_webauth_COOKIE_ to end up getting set 
+       in fixups */
     return apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_webauth_pt_",
                        proxy_type, NULL);
+}
+
+
+/*
+ * given the proxy_type (krb5, etc) return the cookie name to use 
+ */
+static char *
+cred_cookie_name(const char *cred_type, 
+                 const char *cred_server,
+                 MWA_REQ_CTXT *rc) 
+{
+    return apr_pstrcat(rc->r->pool, "webauth_ct_", cred_type, 
+                       cred_server, NULL);
+}
+
+/*
+ * given the cred type/server (krb5, etc) return the cookie note name to use 
+ */
+static char *
+cred_cookie_note_name(const char *cred_type, 
+                      const char *cred_server, MWA_REQ_CTXT *rc) 
+{
+    /* must start with mod_webauth_COOKIE_ to end up getting set 
+       in fixups */
+    return apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_webauth_ct_",
+                       cred_type, cred_server, NULL);
 }
 
 /*
@@ -704,6 +706,75 @@ make_proxy_cookie(const char *proxy_type,
     rc->pt->expiration_time = expiration_time;
     rc->pt->wpt = apr_pstrmemdup(rc->r->pool, wpt, wpt_len);
     rc->pt->wpt_len = wpt_len;
+    return 1;
+}
+
+
+/*
+ * create a cred-token cookie.
+ */
+static int
+make_cred_cookie(MWA_CRED_TOKEN *ct,
+                  MWA_REQ_CTXT *rc)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    char *token, *btoken, *cookie;
+    int tlen, olen, status;
+    const char *mwa_func="make_cred_cookie";
+    status = WA_ERR_NONE;
+    time_t creation_time;
+    char *cookie_name;
+
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+                     "mod_webauth: %s: webauth_attr_list_new failed", 
+                     mwa_func);
+        return 0;
+    }
+
+    creation_time = time(NULL);
+
+    SET_TOKEN_TYPE(WA_TT_CRED);
+    SET_CRED_TYPE(ct->cred_type);
+    SET_CRED_SERVER(ct->cred_server);
+    SET_SUBJECT(ct->subject);
+    SET_CRED_DATA(ct->cred_data, ct->cred_data_len);
+    SET_EXPIRATION_TIME(ct->expiration_time);
+    SET_CREATION_TIME(ct->creation_time);
+    
+    tlen = webauth_token_encoded_length(alist);
+    token = (char*)apr_palloc(rc->r->pool, tlen);
+
+    if (rc->sconf->ring == NULL)
+        return 0;
+
+    status = webauth_token_create(alist, 0, token, 
+                                  &olen, tlen, rc->sconf->ring);
+    webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE) {
+        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+                              "webauth_token_create", ct->subject);
+        return 0;
+    }
+
+    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(btoken, token, olen);
+
+    cookie_name = cred_cookie_name(ct->cred_type, ct->cred_server, rc);
+    cookie = apr_psprintf(rc->r->pool,
+                          "%s=%s; path=/;%s",
+                          cookie_name,
+                          btoken,
+                          is_https(rc->r) ? "secure" : "");
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: setting cookie(%s): (%s)\n", 
+                     mwa_func, cookie_name, cookie);
+
+    mwa_setn_note(rc->r, cred_cookie_note_name(ct->cred_type, ct->cred_server,
+                                               rc), cookie);
     return 1;
 }
 
@@ -951,7 +1022,6 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
     }
 }
 
-
 /*
  * parse a proxy-token from a cookie. 
  * return pointer to it on success, NULL on failure.
@@ -991,7 +1061,7 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     if (tt == NULL || strcmp(tt, WA_TT_PROXY) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: token type(%s) not (%s)",
-                     mwa_func, tt ? tt : "(null)", WA_TT_APP);
+                     mwa_func, tt ? tt : "(null)", WA_TT_PROXY);
         goto cleanup;
     }
 
@@ -1616,10 +1686,11 @@ extra_redirect(MWA_REQ_CTXT *rc)
 
 
 /*
- * check cookie for valid app-token. If an epxired one is found,
- * do a Set-Cookie to blank it out.
+ * check cookie for valid cred-token. If an epxired one is found,
+ * do a Set-Cookie to blank it out. returns NULL on error/expired
+ * cookie.
  */
-static int
+MWA_CRED_TOKEN *
 parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 {
     return 0;
@@ -1629,7 +1700,7 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
  * add a proxy type to the array if it isn't present.
  */
 static void
-add_needed_proxy_type(apr_array_header_t *a, char *type)
+add_proxy_type(apr_array_header_t *a, char *type)
 {
    char **ntype;
    int i;
@@ -1651,7 +1722,8 @@ add_needed_proxy_type(apr_array_header_t *a, char *type)
  */
 static int 
 acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
-              MWA_WACRED *cred, int num_creds)
+              MWA_WACRED *creds, int num_creds,
+              apr_array_header_t **acquired_creds)
 {
     int i;
     const char *mwa_func="acquire_creds";
@@ -1679,15 +1751,42 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
                  "mod_webauth: %s: suhweet! we have this proxy type: (%s)",
                  mwa_func, proxy_type);
 
+#if 1
     for (i=0; i < num_creds; i++) {
-        if (strcmp(proxy_type, cred[i].type) == 0) {
+        if (strcmp(proxy_type, creds[i].type) == 0) {
             if (rc->sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                              "mod_webauth: %s: need this cred: (%s) (%s)",
-                             mwa_func, cred[i].type, cred[i].service);
+                             mwa_func, creds[i].type, creds[i].service);
             }
         }
     }
+#endif 
+
+    if (!mwa_get_creds_from_webkdc(rc, pt, creds, num_creds, acquired_creds)) {
+
+        /* FIXME: what do we want to do here? mwa_get_creds_from_webkdc
+           will log any errors. We could either cause a failure_redirect
+           or let the request continue without all the desired credentials
+           and let the app cope. This might need to be a directive.
+           for now, lets just continue... */
+
+        if (rc->sconf->debug) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webauth: %s: mwa_get_creds_from_webkdc failed!",
+                         mwa_func);
+        }
+    } else {
+        /* need to construct new cookies for newly gathered creds */
+        if (*acquired_creds) {
+            MWA_CRED_TOKEN **creds = (MWA_CRED_TOKEN**)(*acquired_creds)->elts;
+            int i, num_creds = (*acquired_creds)->nelts;
+            for (i=0; i < num_creds; i++) {
+                make_cred_cookie(creds[i], rc);
+            }
+        }
+    }
+
 
     return OK;
 }
@@ -1700,9 +1799,13 @@ static int
 gather_creds(MWA_REQ_CTXT *rc)
 {
     int i, code;
-    apr_array_header_t *needed_creds = NULL;
-    apr_array_header_t *needed_proxys = NULL;
+    apr_array_header_t *needed_creds = NULL; /* (MWA_WACRED) */
+    apr_array_header_t *needed_proxy_types = NULL; /* (char*) */
+    apr_array_header_t *all_proxy_types = NULL; /* (char*) */
+    apr_array_header_t *gathered_creds = NULL; /* (MWA_CRED_TOKEN*) */
+    apr_array_header_t *acquired_creds = NULL; /* (MWA_CRED_TOKEN*) */
     MWA_WACRED *ncred, *cred;
+    MWA_CRED_TOKEN *ct, **nct;
  
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -1712,33 +1815,68 @@ gather_creds(MWA_REQ_CTXT *rc)
     
     for (i=0; i < rc->dconf->creds->nelts; i++) {
         if (cred[i].service) {
-            /* keep track of the ones we need */
-            if (!parse_cred_token_cookie(rc, cred)) {
+
+            if (all_proxy_types == NULL)
+                all_proxy_types = apr_array_make(rc->r->pool, 2,
+                                                 sizeof(char*));
+            add_proxy_type(all_proxy_types, cred[i].type);
+
+            /* check the cookie first */
+            ct = parse_cred_token_cookie(rc, cred);
+
+            if (ct != NULL) {
+                /* save in gathered creds */
+                if (gathered_creds == NULL)
+                    gathered_creds = apr_array_make(rc->r->pool, 
+                                                    rc->dconf->creds->nelts,
+                                                    sizeof(MWA_CRED_TOKEN*));
+                nct = apr_array_push(gathered_creds);
+                *nct = ct;
+            } else {
+                /* keep track of the ones we need */
                 if (needed_creds == NULL) {
                     needed_creds = apr_array_make(rc->r->pool, 5,
                                                   sizeof(MWA_WACRED));
-                    needed_proxys = apr_array_make(rc->r->pool, 2,
-                                                   sizeof(char*));
+                    needed_proxy_types = apr_array_make(rc->r->pool, 2,
+                                                        sizeof(char*));
                 }
                 ncred = apr_array_push(needed_creds);
                 ncred->type = cred[i].type;
                 ncred->service = cred[i].service;
-                add_needed_proxy_type(needed_proxys, ncred->type);
+                add_proxy_type(needed_proxy_types, cred[i].type);
             }
         }
     }
 
-    if (needed_proxys != NULL) {
-        char **proxy = (char**)needed_proxys->elts;
+    /* now, for each proxy type that has needed credentials, 
+       try and acquire them from the webkdc. */
+    if (needed_proxy_types != NULL) {
+        char **proxy = (char**)needed_proxy_types->elts;
         cred = (MWA_WACRED*) needed_creds->elts;
 
         /* foreach proxy type, attempt to acquire the needed creds */
-        for (i=0; i < needed_proxys->nelts; i++) {
-            code = acquire_creds(rc, proxy[i], cred, needed_creds->nelts);
+        for (i=0; i < needed_proxy_types->nelts; i++) {
+            code = acquire_creds(rc, proxy[i], cred, 
+                                 needed_creds->nelts,
+                                 &acquired_creds);
             if (code != OK)
                 return code;
         }
     }
+
+    if (gathered_creds != NULL || acquired_creds != NULL) {
+        if (gathered_creds == NULL)
+            gathered_creds = acquired_creds;
+        else if (acquired_creds != NULL)
+            apr_array_cat(gathered_creds, acquired_creds);
+    }
+
+    /* now go through all_proxy_types, and for do any special
+       handling for the proxy type and all its credentials.
+       for example, for krb5, we'll want to create the cred file,
+       dump in all the creds, and point KRB%CCNAME at it for 
+       cgi programs.
+    */
 
     return OK;
 }
