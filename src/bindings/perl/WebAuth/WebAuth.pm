@@ -168,13 +168,14 @@ random data was unavailable. The returned data is suitable
 for use as a key. Use the constants WA_AES_128, WA_AES_192, and
 WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
 
-=item key_create_aes(key_material)
+=item key_create(type, key_material)
 
- $key = key_create_aes($key_material);
+ $key = key_create_key($type, $key_material);
 
-Creates a reference to a WEBAUTH_AES_KEYPtr object, or undef
-on error. $key_material must be a string with a length of
-WA_AES_128, WA_AES_192, or WA_AES_256. $key should be set
+Creates a reference to a WEBAUTH_KEYPtr object, or undef
+on error. $type must be WA_AES_KEY, and $key_material must 
+be a string with a length of
+WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
 
 =item token_create(attrs, key[, status])
@@ -208,8 +209,10 @@ The following constants from webauth.h are available:
   WA_ERR_NO_MEM
   WA_ERR_BAD_HMAC
   WA_ERR_RAND_FAILURE
+  WA_ERR_BAD_KEY
   WA_ERR_NONE
 
+  WA_AES_KEY
   WA_AES_128
   WA_AES_192
   WA_AES_256

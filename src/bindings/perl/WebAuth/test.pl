@@ -127,17 +127,19 @@ ok(WebAuth::WA_AES_256, length(WebAuth::random_key(WebAuth::WA_AES_256)));
 
 ######################################## keys
 
-$key = WebAuth::key_create_aes(WebAuth::random_key(WebAuth::WA_AES_128));
+$key = WebAuth::key_create(WebAuth::WA_AES_KEY,
+			   WebAuth::random_key(WebAuth::WA_AES_128));
 ok(defined($key));
-ok(isa($key, 'WEBAUTH_AES_KEYPtr'));
+ok(isa($key, 'WEBAUTH_KEYPtr'));
 
 # invalid key material length
-$key = WebAuth::key_create_aes(WebAuth::random_key(2));
+$key = WebAuth::key_create(WebAuth::WA_AES_KEY, WebAuth::random_key(2));
 ok(undef, $key);
 
 ######################################## tokens
 
-$key = WebAuth::key_create_aes(WebAuth::random_key(WebAuth::WA_AES_128));
+$key = WebAuth::key_create(WebAuth::WA_AES_KEY,
+			   WebAuth::random_key(WebAuth::WA_AES_128));
 $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
 $token = WebAuth::token_create($attrs, $key, $status);

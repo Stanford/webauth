@@ -25,7 +25,9 @@ BOOT:
     IV_CONST(WA_ERR_NO_MEM);
     IV_CONST(WA_ERR_BAD_HMAC);
     IV_CONST(WA_ERR_RAND_FAILURE);
+    IV_CONST(WA_ERR_BAD_KEY);
     IV_CONST(WA_ERR_NONE);
+    IV_CONST(WA_AES_KEY);
     IV_CONST(WA_AES_128);
     IV_CONST(WA_AES_192);
     IV_CONST(WA_AES_256);
@@ -353,16 +355,17 @@ CODE:
     }
 }
 
-WEBAUTH_AES_KEY *
-webauth_key_create_aes(key_material)
+WEBAUTH_KEY *
+webauth_key_create(type,key_material)
+int type
 SV * key_material
-PROTOTYPE: $
+PROTOTYPE: $$
 CODE:
 {
     STRLEN n_input;
     unsigned char *p_input;
     p_input = SvPV(key_material, n_input);
-    RETVAL = webauth_key_create_aes(p_input, n_input);
+    RETVAL = webauth_key_create(type, p_input, n_input);
 }
 OUTPUT:
     RETVAL
@@ -371,7 +374,7 @@ OUTPUT:
 void
 webauth_token_create(attrs,key,...)
 SV *attrs
-WEBAUTH_AES_KEY *key
+WEBAUTH_KEY *key
 PROTOTYPE: $$;$
 CODE:
 {
@@ -421,7 +424,7 @@ CODE:
 void
 webauth_token_parse(buffer,key,...)
 SV *buffer
-WEBAUTH_AES_KEY *key
+WEBAUTH_KEY *key
 PROTOTYPE: $$;$
 CODE:
 {
@@ -453,13 +456,13 @@ CODE:
     }
 }
 
-MODULE = WebAuth        PACKAGE = WEBAUTH_AES_KEYPtr  PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
 
 void
 webauth_DESTROY(key)
-    WEBAUTH_AES_KEY *key
+    WEBAUTH_KEY *key
 CODE:
-    webauth_key_destroy_aes(key);
+    webauth_key_destroy(key);
 
  /*
  **  Local variables:
