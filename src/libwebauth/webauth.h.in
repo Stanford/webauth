@@ -54,18 +54,22 @@ typedef enum {
 }  WEBAUTH_ERR;    
 
 
-/** protocol error codes (PEC) for error-token and XML messages.
+/* protocol error codes (PEC) for error-token and XML messages.
+ *
+ * these numbers must not change, as they are part of the protocol 
  */
 typedef enum {
     WA_PEC_SERVICE_TOKEN_EXPIRED = 1,
-    WA_PEC_SERVICE_TOKEN_INVALID, /* unable to decrypt and/or bad format */
-    WA_PEC_PROXY_TOKEN_EXPIRED,
-    WA_PEC_PROXY_TOKEN_INVALID, /* unable to decrypt and/or bad format */
-    WA_PEC_INVALID_REQUEST,
-    WA_PEC_UNAUTHORIZED,
-    WA_PEC_SERVER_FAILURE,
-    WA_PEC_REQUEST_TOKEN_STALE,
-    WA_PEC_REQUEST_TOKEN_INVALID, /* unable to decrypt and/or bad format */
+    WA_PEC_SERVICE_TOKEN_INVALID = 2, /* unable to decrypt and/or bad format */
+    WA_PEC_PROXY_TOKEN_EXPIRED = 3,
+    WA_PEC_PROXY_TOKEN_INVALID = 4, /* unable to decrypt and/or bad format */
+    WA_PEC_INVALID_REQUEST = 5, /* missing data, incorrect data, etc */
+    WA_PEC_UNAUTHORIZED = 6,    /* access denied */
+    WA_PEC_SERVER_FAILURE = 7,  /* server failure, try again if you'd like */
+    WA_PEC_REQUEST_TOKEN_STALE = 8, 
+    WA_PEC_REQUEST_TOKEN_INVALID = 9, /* unable to decrypt and/or bad format */
+    WA_PEC_GET_CRED_FAILURE = 10, /* unable to get requested credential */
+    WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
 }  WEBAUTH_ET_ERR;    
 
 /******************** constants for token attributes **********/
