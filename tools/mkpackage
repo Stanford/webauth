@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+$ID = q$Id$;
+#
+# mkpackage -- Wrapper around tar to create a WebAuth module package.
+#
+# This is a small and fairly simple wrapper around tar to create a module
+# package.  It takes the root of the Apache tree, the name of the tar file to
+# create, and then a series of file specifications (possibly with wildcards)
+# of the files inside the Apache tree to put into the tar file.  It's used for
+# generating binary packages of the WebAuth modules.
+
+require 5.005;
+
+use strict;
+use vars qw($ID);
+
+use Cwd qw(getcwd);
+
+die "Usage: mkpackage <apache-root> <tar-name> <files> [<files> ...]\n"
+    unless (@ARGV >= 3);
+my $root = shift;
+my $tarname = shift;
+my $apachedir = $root;
+$apachedir =~ s%/+$%%;
+$apachedir =~ s%^.*/%%;
+my @files = map { "$apachedir/$_" } @ARGV;
+my $tarname = cwd . '/' . $tarname;
+chdir $root or die "$0: cannot chdir to $root: $!\n";
+system ("tar cf '$tarname' @files") == 0
+    or die "$0: tar exited with status ", ($? >> 8), "\n";
+system ('gzip', '-9', $tarname) == 0
+    or die "$0: gzip exited with status ", ($? >> 8), "\n";
+exit 0;
+

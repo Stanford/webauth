@@ -179,3 +179,4 @@ tools/install-sh                        Installation shell script
 tools/ltmain.sh                         Base libtool script
 tools/makedepend                        Generate dependencies
 tools/mkmanifest                        Generate an initial manifest
+tools/mkpackage                         Generate a WebAuth module package

@@ -1,15 +1,22 @@
 # Makefile for WebAuth
 # $Id$
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-VPATH = @srcdir@
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
+VPATH		= @srcdir@
+
+APACHE_ROOT	= @APACHE_ROOT@
 
 @SET_MAKE@
 
 # The directory name and tar file to use when building a release.
 TARDIR		= @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 TARNAME		= $(TARDIR).tar
+
+# The tarball names to use for the WebAuth and WebKDC module packages.
+WEBAUTH_PKG	= @PACKAGE_TARNAME@-modules-@PACKAGE_VERSION@.tar
+WEBKDC_PKG	= @PACKAGE_TARNAME@-webkdc-@PACKAGE_VERSION@.tar
 
 # DISTDIRS gets all directories from the MANIFEST, and DISTFILES gets all
 # regular files.  Anything not listed in the MANIFEST will not be included in
@@ -83,3 +90,14 @@ check-manifest:
 	sed -e 1,2d -e 's/ .*//' MANIFEST > LIST.manifest
 	tools/mkmanifest > LIST.real
 	diff -u LIST.manifest LIST.real
+
+# Make a package of just the Stanford configuration files and the WebAuth
+# modules, for binary distributions.
+package-webauth: install
+	tools/mkpackage '$(APACHE_ROOT)' '$(WEBAUTH_PKG)' \
+	    'conf/stanford-*' 'modules/mod_webauth*'
+
+# Make a package of the WebKDC files and module.
+package-webkdc: install-webkdc
+	tools/mkpackage '$(APACHE_ROOT)' '$(WEBKDC_PKG)' \
+	    'modules/mod_webkdc*' 'webkdc'

@@ -2,9 +2,12 @@
 
 WebAuth 3.2.0 (in progress)
 
- *) removed extra logging from mod_webauth/webkdc.c, and moved
-    other extraneous logging so its only logged at a level of
-    APLOG_DEBUG when WebAuthDebug is turned on.
+ *) Removed extra logging from mod_webauth/webkdc.c, and moved other
+    extraneous logging so its only logged at a level of APLOG_DEBUG when
+    WebAuthDebug is turned on.
+
+ *) Added package-webauth and package-webkdc targets for maintainers to
+    generate WebAuth module packages.
 
 WebAuth 3.1.2 (2003-05-29)
 
@@ -17,8 +20,8 @@ WebAuth 3.1.2 (2003-05-29)
     connection expiry, via ignoring SIGPIPE.
 
  *) mod_webauth: Correctly construct the return url for reverse proxies 
-   (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
-   for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
+    (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
+    for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
 
  *) mod_webauth: Don't try to attr decode a zero length service token 
     cache file.  Log a warning and return NULL like there was no file.
