@@ -24,5 +24,6 @@ mod_webkdc.o: $(SOURCES)
 
 install:
 	$(APXS) -i mod_webkdc.la
+
 clean:
 	rm -rf *.o *.la *.lo *.slo .libs *~ core \#*
