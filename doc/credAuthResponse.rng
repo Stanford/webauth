@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<element name="passwordAuthResponse"
+         xmlns="http://relaxng.org/ns/structure/1.0"
+         xmlns:a="http://relaxng.org/ns/annotation/1.0"
+	datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <a:documentation>
+	This is the response to a valid and authorized 
+	encryptedCredAuth message. 
+  </a:documentation>
+  <element name="messageID">
+    <data type=integer\>
+  </element>
+  <optional>
+  <a:documentation> 
+  Version is assumed to be 1 if not present 
+  </a:documentation> 	
+  <element name="procotolVersion">
+    <data type=integer/>
+  </element>
+  </optional>
+  <element name="authResponse">
+    <zeroOrMore>
+	<element name="serviceCred">
+	  <element name="serviceName">
+		<text/>
+	  </element>
+	  <element name="authType">
+	     <choice> 
+	       <value>kerberos_4</value>
+       	       <value>kerberos_5</value>
+	     </choice>
+	   </element>
+ 	   <element name="authData">
+		<data type=base64binary/>
+	   </element> 
+	  </element>
+	  </zeroOrMore>
+	</element>
+</element>
