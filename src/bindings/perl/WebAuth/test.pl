@@ -12,10 +12,10 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-BEGIN { plan tests => 56 }
+BEGIN { plan tests => 41 }
 my $run_kerb = 0;
 
-#BEGIN { plan tests => 76 }
+#BEGIN { plan tests => 47 }
 #my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
@@ -24,7 +24,7 @@ if ($run_kerb) {
     # FIXME: need better way to config these
     # user/password to attempt to login as
     $kuser="schemers";
-    $kpass="xxxxx";
+    $kpass="xxxxxx";
     # path to keytab file used to verify tgt and also 
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
@@ -37,12 +37,18 @@ if ($run_kerb) {
     $krhost="lichen.stanford.edu";
 }
 
+# do it all in an eval block to catch uncaught exceptions
+
+eval {
+
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
+#use WebAuth::Exception;
+
 sub compareHashes;
 
-my ($s, $c, $len, $output);
+my ($len, $output);
 
 #########################
 
@@ -65,8 +71,12 @@ ok(WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')),'\000\001\002'
 
 ok(WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')), '\000\001\002');
 
-# test some failure
-ok(WebAuth::base64_decode('axc'), undef);
+# test failure
+eval {
+    WebAuth::base64_decode('axc');
+};
+
+ok (isa($@, "WebAuth::Exception"));
 
 ########################################  hex
 
@@ -79,51 +89,41 @@ ok(WebAuth::hex_encode('hello'), '68656c6c6f');
 ok(WebAuth::hex_decode('68656c6c6f'), 'hello');
 
 # test some failure
-ok(WebAuth::hex_decode('FOOBAR'), undef);
+eval {
+    ok(WebAuth::hex_decode('FOOBAR'), undef);
+};
+ok (isa($@, "WebAuth::Exception"));
 
 ######################################### attr tests
 
-($s, $output) =WebAuth::attrs_encode({"x"=>"1"});
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq "x=1;");
 
-($s, $output) =WebAuth::attrs_encode({"x"=>";"});
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq "x=;;;");
-
-($s, $output) =WebAuth::attrs_encode({"x"=>"1;"});
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq "x=1;;;");
-
-($s, $output) =WebAuth::attrs_encode({"x"=>"1", "y"=>"2"});
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq "x=1;y=2;");
-
-($s, $output) =WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"});
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq "x=\000;y=123;");
+ok(WebAuth::attrs_encode({"x"=>"1"}) eq "x=1;");
+ok(WebAuth::attrs_encode({"x"=>";"}) eq "x=;;;");
+ok(WebAuth::attrs_encode({"x"=>"1;"}) eq "x=1;;;");
+ok(WebAuth::attrs_encode({"x"=>"1", "y"=>"2"}) eq "x=1;y=2;");
+ok(WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"}) eq "x=\000;y=123;");
 
 # try and encode, followed by a decode and compare the hashes
 my $a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
 
 my $ea = "x=1;y=hello;z=goodbye;";
 
-($s, $output) = WebAuth::attrs_encode($a);
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output eq $ea);
-
-($s, $b) = WebAuth::attrs_decode($ea);
-ok($s, WebAuth::WA_ERR_NONE);
+ok(WebAuth::attrs_encode($a) eq $ea);
+$b = WebAuth::attrs_decode($ea);
 ok(compareHashes($a,$b), 1);
 
 # some failures
-($s, $b) = WebAuth::attrs_decode('x=1;y=23');
-ok($s, WebAuth::WA_ERR_CORRUPT);
-ok($b, undef);
+eval {
+    $b = WebAuth::attrs_decode('x=1;y=23');
+};
+ok (isa($@, "WebAuth::Exception"));
+ok($@->status(), WebAuth::WA_ERR_CORRUPT);
 
-($s, $b) = WebAuth::attrs_decode('x=1;zr');
-ok($s, WebAuth::WA_ERR_CORRUPT);
-ok($b, undef);
+eval {
+    $b = WebAuth::attrs_decode('x=1;zr');
+};
+ok (isa($@, "WebAuth::Exception"));
+ok($@->status(), WebAuth::WA_ERR_CORRUPT);
 
 ######################################## random
 
@@ -142,8 +142,10 @@ ok(defined($key));
 ok(isa($key, 'WEBAUTH_KEYPtr'));
 
 # invalid key material length
-$key = WebAuth::key_create(WebAuth::WA_AES_KEY, WebAuth::random_key(2));
-ok(!defined($key));
+eval {
+    $key = WebAuth::key_create(WebAuth::WA_AES_KEY, WebAuth::random_key(2));
+};
+ok (isa($@, "WebAuth::Exception"));
 
 # $ring = WebAuth::keyring_new($initial_capacity);
 # WebAuth::keyring_add($ring, c, vf, vt, $key); # use webauth_key_copy internally
@@ -160,21 +162,15 @@ ok(isa($ring, 'WEBAUTH_KEYRINGPtr'));
 ok ($ring != undef);
 
 my $curr=time();
-$s = WebAuth::keyring_add($ring, $curr, $curr, $curr+3600, $key);
-ok($s, WebAuth::WA_ERR_NONE);
+WebAuth::keyring_add($ring, $curr, $curr, $curr+3600, $key);
 
 $key = undef;
-my $token;
-($s, $token) = WebAuth::token_create($attrs, 0, $ring);
+my $token = WebAuth::token_create($attrs, 0, $ring);
 
 ok(length($token));
-ok($s, WebAuth::WA_ERR_NONE);
 
-my $attrs2 = undef;
+my $attrs2 = WebAuth::token_parse($token, 0, $ring);
 
-($s, $attrs2) = WebAuth::token_parse($token, 0, $ring);
-
-ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
 
 
@@ -182,17 +178,12 @@ $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			   WebAuth::random_key(WebAuth::WA_AES_128));
 $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-($s, $token) = WebAuth::token_create($attrs, 0, $key);
+$token = WebAuth::token_create($attrs, 0, $key);
 
 ok(length($token));
-ok($s, WebAuth::WA_ERR_NONE);
 
-$attrs2 = undef;
-($s, $attrs2) = WebAuth::token_parse($token, 0, $key);
-
-ok($s, WebAuth::WA_ERR_NONE);
+$attrs2 = WebAuth::token_parse($token, 0, $key);
 ok(compareHashes($attrs, $attrs2), 1);
-
 
 
 ######################################### key rings
@@ -200,96 +191,77 @@ ok(compareHashes($attrs, $attrs2), 1);
 # FIXME: cleanup files, compare them, should probably use temp file names, etc.
 
 # write key ring
-$s = WebAuth::keyring_write_file($ring, "webauth_keyring");
-ok($s, WebAuth::WA_ERR_NONE);
+WebAuth::keyring_write_file($ring, "webauth_keyring");
 
 # read key ring
-my $ring2;
-
-($s, $ring2) = WebAuth::keyring_read_file("webauth_keyring");
+my $ring2 = WebAuth::keyring_read_file("webauth_keyring");
 ok(isa($ring2, 'WEBAUTH_KEYRINGPtr'));
-ok($s, WebAuth::WA_ERR_NONE);
 
 # write key ring2
-$s = WebAuth::keyring_write_file($ring2, "webauth_keyring2");
-ok($s, WebAuth::WA_ERR_NONE);
+WebAuth::keyring_write_file($ring2, "webauth_keyring2");
 
 #print "attrs2($attrs) status($s)\n";
-
-
 
 ######################################## krb5
 
 if ($run_kerb) {
-    ($s, $c) = WebAuth::krb5_new();
+    eval {
+	my $c = WebAuth::krb5_new();
 
-    ok($s, WebAuth::WA_ERR_NONE);
-    ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
+	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-    my $code = WebAuth::krb5_error_code($c);
-    ok($code, 0);
+	my $code = WebAuth::krb5_error_code($c);
+	ok($code, 0);
 
-    my $msg = WebAuth::krb5_error_message($c);
-    ok($msg eq "success");
+	my $msg = WebAuth::krb5_error_message($c);
+	ok($msg eq "success");
 
-    my $ctx_princ;
+	#FIXME my $ctx_princ = WebAuth::krb5_get_principal($c);
 
-    ($s, $ctx_princ) = WebAuth::krb5_get_principal($c);
-    ok($s, WebAuth::WA_ERR_INVALID_CONTEXT);
+	WebAuth::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);
 
-    $s = WebAuth::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my $ctx_princ = WebAuth::krb5_get_principal($c);
 
-    ($s, $ctx_princ) = WebAuth::krb5_get_principal($c);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my ($tgt, $expiration) = WebAuth::krb5_export_tgt($c);
 
-    my ($tgt, $expiration);
-    ($s, $tgt, $expiration) = WebAuth::krb5_export_tgt($c);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my $princ = WebAuth::krb5_service_principal($c, $kservice, $khost);
 
-    my $princ;
-    ($s, $princ) = WebAuth::krb5_service_principal($c, $kservice, $khost);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my $ticket;
 
-    my $ticket;
-    ($s, $ticket, $expiration) = WebAuth::krb5_export_ticket($c, $princ);
-    ok($s, WebAuth::WA_ERR_NONE);
+	($ticket, $expiration) = WebAuth::krb5_export_ticket($c, $princ);
 
-    my $rprinc;
-    ($s, $rprinc) = WebAuth::krb5_service_principal($c, $krservice, $krhost);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my $rprinc = WebAuth::krb5_service_principal($c, $krservice, $krhost);
 
-    my $request;
-    ($s, $request) = WebAuth::krb5_mk_req($c, $rprinc);
-    ok($s, WebAuth::WA_ERR_NONE);
+	my $request = WebAuth::krb5_mk_req($c, $rprinc);
 
-    my $client_princ;
-    ($s, $client_princ) = WebAuth::krb5_rd_req($c, $request, $kkeytab);
-    ok($s, WebAuth::WA_ERR_NONE);
-    #print "client = ($client_princ)\n";
+	my $client_princ = WebAuth::krb5_rd_req($c, $request, $kkeytab);
+	#print "client = ($client_princ)\n";
 
-    # nuke current context and import from tgt we created
-    $c = undef;
-    ($s, $c) = WebAuth::krb5_new();
-    ok($s, WebAuth::WA_ERR_NONE);
-    ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
+	# nuke current context and import from tgt we created
+	$c = WebAuth::krb5_new();
+	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-    $s = WebAuth::krb5_init_via_tgt($c, $tgt);
-    ok($s, WebAuth::WA_ERR_NONE);
+	WebAuth::krb5_init_via_tgt($c, $tgt);
 
-    # import ticket we exported
-    $s = WebAuth::krb5_import_ticket($c, $ticket);
-    ok($s, WebAuth::WA_ERR_NONE);
+	# import ticket we exported
+	WebAuth::krb5_import_ticket($c, $ticket);
+	# nuke current context and get from keytab
+	$c = WebAuth::krb5_new();
+	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-    # nuke current context and get from keytab
-    $c = undef;
-    ($s, $c) = WebAuth::krb5_new();
-    ok($s, WebAuth::WA_ERR_NONE);
-    ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
-
-    $s = WebAuth::krb5_init_via_keytab($c, $kkeytab);
-    ok($s, WebAuth::WA_ERR_NONE);
+	WebAuth::krb5_init_via_keytab($c, $kkeytab);
+    };
+    ok (!isa($@, "WebAuth::Exception"));
+    if (isa($@, "WebAuth::Exception")) {
+	die $@;
+    }
 }
+
+};
+if (isa($@, "WebAuth::Exception")) {
+    die $@;
+}
+
 
 sub compareHashes {
     my $a = shift;
@@ -301,7 +273,7 @@ sub compareHashes {
     my $an = scalar @akeys;
     my $bn = scalar @bkeys;
 
-    my $i;
+    my ($i, $key);
 
     if ($an != $bn) {
 	return 0;

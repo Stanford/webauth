@@ -7,6 +7,33 @@
 
 #include "../../../libwebauth/webauth.h"
 
+void
+webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
+{
+    HV *hv;
+    SV *rv;
+
+    hv = newHV();
+    hv_store(hv, "status", 6, newSViv(s), 0);
+    if (detail != NULL) {
+        hv_store(hv, "detail", 6, newSVpv(detail,0), 0);
+    }
+    if (s == WA_ERR_KRB5 && c != NULL) {
+        hv_store(hv, "krb5_ec", 7, newSViv(webauth_krb5_error_code(c)), 0);
+        hv_store(hv, "krb5_em", 7, 
+                  newSVpv(webauth_krb5_error_message(c),0), 0);
+    }
+
+	if (CopLINE(PL_curcop)) {
+        hv_store(hv, "line", 4, newSViv(CopLINE(PL_curcop)), 0);
+        hv_store(hv, "file", 4, newSVpv(CopFILE(PL_curcop), 0), 0);
+    }
+    rv = newRV_noinc((SV*)hv);
+    sv_bless(rv, gv_stashpv("WebAuth::Exception", TRUE));
+    sv_setsv(get_sv("@", TRUE), sv_2mortal(rv));
+    croak(Nullch);
+}
+
 MODULE = WebAuth        PACKAGE = WebAuth    PREFIX = webauth_
 
 PROTOTYPES: ENABLE
@@ -96,6 +123,10 @@ CODE:
     
     s = webauth_base64_encode(p_input, n_input, 
                               SvPVX(ST(0)), &out_len, out_max);
+
+    if (s != WA_ERR_NONE) 
+        webauth_croak("webauth_base64_encode", s, NULL);
+
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
@@ -110,6 +141,7 @@ PPCODE:
     int out_len, s;
     unsigned char *p_input;
     unsigned char *buff;
+    SV *output;
 
     p_input = SvPV(input, n_input);
     buff = NULL;
@@ -120,16 +152,16 @@ PPCODE:
     }
     s = webauth_base64_decode(p_input, n_input, buff, &out_len, n_input);
 
-    EXTEND(SP,1);
-
-    if (s == WA_ERR_NONE) {
-        SV *output = sv_newmortal();
-        sv_setpvn(output, buff, out_len);
-        PUSHs(output);
-    } else {
-        PUSHs(&PL_sv_undef);
+    if (s != WA_ERR_NONE) {
+       if (buff != NULL)
+            free(buff);
+       webauth_croak("webauth_base64_decode", s, NULL);
     }
 
+    EXTEND(SP,1);
+    output = sv_newmortal();
+    sv_setpvn(output, buff, out_len);
+    PUSHs(output);
     if (buff != NULL)
         free(buff);
 }
@@ -150,6 +182,8 @@ CODE:
 
     ST(0) = sv_2mortal(NEWSV(0, out_max));
     s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
+    if (s != WA_ERR_NONE) 
+        webauth_croak("webauth_hex_encode", s, NULL);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
@@ -163,9 +197,14 @@ PPCODE:
     STRLEN n_input;
     int out_len, out_max, s;
     unsigned char *p_input, *buff;
+    SV *output;
+    buff = NULL;
 
     p_input = SvPV(input, n_input);
     s = webauth_hex_decoded_length(n_input, &out_max);
+    if (s != WA_ERR_NONE) 
+        webauth_croak("webauth_hex_decoded_length", s, NULL);
+
     if (s == WA_ERR_NONE) {
             buff = malloc(out_max);
             if (buff == NULL) {
@@ -174,15 +213,18 @@ PPCODE:
             s = webauth_hex_decode(p_input, n_input, buff, &out_len, out_max);
     }
 
+
+    if (s != WA_ERR_NONE) {
+        if (buff != NULL) 
+            free(buff);        
+        webauth_croak("webauth_hex_decode", s, NULL);
+    }
+
     EXTEND(SP,1);
 
-    if (s == WA_ERR_NONE) {
-        SV *output = sv_newmortal();
-        sv_setpvn(output, buff, out_len);
-        PUSHs(output);
-    } else {
-        PUSHs(&PL_sv_undef);
-    }
+    output = sv_newmortal();
+    sv_setpvn(output, buff, out_len);
+    PUSHs(output);
 
     if (buff != NULL) 
         free(buff);
@@ -227,14 +269,13 @@ PPCODE:
     s = webauth_attrs_encode(list, SvPVX(output), &out_len, out_max);
     webauth_attr_list_free(list);
     if (s != WA_ERR_NONE) {
-        output = &PL_sv_undef;
+        webauth_croak("webauth_attrs_encode", s, NULL);
     } else {
         SvCUR_set(output, out_len);
         SvPOK_only(output);
     }
 
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+    EXTEND(SP,1);
     PUSHs(output);
 }
 
@@ -256,19 +297,17 @@ PPCODE:
 
     s = webauth_attrs_decode(p_input, n_input, &list);
 
-    if (s == WA_ERR_NONE) {
-        hv = newHV();
-        for (i=0; i < list->num_attrs; i++) {
-            hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
-                     newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
-        }
-        webauth_attr_list_free(list);
-       output = sv_2mortal(newRV_noinc((SV*)hv));
-    } else {
-       output =  &PL_sv_undef;
+    if (s != WA_ERR_NONE)
+        webauth_croak("webauth_attrs_decode", s, NULL);
+
+    hv = newHV();
+    for (i=0; i < list->num_attrs; i++) {
+        hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
+            newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
     }
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+    webauth_attr_list_free(list);
+    output = sv_2mortal(newRV_noinc((SV*)hv));
+    EXTEND(SP,1);
     PUSHs(output);
 }
 
@@ -282,7 +321,7 @@ CODE:
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_bytes(SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
+        webauth_croak("webauth_random_bytes", s, NULL);
     } else {
         SvCUR_set(ST(0), length);
         SvPOK_only(ST(0));
@@ -299,7 +338,7 @@ CODE:
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_key(SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
+        webauth_croak("webauth_random_key", s, NULL);
     } else {
         SvCUR_set(ST(0), length);
         SvPOK_only(ST(0));
@@ -317,6 +356,9 @@ CODE:
     unsigned char *p_input;
     p_input = SvPV(key_material, n_input);
     RETVAL = webauth_key_create(type, p_input, n_input);
+    if (RETVAL == NULL) {
+        webauth_croak("webauth_key_create", WA_ERR_BAD_KEY, NULL);
+    }
 }
 OUTPUT:
     RETVAL
@@ -333,25 +375,26 @@ PPCODE:
     int s;
    
     s = webauth_keyring_read_file(path, &ring);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_keyring_read_file", s, NULL);
+    }
     output = sv_newmortal();
     sv_setref_pv(output, "WEBAUTH_KEYRINGPtr", (void*)ring);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
     PUSHs(output);
 }
 
-int
+void
 webauth_keyring_write_file(ring,path)
 WEBAUTH_KEYRING *ring
 char *path
 PROTOTYPE: $$
-CODE:
+PPCODE:
 {
-    RETVAL = webauth_keyring_write_file(ring, path);
+    int s = webauth_keyring_write_file(ring, path);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_keyring_write_file", s, NULL);
+    }
 }
-OUTPUT:
-    RETVAL
-
 
 WEBAUTH_KEYRING *
 webauth_keyring_new(initial_capacity)
@@ -360,12 +403,14 @@ PROTOTYPE: $
 CODE:
 {
     RETVAL = webauth_keyring_new(initial_capacity);
+    if (RETVAL == NULL) {
+        webauth_croak("webauth_keyring_new", WA_ERR_NO_MEM, NULL);
+    }
 }
 OUTPUT:
     RETVAL
 
-
-int
+void
 webauth_keyring_add(ring,creation_time,valid_from,valid_till,key)
 WEBAUTH_KEYRING *ring
 time_t creation_time
@@ -373,23 +418,25 @@ time_t valid_from
 time_t valid_till
 WEBAUTH_KEY *key
 PROTOTYPE: $$$$$
-CODE:
+PPCODE:
 {
     WEBAUTH_KEY *copy;
+    int s;
 
     copy = webauth_key_copy(key);
     if (copy == NULL) {
-        RETVAL = WA_ERR_NO_MEM;    
+        s = WA_ERR_NO_MEM;    
     } else {
-        RETVAL = webauth_keyring_add(ring, creation_time, 
+        s = webauth_keyring_add(ring, creation_time, 
                                       valid_from, valid_till, copy);
-        if (RETVAL != WA_ERR_NONE) {
+        if (s != WA_ERR_NONE) {
             webauth_key_free(copy);
         }
     }
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_keyring_write_file", s, NULL);
+    }
 }
-OUTPUT:
-    RETVAL
 
 void
 webauth_token_create(attrs,hint,key_or_ring)
@@ -449,14 +496,14 @@ PPCODE:
     webauth_attr_list_free(list);
 
     if (s != WA_ERR_NONE) {
-        output = &PL_sv_undef;
+        free(buff);
+        webauth_croak("webauth_token_create", s, NULL);    
     } else {
         output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
     }
     free(buff);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+    EXTEND(SP,1);
     PUSHs(output);
 }
 
@@ -500,10 +547,9 @@ PPCODE:
         output = sv_2mortal(newRV_noinc((SV*)hv));
         webauth_attr_list_free(list);
     } else {
-        output =  &PL_sv_undef;
+        webauth_croak("webauth_token_parse", s, NULL);    
     }
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+    EXTEND(SP,1);
     PUSHs(output);
 }
 
@@ -512,15 +558,20 @@ webauth_krb5_new()
 PROTOTYPE: 
 PPCODE:
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
-    int s= webauth_krb5_new(&ctxt);
+    WEBAUTH_KRB5_CTXT *ctxt = NULL;
+    int s = webauth_krb5_new(&ctxt);
     SV *output = sv_newmortal();
     sv_setref_pv(output, "WEBAUTH_KRB5_CTXTPtr", (void*)ctxt);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+    if (ctxt == NULL) {
+        webauth_croak("webauth_krb5_new", WA_ERR_NO_MEM, NULL);
+    } else {
+        if (s != WA_ERR_NONE) {
+            webauth_croak("webauth_krb5_new", s, ctxt);
+        }
+    }
+    EXTEND(SP,1);
     PUSHs(output);
 }
-
 
 int
 webauth_krb5_error_code(c)
@@ -544,54 +595,58 @@ CODE:
 OUTPUT:
     RETVAL
 
-int
+void
 webauth_krb5_init_via_password(c,name,password,keytab,...)
 WEBAUTH_KRB5_CTXT *c
 char *name
 char *password
 char *keytab
 PROTOTYPE: $$$$;$
-CODE:
+PPCODE:
 {
     char *cred;
+    int s;
     if (items==5) {
         cred = (char *)SvPV(ST(4),PL_na);
     } else {
         cred = NULL;
     }
-    RETVAL = webauth_krb5_init_via_password(c, name, password, keytab, cred);
+    s = webauth_krb5_init_via_password(c, name, password, keytab, cred);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_krb5_init_via_password", s, c);
+    }
 }
-OUTPUT:
-    RETVAL
 
-int
+void
 webauth_krb5_init_via_keytab(c,keytab,...)
 WEBAUTH_KRB5_CTXT *c
 char *keytab
 PROTOTYPE: $$;$
-CODE:
+PPCODE:
 {
+    int s;
     char *cred;
     if (items==3) {
         cred = (char *)SvPV(ST(2),PL_na);
     } else {
         cred = NULL;
     }
-    RETVAL = webauth_krb5_init_via_keytab(c, keytab, cred);
+    s = webauth_krb5_init_via_keytab(c, keytab, cred);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_krb5_init_via_keytab", s, c);
+    }
 }
-OUTPUT:
-    RETVAL
 
-int
+void
 webauth_krb5_init_via_tgt(c,tgt,...)
 WEBAUTH_KRB5_CTXT *c
 SV *tgt
 PROTOTYPE: $$;$
-CODE:
+PPCODE:
 {
     char *cred;
     unsigned char *ptgt;
-    int tgt_len;
+    int tgt_len, s;
 
     ptgt = SvPV(tgt, tgt_len);
 
@@ -600,26 +655,28 @@ CODE:
     } else {
         cred = NULL;
     }
-    RETVAL = webauth_krb5_init_via_tgt(c, ptgt, tgt_len, cred);
+    s = webauth_krb5_init_via_tgt(c, ptgt, tgt_len, cred);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_krb5_init_via_keytab", s, c);
+    }
 }
-OUTPUT:
-    RETVAL
 
-int
+void
 webauth_krb5_import_ticket(c,ticket)
 WEBAUTH_KRB5_CTXT *c
 SV *ticket
 PROTOTYPE: $$
-CODE:
+PPCODE:
 {
     unsigned char *pticket;
-    int ticket_len;
+    int ticket_len, s;
 
     pticket = SvPV(ticket, ticket_len);
-    RETVAL = webauth_krb5_import_ticket(c, pticket, ticket_len);
+    s = webauth_krb5_import_ticket(c, pticket, ticket_len);
+    if (s != WA_ERR_NONE) {
+        webauth_croak("webauth_krb5_import_ticket", s, c);
+    }
 }
-OUTPUT:
-    RETVAL
 
 void
 webauth_krb5_export_tgt(c)
@@ -633,17 +690,16 @@ PPCODE:
     time_t expiration;
 
     s = webauth_krb5_export_tgt(c, &tgt, &tgt_len, &expiration);
-    EXTEND(SP,3);
-    PUSHs(sv_2mortal(newSViv(s)));
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpvn(out, tgt, tgt_len);
         free(tgt);
+        EXTEND(SP,2);
         PUSHs(out);
         PUSHs(sv_2mortal(newSViv(expiration)));
     } else {
-        PUSHs(&PL_sv_undef);
-        PUSHs(&PL_sv_undef);
+        free(tgt);
+        webauth_croak("webauth_krb5_export_tgt", s, c);
     }
 }
 
@@ -659,15 +715,15 @@ PPCODE:
     char *server_princ;
     s = webauth_krb5_service_principal(c, service, 
                                        hostname, &server_princ);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpv(out, server_princ);
+        EXTEND(SP,1);
         PUSHs(out);
         free(server_princ);
     } else {
-        PUSHs(&PL_sv_undef);
+        free(server_princ);
+        webauth_croak("webauth_krb5_service_principal", s, c);
     }
 }
 
@@ -681,15 +737,15 @@ PPCODE:
     char *princ;
     s = webauth_krb5_get_principal(c, &princ);
 
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpv(out, princ);
+        EXTEND(SP,1);
         PUSHs(out);
         free(princ);
     } else {
-        PUSHs(&PL_sv_undef);
+        free(princ);
+        webauth_croak("webauth_krb5_get_principal", s, c);
     }
 }
 
@@ -706,17 +762,16 @@ PPCODE:
 
     s = webauth_krb5_export_ticket(c, princ, &ticket,
                                         &ticket_len, &expiration);
-    EXTEND(SP,3);
-    PUSHs(sv_2mortal(newSViv(s)));
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpvn(out, ticket, ticket_len);
         free(ticket);
+        EXTEND(SP,2);
         PUSHs(out);
         PUSHs(sv_2mortal(newSViv(expiration)));
     } else {
-        PUSHs(&PL_sv_undef);
-        PUSHs(&PL_sv_undef);
+        free(ticket);
+        webauth_croak("webauth_krb5_export_ticket", s, c);
     }
 }
 
@@ -730,15 +785,16 @@ PPCODE:
     unsigned char *req;
     int req_len, s;
     s = webauth_krb5_mk_req(c, princ, &req, &req_len);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
+
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpvn(out, req, req_len);
         free(req);
+        EXTEND(SP,1);
         PUSHs(out);
     } else {
-        PUSHs(&PL_sv_undef);
+        free(req);
+        webauth_croak("webauth_krb5_mk_req", s, c);
     }
 }
 
@@ -756,28 +812,28 @@ PPCODE:
     req = SvPV(request, req_len);
     s = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ);
 
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();
         sv_setpv(out, client_princ);
         free(client_princ);
+        EXTEND(SP,1);
         PUSHs(out);
     } else {
-        PUSHs(&PL_sv_undef);
+        free(client_princ);
+        webauth_croak("webauth_krb5_rd_req", s, c);
     }
 }
 
-int
+void
 webauth_krb5_keep_cred_cache(c)
 WEBAUTH_KRB5_CTXT *c
 PROTOTYPE: $
-CODE:
+PPCODE:
 {       
-    RETVAL = webauth_krb5_keep_cred_cache(c);
+    int s = webauth_krb5_keep_cred_cache(c);
+    if (s != WA_ERR_NONE)
+        webauth_croak("webauth_krb5_rd_req", s, c);
 }
-OUTPUT:
-    RETVAL
 
 MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
 

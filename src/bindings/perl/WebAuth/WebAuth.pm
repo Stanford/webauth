@@ -29,6 +29,86 @@ bootstrap WebAuth $VERSION;
 
 # Preloaded methods go here.
 
+package WebAuth::Exception;
+
+use strict;
+use warnings;
+
+use WebAuth;
+
+use overload '""' => \&to_string;
+
+BEGIN {
+    use Exporter   ();
+    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
+
+    # set the version for version checking
+    $VERSION     = 1.00;
+    @ISA         = qw(Exporter);
+    @EXPORT      = qw();
+    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+
+    # your exported package globals go here,
+    # as well as any optionally exported functions
+    @EXPORT_OK   = qw();
+}
+
+our @EXPORT_OK;
+
+#sub new {
+#    my ($type, $detail, $s, $kc) = @_;
+#    my $self = {};
+#    bless $self, $type;
+#    $self->{'status'} = $s;
+#    $self->{'detail'} = $detail;
+#    if (defined($kc) && $s == WebAuth::WA_ERR_KRB5) {
+#	$self->{'krb5_ec'} = WebAuth::krb5_error_message($kc);
+#	$self->{'krb5_em'} = WebAuth::krb5_error_code($kc);
+#    }
+#    return $self;
+#}
+
+sub status {
+    my ($self) = @_;
+    return $self->{'status'};
+}
+
+sub krb5_error_code {
+    my ($self) = @_;
+    return $self->{'krb5_ec'};
+}
+
+sub krb5_error_message {
+    my ($self) = @_;
+    return $self->{'krb5_em'};
+}
+
+sub error_message {
+    my ($self) = @_;
+    my $s = $self->{'status'};
+    my $line = $self->{'line'};
+    my $file = $self->{'file'};
+    my $msg = WebAuth::error_message($s);
+    my $detail = $self->{'detail'};
+    if (defined($detail)) {
+	$msg = "$detail: $msg";
+    }
+    if ($s == &WebAuth::WA_ERR_KRB5) {
+	my $kec = $self->{'krb5_ec'};
+	my $kem = $self->{'krb5_em'};
+	$msg .= ": $kem ($kec)";
+    }
+    if (defined($line)) {
+	$msg .= " at $file line $line";
+    }
+    return $msg;
+}
+
+sub to_string {
+    my ($self) = @_;
+    return $self->error_message();
+}
+
 1;
 __END__
 # Below is stub documentation for your module. You better edit it!
@@ -48,6 +128,8 @@ WebAuth - Perl extension for WebAuth (version 3)
 WebAuth is a low-level Perl interface into the WebAuth C API. 
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
+
+All functions have the potential to croak with WebAuth::Exception object.
 
 =head1 EXPORT
 
@@ -91,7 +173,7 @@ or undef if unable to decode $input.
 
 =item attrs_encode(attrs);
 
-($status, $output) = attrs_encode($attrs);
+ $output = attrs_encode($attrs);
 
 Takes as input $attrs (which must be a reference to a hash) and returns
 a string of the encoded attributes in $output.  The values in the $attrs
@@ -99,10 +181,10 @@ hash table get converted to strings if they aren't already.
 
 =item attrs_decode(input);
 
- ($status, $attrs) = attrs_decode($input);
+ $attrs = attrs_decode($input);
 
 attr decodes the $input string and returns the result in $attrs as 
-a reference to a hash, or undef in the case of an error. 
+a reference to a hash, or croaks in case of an error.
 
 =item random_bytes(length)
 
@@ -141,27 +223,27 @@ on error.
 
 =item keyring_add(ring, creation_time, valid_from, valid_till, key)
 
- $status = keyring_add($ring, $c, $vf, $vt, $key);
+ keyring_add($ring, $c, $vf, $vt, $key);
 
-Adds a key to the key ring. creation_time and valid_from can both be
+Adds a key to the keyring. creation_time and valid_from can both be
 0, in which case the current time is used. key is copied internally, and
 can be undef'd after calling this function.
 
 =item keyring_write_file(ring, path)
 
- $status = keyring_write_file($ring, $path);
+ keyring_write_file($ring, $path);
 
-Writes a key ring to a file. Returns WA_ERR_NONE on success.
+Writes a key ring to a file.
 
 =item keyring_read_file(path)
 
- ($status, $ring) = keyring_read_file($path);
+ $ring = keyring_read_file($path);
 
-Reads a key ring from a file and returns it in $ring on success.
+Reads a keyring from a file and returns it in $ring on success.
 
 =item token_create(attrs, hint, key_or_ring)
 
-  ($status, $token) = token_create($attrs, $hint, $key_or_ring);
+  $token = token_create($attrs, $hint, $key_or_ring);
 
 Takes as input $attrs (which must be a reference to a hash) and 
 $key_or_ring (created with keyring_new or key_create) and returns 
@@ -172,19 +254,16 @@ aren't already.
 
 =item token_parse(token, ttl, key_or_ring)
 
-  ($status, $attrs) = token_parse($token, $ttl, $key_or_ring);
+  $attrs = token_parse($token, $ttl, $key_or_ring);
 
 Takes as input an encrypted token and a key_or_ring (created with 
 keyring_new or key_create) and returns the attributes.
 
 =item krb5_new()
 
-  ($status, $context) = krb5_new();
+  $context = krb5_new();
 
-Creates a new WEBAUTH_KRB5_CTXT reference in $context, and returns
-the webauth status code, which will be WA_ERR_NONE on success. If 
-$status is WA_ERR_KRB5, then context can be used with only the
-krb5_error_code and krb5_error_message calls.
+Creates a new WEBAUTH_KRB5_CTXT reference in $context.
 
 =item krb5_error_code(context)
 
@@ -202,7 +281,7 @@ using $context. If no error occured, the returned value will be "success".
 
 =item krb5_keep_cred_cache(context)
 
-  $status = krb5_keep_cred_cache($context);
+  krb5_keep_cred_cache($context);
 
 If called before $context is no longer in use, prevents the credential
 cache (created via one of the calls to krb5_init_via*) from being 
@@ -211,8 +290,8 @@ credential cache from being removed.
 
 =item krb5_init_via_password(context, user, password, keytab[, cache])
 
-  $status = krb5_init_via_password($context, $user, 
-                                      $password, $keytab[, $cache]);
+   krb5_init_via_password($context, $user, 
+                              $password, $keytab[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
@@ -221,7 +300,7 @@ cache will be used and destroyed when the context is destroyed.
 
 =item krb5_init_via_keytab(context, keytab[, cache])
 
-  $status = krb5_init_via_keytab($context, $keytab[, $cache]);
+   krb5_init_via_keytab($context, $keytab[, $cache]);
 
 Initializes a context using the principal in the specified keytab
 by getting a TGT. If $cache is not specified, a memory
@@ -229,7 +308,7 @@ cache will be used and destroyed when the context is destroyed.
 
 =item krb5_init_via_tgt(context, tgt[, cache])
 
-  $status = krb5_init_via_keytab($context, $tgt[, $cache]);
+   krb5_init_via_keytab($context, $tgt[, $cache]);
 
 Initializes a context using a TGT that was previously exported using
 krb5_export_tgt. If $cache is not specified, a memory
@@ -237,7 +316,7 @@ cache will be used and destroyed when the context is destroyed.
 
 =item krb5_export_tgt(context)
 
-  ($status, $tgt, $expiration) = krb5_export_tgt($context)
+  ($tgt, $expiration) = krb5_export_tgt($context)
 
 Used to "export" a TGT from the specified context, which should have
 been initialized via one of the krb5_init_via_* functions. On
@@ -246,13 +325,13 @@ itself (binary data) and $expiration is the expiration time of the ticket.
 
 =item krb5_import_ticket(context, ticket)
 
-  $status = krb5_import_ticket($context, $ticket);
+  krb5_import_ticket($context, $ticket);
 
 Used to "import" a ticket that was created with krb5_export_ticket.
 
 =item krb5_export_ticket(context, principal);
 
-  ($status, $ticket, $expiration) = krb5_export_ticket($context, $principal);
+  ($ticket, $expiration) = krb5_export_ticket($context, $principal);
 
 Used to "export" a ticket for the requested server principal. On success,
 both $ticket and $expiration will be set. $ticket is the ticket itself
@@ -260,8 +339,7 @@ both $ticket and $expiration will be set. $ticket is the ticket itself
 
 =item krb5_service_principal(context, service, hostname)
 
-    ($status, $principal) = krb5_service_principal($context, $service,
-					       $hostname);
+    $principal = krb5_service_principal($context, $service, $hostname);
 
 Used to construct a server principal for use with other calls such as
 krb5_mk_req and krb5_export_ticket. On success $principal will be set
@@ -269,21 +347,21 @@ to the constructed principal, represented as a string.
 
 =item krb5_get_principal(context)
 
-    ($status, $principal) = krb5_getprincipal($context);
+    $principal = krb5_getprincipal($context);
 
 Used to get the principal associated with the context. Should only be
 called after a successful call to krb5_init_via*.
 
 =item krb5_mk_req(context, principal)
 
-    ($status, $request) = krb5_mk_req($context, $principal);
+    $request = krb5_mk_req($context, $principal);
 
 Used to construct a kerberos V5 request for the specified principal. $request
 will be set on success, and will contain the result of the krb5_mk_req call.
 
 =item krb5_rd_req(context, request, keytab)
 
-    ($status, $principal) = krb5_rd_req($context, $request, $keytab);
+    $principal = krb5_rd_req($context, $request, $keytab);
 
 Used to read a request created with krb5_mk_req. On success $principal
 will be set to the client principal in the request.

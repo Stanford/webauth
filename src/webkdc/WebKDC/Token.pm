@@ -4,9 +4,7 @@ use strict;
 use warnings;
 
 use WebAuth;
-use WebKDC::Status;
 use UNIVERSAL qw(isa);
-use Carp;
 
 BEGIN {
     use Exporter   ();
@@ -95,13 +93,7 @@ sub to_token {
 	$ct = time();
     }
 
-    my ($s, $token) = 
-	WebAuth::token_create($self->{'attrs'}, $ct, $key);
-
-    if ($s != WebAuth::WA_ERR_NONE) {
-	carp "",new WebKDC::Status("token_create", $s);
-    }
-    return $token;
+    return WebAuth::token_create($self->{'attrs'}, $ct, $key);
 }
 
 sub to_b64token {
@@ -111,11 +103,7 @@ sub to_b64token {
 
 sub from_token {
     my ($self, $token, $key, $ttl) = @_;
-    my $s;
-    ($s, $self->{'attrs'}) = WebAuth::token_parse($token, $ttl, $key);
-    if ($s != WebAuth::WA_ERR_NONE) {
-	carp "",new WebKDC::Status("token_parse", $s);
-    }
+    $self->{'attrs'} = WebAuth::token_parse($token, $ttl, $key);
 }
 
 sub from_b64token {

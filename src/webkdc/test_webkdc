@@ -6,8 +6,6 @@ use warnings;
 use lib '../bindings/perl/WebAuth/blib/lib';
 use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 
-use Carp;
-
 use WebAuth;
 use WebKDC;
 use WebKDC::IdToken;
@@ -22,53 +20,18 @@ $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
 sub was_get_krb5_mk_req($) {
     my $keytab = shift;
 
-    my ($s, $c, $princ, $request);
-
-    ($s, $c) = WebAuth::krb5_new();
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_new", $s, $c);
-    }
-
-    $s = WebAuth::krb5_init_via_keytab($c, $keytab);
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_init_via_keytab", $s, $c);
-    }
-
-    ($s, $princ) = WebAuth::krb5_service_principal($c, 
-						   $WebKDC::C_WEBKDC_K5SERVICE,
-						   $WebKDC::C_WEBKDC_HOST);
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_service_principal", $s, $c);
-    }
-
-    ($s, $request) = WebAuth::krb5_mk_req($c, $princ);
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_mk_req", $s, $c);
-    }
-    return $request;
-}
-
-
-sub was_verify_krb5_subject_auth_data($$) {
-    my ($sad, $keytab) = @_;
-
-    my ($s, $c, $princ);
-
-    ($s, $c) = WebAuth::krb5_new();
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_new", $s, $c);
-    }
-
-    ($s, $princ) = WebAuth::krb5_rd_req($c, $sad, $keytab);
-    if ($s != WebAuth::WA_ERR_NONE) {
-	croak "",new WebKDC::Status("krb5_rd_req", $s, $c);
-    }
-    return $princ;
 }
 
 eval {
 
-    my $request = was_get_krb5_mk_req($CONFIG_WAS_KEYTAB);
+    my $c = WebAuth::krb5_new();
+
+    WebAuth::krb5_init_via_keytab($c, $CONFIG_WAS_KEYTAB);
+
+    my $princ = WebAuth::krb5_service_principal($c, 
+						$WebKDC::C_WEBKDC_K5SERVICE,
+						$WebKDC::C_WEBKDC_HOST);
+    my $request = WebAuth::krb5_mk_req($c, $princ);
 
     my ($service_token, $session_key, $expiration_time) =
 	WebKDC::make_service_token_from_krb5_cred($request);
@@ -86,7 +49,7 @@ eval {
     my $req = new WebKDC::LoginRequest;
 
     $req->set_user("schemers");
-    $req->set_pass("xxxxxx");
+    $req->set_pass("xxxxx");
     $req->set_request_token($rt);
     $req->set_service_token($service_token);
 
@@ -112,8 +75,9 @@ eval {
 
     my $sad = $id_token->get_subject_auth_data();
 
-    my $princ = was_verify_krb5_subject_auth_data($sad, $CONFIG_WAS_KEYTAB);
-    print "id = $princ\n";
+    my $id_princ = WebAuth::krb5_rd_req(WebAuth::krb5_new(), $sad, 
+				     $CONFIG_WAS_KEYTAB);
+    print "id = $id_princ\n";
 };
 
 if ($@) {
