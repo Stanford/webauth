@@ -5,10 +5,10 @@ dnl Put more complex macros into separate files to make them easier to
 dnl maintain.
 m4_include([m4/int32.m4])
 
-AC_REVISION($Revision$)dnl
+AC_REVISION($Revision$)
 AC_PREREQ(2.53)
-AC_INIT(src/libwebauth/webauth.h)
-AC_CONFIG_AUX_DIR(tools)
+AC_INIT([src/libwebauth/webauth.h.in])
+AC_CONFIG_AUX_DIR([tools])
 
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
@@ -72,6 +72,7 @@ AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/libwebauth/Makefile
+    src/libwebauth/webauth.h
     src/utils/Makefile
     tests/Makefile
     tests/libwebauth/Makefile
