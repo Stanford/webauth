@@ -106,6 +106,15 @@ Syntax and Indentation
   same line as if/while/for, and close and open brace on the same line as
   else).  Prefer a space between the cast and the variable being cast.
 
+  Indent nested preprocessor directives by one space, between the # and
+  the directive, for each level of surrounding #if.  For example:
+
+      #if HAVE_SSL
+      # if HAVE_OPENSSL_SSL_H
+      #  include <openssl/ssl.h>
+      # endif
+      #endif
+
   Introductory comments for functions or files are generally written as:
 
       /*
