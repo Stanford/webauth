@@ -46,8 +46,13 @@
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL 300
 
-/* max number of <token>'s we will return. 128 is probably overkill */
-#define MAX_TOKENS_RETURNED 128
+/* max number of <token>'s we will return. 64 is overkill */
+#define MAX_TOKENS_RETURNED 64
+
+/* max number of <proxyToken>'s we will accept/return in the
+   processRequestTokens command. 64 is  overkill */
+#define MAX_PROXY_TOKENS_ACCEPTED 64
+#define MAX_PROXY_TOKENS_RETURNED 64
 
 /* enums for config directives */
 
@@ -96,6 +101,28 @@ typedef struct {
     time_t expiration;
 } MWK_PROXY_TOKEN;
 
+/* interesting stuff from a parsed login-token */
+typedef struct {
+    char *username;
+    char *password;
+} MWK_LOGIN_TOKEN;
+
+/* interesting stuff from a parsed request-token */
+typedef struct {
+    char *cmd;
+    void *app_state;
+    int app_state_len;
+    char *return_url;
+    char *request_reason;
+    char *requested_token_type;
+    union {
+        /* when requested_token_type is 'id' */
+        char *subject_auth_type;
+        /* when requested_token_type is 'proxy' */
+        char *proxy_type;
+    } u;
+} MWK_REQUEST_TOKEN;
+
 /* used to represent <requesterCredential> */
 typedef struct {
     char *type; /* krb5|service */
@@ -104,16 +131,20 @@ typedef struct {
         /* when type is service */
         struct {
             MWK_SERVICE_TOKEN st;
-            char *cmd; /* cmd from request-token */
+            MWK_REQUEST_TOKEN rt;
         } service;
     } u;
 } MWK_REQUESTER_CREDENTIAL;
 
 /* used to represent <subjectCredential> */
 typedef struct {
-    char *type; /* proxy */
+    char *type; /* proxy|login */
     union {
-        MWK_PROXY_TOKEN pt; /* when type is proxy */
+        struct {
+            int num_proxy_tokens;
+            MWK_PROXY_TOKEN pt[MAX_PROXY_TOKENS_ACCEPTED];
+        } proxy;
+        MWK_LOGIN_TOKEN lt;
     } u;
 } MWK_SUBJECT_CREDENTIAL;
 
@@ -125,6 +156,14 @@ typedef struct {
     const char *expires; /* might be NULL */
 } MWK_RETURNED_TOKEN;
 
+/* used to represent returned proxy-tokens for 
+ * the processRequestTokenResponse.
+ */
+typedef struct {
+    const char *type;
+    const char *token_data;
+} MWK_RETURNED_PROXY_TOKEN;
+
 /* used to append a bunch of data together */
 typedef struct {
     char *data;
@@ -132,6 +171,7 @@ typedef struct {
     int capacity;
     apr_pool_t *pool;
 } MWK_STRING;
+
 
 /* util.c */
 
@@ -185,7 +225,7 @@ mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
 /*
  * concat all the text pieces together and return data
  */
-const char *
-mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *def);
+char *
+mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, char *def);
 
 #endif

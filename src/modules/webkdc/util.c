@@ -52,8 +52,8 @@ mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
 /*
  * concat all the text pieces together and return data 
  */
-const char *
-mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *def)
+char *
+mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, char *def)
 {
     if (e->first_cdata.first &&
         e->first_cdata.first->text) {
