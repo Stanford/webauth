@@ -21,5 +21,8 @@ all: mod_webauth.o
 mod_webauth.o: $(SOURCES)
 	$(APXS) -c $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
+install:
+	$(APXS) -i mod_webauth.la
+
 clean:
 	rm -rf *.o *.la *.lo *.slo .libs *~ core \#*
