@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- $ID
+This is the template for the Stanford WebAuth v3 login page. This page
+is called from login.fcgi script on the weblogin server. It displays a
+form asking the user for SUNetID and password. Variables used:
+username               : the username (SUNetID)
+password               : password
+err_username           : no username error
+err_password           : no password error
+err_cookie             : err_cookie
+RT                     : Response Token
+ST                     : Service Token
+LC                     : Login Cancel Token
+CancelURl              : CancelURL
+-->
+<html>
+  <head>
+    <HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+    <title>Stanford University - WebLogin</title>
+    <meta http-equiv="Content-Type" content=
+    "text/html; charset=iso-8859-1">
+  </head>
+
+  <body bgcolor="#FFFFCC">
+    <form action="" method="post" autocomplete="OFF"enctype="application/x-www-form-urlencoded" >
+
+     <TMPL_IF NAME=err_missinginput>
+        <!-- Error: Missing SunetID and Password. -->
+        <p align="center"><font size="2" face="Arial, Helvetica, sans-serif">
+        <strong>Error: Enter both your SUNetID and its password. 
+        </strong></font></p>
+      <TMPL_ELSE>
+	<TMPL_IF NAME=err_username>
+	    <!-- Error: no username submitted. -->
+	    <p align="center"><font size="2" face="Arial, Helvetica, sans-serif">
+	    <strong>Error: Enter SUNetID.
+	    </strong></font></p>
+	</TMPL_IF>      
+	<TMPL_IF NAME=err_password>
+	    <!-- Error: no password submitted. -->
+	    <p align="center"><font size="2" face="Arial, Helvetica, sans-serif">
+	    <strong>Error: Enter your  password.
+	    </strong></font></p>
+	</TMPL_IF>
+     </TMPL_IF>
+
+      <TMPL_IF NAME=login_failed>
+        <!-- Error: login failed. -->
+         <p align="center"><font size="2" face="Arial, Helvetica, sans-serif">
+         <strong>
+          Error: You entered an incorrect SUNet ID or Password (or both).
+         </strong></font></p>
+      </TMPL_IF>
+
+      <TMPL_IF NAME=err_cookies>
+        <!-- Error: cookies not enabled. -->
+        <p align="center"><font size="2" face="Arial, Helvetica, sans-serif">
+	<strong>
+        Error: You must enable cookies.
+      </strong></font></p>
+      </TMPL_IF> 
+
+      <table width="50%" border="1" align="center" bgcolor="#FFFFFF">
+        <tr>
+          <td>
+            <table width="100%" align="center" border="0">
+              <tr>
+                <td><img src="/images/gateway1.gif" width="160" height=
+                "160"></td>
+
+                <td>
+                  <table width="100%" align="center" border="0">
+                    <tr>
+                      <td>
+                        <table width="100%">
+                          <tr>
+                            <td bgcolor="#990000" nowrap>
+                              <div align="right">
+                                <font color="#FFFFFF" size="3" face=
+                                "Verdana, Arial, Helvetica, sans-serif">
+                                <strong>WebLogin</strong></font>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <div align="center">
+                          &#160;
+                        </div>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <table width="100%" border="0">
+                          <tr>
+                            <td width="30%" bgcolor="#FFFFFF">
+                              <div align="right">
+                                <font size="2" face=
+                                "Verdana, Arial, Helvetica, sans-serif">
+                                <strong>SUNet ID:</strong></font>
+                              </div>
+                            </td>
+
+                            <td width="50%" nowrap><font color=
+                            "#990000" size="3" face=
+                            "Verdana, Arial, Helvetica, sans-serif"><strong>
+                            <input name="username" type="text"
+			    value="<TMPL_VAR NAME=username>"
+			    size="10" maxlength="8"></strong></font></td>
+                          </tr>
+
+                          <tr>
+                            <td width="30%" bgcolor="#FFFFFF">
+                              <div align="right">
+                                <font size="2" face=
+                                "Verdana, Arial, Helvetica, sans-serif">
+                                <strong>Password:</strong></font>
+                              </div>
+                            </td>
+
+                            <td width="50%" nowrap><input name=
+                            "password" type="password" size="18"
+                            maxlength="16"></td>
+                          </tr>
+
+                          <tr>
+                            <td width="30%" bgcolor="#FFFFFF">
+                            &#160;</td>
+
+                            <td width="50%" nowrap>
+                              <div align="right">
+                                <input type="submit" name="Submit"
+                                value="Login">
+                              </div>
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td height="5" valign="bottom" bgcolor=
+                            "#FFFFFF">&#160;</td>
+
+                            <td height="5" valign="bottom" nowrap>
+                            &#160;</td>
+                          </tr>
+
+                          <tr>
+                            <td width="50%" valign="bottom" nowrap
+                            bgcolor="#FFFFFF"><a href="/templates/help.html">
+			    <font size="1" face=
+                            "Verdana, Arial, Helvetica, sans-serif">
+			    <strong> What is this?</strong></font></a></td>
+
+                            <td width="50%" valign="bottom" nowrap>
+                              <div align="right">
+
+				<!--Figure out where to get the cancel url -->
+				<TMPL_IF NAME=wa_cancel_url>
+				    <!-- The WebAuthServer has a cancel url.-->
+				    <A href= <TMPL_VAR NAME=cancel_url>
+				<TMPL_ELSE>
+				    <!-- send them somwhere else-->
+				    <A href= http://www.stanford.edu>
+				</TMPL_IF>
+			        <FONT size="1" face="Verdana, Arial, Helvetica, sans-serif">
+                                <strong>I don't want to login</strong></font></a>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+       <INPUT type="hidden" name="RT" value="<TMPL_VAR NAME=RT>">
+      <INPUT type="hidden" name="ST" value="<TMPL_VAR NAME=ST>" >
+      <INPUT type="hidden" name="LC" value="<TMPL_VAR NAME=LC>">   
+
+      </form>
+
+    <div align="center">
+      <p><font size="2" face=
+      "Arial, Helvetica, sans-serif"><strong>Caution</strong>: Never
+      enter your SUNet ID and password on a Web page unless that
+      page&#39;s URL (location) points to the weblogin.stanford.edu
+      computer or you are establishing network connectivity.</font></p>
+
+      <p><font size="1" face="Arial, Helvetica, sans-serif">Copyright
+      2003 Stanford University. All Rights Reserved. Last modified
+      2/11/03 by ITSS/jnk.</font></p>
+    </div>
+  </body>
+</html>
+
