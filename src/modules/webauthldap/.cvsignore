@@ -1,1 +1,5 @@
+.libs
 Makefile
+*.la
+*.lo
+*.slo
