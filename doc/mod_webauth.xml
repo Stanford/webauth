@@ -114,8 +114,7 @@ is preferred over REMOTE_USER. This is because WEBAUTH_USER
 will only ever get set by mod_webauth, while REMOTE_USER could potentially
 get set by another Apache module, depending on how Apache server has
 been configured. To safely use REMOTE_USER, you should also check AUTH_TYPE
-to make sure that it is set to WebAuth, or ensure that all pages
-you are serving for your application have their AuthType set to WebAuth.
+to make sure that it is set to WebAuth. 
 </p>
 </section>
 
