@@ -23,11 +23,16 @@ BEGIN {
 
 our @EXPORT_OK;
 
+
 sub new {
     my $type = shift;
     my $self = { "attrs" => {}};
     bless $self, $type;
-    $self->set_token_type('resp');
+    if (@_) {
+	$self->init_from_token('resp', @_);
+    } else {
+	$self->set_token_type('resp');
+    }
     return $self;
 }
 
@@ -112,14 +117,6 @@ sub get_req_token_exp_time {
 	return unpack('N', $time);
     } else {
 	return $time;
-    }
-}
-
-sub from_token {
-    my ($self, $token, $key, $ttl, $b64) = @_;
-    $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if ($self->get_token_type() ne 'resp') {
-	die "token_type not 'resp'";
     }
 }
 

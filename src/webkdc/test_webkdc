@@ -33,7 +33,7 @@ eval {
 						$WebKDC::C_WEBKDC_HOST);
     my $request = WebAuth::krb5_mk_req($c, $princ);
 
-    my ($service_token, $session_key, $expiration_time) =
+    my ($service_token_str, $session_key, $expiration_time) =
 	WebKDC::make_service_token_from_krb5_cred($request);
 
     my $key = WebAuth::key_create(WebAuth::WA_AES_KEY, $session_key);
@@ -42,36 +42,34 @@ eval {
     $req_token->set_return_url("http://foo.bar.com/");
     $req_token->set_creation_time(time());
     $req_token->set_request_reason('na');
+    $req_token->set_req_token_type('id');
     $req_token->set_subject_auth('krb5');
 
-    my $rt = $req_token->to_b64token($key);
+    print $req_token;
+
+    my $req_token_str = $req_token->to_b64token($key);
 
     my $req = new WebKDC::LoginRequest;
 
-    $req->set_user("schemers");
-    $req->set_pass("xxxxx");
-    $req->set_request_token($rt);
-    $req->set_service_token($service_token);
+    $req->set_user("schemers/test");
+    $req->set_pass("testing");
+    $req->set_request_token($req_token_str);
+    $req->set_service_token($service_token_str);
 
     my $resp = WebKDC::process_login_request($req);
 
-    my $resp_token = new WebKDC::ResponseToken;
+    my $resp_token = new WebKDC::ResponseToken($resp->get_response_token(), 
+					       $key, $WebKDC::C_TOKEN_TTL, 1);
 
-    $resp_token->from_b64token($resp->get_response_token(), 
-			       $key, $WebKDC::C_TOKEN_TTL);
-
-    print $resp_token->to_string();
-
-    my $id_token = new WebKDC::IdToken;
+    print $resp_token;
 
     if (!$resp_token->is_ok()) {
 	die "resp_token not ok";
     }
 
-    $id_token->from_token($resp_token->get_req_token(), $key, 
-			  $WebKDC::C_TOKEN_TTL);
-
-    print $id_token->to_string();
+    my $id_token = new WebKDC::IdToken($resp_token->get_req_token(),
+				       $key, $WebKDC::C_TOKEN_TTL);
+    print $id_token;
 
     my $sad = $id_token->get_subject_auth_data();
 

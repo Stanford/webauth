@@ -73,8 +73,7 @@ sub verify_pass_krb5($$$) {
 # construct a service token given:
 #    $request    from krb5_mk_req (binary)
 # returns:
-#    $s  (webauth status)
-#    $token (binary)
+#    $token (b64
 #    $session_key (binary)
 #    $expiration_time
 #    
@@ -93,17 +92,15 @@ sub make_service_token_from_krb5_cred($) {
     my $creation_time = time;
     my $expiration_time = $creation_time+$C_SERVICE_TOKEN_LIFETIME;
 
-    my $sto = new WebKDC::ServiceToken;
+    my $service_token = new WebKDC::ServiceToken;
 
-    $sto->set_session_key($session_key);
-    $sto->set_subject("krb5:$clientprinc");
-    $sto->set_creation_time($creation_time);
-    $sto->set_expiration_time($expiration_time);
+    $service_token->set_session_key($session_key);
+    $service_token->set_subject("krb5:$clientprinc");
+    $service_token->set_creation_time($creation_time);
+    $service_token->set_expiration_time($expiration_time);
 
-    my $token;
-
-    $token = $sto->to_b64token($ring);
-    return ($token, $session_key, $expiration_time);
+    return ($service_token->to_b64token($ring), 
+	    $session_key, $expiration_time);
 }
 
 # takes a WebKDC::LoginRequest and returns a WebKDC::LoginResponse
@@ -117,11 +114,10 @@ sub process_login_request($) {
 
     my $ring = WebAuth::keyring_read_file($C_WEBKDC_KEYRING_PATH);
 
-    my $sto = new WebKDC::ServiceToken;
+    my $service_token = new WebKDC::ServiceToken($req->get_service_token(), 
+				       $ring, $C_TOKEN_TTL, 1);
 
-    $sto->from_b64token($req->get_service_token(), $ring, $C_TOKEN_TTL);
-
-    my $server_principal = $sto->get_subject();
+    my $server_principal = $service_token->get_subject();
 
     if ($server_principal !~ /^krb5:/) {
 	die "ERROR: only krb5 principals supported in service tokens";
@@ -134,20 +130,18 @@ sub process_login_request($) {
 
     # use session key to parse request token
     my $key = WebAuth::key_create(WebAuth::WA_AES_KEY, 
-				  $sto->get_session_key());
-    my $reqo = new WebKDC::RequestToken;
+				  $service_token->get_session_key());
 
-    $reqo->from_b64token($req->get_request_token(), $key, $C_TOKEN_TTL);
+    my $req_token = new WebKDC::RequestToken($req->get_request_token(), 
+					     $key, $C_TOKEN_TTL, 1);
 
     # FIXME: would normally poke through request to determine what to do next
-    $resp->set_return_url($reqo->get_return_url());
-    $resp->set_post_url($reqo->get_post_url());
+    $resp->set_return_url($req_token->get_return_url());
+    $resp->set_post_url($req_token->get_post_url());
 
-    my ($sad, $prd, $et);
-
-    ($sad, $prd, $et) = verify_pass_krb5($req->get_user(),
-					 $req->get_pass(),
-					 $server_principal);
+    my ($sad, $prd, $et) = verify_pass_krb5($req->get_user(),
+					    $req->get_pass(),
+					    $server_principal);
     my ($id_token);
 
     my $ito = new WebKDC::IdToken;
@@ -158,12 +152,12 @@ sub process_login_request($) {
 
     $id_token = $ito->to_token($key);
 				      
-    my ($response_token);
-    my $respo = new WebKDC::ResponseToken;
+    my $resp_token = new WebKDC::ResponseToken;
 
-    $respo->set_req_token($id_token);
-    $response_token = $respo->to_b64token($key);
-    $resp->set_response_token($response_token);
+    $resp_token->set_req_token($id_token);
+    $resp_token->set_creation_time(time());
+
+    $resp->set_response_token($resp_token->to_b64token($key));
     return $resp;
 }
 

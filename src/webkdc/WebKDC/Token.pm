@@ -6,6 +6,8 @@ use warnings;
 use WebAuth;
 use UNIVERSAL qw(isa);
 
+use overload '""' => \&to_string;
+
 BEGIN {
     use Exporter   ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -101,14 +103,13 @@ sub to_b64token {
     return WebAuth::base64_encode($self->to_token($key));
 }
 
-sub from_token {
-    my ($self, $token, $key, $ttl) = @_;
+sub init_from_token {
+    my ($self, $token_type, $token, $key, $ttl, $b64) = @_;
+    $token = WebAuth::base64_decode($token) if $b64;
     $self->{'attrs'} = WebAuth::token_parse($token, $ttl, $key);
-}
-
-sub from_b64token {
-    my ($self, $token, $key, $ttl) = @_;
-    $self->from_token(WebAuth::base64_decode($token), $key, $ttl);
+    if ($self->get_token_type() ne $token_type) {
+	die "token_type not '$token_type'";
+    }
 }
 
 sub set_token_type {

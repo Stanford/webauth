@@ -27,7 +27,11 @@ sub new {
     my $type = shift;
     my $self = { "attrs" => {}};
     bless $self, $type;
-    $self->set_token_type('service');
+    if (@_) {
+	$self->init_from_token('service', @_);
+    } else {
+	$self->set_token_type('service');
+    }
     return $self;
 }
 
@@ -82,14 +86,6 @@ sub get_expiration_time {
 	return unpack('N', $time);
     } else {
 	return $time;
-    }
-}
-
-sub from_token {
-    my ($self, $token, $key, $ttl, $b64) = @_;
-    $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if ($self->get_token_type() ne 'service') {
-	die "from_token: token type not 'service'";
     }
 }
 

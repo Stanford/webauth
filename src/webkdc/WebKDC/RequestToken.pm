@@ -27,7 +27,11 @@ sub new {
     my $type = shift;
     my $self = { "attrs" => {}};
     bless $self, $type;
-    $self->set_token_type('req');
+    if (@_) {
+	$self->init_from_token('req', @_);
+    } else {
+	$self->set_token_type('req');
+    }
     return $self;
 }
 
@@ -111,14 +115,6 @@ sub set_post_url {
 sub get_post_url {
     my ($self) = @_;
     return $self->{'attrs'}{&WebAuth::WA_TK_POST_URL};
-}
-
-sub from_token {
-    my ($self, $token, $key, $ttl, $b64) = @_;
-    $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if ($self->get_token_type() ne 'req') {
-	die "from_token: token_type not 'req'";
-    }
 }
 
 1;
