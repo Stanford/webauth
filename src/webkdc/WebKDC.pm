@@ -60,7 +60,8 @@ our %pec_mapping = (
 
 sub get_keyring {
     if (!defined($our_keyring)) {
-	$our_keyring = WebAuth3::keyring_read_file($WebKDC::Config::KEYRING_PATH);
+	$our_keyring =
+            WebAuth3::keyring_read_file($WebKDC::Config::KEYRING_PATH);
     }
     return $our_keyring;
 }
