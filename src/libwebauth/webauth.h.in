@@ -75,6 +75,8 @@ typedef enum {
     WA_PEC_LOGIN_FAILED = 14,        /* login with username/passwword failed */
     WA_PEC_PROXY_TOKEN_REQUIRED = 15, /* missing a required proxy-token.
                                          login and try again */
+    WA_PEC_LOGIN_CANCELED = 16, /* user canceled login process */
+    WA_PEC_LOGIN_FORCED = 17, /* user must re-login */
 }  WEBAUTH_ET_ERR;    
 
 /******************** constants for token attributes **********/
@@ -93,7 +95,7 @@ typedef enum {
 #define WA_TK_PROXY_TYPE "pt"
 #define WA_TK_PROXY_DATA "pd"
 #define WA_TK_PROXY_SUBJECT "ps"
-#define WA_TK_REQUEST_REASON "rr"
+#define WA_TK_REQUEST_OPTIONS "ro"
 #define WA_TK_REQUESTED_TOKEN_TYPE "rtt"
 #define WA_TK_RETURN_URL "ru"
 #define WA_TK_SUBJECT "s"
