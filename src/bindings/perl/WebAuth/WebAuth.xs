@@ -427,19 +427,17 @@ OUTPUT:
     RETVAL
 
 void
-webauth_keyring_add(ring,creation_time,valid_from,valid_till,key)
+webauth_keyring_add(ring,creation_time,valid_after,key)
 WEBAUTH_KEYRING *ring
 time_t creation_time
-time_t valid_from
-time_t valid_till
+time_t valid_after
 WEBAUTH_KEY *key
-PROTOTYPE: $$$$$
+PROTOTYPE: $$$$
 PPCODE:
 {
     int s;
 
-    s = webauth_keyring_add(ring, creation_time, 
-                            valid_from, valid_till, key);
+    s = webauth_keyring_add(ring, creation_time, valid_after, key);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_keyring_write_file", s, NULL);
     }

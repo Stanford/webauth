@@ -138,7 +138,7 @@ read_service_token_cache(MWA_REQ_CTXT *rc)
     status = webauth_attrs_decode(buffer, finfo.size, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL, "mwa_func", 
+        mwa_log_webauth_error(rc->r->server, status, NULL, "mwa_func", 
                               "webauth_attrs_decode");
         return NULL;
     }
@@ -599,7 +599,7 @@ request_service_token(MWA_REQ_CTXT *rc, time_t curr)
 
     status = webauth_krb5_init_via_keytab(ctxt, rc->sconf->keytab_path, NULL);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, ctxt, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, ctxt, mwa_func,
                               "webauth_krb5_init_via_keytab");
         webauth_krb5_free(ctxt);
         return 0;
@@ -608,7 +608,7 @@ request_service_token(MWA_REQ_CTXT *rc, time_t curr)
     status = webauth_krb5_mk_req(ctxt, rc->sconf->webkdc_principal, 
                                  &k5_req, &k5_req_len);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, ctxt, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, ctxt, mwa_func,
                               "webauth_krb5_mk_req");
         webauth_krb5_free(ctxt);
         return 0;
@@ -726,7 +726,7 @@ get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status, NULL,
                               "get_app_state",
                               "webauth_token_create");
     } else {

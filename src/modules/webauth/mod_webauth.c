@@ -292,6 +292,8 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
+    WEBAUTH_KEYRING *ring;
+
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
 
@@ -309,6 +311,11 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     CHECK_DIR(st_cache_path, CD_ServiceTokenCache);
 
 #undef CHECK_DIR
+
+    /* FIXME: this might be broken wrt to virtual hosts having differnt
+              key ring files
+    */
+    mwa_init_keyring(s, sconf);
 
     ap_add_version_component(pconf, WEBAUTH_VERSION);
 
@@ -500,7 +507,7 @@ make_app_token(const char *subject,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL, "make_app_token",
+        mwa_log_webauth_error(rc->r->server, status, NULL, "make_app_token",
                               "webauth_token_create");
         return;
     }
@@ -634,7 +641,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
         return NULL;
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status, NULL,
                               "parse_app_token", "webauth_token_parse");
         return NULL;
     }
@@ -749,7 +756,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
         return NULL;
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status, NULL,
                               "get_session_key", "webauth_token_parse");
         return NULL;
     }
@@ -823,7 +830,7 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
     webauth_krb5_free(ctxt);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, ctxt, "validate_krb5_sad",
+        mwa_log_webauth_error(rc->r->server, status, ctxt, "validate_krb5_sad",
                               "webauth_krb5_rd_req");
         return NULL;
     }
@@ -967,7 +974,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
                                           key, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
                               "webauth_token_parse_with_key");
         return code;
     }
@@ -1143,7 +1150,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, status, NULL, "redirect_request_token",
+        mwa_log_webauth_error(rc->r->server, status, 
+                              NULL, "redirect_request_token",
                               "webauth_token_create_with_key");
         return failure_redirect(rc);
     }

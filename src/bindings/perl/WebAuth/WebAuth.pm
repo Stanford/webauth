@@ -352,11 +352,11 @@ to undef when the key is no longer needed.
 Creates a reference to a WEBAUTH_KEYRINGPtr object, or undef
 on error.
 
-=item keyring_add(ring, creation_time, valid_from, valid_till, key)
+=item keyring_add(ring, creation_time, valid_after, key)
 
  keyring_add($ring, $c, $vf, $vt, $key);
 
-Adds a key to the keyring. creation_time and valid_from can both be
+Adds a key to the keyring. creation_time and valid_after can both be
 0, in which case the current time is used. key is copied internally, and
 can be undef'd after calling this function.
 

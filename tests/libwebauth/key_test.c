@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     TEST_OK(key != NULL);
 
     time(&curr);
-    s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
+    s = webauth_keyring_add(ring, curr, curr, key);
     TEST_OK2(WA_ERR_NONE, s);
 
     webauth_key_free(key);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
     TEST_OK(key != NULL);
 
-    s = webauth_keyring_add(ring, curr, curr+3600, curr+7200, key);
+    s = webauth_keyring_add(ring, curr, curr+3600, key);
     TEST_OK2(WA_ERR_NONE, s);
 
     webauth_key_free(key);
@@ -71,8 +71,7 @@ int main(int argc, char *argv[])
             e1 = &ring->entries[i];
             e2 = &ring2->entries[i];
             ok = (e1->creation_time == e2->creation_time) &&
-                (e1->valid_from == e2->valid_from) &&
-                (e1->valid_till == e2->valid_till) &&
+                (e1->valid_after == e2->valid_after) &&
                 (e1->key->type == e2->key->type) &&
                 (e1->key->length == e2->key->length) &&
                 (memcmp(e1->key->data, e2->key->data, e1->key->length) == 0);

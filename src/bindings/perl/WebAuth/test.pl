@@ -24,7 +24,7 @@ if ($run_kerb) {
     # FIXME: need better way to config these
     # user/password to attempt to login as
     $kuser="schemers/test";
-    $kpass="xxxxx";
+    $kpass="xxxxxxx";
     # path to keytab file used to verify tgt and also 
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
@@ -33,7 +33,7 @@ if ($run_kerb) {
     $khost="shred.stanford.edu";
     # service/host to use with krb5_mk_req, should be same
     # as the one in the keytab
-    $krservice="host";
+    $krservice="webauth";
     $krhost="lichen.stanford.edu";
 }
 
@@ -169,7 +169,7 @@ ok(isa($ring, 'WEBAUTH_KEYRINGPtr'));
 ok ($ring != undef);
 
 my $curr=time();
-WebAuth::keyring_add($ring, $curr, $curr, $curr+3600, $key);
+WebAuth::keyring_add($ring, $curr, $curr, $key);
 
 $key = undef;
 my $token = WebAuth::token_create($attrs, 0, $ring);
@@ -191,7 +191,6 @@ ok(length($token));
 
 $attrs2 = WebAuth::token_parse($token, 0, $key);
 ok(compareHashes($attrs, $attrs2), 1);
-
 
 ######################################### key rings
 
@@ -216,7 +215,6 @@ if ($run_kerb) {
 	my $c = WebAuth::krb5_new();
 
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
-
 	#FIXME my $ctx_princ = WebAuth::krb5_get_principal($c);
 
 	my $sp = WebAuth::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);

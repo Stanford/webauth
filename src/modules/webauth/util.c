@@ -200,7 +200,8 @@ mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
 
     status = webauth_krb5_new(&ctxt);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r, status, ctxt, mwa_func, "webauth_krb5_new");
+        mwa_log_webauth_error(r->server, 
+                              status, ctxt, mwa_func, "webauth_krb5_new");
         if (status == WA_ERR_KRB5)
             webauth_krb5_free(ctxt);
         return NULL;
@@ -210,21 +211,21 @@ mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
 
 
 void
-mwa_log_webauth_error(request_rec *r, 
+mwa_log_webauth_error(server_rec *s, 
                        int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
                       const char *func)
 {
     if (status == WA_ERR_KRB5 && ctxt != NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: %s: %s failed: %s (%d): %s %d",
                      mwa_func, func,
                      webauth_error_message(status), status,
                      webauth_krb5_error_message(ctxt), 
                      webauth_krb5_error_code(ctxt));
     } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: %s: %s failed: %s (%d)",
                      mwa_func,
                      func,
@@ -232,54 +233,87 @@ mwa_log_webauth_error(request_rec *r,
     }
 }
 
-WEBAUTH_KEYRING *
-auto_create(MWA_REQ_CTXT *rc)
+static int
+auto_create(server_rec *serv, MWA_SCONF *sconf)
 {
-    time_t vf, vt;
+    time_t va;
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring;
     int s;
     unsigned char key_material[WA_AES_128];
     const char *mwa_func="auto_create";
 
-    time(&vf);
-    vt = vf+rc->sconf->keyring_key_lifetime;
+    time(&va);
     
     ring = webauth_keyring_new(32);
     if (ring == NULL) {
-        mwa_log_webauth_error(rc->r, WA_ERR_NO_MEM, 
+        mwa_log_webauth_error(serv, WA_ERR_NO_MEM, 
                               NULL, mwa_func, "webauth_keyring_new");
-        return NULL;
+        return 0;
     }
     
     s = webauth_random_key(key_material, WA_AES_128);
     if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, s, NULL, mwa_func, "webauth_random_key");
+        mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key");
         webauth_keyring_free(ring);
-        return NULL;
+        return 0;
     }
 
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
 
-    s = webauth_keyring_add(ring, vf, vf, vt, key);
+    s = webauth_keyring_add(ring, va, va, key);
     if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, s, NULL, mwa_func,
+        mwa_log_webauth_error(serv, s, NULL, mwa_func,
                               "webauth_keyring_add");
         webauth_key_free(key);
         webauth_keyring_free(ring);
-        return NULL;
+        return 0;
     }
 
     webauth_key_free(key);
 
-    s = webauth_keyring_write_file(ring, rc->sconf->keyring_path);
+    s = webauth_keyring_write_file(ring, sconf->keyring_path);
     if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r, s, NULL, mwa_func,
+        mwa_log_webauth_error(serv, s, NULL, mwa_func,
                               "webauth_keyring_add");
         webauth_keyring_free(ring);
-        return NULL;
+        return 0;
     }
-    return ring;
+    return 1;
+}
+
+/*
+ * called by module init
+ */
+void
+mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf)
+{
+    int status;
+    WEBAUTH_KEYRING *ring;
+    static const char *mwa_func = "mwa_init_keyring";
+
+    /* attempt to open up keyring */
+    status = webauth_keyring_read_file(sconf->keyring_path, &ring);
+    if (status != WA_ERR_NONE) {
+        if (sconf->keyring_auto_update) {
+            if (!auto_create(serv, sconf)) {
+                /* complain even more */
+                ap_log_error(APLOG_MARK, APLOG_EMERG, 0, serv,
+                             "mod_webauth: %s: auto_create of keyring failed!",
+                             mwa_func);
+            } else {
+                if (sconf->debug) {
+                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                                 "mod_webauth: auto-created key ring");
+                }
+            }
+        } else {
+            mwa_log_webauth_error(serv, status, NULL,
+                                  mwa_func, "webauth_keyring_read_file");
+        }
+    }
+    if (ring != NULL)
+        webauth_keyring_free(ring);
 }
 
 /* 
@@ -295,36 +329,14 @@ mwa_get_keyring(MWA_REQ_CTXT *rc)
     static const char *mwa_func = "mwa_get_keyring";
 
     if (ring != NULL) {
-        /* FIXME: we'll eventually want to check here to see if we need
-         * to generate a new key and/or re-read they keyfile.
-         */
         return ring;
     }
 
     /* attempt to open up keyring */
     status = webauth_keyring_read_file(rc->sconf->keyring_path, &ring);
     if (status != WA_ERR_NONE) {
-        if (rc->sconf->keyring_auto_update) {
-            ring = auto_create(rc);
-            if (ring == NULL) {
-                /* complain even more */
-                ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
-                             "mod_webauth: %s: auto_create of keyring failed!",
-                             mwa_func);
-            } else {
-                if (rc->sconf->debug) {
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                                 "mod_webauth: auto-created key ring");
-                }
-            }
-        } else {
-            mwa_log_webauth_error(rc->r, status, NULL,
-                              "get_keyring", "webauth_keyring_read_file");
-        }
-    } else {
-        /* FIXME: need to check and make sure we have a valid key,
-         *        and/or if we are supposed to generate a new one yet.
-         */
+        mwa_log_webauth_error(rc->r->server, status, NULL,
+                              mwa_func, "webauth_keyring_read_file");
     }
     return ring;
 }

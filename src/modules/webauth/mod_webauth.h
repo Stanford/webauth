@@ -323,7 +323,7 @@ mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func);
  * log a webauth-related error. ctxt can be NULL.
  */
 void
-mwa_log_webauth_error(request_rec *r, 
+mwa_log_webauth_error(server_rec *r, 
                       int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
@@ -336,5 +336,11 @@ mwa_log_webauth_error(request_rec *r,
 
 WEBAUTH_KEYRING *
 mwa_get_keyring(MWA_REQ_CTXT *rc);
+
+/* 
+ * called during module init to check/update the keyring
+ */
+void
+mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf);
 
 #endif

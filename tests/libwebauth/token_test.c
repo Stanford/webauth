@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     TEST_OK(ring != NULL);
     
     time(&curr);
-    s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
+    s = webauth_keyring_add(ring, curr, curr, key);
     TEST_OK2(WA_ERR_NONE, s);
 
     webauth_key_free(key);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     TEST_OK(ring2 != NULL);
     
     time(&curr);
-    s = webauth_keyring_add(ring2, curr, curr, curr+3600, key);
+    s = webauth_keyring_add(ring2, curr, curr, key);
     TEST_OK2(WA_ERR_NONE, s);
 
     webauth_key_free(key);

@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.00, Modified 12/06/02</b></H4>
+<H4><b>Version  1.01, Modified 12/12/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -354,27 +354,20 @@ of entries, each of which contain the following information:
   key type       Type of the key, AES is the only supported key type right now.
   key data       The binary data that makes up the key
   creation       Time the key was created
-  valid_from     When the key becomes valid
-  valid_till     When the key expires
+  valid_after    When the key becomes valid
 </pre>
 
-<p>Of note is the "valid_from" value. It is used to create post-dated keys
+<p>Of note is the "valid_after" value. It is used to create post-dated keys
 in the key ring, to allow for new keys to get generated and distributed
 among a pool of servers (for load balancing/fail-over) in such a way that
 all the keys can be updated before the key becomes valid.
 
 <p>Initially key rings can be distributed using a mechanism like SSH,
 though there will eventually be support within the WebAuth protocol
-for distributing new key rings.
+for distributing new key rings among a pool of servers.
 
-<p>Current thinking is that the private AES-keys will be changed
-once a month, with new keys being generated and post-dated 48-72 
-hours in advance of the current key's expiration. Servers that don't 
-have a new key within this window before the current key expires can 
-log errors and raise the attention of system administrators. Since
-the previous key is still maintained in the key ring, the servers
-will be able to continue and parse outstanding tokens encrypted
-in the previous key until the the token expires.
+<p>Stand-alone servers (not part of a pool) will automatically generate
+   new keys when needed upon a restart.
 
 <H4>1.3.3 <a name="kmpool">Supporting Server Pools</a></H3>
 
@@ -1972,6 +1965,18 @@ FIXME: Insert link to mod_webauth documentation
    <td><ul>
          <li>Add &lt;loginErrorCode> and &lt;loginErrorMessage> to
              &lt;requestTokenResponse>.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>12/12/2002</td>
+  <td>1.01</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>keys in the keyring no longer expire. The key with the most
+             current (but not post-dated) valid_after will always be
+             used to encrypt new keys.
        </ul>
    </td>
 </tr>
