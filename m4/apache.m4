@@ -14,4 +14,4 @@ AC_ARG_WITH([apache],
     [if test x"$withval" != xno ; then
         APACHE_PATH=$withval
      fi])
-AC_PATH_PROG([APXS], [apxs], [apxs], [$APACHE_PATH:$PATH])])
+AC_PATH_PROG([APXS], [apxs], [apxs], [$APACHE_PATH/bin:$PATH])])

@@ -1,0 +1,25 @@
+# Makefile for webkdc module
+# $Id$
+
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
+VPATH		= @srcdir@
+
+APXS		= @APXS@
+
+CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
+		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@
+LDFLAGS		= @LDFLAGS@
+LDLIBS		= $(top_builddir)src/libwebauth/libwebauth.la \
+		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@
+
+SOURCES		= mod_webkdc.c util.c
+
+all: mod_webkdc.o
+
+mod_webkdc.o: $(SOURCES)
+	$(APXS) -c $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
+
+clean:
+	rm -rf *.o *.la *.lo *.slo .libs *~ core \#*

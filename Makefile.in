@@ -40,9 +40,11 @@ doc docs:
 distclean: clean
 	rm -rf config.status config.cache config.log config.h libtool \
 	       Makefile src/Makefile src/libwebauth/Makefile \
-	       src/utils/Makefile tests/Makefile tests/libwebauth/Makefile \
-	       src/bindings/perl/WebAuth/Makefile.PL \
-	       *~ core \#* autom4te*.cache
+	       src/modules/Makefile src/modules/webauth/Makefile \
+	       src/modules/webkdc/Makefile src/utils/Makefile tests/Makefile \
+	       tests/libwebauth/Makefile \
+	       src/bindings/perl/WebAuth/Makefile.PL *~ core \#* \
+	       autom4te*.cache
 
 # Make a release.  We create a release by recreating the directory structure
 # and then copying over all files listed in the MANIFEST.  If it isn't in the

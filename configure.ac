@@ -5,10 +5,11 @@ dnl Put more complex macros into separate files to make them easier to
 dnl maintain.  (Also good for macros that should be used in other projects as
 dnl well.)
 m4_include([m4/apache.m4])
-m4_include([m4/crypto.m4])
+m4_include([m4/curl.m4])
 m4_include([m4/int32.m4])
 m4_include([m4/krb5.m4])
 m4_include([m4/libtool.m4])
+m4_include([m4/ssl.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
@@ -66,7 +67,8 @@ AC_SEARCH_LIBS(socket, socket, ,
     [AC_CHECK_LIB(nsl, socket, LIBS="$LIBS -lsocket -lnsl", , -lsocket)])
 
 WEBAUTH_LIB_KRB5
-WEBAUTH_LIB_CRYPTO
+WEBAUTH_LIB_SSL
+WEBAUTH_LIB_CURL
 
 dnl Check for an implementation of AES, and if not found in the OpenSSL
 dnl libraries, set WEBAUTH_AES_OBJS to the *.o files required for it.
@@ -102,6 +104,9 @@ AC_CONFIG_FILES([
     src/bindings/perl/WebAuth/Makefile.PL
     src/libwebauth/Makefile
     src/libwebauth/webauth.h
+    src/modules/Makefile
+    src/modules/webauth/Makefile
+    src/modules/webkdc/Makefile
     src/utils/Makefile
     tests/Makefile
     tests/libwebauth/Makefile

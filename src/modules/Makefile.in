@@ -1,4 +1,4 @@
-# Makefile for Webauth source
+# Makefile for Webauth modules
 # $Id$
 
 srcdir = @srcdir@
@@ -7,7 +7,7 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = libwebauth modules utils
+SUBDIRS = webauth webkdc
 
 .PHONY: all clean depend install
 

@@ -1,0 +1,4 @@
+Makefile
+*.la
+*.lo
+*.slo
