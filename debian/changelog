@@ -1,5 +1,5 @@
-webauth (3.2.2-1) unstable; urgency=low
+webauth (3.2.3-1) unstable; urgency=low
 
   * Initial release.
 
- --
+ -- Russ Allbery <rra@stanford.edu>  Wed, 23 Jun 2004 16:11:02 -0700
