@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     int s;
     WEBAUTH_KRB5_CTXT *c;
     TEST_VARS;
-    char *username, *password, *keytab_path, *server;
+    char *username, *password, *keytab_path, *server, *server_principal;
     char *service, *host;
     char *cp;
     unsigned char *sa;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     service = argv[4];
     host = argv[5];
 
-    START_TESTS(21);
+    START_TESTS(22);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
@@ -52,9 +52,11 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
 
     s = webauth_krb5_init_via_password(c, username, password, 
-                                       keytab_path, NULL);
+                                       keytab_path, NULL, &server_principal);
 
     TEST_OK2(WA_ERR_NONE, s);
+    TEST_OK(server_principal != NULL);
+    free(server_principal);
 
     s = webauth_krb5_get_principal(c, &cprinc);
     TEST_OK2(WA_ERR_NONE, s);
