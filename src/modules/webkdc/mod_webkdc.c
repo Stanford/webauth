@@ -1744,17 +1744,16 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     pt->proxy_data = tgt;
     pt->proxy_data_len = tgt_len;
 
+    time(&creation);
+
     /* if ProxyTopkenMaxLifetime is non-zero, use the min of it 
        and the tgt, else just use the tgt  */
     if (rc->sconf->proxy_token_max_lifetime) {
-        pt->expiration = 
-            (tgt_expiration < rc->sconf->proxy_token_max_lifetime) ?
-            tgt_expiration : rc->sconf->proxy_token_max_lifetime;
+        time_t pmax = creation + rc->sconf->proxy_token_max_lifetime;
+        pt->expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
     } else {
         pt->expiration = tgt_expiration;
     }
-
-    time(&creation);
 
     alist = new_attr_list(rc, mwk_func);
     if (alist == NULL)

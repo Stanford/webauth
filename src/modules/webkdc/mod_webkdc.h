@@ -27,23 +27,23 @@
 
 /* defines for config directives */
 
-#define CD_Keyring "WebKDCKeyring"
+#define CD_Keyring "WebKdcKeyring"
 #define CM_Keyring "path to the keyring file"
 
-#define CD_Keytab "WebKDCKeytab"
+#define CD_Keytab "WebKdcKeytab"
 #define CM_Keytab "path to the K5 keytab file"
 
-#define CD_Debug "WebKDCDebug"
+#define CD_Debug "WebKdcDebug"
 #define CM_Debug "turn debugging on or off"
 
-#define CD_ProxyTokenMaxLifetime "WebKDCProxyTokenMaxLifetime"
+#define CD_ProxyTokenMaxLifetime "WebKdcProxyTokenMaxLifetime"
 #define CM_ProxyTokenMaxLifetime "lifetime of webdc-proxy-tokens"
 #define DF_ProxyTokenMaxLifetime (60*60*10)
 
-#define CD_ServiceTokenLifetime "WebKDCServiceTokenLifetime"
+#define CD_ServiceTokenLifetime "WebKdcServiceTokenLifetime"
 #define CM_ServiceTokenLifetime "lifetime of webkdc-service-tokens"
 
-#define CD_TokenMaxTTL "WebKDCTokenMaxTTL"
+#define CD_TokenMaxTTL "WebKdcTokenMaxTTL"
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL (60*5)
 
