@@ -56,6 +56,7 @@ WebAuthLastUseUpdateInterval
 </a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthlogincanceledurl">WebAuthLoginCanceledURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthproxyheaders">WebAuthProxyHeaders</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
@@ -863,6 +864,73 @@ This should alway use SSL. </p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLoginURL https://webkdc.stanford.edu/login/
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthProxyHeaders" id="WebAuthProxyHeaders">WebAuthProxyHeaders</a> <a name="webauthproxyheaders" id="webauthproxyheaders">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Inserts extra headers into request
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthProxyHeaders on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthProxyHeaders off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>This directive is useful in conjunction with the <code>ProxyPass</code>
+directive. When enabled, it causes the following extra headers to be 
+inserted into the proxy request:</p>
+
+<table class="bordered">
+<tr>
+ <th>Header Name:</th>
+ <th>Description:</th>
+</tr>
+<tr><td><code>X-WebAuth-User</code></td>            
+    <td>Name of the WebAuth authenticated user</td></tr>
+
+<tr><td><code>X-WebAuth-Token-Creation</code></td>     
+     <td>When the token was created</td></tr>
+
+<tr><td><code>X-WebAuth-Token-Expiration</code></td> 
+<td>When the token will expire. Note: if
+<a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>
+is set then the token may expire sooner due to inactivity.
+</td></tr>
+<tr><td><code>X-WebAuth-Token-LastUsed</code></td> 
+<td>When the token was last used. Only available if 
+<a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+ is non-zero</td></tr>
+</table>
+
+<p>
+Note that this option should only be used as a last resort when the target
+server specified in <code>ProxyPass</code> is unable to directly
+run <code>mod_webauth</code>.  HTTP headers are not secure and can
+easily be forged. The target server should only accept connections
+from the proxy server running <code>mod_webauth</code>.
+</p>
+
+<p>
+Turning this directive on also strips out any cookies that start with
+the prefix <code>webauth_</code>, so they do not get forwarded to
+the target server.
+</p>
+<div class="example"><h3>Example</h3><p><code>
+&lt;VirtualHost vhost.stanford.edu&gt;<br />
+  ...<br />
+  WebAuthProxyHeaders on<br />
+  ...<br />
+  &lt;Location / &gt;<br />
+    AuthType WebAuth<br />
+    require valid-user<br />
+  &lt;/Location&gt;<br />
+  ...<br />
+  ProxyPass / http://otherhost.stanford.edu/<br />
+  ProxyPassReverse / http://otherhost.stanford.edu/<br />
+  ...<br />
+&lt;/VirtualHost&gt;<br />
 </code></p></div>
 
 </div>

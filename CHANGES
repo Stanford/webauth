@@ -2,6 +2,9 @@
 
 WebAuth 3.0.1 (in progress)
 
+ *) implement WebAuthProxyHeaders directive. See WebAuth module
+    documentation for more information.
+
  *) clean up header includes in tests and wa_keyring
 
  *) mod_{webauth,webkdc}.h - "module" declaration should be extern

@@ -1094,4 +1094,71 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthProxyHeaders</name>
+<description>Inserts extra headers into request
+</description>
+<syntax>WebAuthProxyHeaders on|off</syntax>
+<default>WebAuthProxyHeaders off</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>This directive is useful in conjunction with the <code>ProxyPass</code>
+directive. When enabled, it causes the following extra headers to be 
+inserted into the proxy request:</p>
+
+<table border="1">
+<tr>
+ <th>Header Name:</th>
+ <th>Description:</th>
+</tr>
+<tr><td><code>X-WebAuth-User</code></td>            
+    <td>Name of the WebAuth authenticated user</td></tr>
+
+<tr><td><code>X-WebAuth-Token-Creation</code></td>     
+     <td>When the token was created</td></tr>
+
+<tr><td><code>X-WebAuth-Token-Expiration</code></td> 
+<td>When the token will expire. Note: if
+<a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>
+is set then the token may expire sooner due to inactivity.
+</td></tr>
+<tr><td><code>X-WebAuth-Token-LastUsed</code></td> 
+<td>When the token was last used. Only available if 
+<a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+ is non-zero</td></tr>
+</table>
+
+<p>
+Note that this option should only be used as a last resort when the target
+server specified in <code>ProxyPass</code> is unable to directly
+run <code>mod_webauth</code>.  HTTP headers are not secure and can
+easily be forged. The target server should only accept connections
+from the proxy server running <code>mod_webauth</code>.
+</p>
+
+<p>
+Turning this directive on also strips out any cookies that start with
+the prefix <code>webauth_</code>, so they do not get forwarded to
+the target server.
+</p>
+<example><title>Example</title>
+&lt;VirtualHost vhost.stanford.edu><br/>
+  ...<br/>
+  WebAuthProxyHeaders on<br/>
+  ...<br/>
+  &lt;Location / ><br/>
+    AuthType WebAuth<br/>
+    require valid-user<br/>
+  &lt;/Location><br/>
+  ...<br/>
+  ProxyPass / http://otherhost.stanford.edu/<br/>
+  ProxyPassReverse / http://otherhost.stanford.edu/<br/>
+  ...<br/>
+&lt;/VirtualHost><br/>
+</example>
+</usage>
+</directivesynopsis>
+
 </modulesynopsis>

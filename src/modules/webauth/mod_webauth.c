@@ -50,6 +50,60 @@ is_https(request_rec *r)
     return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
+/* remove any webauth_* cookies before proxying the request */
+static void
+strip_webauth_cookies(MWA_REQ_CTXT *rc)
+{
+    char *c;
+    int cookie_start, copy;
+    char *d, *s;
+    const char *mwa_func = "strip_webauth_cookies";
+
+    c = (char*) apr_table_get(rc->r->headers_in, "Cookie");
+
+    if (c == NULL || (ap_strstr(c, "webauth_") == NULL))
+        return;
+
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: %s: need to strip: %s", mwa_func, c);
+    s = d = c;
+    cookie_start = copy = 1;
+    while (*s) {
+        if (cookie_start && *s != ' ') {
+            copy = strncmp(s, "webauth_", 8) != 0;
+            cookie_start = 0;
+        } else if (*s == ';') {
+            cookie_start = 1;
+        }
+        if (copy) {
+            if (d != s)
+                *d = *s;
+            d++;
+        }
+        s++;
+    }
+
+    /* strip of trailing space */
+    while (d > c && *(d-1) == ' ')
+        d--;
+
+    /* null-terminate */
+    *d = '\0';
+
+    if (*c == '\0') {
+        apr_table_unset(rc->r->headers_in, "Cookie");
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                         "mod_webauth: %s: no cookies after strip", mwa_func);
+    } else {
+        /* we modified the Cookie header in place */
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                         "mod_webauth: %s: after strip: %s", mwa_func, c);
+    }
+}
+
 /*
  * find a cookie in the Cookie header and return its value, otherwise
  * return NULL.
@@ -570,6 +624,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->strip_url : bconf->strip_url;
 
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
+
+    conf->proxy_headers = oconf->proxy_headers_ex ? 
+        oconf->proxy_headers : bconf->proxy_headers;
 
     conf->require_ssl = oconf->require_ssl_ex ? 
         oconf->require_ssl : bconf->require_ssl;
@@ -1971,6 +2028,8 @@ static int
 check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
+    char *wte, *wtc, *wtlu;
+
     MWA_REQ_CTXT rc;
 
     memset(&rc, 0, sizeof(rc));
@@ -2026,22 +2085,37 @@ check_user_id_hook(request_rec *r)
     r->ap_auth_type = (char*)at;
 
     /* stash some envs for fixups */
-    fixup_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
 
-    if (rc.at.expiration_time)
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION,
-                     apr_psprintf(rc.r->pool, "%d", 
-                                  (int)rc.at.expiration_time));
+    wte = rc.at.expiration_time ? 
+        apr_psprintf(rc.r->pool, "%d", (int)rc.at.expiration_time) : NULL;
     
-    if (rc.at.creation_time)
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, 
-                     apr_psprintf(rc.r->pool, "%d", 
-                                   (int)rc.at.creation_time));
+    wtc = rc.at.creation_time ? 
+        apr_psprintf(rc.r->pool, "%d", (int)rc.at.creation_time) : NULL;
 
-    if (rc.at.last_used_time) 
-        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED,
-                     apr_psprintf(rc.r->pool, "%d",
-                                  (int)rc.at.last_used_time));
+    wtlu = rc.at.last_used_time ?
+        apr_psprintf(rc.r->pool, "%d", (int)rc.at.last_used_time) : NULL;
+
+    fixup_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
+    if (wte != NULL) 
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, wte);
+    if (wtc != NULL)
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
+    if (wtlu != NULL) 
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
+
+    if (rc.sconf->proxy_headers) {
+        apr_table_set(r->headers_in, "X-WebAuth-User", rc.at.subject);
+        if (wte != NULL) 
+            apr_table_set(r->headers_in, "X-WebAuth-Token-Expiration", wte);
+        if (wtc != NULL) 
+            apr_table_set(r->headers_in, "X-WebAuth-Token-Creation", wtc);
+        if (wtlu != NULL) 
+            apr_table_set(r->headers_in, "X-WebAuth-Token-LastUsed", wtlu);
+
+        /* make sure any webauth_* cookies don't end up proxied */
+        strip_webauth_cookies(&rc);
+    }
+
     return OK;
 }
 
@@ -2320,6 +2394,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->debug = flag;
             sconf->debug_ex = 1;
             break;
+        case E_ProxyHeaders:
+            sconf->proxy_headers = flag;
+            sconf->proxy_headers_ex = 1;
+            break;
         case E_KeyringAutoUpdate:
             sconf->keyring_auto_update = flag;
             sconf->keyring_auto_update_ex = 1;
@@ -2428,6 +2506,7 @@ static const command_rec cmds[] = {
     SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_ProxyHeaders, E_ProxyHeaders, CM_ProxyHeaders),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),

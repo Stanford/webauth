@@ -94,6 +94,10 @@
 #define CD_Debug "WebAuthDebug"
 #define CM_Debug "turn debugging on or off"
 
+
+#define CD_ProxyHeaders "WebAuthProxyHeaders"
+#define CM_ProxyHeaders "turn proxy WebAuth headers on or off"
+
 #define CD_DoLogout "WebAuthDoLogout"
 #define CM_DoLogout "nuke all WebAuth cookies"
 
@@ -203,6 +207,7 @@ enum {
     E_LastUseUpdateInterval,
     E_LoginURL,
     E_LoginCanceledURL,
+    E_ProxyHeaders,
     E_ReturnURL,
     E_RequireSSL,
     E_UseCreds,
@@ -245,6 +250,8 @@ typedef struct {
     char *st_cache_path;
     int  debug;
     int debug_ex;
+    int proxy_headers;
+    int proxy_headers_ex;
     int  require_ssl;
     int require_ssl_ex;
     char *subject_auth_type;

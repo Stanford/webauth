@@ -2,6 +2,10 @@
 
 WebAuth 3.0.1pre (2003-02-20)
 
+    Added WebAuthProxyHeaders directive to pass WebAuth information to
+    a proxied server. See the WebAuth module documentation for more
+    information.
+
     Remove the service token cache on restarts
 
 WebAuth 3.0.0 (2003-02-18)
