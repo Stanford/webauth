@@ -53,15 +53,24 @@ site, see doc/install-webkdc.
      You can omit --with-krb5, --with-openssl, and --with-curl if the
      packages are installed in locations automatically searched by your
      compiler (which will be the case if you're using Linux and the
-     packages that come with your Linux distribution).  You can omit
-     --with-apache if the right version of apxs is in your path;
-     otherwise, apxs should be in a bin subdirectory of the path that you
-     give to --with-apache.
+     packages that come with your Linux distribution).
 
-     Whatever version of Perl is found first on your path will be used to
-     build the Perl bindings.  You can override this check by setting the
-     environment variable PERL to the full path of the Perl binary that
-     you want to use.
+     You can omit --with-apache if the right version of apxs is in your
+     path; otherwise, apxs should be in a bin subdirectory of the path
+     that you give to --with-apache.  If your Apache installation doesn't
+     have a single root directory (if you are, for example, using the
+     Apache package installed from a Linux distribution), you can instead
+     specify the full path to apxs with --with-apxs, and the --with-apache
+     option should point to the directory above your htdocs directory (and
+     will only be used for installing the test suite, if you choose to do
+     that).
+
+     You may optionally build Perl bindings for libwebauth by passing the
+     --enable-perl option to configure.  If you do this, whatever version
+     of Perl is found first on your path will be used to build the Perl
+     bindings.  You can override this check by setting the environment
+     variable PERL to the full path of the Perl binary that you want to
+     use.
 
      configure will detect various things about your system and will
      generate the makefiles and include files required to build WebAuth.
@@ -77,8 +86,8 @@ site, see doc/install-webkdc.
      programs will be installed in /usr/local/bin; to change those
      locations, pass the --prefix option to configure with whatever path
      you want to serve as the installation root.  The install location of
-     the Apache modules will be derived from Apache and the install
-     location of the Perl modules will be derived from Perl's
+     the Apache modules will be determined by Apache's apxs utility, and
+     the install location of the Perl modules will be derived from Perl's
      configuration; neither are affected by --prefix.
 
  4.  Build WebAuth by running:
@@ -103,7 +112,13 @@ site, see doc/install-webkdc.
      active and will not protect any web pages.
 
  6.  Add Apache directives for WebAuth to your httpd.conf or equivalent
-     file.  The basic set of directives are:
+     file.  Stanford users should simply copy conf/stanford-webauth.conf
+     to their Apache 2.0 conf directory and then add the line:
+
+         Include conf/stanford-webauth.conf
+
+     to their httpd.conf file.  For users at other sites, the basic set of
+     directives are:
 
          LoadModule webauth_module modules/mod_webauth.so
 
@@ -118,8 +133,7 @@ site, see doc/install-webkdc.
          WebAuthServiceTokenCache conf/webauth/service_token.cache
 
      In all instances above, replace <your-webkdc> with the hostname of
-     the WebKDC server at your site.  Stanford users should use the name
-     weblogin-new.stanford.edu.
+     the WebKDC server at your site.
 
      If you are testing a beta release, please also add:
 
