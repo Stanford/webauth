@@ -36,6 +36,7 @@ doc/old/webkdc-implementation           Obsolete documentation
 doc/old/webkdc-protocol                 Obsolete documentation
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
+doc/webauth.conf                        Sample WebAuth Apache configuration
 doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
