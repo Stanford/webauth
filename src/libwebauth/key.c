@@ -366,7 +366,7 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
     temp = NULL;
     fd = -1;
 
-    temp = malloc(strlen(path)+7+1); // .XXXXXX\0
+    temp = malloc(strlen(path)+7+1); /* .XXXXXX\0 */
     if (temp == NULL)
         return WA_ERR_NO_MEM;
 
