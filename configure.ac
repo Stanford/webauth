@@ -31,7 +31,7 @@ test x"$prefix" = xNONE && prefix="$ac_default_prefix"
 dnl By default, we don't build the WebKDC or any of its components.
 WEBKDC=
 AC_ARG_ENABLE([webkdc],
-    AC_HELP_STRING([--enable-webkdc], [Compile and install the WebKDC])
+    AC_HELP_STRING([--enable-webkdc], [Compile and install the WebKDC]),
     [if test x"$enableval" != xno ; then
         WEBKDC=webkdc
      fi])
