@@ -10,10 +10,16 @@ prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 bindir		= @bindir@
 libdir		= @libdir@
+mandir		= @mandir@
 D		= $(DESTDIR)
+
+man1dir		= $(mandir)/man1
+
+VERSION		= @PACKAGE_VERSION@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
 LIBTOOL		= $(top_builddir)libtool
 RANLIB		= @RANLIB@
 
@@ -26,12 +32,14 @@ LDFLAGS		= -L$(top_builddir)src/libwebauth -R$(libdir)
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 PROGS		= wa_keyring
+MAN		= wa_keyring.1
 
 all: $(PROGS)
 
 install: $(PROGS)
 	$(INSTALL) -d $D$(bindir)
 	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $D$(bindir)/wa_keyring
+	$(INSTALL_DATA) $(srcdir)/wa_keyring.1 $D$(man1dir)/wa_keyring.1
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
@@ -39,8 +47,15 @@ install: $(PROGS)
 wa_keyring: wa_keyring.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ wa_keyring.o $(LDLIBS)
 
+wa_keyring.1: wa_keyring.pod
+	pod2man --release='$(VERSION)' --section=1 --center='User Programs' \
+	    wa_keyring.pod > $@
+
 clean:
 	rm -rf $(PROGS) *.o .libs *~ core \#*
+
+maintclean:
+	rm -f wa_keyring.1
 
 depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
