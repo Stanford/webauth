@@ -30,7 +30,7 @@ if (($apachedir =~ tr%/%/%) > 1 || $apachedir !~ m%^/%) {
 my @files = map { "$apachedir/$_" } @ARGV;
 $tarname = getcwd . '/' . $tarname;
 chdir "$root/.." or die "$0: cannot chdir to $root: $!\n";
-system ("tar cf '$tarname' @files") == 0
+system ("tar --create --owner=0 --group=0 --file='$tarname' @files") == 0
     or die "$0: tar exited with status ", ($? >> 8), "\n";
 system ('gzip', '-9', $tarname) == 0
     or die "$0: gzip exited with status ", ($? >> 8), "\n";
