@@ -14,8 +14,8 @@ APACHECTL=apachectl
 
 #   additional defines, includes and libraries
 #DEFS=-Dmy_define=my_value
-#INCLUDES=-Imy/include/dir
-#LIBS=-Lmy/lib/dir -lmylib
+INCLUDES=-I../../libwebauth
+LIBS=-L../../libwebauth -lwebauth
 
 #   the default target
 all: local-shared-build

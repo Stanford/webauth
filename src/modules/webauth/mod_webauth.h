@@ -10,6 +10,9 @@
 #include "apr.h"
 #include "apr_lib.h"
 #include "apr_strings.h"
+#include "apr_tables.h"
+
+#include "webauth.h"
 
 /* defines for config directives */
 #define CD_WebKDCURL "WebAuthWebKDCURL"
@@ -59,6 +62,10 @@
 #define CD_ReturnURL "WebAuthReturnURL"
 #define CM_ReturnURL "url to return to after logging in"
 
+/* r->notes keys */
+#define N_WEBAUTHR "MWA_WEBAUTHR"
+#define N_WEBAUTHS "MWA_WEBAUTHS"
+#define N_SUBJECT  "MWA_SUBJECT"
 
 /* enums for config directives */
 
@@ -82,6 +89,7 @@ enum {
 
 module webauth_module;
 
+/* server conf stuff */
 typedef struct {
     char *webkdc_url;
     char *login_url;
@@ -91,9 +99,12 @@ typedef struct {
     char *st_cache_path;
     char *var_prefix;
     int  debug;
-} WEBAUTH_SCONF;
+    /* end of conf */
+    WEBAUTH_KEYRING *ring; /* from keyring_path */
 
+} MWA_SCONF;
 
+/* directory conf stuff */
 typedef struct {
     int app_token_lifetime;
     int token_max_ttl;
@@ -102,6 +113,6 @@ typedef struct {
     int hard_expire;
     int force_login;
     char *return_url;
-} WEBAUTH_DCONF;
+} MWA_DCONF;
 
 #endif
