@@ -6,7 +6,6 @@
 ^webauth-perl-.*\.tar\.gz$
 ^blib/
 ^pm_to_blib$
-^typemap$
 ^webauth_keyring2?$
 ~$
 \.old$
