@@ -159,9 +159,9 @@ sub request_token_request($$) {
     # send the request to the webkdc
 
     my $xml = $webkdc_doc->root->to_string(1);
-    print STDERR "-------- generated --------\n";
-    print STDERR "$xml\n";
-    print STDERR "-------- generated --------\n";
+    #print STDERR "-------- generated --------\n";
+    #print STDERR "$xml\n";
+    #print STDERR "-------- generated --------\n";
 
 
     my $ua = new LWP::UserAgent;
@@ -190,7 +190,7 @@ sub request_token_request($$) {
 	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
 
-    print STDERR $http_res->content;
+    #print STDERR $http_res->content;
 
     if ($root->name() eq 'errorResponse') {
 	my $error_code = get_child_value($root, 'errorCode', 1);
