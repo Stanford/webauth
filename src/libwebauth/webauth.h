@@ -1,4 +1,4 @@
-/** \file
+/** @file
  * Interface to the libwebauth utility library.
  *
  * The libwebauth utility library contains the basic token handling functions
@@ -80,11 +80,11 @@ typedef enum {
 
 /******************** types ********************/
 
-/** A generic attribute.
+/** A generic name/value attribute.
  *
  * Holds a generic name/value attribute for constructing and parsing tokens.
- * Names <b>must not</b> contain "=", and values \b may contain binary data,
- * since the length \b must be specified.
+ * Names <b>must not</b> contain "=", and values <b>may</b> contain binary
+ * data, since the length <b>must</b> be specified.
  */
 typedef struct {
     char *name;                 /**< Name of attribute. */
@@ -94,9 +94,9 @@ typedef struct {
 
 /** An attribute list.
  *
- * Holds a list of attributes. You must always use
- * use webauth_attr_list_new to construct a new attr list,
- * so webauth_attr_list_{add,free} work correctly.
+ * Holds a list of attributes. You must always use use webauth_attr_list_new
+ * to construct a new attr list, so webauth_attr_list_{add,free} work
+ * correctly.
  */
 typedef struct {
     int num_attrs;
@@ -131,10 +131,10 @@ typedef struct {
 /** Amount of space required to base64-encode data.
  *
  * Returns the amount of space required to base64-encode data.  Returned
- * length does \b NOT include room for nul-termination.
+ * length does <b>NOT</b> include room for nul-termination.
  *
- * \param length Length of data to be encoded.
- * \return Space base64-encoded data will require.
+ * @param length Length of data to be encoded.
+ * @return Space base64-encoded data will require.
  */
 int webauth_base64_encoded_length(int length);
 
@@ -143,13 +143,13 @@ int webauth_base64_encoded_length(int length);
  * Returns the amount of space required to base64-decode data of the given
  * length.  Does not actually attempt to ensure that the input contains a
  * valid base64-encoded string, other than checking the last two characters
- * for padding ("=").  Returned length does \b NOT include room for
+ * for padding ("=").  Returned length does <b>NOT</b> include room for
  * nul-termination.
  *
- * \param input Base64-encoded data.
- * \param length Length of base64-encoded data.
+ * @param input Base64-encoded data.
+ * @param length Length of base64-encoded data.
  *
- * \return Returns the required space in bytes provided that length is
+ * @return Returns the required space in bytes provided that length is
  *   greater than 0 and a multiple of 4.  Otherwise, returns #WA_ERR_CORRUPT
  *   since the input data cannot be valid base64-encoded data.
  */
@@ -157,17 +157,17 @@ int webauth_base64_decoded_length(const unsigned char *input, int length);
 
 /** Base64-encode the given data.
  *
- * Does \b NOT nul-terminate.  Output cannot point to the same memory space as
- * input.
+ * Does <b>NOT</b> nul-terminate.  Output cannot point to the same memory
+ * space as input.
  *
- * \param input Data to encode.
- * \param input_len Length of data to encode.
- * \param output Buffer into which to write base64-encoded data.
- * \param max_output_len Maximum number of bytes to write to \a output.
+ * @param input Data to encode.
+ * @param input_len Length of data to encode.
+ * @param output Buffer into which to write base64-encoded data.
+ * @param max_output_len Maximum number of bytes to write to @a output.
  *
- * \return Returns the number of bytes written to \a output, or
+ * @return Returns the number of bytes written to @a output, or
  *   #WA_ERR_NO_ROOM if encoding the provided data would require more space
- *   than \a max_output_len.
+ *   than @a max_output_len.
  */
 int webauth_base64_encode(const unsigned char *input,
                           int input_len, 
@@ -176,16 +176,16 @@ int webauth_base64_encode(const unsigned char *input,
 
 /** Base64-decode the given data.
  *
- * Does \b NOT nul-terminate.  Output may point to input.
+ * Does <b>NOT</b> nul-terminate.  Output may point to input.
  *
- * \param input Data to decode.
- * \param input_len Length of data to decode.
- * \param output Buffer into which to write base64-decoded data.
- * \param max_output_len Maximum number of bytes to write to \a output.
+ * @param input Data to decode.
+ * @param input_len Length of data to decode.
+ * @param output Buffer into which to write base64-decoded data.
+ * @param max_output_len Maximum number of bytes to write to @a output.
  *
- * \return Returns the number of bytes written to \a output, #WA_ERR_NO_ROOM
- *   if decoding the provided data would require more space than \a
- *   max_output_len, or #WA_ERR_CORRUPT if \a input is not valid
+ * @return Returns the number of bytes written to @a output, #WA_ERR_NO_ROOM
+ *   if decoding the provided data would require more space than @a
+ *   max_output_len, or #WA_ERR_CORRUPT if @a input is not valid
  *   base64-encoded data.
  */
 int webauth_base64_decode(unsigned char *input,
