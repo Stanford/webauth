@@ -1,82 +1,46 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!-- $Id$
+<!--
 This is the template for the StanfordWebAuth v3 error page. It is displayed
 whenever the login.fcgi script on the weblogin server encounters an error.
 errors codes:
 err_no_request_token:no request token
-err_webkdc          :errmsg sent from webkdc -- we can change to be more specific
+err_webkdc          :errmsg sent from webkdc - we can change to be more specific
 -->
-<HTML>
-  <HEAD>
-    <TITLE>Stanford University - WebLogin Error</TITLE>
-    <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
-    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-  </HEAD>
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>Webauth Error</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
 
-  <BODY BGCOLOR="#FFFFCC">
-    <FORM ACTION="" METHOD="get">
-      <TABLE WIDTH="60%" BORDER="1" ALIGN="center" BGCOLOR="#FFFFFF">
-        <TR>
-          <TD>
-            <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
-              <TR>
-                <TD WIDTH="170"><IMG SRC="/images/gateway1.gif" WIDTH="160"
-                HEIGHT="160" ALT="Image of Stanford University, closed gateway"></TD>
+  <body>
+    <h1 align="center">Webauth Error</h1>
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <tr>
+          <td><img alt="Error" src="/images/error.png"
+                   width="160" height="160"/></td>
+          <td>
+            <div class="errortext">
+              <p><strong>An error has occurred</strong></p>
 
-                <TD VALIGN="top">
-                  <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
-                    <TR>
-                      <TD>
-                        <TABLE WIDTH="100%">
-                          <TR>
-                            <TD BGCOLOR="#990000" NOWRAP>
-                              <DIV ALIGN="right">
-                                <FONT COLOR="#FFFFFF" SIZE="3" FACE=
-                                "Verdana, Arial, Helvetica, sans-serif">
-                                <STRONG>WebLogin</STRONG></FONT>
-                              </DIV>
-                            </TD>
-                          </TR>
-                        </TABLE>
-                      </TD>
-                    </TR>
-                  </TABLE>
+              <!-- Error: no respson token -->
+              <TMPL_IF NAME=err_no_request_token>
+                <p>Error: The URL given is incomplete.</p>
+              </TMPL_IF>
 
-                  <P><STRONG><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">An error has occurred.</FONT></STRONG></P>
+              <TMPL_IF NAME=err_webkdc>
+                <p>Error: <TMPL_VAR NAME=err_msg></p>
+              </TMPL_IF>
 
-		<!-- Error: no respson token -->
-	        <TMPL_IF NAME=err_no_request_token>
-		    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-			Error: The URL given is incomplete. 
-		    </FONT></P>
-	        </TMPL_IF>
-
-		<TMPL_IF NAME=err_webkdc>
-		     <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-			Error: <TMPL_VAR NAME=err_msg> 
-		    </FONT></P>
-		</TMPL_IF>
-
-                  <P><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">To try again, please return to the
-                  preceding web page (or you may need to start your request for this
-                  web service again).
-                  For help or to report a service problem, contact <A HREF=
-                  "http://helpsu.stanford.edu">HelpSU</A>.</FONT></P>
-                </TD>
-              </TR>
-            </TABLE>
-          </TD>
-        </TR>
-      </TABLE>
-    </FORM>
-
-  <table width="65%" border="0" align="center">
-     <tr><td><DIV ALIGN="center"><font size="1" face="Arial, Helvetica, sans-serif">Copyright
-      2003 Stanford University. All Rights Reserved.<br>Last modified
-      10/20/03 by ITSS/jnk.</font></DIV></td></tr></table>  
-
-</BODY>
-</HTML>
-
+              <p>To try again, please return to the preceding web page
+              (or you may need to start your request for this web
+              service again).  Click <a href="/help.html">help</a> for
+              assistance</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!-- $Id$
+<!--
 This is the template for StanfordWebAuth v3 logout. It is displayed
 whenever the logout.fcgi script is executed. The logout.fcgi deletes
 the single sign on cookie
@@ -7,82 +7,37 @@ variables:
 cookies_flag : found cookies
 
 -->
-<HTML>
-  <HEAD>
-    <TITLE>Stanford University - WebLogin Logout</TITLE>
-    <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
-    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-  </HEAD>
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>Webauth Logout</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
 
-  <BODY BGCOLOR="#FFFFCC">
-    <FORM ACTION="" METHOD="get">
-      <TABLE WIDTH="60%" BORDER="1" ALIGN="center" BGCOLOR="#FFFFFF">
-        <TR>
-          <TD>
-            <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
-              <TR>
-                <TD WIDTH="170"><IMG SRC="/images/gateway1.gif" WIDTH="160"
-                HEIGHT="160" ALT="Image of Stanford University, closed gateway"></TD>
+  <body>
+    <h1 align="center">Webauth Logout</h1>
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <tr>
+          <td><img alt="Logout" src="/images/logout.png"
+                   width="160" height="160"/></td>
+          <td>
+            <div class="logouttext" align="center">
+              <p><strong>You have chosen to remove your Webauth single
+              sign-on cookie.</strong></p>
 
-                <TD VALIGN="top">
-                  <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
-                    <TR>
-                      <TD>
-                        <TABLE WIDTH="100%">
-                          <TR>
-                            <TD BGCOLOR="#990000" NOWRAP>
-                              <DIV ALIGN="right">
-                                <FONT COLOR="#FFFFFF" SIZE="3" FACE=
-                                "Verdana, Arial, Helvetica, sans-serif">
-                                <STRONG>WebLogin</STRONG></FONT>
-                              </DIV>
-                            </TD>
-                          </TR>
-                        </TABLE>
-                      </TD>
-                    </TR>
-                  </TABLE>
-
-                <!--The logout found cookies
-                <TMPL_IF NAME=cookies_flag>
-                    <p><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-                    Results: Single sign-on cookie has been deleted.
-                    </FONT></STRONG></P>
-                <TMPL_ELSE> 
-                    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-                    Results: No single sign-on cookies found to delete.
-                    </FONT></STRONG></P>
-                </TMPL_IF>
-                -->
-
-		 <p><STRONG><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">To logout completely, quit this browser program
-                  when you are finished and log out of PC-Leland or MacLeland.
-		</FONT></STRONG></P>
-				    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-                  <A HREF ="http://www.stanford.edu">Stanford Home Page</A></FONT></P>
-                </TD>
-              </TR>
-            </TABLE>
-          </TD>
-        </TR>
-      </TABLE>
-    </FORM>
-    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif"><strong>Quit the web browser you are using when
-		you are finished with this browser session. </strong> If you do not, anyone subsequently using 
-		your computer will be able to use the browser program to go to Web Authenticated      
-		websites, and the websites will treat that person as you, giving that     
-		person access to Stanford's and your web assets. You are responsible for     
-		preventing that from happening with this web session, and the best way     
-		to do it is to quit the browser program when you are finished with it,     
-		or lock your computer if you need to leave your computer but aren't     
-		through with the browser.</font></p>
-
-<table width="65%" border="0" align="center">
-     <tr><td><DIV ALIGN="center"><font size="1" face="Arial, Helvetica, sans-serif">Copyright
-      2003 Stanford University. All Rights Reserved.<br>Last modified
-      10/20/03 by ITSS/jnk.</font></DIV></td></tr></table>  
-
-
-  </BODY>
-</HTML>
+              <!--The logout found cookies -->
+              <p><strong>Results:</strong>
+              <TMPL_IF NAME=cookies_flag>
+                Single sign-on cookie has been deleted.
+              <TMPL_ELSE> 
+                No single sign-on cookies found to delete.
+              </TMPL_IF>
+              </p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
