@@ -10,6 +10,7 @@ m4_include([m4/int32.m4])
 m4_include([m4/krb5.m4])
 m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
+m4_include([m4/ldap.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.57)
@@ -47,6 +48,14 @@ AC_ARG_ENABLE([mod_webauth],
         MODULES="webauth $MODULES"
      fi],
     [MODULES="webauth $MODULES"])
+
+AC_ARG_ENABLE([mod_webauthldap],
+    AC_HELP_STRING([--disable-mod_webauthldap],
+        [Do not build the WebAuth LDAP  module]),
+    [if test x"$enableval" = xyes ; then
+        MODULES="webauthldap $MODULES"
+     fi],
+    [MODULES="webauthldap $MODULES"])
 
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
 dnl is set in the environment, always use it; otherwise, use -g unless
@@ -116,6 +125,7 @@ AC_SEARCH_LIBS(socket, socket, ,
 WEBAUTH_LIB_KRB5
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
+WEBAUTH_LIB_LDAP
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -148,6 +158,7 @@ AC_CONFIG_FILES([
     src/libwebauth/webauth.h
     src/modules/Makefile
     src/modules/webauth/Makefile
+    src/modules/webauthldap/Makefile
     src/utils/Makefile
     src/webkdc/Makefile
     tests/Makefile
