@@ -615,18 +615,20 @@ request_service_token(server_rec *server,
                               "</getTokensRequest>",
                               NULL);
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                 "mod_webauth: xml_request(%s)", xml_request);
-
+    if (sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+                     "mod_webauth: xml_request(%s)", xml_request);
+    }
 
     xml_response = post_to_webkdc(xml_request, 0, server, sconf, pool);
 
     if (xml_response == NULL)
         return 0;
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                 "mod_webauth: xml_response(%s)", xml_response);
-
+    if (sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+                     "mod_webauth: xml_response(%s)", xml_response);
+    }
     
     xp = apr_xml_parser_create(pool);
     if (xp == NULL) {
@@ -651,9 +653,6 @@ request_service_token(server_rec *server,
                      astatus);
         return 0;
     }
-
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                 "mod_webauth: xml doc root(%s)", xd->root->name);
 
     return parse_service_token_response(xd, server, pool, curr);
 }

@@ -2,6 +2,10 @@
 
 WebAuth 3.2.0 (in progress)
 
+ *) removed extra logging from mod_webauth/webkdc.c, and moved
+    other extraneous logging so its only logged at a level of
+    APLOG_DEBUG when WebAuthDebug is turned on.
+
 WebAuth 3.1.2 (2003-05-29)
 
  *) mod_webauthldap has several bugfixes, supports multiple virtualhosts,
