@@ -958,8 +958,8 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
                                       mwk_func, 0);
     }
 
-    status = webauth_krb5_init_via_tgt(ctxt, sub_pt->proxy_data, 
-                                       sub_pt->proxy_data_len, NULL);
+    status = webauth_krb5_init_via_cred(ctxt, sub_pt->proxy_data, 
+                                        sub_pt->proxy_data_len, NULL);
 
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
@@ -1341,14 +1341,14 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                       "server failure", mwk_func, 0);
     }
 
-    status = webauth_krb5_init_via_tgt(ctxt,
-                                       sub_pt->proxy_data, 
-                                       sub_pt->proxy_data_len,
-                                       NULL);
+    status = webauth_krb5_init_via_cred(ctxt,
+                                        sub_pt->proxy_data, 
+                                        sub_pt->proxy_data_len,
+                                        NULL);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
                                               status, ctxt,
-                                              "webauth_krb5_init_via_tgt",
+                                              "webauth_krb5_init_via_cred",
                                               NULL);
         webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
