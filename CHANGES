@@ -10,6 +10,10 @@ WebAuth 3.2.2 (in progress)
  *) Change C++-style // comments to C commands to make the Sun compiler
     happier.
 
+ *) Include the right compiler flags to find the extra Kerberos libraries
+    we need when probing for S/Ident, if they're in a non-standard
+    location that isn't the same as the S/Ident location.
+
  *) Fix invalid HTML in the templates for the weblogin script.
 
 WebAuth 3.2.1 (2003-09-10)
