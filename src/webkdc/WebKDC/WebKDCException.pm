@@ -76,9 +76,7 @@ sub to_string {
 sub match {
     my $e = shift;
     return 0 if !isa($e, "WebKDC::WebKDCException");
-    return 1 unless @_;
-    return $e->status() == shift;
-    #return @_ ? $e->status() == shift : 1;
+    return @_ ? $e->status() == shift : 1;
 }
 
 
