@@ -26,6 +26,10 @@ BOOT:
     IV_CONST(WA_ERR_BAD_HMAC);
     IV_CONST(WA_ERR_RAND_FAILURE);
     IV_CONST(WA_ERR_BAD_KEY);
+    IV_CONST(WA_ERR_KEYRING_WRITE);
+    IV_CONST(WA_ERR_KEYRING_READ);
+    IV_CONST(WA_ERR_KEYRING_VERSION);
+    IV_CONST(WA_ERR_NOT_FOUND);
     IV_CONST(WA_ERR_NONE);
     IV_CONST(WA_AES_KEY);
     IV_CONST(WA_AES_128);
@@ -371,21 +375,52 @@ OUTPUT:
     RETVAL
 
 
-WEBAUTH_KEY_RING *
-webauth_key_ring_new(initial_capacity)
+WEBAUTH_KEYRING *
+webauth_keyring_read_file(path,...)
+char *path
+PROTOTYPE: $;$
+CODE:
+{
+    WEBAUTH_KEYRING *ring;
+    int s;
+   
+    s = webauth_keyring_read_file(path, &ring);
+    if (items > 1) {
+       sv_setiv(ST(1), s);
+    }
+    RETVAL = ring;
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_keyring_write_file(ring,path)
+WEBAUTH_KEYRING *ring
+char *path
+PROTOTYPE: $$
+CODE:
+{
+    RETVAL = webauth_keyring_write_file(ring, path);
+}
+OUTPUT:
+    RETVAL
+
+
+WEBAUTH_KEYRING *
+webauth_keyring_new(initial_capacity)
 int initial_capacity
 PROTOTYPE: $
 CODE:
 {
-    RETVAL = webauth_key_ring_new(initial_capacity);
+    RETVAL = webauth_keyring_new(initial_capacity);
 }
 OUTPUT:
     RETVAL
 
 
 int
-webauth_key_ring_add(ring,creation_time,valid_from,valid_till,key)
-WEBAUTH_KEY_RING *ring
+webauth_keyring_add(ring,creation_time,valid_from,valid_till,key)
+WEBAUTH_KEYRING *ring
 time_t creation_time
 time_t valid_from
 time_t valid_till
@@ -399,7 +434,7 @@ CODE:
     if (copy == NULL) {
         RETVAL = WA_ERR_NO_MEM;    
     } else {
-        RETVAL = webauth_key_ring_add(ring, creation_time, 
+        RETVAL = webauth_keyring_add(ring, creation_time, 
                                       valid_from, valid_till, copy);
         if (RETVAL != WA_ERR_NONE) {
             webauth_key_free(copy);
@@ -412,7 +447,7 @@ OUTPUT:
 void
 webauth_token_create(attrs,ring,...)
 SV *attrs
-WEBAUTH_KEY_RING *ring
+WEBAUTH_KEYRING *ring
 PROTOTYPE: $$;$
 CODE:
 {
@@ -462,7 +497,7 @@ CODE:
 void
 webauth_token_parse(buffer,ring,...)
 SV *buffer
-WEBAUTH_KEY_RING *ring
+WEBAUTH_KEYRING *ring
 PROTOTYPE: $$;$
 CODE:
 {
@@ -477,7 +512,7 @@ CODE:
 
     num_attrs = webauth_token_parse(p_input, n_input, &list, ring);
 
-    if (items > 1) {
+    if (items > 2) {
        sv_setiv(ST(2), num_attrs);
     }
 
@@ -502,13 +537,13 @@ webauth_DESTROY(key)
 CODE:
     webauth_key_free(key);
 
-MODULE = WebAuth        PACKAGE = WEBAUTH_KEY_RINGPtr  PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WEBAUTH_KEYRINGPtr  PREFIX = webauth_
 
 void
 webauth_DESTROY(ring)
-    WEBAUTH_KEY_RING *ring
+    WEBAUTH_KEYRING *ring
 CODE:
-    webauth_key_ring_free(ring);
+    webauth_keyring_free(ring);
 
  /*
  **  Local variables:

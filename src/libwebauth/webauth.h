@@ -33,6 +33,10 @@ typedef enum {
     WA_ERR_BAD_HMAC,         /**< HMAC check failed. */
     WA_ERR_RAND_FAILURE,     /**< Unable to get random data. */
     WA_ERR_BAD_KEY,          /**< Unable to use key. */
+    WA_ERR_KEYRING_WRITE,    /**< Unable to write to key ring. */
+    WA_ERR_KEYRING_READ,     /**< Unable to read key ring file. */
+    WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
+    WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
@@ -113,14 +117,13 @@ typedef struct {
     time_t valid_from;
     time_t valid_till;
     WEBAUTH_KEY *key;
-} WEBAUTH_KEY_RING_ENTRY;
+} WEBAUTH_KEYRING_ENTRY;
 
 typedef struct {
-    int version;
     int num_entries;
     int capacity;
-    WEBAUTH_KEY_RING_ENTRY *entries;
-} WEBAUTH_KEY_RING;
+    WEBAUTH_KEYRING_ENTRY *entries;
+} WEBAUTH_KEYRING;
 
 
 /******************** base64 ********************/
@@ -261,6 +264,12 @@ WEBAUTH_ATTR_LIST *webauth_attr_list_new();
 int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
                           char *name, void *value, int vlen);
 
+/** searches for the name attribute in the list and returns the
+ * index or WA_ERR_NOT_FOUND.
+ *
+ */
+int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, char *name);
+
 /** free's an attr list
  *
  *  Frees the memory associated with an attribute list. Does not
@@ -375,12 +384,12 @@ void webauth_key_free(WEBAUTH_KEY *key);
 /*
  * create a new key ring
  */
-WEBAUTH_KEY_RING * webauth_key_ring_new(int initial_capacity);
+WEBAUTH_KEYRING * webauth_keyring_new(int initial_capacity);
 
 /*
  * free a key ring, and any keys in it
  */
-void webauth_key_ring_free(WEBAUTH_KEY_RING *ring);
+void webauth_keyring_free(WEBAUTH_KEYRING *ring);
 
 /*
  * add a new entry to a key ring. After the call, "key" will
@@ -390,7 +399,7 @@ void webauth_key_ring_free(WEBAUTH_KEY_RING *ring);
  * If creation_time or valid_from time is 0, then the current time is used.
  */
 
-int webauth_key_ring_add(WEBAUTH_KEY_RING *ring,
+int webauth_keyring_add(WEBAUTH_KEYRING *ring,
                          time_t creation_time,
                          time_t valid_from,
                          time_t valid_till,
@@ -403,7 +412,23 @@ int webauth_key_ring_add(WEBAUTH_KEY_RING *ring,
  * valid valid_till time.
  */
 WEBAUTH_KEY *
-   webauth_key_ring_best_encryption_key(const WEBAUTH_KEY_RING *ring);
+   webauth_keyring_best_encryption_key(const WEBAUTH_KEYRING *ring);
+
+/*
+ * write a key ring to a file. 
+ *
+ * returns WA_ERR_NONE on success, or an error.
+ */
+int webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path);
+
+/*
+ * reads a key ring from a file.
+ *
+ * returns WA_ERR_NONE on success, or an error.
+ */
+
+int
+webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring);
 
 /******************** tokens ********************/
    
@@ -428,7 +453,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
                          int max_output_len,
-                         const WEBAUTH_KEY_RING *ring);
+                         const WEBAUTH_KEYRING *ring);
 
 /*
  * base64 decodes and decrypts attrs into a token
@@ -449,7 +474,7 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR_LIST **list,
-                        const WEBAUTH_KEY_RING *ring);
+                        const WEBAUTH_KEYRING *ring);
 
 #ifdef  __cplusplus
 }

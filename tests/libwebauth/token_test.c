@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
     WEBAUTH_KEY *key;
-    WEBAUTH_KEY_RING *ring;
+    WEBAUTH_KEYRING *ring;
     unsigned char key_material[WA_AES_128];
     WEBAUTH_ATTR_LIST *ain, *aout;
     int rlen, len, dnum_attrs, i, s;
@@ -33,11 +33,11 @@ int main(int argc, char *argv[])
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
     TEST_OK(key != NULL);
 
-    ring = webauth_key_ring_new(32);
+    ring = webauth_keyring_new(32);
     TEST_OK(ring != NULL);
     
     time(&curr);
-    s = webauth_key_ring_add(ring, curr, curr, curr+3600, key);
+    s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
     TEST_OK2(WA_ERR_NONE, s);
 
     rlen = webauth_token_encoded_length(ain);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     webauth_attr_list_free(ain);
     webauth_attr_list_free(aout);
     free(token);
-    webauth_key_ring_free(ring);
+    webauth_keyring_free(ring);
 
     END_TESTS;
     exit(NUM_FAILED_TESTS ? 1 : 0);

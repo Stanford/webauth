@@ -8,7 +8,7 @@
 use Test;
 use UNIVERSAL qw(isa);
 
-BEGIN { plan tests => 68 };
+BEGIN { plan tests => 73 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
@@ -136,8 +136,8 @@ ok(isa($key, 'WEBAUTH_KEYPtr'));
 $key = WebAuth::key_create(WebAuth::WA_AES_KEY, WebAuth::random_key(2));
 ok(!defined($key));
 
-# $ring = WebAuth::key_ring_new($initial_capacity);
-# WebAuth::key_ring_add($ring, c, vf, vt, $key); # use webauth_key_copy internally
+# $ring = WebAuth::keyring_new($initial_capacity);
+# WebAuth::keyring_add($ring, c, vf, vt, $key); # use webauth_key_copy internally
 # WebAuth::
 
 ######################################## tokens
@@ -146,24 +146,42 @@ $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			   WebAuth::random_key(WebAuth::WA_AES_128));
 $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-$ring = WebAuth::key_ring_new(32);
+$ring = WebAuth::keyring_new(32);
+ok(isa($ring, 'WEBAUTH_KEYRINGPtr'));
 ok ($ring != undef);
 
 $curr=time();
-$s = WebAuth::key_ring_add($ring, $curr, $curr, $curr+3600, $key);
+$s = WebAuth::keyring_add($ring, $curr, $curr, $curr+3600, $key);
 ok(WebAuth::WA_ERR_NONE, $s);
 
 $key = undef;
-
+$status = undef;
 $token = WebAuth::token_create($attrs, $ring, $status);
 
 ok(length($token));
 ok(92, $status);
 
+$status = undef;
 $attrs2 = WebAuth::token_parse($token, $ring, $status);
 
 ok(3, $status);
 ok(1, compareHashes($attrs, $attrs));
+
+# FIXME: cleanup files, compare them, should probably use temp file names, etc.
+
+# write key ring
+$status = WebAuth::keyring_write_file($ring, "webauth_keyring");
+ok(WebAuth::WA_ERR_NONE, $status);
+
+# read key ring
+$status = undef;
+$ring2 = WebAuth::keyring_read_file("webauth_keyring", $status);
+ok(isa($ring2, 'WEBAUTH_KEYRINGPtr'));
+ok(WebAuth::WA_ERR_NONE, $status);
+
+# write key ring2
+$status = WebAuth::keyring_write_file($ring2, "webauth_keyring2");
+ok(WebAuth::WA_ERR_NONE, $status);
 
 #print "attrs2($attrs) status($status)\n";
 

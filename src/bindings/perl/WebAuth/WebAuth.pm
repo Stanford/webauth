@@ -178,27 +178,41 @@ be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
 
-=item key_ring_new(initial_capacity)
+=item keyring_new(initial_capacity)
 
- $ring = key_ring_new($initial_capacity);
+ $ring = keyring_new($initial_capacity);
 
-Creates a reference to a WEBAUTH_KEY_RINGPtr object, or undef
+Creates a reference to a WEBAUTH_KEYRINGPtr object, or undef
 on error.
 
-=item key_ring_add(ring, creation_time, valid_from, valid_till, key)
+=item keyring_add(ring, creation_time, valid_from, valid_till, key)
 
- $status = key_ring_add($ring, $c, $vf, $vt, $key);
+ $status = keyring_add($ring, $c, $vf, $vt, $key);
 
 Adds a key to the key ring. creation_time and valid_from can both be
 0, in which case the current time is used. key is copied internally, and
 can be undef'd after calling this function.
+
+=item keyring_write_file(ring, path)
+
+ $status = keyring_write_file($ring, $path);
+
+Writes a key ring to a file. Returns WA_ERR_NONE on success.
+
+=item keyring_read_file(path[, status])
+
+ $ring = keyring_read_file($path[, $status]);
+
+Reads a key ring from a file. Returns undef on error. $status is optional, 
+and if  present will get set to the result of the webauth_keyring_read_file C 
+function.
 
 =item token_create(attrs, ring[, status])
 
   $token = token_create($attrs, $ring[, $status])
 
 Takes as input $attrs (which must be a reference to a hash) and a $ring
-(created with key_ring_new) and returns the basse64 encrypted token\,
+(created with keyring_new) and returns the basse64 encrypted token\,
 or undef in the case of an error.
 The values in the $attrs hash table get converted to strings if they 
 aren't already. $status is optional, and if present will get set to the
@@ -209,7 +223,7 @@ result of the webauth_token_create C function.
   $attrs = token_parse($token, $ring[, $status])
 
 Takes as input a base64 encrypted token and a ring (created with 
-key_ring_new) and returns the attributes, or undef in the case of an error.
+keyring_new) and returns the attributes, or undef in the case of an error.
 $status is optional, and if present will get set to the
 result of the webauth_token_parse C function.
 

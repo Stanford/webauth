@@ -63,6 +63,20 @@ webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
 }
 
 int
+webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, char *name)
+{
+    int i;
+
+    for (i=0; i < list->num_attrs; i++) {
+        if (strcmp(list->attrs[i].name, name) == 0) {
+            return i;
+        }
+    }
+
+    return WA_ERR_NOT_FOUND;
+}
+
+int
 webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
     int space, i, len;

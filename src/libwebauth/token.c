@@ -75,7 +75,7 @@ int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                      unsigned char *output,
                      int max_output_len,
-                     const WEBAUTH_KEY_RING *ring)
+                     const WEBAUTH_KEYRING *ring)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i;
@@ -96,7 +96,7 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     assert(ring != NULL);
 
     /* find the best key */
-    key = webauth_key_ring_best_encryption_key(ring);
+    key = webauth_keyring_best_encryption_key(ring);
     if (key == NULL) {
         return WA_ERR_BAD_KEY;
     }
@@ -190,7 +190,7 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
  * or an error
  *
  * FIXME: need to deal with key versions. We'll probably
- * want to change WEBUTH_AES_KEY to WEBAUTH_KEY_RING,
+ * want to change WEBUTH_AES_KEY to WEBAUTH_KEYRING,
  * and let webauth_toke_parse pick the best key from the key ring
  */
 
@@ -198,7 +198,7 @@ int
 webauth_token_parse(unsigned char *input,
                     int input_len,
                     WEBAUTH_ATTR_LIST **list,
-                    const WEBAUTH_KEY_RING *ring)
+                    const WEBAUTH_KEYRING *ring)
 {
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 
@@ -209,9 +209,8 @@ webauth_token_parse(unsigned char *input,
     AES_KEY aes_key;
     WEBAUTH_KEY *key;
 
-    assert (key != NULL);
-    assert(list);
-    assert(ring);
+    assert(list != NULL);
+    assert(ring != NULL);
 
     if (ring->num_entries == 0) {
         return WA_ERR_BAD_KEY;
