@@ -27,7 +27,6 @@ AC_CHECK_LIB(crypto, AES_cbc_encrypt,
 
 # checks for header files.
 AC_HEADER_STDC
-AC_HEADER_DIRENT
 AC_CHECK_HEADERS(unistd.h)
 
 # checks for types
