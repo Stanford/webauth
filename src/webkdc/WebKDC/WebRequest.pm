@@ -42,8 +42,8 @@ sub pass {
 sub proxy_cookie {
     my $self = shift;
     my $type = shift;
-    $self->{'cookies'}{"webauth_pt_$type"} = shift if @_;
-    return $self->{'cookies'}{"webauth_pt_$type"};
+    $self->{'cookies'}{"webauth_wpt_$type"} = shift if @_;
+    return $self->{'cookies'}{"webauth_wpt_$type"};
 }
 
 sub proxy_cookies {

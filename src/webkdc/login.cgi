@@ -180,12 +180,12 @@ if ($username && $password && $submit eq 'Continue') {
 }
 
 # pass in any proxy-tokens we have from a cookies
-# i.e., enumerate through all cookies that start with webauth_pt
+# i.e., enumerate through all cookies that start with webauth_wpt
 # and put them into a hash:
-# $cookies = { "webauth_pt_krb5" => $cookie_value }
+# $cookies = { "webauth_wpt_krb5" => $cookie_value }
 # $req->proxy_cookies($cookies);
 
-my $pt_krb5 = $q->cookie('webauth_pt_krb5');
+my $pt_krb5 = $q->cookie('webauth_wpt_krb5');
 $req->proxy_cookie('krb5', $pt_krb5) unless !$pt_krb5;
 
 $req->request_token($request_token_str);
