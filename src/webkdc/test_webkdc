@@ -1,0 +1,144 @@
+#!/usr/pubsw/bin/perl
+
+use strict;
+use warnings;
+
+use lib '../bindings/perl/WebAuth/blib/lib';
+use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
+
+use WebAuth;
+use WebKDC;
+use WebKDC::IdToken;
+use WebKDC::ResponseToken;
+use WebKDC::RequestToken;
+
+use vars qw($CONFIG_WAS_KEYTAB);
+
+$CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
+
+sub was_get_krb5_mk_req($) {
+    my $keytab = shift;
+
+    my ($s, $c, $princ, $request);
+
+    ($s, $c) = WebAuth::krb5_new();
+    if (WebKDC::check_error($s, "krb5_new", $c)) {
+	return ($s, undef);
+    }
+
+    $s = WebAuth::krb5_init_via_keytab($c, $keytab);
+    if (WebKDC::check_error($s, "krb5_init_via_keytab", $c)) {
+	return ($s, undef);
+    }
+
+    ($s, $princ) = WebAuth::krb5_service_principal($c, 
+						   $WebKDC::C_WEBKDC_K5SERVICE,
+						   $WebKDC::C_WEBKDC_HOST);
+    if (WebKDC::check_error($s, "krb5_service_principal", $c)) {
+	return ($s, undef);
+    }
+    ($s, $request) = WebAuth::krb5_mk_req($c, $princ);
+    if (WebKDC::check_error($s, "krb5_mk_req", $c)) {
+	return ($s, undef);
+    } else {
+	return ($s, $request);
+    }
+}
+
+
+sub was_verify_krb5_subject_auth_data($$) {
+    my ($sad, $keytab) = @_;
+
+    my ($s, $c, $princ);
+
+
+    ($s, $c) = WebAuth::krb5_new();
+
+    if (WebKDC::check_error($s, "krb5_new", $c)) {
+	return ($s, undef);
+    }
+
+    ($s, $princ) = WebAuth::krb5_rd_req($c, $sad, $keytab);
+
+    if (WebKDC::check_error($s, "krb5_rd_req", $c)) {
+	return ($s, undef);
+    } else {
+	return ($s, $princ);
+    }
+}
+
+
+
+my ($s, $request);
+
+
+($s, $request) = was_get_krb5_mk_req($CONFIG_WAS_KEYTAB);
+
+my ($service_token, $session_key, $expiration_time);
+
+($s, $service_token, $session_key, $expiration_time) =
+    WebKDC::make_service_token_from_krb5_cred($request);
+
+my $key = WebAuth::key_create(WebAuth::WA_AES_KEY, $session_key);
+
+my $req_token = new WebKDC::RequestToken;
+$req_token->set_return_url("http://foo.bar.com/");
+$req_token->set_creation_time(time());
+$req_token->set_request_reason('na');
+$req_token->set_subject_auth('krb5');
+
+my $rt;
+
+($s, $rt) = $req_token->to_b64token($key);
+
+if ($s != WebAuth::WA_ERR_NONE) {
+    die "req_token to_b64token status($s): ".WebAuth::error_message($s)."\n";
+}
+
+my $req = new WebKDC::LoginRequest;
+
+$req->set_user("schemers");
+$req->set_pass("xxxxx");
+$req->set_request_token($rt);
+$req->set_service_token($service_token);
+
+my $resp = WebKDC::process_login_request($req);
+
+$s = $resp->get_status();
+if ($s != WebAuth::WA_ERR_NONE) {
+    die "process_login_request status($s): ".WebAuth::error_message($s)."\n";
+}
+
+my $resp_token = new WebKDC::ResponseToken;
+
+$s = $resp_token->from_b64token($resp->get_response_token(), 
+				$key, $WebKDC::C_TOKEN_TTL);
+
+if ($s != WebAuth::WA_ERR_NONE) {
+    die "resp_token from_token status($s): ".WebAuth::error_message($s)."\n";
+}
+
+print $resp_token->to_string();
+
+my $id_token = new WebKDC::IdToken;
+
+if (!$resp_token->is_ok()) {
+    die "resp_token not ok\n";
+}
+
+$s = $id_token->from_token($resp_token->get_req_token(), $key, 
+			   $WebKDC::C_TOKEN_TTL);
+
+if ($s != WebAuth::WA_ERR_NONE) {
+    die "id_token from_token status($s): ".WebAuth::error_message($s)."\n";
+}
+
+print $id_token->to_string();
+
+my $sad = $id_token->get_subject_auth_data();
+
+my $princ;
+
+($s, $princ) = was_verify_krb5_subject_auth_data($sad, $CONFIG_WAS_KEYTAB);
+
+print "id = $princ\n";
