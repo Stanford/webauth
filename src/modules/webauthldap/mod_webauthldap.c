@@ -496,7 +496,11 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
         if ((code = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
             code = krb5_copy_principal(ctx, entry.principal, &princ);
+#ifdef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
             tcode = krb5_free_keytab_entry_contents(ctx, &entry);
+#else
+            tcode = krb5_kt_free_entry(ctx, &entry);
+#endif
         }
         tcode = krb5_kt_end_seq_get(ctx, keytab, &cursor);
     }
