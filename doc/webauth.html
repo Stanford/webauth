@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.8, Modified 11/06/02</b></H4>
+<H4><b>DRAFT Version  0.85, Modified 11/08/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -219,7 +219,7 @@ is always included along with a request-token.
   <td>session-key</td>
   <td>
 The error-token is returned in the event of an unrecoverable error
-that occured while asking for a token with a request-token.
+that occurred while asking for a token with a request-token.
   </td>
 </tr>
 
@@ -289,7 +289,7 @@ transaction itself is protected with SSL.
 
 <p>The thing to note here is that there are no long term keys stored
 on the WebKDC itself other its own private key. Once the WAS obtains the 
-sevice-token and session-key, it will cache them both until the 
+service-token and session-key, it will cache them both until the 
 service-token expires, which will most likely be 24 hours. Before 
 the service-token expires, the WAS must request a new service-token.
 
@@ -299,7 +299,7 @@ between servers.
 
 <p>One potential issue here is that we are using weaker DES keys
 (Kerberos V5 keytabs) to bootstrap into stronger AES keys. This issue
-is partially mitigated by the use of SSL to futher protect the
+is partially mitigated by the use of SSL to further protect the
 transaction. It was decided that this was acceptable in order to
 keep the WebKDC stateless and to re-use the existing Kerberos V5 
 infrastructure where possible.
@@ -326,7 +326,7 @@ of entries, each of which contain the following information:
 
 <p>Of note is the "valid_from" value. It is used to create post-dated keys
 in the key ring, to allow for new keys to get generated and distributed
-among a pool of servers (for load balancing/failover) in such a way that
+among a pool of servers (for load balancing/fail-over) in such a way that
 all the keys can be updated before the key becomes valid.
 
 <p>Initially key rings can be distributed using a mechanism like SSH,
@@ -378,7 +378,7 @@ the requested token. Note that it would be transmitted alongside the
 returned token, not inside of it. Now, the WAS server would
 create an app-token (which is encrypted in its private key), that
 contains the session-key, and use this as the state it sends in the
-request-token. The WebKDC return this state along with the respsone,
+request-token. The WebKDC return this state along with the response,
 and the WAS can decrypt the state using its private key to get the
 session-key.
 
@@ -421,14 +421,20 @@ present.
       login form gets posted
   5.  -------------------------------> WebKDC
 
-      redirect with returned token
+      confirmation page gets sent back
   6.  <------------------------------- WebKDC
 
-      re-request resource
+      re-request resource (with returned token in URL)
   7.  -----------------> WAS
 
-      response
+      set the app-token cookie, redirect to original request
   8.  <----------------- WAS
+
+      re-request resource
+  9.  -----------------> WAS
+
+      response
+ 10.  <----------------- WAS
 
   ---------------------------------------------------------------
 
@@ -467,6 +473,7 @@ We will now go over each step in detail.
 
 <LI> The user enters their username/password and submits the form back
    to the WebKDC.
+   <p>
 </LI>
 <LI>
    <p>The WebKDC validates the username/password, and also makes sure the
@@ -474,18 +481,16 @@ We will now go over each step in detail.
 
 
    <p>Assuming the username/password is valid, the WebKDC will then construct
-   the return URL, as well as a cookie for itself, which contains the
-   proxy-token. It will then create an id-token,
-   which will get passed back in the return url.
+   a cookie for itself, which contains the proxy-token, and the id-token.
 
-   <p><b>NOTE:</b> This might need to be a POST instead of a redirect, in which
-      case the user will have to click on a "confirmation" button
-      to cause a POST to be made back to the WAS.
+   <p>A confirmation page will be sent back to the browser, that when
+     ok'd will do a GET on the original request, with the id-token
+     appended to the original request.
    <p>
 </LI>
 
 <LI> The user's browser will now re-request the original resource, passing
-     along the id-token.
+     along the id-token in the URL.
      <p>
 </LI>
 
@@ -493,19 +498,26 @@ We will now go over each step in detail.
    check to make sure that it is fresh. It will then look at the subject
    authenticator-type in the token to see if it needs to verify
    the subject. If the authenticator-type is krb5, then it needs
-   to use its webauth/hostname srvtab to verify the identity of the
-   subject, as the subject in the id-token will be the result of a
-   krb5-mk-req API call.
+   to use its keytab to verify the identity of the subject, which is
+   the result of a krb5-mk-req API call.
 
    <p>After verifying the subject, mod_webauth will then rewrite the 
-   id-token into an app-token, and arrange for the app-token to be
-   placed into a cookie for future requests. The application will now
-   serve the original request.
+   id-token into an app-token, and create an app-token to be
+   placed into a cookie for future requests.
 
-   <p><b>NOTE:</b> in the case of a POST to a special URL, mod_webauth would
-       need to process the response-token, etc, and then cause an (internal)
-       redirect to the original resource.
-<p>
+   <p>mod_webauth will then do a redirect to the original request 
+      (which is determined be removing the id-token from the end of the
+       URL), and also set the app-token cookie.
+   <p>
+ </LI>
+
+<LI> The UA will save the app-token cookie, and then re-request the 
+     original request.
+   <p>
+</LI>
+<LI>
+ The application will now serve the original request.
+   <p>
 </LI>
 </OL>
 
@@ -574,11 +586,17 @@ having to prompt the user for their password again.
       redirect with returned token
   4.  <------------------------------- WebKDC
 
-      re-request resource
+      re-request resource (with returned token in URL)
   5.  -----------------> WAS
 
-      response
+      set the app-token cookie, redirect to original request
   6.  <----------------- WAS
+
+      re-request resource
+  7.  -----------------> WAS
+
+      response
+  8.  <----------------- WAS
 
 </pre>
 
@@ -614,25 +632,36 @@ We will now go over each step in detail.
 <p>
 </LI>
 
+
 <LI> The user's browser will now re-request the original resource, passing
-     along the id-token.
+     along the id-token in the URL.
      <p>
 </LI>
 
-<LI> mod_webauth will see the id-token in the request, 
-   and check to 
-   make sure the request is fresh. It will then look at the subject
+<LI> mod_webauth will see the id-token in the request, and will
+   check to make sure that it is fresh. It will then look at the subject
    authenticator-type in the token to see if it needs to verify
    the subject. If the authenticator-type is krb5, then it needs
-   to use its webauth/hostname srvtab to verify the identity of the
-   subject, as the subject auth data in the id-token will be the result of a
-   krb5-mk-req API call.
+   to use its keytab to verify the identity of the subject, which is
+   the result of a krb5-mk-req API call.
 
    <p>After verifying the subject, mod_webauth will then rewrite the 
-   id-token into an app-token, and arrange for the app-token to be
-   placed into a cookie for future requests. The application will now
-   serve the original request.
-<p>
+   id-token into an app-token, and create an app-token to be
+   placed into a cookie for future requests.
+
+   <p>mod_webauth will then do a redirect to the original request 
+      (which is determined be removing the id-token from the end of the
+       URL), and also set the app-token cookie.
+   <p>
+ </LI>
+
+<LI> The UA will save the app-token cookie, and then re-request the 
+     original request.
+   <p>
+</LI>
+<LI>
+ The application will now serve the original request.
+   <p>
 </LI>
 </OL>
 
@@ -667,7 +696,8 @@ for itself.
       redirect with returned token
   4.  <------------------------------------ WebKDC
 
-      re-request resource
+
+      re-request resource (with returned token in URL)
   5.  -----------------> WAS
 
                              request tokens 
@@ -676,8 +706,15 @@ for itself.
                                  response
   7.                     WAS <------------- WebKDC
 
-      response
+      set the cookies, redirect to original request
   8.  <----------------- WAS
+
+      re-request resource
+  9.  -----------------> WAS
+
+      response
+  10. <----------------- WAS
+
 
 </pre>
 
@@ -714,7 +751,7 @@ We will now go over each step in detail.
 </LI>
 
 <LI> The user's browser will now re-request the original resource, passing
-     along the response-token.
+     along the proxy-token.
      <p>
 </LI>
 
@@ -723,16 +760,26 @@ We will now go over each step in detail.
    use the webkdc-proxy-token to make an XML request to the WebKDC for
    an id-token, and for whatever credential-tokens it
    needs.
+   <p>
 
 <LI> The WebKDC will receive the webkdc-proxy-token, and make sure
     the webkdc-service-token's subject is allowed to be use the 
     webkdc-proxy-token. If everything is ok, it
      will return the requested id and credential tokens. 
+   <p>
 <LI>
    <p>After verifying the id-token, mod_webauth will then rewrite the 
    id-token into an app-token, and also rewrite the credential token(s)
    into app-tokens as well. All the app-tokens will be placed
    into cookies for future requests. The proxy-token can be discarded.
+   <p>mod_webauth will now do a redirect to the original request, 
+   setting all the cookies.
+   <p>
+<LI> The UA will save the cookies, and then re-request the 
+     original request.
+   <p>
+</LI>
+<LI>
    The application will now serve the original request.
    <p>The credentials will be passed to the application by having
     mod_webauth save the credentials into a ticket file, and setting an
@@ -803,7 +850,7 @@ since those cookies are scoped to each application server.
 <p>
 
 <H2><B>3. <a name="httpconv">WAS and WebKDC Conventions</a></B></H2>
-<b>NOTEL:</b/>this section will expanded to include more
+<b>NOTE:</b/>this section will expanded to include more
 detail about redirect headers, doing a GET/POST on return, etc.
 
 <H3>3.1 Getting redirected to WebKDC</H3>
@@ -826,22 +873,22 @@ the base64-encoded service-token.
 
 <p>When the WebKDC is ready to redirect the UA back to the WAS,
 it will construct a return URL by taking the return-url specified
-in the request token an appending ";WEBAUTHR=token" to it, where
+in the request token an appending ";WEBAUTHR=token;" to it, where
 token is the requested token. If the "as" attribute was specified
 in the request token, then it is base64-encoded and appended to
-the URL as ";WEBAUTHS=token".
+the URL as ";WEBAUTHS=token;".
 
 <p>For example:
 
 <pre>
-  https://{return-url};WEBAUTHR=token[;WEBAUTHS=token
+  https://{return-url};WEBAUTHR=token;[;WEBAUTHS=token;]
 </pre>
 
-<p>The WebAuth Apache module will then strip ";WEBAUTHS=token"
-and ";WEBAUTHR=token" off the end of the URL. If the tokens are
+<p>The WebAuth Apache module will then strip ";WEBAUTHS=token;"
+and ";WEBAUTHR=token;" off the end of the URL. If the tokens are
 valid, the WebAuth module will construct the app-token cookie, 
-etc, and pass the request through to the original application, 
-with the ";WEBAUTH*" removed from the URL.
+etc, then do another redirect back to the URL with the extra information
+stripped off.
 
 <H2><B>4. <a name="xmlproto">WebKDC XML Protocol Description</a></B></H2>
 
@@ -1101,7 +1148,7 @@ escape any ";"'s in the data with an extra ";".
 </pre>
 
 <p>padding is any additional padding of the data to make the length
-a multiple of 16 bytes for AES encrpytion. Note, there is always 
+a multiple of 16 bytes for AES encryption. Note, there is always 
 padding present. If the length is already a multiple of 16, then 
 16 bytes of padding will be added. The value of each padding
 byte will be equal to the length of the padding. For example, if
@@ -1200,7 +1247,7 @@ proxy = proxy-token</td>
  <td>ru</td><td>string</td><td>return URL. The url to return the user to after authenticating with the WebKDC</td>
 </tr>
 <tr>
- <td>s</td><td>string</td><td>authenticted subject. In service-tokens
+ <td>s</td><td>string</td><td>authenticated subject. In service-tokens
 this is the server that authenticated to get the service-token, in all
 other tokens it is the user that authenticated. Subjects have the form
 "type:identifier". Currently, the only defined type is "krb5", and the
@@ -1316,7 +1363,7 @@ both recent, and for the specified command.
 <H4>5.3.4 <a name="tokenerror">error-token encoding</a></H4>
 
 An error-token gets sent from the WebKDC as a response to a request-token
-when an error has occured.
+when an error has occurred.
 
 <pre><code>
   t=error
@@ -1621,6 +1668,17 @@ WebAuthEndSession redirect|clearLogin|on|off
          <li>add section on security model and support for 
              sending application-state in a request token to 
 	     enable server pools.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>11/08/2002</td>
+  <td>0.85</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>Forgot to final webauth redirect in the usage scenarios that
+             sets the cookies and re-requests original URL.
        </ul>
    </td>
 </tr>
