@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.99, Modified 12/04/02</b></H4>
+<H4><b>Version  1.00, Modified 12/06/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -940,7 +940,7 @@ The command response format on failure is:
   &lt;errorResponse>
     &lt;messageId>{message-id}&lt;/messageId>   &lt;!-- only if present in request -->
     &lt;errorCode>{numeric}&lt;errorCode>
-    &lt;errorString>{message}&lt;errorString>
+    &lt;errorMessage>{message}&lt;errorMessage>
   &lt;/errorResponse>
 
 </code></pre>
@@ -1174,6 +1174,12 @@ The request message is:
 The response message is:
 <pre><code>
   &lt;requestTokenResponse>
+
+    <i>&lt;!-- loginErrorCode will be set in a requestTokenResponse if 
+         there was an error related to logging in  --></i>
+    &lt;loginErrorCode>{numeric}&lt;loginErrorCode>
+    &lt;loginErrorMessage>{message}&lt;loginErrorMessage>
+
     <i>&lt;!-- any updated/new proxy tokens created, only passed back
          if subjectCredential was type="login"  --></i>
     &lt;proxyTokens>
@@ -1186,7 +1192,8 @@ The response message is:
     <i>&lt;!-- subject inside of service-token used to make request --></i>
     &lt;requesterSubject>...&lt;/requesterSubject>
 
-    <i>&lt;!-- requestedToken will either be an error, id, or proxy token. --></i>
+    <i>&lt;!-- requestedToken will either be an error, id, or proxy token. 
+         not set if &lt;loginErrorCode> is set. --></i>
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
 
     &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
@@ -1198,7 +1205,43 @@ The response message is:
   &lt;/requestTokenResponse>
 </code></pre>
 
-<p>If any errors occur, then an &lt;errorResponse> message will be returned.
+<p>If any non login-related errors occur, 
+then an &lt;errorResponse> message will be returned.
+
+<p>If a login-related error occurs then a &lt;requestTokenResponse> will 
+be returned, but &lt;requestedToken> will be unset, and &lt;loginErrorCode> 
+will be set. These error codes are a subset of the ones for &lt;errorCode>,
+in particular, only these error codes will be returned as a 
+loginErrorCode:
+<p>
+<table border>
+ <tr align=center>
+  <th>Error Code</th>
+  <th>Description</th>
+ </tr>
+
+<tr>
+ <td>14</td> <td>Login failed due to bad password or invalid username.
+The web front-end should re-prompt for username/password.
+ </td>
+</tr>
+
+<tr>
+ <td>15</td> <td>A webkdc-proxy-token of a certain type was 
+             required and was not present in the request.  The web front-end
+should prompt for the username and password.
+ </td>
+</tr>
+
+<tr>
+ <td>17</td> <td>The WAS server requested a "forced" login. The
+web front-end should prompt for the username and password.
+
+ </td>
+</tr>
+
+</table>
+
 
 <p>If the request option "ro" is set in the request token, then
   &lt;loginCanceledToken>  will be returned. Note that it is up
@@ -1915,6 +1958,18 @@ FIXME: Insert link to mod_webauth documentation
          <li>add &ltg;loginCanceledToken> to requestToken command response.
          <li>add two new error codes for forced-authentication and
              login-canceled.
+       </ul>
+   </td>
+
+</tr>
+
+<tr>
+  <td>12/06/2002</td>
+  <td>1.00</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>Add &lt;loginErrorCode> and &lt;loginErrorMessage> to
+             &lt;requestTokenResponse>.
        </ul>
    </td>
 </tr>
