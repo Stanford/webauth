@@ -1,9 +1,11 @@
 <?xml version='1.0'?>
-<element name="foo"
+<element name="sendKeysResponse"
          xmlns="http://relaxng.org/ns/structure/1.0"
          xmlns:a="http://relaxng.org/ns/annotation/1.0"
 	datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
-  <a:documentation>A foo element.</a:documentation>
+  <a:documentation>
+	The response to a valid send Keys message. 
+  </a:documentation>
   <element name="messageID">
     <data type=integer\>
   </element>
@@ -13,4 +15,17 @@
     <data type=integer/>
   </element>
   </optional> 
+   <element name="keyRing"> 
+	<zeroOrMore>
+	<element name="encryptionKey">
+	  <element name="keyHint">
+	   <text/>
+          </element>
+	  <element name="keyData">
+           <data type=base64binary/>
+	  </element>
+        </element>
+	</zeroOrMore>
+   </element>
+
 </element>

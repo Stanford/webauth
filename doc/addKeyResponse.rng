@@ -1,16 +1,29 @@
 <?xml version='1.0'?>
-<element name="foo"
+<element name="addKeyResponse"
          xmlns="http://relaxng.org/ns/structure/1.0"
          xmlns:a="http://relaxng.org/ns/annotation/1.0"
 	datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
-  <a:documentation>A foo element.</a:documentation>
+  <a:documentation>
+	The response to a successful add key message. 
+  </a:documentation>
   <element name="messageID">
     <data type=integer\>
   </element>
   <optional>
-  <a:documenation> Version is assumed to be 1 if not present </a:documentation> 	
+  <a:documentation> 
+	Version is assumed to be 1 if not present 
+  </a:documentation> 	
   <element name="procotolVersion">
     <data type=integer/>
   </element>
   </optional> 
+   <element name="keyAdded">
+	<element name="keyHint">
+           <text/>
+        </element>
+        <a:documentation>
+           It really feels like there should be some sort of
+	   verifier or Mutual auth here. 
+	</a:documentation>
+   </element> 
 </element>
