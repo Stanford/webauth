@@ -1294,10 +1294,15 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                                      "webauthldap(%s): StanfordAuth: found: require group %s", 
                                      r->user, w);
                     
-                    rc = webauthldap_docompare(lc, w);
-                    if (rc == LDAP_COMPARE_TRUE) {
-                        authorized = 1;
-                        break;
+                    if (ap_strstr(w, ":") != NULL) {
+                        rc = webauthldap_docompare(lc, w);
+                        if (rc == LDAP_COMPARE_TRUE) {
+                            authorized = 1;
+                            *needs_further_handling = 0;
+                            break;
+                        }
+                    } else {
+                        *needs_further_handling = 1;
                     }
                 }
 #endif
