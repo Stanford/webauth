@@ -9,3 +9,5 @@ configure
 libtool
 mod-config.h
 webauth-*
+webauth_*
+*.deb
