@@ -1,0 +1,36 @@
+# Makefile for WebKDC installation
+# $Id$
+
+srcdir 		= @srcdir@
+top_srcdir	= @top_srcdir@
+VPATH		= @srcdir@
+
+APACHE_ROOT	= @APACHE_ROOT@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+INSTALL_SCRIPT	= @INSTALL_SCRIPT@
+
+@SET_MAKE@
+
+.PHONY: all clean depend install
+
+all clean depend:
+
+install:
+	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc
+	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/WebKDC
+	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/images
+	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/templates
+	$(INSTALL_SCRIPT) login.fcgi $(APACHE_ROOT)/htdocs/webkdc/login.fcgi
+	$(INSTALL_SCRIPT) logout.fcgi $(APACHE_ROOT)/htdocs/webkdc/logout.fcgi
+	$(INSTALL_DATA) WebKDC.pm $(APACHE_ROOT)/htdocs/webkdc/WebKDC.pm
+	for f in images/* ; do \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/images/$$f \
+	done
+	for f in WebKDC/* ; do \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/WebKDC/$$f \
+	done
+	for f in templates/* ; do \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/templates/$$f \
+	done

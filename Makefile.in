@@ -24,7 +24,7 @@ SUBDIRS = src
 ALLDIRS = src tests
 
 .PHONY: all check check-manifest clean dist distclean doc docs install
-.PHONY: install-tests test tests
+.PHONY: install-tests install-webkdc test tests
 
 all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -37,6 +37,9 @@ check test tests:
 
 install-tests:
 	cd tests && $(MAKE) install
+
+install-webkdc
+	cd src && $(MAKE) install-webkdc
 
 clean depend:
 	@for subdir in $(ALLDIRS); do \

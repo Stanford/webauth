@@ -22,3 +22,6 @@ clean depend install:
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
+
+install-webkdc:
+	cd webkdc && $(MAKE) install
