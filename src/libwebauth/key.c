@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <time.h>
 #include <netinet/in.h>
-#include <inttypes.h>
 #include <unistd.h>
 
 /*

@@ -17,10 +17,19 @@
 #include <strings.h>
 #endif 
 
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+#if HAVE_STDINT_H
+# include <stdint.h>
+#endif
+
 #include <assert.h>
 
 #include "webauth.h"
 
+/* this used to have something in it, and probably will
+   again once apache work starts */
 
 /*
 **  Local variables:
