@@ -39,7 +39,6 @@
 
 #include "mod_webauth.h"
 
-
 /*
  * get note from main request 
  */
@@ -51,6 +50,25 @@ get_note(request_rec *r, const char *note)
     } else {
         return apr_table_get(r->notes, note);
     }
+}
+
+/*
+ * remove note from main request, and return it if it was set, or NULL
+ * if unset
+ */
+char *
+remove_note(request_rec *r, const char *note)
+{
+    const char *val;
+    if (r->main)
+        r = r->main;
+
+    val = apr_table_get(r->notes, note);
+
+    if (val != NULL)
+        apr_table_unset(r->notes, note);
+
+    return (char*)val;
 }
 
 /*
@@ -278,6 +296,47 @@ handler_hook(request_rec *r)
     return OK;
 }
 
+static WEBAUTH_ATTR_LIST *
+parse_app_token(char *token,
+                request_rec *r,
+                MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int blen, status, i;
+
+    ap_unescape_url(token);
+    blen = apr_base64_decode_binary(token, token);
+
+    /* parse the token, TTL is zero because app-tokens don't have ttl,
+     * just expiration
+     */
+    status = webauth_token_parse(token, blen, 0, sconf->ring, &alist);
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "webauth_token_parse failed: %s (%d)",
+                     webauth_error_message(status), 
+                     status);
+        return NULL;
+    }
+
+    /* make sure its an app-token */
+    status = webauth_attr_list_find(alist, WA_TK_TOKEN_TYPE, &i);
+    if (i == -1) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "check_cookie: can't find token type in token");
+        return NULL;
+    }
+
+    if (strcmp((char*)alist->attrs[i].value, "app") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "check_cookie: token type(%s) not (app)",
+                     (char*)alist->attrs[i].value);
+        webauth_attr_list_free(alist);
+        return NULL;
+    }
+    return alist;
+}
+
 /*
  * check cookie for valid app-token. If an epxired one is found,
  * do a Set-Cookie (in fixups) to blank it out.
@@ -310,36 +369,11 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
         cval = apr_pstrmemdup(r->pool, cs, ce-cs);
     }
 
-    ap_unescape_url(cval);
+    alist = parse_app_token(cval, r, sconf, dconf);
+    /* FIXME: if we couldn't parse token, we should nuke cookie! */
 
-    error_log(r, apr_psprintf(r->pool, "found cookie(%s)", cval));
-
-    /* decode in place */
-    blen = apr_base64_decode_binary(cval, cval);
-
-    /* parse the token, TTL is zero because app-tokens don't have ttl,
-     * just expiration
-     */
-    status = webauth_token_parse(cval, blen, 0, sconf->ring, &alist);
-    if (status != WA_ERR_NONE) {
-        error_log(r, apr_psprintf(r->pool,
-                                  "webauth_token_parse failed: %s (%d)",
-                                  webauth_error_message(status), 
-                                  status));
+    if (alist == NULL)
         return NULL;
-    }
-
-    /* make sure its an app-token */
-    status = webauth_attr_list_find(alist, WA_TK_TOKEN_TYPE, &i);
-    if (i == -1) {
-        error_log(r, "check_cookie: can't find token type in token");
-        return NULL;
-    }
-
-    if (strcmp((char*)alist->attrs[i].value, "app") != 0) {
-        error_log(r, "check_cookie: token type not app");
-        return NULL;
-    }
 
     /* pull out subject */
     status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
@@ -355,18 +389,79 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
     return sub;
 }
 
-static char *
-check_url(request_rec *r)
+WEBAUTH_KEY *
+get_session_key(char *token,
+                request_rec *r,
+                MWA_SCONF *sconf,
+                MWA_DCONF *dconf)
 {
-    const char *subject, *wr, *ws;
-    wr = get_note(r, N_WEBAUTHR);
-    if (wr != NULL) {
-        const char *ws = get_note(r, N_WEBAUTHS);
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webauth(cuih): found wr(%s)", wr);
-        
+    WEBAUTH_ATTR_LIST *alist;
+    WEBAUTH_KEY *key;
+    int status, i;
+
+    alist = parse_app_token(token, r, sconf, dconf);
+
+    if (alist == NULL)
+        return NULL;
+
+    /* pull out session key */
+    status = webauth_attr_list_find(alist, WA_TK_SESSION_KEY, &i);
+    if (i == -1) {
+        error_log(r, "check_url: can't find session key in token");
+        webauth_attr_list_free(alist);
+        return NULL;
     }
+
+    key = webauth_key_create(WA_AES_KEY,
+                             (unsigned char*)alist->attrs[i].value,
+                             alist->attrs[i].length);
+    webauth_attr_list_free(alist);
+    if (key == NULL) {
+        error_log(r, "check_url: can't find session key in WEBAUTHS token");
+    }
+    return key;
+}
+
+char *
+parse_returned_token(char *token,
+                     WEBAUTH_KEY *key,
+                     request_rec *r, 
+                     MWA_SCONF *sconf, 
+                     MWA_DCONF *dconf)
+{
+    /* if we successfully parse an id-token, write out new webauth_at cookie */
     return NULL;
+}
+
+static char *
+check_url(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    char *subject, *wr, *ws;
+    WEBAUTH_KEY *key = NULL;
+
+    wr = remove_note(r, N_WEBAUTHR);
+    if (wr == NULL) {
+        return NULL;
+    }
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth(cuih): found wr(%s)", wr);
+
+    /* see if we have WEBAUTHS, which has the session key to use */
+    ws = remove_note(r, N_WEBAUTHS);
+
+    if (ws != NULL) {
+        key = get_session_key(ws, r, sconf, dconf);
+        if (key == NULL)
+            return NULL;
+        subject = parse_returned_token(wr, key, r, sconf, dconf);
+        webauth_key_free(key);
+    } else {
+        /* FIXME: use key from session-token */
+        /* subject = parse_returned_token(wr, key, r, sconf, dconf); */
+        subject = NULL;
+    }
+    return subject;
 }
 
 static int 
@@ -400,7 +495,7 @@ check_user_id_hook(request_rec *r)
 
         if (subject == NULL) {
             /* if no valid app token, look for WEBAUTHR in url */
-            subject = check_url(r);
+            subject = check_url(r, sconf, dconf);
         }
 
         /* stick it in note for future reference */
