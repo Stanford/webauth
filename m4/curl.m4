@@ -9,7 +9,7 @@ AC_DEFUN([WEBAUTH_LIB_CURL],
 [AC_REQUIRE([AC_CANONICAL_HOST])
 AC_ARG_WITH([curl],
              AC_HELP_STRING([--with-curl=PATH], [Path to cURL install]),
-             [if test x"$withval" != xno ; then
+             [if test x"$withval" != xno && test x"$withval" != xyes ; then
                  CURL_LDFLAGS=-L$withval/lib
                  CURL_CPPFLAGS=-I$withval/include
               fi])

@@ -12,12 +12,12 @@ AC_DEFUN([WEBAUTH_APACHE],
 [APACHE_ROOT=/usr/local/apache2
 AC_ARG_WITH([apache],
     AC_HELP_STRING([--with-apache=PATH], [Path to Apache 2.x install]),
-    [if test x"$withval" != xno ; then
+    [if test x"$withval" != xno && test x"$withval" != xyes ; then
         APACHE_ROOT=$withval
      fi])
 AC_ARG_WITH([apxs],
     AC_HELP_STRING([--with-apxs=PATH], [Path to Apache 2.x apxs script]),
-    [if test x"$withval" != xno ; then
+    [if test x"$withval" != xno && test x"$withval" != xyes ; then
         APXS=$withval
         AC_SUBST(APXS)
      else

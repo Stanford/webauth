@@ -14,7 +14,7 @@ AC_DEFUN([WEBAUTH_LIB_SIDENT],
     AC_HELP_STRING([--disable-sident], [Disable S/Ident support]))
 AC_ARG_WITH([sident],
     AC_HELP_STRING([--with-sident=PATH], [Path to S/Ident install]),
-    [if test x"$withval" != xno ; then
+    [if test x"$withval" != xno && test x"$withval" != xyes ; then
         SIDENT_LDFLAGS=-L$withval/lib
         SIDENT_CPPFLAGS=-I$withval/include
     fi])

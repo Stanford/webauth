@@ -8,7 +8,7 @@ dnl the appropriate preprocessor and linker flags.
 AC_DEFUN([WEBAUTH_LIB_LDAP],
 [AC_ARG_WITH([ldap],
              AC_HELP_STRING([--with-ldap=PATH], [Path to LDAP install]),
-             [if test x"$withval" != xno ; then
+             [if test x"$withval" != xno && test x"$withval" != xyes ; then
                  LDAP_LDFLAGS=-L$withval/lib
                  LDAP_CPPFLAGS=-I$withval/include
               fi])

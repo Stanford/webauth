@@ -8,7 +8,7 @@ dnl and CRYPTO_LIBS for those programs that only need libcrypto.
 AC_DEFUN([WEBAUTH_LIB_SSL],
 [AC_ARG_WITH([openssl],
              AC_HELP_STRING([--with-openssl=PATH], [Path to OpenSSL install]),
-             [if test x"$withval" != xno ; then
+             [if test x"$withval" != xno && test x"$withval" != xyes ; then
                  SSL_LDFLAGS=-L$withval/lib
                  SSL_CPPFLAGS=-I$withval/include
               fi])
