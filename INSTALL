@@ -157,11 +157,13 @@ site, see doc/install-webkdc.
          /usr/pubsw/sbin/leland_srvtab \
              -f <apache-root>/conf/webauth/srvtab \
              -k <apache-root>/conf/webauth/keytab \
-             webauth/<your-system>
+             webauth.<your-system>
 
-     replacing <apache-root> and <your-system> as above.  Note that
-     Stanford's current keytab download system doesn't allow a keytab to
-     be downloaded without simultaneously downloading a srvtab, but the
+     replacing <apache-root> and <your-system> as above, except in this
+     case, <your-system> should *not* be fully qualified (it should be
+     just the system name without .stanford.edu).  Note that Stanford's
+     current keytab download system doesn't allow a keytab to be
+     downloaded without simultaneously downloading a srvtab, but the
      resulting conf/webauth/srvtab file is not used by WebAuth and can be
      deleted after leland_srvtab is run.
 
