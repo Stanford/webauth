@@ -134,7 +134,7 @@ site, see doc/install-webkdc.
      you'll need to copy it to a local file (like conf/webauth/webkdc.cert)
      and add the following directive:
 
-     WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
+         WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 
      This is not needed when using Stanford's WebKDC.
 
@@ -222,6 +222,15 @@ site, see doc/install-webkdc.
      If you have not installed an SSL certificate before, there are
      instructions available as part of the mod_ssl FAQ.  See
      <http://httpd.apache.org/docs-2.0/ssl/ssl_faq.html#realcert>.
+
+     Stanford users, for university applications, can obtain one of the
+     SSL certificates the university has licensed from a certificate
+     vendor.  There is a fee to offset the licensing charge.  For more
+     information, see:
+
+         <http://www.stanford.edu/dept/itss/tss/ti/SSLCerts.html>
+
+     This is only for Stanford users.
 
 12.  Restart the server to pick up the configuration changes, and check
      your error log for any errors indicating a problem with the WebAuth
