@@ -477,7 +477,7 @@ $ wa_keyring -f ./keyring remove 0
 <example><title>Automatically removing old keys</title>
 <pre>
 # remove any keys with a valid after date older then 90 days
-$ wa_keyring -f ./keyring gc 90d
+$ wa_keyring -f ./keyring gc -90d
 </pre>
 </example>
 

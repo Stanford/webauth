@@ -536,7 +536,7 @@ $ wa_keyring -f ./keyring remove 0
 
 <div class="example"><h3>Automatically removing old keys</h3><pre>
 # remove any keys with a valid after date older then 90 days
-$ wa_keyring -f ./keyring gc 90d
+$ wa_keyring -f ./keyring gc -90d
 </pre></div>
 
 <p>To summarize, for each WebAuth (master and slaves), you'd want the 
