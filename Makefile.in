@@ -57,7 +57,7 @@ doc docs:
 
 distclean: clean
 	rm -rf config.status config.cache config.log config.h libtool \
-	       Makefile src/Makefile src/bindings/Makefile \
+	       mod-config.h Makefile src/Makefile src/bindings/Makefile \
 	       src/bindings/perl/Makefile src/libwebauth/Makefile \
 	       src/libwebauth/webauth.h src/modules/Makefile \
 	       src/modules/webauth/Makefile src/modules/webkdc/Makefile \
