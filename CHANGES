@@ -10,6 +10,9 @@ WebAuth 3.2.1 (in progress)
 
  *) Remove some unnecessary debugging code in mod_webkdc.
 
+ *) Fixed an incorrect handling of a string transformation in the attrs
+    code, likely only affecting a test failure on Tru64.
+
 WebAuth 3.2.0 (2003-08-07)
 
  *) Added S/Ident support to weblogin and the WebKDC.
