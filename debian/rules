@@ -120,7 +120,7 @@ install: build
 binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
-	dh_installchangelogs -i
+	dh_installchangelogs -i CHANGES
 	dh_installdocs -i
 	dh_installexamples -i
 	dh_install -i --sourcedir=debian/tmp
@@ -137,7 +137,7 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir -a
 	dh_testroot -a
-	dh_installchangelogs -a
+	dh_installchangelogs -a CHANGES
 	dh_installdocs -a
 	dh_installexamples -a
 	dh_install -a --sourcedir=debian/tmp
