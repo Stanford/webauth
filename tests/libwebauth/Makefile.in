@@ -15,7 +15,7 @@ CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
 
 LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@
 
-TESTS		= attrs_test base64_test token_test hex_test
+TESTS		= attrs_test base64_test token_test hex_test random_test
 
 all: $(TESTS)
 
@@ -26,6 +26,8 @@ base64_test: base64_test.o
 hex_test: hex_test.o
 
 token_test: token_test.o
+
+random_test: random_test.o
 
 clean:
 	rm -f $(TESTS) *.o *~ core \#*
