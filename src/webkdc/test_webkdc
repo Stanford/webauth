@@ -22,14 +22,31 @@ $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
 $CONFIG_WAS_KEYRING_PATH = "was.keyring";
 
 
-sub handle_response($$) {
-    my ($resp, $key) = @_;
+our $our_keyring = undef;
+
+sub get_was_keyring {
+    if (!defined($our_keyring)) {
+	$our_keyring = WebAuth::keyring_read_file($CONFIG_WAS_KEYRING_PATH);
+    }
+    return $our_keyring;
+}
+
+sub handle_response($) {
+    my ($resp) = @_;
+
+    my $as_token_str = $resp->app_state_token();
+
+    print "as_token_token b64'd length(".length($as_token_str).")\n";
+
+    my $as_token = new WebKDC::AppToken(base64_decode($as_token_str),
+					get_was_keyring(), 0);
+
+    my $key = key_create(WA_AES_KEY, $as_token->session_key());
+
     my $resp_token_str = $resp->response_token();
 
     print "response_token b64'd length(".length($resp_token_str).")\n";
 
-    #FIXME: we don't know this is an id-token (may be an error), need to
-    # call generic token parse method and then look at type
     my $id_token = WebKDC::Token::parse(base64_decode($resp_token_str),
 					$key, $WebKDC::C_TOKEN_TTL);
 
@@ -54,9 +71,7 @@ sub handle_response($$) {
 
     print $app_token;
 
-    my $ring = keyring_read_file($CONFIG_WAS_KEYRING_PATH);
-
-    my $app_token_str = base64_encode($app_token->to_token($ring));
+    my $app_token_str = base64_encode($app_token->to_token(get_was_keyring()));
 
     print "app_token b64'd length(".length($app_token_str).")\n";
 
@@ -72,14 +87,22 @@ eval {
 				       $WebKDC::C_WEBKDC_HOST);
     my $request = krb5_mk_req($c, $princ);
 
-    my ($service_token_str, $session_key, $expiration_time) =
+    my ($service_token_str, $session_key, $st_expiration_time) =
 	WebKDC::make_service_token_from_krb5_cred($request);
 
     print "service_token b64'd length(".length($service_token_str).")\n";
 
     my $key = key_create(WA_AES_KEY, $session_key);
 
+    my $as_token = new WebKDC::AppToken;
+
+    $as_token->session_key($session_key);
+    $as_token->expiration_time($st_expiration_time);
+
+    print $as_token;
+
     my $req_token = new WebKDC::RequestToken;
+    $req_token->app_state($as_token->to_token(get_was_keyring()));
     $req_token->return_url("http://foo.bar.com/");
     $req_token->creation_time(time());
     $req_token->request_reason('na');
@@ -102,7 +125,7 @@ eval {
 
     WebKDC::handle_request_token($req, $resp);
 
-    handle_response($resp, $key);
+    handle_response($resp);
 
     print "----------------------\n";
     print "----------------------\n";
@@ -122,7 +145,7 @@ eval {
 
     WebKDC::handle_request_token($req, $resp);
 
-    handle_response($resp, $key);
+    handle_response($resp);
 
 };
 

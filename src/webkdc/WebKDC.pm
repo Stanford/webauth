@@ -264,6 +264,12 @@ sub handle_request_token($$) {
     $wresp->return_url($req_token->return_url());
     $wresp->post_url($req_token->post_url());
 
+    # add app_state if present in request-token
+    my $as = $req_token->app_state();
+    if ($as) {
+	$wresp->app_state_token(base64_encode($as));
+    }
+
     my $rtt = $req_token->requested_token_type();
     #FIXME: ACL CHECK: service-token subject allowed to request
     #       the requested token?

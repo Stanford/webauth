@@ -46,6 +46,7 @@ our %EXPORT_TAGS = (
 				    WA_AES_128
 				    WA_AES_192
 				    WA_AES_256
+				    WA_TK_APP_STATE
 				    WA_TK_COMMAND
 				    WA_TK_CRED_DATA
 				    WA_TK_CRED_TYPE
@@ -578,6 +579,7 @@ The following constants from webauth.h are available:
   WA_AES_192
   WA_AES_256
 
+  WA_TK_APP_STATE
   WA_TK_COMMAND
   WA_TK_CRED_DATA
   WA_TK_CRED_TYPE

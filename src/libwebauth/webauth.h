@@ -63,6 +63,7 @@ typedef enum {
 
 /******************** constants for token attributes **********/
 
+#define WA_TK_APP_STATE "as"
 #define WA_TK_COMMAND "cmd"
 #define WA_TK_CRED_DATA "crd"
 #define WA_TK_CRED_TYPE "crt"

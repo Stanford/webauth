@@ -31,6 +31,8 @@ our @EXPORT_OK;
 
 our %ta_desc = 
     (
+     &WA_TK_APP_STATE => 'app-state',
+     &WA_TK_COMMAND => 'command',
      &WA_TK_CRED_DATA => 'cred-data',
      &WA_TK_CRED_TYPE => 'cred-type',
      &WA_TK_CREATION_TIME => 'creation-time',
@@ -75,6 +77,7 @@ sub to_string {
 	    $val = localtime(unpack("N", $val));
 	} elsif ($key eq WA_TK_SESSION_KEY ||
 		 $key eq WA_TK_CRED_DATA ||
+		 $key eq WA_TK_APP_STATE ||
 		 $key eq WA_TK_PROXY_DATA ||
 		 $key eq WA_TK_SUBJECT_AUTH_DATA ||
 		 $key eq WA_TK_WEBKDC_TOKEN) {
@@ -112,6 +115,7 @@ sub parse {
 
     if    ($tt eq 'app')   { $c = 'WebKDC::AppToken'; }
     elsif ($tt eq 'id')    { $c = 'WebKDC::IdToken'; }
+    elsif ($tt eq 'cred')    { $c = 'WebKDC::CredToken'; }
     elsif ($tt eq 'proxy') { $c = 'WebKDC::ProxyToken'; }
     elsif ($tt eq 'webkdc-proxy') { $c = 'WebKDC::WebKDCProxyToken'; }
     elsif ($tt eq 'req') { $c = 'WebKDC::RequestToken'; }
@@ -178,6 +182,12 @@ sub init {
     $self->token_type('app');
 }
 
+sub session_key {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_KEY} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_SESSION_KEY};    
+}
+
 sub subject {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_SUBJECT} = shift if @_;
@@ -235,8 +245,6 @@ sub validate_token {
 
     croak "validate_token failed" unless
 	($self->token_type() eq 'app') && 
-	defined($self->subject()) &&
-	defined($self->creation_time()) &&
 	defined($self->expiration_time());
 }
 
@@ -631,6 +639,13 @@ sub creation_time {
     }
 }
 
+sub app_state {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_APP_STATE} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_APP_STATE};
+}
+
+
 sub subject_auth {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_SUBJECT_AUTH} = shift if @_;
@@ -1008,6 +1023,7 @@ The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
   $token = new WebKDC::RequestToken;
   $token = new WebKDC::RequestToken($binary_token, $key_or_ring, $ttl);
 
+  $token->app_state([$new_value])
   $token->creation_time([$new_value])
   $token->proxy_type([$new_value])
   $token->post_url([$new_value])

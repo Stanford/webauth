@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.7, Modified 11/05/02</b></H4>
+<H4><b>DRAFT Version  0.8, Modified 11/06/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -16,6 +16,12 @@
     <LI><a href="#compwkdc">Web Key Distribution Server (WebKDC)</LI>
   </UL>
   <LI><a href="#tokens">WebAuth Tokens</a>
+  <LI><a href="#keymgmt">Security Model and Key Management</a>
+  <UL>
+    <LI><a href="#kmsessionkeys">Distributing and Managing Session Keys</a></LI>
+    <LI><a href="#kmprivatekeys">Distributing and Managing Private Keys</a></LI>
+    <LI><a href="#kmpool">Supporting Server Pools</a></LI>
+  </UL>
 </UL
 <LI><a href="#scenarios">WebAuth Usage Scenarios</a></LI>
 <UL>
@@ -145,11 +151,11 @@ can't use a "token" that was created for use by another WAS server.
 
 <H3>1.2 <a name="tokens">WebAuth Tokens</a></H3>
 
-<p>The primary purpose of tokens is to provide a standard mechanism
-to exchange and store information that is cryptographically secure from
-both tampering and disclosure. Tokens also contain information
-such as creation times to help detect replays, and
-expiration times so data is never trusted/used forever.
+<p>Tokens provide a standard mechanism to exchange and store information 
+that is cryptographically secure from both tampering and disclosure. 
+Tokens also contain information such as creation times to help detect 
+replays, and expiration times so data is never trusted/used forever. Tokens
+also enable authentication of the servers using them.
 
 <p>Tokens get transfered
 between servers using URL query parameters, 
@@ -257,6 +263,124 @@ or credentials for future use.
 </table>
 
 <p>Their exact formats are discussed in detail at the end of this document.
+
+<H3>1.3 <a name="keymgmt">Security Model and Key Management</a></H3>
+
+<p>As mentioned in the previous section, tokens are at the heart of
+the WebAuth security model. They are used to authenticate requests
+and responses between servers, as well as protect data that is
+stored in URLs and cookie data. Shared symmetric keys (session-keys)
+are used to encrypt tokens between servers, and private keys are
+used to encrypt tokens meant for a only a single server to decrypt.
+
+<H4>1.3.1 <a name="kmsessionkeys">Distributing and Managing Session Keys</a></H3>
+
+<p>In order to exchange session-keys, a key distribution
+protocol is needed.  For this purpose, we use Kerberos V5 and SSL to
+bootstrap and get the session-keys. The WAS that needs
+a session-key will post an XML <a href="#xmlgettokens">message</a> to 
+the WebKDC requesting a service-token. This message contains the
+result of krb5_mk_req call for the WebKDC's server principal, which
+the WebKDC uses to authenticate the server making the request. The
+WebKDC will then send back the service-token, and the session-key
+that is encrypted (in the WebKDC's key) inside of the service-token.
+The WAS will need both to make future requests to the WebKDC. The whole
+transaction itself is protected with SSL.
+
+<p>The thing to note here is that there are no long term keys stored
+on WebKDC itself. Once the WAS obtains the sevice-token and session-key,
+it will cache them both until the service-token expires, which will
+most likely be 24 hours. Before the service-token expires, the WAS must
+request a new service-token.
+
+<p>The protocol is also designed such that other authentication mechanisms
+may be used to bootstrap, such as the GSS-API, or SSL client authentication
+between servers.
+
+<p>One potential issue here is that we are using weaker DES keys
+(Kerberos V5 keytabs) to bootstrap into stronger AES keys. This issue
+is partially mitigated by the use of SSL to futher protect the
+transaction. It was decided that this was acceptable in order to
+keep the WebKDC stateless and to re-use the existing Kerberos V5 
+infrastructure where possible.
+
+<H4>1.3.2 <a name="kmprivatekeys">Distributing and Managing Private Keys</a></H3>
+
+<p>Both the WebKDC and the WAS servers need private keys to encrypt
+their tokens with. These keys will be randomly-generated 128-bit AES
+keys (longer keys are supported if needed), that get stored in "key rings". 
+The key ring is used to contain previously valid keys, currently 
+valid keys, and keys that will be valid in the future. A command-line 
+utility is provided to manage the key ring file.
+
+<p>The key ring consists of a number
+of entries, each of which contain the following information:
+
+<pre>
+  key type       Type of the key, AES is the only supported key type right now.
+  key data       The binary data that makes up the key
+  creation       Time the key was created
+  valid_from     When the key becomes valid
+  valid_till     When the key expires
+</pre>
+
+<p>Of note is the "valid_from" value. It is used to create post-dated keys
+in the key ring, to allow for new keys to get generated and distributed
+among a pool of servers (for load balancing/failover) in such a way that
+all the keys can be updated before the key becomes valid.
+
+<p>Initially key rings can be distributed using a mechanism like SSH,
+though there will eventually be support within the WebAuth protocol
+for distributing new key rings.
+
+<p>Current thinking is that the private AES-keys will be changed
+once a month, with new keys being generated and post-dated 48-72 
+hours in advance of the current key's expiration. Servers that don't 
+have a new key within this window before the current key expires can 
+log errors and raise the attention of system administrators. Since
+the previous key is still maintained in the key ring, the servers
+will be able to continue and parse outstanding tokens encrypted
+in the previous key until the the token expires.
+
+<H4>1.3.3 <a name="kmpool">Supporting Server Pools</a></H3>
+
+<p>In order to support server pools, we need to ensure that
+any server that receives a token is able to decrypt and verify it. Note
+that we are only talking about the WebAuth protocol here, applications
+must solve their own issues when dealing with a pool of servers.
+
+<p>For the WebKDC, all we need to do is distribute the key ring file
+across all the WebKDCs, and having a posted-dated new key in the key ring
+file makes this task easier.
+
+<p>For the WAS, there are two issues. First, we also need to distribute
+the key ring file so all WAS servers can decrypt their app-tokens. The
+second issue, is how to deal with session-keys.
+
+<p>Recall that responses from the WebKDC come back to the WAS encrypted
+in the session-key, not the WAS server's private key. If the response
+comes back to a different WAS server, it would not have the same session-key
+that another WAS server had. One way to deal with session-keys would be to 
+share the same service-token and session-key across all the servers. This
+of course would be very painful and expensive to do.
+
+<p>Another way to handle this is make sure that the return-url in the
+request-token contains the real server's hostname/ip address as opposed
+to the virtual/pool address. This solves the problem as the request always
+comes back to WAS server that initiated the request. This approach
+however might not work in all environments. For example, the real
+app server's address may not be visible from outside the firewall.
+
+<p>The most flexible solution is to allow WAS servers to include some
+"state" or "context" in each request-token. The WebKDC would treat
+this state as opaque data, and return it to the WAS server along with
+the requested token. Note that it would be transmitted alongside the
+returned token, not inside of it. Now, the WAS server would
+create an app-token (which is encrypted in its private key), that
+contains the session-key, and use this as the state it sends in the
+request-token. The WebKDC return this state along with the respsone,
+and the WAS can decrypt the state using its private key to get the
+session-key.
 
 <H2><B>2. <a name="scenarios">WebAuth Scenarios</a></B></H2>
 
@@ -702,20 +826,22 @@ the base64-encoded service-token.
 
 <p>When the WebKDC is ready to redirect the UA back to the WAS,
 it will construct a return URL by taking the return-url specified
-in the request token an appending ";WEBAUTH=tokenWEBAUTH" to it.
+in the request token an appending ";WEBAUTHR=token" to it, where
+token is the requested token. If the "as" attribute was specified
+in the request token, then it is base64-encoded and appended to
+the URL as ";WEBAUTHS=token".
 
 <p>For example:
 
 <pre>
-  https://{return-url};WEBAUTH=tokenWEBAUTH
+  https://{return-url};WEBAUTHR=token[;WEBAUTHS=token
 </pre>
 
-<p>The WebAuth Apache module will strip that off the end of the
-URL and parse the token (after stripping WEBAUTH from the end
-of the token). If the token is valid, the WebAuth module will
-construct the app-token cookie, etc, and pass the request through
-to the original application, with the ";WEBAUTH=tokenWEBAUTH" stripped
-off.
+<p>The WebAuth Apache module will then strip ";WEBAUTHS=token"
+and ";WEBAUTHR=token" off the end of the URL. If the tokens are
+valid, the WebAuth module will construct the app-token cookie, 
+etc, and pass the request through to the original application, 
+with the ";WEBAUTH*" removed from the URL.
 
 <H2><B>4. <a name="xmlproto">WebKDC XML Protocol Description</a></B></H2>
 
@@ -999,6 +1125,11 @@ seconds since 00:00:00 UTC, January 1, 1970.
   <th>Description</th>
  </tr>
 <tr>
+  <td>as</td><td>binary</td>
+  <td>The app-token that is optionally included within a request-token that
+      will get returned along with the response to the request-token.</td>
+</tr>
+<tr>
   <td>cmd</td><td>string</td>
   <td>name of XML command being executed (i.e., getTokensRequest)</td>
 </tr>
@@ -1153,6 +1284,7 @@ both recent, and for the specified command.
 <pre><code>
   t=req
   ct={creation-time}
+  [as={binary-app-token-used-for-state}]
   ru={return-get-redirect-url}
   [pu={return-post-url}]
   rr=na|ea|st|fa
@@ -1278,13 +1410,14 @@ is to cache the idenity within an id-token after it has been verified.
 
 <pre><code>
   t=app
-  s=krb5:{users-k5-principal}
-  ct={creation-time}
   et={expiration-time}
+  [ct={creation-time}]
+  [s=krb5:{users-k5-principal}]
+  [k=session-key]
   [it={inactivity-timeout}]
   [lt={last-use-time}]
-  x-name1=value1  (app-specific-data)
-  x-name2=value2  ...
+  [x-name1=value1]  (app-specific-data)
+  [x-name2=value2]  ...
 </code></pre>
 
 <p>  All attributes are AES-encrypted in the WAS's private key.
@@ -1298,6 +1431,9 @@ is to cache the idenity within an id-token after it has been verified.
 <p>  inactivity-timeout is used to compare the last-use-time against the
   current time to see if an app-token has become inactive due to not being
   used.
+
+<p> session-key is only present when an app-token is being used
+as the application-state inside of a request-token.
 
 <H2><B>6. <a name="cookies">Cookie conventions</a></B></H2>
 
@@ -1473,6 +1609,18 @@ WebAuthEndSession redirect|clearLogin|on|off
    <td><ul>
          <li>rename prt/prd/pro attributes to pt/pd/ps
          <li>formatting and clarification
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>11/07/2002</td>
+  <td>0.8</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>add section on security model and support for 
+             sending application-state in a request token to 
+	     enable server pools.
        </ul>
    </td>
 </tr>
