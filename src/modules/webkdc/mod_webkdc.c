@@ -2149,7 +2149,7 @@ mod_webkdc_cleanup(void *data)
                                                         &webkdc_module);
 
     if (sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: cleanup");
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webkdc: cleanup");
     }
 
     /* walk through list of services and clean up */
@@ -2159,7 +2159,7 @@ mod_webkdc_cleanup(void *data)
 
         if (tconf->ring && tconf->free_ring) {
             if (sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
                              "mod_webkdc: cleanup ring: %s",
                              tconf->keyring_path);
             }
@@ -2240,7 +2240,8 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
                                              &webkdc_module);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initializing");
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
+                     "mod_webkdc: initializing");
 
     apr_pool_cleanup_register(pconf, s, 
                               mod_webkdc_cleanup,
@@ -2254,7 +2255,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     ap_add_version_component(pconf, version);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
                      "mod_webkdc: initialized (%s) (%s)",
                      webauth_info_version(),
                      webauth_info_build());

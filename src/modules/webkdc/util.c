@@ -274,7 +274,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
             msg = "updated";
         else
             msg = "<unknown>";
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, serv,
                      "mod_webkdc: %s key ring: %s", msg, sconf->keyring_path);
     }
 

@@ -737,8 +737,10 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
         apr_pool_destroy(sconf->service_token->pool);
     apr_pool_create(&p, NULL);
     sconf->service_token = copy_service_token(p, new_token);
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                 "mod_webauth: setting service token");
+    if (sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, NULL,
+                     "mod_webauth: setting service token");
+    }
 
 }
 
@@ -767,7 +769,7 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
         if (sconf->service_token->next_renewal_attempt > curr) {
             token = copy_service_token(pool, sconf->service_token);
             if (sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
                              "mod_webauth: %s: using cached service token",
                              mwa_func);
             }
@@ -782,7 +784,7 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
     if (token != NULL) {
 
         if (sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
                          "mod_webauth: %s: read service token from: %s",
                          mwa_func, sconf->st_cache_path);
         }
@@ -828,7 +830,7 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
     } else {
 
         if (sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
                          "mod_webauth: %s: got new service token from webkdc",
                          mwa_func);
         }
@@ -847,7 +849,7 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
     if (token == NULL) {
         /* really complain! */
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
-                     "mod_webauth: mwa_get_service_token returning NULL!!");
+                     "mod_webauth: mwa_get_service_token FAILD!!");
     }
     return token;
 }

@@ -104,7 +104,7 @@ get_acl(MWK_REQ_CTXT *rc)
         return acl;
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                      "mod_webkdc: %s: %sloading acl file: %s",
                      mwk_func, 
                      acl == NULL ? "" : "re",
@@ -148,7 +148,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
 #if 0
         if (rc->sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webkdc: %s: read line: [%s] "
                          "file %s, line %d", mwk_func, 
                          line,
@@ -210,7 +210,7 @@ get_acl(MWK_REQ_CTXT *rc)
             }
 
             if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                              "mod_webkdc: %s: adding cred access: %s %s %s",
                              mwk_func, subject, proxy_type, cred);
             }
@@ -219,7 +219,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
         } else if (strcmp(type, "id") == 0) {
             if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                              "mod_webkdc: %s: adding id access: %s",
                              mwk_func, subject);
             }
@@ -265,7 +265,7 @@ get_acl(MWK_REQ_CTXT *rc)
         acl = new_acl;
 
         if (rc->sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                          "mod_webkdc: %s: acl file loaded ok: %s",
                          mwk_func, 
                          rc->sconf->token_acl_path);
@@ -325,7 +325,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                      "mod_webkdc: mwk_has_id_access: %s => %d",
                      subject, access);
     }
@@ -381,7 +381,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                      "mod_webkdc: mwk_has_proxy_access: %s, %s => %d",
                      subject, proxy_type, access);
     }
@@ -448,7 +448,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                      "mod_webkdc: mwk_has_cred_access: %s, %s, %s => %d",
                      subject, cred_type, cred, access);
     }
@@ -468,7 +468,7 @@ mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
         (strncmp(proxy_subject, "WEBKDC:", 7) == 0);
 
    if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                      "mod_webkdc: mwk_can_use_proxy_token: %s, %s, => %d",
                      subject, proxy_subject, access);
     }
