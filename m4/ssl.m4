@@ -6,7 +6,7 @@ dnl and defines SSL_CPPFLAGS and SSL_LIBS.  It also defines CRYPTO_CPPFLAGS
 dnl and CRYPTO_LIBS for those programs that only need libcrypto.
 
 AC_DEFUN([WEBAUTH_LIB_SSL],
-[AC_ARG_WITH([ssl],
+[AC_ARG_WITH([openssl],
              AC_HELP_STRING([--with-openssl=PATH], [Path to OpenSSL install]),
              [if test x"$withval" != xno ; then
                  SSL_LDFLAGS=-L$withval/lib
