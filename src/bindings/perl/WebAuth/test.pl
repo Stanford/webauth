@@ -29,6 +29,7 @@ ok("an" eq WebAuth::WA_TK_APP_NAME);
 
 ########################################  base64
 
+ok(0);
 ok(4, WebAuth::base64_encoded_length(1));
 ok(4, WebAuth::base64_encoded_length(2));
 ok(4, WebAuth::base64_encoded_length(3));
