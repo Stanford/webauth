@@ -213,7 +213,7 @@ site, see doc/install-webkdc.
      to see the login dialog and then a dump of all environment variables
      made available to CGI applications.  You should see WEBAUTH_USER and
      REMOTE_USER in that list of environment variables, set to your
-     authenticated identity.  Clicking reload should not requite you to
+     authenticated identity.  Clicking reload should not require you to
      authenticate again.
 
      Go to:
