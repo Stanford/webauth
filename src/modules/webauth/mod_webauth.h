@@ -111,6 +111,9 @@
 #define CM_RequireSSL "whether or not SSL is required"
 #define DF_RequireSSL 1
 
+#define CD_SSLReturn "WebAuthSSLReturn"
+#define CM_SSLReturn "whether or not to force return url to be https"
+
 #define CD_SSLRedirect "WebAuthSSLRedirect"
 #define CM_SSLRedirect "redirect to SSL when accessing a webauth-protected page"
 
@@ -255,6 +258,7 @@ enum {
     E_PostReturnURL,
     E_ReturnURL,
     E_RequireSSL,
+    E_SSLReturn,
     E_SSLRedirect,
     E_SSLRedirectPort,
     E_UseCreds,
@@ -343,6 +347,8 @@ typedef struct {
     int use_creds_ex;
     int do_logout;
     int do_logout_ex;
+    int ssl_return;
+    int ssl_return_ex;
     char *return_url;
     char *post_return_url;
     char *failure_url;

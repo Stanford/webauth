@@ -680,6 +680,11 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     conf->extra_redirect_ex = oconf->extra_redirect_ex || 
         bconf->extra_redirect_ex;
 
+    conf->ssl_return = oconf->ssl_return_ex ?
+        oconf->ssl_return : bconf->ssl_return;
+    conf->ssl_return_ex = oconf->ssl_return_ex || 
+        bconf->ssl_return_ex;
+
     conf->dont_cache = oconf->dont_cache_ex ? 
         oconf->dont_cache : bconf->dont_cache;
     conf->dont_cache_ex = oconf->dont_cache_ex || bconf->dont_cache_ex;
@@ -1811,27 +1816,24 @@ make_return_url(MWA_REQ_CTXT *rc,
         }
     }
 
-    /* use explicit return_url if there is one */
-    if (check_dconf_return_url && rc->dconf->return_url) {
-        if (rc->dconf->return_url[0] != '/')
-            return rc->dconf->return_url;
-        else 
-            uri = rc->dconf->return_url;
-        return ap_construct_url(rc->r->pool, uri, rc->r);
-    }
-
-
-
-
     /* if we are proxying or if the uri is parsed and scheme is non-null
        just use unparsed_uri */
     if ((rc->r->proxyreq == PROXYREQ_PROXY) ||
         (rc->r->parsed_uri.is_initialized && rc->r->parsed_uri.scheme != NULL)
         ) {
-        return uri;
+        /* do nothing, use uri */
     } else {
-        return ap_construct_url(rc->r->pool, uri, rc->r);
+        uri = ap_construct_url(rc->r->pool, uri, rc->r);
     }
+
+    if (rc->dconf->ssl_return && strncmp(uri, "http:", 5) == 0) {
+        uri = apr_pstrcat(rc->r->pool,
+                          "https:",
+                          uri+5,
+                          NULL);
+    }
+
+    return uri;
  }
 
 static int
@@ -2793,6 +2795,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->webkdc_cert_check_ex = 1;
             break;
             /* start of dconfigs */
+        case E_SSLReturn:
+            dconf->ssl_return = flag;
+            dconf->ssl_return_ex = 1;
+            break;
         case E_DoLogout:
             dconf->do_logout = flag;
             dconf->do_logout_ex = 1;
@@ -2949,6 +2955,7 @@ static const command_rec cmds[] = {
     /* directory or .htaccess if override auth config */
     DFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
+    DFLAG(CD_SSLReturn, E_SSLReturn, CM_SSLReturn),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     DSTR(CD_PostReturnURL, E_PostReturnURL, CM_PostReturnURL),
     DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),

@@ -2,6 +2,10 @@
 
 WebAuth 3.2.2 (in progress)
 
+ *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up
+    via http at a webauth-protected page and gets redirected to weblogin,
+    the return URL will be https.
+
  *) Fix various compilation problems with Sun cc, including signed vs.
     unsigned char mismatches and C++-style comments.
 

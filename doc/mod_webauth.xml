@@ -1131,6 +1131,31 @@ authentication.
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthSSLReturn</name>
+<description>Sets the return URL to be https
+</description>
+<syntax>WebAuthSSLReturn on|off</syntax>
+<default>WebAuthSSLReturn off</default>
+<contextlist>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+If a user connects to a webauth-protected page via http, and needs to be
+authenticated, then this directive will cause the return URL to be converted
+to https.
+</p>
+
+<example><title>Example</title>
+  &lt;Location /myapp/&gt;<br/>
+  AuthType WebAuth<br/>
+  Require valid-user<br/>
+  WebAuthSSLReturn on<br/>
+  &lt;/Location&gt;
+</example>
+</usage>
+</directivesynopsis>
 
 <directivesynopsis>
 <name>WebAuthDebug</name>

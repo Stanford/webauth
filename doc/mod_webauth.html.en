@@ -20,9 +20,6 @@
 <a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.1</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauth</h1>
-<div class="toplang">
-<p><span>Available Languages: </span></p>
-</div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth V3 protocol</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauth_module</td></tr>
@@ -60,6 +57,7 @@
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslreturn">WebAuthSSLReturn</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
@@ -92,9 +90,9 @@
     directive.
     </p>
 <div class="example"><h3>Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
+  &lt;Location /private/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -106,19 +104,19 @@
     to configure and use mod_webauth.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-  LoadModule webauth_module modules/mod_webauth.so<br />
-<br />
-  WebAuthKeyring conf/webauth/keyring<br />
-  WebAuthKeytab conf/webauth/keytab<br />
-  WebAuthServiceTokenCache conf/webauth/service_token_cache<br />
-  WebAuthLoginURL https://webkdc/login/<br />
-  WebAuthWebKdcURL https://webkdc/webkdc-service/<br />
-  WebAuthWebKdcPrincipal   service/webkdc<br />
-<br />
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  &lt;/Location&gt;<br />
+  LoadModule webauth_module modules/mod_webauth.so<br xmlns="" />
+<br xmlns="" />
+  WebAuthKeyring conf/webauth/keyring<br xmlns="" />
+  WebAuthKeytab conf/webauth/keytab<br xmlns="" />
+  WebAuthServiceTokenCache conf/webauth/service_token_cache<br xmlns="" />
+  WebAuthLoginURL https://webkdc/login/<br xmlns="" />
+  WebAuthWebKdcURL https://webkdc/webkdc-service/<br xmlns="" />
+  WebAuthWebKdcPrincipal   service/webkdc<br xmlns="" />
+<br xmlns="" />
+  &lt;Location /private/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
+  &lt;/Location&gt;<br xmlns="" />
 </code></p></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -167,12 +165,12 @@ is set then the token may expire sooner due to inactivity.
 </table>
 
 <div class="example"><h3>Example</h3><p><code>
-REMOTE_USER=schemers<br />
-AUTH_TYPE=WebAuth<br />
-WEBAUTH_USER=schemers<br />
-WEBAUTH_TOKEN_CREATION=103872393<br />
-WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
-WEBAUTH_TOKEN_LASTUSED=103872393<br />
+REMOTE_USER=schemers<br xmlns="" />
+AUTH_TYPE=WebAuth<br xmlns="" />
+WEBAUTH_USER=schemers<br xmlns="" />
+WEBAUTH_TOKEN_CREATION=103872393<br xmlns="" />
+WEBAUTH_TOKEN_EXPIRATION=1038759389<br xmlns="" />
+WEBAUTH_TOKEN_LASTUSED=103872393<br xmlns="" />
 </code></p></div>
 
 <p>
@@ -202,13 +200,13 @@ to set extra headers based on the values of <code>WEBAUTH_</code> environment va
 to a proxy server. Assuming you've loaded <code>mod_headers</code> and can therefore use the <code>RequestHeader</code> directive, you could do the following:  </p>
 
 <div class="example"><h3>Example</h3><p><code>
-  &lt;Location /someplace&gt;<br />
-    AuthType WebAuth<br />
-    require valid-user<br />
-    ProxyPass http://otherhost.stanford.edu/<br />
-    ProxyPassReverse http://otherhost.stanford.edu/<br />
+  &lt;Location /someplace&gt;<br xmlns="" />
+    AuthType WebAuth<br xmlns="" />
+    require valid-user<br xmlns="" />
+    ProxyPass http://otherhost.stanford.edu/<br xmlns="" />
+    ProxyPassReverse http://otherhost.stanford.edu/<br xmlns="" />
     RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
-  &lt;/Location&gt;<br />
+  &lt;/Location&gt;<br xmlns="" />
 </code></p></div>
 
 <p>The <code>RequestHeader</code> directive causes the <code>X-WEBAUTH-USER</code>
@@ -240,9 +238,9 @@ the pages that are served by the CGI Perl scripts. For example, lets
 assume that all pages under http://yourserver/private/ are to be protected:</p>
 
 <div class="example"><h3>Apache Directives Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
+  &lt;Location /private/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -251,7 +249,7 @@ the Perl script, it is simply a matter of accessing the environment
 variables set by mod_webauth within your Perl script:</p>
 
 <div class="example"><h3>Perl Example</h3><p><code>
-<code>
+<code xmlns="">
 <pre>
 
 my $WEBAUTH_USER = $ENV{'WEBAUTH_USER'};
@@ -274,9 +272,9 @@ You need to first WebAuth-protect the pages that are served by the PHP scripts.
 For example:</p>
 
 <div class="example"><h3>Apache Directives Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
+  &lt;Location /private/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -285,7 +283,7 @@ the PHP script, you can either use the PHP getenv function, or access
 the special <code>$_SERVER</code> array variable. For example:</p>
 
 <div class="example"><h3>PHP Example</h3><p><code>
-<code>
+<code xmlns="">
 <pre>
 
 $WEBAUTH_USER = getenv('WEBAUTH_USER');
@@ -321,19 +319,19 @@ you want to pass. For example:</p>
 
 <div class="example"><h3>Apache Directives Example</h3><p><code>
 # WebAuth-protect /private/
-&lt;Location /private/&gt;<br />
-AuthType WebAuth<br />
-Require valid-user<br />
-&lt;/Location&gt;<br />
-<br />
-# Send everything for /private/ to worker1<br />
-JkMount /private/* worker1 <br />
-# webauth-related environment variables to pass<br />
-JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"<br />
-JkEnvVar REMOTE_USER "&lt;UNSET&gt;"<br />
-JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"<br />
-JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"<br />
-JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"<br />
+&lt;Location /private/&gt;<br xmlns="" />
+AuthType WebAuth<br xmlns="" />
+Require valid-user<br xmlns="" />
+&lt;/Location&gt;<br xmlns="" />
+<br xmlns="" />
+# Send everything for /private/ to worker1<br xmlns="" />
+JkMount /private/* worker1 <br xmlns="" />
+# webauth-related environment variables to pass<br xmlns="" />
+JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"<br xmlns="" />
+JkEnvVar REMOTE_USER "&lt;UNSET&gt;"<br xmlns="" />
+JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"<br xmlns="" />
+JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"<br xmlns="" />
+JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"<br xmlns="" />
 </code></p></div>
 
 <p>If all you are interested in is WEBAUTH_USER, then you
@@ -344,7 +342,7 @@ the servlet, you need to use the <code>getAttribute</code> method
 on the <code>request</code> object.</p>
 
 <div class="example"><h3>JSP Example</h3><p><code>
-<code>
+<code xmlns="">
 <pre>
 WEBAUTH_USER is set to:
 &lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
@@ -371,7 +369,7 @@ will never be used.
 <code>server.xml</code> file.  For example:</p>
 
 <div class="example"><h3>Connector Example</h3><p><code>
-<code>
+<code xmlns="">
 <pre>
 &lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
     port="8009" minProcessors="5" maxProcessors="75"
@@ -410,26 +408,26 @@ requires the use of two Kerberos V5 credentials.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-  # this first WebAuthCred directive will cause us to<br />
-  # acquire a proxy-token on the initial redirect when<br />
-  # determining the user's identity. It saves an extra redirect<br />
-  # later on when we actually use/acquire credentials.<br />
-  <br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  require valid-user<br />
-  WebAuthCred krb5<br />
-  &lt;/Location&gt; <br />
-  <br />
-  # these next WebAuthCred directives will cause us to acquire<br />
-  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br />
-  <br />
-  &lt;Location /myapp/commands/&gt;<br />
-  WebAuthUseCreds on<br />
-  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
-  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br />
+  # this first WebAuthCred directive will cause us to<br xmlns="" />
+  # acquire a proxy-token on the initial redirect when<br xmlns="" />
+  # determining the user's identity. It saves an extra redirect<br xmlns="" />
+  # later on when we actually use/acquire credentials.<br xmlns="" />
+  <br xmlns="" />
+  &lt;Location /myapp/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  require valid-user<br xmlns="" />
+  WebAuthCred krb5<br xmlns="" />
+  &lt;/Location&gt; <br xmlns="" />
+  <br xmlns="" />
+  # these next WebAuthCred directives will cause us to acquire<br xmlns="" />
+  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br xmlns="" />
+  <br xmlns="" />
+  &lt;Location /myapp/commands/&gt;<br xmlns="" />
+  WebAuthUseCreds on<br xmlns="" />
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br xmlns="" />
+  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br xmlns="" />
   &lt;/Location&gt;
-  <br />
+  <br xmlns="" />
 </code></p></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -496,7 +494,7 @@ the <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
 directive:
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
-  WebAuthKeyringAutoUpdate off<br />
+  WebAuthKeyringAutoUpdate off<br xmlns="" />
 </code></p></div>
 
 </p>
@@ -598,7 +596,7 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# create an app-token valid for 2 hours<br />
+# create an app-token valid for 2 hours<br xmlns="" />
 WebAuthAppTokenLifetime 2h
 </code></p></div>
 
@@ -662,14 +660,14 @@ specify that multiple credentials are required.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 
-  # get and use the following krb5 credential on every<br />
-  # request under /myapp/.<br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  require valid-user<br />
-  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
-  &lt;/Location&gt; <br />
-  <br />
+  # get and use the following krb5 credential on every<br xmlns="" />
+  # request under /myapp/.<br xmlns="" />
+  &lt;Location /myapp/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  require valid-user<br xmlns="" />
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br xmlns="" />
+  &lt;/Location&gt; <br xmlns="" />
+  <br xmlns="" />
 </code></p></div>
 
 </div>
@@ -719,8 +717,8 @@ well.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthDebug on<br />
-LogLevel debug<br />
+WebAuthDebug on<br xmlns="" />
+LogLevel debug<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -742,8 +740,8 @@ the <a href="#webauthdontcache">WebAuthDontCache</a> directive for the
 given location.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-  &lt;Location /myapp/logout&gt;<br />
-  WebAuthDoLogout on<br />
+  &lt;Location /myapp/logout&gt;<br xmlns="" />
+  WebAuthDoLogout on<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -795,7 +793,7 @@ all documents (and images) on the server. Also see
 
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthDontCache on<br />
+WebAuthDontCache on<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -832,9 +830,9 @@ under certain circumstances maybe also trigger a caching bug in the
 user's browser (though hopefully this should never happen).</p>
 
 <div class="example"><h3>Example</h3><p><code>
-&lt;Location /myapp/&gt;<br />
-WebAuthExtraRedirect on<br />
-...<br />
+&lt;Location /myapp/&gt;<br xmlns="" />
+WebAuthExtraRedirect on<br xmlns="" />
+...<br xmlns="" />
 &lt;/Location&gt;
 </code></p></div>
 
@@ -880,13 +878,13 @@ authentication.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-  # force the user to login, and create an app-token<br />
-  # that only lasts for 20 minutes<br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  WebAuthForceLogin on<br />
-  WebAuthAppTokenLifetime 20m<br />
+  # force the user to login, and create an app-token<br xmlns="" />
+  # that only lasts for 20 minutes<br xmlns="" />
+  &lt;Location /myapp/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
+  WebAuthForceLogin on<br xmlns="" />
+  WebAuthAppTokenLifetime 20m<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -925,11 +923,11 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# timeout an app-token if it isn't used for more <br />
-# then 20 minutes<br />
-WebAuthInactiveExpire 20m<br />
-# update the last-used-time in the cookie if it's older<br />
-# then 10 minutes<br />
+# timeout an app-token if it isn't used for more <br xmlns="" />
+# then 20 minutes<br xmlns="" />
+WebAuthInactiveExpire 20m<br xmlns="" />
+# update the last-used-time in the cookie if it's older<br xmlns="" />
+# then 10 minutes<br xmlns="" />
 WebAuthLastUseUpdateInterval 10m
 </code></p></div>
 
@@ -990,7 +988,7 @@ That too will eventually be automated.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthKeyringAutoUdpate off<br />
+WebAuthKeyringAutoUdpate off<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -1021,7 +1019,7 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthKeyringKeyLifetime 60d<br />
+WebAuthKeyringKeyLifetime 60d<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -1081,11 +1079,11 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# timeout an app-token if it isn't used for <br />
-# more then 20 minutes<br />
-WebAuthInactiveExpire 20m<br />
-# update the last-used-time in the cookie if it's older<br />
-# then 10 minutes<br />
+# timeout an app-token if it isn't used for <br xmlns="" />
+# more then 20 minutes<br xmlns="" />
+WebAuthInactiveExpire 20m<br xmlns="" />
+# update the last-used-time in the cookie if it's older<br xmlns="" />
+# then 10 minutes<br xmlns="" />
 WebAuthLastUseUpdateInterval 10m
 </code></p></div>
 
@@ -1158,8 +1156,8 @@ will return 401 (UNAUTHORIZED), as it is impractical to try and recover from a P
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-# if unauthenticated when accessing a URL via a POST, <br />
-# authenticate and return to front-page<br />
+# if unauthenticated when accessing a URL via a POST, <br xmlns="" />
+# authenticate and return to front-page<br xmlns="" />
 WebAuthPostReturnURL /myapp/
 </code></p></div>
 
@@ -1182,8 +1180,8 @@ requested.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-# if unauthenticated when accessing a URL, authenticate<br />
-# and return to front-page<br />
+# if unauthenticated when accessing a URL, authenticate<br xmlns="" />
+# and return to front-page<br xmlns="" />
 WebAuthReturnURL /myapp/
 </code></p></div>
 
@@ -1248,7 +1246,7 @@ redirects the user back to <code>http</code>.
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthSSLRedirect on<br />
+WebAuthSSLRedirect on<br xmlns="" />
 </code></p></div>
 
 </div>
@@ -1272,8 +1270,34 @@ you run the Apache server on ports 8080 and 8443, for example.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthSSLRedirect on<br />
-WebAuthSSLRedirectPort 8443<br />
+WebAuthSSLRedirect on<br xmlns="" />
+WebAuthSSLRedirectPort 8443<br xmlns="" />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthSSLReturn" id="WebAuthSSLReturn">WebAuthSSLReturn</a> <a name="webauthsslreturn" id="webauthsslreturn">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Sets the return URL to be https
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLReturn on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLReturn off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+If a user connects to a webauth-protected page via http, and needs to be
+authenticated, then this directive will cause the return URL to be converted
+to https.
+</p>
+
+<div class="example"><h3>Example</h3><p><code>
+  &lt;Location /myapp/&gt;<br xmlns="" />
+  AuthType WebAuth<br xmlns="" />
+  Require valid-user<br xmlns="" />
+  WebAuthSSLReturn on<br xmlns="" />
+  &lt;/Location&gt;
 </code></p></div>
 
 </div>
@@ -1351,7 +1375,7 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# ten minute TTL<br />
+# ten minute TTL<br xmlns="" />
 WebAuthTokenMaxTTL 10m
 </code></p></div>
 
@@ -1375,8 +1399,8 @@ the <a href="#webauthcred">WebAuthCred</a> directive.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-  &lt;Location /myapp/command&gt;<br />
-  WebAuthUseCreds on<br />
+  &lt;Location /myapp/command&gt;<br xmlns="" />
+  WebAuthUseCreds on<br xmlns="" />
   &lt;/Location&gt;
 </code></p></div>
 
@@ -1403,10 +1427,10 @@ module defines, and they will be set in addition to the standard "WEBAUTH"
 ones.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-&lt;Location /myapp/&gt;<br />
-# this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br />
-# environment variables to get set.<br />
-WebAuthVarPrefix HTTP_<br />
+&lt;Location /myapp/&gt;<br xmlns="" />
+# this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br xmlns="" />
+# environment variables to get set.<br xmlns="" />
+WebAuthVarPrefix HTTP_<br xmlns="" />
 &lt;/Location&gt;
 </code></p></div>
 
@@ -1431,7 +1455,7 @@ the WebKDC. It used to request a service-token from the WebKDC. </p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-# if realm isn't specified, the default realm will be used<br />
+# if realm isn't specified, the default realm will be used<br xmlns="" />
 WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 </code></p></div>
 
@@ -1526,9 +1550,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 
 </div>
 </div>
-<div class="bottomlang">
-<p><span>Available Languages: </span></p>
-</div><div id="footer">
+<div id="footer">
 <p class="apache">Maintained by the <a href="http://httpd.apache.org/docs-project/">Apache HTTP Server Documentation Project</a></p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>
