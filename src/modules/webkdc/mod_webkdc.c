@@ -2469,7 +2469,10 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
-    MERGE_PTR(keytab_principal);
+    if (oconf->keytab_path)
+        conf->keytab_principal = oconf->keytab_principal;
+    else
+        conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
     return (void *)conf;

@@ -643,7 +643,12 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(login_url);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
-    MERGE_PTR(keytab_principal);
+    /* always use oconf's keytab_principal if 
+       oconf's keytab_path is specified */
+    if (oconf->keytab_path)
+        conf->keytab_principal = oconf->keytab_principal;
+    else
+        conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(cred_cache_dir);
     MERGE_PTR(st_cache_path);
     return (void *)conf;
