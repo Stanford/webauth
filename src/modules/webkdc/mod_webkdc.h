@@ -17,6 +17,16 @@
 #include "apr_xml.h"
 #include "apr_thread_mutex.h"
 #include "apr_base64.h"
+#include "unixd.h"
+#include "ap_config_auto.h"
+
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#if HAVE_UNISTD_H
+#include <unistd.h> 
+#endif
 
 #include <curl/curl.h>
 

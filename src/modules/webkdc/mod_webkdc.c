@@ -1799,8 +1799,9 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     num_proxy_tokens = 0;
     login_ec = 0;
     request_token = NULL;
+    sub_cred = NULL;
+
     memset(&req_cred, 0, sizeof(req_cred));
-    memset(&sub_cred, 0, sizeof(sub_cred));
     memset(&req_token, 0, sizeof(req_token));
     memset(&rtoken, 0, sizeof(rtoken));
 

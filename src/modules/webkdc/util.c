@@ -251,6 +251,17 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
                                   mwk_func, 
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
+    } else {
+        /* #if taken from ssl_scache_dbm.c */
+#if !defined(OS2) && !defined(WIN32) && !defined(BEOS) && !defined(NETWARE)
+    /*
+     * We have to make sure the Apache child processes have access to
+     * the keyring file.
+     */
+    if (geteuid() == 0 /* is superuser */) {
+        chown(sconf->keyring_path, unixd_config.user_id, -1);
+    }
+#endif
     }
 
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
