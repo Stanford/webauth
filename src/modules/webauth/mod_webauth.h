@@ -42,10 +42,6 @@
 #define AT_COOKIE_NAME_EQ "webauth_at="
 
 /* defines for config directives */
-#define CD_SecureCookie "WebAuthSecureCookie"
-#define CM_SecureCookie "make cookies with the 'secure' attribute"
-#define DF_SecureCookie 1
-
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
 
@@ -120,7 +116,6 @@ enum {
     E_Keytab,
     E_LoginURL,
     E_ReturnURL,
-    E_SecureCookie,
     E_ServiceTokenCache,
     E_StripURL,
     E_SubjectAuthType,
@@ -162,8 +157,6 @@ typedef struct {
     int strip_url;
     int strip_url_ex; 
     int subject_auth_type_ex;
-    int secure_cookie;
-    int secure_cookie_ex;
     int token_max_ttl; 
     int token_max_ttl_ex;
 } MWA_SCONF;

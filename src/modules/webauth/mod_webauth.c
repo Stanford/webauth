@@ -45,6 +45,12 @@
 WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
 
+static int
+is_https(request_rec *r)
+{
+    const char *scheme = ap_run_http_method(r);
+    return (scheme != NULL) && strcmp(scheme, "https") == 0;
+}
 
 /*
  * remove a string from the end of another string
@@ -146,7 +152,6 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf = (MWA_SCONF*)apr_pcalloc(p, sizeof(MWA_SCONF));
 
     /* init defaults */
-    sconf->secure_cookie = DF_SecureCookie;
     sconf->token_max_ttl = DF_TokenMaxTTL;
     sconf->subject_auth_type = DF_SubjectAuthType;
     sconf->strip_url = DF_StripURL;
@@ -178,12 +183,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf = (MWA_SCONF*) apr_pcalloc(p, sizeof(MWA_SCONF));
     bconf = (MWA_SCONF*) basev;
     oconf = (MWA_SCONF*) overv;
-
-    /* secure_cookie is 1 by default, so we need to check if
-       it was explicitly set in the override */
-    
-    conf->secure_cookie = oconf->secure_cookie_ex ?
-        oconf->secure_cookie : bconf->secure_cookie;
 
     conf->token_max_ttl = oconf->token_max_ttl_ex ?
         oconf->token_max_ttl : bconf->token_max_ttl;
@@ -328,7 +327,7 @@ check_cookie(MWA_REQ_CTXT *rc)
                                     "%s=; path=/; expires=%s;%s",
                                     AT_COOKIE_NAME,
                                     "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    rc->sconf->secure_cookie ? "secure" : "");
+                                    is_https(rc->r) ? "secure" : "");
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: nuking cookie(%s): (%s)\n", 
                      AT_COOKIE_NAME, cookie);
@@ -478,7 +477,7 @@ make_app_token(char *subject, time_t expiration_time, MWA_REQ_CTXT *rc)
                           "%s=%s; path=/;%s",
                           AT_COOKIE_NAME,
                           btoken,
-                          rc->sconf->secure_cookie ? "secure" : "");
+                          is_https(rc->r) ? "secure" : "");
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: make_app_token setting cookie(%s): (%s)\n", 
                  AT_COOKIE_NAME, cookie);
@@ -1147,10 +1146,6 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
     
     switch (e) {
         /* server configs */
-        case E_SecureCookie:
-            sconf->secure_cookie = flag;
-            sconf->secure_cookie_ex = 1;
-            break;
         case E_Debug:
             sconf->debug = flag;
             sconf->debug_ex = 1;
@@ -1206,7 +1201,6 @@ static const command_rec cmds[] = {
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SFLAG(CD_SecureCookie, E_SecureCookie, CM_SecureCookie),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     /* directory */
     DSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
