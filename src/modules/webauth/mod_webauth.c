@@ -665,7 +665,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(login_canceled_url);
     MERGE_PTR(failure_url);
     MERGE_PTR(var_prefix);
-
+#ifndef NO_STANFORD_SUPPORT
+    MERGE_PTR(su_authgroups);
+#endif
     if (bconf->creds == NULL) {
         conf->creds = oconf->creds;
     } else if (oconf->creds == NULL) {
@@ -2105,6 +2107,16 @@ check_user_id_hook(request_rec *r)
         r->no_cache = rc.dconf->dont_cache;
 
 #ifndef NO_STANFORD_SUPPORT
+
+    if (rc.dconf->su_authgroups != NULL) {
+        /* always deny access in this case */
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+                     "mod_webauth: denying access due to use of unsupported "
+                     "StanfordAuthGroups directive: %s", 
+                     rc.dconf->su_authgroups);
+        return HTTP_UNAUTHORIZED;
+    }
+
     if (strcmp(at, "StanfordAuth") == 0) {
         mwa_setenv(&rc, "SU_AUTH_USER", rc.at.subject);
         if (rc.at.creation_time) {
@@ -2414,6 +2426,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case SE_ReturnURL:
             dconf->return_url = apr_pstrdup(cmd->pool, arg);
             break;
+        case SE_Groups:
+            dconf->su_authgroups = apr_pstrdup(cmd->pool, arg);
+            break;
 #endif
         default:
             error_str = 
@@ -2616,6 +2631,7 @@ static const command_rec cmds[] = {
 
 #ifndef NO_STANFORD_SUPPORT
     DSTR(SCD_ConfirmMsg, SE_ConfirmMsg, SCM_ConfirmMsg),
+    DSTR(SCD_Groups, SE_Groups, SCM_Groups),
     DFLAG(SCD_DoConfirm, SE_DoConfirm, SCM_DoConfirm),
     DSTR(SCD_Life, SE_Life, SCM_Life),
     DSTR(SCD_ReturnURL, SE_ReturnURL, SCM_ReturnURL),

@@ -166,7 +166,8 @@
 #define SCD_ForceReload "StanfordAuthForceReload"
 #define SCM_ForceReload "maps to WebAuthExtraRedirect"
 
-/* StanfordAuthGroups to be handled by mod_webauthldap */
+#define SCD_Groups "StanfordAuthGroups"
+#define SCM_Groups "unsupported WebAuth 2.5 option"
 
 #define SCD_Life "StanfordAuthLife"
 #define SCM_Life "maps to WebAuthAppTokenLifetime and enables WebAuthForceLogin"
@@ -258,6 +259,7 @@ enum {
     SE_ForceReload,
     SE_Life,
     SE_ReturnURL,
+    SE_Groups,
 #endif
 };
 
@@ -333,6 +335,9 @@ typedef struct {
     apr_array_header_t *creds; /* array of MWA_WACRED's */
     int dont_cache;
     int dont_cache_ex;
+#ifndef NO_STANFORD_SUPPORT
+    char *su_authgroups;
+#endif
 } MWA_DCONF;
 
 /* a cred, used to keep track of WebAuthCred directives. */
