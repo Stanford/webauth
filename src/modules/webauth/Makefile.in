@@ -19,7 +19,7 @@ SOURCES		= mod_webauth.c util.c webkdc.c
 
 all: mod_webauth.o
 
-mod_webauth.o: $(SOURCES)
+mod_webauth.o: $(SOURCES) mod_webauth.h
 	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
 install:

@@ -19,7 +19,7 @@ SOURCES		= mod_webkdc.c util.c acl.c
 
 all: mod_webkdc.o
 
-mod_webkdc.o: $(SOURCES)
+mod_webkdc.o: $(SOURCES) mod_webkdc.h
 	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
 install:
