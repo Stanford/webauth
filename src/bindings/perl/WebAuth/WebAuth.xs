@@ -76,24 +76,23 @@ CODE:
 OUTPUT:
     RETVAL
 
-int
-webauth_base64_decoded_length(input,...)
-    SV * input
-PROTOTYPE: $;$
-CODE:
+void
+webauth_base64_decoded_length(input)
+SV * input
+PROTOTYPE: $
+PPCODE:
 {
-    STRLEN n_input;
     int len, s;
+
+    STRLEN n_input;
     unsigned char *p_input;
     p_input = SvPV(input, n_input);
     s = webauth_base64_decoded_length(p_input, n_input, &len);
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
-    RETVAL = len;
+
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(sv_2mortal(newSViv(len)));
 }
-OUTPUT:
-    RETVAL
 
 void
 webauth_base64_encode(input)
@@ -117,33 +116,32 @@ CODE:
 }
 
 void
-webauth_base64_decode(input, ...)
+webauth_base64_decode(input)
 SV * input
-PROTOTYPE: $;$
-CODE:
+PROTOTYPE: $
+PPCODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
     unsigned char *p_input;
+    SV *output;
 
     p_input = SvPV(input, n_input);
     s = webauth_base64_decoded_length(p_input, n_input, &out_max);
     if (s == WA_ERR_NONE) {
-            ST(0) = sv_2mortal(NEWSV(0, out_max));
+            output = sv_2mortal(NEWSV(0, out_max));
             s = webauth_base64_decode(p_input, n_input, 
-                                      SvPVX(ST(0)), &out_len, out_max);
-    }
-
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
-
-    if (s < 0) {
-        ST(0) = &PL_sv_undef;
+                                      SvPVX(output), &out_len, out_max);
+            if (s == WA_ERR_NONE) {
+                SvCUR_set(output, out_len);
+                SvPOK_only(output);
+            }
     } else {
-        SvCUR_set(ST(0), out_len);
-        SvPOK_only(ST(0));
+        output = &PL_sv_undef;
     }
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 int
@@ -157,22 +155,18 @@ CODE:
 OUTPUT:
     RETVAL
 
-int
-webauth_hex_decoded_length(length,...)
+void
+webauth_hex_decoded_length(length)
     int length
-PROTOTYPE: $;$
-CODE:
+PROTOTYPE: $
+PPCODE:
 {
     int len, s;
     s = webauth_hex_decoded_length(length, &len);
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
-    RETVAL = len;
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(sv_2mortal(newSViv(len)));
 }
-OUTPUT:
-    RETVAL
-
 
 void
 webauth_hex_encode(input)
@@ -195,33 +189,32 @@ CODE:
 }
 
 void
-webauth_hex_decode(input, ...)
+webauth_hex_decode(input)
 SV * input
-PROTOTYPE: $;$
-CODE:
+PROTOTYPE: $
+PPCODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
     unsigned char *p_input;
+    SV *output;
 
     p_input = SvPV(input, n_input);
     s = webauth_hex_decoded_length(n_input, &out_max);
     if (s == WA_ERR_NONE) {
-            ST(0) = sv_2mortal(NEWSV(0, out_max));
+            output = sv_2mortal(NEWSV(0, out_max));
             s = webauth_hex_decode(p_input, n_input,
-                                   SvPVX(ST(0)), &out_len, out_max);
-    }
-
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
-
-    if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
+                                   SvPVX(output), &out_len, out_max);
+            if (s == WA_ERR_NONE) {
+                SvCUR_set(output, out_len);
+                SvPOK_only(output);
+            }
     } else {
-        SvCUR_set(ST(0), out_len);
-        SvPOK_only(ST(0));
+        output = &PL_sv_undef;
     }
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 void
@@ -264,7 +257,7 @@ void
 webauth_attrs_encode(attrs)
 SV *attrs
 PROTOTYPE: $
-CODE:
+PPCODE:
 {
     HV *h;
     SV *sv_val;
@@ -273,6 +266,7 @@ CODE:
     I32 klen;
     STRLEN vlen;
     WEBAUTH_ATTR_LIST *list;
+    SV *output;
 
     if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
         croak("attrs must be reference to a hash");
@@ -294,22 +288,26 @@ CODE:
 
     out_max = webauth_attrs_encoded_length(list);
 
-    ST(0) = sv_2mortal(NEWSV(0, out_max));
-    s = webauth_attrs_encode(list, SvPVX(ST(0)), &out_len, out_max);
+    output = sv_2mortal(NEWSV(0, out_max));
+    s = webauth_attrs_encode(list, SvPVX(output), &out_len, out_max);
     webauth_attr_list_free(list);
     if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
+        output = &PL_sv_undef;
     } else {
-        SvCUR_set(ST(0), out_len);
-        SvPOK_only(ST(0));
+        SvCUR_set(output, out_len);
+        SvPOK_only(output);
     }
+
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 void
-webauth_attrs_decode(buffer,...)
+webauth_attrs_decode(buffer)
 SV *buffer
-PROTOTYPE: $;$
-CODE:
+PROTOTYPE: $
+PPCODE:
 {
     STRLEN n_input;
     unsigned char *p_input;
@@ -317,14 +315,11 @@ CODE:
     int i, s;
     HV *hv;
     SV *copy = sv_2mortal(newSVsv(buffer));
+    SV *output;
 
     p_input = SvPV(copy, n_input);
 
     s = webauth_attrs_decode(p_input, n_input, &list);
-
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
 
     if (s == WA_ERR_NONE) {
         hv = newHV();
@@ -333,10 +328,13 @@ CODE:
                      newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
         }
         webauth_attr_list_free(list);
-       ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
+       output = sv_2mortal(newRV_noinc((SV*)hv));
     } else {
-       ST(0) =  &PL_sv_undef;
+       output =  &PL_sv_undef;
     }
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 void
@@ -389,23 +387,23 @@ OUTPUT:
     RETVAL
 
 
-WEBAUTH_KEYRING *
-webauth_keyring_read_file(path,...)
+void
+webauth_keyring_read_file(path)
 char *path
-PROTOTYPE: $;$
-CODE:
+PROTOTYPE: $
+PPCODE:
 {
     WEBAUTH_KEYRING *ring;
+    SV *output;
     int s;
    
     s = webauth_keyring_read_file(path, &ring);
-    if (items > 1) {
-       sv_setiv(ST(1), s);
-    }
-    RETVAL = ring;
+    output = sv_newmortal();
+    sv_setref_pv(output, "WEBAUTH_KEYRINGPtr", (void*)ring);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
-OUTPUT:
-    RETVAL
 
 int
 webauth_keyring_write_file(ring,path)
@@ -459,17 +457,72 @@ OUTPUT:
     RETVAL
 
 void
-webauth_token_create(attrs,hint,ring,...)
+webauth_token_create(attrs,hint,ring)
 SV *attrs
 time_t hint
 WEBAUTH_KEYRING *ring
-PROTOTYPE: $$$;$
-CODE:
+PROTOTYPE: $$$
+PPCODE:
 {
     HV *h;
     SV *sv_val;
     int num_attrs, s, out_len, out_max;
-    char *akey, *val;
+    char *akey, *val, *buff;
+    I32 klen;
+    STRLEN vlen;
+    WEBAUTH_ATTR_LIST *list;
+    SV *output;
+
+    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
+        croak("attrs must be reference to a hash");
+    }
+
+    h = (HV*)SvRV(attrs);
+
+    num_attrs = hv_iterinit(h);
+
+    list = webauth_attr_list_new(num_attrs);
+    if (list == NULL) {
+        croak("can't malloc attrs");
+    }
+
+    while((sv_val = hv_iternextsv(h, &akey, &klen))) {
+        val = SvPV(sv_val, vlen);
+        webauth_attr_list_add(list, akey, val, vlen);
+    }
+
+    out_max = webauth_token_encoded_length(list);
+    buff = malloc(out_max);
+    if (buff == NULL) {
+        croak("can't malloc token buffer");
+    }
+    s = webauth_token_create(list, hint, buff, &out_len, out_max, ring);
+    webauth_attr_list_free(list);
+
+    if (s != WA_ERR_NONE) {
+        output = &PL_sv_undef;
+    } else {
+        output = sv_newmortal();
+        sv_setpvn(output, buff, out_len);
+    }
+    free(buff);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
+}
+
+void
+webauth_token_create_with_key(attrs,hint,key)
+SV *attrs
+time_t hint
+WEBAUTH_KEY *key
+PROTOTYPE: $$$
+PPCODE:
+{
+    HV *h;
+    SV *sv_val, *output;
+    int num_attrs, s, out_len, out_max;
+    char *akey, *val, *buff;
     I32 klen;
     STRLEN vlen;
     WEBAUTH_ATTR_LIST *list;
@@ -493,142 +546,91 @@ CODE:
     }
 
     out_max = webauth_token_encoded_length(list);
-    ST(0) = sv_2mortal(NEWSV(0, out_max));
-    s = webauth_token_create(list, hint, SvPVX(ST(0)), &out_len, out_max, ring);
+    buff = malloc(out_max);
+    if (buff == NULL) {
+        croak("can't malloc token buffer");
+    }
+    s = webauth_token_create_with_key(list, hint,buff, &out_len, out_max, key);
     webauth_attr_list_free(list);
 
-    if (items > 3) {
-       sv_setiv(ST(3), s);
-    }
-
     if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
+        output = &PL_sv_undef;
     } else {
-        SvCUR_set(ST(0), out_len);
-        SvPOK_only(ST(0));
+        output = sv_newmortal();
+        sv_setpvn(output, buff, out_len);
     }
+    free(buff);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 void
-webauth_token_create_with_key(attrs,hint,key,...)
-SV *attrs
-time_t hint
-WEBAUTH_KEY *key
-PROTOTYPE: $$$;$
-CODE:
-{
-    HV *h;
-    SV *sv_val;
-    int num_attrs, s, out_len, out_max;
-    char *akey, *val;
-    I32 klen;
-    STRLEN vlen;
-    WEBAUTH_ATTR_LIST *list;
-
-    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
-        croak("attrs must be reference to a hash");
-    }
-
-    h = (HV*)SvRV(attrs);
-
-    num_attrs = hv_iterinit(h);
-
-    list = webauth_attr_list_new(num_attrs);
-    if (list == NULL) {
-        croak("can't malloc attrs");
-    }
-
-    while((sv_val = hv_iternextsv(h, &akey, &klen))) {
-        val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, akey, val, vlen);
-    }
-
-    out_max = webauth_token_encoded_length(list);
-    ST(0) = sv_2mortal(NEWSV(0, out_max));
-    s = webauth_token_create_with_key(list, hint, 
-                                      SvPVX(ST(0)), &out_len, out_max, key);
-    webauth_attr_list_free(list);
-
-    if (items > 3) {
-       sv_setiv(ST(3), s);
-    }
-
-    if (s != WA_ERR_NONE) {
-        ST(0) = &PL_sv_undef;
-    } else {
-        SvCUR_set(ST(0), out_len);
-        SvPOK_only(ST(0));
-    }
-}
-
-void
-webauth_token_parse(buffer,ring,...)
+webauth_token_parse(buffer,ring)
 SV *buffer
 WEBAUTH_KEYRING *ring
-PROTOTYPE: $$;$
-CODE:
+PROTOTYPE: $$
+PPCODE:
 {
     STRLEN n_input;
     unsigned char *p_input;
     WEBAUTH_ATTR_LIST *list;
-    int i, num_attrs;
+    int i, s;
     HV *hv;
-    SV *copy = sv_2mortal(newSVsv(buffer));
+    SV *output, *copy = sv_2mortal(newSVsv(buffer));
 
     p_input = SvPV(copy, n_input);
 
-    num_attrs = webauth_token_parse(p_input, n_input, &list, ring);
-
-    if (items > 2) {
-       sv_setiv(ST(2), num_attrs);
-    }
-
-    if (num_attrs > 0) {
+    s = webauth_token_parse(p_input, n_input, &list, ring);
+    
+    if (s == WA_ERR_NONE) {
         hv = newHV();
-        for (i=0; i < num_attrs; i++) {
+        for (i=0; i < list->num_attrs; i++) {
             hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
                      newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
         }
-        ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
+        output = sv_2mortal(newRV_noinc((SV*)hv));
         webauth_attr_list_free(list);
     } else {
-        ST(0) =  &PL_sv_undef;
+        output =  &PL_sv_undef;
     }
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 void
-webauth_token_parse_with_key(buffer,key,...)
+webauth_token_parse_with_key(buffer,key)
 SV *buffer
 WEBAUTH_KEY *key
-PROTOTYPE: $$;$
-CODE:
+PROTOTYPE: $$
+PPCODE:
 {
     STRLEN n_input;
     unsigned char *p_input;
     WEBAUTH_ATTR_LIST *list;
-    int i, num_attrs;
+    int i, s;
     HV *hv;
-    SV *copy = sv_2mortal(newSVsv(buffer));
+    SV *output, *copy = sv_2mortal(newSVsv(buffer));
 
     p_input = SvPV(copy, n_input);
 
-    num_attrs = webauth_token_parse_with_key(p_input, n_input, &list, key);
+    s = webauth_token_parse_with_key(p_input, n_input, &list, key);
 
-    if (items > 2) {
-       sv_setiv(ST(2), num_attrs);
-    }
-
-    if (num_attrs > 0) {
+    if (s == WA_ERR_NONE) {
         hv = newHV();
-        for (i=0; i < num_attrs; i++) {
+        for (i=0; i < list->num_attrs; i++) {
             hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
                      newSVpvn(list->attrs[i].value, list->attrs[i].length), 0);
         }
-        ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
+        output = sv_2mortal(newRV_noinc((SV*)hv));
         webauth_attr_list_free(list);
     } else {
-        ST(0) =  &PL_sv_undef;
+        output =  &PL_sv_undef;
     }
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
 
 int
@@ -742,120 +744,152 @@ CODE:
 OUTPUT:
     RETVAL
 
-int
-webauth_krb5_export_tgt(c,tgt,expiration)
+void
+webauth_krb5_export_tgt(c)
 WEBAUTH_KRB5_CTXT *c
-time_t expiration
-PROTOTYPE: $$$
-CODE:
-{       
+PROTOTYPE: $
+PPCODE:
+{ 
+    int s;      
     unsigned char *tgt;
     int tgt_len;
-    RETVAL = webauth_krb5_export_tgt(c, &tgt, &tgt_len, &expiration);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpvn(ST(1), tgt, tgt_len);
+    time_t expiration;
+
+    s = webauth_krb5_export_tgt(c, &tgt, &tgt_len, &expiration);
+    EXTEND(SP,3);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpvn(out, tgt, tgt_len);
         free(tgt);
-        sv_setiv(ST(2), (IV)expiration);
+        PUSHs(out);
+        PUSHs(sv_2mortal(newSViv(expiration)));
+    } else {
+        PUSHs(&PL_sv_undef);
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
-int
-webauth_krb5_service_principal(c,service,hostname,server_princ)
+void
+webauth_krb5_service_principal(c,service,hostname)
 WEBAUTH_KRB5_CTXT *c
 char *service
 char *hostname
-PROTOTYPE: $$$$
-CODE:
-{       
+PROTOTYPE: $$$
+PPCODE:
+{
+    int s;
     char *server_princ;
-    RETVAL = webauth_krb5_service_principal(c, service, 
-                                            hostname, &server_princ);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpv(ST(3), server_princ);
+    s = webauth_krb5_service_principal(c, service, 
+                                       hostname, &server_princ);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpv(out, server_princ);
+        PUSHs(out);
         free(server_princ);
+    } else {
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
-
-int
-webauth_krb5_get_principal(c,principal)
+void
+webauth_krb5_get_principal(c)
 WEBAUTH_KRB5_CTXT *c
-PROTOTYPE: $$
-CODE:
-{       
+PROTOTYPE: $
+PPCODE:
+{
+    int s;
     char *princ;
-    RETVAL = webauth_krb5_get_principal(c, &princ);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpv(ST(1), princ);
+    s = webauth_krb5_get_principal(c, &princ);
+
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpv(out, princ);
+        PUSHs(out);
         free(princ);
+    } else {
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
-int
-webauth_krb5_export_ticket(c,princ,ticket,expiration)
+void
+webauth_krb5_export_ticket(c,princ)
 WEBAUTH_KRB5_CTXT *c
 char *princ
-time_t expiration
-PROTOTYPE: $$$$
-CODE:
+PROTOTYPE: $$
+PPCODE:
 {       
     unsigned char *ticket;
-    int ticket_len;
-    RETVAL = webauth_krb5_export_ticket(c, princ, &ticket,
+    int ticket_len, s;
+    time_t expiration;
+
+    s = webauth_krb5_export_ticket(c, princ, &ticket,
                                         &ticket_len, &expiration);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpvn(ST(2), ticket, ticket_len);
+    EXTEND(SP,3);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpvn(out, ticket, ticket_len);
         free(ticket);
-        sv_setiv(ST(3), (IV)expiration);
+        PUSHs(out);
+        PUSHs(sv_2mortal(newSViv(expiration)));
+    } else {
+        PUSHs(&PL_sv_undef);
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
-int
-webauth_krb5_mk_req(c,princ,req)
+void
+webauth_krb5_mk_req(c,princ)
 WEBAUTH_KRB5_CTXT *c
 char *princ
-PROTOTYPE: $$$
-CODE:
+PROTOTYPE: $$
+PPCODE:
 {       
     unsigned char *req;
-    int req_len;
-    RETVAL = webauth_krb5_mk_req(c, princ, &req, &req_len);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpvn(ST(2), req, req_len);
+    int req_len, s;
+    s = webauth_krb5_mk_req(c, princ, &req, &req_len);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpvn(out, req, req_len);
         free(req);
+        PUSHs(out);
+    } else {
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
-int
-webauth_krb5_rd_req(c,request,keytab,cprinc)
+void
+webauth_krb5_rd_req(c,request,keytab)
 WEBAUTH_KRB5_CTXT *c
 SV *request
 char *keytab
-PROTOTYPE: $$$$
-CODE:
+PROTOTYPE: $$$
+PPCODE:
 {       
     unsigned char *req;
     char *client_princ;
-    int req_len;
+    int req_len, s;
     req = SvPV(request, req_len);
-    RETVAL = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ);
-    if (RETVAL == WA_ERR_NONE){
-        sv_setpv(ST(3), client_princ);
+    s = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ);
+
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    if (s == WA_ERR_NONE){
+        SV *out = sv_newmortal();
+        sv_setpv(out, client_princ);
         free(client_princ);
+        PUSHs(out);
+    } else {
+        PUSHs(&PL_sv_undef);
     }
 }
-OUTPUT:
-    RETVAL
 
 int
 webauth_krb5_keep_cred_cache(c)

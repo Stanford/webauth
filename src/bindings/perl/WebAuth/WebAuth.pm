@@ -64,13 +64,12 @@ $base64_len = base64_encoded_length($length)
 Given data of the specified length, returns how long the resulting
 base64-encoded data would be.
 
-=item base64_decoded_length(input[, status])
+=item base64_decoded_length(input)
 
-$len = base64_decoded_length($input[, $status])
+($status,$length) = base64_decoded_length($input);
 
-Given the string $input, returns how long the resulting
-base64-encoded data would be, or 0 in case of an error.
-If $status is specified, then it is set to WA_ERR_NONE or 
+Given the string $input, returns how long  the resulting
+base64-encoded data would be in $length. $status will be set to WA_ERR_NONE or 
 WA_ERR_CORRUPT.
 Note that this function doesn't actually attempt to ensure 
 that $input contains a valid base64-encoded string, though 
@@ -84,13 +83,11 @@ $output = base64_encode($input);
 
 base64 encodes the $input string and returns the result.
 
-=item base64_decode(input[, status);
+=item base64_decode(input)
 
- $output = base64_decode($input[, $status] );
+ ($status,$output) = base64_decode($input);
 
-base64 decodes the $input string and returns the result, or undef
-in the case of an error. $status is optional, and if present will get
-set to the result of the webauth_base64_decode C function. 
+base64 decodes the $input string and returns the result in $output.
 
 =item hex_encoded_length(length)
 
@@ -99,13 +96,13 @@ $hex_len = hex_encoded_length($length)
 Given data of the specified length, returns how long the resulting
 hex-encoded data would be.
 
-=item hex_decoded_length(input[, status])
+=item hex_decoded_length(input)
 
-$len = hex_decoded_length($input[, $status])
+($sttus, $len) = hex_decoded_length($input);
 
 Given the string $input, returns how long the resulting
-hex-encoded data would be, or 0 in case of an error.
-If $status is specified, it is set to WA_ERR_NONE or A_ERR_CORRUPT on error. 
+hex-encoded data would be in $len. $status is set to WA_ERR_NONE or 
+A_ERR_CORRUPT on error. 
 Note that this function doesn't actually attempt to ensure 
 that $input contains a valid hex-encoded string, though 
 it does a sanity check to make sure the length is greater
@@ -118,13 +115,12 @@ $output = hex_encode($input);
 
 hex encodes the $input string and returns the result.
 
-=item hex_decode(input[, status);
+=item hex_decode(input)
 
- $output = hex_decode($input[, $status] );
+ ($status, $output) = hex_decode($input);
 
-hex decodes the $input string and returns the result, or undef in the
-case of an error. $status is optional, and if present will get set to
-the result of the webauth_hex_decode C function.
+hex decodes the $input string and returns the result in $output.
+$status will be set to the result of the webauth_hex_decode C function.
 
 =item attrs_encoded_length(attrs)
 
@@ -135,21 +131,18 @@ the resulting length of encoding the attributes into a string.
 
 =item attrs_encode(attrs);
 
-$output = attrs_encode($attrs);
+($status, $output) = attrs_encode($attrs);
 
 Takes as input $attrs (which must be a reference to a hash) and returns
-a string of the encoded attributes.  The values in the $attrs
+a string of the encoded attributes in $output.  The values in the $attrs
 hash table get converted to strings if they aren't already.
 
-=item attrs_decode(input[, status);
+=item attrs_decode(input);
 
- $attrs = attrs_decode($input[, $status] );
+ ($status, $attrs) = attrs_decode($input);
 
-attr decodes the $input string and returns the result as reference to a
-hash, or undef in the case of an error. $status is optional, and if 
-present will get set to the result of the webauth_attrs_decode C function.
-
-Note: $input will be modified. Pass in a copy if this in undesirable.
+attr decodes the $input string and returns the result in $attrs as 
+a reference to a hash, or undef in the case of an error. 
 
 =item random_bytes(length)
 
@@ -200,57 +193,48 @@ can be undef'd after calling this function.
 
 Writes a key ring to a file. Returns WA_ERR_NONE on success.
 
-=item keyring_read_file(path[, status])
+=item keyring_read_file(path)
 
- $ring = keyring_read_file($path[, $status]);
+ ($status, $ring) = keyring_read_file($path);
 
-Reads a key ring from a file. Returns undef on error. $status is optional, 
-and if  present will get set to the result of the webauth_keyring_read_file C 
-function.
+Reads a key ring from a file and returns it in $ring on success.
 
-=item token_create(attrs, hint, ring[, status])
+=item token_create(attrs, hint, ring)
 
-  $token = token_create($attrs, $hint, $ring[, $status])
+  ($status, $token) = token_create($attrs, $hint, $ring);
 
 Takes as input $attrs (which must be a reference to a hash) and a $ring
-(created with keyring_new) and returns the basse64 encrypted token\,
-or undef in the case of an error. If hint is 0, the current time will
-be used.
+(created with keyring_new) and returns the basse64 encrypted token.
+If hint is 0, the current time will be used.
 
 The values in the $attrs hash table get converted to strings if they 
-aren't already. $status is optional, and if present will get set to the
-result of the webauth_token_create C function.
+aren't already.
 
-=item token_parse(token, ring[, status])
+=item token_parse(token, ring)
 
-  $attrs = token_parse($token, $ring[, $status])
+  ($status, $attrs) = token_parse($token, $ring);
 
 Takes as input a base64 encrypted token and a ring (created with 
-keyring_new) and returns the attributes, or undef in the case of an error.
-$status is optional, and if present will get set to the
-result of the webauth_token_parse C function.
+keyring_new) and returns the attributes.
 
-=item token_create_with_key(attrs, hint, key[, status])
+=item token_create_with_key(attrs, hint, key)
 
-  $token = token_create_with_key($attrs, $hint, $key[, $status])
+  ($status, $token) = token_create_with_key($attrs, $hint, $key);
 
 Takes as input $attrs (which must be a reference to a hash) and a $key
-(created with key_new) and returns the basse64 encrypted token\,
-or undef in the case of an error. If hint is 0, the current time will
-be used.
+(created with key_new) and returns the basse64 encrypted token.
+If hint is 0, the current time will be used.
 
 The values in the $attrs hash table get converted to strings if they 
 aren't already. $status is optional, and if present will get set to the
 result of the webauth_token_create C function.
 
-=item token_parse_with_key(token, key[, status])
+=item token_parse_with_key(token, key)
 
-  $attrs = token_parse_with_key($token, $key[, $status])
+  ($status, $attrs) = token_parse_with_key($token, $key);
 
 Takes as input a base64 encrypted token and a key (created with 
-key_new) and returns the attributes, or undef in the case of an error.
-$status is optional, and if present will get set to the
-result of the webauth_token_parse C function.
+key_new) and returns the attributes.
 
 =item krb5_new(context)
 
@@ -308,9 +292,9 @@ Initializes a context using a TGT that was previously exported using
 krb5_export_tgt. If $cache is not specified, a memory
 cache will be used and destroyed when the context is destroyed.
 
-=item krb5_export_tgt(context, tgt, expiration)
+=item krb5_export_tgt(context)
 
-  $status = krb5_export_tgt($context, $tgt, $expiration);
+  ($status, $tgt, $expiration) = krb5_export_tgt($context)
 
 Used to "export" a TGT from the specified context, which should have
 been initialized via one of the krb5_init_via_* functions. On
@@ -323,40 +307,40 @@ itself (binary data) and $expiration is the expiration time of the ticket.
 
 Used to "import" a ticket that was created with krb5_export_ticket.
 
-=item krb5_export_ticket(context, principal, ticket, expiration)
+=item krb5_export_ticket(context, principal);
 
-  $status = krb5_export_ticket($context, $principal, $ticket, $expiration);
+  ($status, $ticket, $expiration) = krb5_export_ticket($context, $principal);
 
 Used to "export" a ticket for the requested server principal. On success,
 both $ticket and $expiration will be set. $ticket is the ticket itself
 (binary data) and $expiration is the expiration time of the ticket.
 
-=item krb5_service_principal(context, service, hostname, principal)
+=item krb5_service_principal(context, service, hostname)
 
-    $status = krb5_service_principal($context, $service,
-                                                  $hostname, $principal);
+    ($status, $principal) = krb5_service_principal($context, $service,
+					       $hostname);
 
 Used to construct a server principal for use with other calls such as
 krb5_mk_req and krb5_export_ticket. On success $principal will be set
 to the constructed principal, represented as a string.
 
-=item krb5_get_principal(context, principal)
+=item krb5_get_principal(context)
 
-    $status = krb5_getprincipal($context, $principal);
+    ($status, $principal) = krb5_getprincipal($context);
 
 Used to get the principal associated with the context. Should only be
 called after a successful call to krb5_init_via*.
 
-=item krb5_mk_req(context, principal, request)
+=item krb5_mk_req(context, principal)
 
-  $status = krb5_mk_req($context, $principal, $request)
+    ($status, $request) = krb5_mk_req($context, $principal);
 
 Used to construct a kerberos V5 request for the specified principal. $request
 will be set on success, and will contain the result of the krb5_mk_req call.
 
-=item krb5_rd_req(context, request, keytab, principal);
+=item krb5_rd_req(context, request, keytab)
 
-  $status = krb5_rd_req($context, $request, $keytab, $principal);
+    ($status, $principal) = krb5_rd_req($context, $request, $keytab);
 
 Used to read a request created with krb5_mk_req. On success $principal
 will be set to the client principal in the request.
