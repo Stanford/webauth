@@ -1,0 +1,67 @@
+Type One (authentication cookie):
+
+    Protocol Version            number          2 bytes
+    Local/Remote Flag           boolean         1 byte
+    Authentication Type         number          2 bytes
+    Data Length                 number          2 bytes
+    Data                        data            <specified above>
+
+This allows variable-length authentication data depending on the chosen
+authentication type.  The protocol version would be defined to be 3 to
+start with, but we may increment it independently of the version number of
+the webauth release itself if we need to rev the cookie format.  All
+fields after the data field should be ignored, so we can tack new fields
+onto the end with a higher protocol rev.
+
+Do we want to leave the additional logging data for a future rev of the
+cookie format?  With the above specification and a guarantee that the
+initial fields will be constant for newer protocol revs, we could easily
+add it later.  (On the other hand, that would require decoding additional
+fields at variable offsets found by decoding the data length first, but
+that doesn't seem like a huge problem to me.)
+
+The local/remote flag would just be 0 for local and 1 for remote (the
+weblogin handoff).  This field is supposed to be unnecessary as the domain
+of the cookie conveys the same information, but is just there as a safety
+check and debugging aid.
+
+The authentication type would be a number specifying the type of
+authentication being used.  We can arbitrarily assign 1 to Kerberos v5
+service tickets.
+
+The data for our initial authentication protocol would be a service ticket
+for the web server in question.
+
+Do we need to store either the identity of the user or the identity of the
+server to which they're authenticating outside of the service ticket or
+outside of the data field in general?  I don't *think* we do, but does
+anyone have any other opinions?
+
+Do we need a checksum/signature/etc. in here?  I don't *think* we do, but
+again, please check me on this.
+
+The only difference between the cookie set by weblogin to pass this
+information and the cookie set by the webauth server (if it wishes to
+continue to use webauth to establish user identity rather than setting its
+own session cookie, which is always its option) is the local/remote flag
+setting.
+
+Type Three (preauthentication handoff to weblogin):
+
+    Protocol Version            number          2 bytes
+    Authentication Type         number          2 bytes
+    Identity Length             number          2 bytes
+    Identity Data               data            <specified above>
+
+The authentication type specifies the type of authentication that this
+webauth server wishes to use, using the same numbers as the previous
+cookie format.  The identity data is the identity of the server to obtain
+authentication information for; for a Kerberos authentication type, this
+will be a principal name.  Identity length may be zero if the specified
+authentication type requires no server identity.
+
+Both cookies will be encoded in base64 before passing them to the client.
+The key for the Type One ticket will be webauth-auth.  The key for the
+Type Three ticket will be webauth-request.  The key for the Type Four
+ticket handoff from weblogin to the webauth server will also be
+webauth-auth.
