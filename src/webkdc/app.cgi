@@ -93,8 +93,14 @@ sub handle_response($$$) {
 sub check_for_valid_app_token {
     my $q = shift;
 
-    my $WR = $q->param('WEBAUTHR');
-    my $WS = $q->param('WEBAUTHS');
+#    my $WR = $q->param('WEBAUTHR');
+#    my $WS = $q->param('WEBAUTHS');
+
+    my $URI = $ENV{'REQUEST_URI'};
+    my ($WR) = ($URI =~ /;WEBAUTHR=([^;]+);/);
+    my ($WS) = ($URI =~ /;WEBAUTHS=([^;]*);/);
+
+    print STDERR "WWR($WR) WWS($WS)\n";
 
     if ($WR && $WS) {
 	my ($app_token, $cookie) = handle_response($q, $WR, $WS);
@@ -195,22 +201,30 @@ sub redirect_for_webauth_login {
 }
 
 my $q = new CGI;
+eval {
 
-my ($app_token, $cookie) = check_for_valid_app_token($q);
+    my ($app_token, $cookie) = check_for_valid_app_token($q);
 
-if (!$app_token) {
-    redirect_for_webauth_login($q);
-    exit(1);
-}
+    if (!$app_token) {
+	redirect_for_webauth_login($q);
+	exit(1);
+    }
 
-$ENV{'REMOTE_USER'} = $app_token->subject();
+    $ENV{'REMOTE_USER'} = $app_token->subject();
 
-if ($cookie) {
-    print $q->header(-type => 'text/plain', -cookie => $cookie);
-} else {
+    if ($cookie) {
+	print $q->header(-type => 'text/plain', -cookie => $cookie);
+    } else {
+	print $q->header(-type => 'text/plain');
+    }
+
+};
+
+if ($@) {
+    print "OOPS: $@\n";
     print $q->header(-type => 'text/plain');
-}
 
+}
 
 print "---------------\n";
 dump_stuff;

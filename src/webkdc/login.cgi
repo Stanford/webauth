@@ -238,8 +238,8 @@ print "$@\n";
     print_headers($q, $resp->proxy_cookies);
     print "ok!\n";
     my $return_url = $resp->return_url();
-    $return_url .= "WEBAUTHR=".$resp->response_token();
-    $return_url .= ";WEBAUTHS=".$resp->app_state() unless !$resp->app_state();
+    $return_url .= ";WEBAUTHR=".$resp->response_token().";";
+    $return_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();
     print "click <a href=\"$return_url\">here</a> to return!\n";
 }
 
