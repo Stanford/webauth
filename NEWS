@@ -2,6 +2,9 @@
 
 WebAuth 3.2.1 (in progress)
 
+ *) When AuthType is StanfordAuth, don't default to WebAuthDontCache. This
+    appears to break IE 6.0 downloads . 
+
  *) Add WebAuthPostReturnURL directive to allow an app to deal with 
     handling a POST that didn't have authentication.
 

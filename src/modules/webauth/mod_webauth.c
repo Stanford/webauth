@@ -2444,11 +2444,6 @@ check_user_id_hook(request_rec *r)
             mwa_setenv(&rc, "SU_AUTH_AGE", 
                        apr_psprintf(rc.r->pool, "%d", (int) age));
         }
-        /* if no_cache isn't already set, and it wasn't explicitly
-           turned off, it should default to on */
-        if (!r->no_cache && !rc.dconf->dont_cache_ex) {
-            dont_cache(&rc);
-        }
     }
 #endif 
 
