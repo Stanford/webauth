@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.41, Modified 10/28/02</b></H4>
+<H4><b>DRAFT Version  0.5, Modified 10/30/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -921,7 +921,6 @@ seconds since 00:00:00 UTC, January 1, 1970.
 <pre>
 name     description
 ----     -----------
-an       application name (if token is tied to a particular app)
 crd      credential data (i.e., a krb5 ticket)
 crt      credential type (krb4, krb5)
 ct       creation time
@@ -943,6 +942,7 @@ ru       return URL
 s        subject of authentication
 sa       subject authenticator type (krb5, webkdc)
 sad      subject authenticator data
+se       subject expiration
 t        token type ("service", "id", "app", "proxy", "cred", "req", "resp")
 x-nnn    application-specific attribute
 
@@ -1050,7 +1050,7 @@ are used to express the identity of user.
   # for sa=krb5
   sad={result-of-krb5-mk-req-for-webauth/hostname}
   ct={creation-time}
-  et={expiration-time}
+  se={expiration-time}
 </code></pre>
 
 <p>notes:
@@ -1067,6 +1067,11 @@ are used to express the identity of user.
   a certain time (probably 5 minutes by default) should be rejected as
   a replay, as id-tokens are only used once and re-written into an app-token.
 
+<p>The value of "se" is used to let the application know how long the
+   subject of the id-token should be considered valid for. The
+   value for "se" is the expiration time of the proxy-token used to create
+   it.
+
 <H4>5.3.5 app-token encoding</H4>
 
 An app-token controlled/maintained by a WAS. The main use of an app-token
@@ -1079,7 +1084,6 @@ is to cache the idenity within an id-token after it has been verified.
   et={expiration-time}
   [it={inactivity-timeout}]
   [lt={last-use-time}]
-  [an={app-name}]
   x-name1=value1  (app-specific-data)
   x-name2=value2  ...
 </code></pre>
@@ -1157,11 +1161,7 @@ a particular "session", as well get timed out.
 
 <p>app-token cookies will have the name:
 
-<pre>  <code>webauth_at[_{app-name}]</code></pre>
-
-Specifying an application name with a cookie is optional. If no application
-name is specified, then the cookie will be used for all requests on a
-given host.
+<pre>  <code>webauth_at</code></pre>
 
 <p>proxy-token cookies will have the name:
 
@@ -1171,7 +1171,7 @@ given host.
 
 <p>cred-tokens will have the name:
 
-<pre>  <code>webauth_ct[_{app-name}]_{cred-type}_{service-name}</code></pre>
+<pre>  <code>webauth_ct_{cred-type}_{service-name}</code></pre>
 
 <p>where cred-type is krb4 or krb5 depending on the type of the cred-token.
 service-name will be the krb4 or krb5 service name, potentially with
@@ -1189,7 +1189,6 @@ WebAuthAuthenticator krb5|webkdc
 WebAuthInactiveExpire {seconds}
 WebAuthHardExpire {seconds}
 WebAuthCauseReAuth on|off
-WebAuthAppName {app-name}
 WebAuthEndSession redirect|clearLogin|on|off
 
 </pre>
@@ -1253,11 +1252,15 @@ WebAuthEndSession redirect|clearLogin|on|off
 </tr>
 
 <tr>
-  <td>10/28/2002</td>
-  <td>0.41</td>
+  <td>10/30/2002</td>
+  <td>0.5</td>
   <td>schemers</td>
    <td><ul>
          <li>use errorResponse message for indicating errors
+         <li>remove app names for now, will re-specify when
+             requirements are more clear
+         <li>change "et" in id-token to "se", to indicate when
+            the subject expires.
        </ul>
    </td>
 </tr>
