@@ -45,6 +45,7 @@ fi
 AC_CONFIG_HEADERS([src/common/include/conf.h])
 
 AC_CONFIG_FILES([Makefile src/Makefile src/libwebauth/Makefile
+                 src/utils/Makefile
                  tests/Makefile tests/libwebauth/Makefile
 ])
 AC_OUTPUT

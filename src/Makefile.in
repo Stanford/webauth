@@ -8,7 +8,7 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = libwebauth
+SUBDIRS = libwebauth utils
 
 all: Makefile
 	@for subdir in $(SUBDIRS); do \
