@@ -8,28 +8,79 @@
 #define NAME_TERM '='
 #define VAL_TERM ';'
 
+WEBAUTH_ATTR_LIST *
+webauth_attr_list_new(int initial_capacity)
+{
+    WEBAUTH_ATTR_LIST *al;
+
+    al = malloc(sizeof(WEBAUTH_ATTR_LIST));
+    if (al!=NULL) {
+        al->num_attrs = 0;
+        al->capacity = initial_capacity;
+        al->attrs = malloc(sizeof(WEBAUTH_ATTR)*initial_capacity);
+        if (al->attrs==NULL) {
+            free(al);
+            return NULL;
+        }
+    }
+    return al;
+}
 
 int
-webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs, 
-                             int num_attrs)
+webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
+                      char *name, void *value, int length)
+{
+    assert(list);
+    assert(list->attrs);
+    if (list->num_attrs == list->capacity) {
+        int new_capacity = list->capacity *2;
+        int new_size = sizeof(WEBAUTH_ATTR) * new_capacity;
+        WEBAUTH_ATTR *new_attrs = 
+            (WEBAUTH_ATTR*) realloc(list->attrs, new_size);
+        if (new_attrs == NULL) {
+            return WA_ERR_NO_MEM;
+        }
+        list->capacity = new_capacity;
+        if (list->attrs != new_attrs) {
+            list->attrs = new_attrs;
+        }
+    }
+    list->attrs[list->num_attrs].name = name;
+    list->attrs[list->num_attrs].value = value;
+    list->attrs[list->num_attrs].length = 
+        length ? length : strlen((char*)value);
+    list->num_attrs++;
+    return WA_ERR_NONE;
+}
+
+void
+webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
+{
+    assert(list);
+    assert(list->attrs);
+    free(list->attrs);
+    free(list);
+}
+
+int
+webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
     int space, i, len;
     unsigned char *p, *v;
-
-    assert(attrs != NULL);
-    assert(num_attrs > 0);
+    
+    assert(list);
 
     space = 0;
-    for (i=0; i < num_attrs; i++) {
-        space += strlen(attrs[i].name) + 1;  /* +1 for NAME_TERM */
-        v = attrs[i].value;
-        len = attrs[i].length;
+    for (i=0; i < list->num_attrs; i++) {
+        space += strlen(list->attrs[i].name) + 1;  /* +1 for NAME_TERM */
+        v = list->attrs[i].value;
+        len = list->attrs[i].length;
         while (len && (p = memchr(v, VAL_TERM, len))) {
             space++; /* add one for each VAL_TERM; we find */
             len -= p+1-v;
             v = p+1;
         } 
-        space += attrs[i].length + 1; /* +1 for VAL_TERM */
+        space += list->attrs[i].length + 1; /* +1 for VAL_TERM */
     }
     return space;
 }
@@ -39,19 +90,19 @@ webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs,
  */
 
 int
-webauth_attrs_encode(const WEBAUTH_ATTR *attrs, 
-                     int num_attrs,
+webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
                      unsigned char *output,
                      int max_output_len)
 {
    int i, len, slen, rlen;
    unsigned char *p, *v, *d;
 
-    assert(attrs != NULL);
-    assert(num_attrs > 0);
+    assert(list != NULL);
+    assert(list->attrs);
+    assert(list->num_attrs > 0);
     assert(output != NULL);
  
-   rlen = webauth_attrs_encoded_length(attrs, num_attrs);
+    rlen = webauth_attrs_encoded_length(list);
 
    if (rlen > max_output_len) {
        return WA_ERR_NO_ROOM;
@@ -59,13 +110,13 @@ webauth_attrs_encode(const WEBAUTH_ATTR *attrs,
 
     d = output;
 
-    for (i=0; i < num_attrs; i++) {
-        len = strlen(attrs[i].name);
-        memcpy(d, attrs[i].name, len);
+    for (i=0; i < list->num_attrs; i++) {
+        len = strlen(list->attrs[i].name);
+        memcpy(d, list->attrs[i].name, len);
         d += len;
         *d++ = NAME_TERM;
-        v = attrs[i].value;
-        len = attrs[i].length;
+        v = list->attrs[i].value;
+        len = list->attrs[i].length;
         while (len && (p = memchr(v, VAL_TERM, len))) {
             slen = p-v+1;
             memcpy(d, v, slen);
@@ -96,29 +147,27 @@ webauth_attrs_encode(const WEBAUTH_ATTR *attrs,
 int
 webauth_attrs_decode(unsigned char *buffer, 
                      int input_len,
-                     WEBAUTH_ATTR *attrs,
-                     int max_num_attrs)
+                     WEBAUTH_ATTR_LIST **list)
 {
-    int n, i;
-    int in_val;
-    unsigned char *p, *d;
+    int i, in_val, length, s;
+    unsigned char *p, *d, *name;
+    void *value;
 
     assert(buffer != NULL);
     assert(input_len > 0);
+    assert(list);
 
-    n = 0;
+    *list = webauth_attr_list_new(64);
+    if (*list == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+
     i = input_len;
     p = buffer;
     in_val = 0;
 
-    if (attrs == NULL) {
-        max_num_attrs = 999999; /* FIXME: use limit from sys header */
-    }
-
-    while (i >0 && n < max_num_attrs) {
-        if (attrs != NULL) {
-            attrs[n].name = p;
-        }
+    while (i >0) {
+        name = p;
         p++; 
         i--;
         while (i && *p != NAME_TERM) {
@@ -126,45 +175,46 @@ webauth_attrs_decode(unsigned char *buffer,
             i--;
         }
         if (i==0 || *p != NAME_TERM) {
+            webauth_attr_list_free(*list);
+            *list = NULL;
             return WA_ERR_CORRUPT; /* no NAME_TERM found */
         }
-        if (attrs != NULL) {
-            *p = '\0'; /* null terminate name */
-        }
+        *p = '\0'; /* null terminate name */
         p++;
         i--;
         if (!i) {
+            webauth_attr_list_free(*list);
+            *list = NULL;
             return WA_ERR_CORRUPT; /* missing val term */
         }
 
-        if (attrs != NULL) {
-            attrs[n].value = p;
-        }
+        value = p;
         d = p;
         in_val = 1;
 
         while(i-- > 0) {
             if (*p != VAL_TERM) {
-                if (d != p && attrs != NULL) {
+                if (d != p) {
                     *d = *p;
                 }
             } else {
                 if (!i || *(p+1) != VAL_TERM) {
                     /* end of value */
                     in_val = 0;
-                    if (attrs != NULL) {
-                        attrs[n].length = d - (unsigned char*)attrs[n].value;
-                        *d = '\0';
+                    length = d - (unsigned char*)value;
+                    *d = '\0';
+                    s = webauth_attr_list_add(*list, name, value, length);
+                    if (!s==WA_ERR_NONE) {
+                        webauth_attr_list_free(*list);
+                        *list = NULL;
+                        return s;
                     }
                     d++;
                     p++;
-                    n++;
                     break; /* look for another value */
                 } else {
                     /* handle escaped VAL_TERM */
-                    if (attrs != NULL) {
-                        *d = *p;
-                    }
+                    *d = *p;
                     /* skip past escaped char */
                     p++;
                     i--;
@@ -176,11 +226,11 @@ webauth_attrs_decode(unsigned char *buffer,
 
     }
     if (in_val) {
+        webauth_attr_list_free(*list);
+        *list = NULL;
         return WA_ERR_CORRUPT;
-    } else if (i && n == max_num_attrs) {
-        return WA_ERR_NO_ROOM;
     } else {
-        return n;
+        return (*list)->num_attrs;
     }
 }
 

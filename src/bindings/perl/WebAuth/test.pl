@@ -29,7 +29,6 @@ ok("an" eq WebAuth::WA_TK_APP_NAME);
 
 ########################################  base64
 
-ok(0);
 ok(4, WebAuth::base64_encoded_length(1));
 ok(4, WebAuth::base64_encoded_length(2));
 ok(4, WebAuth::base64_encoded_length(3));
@@ -99,6 +98,7 @@ ok("x=\000;y=123;", WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"}));
 
 # try and encode, followed by a decode and compare the hashes
 $a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
+
 $ea = "x=1;y=hello;z=goodbye;";
 ok($ea, WebAuth::attrs_encode($a));
 

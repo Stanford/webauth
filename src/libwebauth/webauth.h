@@ -69,13 +69,6 @@ typedef enum {
 #define WA_AES_192 24
 #define WA_AES_256 32
 
-/********************* convenience macros to set attrs **********/
-#define WA_ATTR_STR(a, n, v) \
-  { WEBAUTH_ATTR *t = &a; t->name=n; t->value=v; t->length=strlen(t->value);}
-
-#define WA_ATTR_BIN(a, n, v, l) \
-  { WEBAUTH_ATTR *t= &a; t->name=n; t->value=v; t->length=l;}
-
 /******************** types ********************/
 
 /** A generic attribute.
@@ -89,6 +82,19 @@ typedef struct {
     void *value;                /**< Value of attribute (binary data). */
     int length;                 /**< Length of attribute value in bytes. */
 } WEBAUTH_ATTR;
+
+/** An attribute list.
+ *
+ * Holds a list of attributes. You must always use
+ * use webauth_attr_list_new to construct a new attr list,
+ * so webauth_attr_list_{add,free} work correctly.
+ */
+typedef struct {
+    int num_attrs;
+    int capacity;
+    WEBAUTH_ATTR *attrs;
+    /* don't add anything here as attrs can expand */
+} WEBAUTH_ATTR_LIST;
 
 /* an AES key */
 typedef struct webauth_aes_key WEBAUTH_AES_KEY;
@@ -214,13 +220,36 @@ int webauth_hex_decode(unsigned char *input,
 
 /******************** attrs ********************/
 
+/** Creates a new attr list
+ * 
+ * Returns the new attr list, or NULL if out of memory
+ *
+ */
+WEBAUTH_ATTR_LIST *webauth_attr_list_new();
+
+/** adds an attr to the attr list.
+ *
+ * adds a new attribute to the given attr list, growing the list
+ * if need be. Note that the attr list does not copy the name
+ * name or value data. It is still owned by the caller and should
+ * not be freed until the attr list is also freed.
+ */
+int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
+                          char *name, void *value, int vlen);
+
+/** free's an attr list
+ *
+ *  Frees the memory associated with an attribute list. Does not
+ *  free any memory pointed to by individual attrs.
+ */
+void webauth_attr_list_free(WEBAUTH_ATTR_LIST *list);
+
 /*
  * given an array of attributes, returns the amount
  * of space required to encode them.
  */
 
-int webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs, 
-                                 int num_attrs);
+int webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
  * given an array of attributes, encode them into the buffer.
@@ -234,8 +263,7 @@ int webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs,
  *   WA_ERR_NO_ROOM
  */
 
-int webauth_attrs_encode(const WEBAUTH_ATTR *attrs, 
-                         int num_attrs,
+int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
                          int max_output_len);
 
@@ -253,14 +281,13 @@ int webauth_attrs_encode(const WEBAUTH_ATTR *attrs,
  * returns the number of attributes decoded or an error
  *
  * errors:
- *   WA_ERR_NO_ROOM  (max attrs was too small)
  *   WA_ERR_CORRUPT
+ *   WA_ERR_NO_MEM
  */
 
 int webauth_attrs_decode(unsigned char *buffer, 
                          int buffer_len,
-                         WEBAUTH_ATTR *attrs,
-                         int max_num_attrs);
+                         WEBAUTH_ATTR_LIST **list);
 
 
 /******************** random data ********************/
@@ -313,8 +340,7 @@ void webauth_key_destroy_aes(WEBAUTH_AES_KEY *key);
  * returns length required to encrypt+base64 encode token,
  * not including null-termination.
  */
-int webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
-                                 int num_attrs);
+int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
  * encrypts and base64 encodes attrs into a token
@@ -326,8 +352,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
  *  WA_ERR_NO_MEM
  *  
  */
-int webauth_token_create(const WEBAUTH_ATTR *attrs,
-                         int num_attrs,
+int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
                          int max_output_len,
                          const WEBAUTH_AES_KEY *key);
@@ -337,7 +362,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
  * input buffer is modified, and the resulting
  * attrs point into it for their values.
  *
- * attrs will point to the dynamically-allocated array
+ * lst will point to the dynamically-allocated list
  * of attrs and must be freed when no longer needed.
  *
  * returns number of attrs in the resulting token or an error
@@ -350,7 +375,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
 
 int webauth_token_parse(unsigned char *input,
                         int input_len,
-                        WEBAUTH_ATTR **attrs,
+                        WEBAUTH_ATTR_LIST **list,
                         const WEBAUTH_AES_KEY *key);
 
 #ifdef  __cplusplus

@@ -62,8 +62,7 @@ webauth_key_destroy_aes(WEBAUTH_AES_KEY *key)
 }
 
 static int 
-binary_encoded_length(const WEBAUTH_ATTR *attrs,
-                      int num_attrs,
+binary_encoded_length(const WEBAUTH_ATTR_LIST *list,
                       int *plen)
 {
     int len, m;
@@ -71,7 +70,7 @@ binary_encoded_length(const WEBAUTH_ATTR *attrs,
     /* calculate encrypted data length first */
 
     /* get length of encoded attrs first */
-    len = webauth_attrs_encoded_length(attrs, num_attrs);
+    len = webauth_attrs_encoded_length(list);
 
     /* add in nonce and hmac */
     len += T_NONCE_S+T_HMAC_S;
@@ -94,15 +93,14 @@ binary_encoded_length(const WEBAUTH_ATTR *attrs,
 }
 
 int
-webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
-                             int num_attrs)
+webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
     int plen;
     int blen;
 
-    assert(attrs != NULL);
-    assert(num_attrs);
-    blen = binary_encoded_length(attrs, num_attrs, &plen);
+    assert(list != NULL);
+    assert(list->num_attrs);
+    blen = binary_encoded_length(list, &plen);
     return webauth_base64_encoded_length(blen);
 }
 
@@ -110,8 +108,7 @@ webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
  * encrypts and base64 encodes attrs into a token
  */
 int
-webauth_token_create(const WEBAUTH_ATTR *attrs,
-                     int num_attrs,
+webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                      unsigned char *output,
                      int max_output_len,
                      const WEBAUTH_AES_KEY *key)
@@ -128,15 +125,15 @@ webauth_token_create(const WEBAUTH_ATTR *attrs,
 
     WEBAUTH_AES_KEYP *keyp = (WEBAUTH_AES_KEYP*)key;
 
-    assert(attrs!= NULL);
-    assert(num_attrs);
+    assert(list!= NULL);
+    assert(list->num_attrs);
     assert(output != NULL);
     assert(max_output_len);
     assert(key != NULL);
 
     /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
 
-    elen = binary_encoded_length(attrs, num_attrs, &plen);
+    elen = binary_encoded_length(list, &plen);
     blen = webauth_base64_encoded_length(elen);
 
     if (blen > max_output_len) {
@@ -167,8 +164,7 @@ webauth_token_create(const WEBAUTH_ATTR *attrs,
     n += T_HMAC_S;
 
     /* encode attributes */
-    alen = webauth_attrs_encode(attrs, num_attrs, 
-                                ebuff+T_ATTR_O, elen-n-plen);
+    alen = webauth_attrs_encode(list, ebuff+T_ATTR_O, elen-n-plen);
     if (alen < 0) {
         free(ebuff);
         return alen;
@@ -225,7 +221,7 @@ webauth_token_create(const WEBAUTH_ATTR *attrs,
 int
 webauth_token_parse(unsigned char *input,
                     int input_len,
-                    WEBAUTH_ATTR **attrs,
+                    WEBAUTH_ATTR_LIST **list,
                     const WEBAUTH_AES_KEY *key)
 {
     /* ivec is always 0 since we use nonce as ivec */
@@ -233,14 +229,12 @@ webauth_token_parse(unsigned char *input,
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     /* hmac we compute from data */
     unsigned char computed_hmac[T_HMAC_S];
-    int plen, i, elen, num_attrs, s;
+    int plen, i, elen;
 
     WEBAUTH_AES_KEYP *keyp = (WEBAUTH_AES_KEYP*)key;
 
     assert (key != NULL);
-    assert(attrs);
-
-    *attrs = NULL;
+    assert(list);
 
     /** base64 decode (in place) first */
     elen=webauth_base64_decode(input, input_len, input, input_len);
@@ -290,26 +284,7 @@ webauth_token_parse(unsigned char *input,
         }
     }
 
-    /* now decode attrs, count number needed first */
-    num_attrs = webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen,
-                                     NULL, 0);
-    if (num_attrs < 0) {
-        return num_attrs;
-    }
-
-    *attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
-
-    if (*attrs == NULL) {
-        return WA_ERR_NO_MEM;
-    }
-
-    s = webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen, 
-                             *attrs, num_attrs);
-    if (s<0) {
-        free(*attrs);
-        *attrs = NULL;
-    }
-    return s;
+    return webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen, list);
 }
 
 /*
