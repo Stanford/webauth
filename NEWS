@@ -3,9 +3,12 @@
 WebAuth 3.1.2 (in progress)
 
  *) mod_webauthldap has several bugfixes, supports multiple virtualhosts,
-    better memory utilization and thread safety improvements.
+    and has better memory utilization and thread safety improvements.
 
  *) Correctly construct the return URL for reverse proxies.
+
+ *) Ported to Solaris 7 with gcc 2.95.  Basic WebAuth (but not LDAP)
+    ported to AIX 4.3.
 
 WebAuth 3.1.1 (2003-05-08)
 
