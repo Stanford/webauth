@@ -11,6 +11,9 @@
 #include "apr_lib.h"
 #include "apr_strings.h"
 #include "apr_tables.h"
+#include "apr_xml.h"
+
+#include <curl/curl.h>
 
 #include "webauth.h"
 
@@ -40,6 +43,9 @@
 
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
+
+#define CD_WebKDCPrincipal "WebAuthWebKDCPrincipal"
+#define CM_WebKDCPrincipal "K5 WebKDC principal name"
 
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"
@@ -96,6 +102,7 @@
 enum {
     E_SecureCookie,
     E_WebKDCURL,
+    E_WebKDCPrincipal,
     E_LoginURL,
     E_FailureURL,
     E_Keyring,
@@ -121,6 +128,7 @@ typedef struct {
 /* server conf stuff */
 typedef struct {
     char *webkdc_url;
+    char *webkdc_principal;
     char *login_url;
     char *failure_url;
     char *keyring_path;
@@ -150,5 +158,22 @@ typedef struct {
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
 } MWA_CHECK_USER_CTXT;
+
+/* used to suck back XML data from the webkdc */
+typedef struct {
+    char *data;
+    int size;
+    int capacity;
+    request_rec *r;
+} MWA_CURL_POST_GATHER_CTXT;
+
+
+/* a service token and associated data */
+typedef struct {
+    WEBAUTH_KEY *key; /* all memory allocated from a pool */
+    time_t expires;
+    char *token;
+} MWA_SERVICE_TOKEN;
+
 
 #endif

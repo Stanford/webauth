@@ -39,6 +39,319 @@
 
 #include "mod_webauth.h"
 
+
+#define CHUNK_SIZE 4096
+
+/*
+ * gather up the POST data as it comes back from webkdc
+ */
+static size_t
+post_gather(void *in_data, size_t size, size_t nmemb,
+            MWA_CURL_POST_GATHER_CTXT *ctxt)
+{
+    size_t real_size = size*nmemb;
+    size_t needed_size = ctxt->size+real_size;
+
+    if (ctxt->data == NULL || needed_size > ctxt->capacity) {
+        char *new_data;
+        while (ctxt->capacity < needed_size)
+            ctxt->capacity += CHUNK_SIZE;
+
+        new_data = apr_palloc(ctxt->r->pool, ctxt->capacity);
+
+        if (ctxt->data != NULL) {
+            memcpy(new_data, ctxt->data, ctxt->size);
+        } 
+        /* don't have to free existing data since it from a pool */
+        ctxt->data = new_data;
+    }
+    memcpy(ctxt->data+ctxt->size, in_data, real_size);
+    ctxt->size += real_size;
+    return real_size;
+}
+
+/*
+ * check cookie for valid app-token. If an epxired one is found,
+ * do a Set-Cookie (in fixups) to blank it out.
+ */
+static char *
+post_to_webkdc(char *post_data, int post_data_len, request_rec *r, 
+               MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    CURL *curl;
+    CURLcode code;
+    char curl_error_buff[CURL_ERROR_SIZE+1];
+    struct curl_slist *headers=NULL;
+    MWA_CURL_POST_GATHER_CTXT pgc;
+
+    if (post_data_len == 0)
+        post_data_len = strlen(post_data);
+
+    curl = curl_easy_init();
+
+    if (curl == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: post_to_webkdc: curl_easy_init failed");
+        return NULL;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, sconf->webkdc_url);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_error_buff);
+
+    /* FIXME: turning this off for testing! */
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: WARNING: USING CURLOPT_SSL_VERIFYPEER 0!");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_gather);
+
+    /* don't pre-allocate in case our write function never gets called */
+    pgc.data = 0;
+    pgc.size = 0;
+    pgc.capacity = 0;
+    pgc.r = r;
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &pgc);
+    headers = curl_slist_append(headers, "Content-Type: text/xml");
+ 
+    /* data to post */
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
+ 
+    /* set the size of the postfields data */
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, post_data_len);
+ 
+    /* pass our list of custom made headers */
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+ 
+    curl_error_buff[0] = '\0';
+    code = curl_easy_perform(curl); /* post away! */
+ 
+    curl_slist_free_all(headers); /* free the header list */
+
+    if (code != CURLE_OK) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: curl_easy_perform: error(%d): %s",
+                     code, curl_error_buff);
+        return NULL;
+    }
+    /* null-terminate return data */
+    if (pgc.data) {
+        pgc.data[pgc.size] = '\0';
+    }
+    curl_easy_cleanup(curl);
+    return pgc.data;
+}
+
+void
+log_webauth_krb5_error(request_rec *r, 
+                       int status, 
+                       WEBAUTH_KRB5_CTXT *ctxt,
+                       const char *mwa_func,
+                       const char *func)
+{
+    if (status == WA_ERR_KRB5) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: %s: %s failed: %s (%d): %s %d",
+                     mwa_func, func,
+                     webauth_error_message(status), status,
+                     webauth_krb5_error_message(ctxt), 
+                     webauth_krb5_error_code(ctxt));
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: %s: %s failed: %s (%d)",
+                     webauth_error_message(status), status);
+    }
+}
+
+/*
+ * get a WEBAUTH_KRB5_CTXT
+ */
+static WEBAUTH_KRB5_CTXT *
+get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
+{
+    WEBAUTH_KRB5_CTXT *ctxt;
+    int status;
+
+    status = webauth_krb5_new(&ctxt);
+    if (status != WA_ERR_NONE) {
+        log_webauth_krb5_error(r, status, ctxt, mwa_func, "webauth_krb5_new");
+        if (status == WA_ERR_KRB5)
+            webauth_krb5_free(ctxt);
+        return NULL;
+    }
+    return ctxt;
+}
+
+/*
+ * FIXME: all the data might not be in fist_data.first, need to investigate
+ */
+static const char *
+get_elem_text(apr_xml_elem *e, const char *def)
+{
+    if (e->first_cdata.first &&
+        e->first_cdata.first->text) {
+        return e->first_cdata.first->text;
+    } else {
+        return def;
+    }
+}
+
+/*
+ * XXX
+ */
+static void
+log_error_response(apr_xml_elem *e,
+                   const char *mwa_func,
+                   request_rec *r)
+{
+    apr_xml_elem *sib;
+    const char *error_code = "(no error_code)";
+    const char *error_message = "(no error message)";
+
+    for (sib = e->first_child; sib; sib = sib->next) {
+        if (strcmp(sib->name, "errorCode") == 0) {
+            error_code = get_elem_text(sib, error_code);
+        } else if (strcmp(sib->name, "errorMessage") == 0) {
+            error_message = get_elem_text(sib, error_message);
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                         "mod_webauth: log_error_response: "
+                         "unknown element in <errorResponse>: <%s>",
+                         sib->name);
+        }
+    }
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                 "mod_webauth: %s: errorResponse from webkdc: errorCode(%s) "
+                 "errorMessage(%s)",
+                 mwa_func, error_code, error_message);
+
+}
+
+/*
+ * XXX
+ */
+static MWA_SERVICE_TOKEN *
+parse_service_token_response(apr_xml_doc *xd,
+                             request_rec *r, 
+                             MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    MWA_SERVICE_TOKEN *st;
+    apr_xml_elem *e;
+    static const char *mwa_func = "parse_service_token_response";
+
+    e = xd->root;
+
+    if (strcmp(e->name, "errorResponse") == 0) {
+        log_error_response(e, mwa_func, r);
+        return NULL;
+    } else if (strcmp(e->name, "getTokensResponse") != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: unknown response(%s)", 
+                     mwa_func, e->name);
+        return NULL;
+    }
+
+    /* parse it already */
+    
+
+}
+
+/*
+ * XXX
+ */
+MWA_SERVICE_TOKEN *
+request_service_token(request_rec *r, 
+                      MWA_SCONF *sconf, MWA_DCONF *dconf)
+{
+    WEBAUTH_KRB5_CTXT *ctxt;
+    apr_xml_parser *xp;
+    apr_xml_doc *xd;
+    char *xml_request, *xml_response;
+    unsigned char *k5_req, *bk5_req;
+    int status, k5_req_len, bk5_req_len;
+    static const char *mwa_func = "request_service_token";
+    apr_status_t astatus;
+
+    ctxt = get_webauth_krb5_ctxt(r, mwa_func);
+    if (ctxt == NULL)
+        return 0;
+
+    status = webauth_krb5_init_via_keytab(ctxt, sconf->keytab_path, NULL);
+    if (status != WA_ERR_NONE) {
+        log_webauth_krb5_error(r, status, ctxt, mwa_func,
+                               "webauth_krb5_init_via_keytab");
+        webauth_krb5_free(ctxt);
+        return 0;
+    }
+
+    status = webauth_krb5_mk_req(ctxt, sconf->webkdc_principal, 
+                                 &k5_req, &k5_req_len);
+    webauth_krb5_free(ctxt);
+
+    if (status != WA_ERR_NONE) {
+        log_webauth_krb5_error(r, status, ctxt, mwa_func,
+                               "webauth_krb5_mk_req");
+        return 0;
+    }
+
+    bk5_req_len = apr_base64_encode_len(k5_req_len);
+    bk5_req = (char*) apr_palloc(r->pool, bk5_req_len);
+    apr_base64_encode(bk5_req, k5_req, k5_req_len);
+    free(k5_req);
+    
+    xml_request = apr_pstrcat(r->pool, 
+                              "<getTokensRequest>"
+                              "<requesterCredential type='krb5'>",
+                              bk5_req,
+                              "</requesterCredential>"
+                              "<tokens><token type='service'/></tokens>"
+                              "</getTokensRequest>",
+                              NULL);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                 "mod_webauth: xml_request(%s)", xml_request);
+
+
+    xml_response = post_to_webkdc(xml_request, 0, r, sconf, dconf);
+
+    if (xml_response == NULL)
+        return 0;
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                 "mod_webauth: xml_response(%s)", xml_response);
+
+    
+    xp = apr_xml_parser_create(r->pool);
+    if (xp == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: apr_xml_parser_create failed", 
+                     mwa_func);
+        return 0;
+    }
+
+    astatus = apr_xml_parser_feed(xp, xml_response, strlen(xml_response));
+    if (astatus == APR_SUCCESS) {
+        astatus = apr_xml_parser_done(xp, &xd);
+    }
+
+    if (astatus != APR_SUCCESS) {
+        char errbuff[1024];
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: %s: "
+                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+                     mwa_func,
+                     apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
+                     astatus);
+        return 0;
+    }
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                 "mod_webauth: xml doc root(%s)", xd->root->name);
+
+   return parse_service_token_response(xd, r, sconf, dconf);
+}
+
 /*
  * get a required char* attr from a token, with logging if not present.
  * returns value or NULL on error,
@@ -75,7 +388,7 @@ get_note(request_rec *r, const char *note)
  * remove note from main request, and return it if it was set, or NULL
  * if unset
  */
-char *
+static char *
 remove_note(request_rec *r, const char *note)
 {
     const char *val;
@@ -93,6 +406,7 @@ remove_note(request_rec *r, const char *note)
 /*
  * set note to main request. does not make copy of data
  */
+static void
 setn_note(request_rec *r, const char *note, const char *val)
 {
     if (r->main) {
@@ -154,11 +468,12 @@ die(const char *message, server_rec *s)
 /*
  * module cleanup
  */
-apr_status_t
+static apr_status_t
 mod_webauth_cleanup(void *data)
 {
     MWA_SCONF *sconf = (MWA_SCONF*) data;
 
+    
     if (sconf->ctxt == NULL)
         return APR_SUCCESS;
 
@@ -189,7 +504,10 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     CHECK_DIR(login_url, CD_LoginURL);
     CHECK_DIR(keyring_path, CD_Keyring);
+    CHECK_DIR(webkdc_url, CD_WebKDCURL);
     CHECK_DIR(keytab_path, CD_Keytab);
+    CHECK_DIR(webkdc_principal, CD_WebKDCPrincipal);
+
 #undef CHECK_DIR
 
     /* register pool cleanup function */
@@ -296,6 +614,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->token_max_ttl : bconf->token_max_ttl;
 
     MERGE_PTR(webkdc_url);
+    MERGE_PTR(webkdc_principal);
     MERGE_PTR(login_url);
     MERGE_PTR(failure_url);
     MERGE_PTR(keyring_path);
@@ -500,25 +819,9 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist,
         return NULL;
     }
 
-    status = webauth_krb5_new(&ctxt);
-    if (status != WA_ERR_NONE) {
-        const char *kmsg;
-        if (status == WA_ERR_KRB5) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                         "mod_webauth: validate_krb5_sad: "
-                         "webauth_krb5_new failed: %s (%d): %s %d",
-                         webauth_error_message(status), status,
-                         webauth_krb5_error_message(ctxt), 
-                         webauth_krb5_error_code(ctxt));
-            webauth_krb5_free(ctxt);
-        } else {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                         "mod_webauth: validate_krb5_sad: "
-                         "webauth_krb5_new failed: %s (%d)",
-                         webauth_error_message(status), status);
-        }
+    ctxt = get_webauth_krb5_ctxt(r, "validate_krb5_sad");
+    if (ctxt == NULL)
         return NULL;
-    }
 
     status = webauth_krb5_rd_req(ctxt,
                                  alist->attrs[i].value,
@@ -526,19 +829,16 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist,
                                  sconf->keytab_path,
                                  &principal);
 
+    webauth_krb5_free(ctxt);
+
     if (status != WA_ERR_NONE) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                         "mod_webauth: validate_krb5_sad: "
-                         "webauth_krb5_new failed: %s (%d)",
-                         webauth_error_message(status), status);
-            return NULL;
+        log_webauth_krb5_error(r, status, ctxt, "validate_krb5_sad",
+                               "webauth_krb5_rd_req");
+        return NULL;
     }
 
     subject = apr_pstrcat(r->pool, "krb5:", principal, NULL);
-
     free(principal);
-    webauth_krb5_free(ctxt);
-
     return subject;
 }
 
@@ -962,7 +1262,6 @@ fixups_hook(request_rec *r)
                                   apr_time_now());
         apr_table_setn(r->headers_out, "Set-Cookie", new_cookie);
         */
-
         log_request(r, "in fixups");
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
@@ -972,6 +1271,7 @@ fixups_hook(request_rec *r)
     /* set environment variable */
     subject = get_note(r, N_SUBJECT);
     if (subject) {
+
         char *name;
         if (sconf->var_prefix) {
             name = apr_pstrcat(r->pool, sconf->var_prefix, 
@@ -981,6 +1281,7 @@ fixups_hook(request_rec *r)
         }
         apr_table_setn(r->subprocess_env, name, subject);
 
+        /* request_service_token(r, sconf, dconf);*/
     }
     return DECLINED;
 }
@@ -1000,6 +1301,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         /* server configs */
         case E_WebKDCURL:
             sconf->webkdc_url = apr_pstrdup(cmd->pool, arg);
+            break;
+        case E_WebKDCPrincipal:
+            sconf->webkdc_principal = apr_pstrdup(cmd->pool, arg);
             break;
         case E_LoginURL:
             sconf->login_url = apr_pstrdup(cmd->pool, arg);
@@ -1136,6 +1440,7 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
 static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_WebKDCURL, E_WebKDCURL, CM_WebKDCURL),
+    SSTR(CD_WebKDCPrincipal, E_WebKDCPrincipal, CM_WebKDCPrincipal),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
     SSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
