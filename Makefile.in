@@ -70,11 +70,15 @@ distclean: clean
 	       src/bindings/perl/WebAuth3/Makefile.PL *~ core \#* \
 	       autom4te*.cache LIST.*
 
-# Prepare to make a release.  We recreate the directory structure and then
+maintclean: distclean
+	rm -f configure config.h.in $(TARNAME).gz $(TARNAME).gz.md5
+	rm -f *.orig.tar.gz $(DEBNAME)* *_$(VERSION)-*.deb
+	rm -rf $(TARDIR)
+
+# Make the release tarballs.  We recreate the directory structure and then
 # copy over all files listed in the MANIFEST.  If it isn't in MANIFEST, it
-# doesn't go into the release.  This rule is split off from dist so that
-# we can also use it to build Debian packages.
-dist-prep:
+# doesn't go into the release.
+dist:
 	cd src/utils && make wa_keyring.1
 	rm -rf $(TARDIR)
 	mkdir $(TARDIR)
@@ -85,9 +89,6 @@ dist-prep:
 	    cp $$f $(TARDIR)/$$f || exit 1 ; \
 	done
 	find $(TARDIR) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
-
-# Make the release tarballs.
-dist: dist-prep
 	rm -f $(TARNAME).gz $(TARNAME).gz.md5
 	tar cf $(TARNAME) $(TARDIR)
 	gzip -9 $(TARNAME)
