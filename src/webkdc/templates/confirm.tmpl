@@ -31,6 +31,10 @@ This template has the following variables template parmeters
               <p><strong>Protect your assets:</strong><br/>
                  Quit your web browser when you are finished (see below
               for more details)</p>
+              <TMPL_IF NAME=login_cancel>
+                <p><strong>Click <a href="<TMPL_VAR NAME=cancel_url>">here
+                   to cancel logging on to this service</p>
+              </TMPL_IF>
             </div>
           </td>
         </tr>
