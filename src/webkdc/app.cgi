@@ -107,9 +107,13 @@ sub check_for_valid_app_token {
 
     # check for valid cookie first
     if ($at_str) {
-	my $app_token = new WebKDC::AppToken(base64_decode($at_str),
-					     get_was_keyring(), 0);
-	return ($app_token, undef);
+	my $app_token;
+
+	eval {
+	    $app_token = new WebKDC::AppToken(base64_decode($at_str),
+					      get_was_keyring(), 0);
+	};
+	return ($app_token, undef) if $app_token;
     }
 
     if ($WR && $WS) {

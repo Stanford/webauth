@@ -154,7 +154,7 @@ my $q = new CGI;
 
 my $request_token_str = $q->param('RT');
 my $service_token_str = $q->param('ST');
-my $submit = $q->param('submit');
+my $submit = $q->param('submit') || '';
 
 
 if ($submit eq 'Cancel') {
@@ -183,30 +183,29 @@ if ($username && $password && $submit eq 'Continue') {
 # i.e., enumerate through all cookies that start with webauth_pt
 # and put them into a hash:
 # $cookies = { "webauth_pt_krb5" => $cookie_value }
+# $req->proxy_cookies($cookies);
 
 my $pt_krb5 = $q->cookie('webauth_pt_krb5');
 $req->proxy_cookie('krb5', $pt_krb5) unless !$pt_krb5;
 
-######$req->proxy_cookies($cookies);
-
-# $req_token_str and $service_token_str would normally get
-# passed in via query/post parameters
-
 $req->request_token($request_token_str);
 $req->service_token($service_token_str);
+
+# make the request in an eval to catch errors
 
 eval {
     WebKDC::handle_request_token($req, $resp);
 };
 
 #my $e = $@;
-
-print STDERR "login.cgi exception ".$@."\n";
+#print STDERR "login.cgi exception ".$@."\n";
 
 if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
+
     # need to prompt again, also need to limit number of times
     # we'll prompt
     # make sure to pass the request/service tokens in hidden fields
+
     login_form($q, $resp, $request_token_str, $service_token_str,
 	       "<b>login failed! Try again...</b>");
 
@@ -219,18 +218,20 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
+
     login_form($q, $resp, $request_token_str, $service_token_str, '');
 
 } elsif ($@) {
+
     # something nasty happened
     # log $@, and display an error to the user that a system problem
     # has occurred and tell them to try again later
 
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
- print $q->header(-type => 'text/html');
-print STDERR "FOOBAR ".$@."\n";
-print $@."\n";
+    print $q->header(-type => 'text/html');
+    print STDERR "FOOBAR ".$@."\n";
+    print $@."\n";
     print "oops, login failed, come back later, blah blah blah\n";
 
 } else {
