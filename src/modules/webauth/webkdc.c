@@ -66,26 +66,6 @@ new_service_token(apr_pool_t *pool,
     return token;
 }
 
-static void
-log_apr_error(server_rec *server,
-             apr_status_t astatus,
-             const char *mwa_func,
-             const char *ap_func,
-             const char *path1,
-             const char *path2)
-{
-    char errbuff[512];
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                 "mod_webauth: %s: %s (%s%s%s): %s (%d)",
-                 mwa_func,
-                 ap_func,
-                 path1,
-                 path2 != NULL ? " -> " : "",
-                 path2 != NULL ? path2  : "",
-                 apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
-                 astatus);
-}
-
 MWA_SERVICE_TOKEN *
 read_service_token_cache(server_rec *server,
                              MWA_SCONF *sconf, 
@@ -113,16 +93,16 @@ read_service_token_cache(server_rec *server,
 
     if (astatus != APR_SUCCESS) {
         if (!APR_STATUS_IS_ENOENT(astatus)) {
-            log_apr_error(server, astatus, mwa_func, "apr_file_open",
-                          sconf->st_cache_path, NULL);
+            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_open",
+                              sconf->st_cache_path, NULL);
         }
         return NULL;
     }
 
     astatus = apr_file_info_get(&finfo, APR_FINFO_NORM, cache);
     if (astatus != APR_SUCCESS) {
-        log_apr_error(server, astatus, mwa_func, "apr_file_info_get",
-                      sconf->st_cache_path, NULL);
+        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_info_get",
+                          sconf->st_cache_path, NULL);
         apr_file_close(cache);
         return NULL;
     }
@@ -133,8 +113,8 @@ read_service_token_cache(server_rec *server,
     apr_file_close(cache);
 
     if (astatus != APR_SUCCESS) {
-        log_apr_error(server, astatus, mwa_func, "apr_file_read_full",
-                      sconf->st_cache_path, NULL);
+        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_read_full",
+                          sconf->st_cache_path, NULL);
         return NULL;
     }
 
@@ -211,8 +191,8 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
                               pool);
 
     if (astatus != APR_SUCCESS) {
-        log_apr_error(server, astatus, mwa_func, "apr_file_mktemp",
-                     templ, NULL);
+        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_mktemp",
+                          templ, NULL);
         return 0;
     }
 
@@ -256,7 +236,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     astatus = apr_file_write_full(cache, buffer, ebuff_len, &bytes_written);
 
     if (status != APR_SUCCESS) {
-        log_apr_error(server, astatus, mwa_func, "apr_file_write_file",
+        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_write_file",
                       templ, NULL);
         goto cleanup;
     }
@@ -270,7 +250,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
 
     if (astatus != APR_SUCCESS) {
         ok = 0;
-        log_apr_error(server, astatus, mwa_func, "apr_file_close",
+        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_close",
                       templ, NULL);
     }
 
@@ -279,7 +259,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
         astatus = apr_file_perms_set(templ, APR_UREAD|APR_UWRITE);
 
         if (astatus != APR_SUCCESS) {
-            log_apr_error(server, astatus, mwa_func, "apr_file_perms_set",
+            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_perms_set",
                           templ, NULL);
             /* not ok anymore */
             ok = 0;
@@ -290,16 +270,16 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     if (ok) {
         astatus = apr_file_rename(templ, sconf->st_cache_path, pool);
         if (astatus != APR_SUCCESS) {
-            log_apr_error(server, astatus, mwa_func, "apr_file_rename",
-                          templ, sconf->st_cache_path);
+            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_rename",
+                              templ, sconf->st_cache_path);
             ok = 0;
         }
     } else {
         /* not ok, nuke it */
         astatus = apr_file_remove(templ, pool);
         if (astatus != APR_SUCCESS) {        
-            log_apr_error(server, astatus, mwa_func, "apr_file_rename",
-                          templ, sconf->st_cache_path);
+            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_rename",
+                              templ, sconf->st_cache_path);
         }
     }
 

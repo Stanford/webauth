@@ -1,6 +1,8 @@
 #ifndef MOD_WEBAUTH_H
 #define MOD_WEBAUTH_H
 
+#include <unistd.h>
+
 #include "httpd.h"
 #include "http_config.h"
 #include "http_log.h"
@@ -48,6 +50,7 @@
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
+#define ENV_WEBAUTH_KRB5CCNAME "KRB5CCNAME"
 
 /* defines for config directives */
 #define CD_WebKdcURL "WebAuthWebKdcURL"
@@ -142,6 +145,7 @@
 #define N_EXPIRATION "mod_webauth_EXPIRAION"
 #define N_CREATION   "mod_webauth_CREATION"
 #define N_LASTUSED   "mod_webauth_LASTUSED"
+#define N_KRB5CCNAME "mod_webauth_KRB5CCNAME"
 
 /* cookie note names must start with "mod_webauth_COOKIE_" in
    order to get set by fixups */
@@ -439,5 +443,13 @@ mwa_parse_cred_token(char *token,
                      WEBAUTH_KEYRING *ring,
                      WEBAUTH_KEY *key, 
                      MWA_REQ_CTXT *rc);
+
+void
+mwa_log_apr_error(server_rec *server,
+                  apr_status_t astatus,
+                  const char *mwa_func,
+                  const char *ap_func,
+                  const char *path1,
+                  const char *path2);
 
 #endif

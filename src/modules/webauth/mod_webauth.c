@@ -1762,6 +1762,20 @@ add_proxy_type(apr_array_header_t *a, char *type)
 }
 
 /*
+ * called when the request pool gets cleaned up
+ */
+static apr_status_t
+cred_cache_destroy(void *data)
+{
+    char *path = (char*)data;
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+                 "mod_webauth: cleanup cred: %s", path);
+    /* FIXME: logging */
+    unlink(path);
+    return APR_SUCCESS;
+}
+
+/*
  * prepare any krb5 creds
  */
 static int 
@@ -1770,22 +1784,54 @@ prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
     const char *mwa_func="prepare_krb5_creds";
     WEBAUTH_KRB5_CTXT *ctxt;
     int i, status;
+    char *temp_cred_file;
+    apr_file_t *fp;
+    apr_status_t astatus;
 
-#if 1
-    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
-    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
-    return 1;
-    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
-    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+    if (rc->sconf->cred_cache_dir == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: cred_cache_dir is not set (%s)\n", 
+                     mwa_func, CM_CredCacheDir);
+        return 0;
+    }
 
-#endif
+    astatus = apr_filepath_merge(&temp_cred_file, 
+                                 rc->sconf->cred_cache_dir,
+                                 "temp.krb5.XXXXXX",
+                                 0,
+                                 rc->r->pool);
+
+    astatus = apr_file_mktemp(&fp, temp_cred_file,
+                              APR_CREATE|APR_READ|APR_WRITE|APR_EXCL,
+                              rc->r->pool);
+    if (astatus != APR_SUCCESS) {
+        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
+                          "apr_file_mktemp", temp_cred_file, NULL);
+        return 0;
+    }
+
+    /* we close it here, and register a pool cleanup handler */
+    astatus = apr_file_close(fp);
+    if (astatus != APR_SUCCESS) {
+        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
+                          "apr_file_close", temp_cred_file, NULL);
+        return 0;
+    }
+
+    apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
+                              cred_cache_destroy,
+                              apr_pool_cleanup_null);
+    
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: temp_cred_file mktemp(%s)\n", 
+                     mwa_func, temp_cred_file);
 
     ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, mwa_func);
     if (ctxt == NULL)
         return 0;
 
     webauth_krb5_keep_cred_cache(ctxt);
-
 
     for (i=0; i < num_creds; i++) {
         if (strcmp(creds[i]->cred_type, "krb5") == 0) {
@@ -1796,7 +1842,7 @@ prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
                 status = webauth_krb5_init_via_cred(ctxt,
                                                     creds[i]->cred_data,
                                                     creds[i]->cred_data_len,
-                                                    "/tmp/suhweet");
+                                                    temp_cred_file);
             } else {
                 status = webauth_krb5_import_cred(ctxt,
                                                   creds[i]->cred_data,
@@ -1810,6 +1856,10 @@ prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
         }
     }
     webauth_krb5_free(ctxt);
+
+    /* stash a note for fixups */
+    mwa_setn_note(rc->r, N_KRB5CCNAME, temp_cred_file);
+
     return 1;
 }
 
@@ -2266,6 +2316,8 @@ fixups_hook(request_rec *r)
     set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, mwa_get_note(r, N_EXPIRATION));
     set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, mwa_get_note(r, N_CREATION));
     set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, mwa_get_note(r, N_LASTUSED));
+    set_env(&rc, ENV_WEBAUTH_KRB5CCNAME, mwa_get_note(r, N_KRB5CCNAME));
+
 #if 0
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
                "mod_webauth: cache dir: (%s)\n", 

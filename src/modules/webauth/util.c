@@ -76,6 +76,26 @@ mwa_setn_note(request_rec *r, const char *note, const char *val)
     }
 }
 
+void
+mwa_log_apr_error(server_rec *server,
+                  apr_status_t astatus,
+                  const char *mwa_func,
+                  const char *ap_func,
+                  const char *path1,
+                  const char *path2)
+{
+    char errbuff[512];
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+                 "mod_webauth: %s: %s (%s%s%s): %s (%d)",
+                 mwa_func,
+                 ap_func,
+                 path1,
+                 path2 != NULL ? " -> " : "",
+                 path2 != NULL ? path2  : "",
+                 apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
+                 astatus);
+}
+
 
 /*
  * log interesting stuff from the request
