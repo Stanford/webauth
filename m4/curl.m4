@@ -16,7 +16,9 @@ AC_ARG_WITH([curl],
 WEBAUTH_LDFLAGS_save=$LDFLAGS
 LDFLAGS="$LDFLAGS $CURL_LDFLAGS"
 CURL_LIBS=
-AC_CHECK_LIB([curl], [curl_easy_init], [CURL_LIBS=-lcurl], , [$SSL_LIBS])
+AC_CHECK_LIB([z], [inflate], [CURL_LIBS=-lz])
+AC_CHECK_LIB([curl], [curl_easy_init], [CURL_LIBS=-lcurl], ,
+    [$CURL_LIBS $SSL_LIBS])
 LDFLAGS=$WEBAUTH_LDFLAGS_save
 CURL_LIBS=`echo "$CURL_LDFLAGS $CURL_LIBS" | sed 's/^  *//'`
 AC_SUBST(CURL_LIBS)
