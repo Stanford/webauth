@@ -164,7 +164,9 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
     /* encode attributes */
     alen = webauth_attrs_encode(attrs, num_attrs, 
                                 ebuff+T_ATTR_O, elen-n-plen);
-    if (alen < 0) return alen;
+    if (alen < 0) {
+        return alen;
+    }
 
     n += alen;
 
@@ -238,7 +240,9 @@ int webauth_token_parse(unsigned char *input,
 
     /** base64 decode (in place) first */
     elen=webauth_base64_decode(input, input_len, input, input_len);
-    if (elen < 0) return elen;
+    if (elen < 0) {
+        return elen;
+    }
 
 
     /* first thing we'd normally do is check key-hint

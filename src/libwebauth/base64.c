@@ -68,14 +68,20 @@ int webauth_base64_encode(const unsigned char *input,
 	c1 = *input++;
 	input_len--;
 
-        if (out_len == output_max) return WA_ERR_NO_ROOM;
+        if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[out_len] = basis_64[c1>>2];
 	out_len += 1;
 
-	if (input_len == 0) c2 = 0;
+	if (input_len == 0) {
+            c2 = 0;
+        }
 	else c2 = *input++;
 
-        if (out_len == output_max) return WA_ERR_NO_ROOM;
+        if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[out_len] = basis_64[((c1 & 0x3)<< 4) | ((c2 & 0xF0) >> 4)];
 	out_len += 1;
 
@@ -85,10 +91,15 @@ int webauth_base64_encode(const unsigned char *input,
 	    break;
 	}
 
-	if (--input_len == 0) c3 = 0;
-	else c3 = *input++;
+	if (--input_len == 0) {
+            c3 = 0;
+        } else {
+            c3 = *input++;
+        }
 
-        if (out_len == output_max) return WA_ERR_NO_ROOM;
+        if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[out_len] = basis_64[((c2 & 0xF) << 2) | ((c3 & 0xC0) >>6)];
 	(out_len)++;
 
@@ -99,7 +110,9 @@ int webauth_base64_encode(const unsigned char *input,
 	}
 	
 	--input_len;
-        if (out_len == output_max) return WA_ERR_NO_ROOM;
+        if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[out_len] = basis_64[c3 & 0x3F];
 	out_len += 1;
     }
@@ -130,29 +143,50 @@ webauth_base64_decode(unsigned char *input,
     while (i <= j) {
 
 	c1 = input[i++]; 
-        if (CHAR64(c1) == XX) return WA_ERR_CORRUPT;
+        if (CHAR64(c1) == XX) {
+            return WA_ERR_CORRUPT;
+        }
 	c2 = input[i++]; 
-        if (CHAR64(c2) == XX) return WA_ERR_CORRUPT;
+        if (CHAR64(c2) == XX) {
+            return WA_ERR_CORRUPT;
+        }
 	c3 = input[i++];
-        if (c3 != '=' && CHAR64(c3) == XX) return WA_ERR_CORRUPT;
+        if (c3 != '=' && CHAR64(c3) == XX) {
+            return WA_ERR_CORRUPT;
+        }
 	c4 = input[i++];
-        if (c4 != '=' && CHAR64(c4) == XX) return WA_ERR_CORRUPT;
+        if (c4 != '=' && CHAR64(c4) == XX) {
+            return WA_ERR_CORRUPT;
+        }
 
-	if (out_len == output_max) return WA_ERR_NO_ROOM;
+	if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[(out_len)++] = ((CHAR64(c1)<<2) | ((CHAR64(c2)&0x30)>>4));
 	if (c3 == '=') {
-	    if (c4 != '=') return WA_ERR_CORRUPT;
-	    else return (out_len);
+	    if (c4 != '=') {
+                return WA_ERR_CORRUPT;
+            } else {
+                return (out_len);
+            }
 	}
-	if (out_len == output_max) return WA_ERR_NO_ROOM;
+	if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[(out_len)++] = 
 	                  (((CHAR64(c2)&0xf)<<4) | ((CHAR64(c3)&0x3c)>>2));
 
-	if (c4 == '=') return (out_len);
+	if (c4 == '=') {
+            return (out_len);
+        }
 
-	if (out_len == output_max) return WA_ERR_NO_ROOM;
+	if (out_len == output_max) {
+            return WA_ERR_NO_ROOM;
+        }
 	output[(out_len)++] = (((CHAR64(c3)&0x3)<<6) | CHAR64(c4));
-	if (i == input_len) return (out_len);
+	if (i == input_len) {
+            return (out_len);
+        }
     }
     return WA_ERR_NO_ROOM;
 }
