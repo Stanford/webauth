@@ -230,6 +230,28 @@ keyring_new) and returns the attributes, or undef in the case of an error.
 $status is optional, and if present will get set to the
 result of the webauth_token_parse C function.
 
+=item token_create_with_key(attrs, hint, key[, status])
+
+  $token = token_create_with_key($attrs, $hint, $key[, $status])
+
+Takes as input $attrs (which must be a reference to a hash) and a $key
+(created with key_new) and returns the basse64 encrypted token\,
+or undef in the case of an error. If hint is 0, the current time will
+be used.
+
+The values in the $attrs hash table get converted to strings if they 
+aren't already. $status is optional, and if present will get set to the
+result of the webauth_token_create C function.
+
+=item token_parse_with_key(token, key[, status])
+
+  $attrs = token_parse_with_key($token, $key[, $status])
+
+Takes as input a base64 encrypted token and a key (created with 
+key_new) and returns the attributes, or undef in the case of an error.
+$status is optional, and if present will get set to the
+result of the webauth_token_parse C function.
+
 =item krb5_new(context)
 
   $status = krb5_new($context);
