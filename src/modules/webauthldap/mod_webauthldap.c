@@ -93,20 +93,14 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
     case E_Filter_templ:
         sconf->filter_templ = apr_pstrdup(cmd->pool, arg);
         break;
-    case E_Keytab:
-        sconf->keytab = apr_pstrdup(cmd->pool, arg);
-        break;
     case E_Port:
         sconf->port = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Principal:
-        sconf->principal = apr_pstrdup(cmd->pool, arg);
         break;
     case E_Privgroupattr:
         sconf->privgroupattr = apr_pstrdup(cmd->pool, arg);
         break;
     case E_Tktcache:
-        sconf->tktcache = apr_pstrdup(cmd->pool, arg);
+        sconf->tktcache = ap_server_root_relative(cmd->pool, arg);
         break;
 
     default:
@@ -187,9 +181,37 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
     return error_str;
 }
 
+static const char *
+cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
+{
+    int e = (int)cmd->info;
+    char *error_str = NULL;
+
+    MWAL_SCONF *sconf = (MWAL_SCONF *)
+        ap_get_module_config(cmd->server->module_config, &webauthldap_module);
+    
+    switch (e) {
+        /* server configs */
+        case E_Keytab:
+            sconf->keytab = ap_server_root_relative(cmd->pool, w1);
+            sconf->principal= (w2 != NULL) ? apr_pstrdup(cmd->pool, w2) : NULL;
+            break;
+        default:
+            error_str = 
+                apr_psprintf(cmd->pool,
+                             "Invalid value cmd->info(%d) for directive %s", e,
+                             cmd->directive->directive);
+            break;
+    }
+    return error_str;
+}
+
 
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
+
+#define SSTR12(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_take12,(void*)mconfig, RSRC_CONF, TAKE12, help}
 
 #define SFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
@@ -212,10 +234,9 @@ static const command_rec cmds[] = {
     SSTR(CD_Base, E_Base, CM_Base),
     SSTR(CD_Binddn, E_Binddn, CM_Binddn),
     SSTR(CD_Filter_templ, E_Filter_templ, CM_Filter_templ),
-    SSTR(CD_Keytab, E_Keytab, CM_Keytab),
+    SSTR12(CD_Keytab, E_Keytab, CM_Keytab),
     SSTR(CD_Tktcache, E_Tktcache, CM_Tktcache),
     SSTR(CD_Port, E_Port, CM_Port),
-    SSTR(CD_Principal, E_Principal, CM_Principal),
     SSTR(CD_Privgroupattr, E_Privgroupattr, CM_Privgroupattr),
 
     SFLAG(CD_SSL, E_SSL, CM_SSL),
@@ -245,12 +266,9 @@ config_server_create(apr_pool_t * p, server_rec * s)
 
     /* init defaults */
 
-    sconf->base = DF_Base;
     sconf->debug = DF_Debug;
     sconf->filter_templ = DF_Filter_templ;
-    sconf->host = DF_Host;
     sconf->port = DF_Port;
-    sconf->privgroupattr = DF_Privgroupattr;
     sconf->ssl = DF_SSL;
 
     return (void *)sconf;
@@ -336,14 +354,15 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
                                                           &webauthldap_module);
     if (sconf->debug) ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
                                    "webauthldap: initializing");
-
     // These all must be non-null:
 #define NULCHECK(val, label) \
     if (val == NULL) die_directive(s, label, ptemp);
 
     NULCHECK(sconf->keytab, CD_Keytab);
-    NULCHECK(sconf->principal, CD_Principal);
     NULCHECK(sconf->tktcache, CD_Tktcache);
+    NULCHECK(sconf->host, CD_Host);
+    NULCHECK(sconf->base, CD_Base);
+    NULCHECK(sconf->privgroupattr, CD_Privgroupattr);
 #undef NULCHECK
 
     // Global settings
@@ -412,34 +431,60 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 {
     krb5_context ctx;
     krb5_creds creds;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
     krb5_get_init_creds_opt opts;
     krb5_keytab keytab;
     krb5_ccache cc;
     krb5_principal princ;
     krb5_error_code code;
+    krb5_error_code tcode;
 
+    // initialize the main struct that holds kerberos context
     if ((code = krb5_init_context(&ctx)) != 0)
         return code;
 
-    // FIXME maybe get it out of the keytab?
-    if ((code = krb5_parse_name(ctx, lc->sconf->principal, &princ)) != 0)
-        return code;
-
+    // locate, open, and read the keytab
     if ((code = krb5_kt_resolve(ctx, lc->sconf->keytab, &keytab)) != 0)
         return code;
 
+    // if the principal has been specified via directives, use it, 
+    // otherwise just read the first entry out of the keytab.
+    if (lc->sconf->principal) {
+        code = krb5_parse_name(ctx, lc->sconf->principal, &princ);
+    } else {
+        if ((code = krb5_kt_start_seq_get(ctx, keytab, &cursor)) != 0) {
+            tcode = krb5_kt_close(ctx, keytab);
+            return code;
+        }
+
+        if ((code = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
+            code = krb5_copy_principal(ctx, entry.principal, &princ);
+            tcode = krb5_kt_free_entry(ctx, &entry);
+        }
+        tcode = krb5_kt_end_seq_get(ctx, keytab, &cursor);
+    }
+
+    if (code != 0) {
+        tcode = krb5_kt_close(ctx, keytab);
+        return code;
+    }
+
+    // locate and open the creadentials cache file
     if ((code = krb5_cc_resolve(ctx, lc->sconf->tktcache, &cc)) != 0) {
         krb5_kt_close(ctx, keytab);
         return code;
     }
-
-    if ((code = krb5_cc_initialize(ctx, cc, princ)) != 0) {
+    
+    // initialize it if necessary
+    if ((code != krb5_cc_initialize(ctx, cc, princ)) != 0) {
         krb5_kt_close(ctx, keytab);
         return code;
     }
-
+    
     krb5_get_init_creds_opt_init(&opts);
 
+    // get the tgt for this principal
     code = krb5_get_init_creds_keytab(ctx,
                                       &creds,
                                       princ,
@@ -450,18 +495,13 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     krb5_kt_close(ctx, keytab);
 
-    if (code != 0)
-        return code;
-
-    /* add the creds to the cache */
-    code = krb5_cc_store_cred(ctx, cc, &creds);
-    krb5_free_cred_contents(ctx, &creds);
-    if (code != 0) {
-        return code;
-    } else {
-        return 0;
+    if (code == 0) {
+        /* add the creds to the cache */
+        code = krb5_cc_store_cred(ctx, cc, &creds);
+        krb5_free_cred_contents(ctx, &creds);
     }
 
+    return code;
 }
 
 
@@ -607,6 +647,9 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     int rc;
     char* tktenv;
     MWAL_SASL_DEFAULTS *defaults;
+    struct stat keytab_stat;
+    int fd;
+    int princ_specified;
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
@@ -658,7 +701,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     ldap_get_option(lc->ld, LDAP_OPT_X_SASL_AUTHCID, &defaults->authcid);
     ldap_get_option(lc->ld, LDAP_OPT_X_SASL_AUTHZID, &defaults->authzid);
 
-    // since SASL will look there
+    // since SASL will look there, lets put the ticket location into env
     tktenv = apr_psprintf(lc->r->pool, "%s=%s", ENV_KRB5_TICKET, 
                           lc->sconf->tktcache);
     if (putenv(tktenv) != 0) {
@@ -670,24 +713,57 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap: set ticket to %s", tktenv);
 
-
+    // first try to bind with the current credentials
     rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
                                       defaults->mech, NULL, NULL,
                                       LDAP_SASL_QUIET, sasl_interact_stub,
                                       defaults);
 
-    // this means the ticket expired
+    // this likely means the ticket is missing or expired
     if (rc == LDAP_LOCAL_ERROR) {
 
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap: getting new ticket");
 
-        // so let's get a new one
-        if ((rc = webauthldap_get_ticket(lc)) != 0) {
+        // so let's get a new ticket
+        if (stat(lc->sconf->keytab, &keytab_stat) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                         "mod_webauthldap: cannot get ticket: %s", 
-                         error_message(rc));
+                         "webauthldap: cannot stat the keytab: %s %s (%d)",
+                         lc->sconf->keytab, strerror(errno), errno);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        if ((fd = open(lc->sconf->keytab, O_RDONLY, 0)) < 0) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
+                         "webauthldap: cannot read the keytab %s: %s (%d)", 
+                         lc->sconf->keytab,  strerror(errno), errno);
+            close(fd);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        close(fd);
+
+        princ_specified = lc->sconf->principal? 1:0;
+
+        rc = webauthldap_get_ticket(lc);
+
+        if (rc == KRB5_REALM_CANT_RESOLVE) {
+            if (princ_specified)
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
+                             "webauthldap: cannot get ticket: %s %s %s",
+                             "check if the keytab", lc->sconf->keytab,
+                             "is valid for the specified principal");
+            else
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
+                             "webauthldap: cannot get ticket: %s %s %s",
+                             "check if the keytab", lc->sconf->keytab,
+                             "is valid and only contains the right principal");
+
+            return HTTP_INTERNAL_SERVER_ERROR;
+        } if (rc != 0) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
+                         "webauthldap: cannot get ticket: %s (%d)", 
+                         error_message(rc), rc);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
@@ -704,7 +780,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
 
     if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "ldap_sasl_interactive_bind_s: %s (%d)",
+                     "webauthldap: ldap_sasl_interactive_bind_s: %s (%d)",
                      ldap_err2string(rc), rc);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -781,6 +857,7 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap: ldap_search_ext: %s (%d)",
                      ldap_err2string(rc), rc);
+        ldap_unbind(lc->ld);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -822,6 +899,7 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap: ldap_result: %s (%d)",
                      ldap_err2string(rc), rc);
+        ldap_unbind(lc->ld);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -1029,6 +1107,7 @@ auth_checker_hook(request_rec * r)
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                          "webauthldap: UNAUTHORIZED");
+        ldap_unbind(lc->ld);
         return HTTP_UNAUTHORIZED;
     }
 
@@ -1054,6 +1133,7 @@ auth_checker_hook(request_rec * r)
                      "\n***************************************************");
     }
 
+    ldap_unbind(lc->ld);
     return (needs_further_handling ? DECLINED : OK);
 }
 

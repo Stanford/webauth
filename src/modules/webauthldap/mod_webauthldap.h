@@ -33,7 +33,6 @@
 /* defines for config directives */
 #define CD_Base "WebAuthLdapBase"
 #define CM_Base "Search base for LDAP lookup"
-#define DF_Base "cn=people,dc=stanford,dc=edu"
 
 #define CD_Binddn "WebAuthLdapBindDN"
 #define CM_Binddn "bind DN for the LDAP connection"
@@ -47,9 +46,8 @@
 #define DF_Filter_templ "uid=USER"
 #define FILTER_MATCH "USER"
 
-#define CD_Privgroupattr "WebAuthLdapPrivgroupAttribute"
+#define CD_Privgroupattr "WebAuthLdapAuthorizationAttribute"
 #define CM_Privgroupattr "ldap attribute to use for priviledge groups"
-#define DF_Privgroupattr "suPrivilegeGroup"
 
 #define CD_Attribs "WebAuthLdapAttribute"
 #define CM_Attribs "additional ldap attributes to place into the environment"
@@ -57,10 +55,9 @@
 
 #define CD_Host "WebAuthLdapHost"
 #define CM_Host "LDAP Host for LDAP lookup"
-#define DF_Host "ldap.stanford.edu"
 
 #define CD_Keytab "WebAuthLdapKeytab"
-#define CM_Keytab "keytab with the principal to bind as"
+#define CM_Keytab "keytab and the principal to bind as"
 
 #define CD_Tktcache "WebAuthLdapTktCache"
 #define CM_Tktcache "K5 ticket cache for ldap"
@@ -68,9 +65,6 @@
 #define CD_Port "WebAuthLdapPort"
 #define CM_Port "ldap port to bind to"
 #define DF_Port "0"
-
-#define CD_Principal "WebAuthLdapPrincipal"
-#define CM_Principal "principal to bind as"
 
 #define CD_SSL "WebAuthLdapSSL"
 #define CM_SSL "use ssl or not"
@@ -85,7 +79,6 @@ enum {
     E_Host,
     E_Keytab,
     E_Port,
-    E_Principal,
     E_Privgroupattr,
     E_SSL,
     E_Tktcache
