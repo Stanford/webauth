@@ -221,9 +221,7 @@ handler_hook(request_rec *r)
 }
 
 static WEBAUTH_ATTR_LIST *
-parse_app_token(char *token,
-                request_rec *r,
-                MWA_SCONF *sconf, MWA_DCONF *dconf)
+parse_app_token(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     int blen, status, i;
@@ -237,15 +235,16 @@ parse_app_token(char *token,
      */
     status = webauth_token_parse(token, blen, 0, mwa_g_ring, &alist);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r, status, NULL,
+        mwa_log_webauth_error(rc->r, status, NULL,
                               "parse_app_token", "webauth_token_parse");
         return NULL;
     }
 
     /* make sure its an app-token */
-    tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, r, "check_cookie", NULL);
+    tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r,
+                          "check_cookie", NULL);
     if (strcmp(tt, WA_TT_APP) != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: check_cookie: token type(%s) not (%s)",
                      (char*)alist->attrs[i].value, WA_TT_APP);
         webauth_attr_list_free(alist);
@@ -259,7 +258,7 @@ parse_app_token(char *token,
  * do a Set-Cookie (in fixups) to blank it out.
  */
 static char *
-check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
+check_cookie(MWA_REQ_CTXT *rc)
 {
     const char *c;
     char *cs, *ce, *cval, *sub;
@@ -267,7 +266,7 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
     int i;
     WEBAUTH_ATTR_LIST *alist;
 
-    c = apr_table_get(r->headers_in, "Cookie");
+    c = apr_table_get(rc->r->headers_in, "Cookie");
     if (c == NULL) 
         return NULL;
 
@@ -281,40 +280,41 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
     ce = ap_strchr(cs, ';');
 
     if (ce == NULL) {
-        cval = apr_pstrdup(r->pool, cs);
+        cval = apr_pstrdup(rc->r->pool, cs);
     } else {
-        cval = apr_pstrmemdup(r->pool, cs, ce-cs);
+        cval = apr_pstrmemdup(rc->r->pool, cs, ce-cs);
     }
 
     sub = NULL;
 
-    alist = parse_app_token(cval, r, sconf, dconf);
+    alist = parse_app_token(cval, rc);
     if (alist != NULL) {
         /* pull out subject */
         const char *tsub = 
-            mwa_get_str_attr(alist, WA_TK_SUBJECT, r, "check_cookie", NULL);
+            mwa_get_str_attr(alist, WA_TK_SUBJECT, rc->r, 
+                             "check_cookie", NULL);
         if (tsub != NULL) {
-            sub = apr_pstrdup(r->pool, tsub);
+            sub = apr_pstrdup(rc->r->pool, tsub);
         }
         webauth_attr_list_free(alist);
     }
 
     if (sub == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        char *cookie = apr_psprintf(r->pool,
+        char *cookie = apr_psprintf(rc->r->pool,
                                     "%s=; path=/; expires=%s;%s",
                                     AT_COOKIE_NAME,
                                     "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    sconf->secure_cookie ? "secure" : "");
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                                    rc->sconf->secure_cookie ? "secure" : "");
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: nuking cookie(%s): (%s)\n", 
                      AT_COOKIE_NAME, cookie);
-        mwa_setn_note(r, N_APP_COOKIE, cookie);
+        mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
         return NULL;
     }
 
     if (sub != NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: found valid %s cookie for (%s)", 
                      AT_COOKIE_NAME,
                      sub);
@@ -324,16 +324,13 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
 }
 
 WEBAUTH_KEY *
-get_session_key(char *token,
-                request_rec *r,
-                MWA_SCONF *sconf,
-                MWA_DCONF *dconf)
+get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     WEBAUTH_KEY *key;
     int status, i , klen;
 
-    alist = parse_app_token(token, r, sconf, dconf);
+    alist = parse_app_token(token, rc);
 
     if (alist == NULL)
         return NULL;
@@ -341,7 +338,7 @@ get_session_key(char *token,
     /* pull out session key */
     status = webauth_attr_list_find(alist, WA_TK_SESSION_KEY, &i);
     if (i == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                     "mod_webauth: check_url: can't find session key in token");
         webauth_attr_list_free(alist);
         return NULL;
@@ -352,15 +349,15 @@ get_session_key(char *token,
     if (klen != WA_AES_128 && 
         klen != WA_AES_192 &&
         klen != WA_AES_256) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                      "mod_webauth: get_session_key: invalid key length: %d",
                      klen);
         return NULL;
     }
 
-    key = (WEBAUTH_KEY*) apr_palloc(r->pool, sizeof(WEBAUTH_KEY));
+    key = (WEBAUTH_KEY*) apr_palloc(rc->r->pool, sizeof(WEBAUTH_KEY));
     key->type = WA_AES_KEY;
-    key->data = (unsigned char*) apr_palloc(r->pool, klen);
+    key->data = (unsigned char*) apr_palloc(rc->r->pool, klen);
     memcpy(key->data, alist->attrs[i].value, klen);
     key->length = klen;
 
@@ -370,10 +367,8 @@ get_session_key(char *token,
 }
 
 static char *
-validate_krb5_sad(WEBAUTH_ATTR_LIST *alist,
-                  request_rec *r,
-                  MWA_SCONF *sconf, 
-                  MWA_DCONF *dconf)
+validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
+
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status, i;
@@ -381,56 +376,53 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist,
 
     status = webauth_attr_list_find(alist, WA_TK_SUBJECT_AUTH_DATA, &i);
     if (i == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                      "mod_webauth: validate_krb5_sad: "
                      "can't find subject auth data");
         return NULL;
     }
 
-    ctxt = mwa_get_webauth_krb5_ctxt(r, "validate_krb5_sad");
+    ctxt = mwa_get_webauth_krb5_ctxt(rc->r, "validate_krb5_sad");
     if (ctxt == NULL)
         return NULL;
 
     status = webauth_krb5_rd_req(ctxt,
                                  alist->attrs[i].value,
                                  alist->attrs[i].length,
-                                 sconf->keytab_path,
+                                 rc->sconf->keytab_path,
                                  &principal);
 
     webauth_krb5_free(ctxt);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r, status, ctxt, "validate_krb5_sad",
+        mwa_log_webauth_error(rc->r, status, ctxt, "validate_krb5_sad",
                               "webauth_krb5_rd_req");
         return NULL;
     }
 
-    subject = apr_pstrcat(r->pool, "krb5:", principal, NULL);
+    subject = apr_pstrcat(rc->r->pool, "krb5:", principal, NULL);
     free(principal);
     return subject;
 }
 
 static void
-make_app_token(char *subject,
-               time_t expiration_time,
-               request_rec *r, 
-               MWA_SCONF *sconf, 
-               MWA_DCONF *dconf)
+make_app_token(char *subject, time_t expiration_time, MWA_REQ_CTXT *rc)
 {
-    WEBAUTH_ATTR_LIST *alist = webauth_attr_list_new(10);
+    WEBAUTH_ATTR_LIST *alist;
     time_t curr = time(NULL);
     char *token, *btoken, *cookie;
     int tlen, olen, status;
 
+    alist = webauth_attr_list_new(10);
     if (alist == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: make_app_token: "
                      "webauth_attr_list_new failed");
         return;
     }
 
-    if (dconf->app_token_lifetime) {
-        expiration_time = curr+dconf->app_token_lifetime;
+    if (rc->dconf->app_token_lifetime) {
+        expiration_time = curr + rc->dconf->app_token_lifetime;
     }
 
     webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
@@ -444,55 +436,52 @@ make_app_token(char *subject,
     /* FIXME: handle it/lt app_token_lifetime, inactive/etc */
 
     tlen = webauth_token_encoded_length(alist);
-    token = (char*)apr_palloc(r->pool, tlen);
+    token = (char*)apr_palloc(rc->r->pool, tlen);
 
     status = webauth_token_create(alist, curr, token, &olen, tlen, mwa_g_ring);
 
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r, status, NULL, "make_app_token",
+        mwa_log_webauth_error(rc->r, status, NULL, "make_app_token",
                               "webauth_token_create");
         return;
     }
 
-    btoken = (char*) apr_palloc(r->pool, apr_base64_encode_len(olen));
+    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
     apr_base64_encode(btoken, token, olen);
 
-    cookie = apr_psprintf(r->pool,
+    cookie = apr_psprintf(rc->r->pool,
                           "%s=%s; path=/;%s",
                           AT_COOKIE_NAME,
                           btoken,
-                          sconf->secure_cookie ? "secure" : "");
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                          rc->sconf->secure_cookie ? "secure" : "");
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: make_app_token setting cookie(%s): (%s)\n", 
                  AT_COOKIE_NAME, cookie);
-    mwa_setn_note(r, N_APP_COOKIE, cookie);
+    mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
 }
 
 
 static char *
-handle_id_token(WEBAUTH_ATTR_LIST *alist,
-                request_rec *r, 
-                MWA_SCONF *sconf, 
-                MWA_DCONF *dconf)
+handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
     char *subject;
     int status;
     const char *sa = mwa_get_str_attr(alist, WA_TK_SUBJECT_AUTH,
-                                  r, "handle_id_token", NULL);
+                                      rc->r, "handle_id_token", NULL);
     if (sa == NULL ) {
         /* nothing, we already logged an error */
         return NULL;
     }
 
     if (strcmp(sa, WA_SA_KRB5) == 0) {
-        subject = validate_krb5_sad(alist, r, sconf, dconf);
+        subject = validate_krb5_sad(alist, rc);
     } else if (strcmp(sa, WA_SA_WEBKDC) == 0) {
         /* subject is all set */
         const char *tsub = mwa_get_str_attr(alist, WA_TK_SUBJECT,
-                                        r, "handle_id_token", NULL);
-        subject = apr_pstrdup(r->pool, tsub);
+                                            rc->r, "handle_id_token", NULL);
+        subject = apr_pstrdup(rc->r->pool, tsub);
     } else {
 
     }
@@ -505,15 +494,14 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist,
                                             &expiration_time,
                                             WA_F_NONE);
         if (status != WA_ERR_NONE) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: parse_returned_token: "
                          "can't get expiration time from id token token");
         } else {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: parse_returned_token: "
                          "got subject(%s) from id token", subject);
-            make_app_token(subject, expiration_time,
-                           r, sconf, dconf);
+            make_app_token(subject, expiration_time, rc);
         }
     } else {
         /* FIXME: everyone else should have logged something, right? */
@@ -521,14 +509,8 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist,
     return subject;
 }
 
-
-
 static char *
-parse_returned_token(char *token,
-                     WEBAUTH_KEY *key,
-                     request_rec *r, 
-                     MWA_SCONF *sconf, 
-                     MWA_DCONF *dconf)
+parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     int blen, status;
@@ -542,16 +524,18 @@ parse_returned_token(char *token,
     blen = apr_base64_decode(token, token);
 
     status = webauth_token_parse_with_key(token, blen, 
-                                 sconf->token_max_ttl, key, &alist);
+                                          rc->sconf->token_max_ttl, 
+                                          key, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(r, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r, status, NULL, mwa_func,
                               "webauth_token_parse_with_key");
         return NULL;
     }
 
     /* make sure its an app-token */
-    token_type = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, r, mwa_func, NULL);
+    token_type = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, 
+                                  mwa_func, NULL);
     if (token_type == NULL) {
         webauth_attr_list_free(alist);
         return NULL;
@@ -559,20 +543,34 @@ parse_returned_token(char *token,
 
     if (strcmp(token_type, WA_TT_ID) == 0) {
 
-        subject = handle_id_token(alist, r, sconf, dconf);
+        subject = handle_id_token(alist, rc);
 
     } else if (strcmp(token_type, WA_TT_PROXY) == 0) {
 
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: parsed a proxy token", mwa_func);
 
     } else if (strcmp(token_type, WA_TT_ERROR) == 0) {
 
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        /* FIXME: 
+         *   special handling for some errors code:
+         *
+         *    if ec = bad/expired-service-token, we need to
+         *    toss our in memory (and potentiall file cached) service
+         *    token,
+         *
+         *    stale request?
+         *
+         *    other error codes? probably need to detect a rejected
+         *    request for a proxy-token
+         *
+         */
+
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: parsed an error token", mwa_func);
 
     } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: unhandled token type(%s)",
                      mwa_func,
                      token_type);
@@ -586,32 +584,32 @@ parse_returned_token(char *token,
  * check to see if we got passed WEBAUTHR and WEBAUTHS
  */
 static char *
-check_url(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
+check_url(MWA_REQ_CTXT *rc)
 {
     char *subject, *wr, *ws;
     WEBAUTH_KEY *key = NULL;
 
-    wr = mwa_remove_note(r, N_WEBAUTHR);
+    wr = mwa_remove_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {
         return NULL;
     }
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: check_url: found wr(%s)", wr);
 
     /* see if we have WEBAUTHS, which has the session key to use */
-    ws = mwa_remove_note(r, N_WEBAUTHS);
+    ws = mwa_remove_note(rc->r, N_WEBAUTHS);
 
     if (ws != NULL) {
         /* don't have to free key, its allocated from a pool */
-        key = get_session_key(ws, r, sconf, dconf);
+        key = get_session_key(ws, rc);
         if (key == NULL)
             return NULL;
-        subject = parse_returned_token(wr, key, r, sconf, dconf);
+        subject = parse_returned_token(wr, key, rc);
     } else {
-        /* FIXME: use key from session-token */
-        /* subject = parse_returned_token(wr, key, r, sconf, dconf); */
-        subject = NULL;
+        MWA_SERVICE_TOKEN *st = mwa_get_service_token(rc);
+        if (st != NULL)
+            subject = parse_returned_token(wr, &st->key, rc);
     }
     return subject;
 }
@@ -621,14 +619,15 @@ check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
     const char *subject, *cookie;
-    MWA_SCONF *sconf;
-    MWA_DCONF *dconf;
+    MWA_REQ_CTXT rc;
+   
+    rc.r = r;
 
-    dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
-                                                 &webauth_module);
+    rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
+                                                &webauth_module);
 
-    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                                 &webauth_module);
+    rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
+                                                &webauth_module);
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                  "mod_webauth: in check_user_id hook");
@@ -642,11 +641,11 @@ check_user_id_hook(request_rec *r)
 
     if (subject == NULL) {
         /* next, check for valid app-token cookie */
-        subject = check_cookie(r, sconf, dconf);
+        subject = check_cookie(&rc);
 
         if (subject == NULL) {
             /* if no valid app token, look for WEBAUTHR in url */
-            subject = check_url(r, sconf, dconf);
+            subject = check_url(&rc);
         }
         /* stick it in note for future reference */
         if (subject != NULL)
@@ -680,7 +679,7 @@ check_user_id_hook(request_rec *r)
     if ((r->args != NULL) && (*(r->args) == 'Z')) {
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                  "mod_webauth: set Location, returning redirect...");
-    apr_table_setn(r->err_headers_out, "Location", sconf->login_url);
+    apr_table_setn(r->err_headers_out, "Location", rc.sconf->login_url);
         return HTTP_MOVED_TEMPORARILY;
     } else {
         return OK;
@@ -808,15 +807,15 @@ translate_name_hook(request_rec *r)
 static int 
 fixups_hook(request_rec *r)
 {
-    MWA_DCONF *dconf;
-    MWA_SCONF *sconf;
     const char *subject;
+    MWA_REQ_CTXT rc;
 
-    dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
+    rc.r = r;
+    rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
                                                  &webauth_module);
 
-    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                                 &webauth_module);
+    rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
+                                                &webauth_module);
 
     if (ap_is_initial_req(r)) {
         char *new_cookie;
@@ -836,16 +835,15 @@ fixups_hook(request_rec *r)
     if (subject) {
 
         char *name;
-        if (sconf->var_prefix) {
-            name = apr_pstrcat(r->pool, sconf->var_prefix, 
+        if (rc.sconf->var_prefix) {
+            name = apr_pstrcat(r->pool, rc.sconf->var_prefix, 
                                ENV_WEBAUTH_USER, NULL);
         } else {
             name = ENV_WEBAUTH_USER;
         }
         apr_table_setn(r->subprocess_env, name, subject);
         {
-            MWA_SERVICE_TOKEN *st = 
-                mwa_get_service_token(r, sconf, dconf);
+            MWA_SERVICE_TOKEN *st = mwa_get_service_token(&rc);
             if (st != NULL) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                              "mod_webauth: st->expires(%d)", st->expires);

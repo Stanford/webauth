@@ -158,11 +158,12 @@ typedef struct {
     char *return_url;
 } MWA_DCONF;
 
+/* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
-} MWA_CHECK_USER_CTXT;
+} MWA_REQ_CTXT;
 
 /* used to suck back XML data from the webkdc */
 typedef struct {
@@ -180,8 +181,7 @@ MWA_SERVICE_TOKEN *mwa_g_service_token;
 /* service_token.c */
 
 MWA_SERVICE_TOKEN *
-mwa_get_service_token(request_rec *r,
-                      MWA_SCONF *sconf, MWA_DCONF *dconf);
+mwa_get_service_token(MWA_REQ_CTXT *rc);
 
 /* util.c */
 
