@@ -35,6 +35,7 @@ m4/krb5.m4                              Probes for Kerberos v5
 m4/ldap.m4                              Probes for OpenLDAP
 m4/libgcc.m4                            Probes for libgcc link options
 m4/libtool.m4                           Probes for library build support
+m4/sident.m4                            Probes for S/Ident
 m4/ssl.m4                               Probes for OpenSSL characteristics
 src                                     WebAuth source code (Directory)
 src/Makefile.in                         Makefile for WebAuth source
@@ -53,6 +54,7 @@ src/bindings/perl/WebAuth3/test.pl        Tests for Perl module
 src/bindings/perl/WebAuth3/typemap        Type mapping for Perl bindings
 src/libwebauth                          The WebAuth library (Directory)
 src/libwebauth/Makefile.in              Makefile for WebAuth library
+src/libwebauth/Makefile.vc              Windows Makefile for WebAuth library
 src/libwebauth/attrs.c                  Token attribute handling
 src/libwebauth/base64.c                 Base64 encoding and decoding
 src/libwebauth/key.c                    Key handling
@@ -67,15 +69,17 @@ src/modules                             WebAuth Apache modules (Directory)
 src/modules/Makefile.in                 Makefile for Apache modules
 src/modules/webauth                     Base WebAuth module (Directory)
 src/modules/webauth/Makefile.in         Makefile for base module
+src/modules/webauth/Makefile.vc         Windows Makefile for base module
 src/modules/webauth/krb5.c              Kerberos-related functions
 src/modules/webauth/mod_webauth.c       Implementation of base module
 src/modules/webauth/mod_webauth.h       Internal API for base module
 src/modules/webauth/util.c              Utility functions for base module
 src/modules/webauth/webkdc.c            Interface to the WebKDC
 src/modules/webauthldap                 WebAuthLdap module (Directory)
-src/modules/webauthldap/Makefile.in     Makefile for ldap module
-src/modules/webauthldap/mod_webauthldap.c Implementation of ldap module
-src/modules/webauthldap/mod_webauthldap.h Internal API for ldap module
+src/modules/webauthldap/Makefile.in     Makefile for LDAP module
+src/modules/webauthldap/Makefile.vc     Windows Makefile for LDAP module
+src/modules/webauthldap/mod_webauthldap.c Implementation of LDAP module
+src/modules/webauthldap/mod_webauthldap.h Internal API for LDAP module
 src/modules/webkdc                      WebKDC -- Apache module (Directory)
 src/modules/webkdc/Makefile.in          WebKDC -- Makefile for module
 src/modules/webkdc/acl.c                WebKDC -- ACL file handling
@@ -85,6 +89,7 @@ src/modules/webkdc/token.acl            WebKDC -- Sample ACL file
 src/modules/webkdc/util.c               WebKDC -- Utility functions
 src/utils                               WebAuth utility programs (Directory)
 src/utils/Makefile.in                   Makefile for utility programs
+src/utils/Makefile.vc                   Windows Makefile for utility programs
 src/utils/wa_keyring.c                  Manipulate the server keyring
 src/utils/wa_keyring.pod                Documentation for wa_keyring
 src/webkdc                              WebKDC -- Perl login server (Directory)
@@ -118,6 +123,7 @@ tests/libwebauth/base64_test.c          Test base64 encoding and decoding
 tests/libwebauth/hex_test.c             Test hex encoding and decoding
 tests/libwebauth/key_test.c             Test key handling
 tests/libwebauth/krb5_test.c            Test Kerberos v5 support
+tests/libwebauth/krb5_tgt_test.c        Test Kerberos v5 TGT support
 tests/libwebauth/random_test.c          Test random numbe rhandling
 tests/libwebauth/token_test.c           Test WebAuth token handling
 tests/libwebauth/webauthtest.h          Utilities for test programs
@@ -181,3 +187,14 @@ tools/makedepend                        Generate dependencies
 tools/mkheader                          Generate webauth.h
 tools/mkmanifest                        Generate an initial manifest
 tools/mkpackage                         Generate a WebAuth module package
+windows                                 Windows support files (Directory)
+windows/BUILD.txt                       Instructions for Windows builds
+windows/INSTALL.txt                     Instructions for Windows installation
+windows/buildenv.bat                    Set up environment for building
+windows/config.h                        Prebuilt config.h for Windows
+windows/krb5.ini                        Kerberos configuration for Windows
+windows/make_zip                        Script to build .zip distribution
+windows/sasl.reg                        SASL registration file for Windows
+windows/setup.bat                       Set up a Windows build
+windows/stanford-webauth.conf           Modified configuration for Windows
+windows/webauth-ssl.conf                SSL configuration for Windows
