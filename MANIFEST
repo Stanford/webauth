@@ -158,6 +158,9 @@ tests/mod_webauth/htdocs/tests/auth/test1        WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test10       WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test11       WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test11return WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test12       WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test12post   WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test12return WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test2        WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test2return  WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test3        WebAuth module tests
