@@ -17,7 +17,26 @@ monitored for security.
      INSTALL file at the top of the source tree.  This will install the
      WebKDC module as well as the basic WebAuth module.
 
- 2.  Add Apache directives for the WebKDC.  The basic set is:
+ 2. You'll need to install the following Perl modules from CPAN:
+
+    HTML::Template
+    FCGI
+
+    You'll probably also want to install and configure mod_fastcgi as
+    well, though its not a requirement. If you decide to install it,
+    you'll need to configure it like so:
+
+    FastCGIConfig -initial-env LD_LIBRARY_PATH
+    LoadModule fastcgi_module modules/mod_fastcgi.so
+    <Directory "webkdc" >
+       AllowOverride All
+       Options Indexes FollowSymlinks +ExecCGI
+       AddHandler fastcgi-script .fcgi
+       Order allow,deny
+       Allow from all
+    </Directory>
+
+ 3.  Add Apache directives for the WebKDC.  The basic set is:
 
          LoadModule webkdc_module modules/mod_webkdc.so
          WebKdcServiceTokenLifetime 30d
@@ -31,25 +50,16 @@ monitored for security.
 
      so that your server will generate more complete logs if anything goes
      wrong.  This may also be useful if this is the first time you've
-     installed a WebKdc.
+     installed a WebKdc. You'll also want to set LogLevel to debug:
 
- 3.  Set up a script alias to run the login CGI service by adding the
-     following line to your Apache configuration:
+         LogLevel debug
+     
+ 4.  Set up a script aliases to run the login CGI service by adding the
+     following lines to your Apache configuration:
 
-         ScriptAlias /login "<apache-root>/htdocs/webkdc/login.cgi"
-
-     You can change the path to wherever is convenient.  Replace
-     <apache-root> with the root of your Apache installation.
-
- 4.  Tell Apache to allow CGI execution in that directory:
-
-         <Directory "/usr/local/apache2/htdocs/webkdc">
-             Options Indexes FollowSymLinks +ExecCGI
-             AddHandler cgi-script .cgi
-             AllowOverride All
-             Order allow,deny
-             Allow from all
-         </Directory>
+       ScriptAlias /login "webkdc/login.fcgi"
+       ScriptAlias /logout "webkdc/logout.fcgi"
+       Alias /images "webkdc/images/"
 
  5.  Set up a <VirtualHost> directive using SSL for the WebKDC service ,
      running on some port other than the standard port (since the login
@@ -65,28 +75,27 @@ monitored for security.
          ...
          </VirtualHost>
 
- 6.  Create the conf/webkdc directory and the webkdc htdocs directory:
+ 6.  Create the conf/webkdc directory and the webkdc directory:
 
          cd <apache-root>
-         mkdir -p conf/webkdc htdocs/webkdc
+         mkdir -p conf/webkdc webkdc
 
  7.  Install the WebKDC files used by the login server, the portion that
      runs on the regular SSL port.  cd to the root of the WebAuth source
      tree and then run:
 
          cd src/webkdc
-         cp login.cgi quad.gif WebKDC.pm <apache-root>/htdocs/webkdc
-         cp -r WebKDC <apache-root>/htdocs/webkdc
+         cp login.fcgi logout.fcgi WebKDC.pm <apache-root>/webkdc
+         cp -r WebKDC images templates <apache-root>/webkdc
 
- 8.  Edit <apache-root>/htdocs/WebKDC.pm and change the variables
-     $C_WEBKDC_KEYRING_PATH and $C_WEBKDC_URL to point to your install
-     locations:
+ 8.  Verify <apache-root>/webkdc/WebKDC.pm has the correct values
+     for $C_WEBKDC_KEYRING_PATH and $C_WEBKDC_URL:
 
-         our $C_WEBKDC_KEYRING_PATH = "<apache-root>/conf/webkdc/keyring";
-         our $C_WEBKDC_URL = "https://<webkdc-server>:8443/webkdc-service/";
+      our $C_WEBKDC_KEYRING_PATH = "../conf/webkdc/keyring";
+      our $C_WEBKDC_URL = "https://localhost/webkdc-service/";
 
-     where <webkdc-server> is the fully qualified name of the system on
-     which you're running the WebKDC service.
+     If you follow the default recommendations on where to place the
+     keyring, you shouldn't have to change anything.
 
  9.  Install a keytab for the WebKDC.  This keytab must be for the same
      identity as is mentioned in the WebAuthWebKdcPrincipal configuration
