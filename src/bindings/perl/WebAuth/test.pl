@@ -12,10 +12,10 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-BEGIN { plan tests => 95 }
+BEGIN { plan tests => 56 }
 my $run_kerb = 0;
 
-#BEGIN { plan tests => 115 }
+#BEGIN { plan tests => 76 }
 #my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
@@ -58,106 +58,30 @@ ok("an" eq WebAuth::WA_TK_APP_NAME);
 
 ########################################  base64
 
-ok(WebAuth::base64_encoded_length(1), 4);
-ok(WebAuth::base64_encoded_length(2), 4);
-ok(WebAuth::base64_encoded_length(3), 4);
-ok(WebAuth::base64_encoded_length(4), 8);
-ok(WebAuth::base64_encoded_length(5), 8);
-ok(WebAuth::base64_encoded_length(6), 8);
-ok(WebAuth::base64_encoded_length(7), 12);
-ok(WebAuth::base64_encoded_length(8), 12);
-ok(WebAuth::base64_encoded_length(9), 12);
-
-($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1'));
-ok($len, 1);
-ok($s, WebAuth::WA_ERR_NONE);
-
-($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('12'));
-ok($len, 2);
-ok($s, WebAuth::WA_ERR_NONE);
-
-($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('123'));
-ok($len, 3);
-ok($s, WebAuth::WA_ERR_NONE);
-
-($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1234'));
-ok($len, 4);
-ok($s, WebAuth::WA_ERR_NONE);
-
-
 ok(WebAuth::base64_encode('hello'), 'aGVsbG8=');
+ok(WebAuth::base64_decode('aGVsbG8='), 'hello');
 
-($s, $output) = WebAuth::base64_decode('aGVsbG8=');
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output, 'hello');
+ok(WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')),'\000\001\002');
 
-($s, $output) = WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')),
+ok(WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')), '\000\001\002');
 
-ok($output,'\000\001\002');
-ok($s, WebAuth::WA_ERR_NONE);
-
-
-($s, $output) = 
-          WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002'));
-
-ok($output, '\000\001\002');
-ok($s, WebAuth::WA_ERR_NONE);
-
-# test some failures
-
-($s, $len) = WebAuth::base64_decoded_length('x');
-ok($s, WebAuth::WA_ERR_CORRUPT);
-
-($s, $output) = WebAuth::base64_decode('axc');
-ok($s, WebAuth::WA_ERR_CORRUPT);
-ok($output, undef);
+# test some failure
+ok(WebAuth::base64_decode('axc'), undef);
 
 ########################################  hex
 
-# basic hex lenth tests
-ok(WebAuth::hex_encoded_length(1), 2);
-ok(WebAuth::hex_encoded_length(3), 6);
-ok(WebAuth::hex_encoded_length(5), 10);
-
-($s, $len) = WebAuth::hex_decoded_length(2);
-ok($s, WebAuth::WA_ERR_NONE);
-ok($len, 1);
-
-($s, $len) = WebAuth::hex_decoded_length(6);
-ok($s, WebAuth::WA_ERR_NONE);
-ok($len, 3);
-
-($s, $len) = WebAuth::hex_decoded_length(10);
-ok($s, WebAuth::WA_ERR_NONE);
-ok($len, 5);
 
 ok(WebAuth::hex_encode("\000\001\002\003\004\005"), '000102030405');
 
-($s, $output) = WebAuth::hex_decode('000102030405');
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output, "\000\001\002\003\004\005");
+ok(WebAuth::hex_decode('000102030405'), "\000\001\002\003\004\005");
 
 ok(WebAuth::hex_encode('hello'), '68656c6c6f');
-($s, $output) = WebAuth::hex_decode('68656c6c6f');
-ok($s, WebAuth::WA_ERR_NONE);
-ok($output, 'hello');
+ok(WebAuth::hex_decode('68656c6c6f'), 'hello');
 
-# test some failures
-
-($s,$len) = WebAuth::hex_decoded_length(3);
-ok($s, WebAuth::WA_ERR_CORRUPT);
-
-$s = undef;
-($s, $output) = WebAuth::hex_decode('FOOBAR');
-ok($s, WebAuth::WA_ERR_CORRUPT);
+# test some failure
+ok(WebAuth::hex_decode('FOOBAR'), undef);
 
 ######################################### attr tests
-
-ok(WebAuth::attrs_encoded_length({"x"=>"1"}), 4);
-ok(WebAuth::attrs_encoded_length({"x"=>";"}), 5);
-ok(WebAuth::attrs_encoded_length({"x"=>"1;"}), 6);
-ok(WebAuth::attrs_encoded_length({"x"=>"1", "y"=>"2"}), 8);
-ok(WebAuth::attrs_encoded_length({"x"=>"\000", "y"=>"123"}), 10);
 
 ($s, $output) =WebAuth::attrs_encode({"x"=>"1"});
 ok($s, WebAuth::WA_ERR_NONE);

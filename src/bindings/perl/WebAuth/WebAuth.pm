@@ -63,26 +63,6 @@ $message = error_message($status)
 
 Returns an error message for the specified status.
 
-=item base64_encoded_length(length)
-
-$base64_len = base64_encoded_length($length)
-
-Given data of the specified length, returns how long the resulting
-base64-encoded data would be.
-
-=item base64_decoded_length(input)
-
-($status,$length) = base64_decoded_length($input);
-
-Given the string $input, returns how long  the resulting
-base64-encoded data would be in $length. $status will be set to WA_ERR_NONE or 
-WA_ERR_CORRUPT.
-Note that this function doesn't actually attempt to ensure 
-that $input contains a valid base64-encoded string, though 
-it does a sanity check to make sure the length is greater
-then 0 and a multiple of 4. Call base64_decode to actually attempt
-to parse and decode $input.
-
 =item base64_encode(input);
 
 $output = base64_encode($input);
@@ -91,29 +71,10 @@ base64 encodes the $input string and returns the result.
 
 =item base64_decode(input)
 
- ($status,$output) = base64_decode($input);
+ $output = base64_decode($input);
 
-base64 decodes the $input string and returns the result in $output.
-
-=item hex_encoded_length(length)
-
-$hex_len = hex_encoded_length($length)
-
-Given data of the specified length, returns how long the resulting
-hex-encoded data would be.
-
-=item hex_decoded_length(input)
-
-($sttus, $len) = hex_decoded_length($input);
-
-Given the string $input, returns how long the resulting
-hex-encoded data would be in $len. $status is set to WA_ERR_NONE or 
-A_ERR_CORRUPT on error. 
-Note that this function doesn't actually attempt to ensure 
-that $input contains a valid hex-encoded string, though 
-it does a sanity check to make sure the length is greater
-then 0 and a multiple of 4. Call hex_decode to actually attempt
-to parse and decode $input.
+base64 decodes the $input string and returns the result in $output,
+or undef if unable to parse $input.
 
 =item hex_encode(input);
 
@@ -123,17 +84,10 @@ hex encodes the $input string and returns the result.
 
 =item hex_decode(input)
 
- ($status, $output) = hex_decode($input);
+ $output = hex_decode($input);
 
-hex decodes the $input string and returns the result in $output.
-$status will be set to the result of the webauth_hex_decode C function.
-
-=item attrs_encoded_length(attrs)
-
-$len = attrs_encoded_length($attrs)
-
-Takes as input $attrs (which must be a reference to a hash) and returns
-the resulting length of encoding the attributes into a string.
+hex decodes the $input string and returns the result in $output,
+or undef if unable to decode $input.
 
 =item attrs_encode(attrs);
 

@@ -79,36 +79,6 @@ CODE:
 OUTPUT:
     RETVAL
 
-
-int
-webauth_base64_encoded_length(length)
-    int length
-PROTOTYPE: $
-CODE:
-{
-    RETVAL = webauth_base64_encoded_length(length);
-}
-OUTPUT:
-    RETVAL
-
-void
-webauth_base64_decoded_length(input)
-SV * input
-PROTOTYPE: $
-PPCODE:
-{
-    int len, s;
-
-    STRLEN n_input;
-    unsigned char *p_input;
-    p_input = SvPV(input, n_input);
-    s = webauth_base64_decoded_length(p_input, n_input, &len);
-
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
-    PUSHs(sv_2mortal(newSViv(len)));
-}
-
 void
 webauth_base64_encode(input)
 SV * input
@@ -137,58 +107,33 @@ PROTOTYPE: $
 PPCODE:
 {
     STRLEN n_input;
-    int out_len, out_max, s;
+    int out_len, s;
     unsigned char *p_input;
     unsigned char *buff;
 
     p_input = SvPV(input, n_input);
     buff = NULL;
 
-    s = webauth_base64_decoded_length(p_input, n_input, &out_max);
-    if (s == WA_ERR_NONE) {
-            buff = malloc(out_max);
-            if (buff == NULL) {
-                croak("can't create buffer");
-            }
-            s = webauth_base64_decode(p_input, n_input, 
-                                      buff, &out_len, out_max);
+    buff = malloc(n_input);
+    if (buff == NULL) {
+        croak("can't create buffer");
     }
+    s = webauth_base64_decode(p_input, n_input, buff, &out_len, n_input);
 
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
-    if (buff != NULL) {
+    EXTEND(SP,1);
+
+    if (s == WA_ERR_NONE) {
         SV *output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
-        free(buff);
         PUSHs(output);
     } else {
         PUSHs(&PL_sv_undef);
     }
+
+    if (buff != NULL)
+        free(buff);
 }
 
-int
-webauth_hex_encoded_length(length)
-    int length
-PROTOTYPE: $
-CODE:
-{
-    RETVAL = webauth_hex_encoded_length(length);
-}
-OUTPUT:
-    RETVAL
-
-void
-webauth_hex_decoded_length(length)
-    int length
-PROTOTYPE: $
-PPCODE:
-{
-    int len, s;
-    s = webauth_hex_decoded_length(length, &len);
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
-    PUSHs(sv_2mortal(newSViv(len)));
-}
 
 void
 webauth_hex_encode(input)
@@ -229,52 +174,18 @@ PPCODE:
             s = webauth_hex_decode(p_input, n_input, buff, &out_len, out_max);
     }
 
-    EXTEND(SP,2);
-    PUSHs(sv_2mortal(newSViv(s)));
-    if (buff != NULL) {
+    EXTEND(SP,1);
+
+    if (s == WA_ERR_NONE) {
         SV *output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
-        free(buff);
         PUSHs(output);
     } else {
         PUSHs(&PL_sv_undef);
     }
-}
 
-void
-webauth_attrs_encoded_length(attrs)
-SV *attrs
-PROTOTYPE: $
-CODE:
-{
-    HV *h;
-    SV *sv_val;
-    int num_attrs, s;
-    char *key, *val;
-    I32 klen;
-    STRLEN vlen;
-    WEBAUTH_ATTR_LIST *list;
-
-    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
-        croak("attrs must be reference to a hash");
-    }
-
-    h = (HV*)SvRV(attrs);
-
-    num_attrs = hv_iterinit(h);
-
-    list = webauth_attr_list_new(num_attrs);
-    if (list == NULL) {
-        croak("can't create new attr list");
-    }
-    while((sv_val=hv_iternextsv(h, &key, &klen))) {
-        val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, key, val, vlen);
-    }
-
-    s = webauth_attrs_encoded_length(list);
-    webauth_attr_list_free(list);
-    ST(0) = sv_2mortal(newSViv(s));
+    if (buff != NULL) 
+        free(buff);
 }
 
 void
