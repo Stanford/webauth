@@ -7,6 +7,7 @@ use UNIVERSAL qw(isa);
 use LWP::UserAgent;
 
 use WebAuth3 qw(:base64 :krb5 :const);
+use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
 use WebKDC::WebKDCException;
@@ -30,13 +31,6 @@ BEGIN {
 }
 
 our @EXPORT_OK;
-
-#
-# all the $C_ variables are candidates for a config file
-# when one exists.
-#
-our $C_WEBKDC_KEYRING_PATH = "../conf/webkdc/keyring";
-our $C_WEBKDC_URL = "https://localhost/webkdc-service/";
 
 our $DEBUG = 1;
 
@@ -66,7 +60,7 @@ our %pec_mapping = (
 
 sub get_keyring {
     if (!defined($our_keyring)) {
-	$our_keyring = WebAuth3::keyring_read_file($C_WEBKDC_KEYRING_PATH);
+	$our_keyring = WebAuth3::keyring_read_file($WebKDC::Config::KEYRING_PATH);
     }
     return $our_keyring;
 }
@@ -176,7 +170,7 @@ sub request_token_request($$) {
 
     my $ua = new LWP::UserAgent;
 
-    my $http_req = new HTTP::Request(POST=> $C_WEBKDC_URL);
+    my $http_req = new HTTP::Request(POST=> $WebKDC::Config::URL);
     $http_req->content_type('text/xml');
     $http_req->content($webkdc_doc->root->to_string());
 
