@@ -4,6 +4,11 @@
 
 #include "mod_webauth.h"
 
+/* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
+#ifndef CURLOPT_WRITEDATA
+# define CURLOPT_WRITEDATA CURLOPT_FILE
+#endif
+
 /*
  * make a copy of the service token into the given pool
  */
