@@ -63,7 +63,7 @@ sub verbose_message {
     my $s = $self->{'status'};
     my $m = $self->{'mesg'};
     my $w = $self->{'wrapped'};
-    my $msg = "WebKDC::Exception ".$ErrorNames[$s].": $m";
+    my $msg = "WebKDC::WebKDCException ".$ErrorNames[$s].": $m";
     $msg .= ": $w" if (defined($w));
     return $msg;
 }
@@ -154,21 +154,21 @@ The following constants are exported:
 =item match($exception[, $status])
 
   This class function (not a method) returns true if the given
-  $exception is a WebAuth::Exception. If $status is specified, then
+  $exception is a WebKDC::WebKDCException. If $status is specified, then
   $exception->status() will also be compared to $status.
 
 =item new(status, message, wrapped_exception)
 
-  This method is used to created new WebKDC::Exception objects.
+  This method is used to created new WebKDC::WebKDCException objects.
 
 =item status()
 
-  This method returns the WebKDC::Exception status code for the exception,
+  This method returns the WebKDC::WebKDCException status code for the exception,
   which will be one of the WK_ERR_* codes.
 
 =item message()
 
-  This method returns the WebKDC::Exception error message that was
+  This method returns the error message that was
   used in the constructor.
 
 =item wrapped_exceptione()

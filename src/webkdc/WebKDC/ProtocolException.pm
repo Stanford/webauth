@@ -44,7 +44,7 @@ sub verbose_message {
     my $self = shift;
     my $s = $self->{'status'};
     my $m = $self->{'mesg'};
-    my $msg = "WebKDC::Exception $s: $m";
+    my $msg = "WebKDC::ProtocolException $s: $m";
     return $msg;
 }
 
@@ -124,6 +124,7 @@ use WebAuth qw(:const);
 
 =back
 
+
 =head1 METHODS and FUNCTIONS
 
 =over 4
@@ -131,32 +132,27 @@ use WebAuth qw(:const);
 =item match($exception[, $status])
 
   This class function (not a method) returns true if the given
-  $exception is a WebAuth::Exception. If $status is specified, then
+  $exception is a WebAuth::ProtocolException. If $status is specified, then
   $exception->status() will also be compared to $status.
 
-=item new(status, message, wrapped_exception)
+=item new(status, message)
 
-  This method is used to created new WebKDC::Exception objects.
+  This method is used to created new WebKDC::ProtcolException objects.
 
 =item status()
 
-  This method returns the WebKDC::Exception status code for the exception,
-  which will be one of the WK_ERR_* codes.
+  This method returns the WebKDC::ProtocolException status code 
+  for the exception,  which will be one of the WA_PEC_* codes.
 
 =item message()
 
-  This method returns the WebKDC::Exception error message that was
+  This method returns the rror message that was
   used in the constructor.
-
-=item wrapped_exceptione()
-
-  This method returns the wrapped exception that was used in the
-  constructor (if there was one).
 
 =item verbose_message()
 
   This method returns a verbose error message, which consists
-  of the status code, message, and any wrapped exception.
+  of the status code and message.
 
   The verbose_message method is also called if the exception is
   used as a string.
