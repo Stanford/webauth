@@ -7,5 +7,6 @@ random_test
 token_test
 key_test
 krb5_test
+krb5_tgt_test
 webauth_keyring
 webauth_keyring2
