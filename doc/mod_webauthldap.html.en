@@ -4,11 +4,31 @@
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
               This file is generated from xml source: DO NOT EDIT
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-      --><title>mod_webauthldap - Apache HTTP Server</title><link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" /><link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" /><link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" /><link href="../images/favicon.ico" rel="shortcut icon" /></head><body><div id="page-header"><p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p><p class="apache">Apache HTTP Server Version 2.0</p><img alt="" src="../images/feather.gif" /></div><div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div><div id="path"><a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div><div id="page-content"><div id="preamble"><h1>Apache Module mod_webauthldap</h1><table class="module"><tr><th><a href="module-dict.html#Description">Description:
-                  </a></th><td>LDAP Authorization and attribute lookup for WebAuth V3</td></tr><tr><th><a href="module-dict.html#Status">Status:
-                  </a></th><td>Contributed</td></tr><tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:
-                  </a></th><td>webauthldap_module</td></tr><tr><th><a href="module-dict.html#SourceFile">Source File:
-                  </a></th><td>mod_webauthldap.c</td></tr></table><h3>Summary</h3>
+      -->
+<title>mod_webauthldap - Apache HTTP Server</title>
+<link href="/style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
+<link href="/style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
+<link href="/style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
+<link href="/images/favicon.ico" rel="shortcut icon" /></head>
+<body>
+<div id="page-header">
+<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p>
+<p class="apache">Apache HTTP Server Version 2.1</p>
+<img alt="" src="/images/feather.gif" /></div>
+<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="/images/left.gif" /></a></div>
+<div id="path">
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="/">Version 2.1</a> &gt; <a href="./">Modules</a></div>
+<div id="page-content">
+<div id="preamble"><h1>Apache Module mod_webauthldap</h1>
+<div class="toplang">
+<p><span>Available Languages: </span></p>
+</div>
+<table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>LDAP Authorization and attribute lookup for WebAuth V3</td></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauthldap_module</td></tr>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauthldap.c</td></tr></table>
+<h3>Summary</h3>
+
 <p>This module provides authorization based on configurable LDAP priviledge
  groups. It also allows retrieving adhoc LDAP attributes and places them in 
  environment variables. The module was designed for use with an LDAP server 
@@ -17,7 +37,32 @@
 
 <p>For other Webauth documentation see the
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
-</div><div id="quickview"><h3 class="directives">Directives</h3><ul id="toc"><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthrule">WebAuthLdapAuthrule</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li></ul><h3>Topics</h3><ul id="topics"><li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li><li><img alt="" src="../images/down.gif" /> Adhoc attributes lookup</li><li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li><li><img alt="" src="../images/down.gif" /> Webauth 2.x backward compatibility</li></ul></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Using WebAuthLdap Authorization</h2>
+</div>
+<div id="quickview"><h3 class="directives">Directives</h3>
+<ul id="toc">
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapauthrule">WebAuthLdapAuthrule</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li>
+</ul>
+<h3>Topics</h3>
+<ul id="topics">
+<li><img alt="" src="/images/down.gif" /> Using WebAuthLdap Authorization</li>
+<li><img alt="" src="/images/down.gif" /> Adhoc attributes lookup</li>
+<li><img alt="" src="/images/down.gif" /> Generic Minimal Config File</li>
+<li><img alt="" src="/images/down.gif" /> Webauth 2.x backward compatibility</li>
+</ul></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="section">
+<h2>Using WebAuthLdap Authorization</h2>
 
     <p>To restrict access to particular priviledge group(s) place the 
     "require privgroup  &lt;group name&gt;" directives in a .htaccess 
@@ -47,7 +92,9 @@
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Adhoc attributes lookup</h2>
+</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="section">
+<h2>Adhoc attributes lookup</h2>
 
     <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a 
     Location block or a Directory block, any attributes available
@@ -67,13 +114,15 @@
   &lt;Location /private/&gt;<br />
   AuthType WebAuth<br />
   Require valid-user<br />
-  WebAuthLdapAttribute affiliation<br />
+  WebAuthLdapAttribute displayName<br />
   WebAuthLdapAttribute description<br />
-  WebAuthLdapAttribute phoneNumber<br />
+  WebAuthLdapAttribute telephoneNumber<br />
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Generic Minimal Config File</h2>
+</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="section">
+<h2>Generic Minimal Config File</h2>
 
     <p>The following example shows the minimum config file required
     to configure and use mod_webauthldap.</p>
@@ -95,7 +144,9 @@
   &lt;/Location&gt;<br />
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Webauth 2.x backward compatibility</h2>
+</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="section">
+<h2>Webauth 2.x backward compatibility</h2>
 
     <p>StanfordAuth as an AuthType is supported as a form of backward 
        compatibility, to ease the transition. When it is used, require group
@@ -126,13 +177,17 @@
   require group stanford:stanford<br />
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>Specifies an LDAP attribute to place into environment variables</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapAttribute <em>ldap_attribute_name</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>"displayName", "mail"</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>directory</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Specifies an LDAP attribute to place into environment variables</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAttribute <em>ldap_attribute_name</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>"displayName", "mail"</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>One attribute per directive, but multiple directives can be used. The specified attributes will be set in addition to the default ones.</p>
 
     <p>The name of the environment variable is formed by prepending 
@@ -142,101 +197,144 @@
     also be set into WEBAUTH_LDAP_ATTRIBUTENAME1,  WEBAUTH_LDAP_ATTRIBUTENAME2,
     and so on, in no particular order.</p>
 
+    <p>The attributes can be any attribute found in your directory server that
+    the server using this module has access to read.</p>
+
 <div class="example"><h3>Example</h3><p><code>
 &lt;Location /private/&gt;<br />
 AuthType WebAuth<br />
 Require privgroup stanford:staff<br />
-WebAuthLdapAttribute affiliation<br />
-WebAuthLdapAttribute description<br />
-WebAuthLdapAttribute phoneNumber<br />
+WebAuthLdapAttribute suAffiliation<br />
+WebAuthLdapAttribute displayName<br />
+WebAuthLdapAttribute suUnivid<br />
 &lt;/Location&gt;<br />
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapAuthorizationAttribute" id="WebAuthLdapAuthorizationAttribute">WebAuthLdapAuthorizationAttribute</a> <a name="webauthldapauthorizationattribute" id="webauthldapauthorizationattribute">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The LDAP attribute that is checked against to determine authorization of a user</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapAuthorizationAttribute <em>ldap_attribute_name</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapAuthorizationAttribute" id="WebAuthLdapAuthorizationAttribute">WebAuthLdapAuthorizationAttribute</a> <a name="webauthldapauthorizationattribute" id="webauthldapauthorizationattribute">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The LDAP attribute that is checked against to determine authorization of a user</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAuthorizationAttribute <em>ldap_attribute_name</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>This specifies the attribute in the LDAP directory that contains the groups used for determining authorization of access. This is expected to be a multi-valued attribute against which ldap compare operations are performed.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapAuthorizationAttribute priviledgeAttribute
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapAuthrule" id="WebAuthLdapAuthrule">WebAuthLdapAuthrule</a> <a name="webauthldapauthrule" id="webauthldapauthrule">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>This is a flag that controls whether the environment variable WEBAUTH_LDAPAUTHRULE is set to indicate how a user was authorized. Its values can be: "valid-user", "user suchnsuch", or "groupname".</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapAuthrule <em>on|off</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>on</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapBase" id="WebAuthLdapBase">WebAuthLdapBase</a> <a name="webauthldapbase" id="webauthldapbase">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The base for the LDAP lookup</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapBase <em>valid_search_base</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapAuthrule" id="WebAuthLdapAuthrule">WebAuthLdapAuthrule</a> <a name="webauthldapauthrule" id="webauthldapauthrule">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>This is a flag that controls whether the environment variable WEBAUTH_LDAPAUTHRULE is set to indicate how a user was authorized. Its values can be: "valid-user", "user suchnsuch", or "groupname".</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAuthrule <em>on|off</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapBase" id="WebAuthLdapBase">WebAuthLdapBase</a> <a name="webauthldapbase" id="webauthldapbase">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The base for the LDAP lookup</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapBase <em>valid_search_base</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>The lookup of the user's entry will begin at the specified base.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapBase cn=people,dc=acme,dc=com
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapBindDN" id="WebAuthLdapBindDN">WebAuthLdapBindDN</a> <a name="webauthldapbinddn" id="webauthldapbinddn">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The bind DN for the LDAP lookup</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapBindDN <em>valid_bind_dn</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapBindDN" id="WebAuthLdapBindDN">WebAuthLdapBindDN</a> <a name="webauthldapbinddn" id="webauthldapbinddn">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The bind DN for the LDAP lookup</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapBindDN <em>valid_bind_dn</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>The bind DN specifies the LDAP identity that this module will use when binding to the LDAP server. Some openldap servers do not need an explicit bind DN and determine the binding identity from the authentication credentials.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapBindDN cn=myDN,dc=acme,dc=com
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapDebug" id="WebAuthLdapDebug">WebAuthLdapDebug</a> <a name="webauthldapdebug" id="webauthldapdebug">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>Turn on|off the debugging level of logging</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapDebug <em>on|off</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>off</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapDebug" id="WebAuthLdapDebug">WebAuthLdapDebug</a> <a name="webauthldapdebug" id="webauthldapdebug">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on|off the debugging level of logging</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapDebug <em>on|off</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>This will print some tracing and debuggin output in the server log, about 
 the stages of processing, the ldap parameters and returned results.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapDebug on
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapFilter" id="WebAuthLdapFilter">WebAuthLdapFilter</a> <a name="webauthldapfilter" id="webauthldapfilter">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The LDAP filter to use in searching for the user's entry</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapFilter <em>valid_ldap_filter</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>uid=USER</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapFilter" id="WebAuthLdapFilter">WebAuthLdapFilter</a> <a name="webauthldapfilter" id="webauthldapfilter">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The LDAP filter to use in searching for the user's entry</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapFilter <em>valid_ldap_filter</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>uid=USER</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>This can be any properly formed LDAP filter, where the current user's id will be substituted for the upper-cased string "USER". The "USER" string can appear in the filter multiple times.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapFilter (&amp;(objectClass=superson)(uid=USER))
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapHost" id="WebAuthLdapHost">WebAuthLdapHost</a> <a name="webauthldaphost" id="webauthldaphost">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The hostname for the LDAP server</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapHost <em>hostname</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapHost" id="WebAuthLdapHost">WebAuthLdapHost</a> <a name="webauthldaphost" id="webauthldaphost">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The hostname for the LDAP server</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapHost <em>hostname</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>The ldap server needs to support SASL GSSAPI Kerberos V binds.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapHost ldap.acme.com
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapKeytab" id="WebAuthLdapKeytab">WebAuthLdapKeytab</a> <a name="webauthldapkeytab" id="webauthldapkeytab">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>Keytab containing the principal used for binding to the LDAP server.</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapKeytab <em>path</em>  [<em>principal</em>]</td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapKeytab" id="WebAuthLdapKeytab">WebAuthLdapKeytab</a> <a name="webauthldapkeytab" id="webauthldapkeytab">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Keytab containing the principal used for binding to the LDAP server.</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapKeytab <em>path</em>  [<em>principal</em>]</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>In case a keytab contains several principals, use the second optional value on this directive to indicate the principal name to use.</p>
 
 <p>If the path is not absolute, it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -244,34 +342,57 @@ WebAuthLdapHost ldap.acme.com
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapPort" id="WebAuthLdapPort">WebAuthLdapPort</a> <a name="webauthldapport" id="webauthldapport">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The port on which to connect to the LDAP server.</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapPort <em>port_num</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>389</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapPort" id="WebAuthLdapPort">WebAuthLdapPort</a> <a name="webauthldapport" id="webauthldapport">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The port on which to connect to the LDAP server.</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapPort <em>port_num</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>389</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>If using SSL, this should be set to the SSL port on the LDAP server, usually 636.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapPort 389
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapSSL" id="WebAuthLdapSSL">WebAuthLdapSSL</a> <a name="webauthldapssl" id="webauthldapssl">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>This flag is used to toggle the connection to the LDAP server to be SSL or plain.</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapSSL <em>on|off</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>off</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapTktCache" id="WebAuthLdapTktCache">WebAuthLdapTktCache</a> <a name="webauthldaptktcache" id="webauthldaptktcache">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
-              </a></th><td>The path to the Kerberos V credentials cache file</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
-              </a></th><td>WebAuthLdapTktCache <em>path</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
-              </a></th><td><code>/tmp/webauthldap.tkt</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
-              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
-              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
-              </a></th><td>mod_webauthldap</td></tr></table>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapSSL" id="WebAuthLdapSSL">WebAuthLdapSSL</a> <a name="webauthldapssl" id="webauthldapssl">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>This flag is used to toggle the connection to the LDAP server to be SSL or plain.</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapSSL <em>on|off</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapTktCache" id="WebAuthLdapTktCache">WebAuthLdapTktCache</a> <a name="webauthldaptktcache" id="webauthldaptktcache">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The path to the Kerberos V credentials cache file</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapTktCache <em>path</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>/tmp/webauthldap.tkt</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
 <p>If the ticket exists, is valid and readable, it will be used until it expires. After expiration, or if it doesn't exist, the specified keytab will be used to obtain a new ticket.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapTktCache /tmp/webauthldap.tkt
 </code></p></div>
-</div></div><div id="footer"><p class="apache">Maintained by the <a href="http://httpd.apache.org/docs-project/">Apache HTTP Server Documentation Project</a></p><p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div></body></html>
+
+</div>
+</div>
+<div class="bottomlang">
+<p><span>Available Languages: </span></p>
+</div><div id="footer">
+<p class="apache">Copyright 1999-2004 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p></div>
+</body></html>

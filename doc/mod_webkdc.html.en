@@ -6,20 +6,23 @@
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       -->
 <title>mod_webkdc - Apache HTTP Server</title>
-<link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
-<link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
-<link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
-<link href="../images/favicon.ico" rel="shortcut icon" /></head>
+<link href="/style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
+<link href="/style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
+<link href="/style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
+<link href="/images/favicon.ico" rel="shortcut icon" /></head>
 <body>
 <div id="page-header">
-<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
+<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p>
 <p class="apache">Apache HTTP Server Version 2.1</p>
-<img alt="" src="../images/feather.gif" /></div>
-<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
+<img alt="" src="/images/feather.gif" /></div>
+<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="/images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.1</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="/">Version 2.1</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webkdc</h1>
+<div class="toplang">
+<p><span>Available Languages: </span></p>
+</div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>WebAuth V3 WebKDC module</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webkdc_module</td></tr>
@@ -34,32 +37,32 @@
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcdebug">WebKdcDebug</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyring">WebKdcKeyring</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringkeylifetime">WebKdcKeyringKeyLifetime</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdcdebug">WebKdcDebug</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyring">WebKdcKeyring</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyringkeylifetime">WebKdcKeyringKeyLifetime</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
+<li><img alt="" src="/images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> Setting up the WebKDC</li>
-<li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> Setting up multiple WebKDCs</li>
+<li><img alt="" src="/images/down.gif" /> Setting up the WebKDC</li>
+<li><img alt="" src="/images/down.gif" /> Minimal Config File</li>
+<li><img alt="" src="/images/down.gif" /> Setting up multiple WebKDCs</li>
 </ul></div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up the WebKDC</h2>
 
     <p>describe how to configure keyrings, acls, handler, etc.
     </p>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="section">
 <h2>Minimal Config File</h2>
 
@@ -81,7 +84,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 &lt;/VirtualHost&gt;
 </pre></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up multiple WebKDCs</h2>
 <p>WebAuth V3 was designed so that it would be fairly easy
@@ -130,7 +133,7 @@ the <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a>
 directive:
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
-  WebKdcKeyringAutoUpdate off<br xmlns="" />
+  WebKdcKeyringAutoUpdate off<br />
 </code></p></div>
 
 </p>
@@ -214,7 +217,7 @@ $ scp conf/webkdc/keyring webkdc-slave:{path-on-slave}
 </pre></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcDebug" id="WebKdcDebug">WebKdcDebug</a> <a name="webkdcdebug" id="webkdcdebug">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in Apache error_log
@@ -230,11 +233,11 @@ Whether or not we do extra debugging in error_log.
 </p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcDebug on<br xmlns="" />
+WebKdcDebug on<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyring" id="WebKdcKeyring">WebKdcKeyring</a> <a name="webkdckeyring" id="webkdckeyring">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the WebKDC's keyring
@@ -265,7 +268,7 @@ WebKdcKeyring conf/webkdc/keyring
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyringAutoUpdate" id="WebKdcKeyringAutoUpdate">WebKdcKeyringAutoUpdate</a> <a name="webkdckeyringautoupdate" id="webkdckeyringautoupdate">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not we auto-update the keyring file 
@@ -290,11 +293,11 @@ That too will eventually be automated.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringAutoUpdate off<br xmlns="" />
+WebKdcKeyringAutoUpdate off<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyringKeyLifetime" id="WebKdcKeyringKeyLifetime">WebKdcKeyringKeyLifetime</a> <a name="webkdckeyringkeylifetime" id="webkdckeyringkeylifetime">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update
@@ -321,11 +324,11 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringKeyLifetime 60d<br xmlns="" />
+WebKdcKeyringKeyLifetime 60d<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeytab" id="WebKdcKeytab">WebKdcKeytab</a> <a name="webkdckeytab" id="webkdckeytab">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
@@ -352,7 +355,7 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcProxyTokenLifetime" id="WebKdcProxyTokenLifetime">WebKdcProxyTokenLifetime</a> <a name="webkdcproxytokenlifetime" id="webkdcproxytokenlifetime">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>lifetime of webkdc-proxy tokens we create.
@@ -390,12 +393,12 @@ even if this directive is set higher then 25 hours.
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-# create a webkdc-proxy token valid for 2 hours<br xmlns="" />
+# create a webkdc-proxy token valid for 2 hours<br />
 WebKdcProxyTokenLifetime 2h
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcServiceTokenLifetime" id="WebKdcServiceTokenLifetime">WebKdcServiceTokenLifetime</a> <a name="webkdcservicetokenlifetime" id="webkdcservicetokenlifetime">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>lifetime of webkdc-service tokens we create.
@@ -427,12 +430,12 @@ hours, days, and weeks respectively.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-# create a webkdc-service token valid for 30 days<br xmlns="" />
+# create a webkdc-service token valid for 30 days<br />
 WebKdcServiceTokenLifetime 30d
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcSIdentAuthType" id="WebKdcSIdentAuthType">WebKdcSIdentAuthType</a> <a name="webkdcsidentauthtype" id="webkdcsidentauthtype">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable S/Ident checks
@@ -471,11 +474,11 @@ is performed.
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"<br xmlns="" />
+WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcSIdentTimeout" id="WebKdcSIdentTimeout">WebKdcSIdentTimeout</a> <a name="webkdcsidenttimeout" id="webkdcsidenttimeout">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Timeout value used with ident_query call
@@ -501,11 +504,11 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentTimeout 5s<br xmlns="" />
+WebKdcSIdentTimeout 5s<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcTokenAcl" id="WebKdcTokenAcl">WebKdcTokenAcl</a> <a name="webkdctokenacl" id="webkdctokenacl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the token acl
@@ -562,7 +565,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebkdcTokenMaxTTL" id="WebkdcTokenMaxTTL">WebkdcTokenMaxTTL</a> <a name="webkdctokenmaxttl" id="webkdctokenmaxttl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How old a token that was should be recently created is valid for.
@@ -585,13 +588,15 @@ which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-# ten minute TTL<br xmlns="" />
+# ten minute TTL<br />
 WebKdcTokenMaxTTL 10m
 </code></p></div>
 
 </div>
 </div>
-<div id="footer">
-<p class="apache">Maintained by the <a href="http://httpd.apache.org/docs-project/">Apache HTTP Server Documentation Project</a></p>
-<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
+<div class="bottomlang">
+<p><span>Available Languages: </span></p>
+</div><div id="footer">
+<p class="apache">Copyright 1999-2004 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p></div>
 </body></html>

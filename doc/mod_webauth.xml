@@ -288,7 +288,7 @@ WEBAUTH_USER is set to:
 
 <p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code> will
 end up as a request attribute as opposed to being accessible by
-<code>java.lang.System.getenv</code>, which is <b>deprecated</b>.
+<code>java.lang.System.getenv</code>, which is <strong>deprecated</strong>.
 </p>
 
 <note><title>Note</title> 
@@ -1276,17 +1276,14 @@ included in the response to tell browsers not to cache the returned document.
 
 <p>
 It is recommended this only be turned on for sensitive documents and not
-all documents (and images) on the server. Also see
-<seealso><a href="mod_expires.html.en">mod_expires</a></seealso>.
+all documents (and images) on the server.
 </p>
-
-
-
 
 <example><title>Example</title>
 WebAuthDontCache on<br />
 </example>
 </usage>
+<seealso><a href="mod_expires.html.en">mod_expires</a></seealso>
 </directivesynopsis>
 
 <directivesynopsis>
@@ -1469,7 +1466,7 @@ file, and point to that file with this directive.
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
 <note><title>Note</title> 
-    <p>This directive is only needed when the <b>WebKDC</b> is using a
+    <p>This directive is only needed when the <strong>WebKDC</strong> is using a
 self-signed certificate. It is not needed if your WebAuth server is using
 a self-signed certificate</p>
 </note>

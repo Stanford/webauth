@@ -72,9 +72,9 @@
   &lt;Location /private/&gt;<br />
   AuthType WebAuth<br />
   Require valid-user<br />
-  WebAuthLdapAttribute affiliation<br />
+  WebAuthLdapAttribute displayName<br />
   WebAuthLdapAttribute description<br />
-  WebAuthLdapAttribute phoneNumber<br />
+  WebAuthLdapAttribute telephoneNumber<br />
   &lt;/Location&gt;
 </example>
 
@@ -287,13 +287,16 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
     also be set into WEBAUTH_LDAP_ATTRIBUTENAME1,  WEBAUTH_LDAP_ATTRIBUTENAME2,
     and so on, in no particular order.</p>
 
+    <p>The attributes can be any attribute found in your directory server that
+    the server using this module has access to read.</p>
+
 <example><title>Example</title>
 &lt;Location /private/&gt;<br />
 AuthType WebAuth<br />
 Require privgroup stanford:staff<br />
-WebAuthLdapAttribute affiliation<br />
-WebAuthLdapAttribute description<br />
-WebAuthLdapAttribute phoneNumber<br />
+WebAuthLdapAttribute suAffiliation<br />
+WebAuthLdapAttribute displayName<br />
+WebAuthLdapAttribute suUnivid<br />
 &lt;/Location&gt;<br/>
 </example>
 </usage>
