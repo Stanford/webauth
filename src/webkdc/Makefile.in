@@ -18,19 +18,19 @@ INSTALL_SCRIPT	= @INSTALL_SCRIPT@
 all clean depend:
 
 install:
-	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc
-	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/WebKDC
-	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/images
-	$(INSTALL) -d $(APACHE_ROOT)/htdocs/webkdc/templates
-	$(INSTALL_SCRIPT) login.fcgi $(APACHE_ROOT)/htdocs/webkdc/login.fcgi
-	$(INSTALL_SCRIPT) logout.fcgi $(APACHE_ROOT)/htdocs/webkdc/logout.fcgi
-	$(INSTALL_DATA) WebKDC.pm $(APACHE_ROOT)/htdocs/webkdc/WebKDC.pm
+	$(INSTALL) -d $(APACHE_ROOT)/webkdc
+	$(INSTALL) -d $(APACHE_ROOT)/webkdc/WebKDC
+	$(INSTALL) -d $(APACHE_ROOT)/webkdc/images
+	$(INSTALL) -d $(APACHE_ROOT)/webkdc/templates
+	$(INSTALL_SCRIPT) login.fcgi $(APACHE_ROOT)/webkdc/login.fcgi
+	$(INSTALL_SCRIPT) logout.fcgi $(APACHE_ROOT)/webkdc/logout.fcgi
+	$(INSTALL_DATA) WebKDC.pm $(APACHE_ROOT)/webkdc/WebKDC.pm
 	for f in images/* ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/images/$$f \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/images/$$f \
 	done
 	for f in WebKDC/* ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/WebKDC/$$f \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/WebKDC/$$f \
 	done
 	for f in templates/* ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/htdocs/webkdc/templates/$$f \
+	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/templates/$$f \
 	done
