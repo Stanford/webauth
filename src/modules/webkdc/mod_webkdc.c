@@ -371,6 +371,7 @@ attempt_sident(MWK_REQ_CTXT *rc,
                          s
                          );
         } else {
+            ident_set_authflag("USER-INTERACTION", "YES");
             if (rc->sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
                              "mod_webkdc: %s: ident_set_authtype(%s,%s, %d)",
@@ -3005,10 +3006,6 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
     ap_add_version_component(pconf, version);
-
-#if HAVE_SIDENT
-    ident_set_authflag("USER-INTERACTION", "YES");
-#endif
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
