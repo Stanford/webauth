@@ -39,11 +39,98 @@
 
 #include "mod_webauth.h"
 
+
+/* attr list macros to make code easier to read and audit 
+ * we don't need to check error codes since we are using
+ * WA_F_NONE, which doesn't allocate any memory.
+ */
+
+#define ADD_STR(name,value) \
+       webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
+
+#define ADD_PTR(name,value, len) \
+       webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
+
+#define ADD_TIME(name,value) \
+       webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
+
+#define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
+#define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
+#define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
+#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
+#define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
+#define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
+#define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
+#define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
+#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
+#define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
+#define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
+#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
+#define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
+#define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
+#define SET_REQUEST_REASON(r)        ADD_STR(WA_TK_REQUEST_REASON, r)
+#define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
+#define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
+#define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
+#define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
+#define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
+#define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
+#define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
+
 /*
  * initialized only in mod_webauth_child_init
  */
 WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
+
+
+/* FIXME: should we pass some query paramters along with
+   failure_redirect to indicate what failure occured? */
+static int
+failure_redirect(MWA_REQ_CTXT *rc)
+{
+    char *redirect_url, *uri;
+    
+    uri = rc->sconf->failure_url;
+
+    if (uri == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: failure_redirect: no URL configured");
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (uri[0] != '/') {
+        redirect_url = uri;
+    } else {
+        char port[32];
+        apr_port_t p;
+        const char *scheme;
+
+        scheme = ap_run_http_method(rc->r);
+        p = ap_get_server_port(rc->r);
+
+        if (ap_is_default_port(p, rc->r)) {
+            port[0] = '\0';
+        } else {
+            sprintf(port, ":%d", p);
+        }
+
+        redirect_url = apr_pstrcat(rc->r->pool,
+                                   scheme, "://",
+                                   rc->r->server->server_hostname, 
+                                   port, 
+                                   uri,
+                                   NULL);
+    }
+
+    apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                               
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: failufre_redirect: redirect(%s)",
+                 redirect_url);
+
+    return HTTP_MOVED_TEMPORARILY;
+}
 
 static int
 is_https(request_rec *r)
@@ -452,13 +539,10 @@ make_app_token(char *subject, time_t expiration_time, MWA_REQ_CTXT *rc)
         expiration_time = curr + rc->dconf->app_token_lifetime;
     }
 
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
-                              WA_F_NONE);
-    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0, WA_F_NONE);
-    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
-                               expiration_time, WA_F_NONE);
-
-    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, WA_F_NONE);
+    SET_TOKEN_TYPE(WA_TT_APP);
+    SET_SUBJECT(subject);
+    SET_EXPIRATION_TIME(expiration_time);
+    SET_CREATION_TIME(curr);
     
     /* FIXME: handle it/lt app_token_lifetime, inactive/etc */
 
@@ -696,7 +780,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: redirect_request_token: "
                      "no service token, denying request");
-        return HTTP_UNAUTHORIZED;
+        return failure_redirect(rc);
     }
 
     alist = webauth_attr_list_new(10);
@@ -704,29 +788,18 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: redirect_request_token: "
                      "webauth_attr_list_new failed");
-        return HTTP_UNAUTHORIZED;
+        return failure_redirect(rc);
     }
 
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_REQUEST, 0, 
-                              WA_F_NONE);
-
-    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, WA_F_NONE);
+    SET_TOKEN_TYPE(WA_TT_REQUEST);
+    SET_CREATION_TIME(curr);
+    SET_REQUEST_REASON(rc->dconf->force_login ? "fa" : "na");
+    SET_REQUESTED_TOKEN_TYPE("id");
+    SET_SUBJECT_AUTH(rc->sconf->subject_auth_type);
 
     if (st->app_state != NULL) {
-        webauth_attr_list_add(alist, WA_TK_APP_STATE, 
-                              st->app_state, st->app_state_len,
-                              WA_F_NONE);
+        SET_APP_STATE(st->app_state, st->app_state_len);
     }
-
-    webauth_attr_list_add_str(alist, WA_TK_REQUEST_REASON,
-                              rc->dconf->force_login ? "fa" : "na",
-                              0, WA_F_NONE);
-
-    webauth_attr_list_add_str(alist, WA_TK_REQUESTED_TOKEN_TYPE, 
-                              WA_TT_ID, 0, WA_F_NONE);
-
-    webauth_attr_list_add_str(alist, WA_TK_SUBJECT_AUTH,
-                              rc->sconf->subject_auth_type, 0, WA_F_NONE);
 
     return_url = make_return_url(rc);
 
@@ -734,8 +807,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
        end of it, that could get ugly... */
     strip_end(return_url, WEBAUTHR_MAGIC);
 
-    webauth_attr_list_add_str(alist, WA_TK_RETURN_URL, return_url,
-                              0, WA_F_NONE);
+    SET_RETURN_URL(return_url);
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: redirect_requst_token: return_url(%s)",
@@ -757,7 +829,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
         mwa_log_webauth_error(rc->r, status, NULL, "redirect_request_token",
                               "webauth_token_create_with_key");
-        return HTTP_UNAUTHORIZED;
+        return failure_redirect(rc);
     }
 
     btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
@@ -796,6 +868,7 @@ extra_redirect(MWA_REQ_CTXT *rc)
 
     return HTTP_MOVED_TEMPORARILY;
 }
+
 
 static int 
 check_user_id_hook(request_rec *r)
@@ -873,8 +946,7 @@ check_user_id_hook(request_rec *r)
             ap_discard_request_body(r);
             return redirect_request_token(&rc);
         } else {
-            /* FIXME: redirect to error handler? */
-            return HTTP_UNAUTHORIZED;
+            return failure_redirect(&rc);
         }
     }
 

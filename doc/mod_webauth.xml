@@ -342,12 +342,8 @@ a fatal error. If it is not set, then the server will return a
 "500 Internal Server Error" when a fatal error occurs.
 </p>
 
-<note><title>Note (NIY)</title> 
-    <p>This directive is <b>NOT</b> implemented yet.</p>
-</note>
-
 <example><title>Example</title>
-WebAuthFailureURL /app/failure
+WebAuthFailureURL /app/sorry.html
 </example>
 </usage>
 </directivesynopsis>
