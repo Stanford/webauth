@@ -13,7 +13,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
                    -I@top_srcdir@/src/libwebauth @CPPFLAGS@
 
-LIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @KRB5_LIBS@ @LIBS@
+LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @KRB5_LIBS@ @LIBS@
 
 TESTS		= attrs_test base64_test key_test krb5_test token_test \
 		  hex_test random_test
