@@ -30,6 +30,7 @@ PROGS		= wa_keyring
 all: $(PROGS)
 
 install: $(PROGS)
+	$(INSTALL) -d $D$(bindir)
 	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $D$(bindir)/wa_keyring
 
 wa_keyring: wa_keyring.o
