@@ -16,7 +16,7 @@
 #include <time.h>
 
 #ifdef  __cplusplus
-extern "C" {
+/*extern "C" {*/
 #endif
 
 /******************** error codes ********************/
@@ -39,6 +39,7 @@ typedef enum {
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
     WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
     WA_ERR_GETHOSTNAME,      /**< Couldn't get local hostname. */
+    WA_ERR_LOGIN_FAILED,     /**< Bad username/password. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
@@ -501,17 +502,45 @@ int webauth_krb5_init(WEBAUTH_KRB5_CTXT **context);
 
 int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
 
-int webauth_krb5_init_creds_password(WEBAUTH_KRB5_CTXT *context,
-                                     const char *username,
-                                     const char *password,
+int webauth_krb5_tgt_from_password(WEBAUTH_KRB5_CTXT *context,
+                                   const char *username,
+                                   const char *password,
+                                   const char *service,
+                                   const char *keytab);
+
+int webauth_krb5_tgt_from_keytab(WEBAUTH_KRB5_CTXT *context, char *path);
+
+int webauth_krb5_import_tgt(WEBAUTH_KRB5_CTXT *context,
+                            unsigned char *tgt,
+                            int tgt_len);
+
+int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
+                            unsigned char **tgt,
+                            int *tgt_len);
+
+int webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
+                           unsigned char *ticket,
+                           int ticket_len);
+
+int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
+                           char *service,
+                           unsigned char **ticket,
+                           int *ticket_length);
+
+int webauth_krb5_get_subject_auth(WEBAUTH_KRB5_CTXT *context,
+                                  const char *hostname,
+                                  const char *service,
+                                  unsigned char **authenticator,
+                                  int *length);
+
+int webauth_krb5_verify_subject_auth(WEBAUTH_KRB5_CTXT *context,
+                                     const unsigned char *authenticator,
+                                     int length,
                                      const char *service,
                                      const char *keytab);
 
-
-
-
 #ifdef  __cplusplus
-}
+    /*}*/
 #endif
 
 /*
