@@ -175,8 +175,17 @@ webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
                             int32_t value,
                             int flags)
 {
-
-    return webauth_attr_list_add_uint32(list, name, value, flags);
+    if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
+        char buff[32];
+        sprintf(buff, "%ld", (long) value);
+        return webauth_attr_list_add_str(list, name, 
+                                         buff, 0, flags|WA_F_COPY_VALUE);
+    } else {
+        value = htonl(value);
+        return webauth_attr_list_add(list, name, (void*)&value, 
+                                     sizeof(value),
+                                     flags|WA_F_COPY_VALUE);
+    }
 }
 
 int
