@@ -272,6 +272,8 @@ int webauth_attrs_decode(unsigned char *buffer,
  * The number of bytes specified by output_len is placed in
  * output, which must contain enough room to contain the
  * requested number of bytes.
+ *
+ * returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
 int webauth_random_bytes(unsigned char *output, int num_bytes);
 
@@ -279,6 +281,8 @@ int webauth_random_bytes(unsigned char *output, int num_bytes);
  * used to create random bytes suitable for use as a key.
  * The number of bytes specified in key_len is placed in key, which
  * must contain enough room to hold key_len byte of data.
+ *
+ * returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
 
 int webauth_random_key(unsigned char *key, int key_len);
