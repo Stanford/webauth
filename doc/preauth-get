@@ -16,6 +16,11 @@ The fields included in the GET are as follows:
     at          Authentication type (as a string), e.g. kerberos_v5
     id          Server identity to use, e.g. service/stanford-you
     ru          Return URL (the page to send the client back to after auth)
+    pu          Post URL (the page to which to post autn data)
+    px          The type of proxy authentication TGT requested
+
+The valid values for px are k4 or k5, representing Kerberos v4 or Kerberos
+v5 encrypted proxy authentication TGTs.
 
 For example, suppose one attempted to access https://www.stanford.edu/auth/
 and that page requires kerberos_v5 authentication with a service name of
@@ -28,6 +33,18 @@ service/www-auth.  The user would be redirected to the URL:
 the reader).  Note that si, the session ID, may be omitted if the server
 doesn't care about such a value, and that id, the server identity, may be
 omitted if the specified authentication type doesn't require such data.
+
+Post URL can be omitted if the URL to which authentication should be
+posted is:
+
+    https://<hostname>/webauth-confirm
+
+where <hostname> is the host portion of the return URL.  Otherwise, it
+must be included.
+
+The proxy authentication type field should be omitted unless the server
+requesting user authentication is authorized to obtain proxy credentials
+on behalf of the user.
 
 The return URL must always be the last attribute given.  This is to aid in
 possible workarounds for truncation of the URL, since the return URL may
