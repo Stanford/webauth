@@ -684,6 +684,9 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     ldap_get_option(lc->ld, LDAP_OPT_X_SASL_AUTHCID, &defaults->authcid);
     ldap_get_option(lc->ld, LDAP_OPT_X_SASL_AUTHZID, &defaults->authzid);
 
+    if (!defaults->mech)
+        defaults->mech = "GSSAPI";
+
     // since SASL will look there, lets put the ticket location into env
     tktenv = apr_psprintf(lc->r->pool, "%s=%s", ENV_KRB5_TICKET, 
                           lc->sconf->tktcache);
@@ -702,6 +705,9 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                                       defaults->mech, NULL, NULL,
                                       LDAP_SASL_QUIET, sasl_interact_stub,
                                       defaults);
+
+    if (defaults->authcid != NULL)
+        ldap_memfree (defaults->authcid);
 
     // this likely means the ticket is missing or expired
     if (rc == LDAP_LOCAL_ERROR) {
@@ -760,6 +766,9 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                                           defaults->mech, NULL, NULL,
                                           LDAP_SASL_QUIET, sasl_interact_stub,
                                           defaults);
+        if (defaults->authcid != NULL)
+            ldap_memfree (defaults->authcid);
+
     } else {
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
@@ -808,6 +817,7 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                  "webauthldap(%s): retrieved entry DN = %s", 
                  lc->r->user, dn);
+    ldap_memfree( dn );
 
     // attributes and values are stored in a table
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
@@ -825,6 +835,7 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
             }
             ber_bvecfree(bvals);
         }
+        ldap_memfree(a);
     }
 
     if (ber != NULL) {
@@ -933,14 +944,15 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
 
         rc = ldap_compare_ext_s(lc->ld, dn, attr, &bvalue, NULL, NULL);
 
-        if (rc != LDAP_COMPARE_FALSE) {
+        if (rc == LDAP_COMPARE_TRUE) {
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap(%s): authn SUCCEEDED %s=%s", 
                          lc->r->user, attr, value);
 	    lc->authrule = value;
-            return rc;
         }
 
+        if (rc != LDAP_COMPARE_FALSE)
+            return rc;
     }
 
     return LDAP_COMPARE_FALSE;
@@ -983,8 +995,16 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         return 1;
 
     // to keep track which ones we have already seen
-    apr_table_setn(lc->envvars, newkey, "placed in env vars");
-    
+    apr_table_set(lc->envvars, newkey, "placed in env vars");
+
+#ifndef NO_STANFORD_SUPPORT
+    if (!strcmp(newkey, "mail") && lc->legacymode) {
+        apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRMAIL", val);
+    } else if (!strcmp(newkey, "displayname") && lc->legacymode) {
+        apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRNAME", val);
+    }
+#endif
+
     newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
 
     // environment var names should be uppercased
@@ -1020,7 +1040,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                                  "webauthldap(%s): setting %s", lc->r->user,
                                  numbered_key);
 
-                apr_table_setn(lc->r->subprocess_env, numbered_key, val);
+                apr_table_set(lc->r->subprocess_env, numbered_key, val);
                 break;
             }
         }
@@ -1057,7 +1077,6 @@ webauthldap_envnotfound(void* lcp, const char *key, const char *val)
 int
 webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc, 
                                 const apr_array_header_t *reqs_arr,
-                                int legacymode,
                                 int* needs_further_handling)
 {
     int authorized, i, m, rc;
@@ -1127,7 +1146,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                     }
                 }
 #ifndef NO_STANFORD_SUPPORT
-            } else if ((!strcmp(w, "group")) && legacymode) {
+            } else if ((!strcmp(w, "group")) && lc->legacymode) {
                 
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
@@ -1152,22 +1171,25 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                 }
 #endif
             } else {
-            if (lc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                while (t[0]) {
+                    w = ap_getword_conf(r->pool, &t);
+
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                              "webauthldap(%s): found require %s",  r->user, w);
             
-            // This means some other require directive like "group" is 
-            // encountered. Notice that we continue looking for the ones
-            // that matter to us anyway.
-            *needs_further_handling = 1;
+                    // This means some other require directive like "group" is 
+                    // encountered. Notice that we continue looking for the
+                    // ones that matter to us anyway.
+                    *needs_further_handling = 1;
+                }
             }
         }
     }
 
-    if (!authorized) {
+    if (!authorized && !(*needs_further_handling)) {
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server, 
                      "webauthldap: user %s UNAUTHORIZED", r->user);
-        ldap_unbind(lc->ld);
         return HTTP_UNAUTHORIZED;
     }
 
@@ -1199,17 +1221,17 @@ auth_checker_hook(request_rec * r)
     char *w;
     int m = r->method_number;
     int needs_further_handling;
-    int legacymode = 0;
 
 #ifndef NO_STANFORD_SUPPORT
-
-    if (apr_table_get(r->subprocess_env, "SU_AUTH_USER")) 
-        legacymode = 1;
-    else
-#endif
+    if (!apr_table_get(r->subprocess_env, "SU_AUTH_USER") &&
+        !apr_table_get(r->subprocess_env, "WEBAUTH_USER")) {
+        return DECLINED;
+    }
+#else
     if (apr_table_get(r->subprocess_env, "WEBAUTH_USER") == NULL) {
         return DECLINED;
     }
+#endif
 
     if (r->user == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
@@ -1225,6 +1247,7 @@ auth_checker_hook(request_rec * r)
     lc->sconf = (MWAL_SCONF*) 
         ap_get_module_config(lc->r->server->module_config,&webauthldap_module);
 
+    lc->legacymode = apr_table_get(r->subprocess_env, "SU_AUTH_USER") ? 1 : 0;
 
     //
     // See if there is anything for us to do
@@ -1252,7 +1275,7 @@ auth_checker_hook(request_rec * r)
             }
 #ifndef NO_STANFORD_SUPPORT
             // if we see oldschool stanford:groupname, process them as well
-            if ((!strcmp(w, "group")) && legacymode) {
+            if ((!strcmp(w, "group")) && lc->legacymode) {
                 needs_further_handling = 1;
                 break;
             }
@@ -1285,14 +1308,16 @@ auth_checker_hook(request_rec * r)
     // Validate privgroups.
     //
     needs_further_handling = 0;
-    if ((rc = webauthldap_validate_privgroups(lc, reqs_arr, legacymode,
-                                              &needs_further_handling)) != 0)
+    if ((rc = webauthldap_validate_privgroups(lc, reqs_arr,
+                                              &needs_further_handling)) != 0){
+        ldap_unbind(lc->ld);
         return rc; // means not authorized, or error
+    }
 
 
     // This sets a envvar for the rule on which authorization succeeded.
     if (lc->sconf->set_authrule && lc->authrule)
-        apr_table_setn(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE", 
+        apr_table_set(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE", 
                        lc->authrule);
 
     //
