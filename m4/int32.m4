@@ -5,7 +5,7 @@ dnl The public macro exposed by this file is WEBAUTH_TYPE_INT32_T.  This macro
 dnl locates the appropriate header files to include for int32_t and uint32_t
 dnl or determines how to define those types, and then both includes the
 dnl appropriate defines into the generated config.h and also defines the
-dnl output variable INT32_MAGIC to contain the required preprocessor
+dnl output variable WEBAUTH_INT32_MAGIC to contain the required preprocessor
 dnl directives to make them available.
 
 dnl Used to build the type cache name.
@@ -61,27 +61,28 @@ dnl If the system already has int32_t and uint32_t, set INT32_MAGIC to the
 dnl appropriate includes.  Otherwise, set it to the appropriate defines.
 if test x"$WEBAUTH_HAVE_INT32_T" = xyes \
  || test x"$WEBAUTH_HAVE_UINT32_t" = xyes ; then
-    AC_CHECK_HEADER([stdint.h], [INT32_MAGIC="#include <stdint.h>"],
-        [AC_CHECK_HEADER([inttypes.h], [INT32_MAGIC="#include <inttypes.h>"])])
+    AC_CHECK_HEADER([stdint.h], [WEBAUTH_INT32_MAGIC="#include <stdint.h>"],
+        [AC_CHECK_HEADER([inttypes.h],
+             [WEBAUTH_INT32_MAGIC="#include <inttypes.h>"])])
 fi
 if test x"$WEBAUTH_HAVE_INT32_T" = xno ; then
-    if test -n "$INT32_MAGIC" ; then
-         INT32_MAGIC="$INT32_MAGIC
+    if test -n "$WEBAUTH_INT32_MAGIC" ; then
+         WEBAUTH_INT32_MAGIC="$WEBAUTH_INT32_MAGIC
 "
     fi
-    INT32_MAGIC="${INT32_MAGIC}#undef int32_t
+    WEBAUTH_INT32_MAGIC="${WEBAUTH_INT32_MAGIC}#undef int32_t
 #define int32_t $WEBAUTH_INT32"
 fi
 if test x"$WEBAUTH_HAVE_UINT32_T" = xno ; then
-    if test -n "$INT32_MAGIC" ; then
-         INT32_MAGIC="$INT32_MAGIC
+    if test -n "$WEBAUTH_INT32_MAGIC" ; then
+         WEBAUTH_INT32_MAGIC="$WEBAUTH_INT32_MAGIC
 "
     fi
-    INT32_MAGIC="${INT32_MAGIC}#undef uint32_t
+    WEBAUTH_INT32_MAGIC="${WEBAUTH_INT32_MAGIC}#undef uint32_t
 #define uint32_t unsigned $WEBAUTH_INT32"
 fi
 
-dnl All done.  Mark INT32_MAGIC for output.
-AC_SUBST([INT32_MAGIC])
+dnl All done.  Mark WEBAUTH_INT32_MAGIC for output.
+AC_SUBST([WEBAUTH_INT32_MAGIC])
 
 ])
