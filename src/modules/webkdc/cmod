@@ -1,1 +1,1 @@
-/usr/local/apache2/bin/apxs -c -I../../libwebauth -L/usr/lpubsw/lib -lcrypto -lkrb5 -lk5crypto -lcom_err  mod_webkdc.c util.c ../../libwebauth/libwebauth.a 
+/usr/local/apache2/bin/apxs -c -I../../libwebauth -L/usr/lpubsw/lib -lcrypto -lkrb5 -lk5crypto -lcom_err  mod_webkdc.c util.c acl.c  ../../libwebauth/libwebauth.a 

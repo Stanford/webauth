@@ -940,7 +940,11 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, 1);
     }
 
-    /*FIXME: ACL CHECK: subject allowed to get a service token? */
+    if (!mwk_has_service_access(rc, req_cred->subject)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to get a service token",
+                                 mwk_func, 1);
+    }
 
     status = webauth_random_key(session_key, sizeof(session_key));
 
@@ -1131,9 +1135,12 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, 1);
     }
 
-    /* FIXME: ACL CHECK: requester allowed to get an id token
-     *        using subject cred?
-     */
+    /* check access */
+    if (!mwk_has_id_access(rc, req_cred->subject)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to get an id token",
+                                 mwk_func, 1);
+    }
 
     sad = NULL;
     subject = NULL;
@@ -1157,6 +1164,14 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
         char *msg = apr_psprintf(rc->r->pool, "invalid authenticator type %s",
                                  auth_type);
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+    }
+
+    /* check access again */
+    if (!mwk_can_use_proxy_token(rc, req_cred->subject, 
+                                 sub_pt->proxy_subject)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to use proxy token",
+                                 mwk_func, 1);
     }
 
     alist = new_attr_list(rc, mwk_func);
@@ -1229,16 +1244,26 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, 1);
     }
 
-    /* FIXME: ACL CHECK: requester allowed to get a proxy token
-     *        using subject cred?
-     */
-
+    /* check access */
+    if (!mwk_has_proxy_access(rc, req_cred->subject, proxy_type)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to get a proxy token",
+                                 mwk_func, 1);
+    }
 
     /* make sure we are creating a proxy-tyoken that has
-       the same type as the proxy-token we using to create it */
+       the same type as the proxy-token we are using to create it */
     sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func);
     if (sub_pt == NULL) 
         return MWK_ERROR;
+
+    /* check access again */
+    if (!mwk_can_use_proxy_token(rc, req_cred->subject, 
+                                 sub_pt->proxy_subject)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to use proxy token",
+                                 mwk_func, 1);
+    }
 
     /* create the webkdc-proxy-token first, using existing proxy-token */
     alist = new_attr_list(rc, mwk_func);
@@ -1322,10 +1347,6 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, 1);
     }
 
-    /* FIXME: ACL CHECK: requester allowed to get a cred token
-     *        using subject cred?
-     */
-
     credential_type = get_element(rc, e, "credentialType", 1, mwk_func);
 
     if (credential_type == NULL)
@@ -1346,11 +1367,26 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     if (sp == NULL) 
         return MWK_ERROR;
 
+    /* check access */
+    if (!mwk_has_cred_access(rc, req_cred->subject, ct, sp)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to get credential",
+                                 mwk_func, 1);
+    }
+
     /* make sure we are creating a cred-token that has
        the same type as the proxy-token we are using to create it */
     sub_pt = find_proxy_token(rc, sub_cred, ct, mwk_func);
     if (sub_pt == NULL)
         return MWK_ERROR;
+
+    /* check access again */
+    if (!mwk_can_use_proxy_token(rc, req_cred->subject, 
+                                 sub_pt->proxy_subject)) {
+        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to use proxy token",
+                                 mwk_func, 1);
+    }
 
     /* try to get the credentials  */
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
@@ -1732,7 +1768,9 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     pt = &sub_cred->u.proxy.pt[0];
 
     pt->proxy_type = "krb5";
-    pt->proxy_subject = server_principal;
+    /* pt->proxy_subject = server_principal;*/
+    pt->proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:",
+                                    server_principal, NULL);
     pt->subject = subject;
     pt->proxy_data = tgt;
     pt->proxy_data_len = tgt_len;
@@ -1919,27 +1957,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                 login_ec = rc->error_code;
                 login_em = rc->error_message;
                 goto send_response;
-            case WA_PEC_UNAUTHORIZED:
-                /* for some error codes we want to return 
-                   an error token as the requestedToken */
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                             "mod_webkdc: %s: %s (%d)", rc->mwk_func, 
-                             rc->error_message, rc->error_code);
-
-                ms = create_error_token_from_req(rc, 
-                                                 rc->error_code,
-                                                 rc->error_message,
-                                                 &req_cred,
-                                                 &rtoken);
-                if (ms == MWK_OK)
-                    goto send_response;
-                else 
-                    return MWK_ERROR;                    
             default:
                 return MWK_ERROR;
         }
     }
-
 
  send_response:
 
@@ -2158,6 +2179,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     CHECK_DIR(keyring_path, CD_Keyring, NULL);
     CHECK_DIR(keytab_path, CD_Keytab, NULL);
+    CHECK_DIR(token_acl_path, CD_TokenAcl, NULL);
     CHECK_DIR(service_token_lifetime, CD_ServiceTokenLifetime, 0);
 
 #undef CHECK_DIR
@@ -2236,6 +2258,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
+    MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
     return (void *)conf;
 }
@@ -2300,6 +2323,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_Keytab:
             sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
             break;
+        case E_TokenAcl:
+            sconf->token_acl_path = ap_server_root_relative(cmd->pool, arg);
+            break;
         case E_ProxyTokenLifetime:
             sconf->proxy_token_lifetime = seconds(arg, &error_str);
             sconf->proxy_token_lifetime_ex = 1;
@@ -2360,6 +2386,7 @@ static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
+    SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime, 

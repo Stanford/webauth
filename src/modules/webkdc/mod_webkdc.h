@@ -30,6 +30,9 @@
 #define CD_Keyring "WebKdcKeyring"
 #define CM_Keyring "path to the keyring file"
 
+#define CD_TokenAcl "WebKdcTokenAcl"
+#define CM_TokenAcl "path to the token acl file"
+
 #define CD_Keytab "WebKdcKeytab"
 #define CM_Keytab "path to the K5 keytab file"
 
@@ -58,6 +61,7 @@
 /* enum for mutexes */
 enum mwk_mutex_type {
     MWK_MUTEX_KEYRING,
+    MWK_MUTEX_TOKENACL,
     MWK_MUTEX_MAX /* MUST BE LAST! */
 };
 
@@ -70,6 +74,7 @@ enum mwk_status {
 /* enums for config directives */
 
 enum {
+    E_TokenAcl,
     E_Debug,
     E_Keyring,
     E_Keytab,
@@ -84,6 +89,7 @@ module webkdc_module;
 typedef struct {
     char *keyring_path;
     char *keytab_path;
+    char *token_acl_path;
     int  debug;
     int debug_ex;
     int proxy_token_lifetime;
@@ -187,6 +193,32 @@ typedef struct {
     apr_pool_t *pool;
 } MWK_STRING;
 
+/* acl.c */
+
+int 
+mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
+                        const char *subject,
+                        const char *proxy_subject);
+
+
+int 
+mwk_has_service_access(MWK_REQ_CTXT *rc,
+                       const char *subject);
+
+int 
+mwk_has_id_access(MWK_REQ_CTXT *rc,
+                  const char *subject);
+
+int
+mwk_has_proxy_access(MWK_REQ_CTXT *rc,
+                     const char *subject, 
+                     const char *proxy_type);
+
+int
+mwk_has_cred_access(MWK_REQ_CTXT *rc,
+                    const char *subject, 
+                    const char *cred_type,
+                    const char *cred);
 
 /* util.c */
 
