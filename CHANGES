@@ -6,6 +6,9 @@ WebAuth 3.2.2 (in progress)
     via http at a webauth-protected page and gets redirected to weblogin,
     the return URL will be https.
 
+ *) Fixed a bug in libwebauth that prevented wa_keyring from adding keys
+    to an empty keyring file.
+
  *) Add a new mod-config.h for Autoconf results that we want to use in
     module builds, and use this to fix compatibility in mod_webauthldap
     for older versions of the Kerberos libraries and remove code to add

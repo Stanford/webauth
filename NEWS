@@ -6,6 +6,9 @@ WebAuth 3.2.2 (in progress)
     via http at a webauth-protected page and gets redirected to weblogin,
     the return URL will be https.
 
+ *) Fixed a bug in libwebauth that prevented wa_keyring from adding keys
+    to an empty keyring file.
+
  *) Fix various compilation problems with Sun cc, including signed vs.
     unsigned char mismatches and C++-style comments.
 
