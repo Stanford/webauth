@@ -8,7 +8,6 @@
 # Destroy all webauth_wpt cookies
 #
 #--------------------------------------------------------------------------
-$ENV{HTML_TEMPLATE_ROOT} = 'templates';
 %PAGES = ('logout' => 'logout.tmpl');
 
 use strict;
@@ -17,6 +16,7 @@ use warnings;
 use CGI::Fast qw(-compile);
 use CGI::Cookie;
 use HTML::Template;
+use WebKDC::Config;
 use vars qw(%PAGES);
 
 sub get_cookie_values {  
@@ -34,7 +34,10 @@ sub get_cookie_values {
 # Main
 ###############################################
 
-%PAGES = map { $_ => HTML::Template->new (filename => $PAGES{$_},cache => 1) } (keys %PAGES);
+%PAGES = map {
+    $_ => HTML::Template->new (filename => $PAGES{$_}, cache => 1,
+                               path => $WebKDC::Config::TEMPLATE_PATH)
+} (keys %PAGES) ;
 
 while (my $q = new CGI::Fast) {
 
