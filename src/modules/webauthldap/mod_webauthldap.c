@@ -466,8 +466,9 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
 
 /**
- * This will remove duplicates in from a given apr_array, and return the 
- * resulting new array, allocated out of the same pool as the original array.
+ * This will remove duplicates in from a given apr_array of strings, and 
+ * return the resulting new array, allocated out of the same pool as the 
+ * original array. Comparisons can be either case sensitive or insensitive.
  * @orig the array to remove duplicates from
  * @lowercase true/false flag for comparison and result's case-sensitivity
  * @return the array with no duplicate entries
@@ -972,6 +973,10 @@ auth_checker_hook(request_rec * r)
                 continue;
             }
 
+            // short circuit on the first directive to positively validate
+            if (authorized)
+                break;
+
             t = reqs[i].requirement;
             w = ap_getword_white(r->pool, &t);
 
@@ -979,11 +984,9 @@ auth_checker_hook(request_rec * r)
                 if (lc->sconf->debug)
                     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                                  "webauthldap: REQUIRE: valid-user");
-
                 authorized = 1;
                 break;
-            }
-            if (!strcmp(w, "user")) {
+            } else if (!strcmp(w, "user")) {
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
                     if (lc->sconf->debug)
@@ -1014,7 +1017,9 @@ auth_checker_hook(request_rec * r)
                     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                                  "webauthldap: REQUIRE: %s", w);
 
-                // this means "group" or some other directive is there
+                // This means some other require directive like group is 
+                // encountered. Notice that we continue looking for the ones
+                // that matter to us anyway.
                 needs_further_handling = 1;
             }
         }
