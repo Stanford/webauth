@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.4, Modified 10/25/02</b></H4>
+<H4><b>DRAFT Version  0.4, Modified 10/26/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -931,8 +931,8 @@ rt-t     requested token type
 ru       return URL
 s        subject of authentication
 sa       subject authenticator type (krb5, webkdc)
+sad      subject authenticator data
 t        token type ("service", "id", "app", "proxy", "cred", "req", "resp")
-
 x-nnn    application-specific attribute
 
 </pre>
@@ -1028,13 +1028,16 @@ the result of the request, and is present if there were no errors.
 
 <H4>5.3.4 id-token encoding</H4>
 
-The id-token gets returned from WebKDC, as is bound to an WAS. They
+The id-token gets returned from WebKDC, and is bound to an WAS. They
 are used to express the identity of user. 
 
 <pre><code>
   t=id
   sa=krb5|webkdc
-  s={result-of-krb5-mk-req-for-webauth/hostname}|krb5:{users-krb5-principal}
+  # for sa=webkdc
+  s=krb5:{users-krb5-principal}
+  # for sa=krb5
+  sad={result-of-krb5-mk-req-for-webauth/hostname}
   ct={creation-time}
   et={expiration-time}
 </code></pre>
@@ -1112,7 +1115,7 @@ proxy-token.
 
 <H4>5.3.7 credential-token encoding</H4>
 
-A credential-token is k4/k5 service ticket returned by the WebKDC for an WAS.
+A credential-token is k4/k5 service ticket returned by the WebKDC for a WAS.
 
 <pre><code>
   t=cred
@@ -1221,7 +1224,7 @@ WebAuthEndSession redirect|clearLogin|on|off
 </tr>
 
 <tr>
-  <td>10/25/2002</td>
+  <td>10/26/2002</td>
   <td>0.4</td>
   <td>schemers</td>
    <td><ul>
@@ -1232,8 +1235,8 @@ WebAuthEndSession redirect|clearLogin|on|off
          <li>requested token is now contained within the response-token
          <li>got rid of unneeded/not-fleshed-out token attributes 
              (rth, san, ver)
-         <li>add new token attributes (rt, rt-t, rt-et)
-             
+         <li>add new token attributes (rt, rt-t, rt-et, sad)
+         <li>change id-token to use "sad" instead of "s" for krb5
        </ul>
    </td>
 </tr>

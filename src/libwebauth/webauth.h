@@ -65,12 +65,13 @@ typedef enum {
 #define WA_TK_PROXY_OWNER "pro"
 #define WA_TK_POST_URL "pu"
 #define WA_TK_REQUEST_REASON "rr"
-#define WA_TK_REQUESTED_TOKEN "rt"
-#define WA_TK_REQUESTED_TOKEN_EXPIRATION "rt-et"
-#define WA_TK_REQUESTED_TOKEN_TYPE "rt-t"
+#define WA_TK_REQ_TOKEN "rt"
+#define WA_TK_REQ_TOKEN_EXPIRATION "rt-et"
+#define WA_TK_REQ_TOKEN_TYPE "rt-t"
 #define WA_TK_RETURN_URL "ru"
 #define WA_TK_SUBJECT "s"
-#define WA_TK_SUBJECT_AUTHENTICATOR "sa"
+#define WA_TK_SUBJECT_AUTH "sa"
+#define WA_TK_SUBJECT_AUTH_DATA "sad"
 #define WA_TK_TOKEN_TYPE "t"
 
 

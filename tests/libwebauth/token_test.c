@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     time(&curr);
     ain = webauth_attr_list_new(32);
     webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0);
     webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
     webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600);
 
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 
     ain = webauth_attr_list_new(32);
     webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0);
     webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
     webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600);
 
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
     ain = webauth_attr_list_new(32);
     webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0);
     webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
     webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr-3600);
 
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 
     ain = webauth_attr_list_new(32);
     webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0);
     webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
     webauth_attr_list_add_time(ain, WA_TK_CREATION_TIME, curr-3600);
 
