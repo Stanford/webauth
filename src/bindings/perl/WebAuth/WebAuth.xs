@@ -660,43 +660,43 @@ PPCODE:
 }
 
 void
-webauth_krb5_init_via_tgt(c,tgt,...)
+webauth_krb5_init_via_cred(c,cred,...)
 WEBAUTH_KRB5_CTXT *c
-SV *tgt
+SV *cred
 PROTOTYPE: $$;$
 PPCODE:
 {
-    char *cred;
-    unsigned char *ptgt;
-    int tgt_len, s;
+    char *cc;
+    unsigned char *pcred;
+    int cred_len, s;
 
-    ptgt = SvPV(tgt, tgt_len);
+    pcred = SvPV(cred, cred_len);
 
     if (items==3) {
-        cred = (char *)SvPV(ST(2),PL_na);
+        cc = (char *)SvPV(ST(2),PL_na);
     } else {
-        cred = NULL;
+        cc = NULL;
     }
-    s = webauth_krb5_init_via_tgt(c, ptgt, tgt_len, cred);
+    s = webauth_krb5_init_via_cred(c, pcred, cred_len, cc);
     if (s != WA_ERR_NONE) {
-        webauth_croak("webauth_krb5_init_via_keytab", s, c);
+        webauth_croak("webauth_krb5_init_via_cred", s, c);
     }
 }
 
 void
-webauth_krb5_import_ticket(c,ticket)
+webauth_krb5_import_cred(c,cred)
 WEBAUTH_KRB5_CTXT *c
-SV *ticket
+SV *cred
 PROTOTYPE: $$
 PPCODE:
 {
     unsigned char *pticket;
     int ticket_len, s;
 
-    pticket = SvPV(ticket, ticket_len);
-    s = webauth_krb5_import_ticket(c, pticket, ticket_len);
+    pticket = SvPV(cred, ticket_len);
+    s = webauth_krb5_import_cred(c, pticket, ticket_len);
     if (s != WA_ERR_NONE) {
-        webauth_croak("webauth_krb5_import_ticket", s, c);
+        webauth_croak("webauth_krb5_import_cred", s, c);
     }
 }
 

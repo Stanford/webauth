@@ -41,7 +41,9 @@ int main(int argc, char *argv[])
     service = argv[4];
     host = argv[5];
 
-    START_TESTS(22);
+    cprinc = NULL;
+
+    START_TESTS(26);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
@@ -61,7 +63,6 @@ int main(int argc, char *argv[])
     s = webauth_krb5_get_principal(c, &cprinc, 1);
     printf("cprinc = %s\n", cprinc);
     TEST_OK2(WA_ERR_NONE, s);
-    free(cprinc);
 
     /*
     printf("code(%d) mess(%s)\n", 
@@ -105,21 +106,36 @@ int main(int argc, char *argv[])
 
     s = webauth_krb5_free(c);
     TEST_OK2(WA_ERR_NONE, s);
-        
+
     if (tgt != NULL) {
         s = webauth_krb5_new(&c);
         TEST_OK2(WA_ERR_NONE, s);
         TEST_OK(c != NULL);
             
-        s = webauth_krb5_init_via_tgt(c, tgt, tgtlen, NULL);
+        s = webauth_krb5_init_via_cred(c, tgt, tgtlen, NULL);
         free(tgt);
         TEST_OK2(WA_ERR_NONE, s);
 
         if (ticket != NULL) {
-            s = webauth_krb5_import_ticket(c, ticket, ticketlen);
-            free(ticket);
+            s = webauth_krb5_import_cred(c, ticket, ticketlen);
+            /*free(ticket);*/
             TEST_OK2(WA_ERR_NONE, s);
         }
+
+        s = webauth_krb5_free(c);
+        TEST_OK2(WA_ERR_NONE, s);
+    }
+
+    if (tgt != NULL) {
+        s = webauth_krb5_new(&c);
+        TEST_OK2(WA_ERR_NONE, s);
+        TEST_OK(c != NULL);
+
+        s = webauth_krb5_init_via_cred(c, ticket, ticketlen, NULL);
+        free(ticket);
+        TEST_OK2(WA_ERR_NONE, s);
+
+        /*s = webauth_krb5_keep_cred_cache(c);*/
 
         s = webauth_krb5_free(c);
         TEST_OK2(WA_ERR_NONE, s);
@@ -134,6 +150,9 @@ int main(int argc, char *argv[])
 
     s = webauth_krb5_free(c);
     TEST_OK2(WA_ERR_NONE, s);
+
+    if (cprinc != NULL)
+        free(cprinc);
 
     END_TESTS;
     exit(NUM_FAILED_TESTS ? 1 : 0);

@@ -89,8 +89,8 @@ our %EXPORT_TAGS = (
 		    'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
 				   krb5_init_via_password
 				   krb5_init_via_keytab
-				   krb5_init_via_tgt
-				   krb5_import_ticket
+				   krb5_init_via_cred
+				   krb5_import_cred
 				   krb5_export_tgt
 				   krb5_service_principal
 				   krb5_get_principal
@@ -424,12 +424,12 @@ Initializes a context using the principal in the specified keytab
 by getting a TGT. If $cache is not specified, a memory
 cache will be used and destroyed when the context is destroyed.
 
-=item krb5_init_via_tgt(context, tgt[, cache])
+=item krb5_init_via_cred(context, cred[, cache])
 
-   krb5_init_via_keytab($context, $tgt[, $cache]);
+   krb5_init_via_cred($context, $cred[, $cache]);
 
-Initializes a context using a TGT that was previously exported using
-krb5_export_tgt. If $cache is not specified, a memory
+Initializes a context using a ticket that was previously exported using
+krb5_export_*. If $cache is not specified, a memory
 cache will be used and destroyed when the context is destroyed.
 
 =item krb5_export_tgt(context)
@@ -441,11 +441,11 @@ been initialized via one of the krb5_init_via_* functions. On
 success both  $tgt and $expiration get set. $ticket is the ticket
 itself (binary data) and $expiration is the expiration time of the ticket.
 
-=item krb5_import_ticket(context, ticket)
+=item krb5_import_cred(context, cred)
 
-  krb5_import_ticket($context, $ticket);
+  krb5_import_cred($context, $cred);
 
-Used to "import" a ticket that was created with krb5_export_ticket.
+Used to "import" a ticket that was created with krb5_export_*.
 
 =item krb5_export_ticket(context, principal);
 

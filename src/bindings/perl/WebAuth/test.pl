@@ -24,7 +24,7 @@ if ($run_kerb) {
     # FIXME: need better way to config these
     # user/password to attempt to login as
     $kuser="schemers/test";
-    $kpass="xxxxxxx";
+    $kpass="xxxxx";
     # path to keytab file used to verify tgt and also 
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
@@ -239,10 +239,10 @@ if ($run_kerb) {
 	$c = WebAuth::krb5_new();
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-	WebAuth::krb5_init_via_tgt($c, $tgt);
+	WebAuth::krb5_init_via_cred($c, $tgt);
 
 	# import ticket we exported
-	WebAuth::krb5_import_ticket($c, $ticket);
+	WebAuth::krb5_import_cred($c, $ticket);
 	# nuke current context and get from keytab
 	$c = WebAuth::krb5_new();
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));

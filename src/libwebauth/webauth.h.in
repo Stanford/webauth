@@ -831,13 +831,13 @@ int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
                                  const char *cache_name);
 
 /*
- * initialize a context with a tgt that was created via 
- * webauth_krb5_export_tgt.
+ * initialize a context with a credential that was created via 
+ * webauth_krb5_export_tgt or webauth_krb5_export_ticket.
  */
-int webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
-                              unsigned char *tgt,
-                              int tgt_len,
-                              const char *cache_name);
+int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
+                               unsigned char *cred,
+                               int cred_len,
+                               const char *cache_name);
 
 /*
  * export the TGT from the context. Used in constructing a proxy-token
@@ -851,11 +851,14 @@ int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
                             time_t *expiration);
 
 /*
- * import a ticket that was exported via webauth_krb5_export_ticket.
+ * import a credential (tgt or ticket)
+ * that was exported via webauth_krb5_export_{ticket,tgt}.
+ * context should have been initialized by calling 
+ * webauth_krb5_init_via_import.
  */
-int webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
-                               unsigned char *ticket,
-                               int ticket_len);
+int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
+                             unsigned char *cred,
+                             int cred_len);
 /*
  * create a service principal (service/hostname.do.main@realm) 
  * from a service and hostname. If service is NULL, "host" is used,

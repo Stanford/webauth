@@ -262,6 +262,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 {
     WEBAUTH_ATTR_LIST *list;
     int s, f;
+    unsigned char *buff;
 
     assert(c != NULL);
     assert(creds != NULL);
@@ -269,10 +270,18 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 
     memset(creds, 0, sizeof(krb5_creds));
 
-    s = webauth_attrs_decode(input, input_length, &list);
+    list = NULL;
+    buff = (char*) malloc(input_length);
 
-    if (s != WA_ERR_NONE)
-        return s;
+    if (buff == NULL)
+        return WA_ERR_NO_MEM;
+
+    memcpy(buff, input, input_length);
+
+    s = webauth_attrs_decode(buff, input_length, &list);
+
+    if (s != WA_ERR_NONE) 
+        goto cleanup;
 
     /* clent principal */
     webauth_attr_list_find(list, CR_CLIENT, &f);
@@ -461,9 +470,15 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     s = WA_ERR_NONE;
 
  cleanup:
-    webauth_attr_list_free(list);
+    if (buff != NULL) 
+        free(buff);
+
+    if (list != NULL) 
+        webauth_attr_list_free(list);
+
     if  (s != WA_ERR_NONE)
         krb5_free_cred_contents(c->ctx, creds);
+
     return s;
 }
 
@@ -702,7 +717,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                            (char*)tpassword,
                                            NULL, /* prompter */
                                            NULL, /* data */
-                                           NULL, /* start_time */
+                                           0, /* start_time */
                                            NULL, /* in_tkt_service */
                                            &opts);
 
@@ -922,7 +937,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
                                          &creds,
                                          c->princ,
                                          keytab,
-                                         NULL, /* start_time */
+                                         0, /* start_time */
                                          NULL, /* in_tkt_service */
                                          &opts);
 
@@ -955,10 +970,10 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
 }
 
 int
-webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
-                          unsigned char *tgt,
-                          int tgt_len,
-                          const char *cache_name)
+webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
+                           unsigned char *cred,
+                           int cred_len,
+                           const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_creds creds;
@@ -966,13 +981,12 @@ webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
     int s;
 
     assert(c != NULL);
-    assert(tgt != NULL);
+    assert(cred != NULL);
 
-    s = cred_from_attr_encoding(c, tgt, tgt_len, &creds);
+    s = cred_from_attr_encoding(c, cred, cred_len, &creds);
 
     if (s!= WA_ERR_NONE) 
         return s;
-
 
     if (cache_name == NULL) {
         sprintf(ccname, "MEMORY:%p", c);
@@ -998,6 +1012,7 @@ webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
     /* add the creds to the cache */
     c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
     krb5_free_cred_contents(c->ctx, &creds);
+
     if (c->code != 0) {
         return WA_ERR_KRB5;
     } else {
@@ -1070,18 +1085,18 @@ webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
 }
 
 int
-webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
-                           unsigned char *ticket,
-                           int ticket_len)
+webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
+                         unsigned char *cred,
+                         int cred_len)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_creds creds;
     int s;
 
     assert(c != NULL);
-    assert(ticket!= NULL);
+    assert(cred != NULL);
 
-    s = cred_from_attr_encoding(c, ticket, ticket_len, &creds);
+    s = cred_from_attr_encoding(c, cred, cred_len, &creds);
     if (s!= WA_ERR_NONE) 
         return s;
 
