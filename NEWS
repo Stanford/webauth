@@ -1,0 +1,11 @@
+                       User-Visible WebAuth Changes
+
+WebAuth 3.0.0 (2003-02-18)
+
+    Initial public release of WebAuth v3.  This is a complete rewrite of
+    the WebAuth system, sharing no common code with the previous release.
+    It is now based on Apache 2.0, Kerberos v5, and a new infrastructure
+    for managing authentication tokens.
+
+    This is the initial release with basic authentication support and Perl
+    bindings only.
