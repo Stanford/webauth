@@ -54,6 +54,12 @@
 #define MAX_PROXY_TOKENS_ACCEPTED 64
 #define MAX_PROXY_TOKENS_RETURNED 64
 
+/* enum for return code */
+enum mwk_status {
+    MWK_ERROR = 0,
+    MWK_OK = 1
+};
+
 /* enums for config directives */
 
 enum {
