@@ -1,4 +1,4 @@
-                          WebAuth release 3.1.0
+                          WebAuth release 3.1.2
                   (site-wide web authentication system)
 
                         Written by Roland Schemers
@@ -96,6 +96,25 @@ REQUIREMENTS
 
 SUPPORT
 
+  New WebAuth releases are announced via the low-volume webauth-announce
+  mailing list.  To subscribe, send mail to majordomo@lists.stanford.edu
+  with:
+
+      subscribe webauth-announce
+
+  in the body of the message.
+
+  There is also a separate mailing list for general discussion and
+  requests for help, which is also read by members of the WebAuth project
+  team.  To subscribe, send mail to majordomo@lists.stanford.edu with:
+
+      subscribe webauth-info
+
+  in the body of the message.  Stanford users may instead read and post to
+  the newsgroup su.computers.webauth, which is bidirectionally gatewayed
+  to webauth-info.  The newsgroup additionally gets all messages to
+  webauth-announce as well.
+
   For Stanford affiliates, the WebAuth modules are a supported product of
   the ITSS Infrastructure Services team.  You can report problems or
   request help with WebAuth by submitting a HelpSU ticket at:
@@ -108,17 +127,15 @@ SUPPORT
   general web server problems unrelated to WebAuth are outside the scope
   of what we can help with.
 
-  For non-Stanford users, please see the contact information at:
-
-      <http://webauthv3.stanford.edu/>
-
-  We cannot provide any formal support for non-Stanford users, nor do we
-  make any promises or committments related to this software.  Please feel
-  free to use it on an as-is basis, and please do feel free to send us any
-  patches or improvements that you wish to contribute and we will evaluate
-  them for future releases.  Our primary focus is supporting the needs of
-  Stanford University, however, and problems that don't affect Stanford's
-  use of WebAuth will generally not be prioritized.
+  For non-Stanford users, please instead subscribe to webauth-info and ask
+  your question there.  We cannot provide any formal support for
+  non-Stanford users, nor do we make any promises or committments related
+  to this software.  Please feel free to use it on an as-is basis, and
+  please do feel free to send us any patches or improvements that you wish
+  to contribute and we will evaluate them for future releases.  Our
+  primary focus is supporting the needs of Stanford University, however,
+  and problems that don't affect Stanford's use of WebAuth will generally
+  not be prioritized.
 
 
 LICENSE
