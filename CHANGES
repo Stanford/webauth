@@ -13,6 +13,9 @@ WebAuth 3.2.1 (in progress)
  *) Fixed an incorrect handling of a string transformation in the attrs
     code, likely only affecting a test failure on Tru64.
 
+ *) Improve the handling of the configure probes to include the right
+    prerequisites for Kerberos checks and to probe for libz before cURL.
+
 WebAuth 3.2.0 (2003-08-07)
 
  *) Added S/Ident support to weblogin and the WebKDC.
