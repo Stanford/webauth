@@ -178,5 +178,6 @@ tools/config.sub                        Platform canonicalization
 tools/install-sh                        Installation shell script
 tools/ltmain.sh                         Base libtool script
 tools/makedepend                        Generate dependencies
+tools/mkheader                          Generate webauth.h
 tools/mkmanifest                        Generate an initial manifest
 tools/mkpackage                         Generate a WebAuth module package

@@ -4,9 +4,11 @@ dnl
 dnl The public macro exposed by this file is WEBAUTH_TYPE_INT32_T.  This macro
 dnl locates the appropriate header files to include for int32_t and uint32_t
 dnl or determines how to define those types, and then both includes the
-dnl appropriate defines into the generated config.h and also defines the
-dnl output variable WEBAUTH_INT32_MAGIC to contain the required preprocessor
-dnl directives to make them available.
+dnl appropriate defines into the generated config.h.  It also defines
+dnl HAVE_INT32_T and HAVE_UINT32_T as appropriate.
+
+dnl if some other type has to be used to supply int32_t and uint32_t and
+dnl defines the output variables WEBAUTH
 
 dnl Used to build the type cache name.
 AC_DEFUN([_WEBAUTH_TYPE_CACHE], translit([ac_cv_sizeof_$1], [ *], [_p]))
@@ -48,41 +50,10 @@ _WEBAUTH_IF_SIZEOF(int, 4, 4, WEBAUTH_INT32=int,
 dnl Now, check to see if we need to define int32_t and uint32_t ourselves.
 dnl This has to be done after the probes for an appropriately sized integer
 dnl type so that we can pass that type to AC_DEFINE_UNQUOTED.
-AC_CHECK_TYPE(int32_t, [WEBAUTH_HAVE_INT32_T=yes],
+AC_CHECK_TYPES(int32_t, ,
     [AC_DEFINE_UNQUOTED([int32_t], [$WEBAUTH_INT32],
-        [Define to a 4-byte signed type if <inttypes.h> does not define.])
-     WEBAUTH_HAVE_INT32_T=no])
-AC_CHECK_TYPE(uint32_t, [WEBAUTH_HAVE_UINT32_T=yes],
+        [Define to a 4-byte signed type if <inttypes.h> does not define.])])
+AC_CHECK_TYPES(uint32_t, ,
     [AC_DEFINE_UNQUOTED([uint32_t], [unsigned $WEBAUTH_INT32],
-        [Define to a 4-byte unsigned type if <inttypes.h> does not define.])
-     WEBAUTH_HAVE_UINT32_T=no])
-
-dnl If the system already has int32_t and uint32_t, set INT32_MAGIC to the
-dnl appropriate includes.  Otherwise, set it to the appropriate defines.
-if test x"$WEBAUTH_HAVE_INT32_T" = xyes \
- || test x"$WEBAUTH_HAVE_UINT32_t" = xyes ; then
-    AC_CHECK_HEADER([stdint.h], [WEBAUTH_INT32_MAGIC="#include <stdint.h>"],
-        [AC_CHECK_HEADER([inttypes.h],
-             [WEBAUTH_INT32_MAGIC="#include <inttypes.h>"])])
-fi
-if test x"$WEBAUTH_HAVE_INT32_T" = xno ; then
-    if test -n "$WEBAUTH_INT32_MAGIC" ; then
-         WEBAUTH_INT32_MAGIC="$WEBAUTH_INT32_MAGIC
-"
-    fi
-    WEBAUTH_INT32_MAGIC="${WEBAUTH_INT32_MAGIC}#undef int32_t
-#define int32_t $WEBAUTH_INT32"
-fi
-if test x"$WEBAUTH_HAVE_UINT32_T" = xno ; then
-    if test -n "$WEBAUTH_INT32_MAGIC" ; then
-         WEBAUTH_INT32_MAGIC="$WEBAUTH_INT32_MAGIC
-"
-    fi
-    WEBAUTH_INT32_MAGIC="${WEBAUTH_INT32_MAGIC}#undef uint32_t
-#define uint32_t unsigned $WEBAUTH_INT32"
-fi
-
-dnl All done.  Mark WEBAUTH_INT32_MAGIC for output.
-AC_SUBST([WEBAUTH_INT32_MAGIC])
-
+        [Define to a 4-byte unsigned type if <inttypes.h> does not define.])])
 ])

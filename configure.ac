@@ -158,7 +158,6 @@ AC_CONFIG_FILES([
     src/Makefile
     src/bindings/Makefile
     src/libwebauth/Makefile
-    src/libwebauth/webauth.h
     src/modules/Makefile
     src/modules/webauth/Makefile
     src/modules/webauthldap/Makefile
@@ -180,6 +179,11 @@ case "$MODULES" in
     AC_CONFIG_FILES([src/modules/webkdc/Makefile])
     ;;
 esac
+
+dnl Generate webauth.h from webauth.h.in.
+AC_CONFIG_COMMANDS([src/libwebauth/webauth.h],
+    [$srcdir/tools/mkheader $srcdir/$filename.in $filename],
+    [filename=src/libwebauth/webauth.h])
 
 dnl Link all of the Perl binding files into the build tree, since Perl doesn't
 dnl support the VPATH thing.

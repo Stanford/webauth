@@ -1,0 +1,53 @@
+#! /bin/sh
+# $Id$
+#
+# mkheader -- Generate the webauth.h header, including config.h information.
+#
+# This shell script runs after configure and generates the webauth.h header
+# with the appropriate magic to allow use of int32_t and uint32_t.  It exists
+# because one can't easily insert multiline code into header files using
+# Autoconf; output variables aren't allowed to contain newlines.
+#
+# The first argument should be the path to webauth.h.in and the second
+# argument should be the path to webauth.h.
+
+# Find the definitions of int32_t and uint32_t.
+int32=`grep '^#define int32_t' config.h | sed 's/^#/# /'`
+uint32=`grep '^#define uint32_t' config.h | sed 's/^#/# /'`
+
+# Start building the magic string.  Include the appropriate header files, if
+# they exist.
+magic=''
+if [ -z "$int32" ] || [ -z "$uint32" ] ; then
+    if grep '^#define HAVE_INTTYPES_H' config.h > /dev/null 2>&1 ; then
+        magic="${magic}# include <inttypes.h>
+"
+    fi
+    if grep '^#define HAVE_STDINT_H' config.h > /dev/null 2>&1 ; then
+        magic="${magic}# include <stdint.h>
+"
+    fi
+fi
+
+# Now include the definitions of int32_t and uint32_t if needed.
+if [ -n "$int32" ] ; then
+    magic="${magic}# undef int32_t
+$int32
+"
+fi
+if [ -n "$uint32" ] ; then
+    magic="${magic}# undef uint32_t
+$uint32
+"
+fi
+
+# Add a comment if we have anything.
+if [ -n "$magic" ] ; then
+    magic="/* The necessary preprocessor magic to get int32_t and uint32_t. */
+$magic"
+fi
+
+# We now have the full magic string.  Generate webauth.h from webauth.h.in.
+sed '/@WEBAUTH_INT32_MAGIC@/q' "$1" | sed '/@WEBAUTH_INT32_MAGIC@/d' > "$2"
+echo "$magic" >> "$2"
+sed '1,/@WEBAUTH_INT32_MAGIC@/d' "$1" >> "$2"
