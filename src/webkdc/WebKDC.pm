@@ -49,6 +49,9 @@ our $C_TOKEN_TTL = 300; # 5 minutes
 our $C_WEBKDC_KEYRING_PATH = "webkdc.keyring";
 our $C_WEBKDC_KEYTAB = "lichen_webauth.keytab";
 
+our $DEBUG = 1;
+
+
 our $our_keyring = undef;
 
 sub get_keyring {
@@ -102,7 +105,7 @@ sub make_service_token_from_krb5_cred($) {
     $service_token->creation_time($creation_time);
     $service_token->expiration_time($expiration_time);
 
-    print $service_token;
+    #print $service_token;
     return (base64_encode($service_token->to_token(get_keyring())), 
 	    $session_key, $expiration_time);
 }
@@ -157,7 +160,7 @@ sub handle_web_id_request {
 	$proxy_token->subject("krb5:$cp");
 	$proxy_token->creation_time(time());
 	$proxy_token->expiration_time($et);
-	print $proxy_token;
+	#print $proxy_token;
 	my $proxy_token_str = 
 	    base64_encode($proxy_token->to_token(get_keyring()));
 	$wresp->proxy_cookie('krb5', $proxy_token_str);
@@ -246,6 +249,8 @@ sub handle_request_token($$) {
     my $service_token =
 	new WebKDC::WebKDCServiceToken($st_str, get_keyring(), 0);
 
+    print STDERR "$service_token\n" if $DEBUG;
+
     my $server_principal = $service_token->subject();
 
     if ($server_principal !~ /^krb5:/) {
@@ -260,6 +265,8 @@ sub handle_request_token($$) {
 	new WebKDC::RequestToken(base64_decode($wreq->request_token()), 
 				 $key, $C_TOKEN_TTL);
 
+    print STDERR "$req_token\n" if $DEBUG;
+
     # add return_url and post_url if present in request-token
     $wresp->return_url($req_token->return_url());
     $wresp->post_url($req_token->post_url());
@@ -267,7 +274,7 @@ sub handle_request_token($$) {
     # add app_state if present in request-token
     my $as = $req_token->app_state();
     if ($as) {
-	$wresp->app_state_token(base64_encode($as));
+	$wresp->app_state(base64_encode($as));
     }
 
     my $rtt = $req_token->requested_token_type();
@@ -785,7 +792,7 @@ following fashion:
   $req->service_token($service_token_str);
 
   eval {
-    WebLDC::handle_request_token($req, $resp);
+    WebKDC::handle_request_token($req, $resp);
   };
 
   if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
