@@ -1876,12 +1876,11 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     int login_ec;
     const char *login_em = NULL;
     char *req_token_info;
-    *subject_out = "<unknown>";
-    *req_subject_out = "<unkknown>";
-
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
 
+    *subject_out = "<unknown>";
+    *req_subject_out = "<unkknown>";
     did_login = 0;
     num_proxy_tokens = 0;
     login_ec = 0;
