@@ -3,6 +3,12 @@ This file contains the Windows-specific installation instructions. They
 are based upon installing Apache 2.0.47 using the standard Apache MSI
 file. 
 
+See also:
+
+http://httpd.apache.org/docs-2.0/platform/windows.html
+
+For more windows-specific Apache information.
+
 ------------------------------------------------------------
 NOTE: There is currently an Apache bug under Windows where
       stopping and/or restarting Apache causes a fatal exception.
@@ -48,7 +54,6 @@ NOTE: There is currently an Apache bug under Windows where
 	conf/stanford-ldap.conf          WebAuth
 	conf/webauth/ca-bundle.crt       cURL
  	conf/webauth/sasl.reg            WebAuth
- 	conf/webauth/INSTALL.txt         WebAuth
 
     Note that stanford-webauth.conf is the standard stanford-webauth.conf
     file distributed with WebAuth with the following extra line added

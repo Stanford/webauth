@@ -25,5 +25,4 @@
 	conf/stanford-webauth.conf \
 	conf/stanford-ldap.conf \
 	conf/webauth/ca-bundle.crt \
-	conf/webauth/sasl.reg \
-	conf/webauth/INSTALL.txt
+	conf/webauth/sasl.reg
