@@ -126,8 +126,8 @@
 #define CM_ForceLogin "having no valid app-token forces a "\
                       "username/password prompt"
 
-#define CD_SaveCreds "WebAuthSaveCreds"
-#define CM_SaveCreds "whether or not to create a cred cache file"
+#define CD_UseCreds "WebAuthUseCreds"
+#define CM_UseCreds "whether or not to create a cred cache file"
 
 #define CD_ReturnURL "WebAuthReturnURL"
 #define CM_ReturnURL "url to return to after logging in"
@@ -199,7 +199,7 @@ enum {
     E_LoginCanceledURL,
     E_ReturnURL,
     E_RequireSSL,
-    E_SaveCreds,
+    E_UseCreds,
     E_ServiceTokenCache,
     E_StripURL,
     E_SubjectAuthType,
@@ -266,8 +266,8 @@ typedef struct {
     int last_use_update_interval;
     int force_login;
     int force_login_ex;
-    int save_creds;
-    int save_creds_ex;
+    int use_creds;
+    int use_creds_ex;
     int do_logout;
     int do_logout_ex;
     char *return_url;

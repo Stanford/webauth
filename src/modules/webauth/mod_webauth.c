@@ -591,9 +591,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->force_login : bconf->force_login;
     conf->force_login_ex = oconf->force_login_ex;
 
-    conf->save_creds = oconf->save_creds_ex ? 
-        oconf->save_creds : bconf->save_creds;
-    conf->save_creds_ex = oconf->save_creds_ex;
+    conf->use_creds = oconf->use_creds_ex ? 
+        oconf->use_creds : bconf->use_creds;
+    conf->use_creds_ex = oconf->use_creds_ex;
 
     conf->do_logout = oconf->do_logout_ex ? 
         oconf->do_logout : bconf->do_logout;
@@ -1940,7 +1940,7 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
 }
 
 /*
- * save_creds is on, so we need to gather creds (from cookies and/or
+ * use_creds is on, so we need to gather creds (from cookies and/or
  * webkdc, redirecting if we don't have a proxy-token)
  */
 static int 
@@ -2072,12 +2072,12 @@ gather_tokens(MWA_REQ_CTXT *rc)
     if (in_url && rc->sconf->extra_redirect)
         return extra_redirect(rc);
 
-    /* if save_creds is on, look for creds. If creds aren't found,
+    /* if use_creds is on, look for creds. If creds aren't found,
        see if we have a proxy-token for the creds. The proxy-token
        might already be set from check_url, if not, we need to call
        parse_proxy_token_cookie to see if we have one in a cookie.
        If we don't, time for a redirect! */
-    if (rc->dconf->save_creds && rc->dconf->creds) {
+    if (rc->dconf->use_creds && rc->dconf->creds) {
         code = gather_creds(rc);
         if (code != OK)
             return code;
@@ -2463,9 +2463,9 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             dconf->force_login = flag;
             dconf->force_login_ex = 1;
             break;
-        case E_SaveCreds:
-            dconf->save_creds = flag;
-            dconf->save_creds_ex = 1;
+        case E_UseCreds:
+            dconf->use_creds = flag;
+            dconf->use_creds_ex = 1;
             break;
         case E_StripURL:
             sconf->strip_url = flag;
@@ -2564,7 +2564,7 @@ static const command_rec cmds[] = {
     ADSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     ADSTR(CD_LastUseUpdateInterval, E_LastUseUpdateInterval, CM_LastUseUpdateInterval),
     ADFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
-    ADFLAG(CD_SaveCreds, E_SaveCreds, CM_SaveCreds),
+    ADFLAG(CD_UseCreds, E_UseCreds, CM_UseCreds),
     ADFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
     ADSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
