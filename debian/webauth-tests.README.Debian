@@ -10,13 +10,19 @@ wherever you put local configuration:
     Alias /tests/ /usr/share/webauth/htdocs/tests/
     Alias /ldaptests/ /usr/share/webauth/htdocs/ldaptests/
 
-and then reload the configuration with /etc/init.d/apache2 reload.  You
-can then go to /tests/ and /ldaptests/ on your site to see the test
-suite.
+and make sure that CGI scripts are enabled with:
+
+    a2enmod cgi
+
+Then reload the configuration with /etc/init.d/apache2 reload.  You can
+then go to /tests/ and /ldaptests/ on your site to see the test suite.
 
 The LDAP tests are fairly Stanford-specific in that they use attributes
 peculiar to Stanford's directory servers and privgroups specific to
 Stanford, so you may need to modify ldaptests.conf to make it a better
 test for your site.
 
- -- Russ Allbery <rra@stanford.edu>, Tue Jun 22 23:11:43 2004
+If you are not using the WebAuth LDAP module, you can just omit the two
+lines referring to ldaptests.
+
+ -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 18:15:24 2004
