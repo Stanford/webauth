@@ -25,6 +25,8 @@ WebAuth 3.2.2 (in progress)
 
  *) Fix invalid HTML in the templates for the weblogin script.
 
+ *) Fix some portability issues with non-GNU make.
+
 WebAuth 3.2.1 (2003-09-10)
 
  *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.
