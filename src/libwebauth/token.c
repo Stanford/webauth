@@ -68,24 +68,25 @@ webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list)
     return webauth_base64_encoded_length(blen);
 }
 
+
+/* ivec is always 0 since we use nonce as ivec */
+static unsigned char aes_ivec[AES_BLOCK_SIZE] = 
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
 /*
  * encrypts and base64 encodes attrs into a token
  */
 int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list,
+                     time_t hint,
                      unsigned char *output,
                      int max_output_len,
                      const WEBAUTH_KEYRING *ring)
 {
     unsigned char *ebuff;
-    int elen, blen, plen, alen, n, i;
+    int elen, blen, plen, alen, n, i, s;
     uint32_t currt; /* sizeof MUST equal T_HINT_S */
-    unsigned char temp_nonce[T_NONCE_S] = 
-        {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
 
-    /* ivec is always 0 since we use nonce as ivec */
-    unsigned char aes_ivec[AES_BLOCK_SIZE] = 
-        {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     AES_KEY aes_key;
     WEBAUTH_KEY *key;
 
@@ -96,7 +97,7 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     assert(ring != NULL);
 
     /* find the best key */
-    key = webauth_keyring_best_encryption_key(ring);
+    key = webauth_keyring_best_key(ring, 1, 0);
     if (key == NULL) {
         return WA_ERR_BAD_KEY;
     }
@@ -121,17 +122,22 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 
     n = 0;
 
-    currt = htonl((uint32_t)time(NULL));
+    if (hint == 0) {
+        time(&hint);
+    }
+    currt = htonl((uint32_t)hint);
 
-    /* FIXME: hint might need to optionally be passed in
-       if we need to propagate it */
-
-    /* copy in current time */
+    /* copy in hint */
     memcpy(ebuff, &currt, T_HINT_S);
     n += T_HINT_S;
 
     /* copy in nonce */
-    memcpy(ebuff+n, temp_nonce, T_NONCE_S);
+    s = webauth_random_bytes(ebuff+n, T_NONCE_S);
+    if (s != WA_ERR_NONE) {
+        free(ebuff);
+        return s;
+    }
+
     n += T_NONCE_S;
 
     /* leave room for hmac of data */
@@ -152,19 +158,16 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     }
     n += plen;
 
-    /* calculate hmac over data+padding, using nonce as key
-       FIXME: change hmac key to something better. might want
-       to always carry around a an AES_KEY and an HMAC key, */
-
+    /* calculate hmac over data+padding 
+       FIXME: change hmac key to something better.*/
     /* HMAC doesn't return an errors */
     HMAC(EVP_sha1(), 
-         (void*)temp_nonce, T_NONCE_S,  /* key, len */
+         (void*)key->data, key->length, /* key, len */
          ebuff+T_ATTR_O, alen+plen,     /* data, len */
          ebuff+T_HMAC_O, NULL);         /* hmac, len (out) */
 
     /* now AES encrypt everything but the time at the front */
     /* AES_cbc_encrypt doesn't return anything */
-
 
     AES_cbc_encrypt(ebuff+T_NONCE_O,
                     ebuff+T_NONCE_O, /* encrypt in-place */
@@ -181,58 +184,22 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     return blen;
 }
 
+
 /*
- * base64 decodes and decrypts attrs into a token
- * input buffer is modified, and the resulting
- * attrs point into it for their values.
- *
- * returns number of attrs in the resulting token
- * or an error
- *
- * FIXME: need to deal with key versions. We'll probably
- * want to change WEBUTH_AES_KEY to WEBAUTH_KEYRING,
- * and let webauth_toke_parse pick the best key from the key ring
+ * decrypt token, return length of decrypted data or an error
  */
 
-int
-webauth_token_parse(unsigned char *input,
-                    int input_len,
-                    WEBAUTH_ATTR_LIST **list,
-                    const WEBAUTH_KEYRING *ring)
+static int
+decrypt_token(WEBAUTH_KEY *key, unsigned char *input, int elen)
 {
-    /* ivec is always 0 since we use nonce as ivec */
-    unsigned char aes_ivec[AES_BLOCK_SIZE] = 
-        {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     /* hmac we compute from data */
     unsigned char computed_hmac[T_HMAC_S];
-    int plen, i, elen;
+    int plen, i;
     AES_KEY aes_key;
-    WEBAUTH_KEY *key;
-
-    assert(list != NULL);
-    assert(ring != NULL);
-
-    if (ring->num_entries == 0) {
-        return WA_ERR_BAD_KEY;
-    }
-
-    /* FIXME: need to use key hint and potentially iterate through
-       all keys in the ring to decrypt, for now, we use the first */
-
-    key = ring->entries[0].key;
 
     if (AES_set_decrypt_key(key->data, key->length*8, &aes_key)) {
         return WA_ERR_BAD_KEY;
     }
-
-    /** base64 decode (in place) first */
-    elen=webauth_base64_decode(input, input_len, input, input_len);
-    if (elen < 0) {
-        return elen;
-    }
-
-
-    /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
 
     /* decrypt using our key */
     /* now AES decrypt everything but the time at the front */
@@ -245,13 +212,13 @@ webauth_token_parse(unsigned char *input,
 
     /* we now need to compute HMAC to see if decryption succeeded */
 
-    /* calculate hmac over data+padding, using nonce as key */
+    /* calculate hmac over data+padding */
     /* FIXME: change hmac key to something better */
     /* hamc doesn't return anything */
     HMAC(EVP_sha1(),
-         (void*)input+T_NONCE_O, T_NONCE_S,  /* key, len */
+         (void*)key->data, key->length,  /* key, len */
          input+T_ATTR_O, elen-T_ATTR_O, /* data, len */
-         computed_hmac, NULL);               /* hmac, len (out) */
+         computed_hmac, NULL);          /* hmac, len (out) */
 
     /* compare computed against decrypted */
     if (memcmp(input+T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
@@ -270,7 +237,85 @@ webauth_token_parse(unsigned char *input,
         }
     }
 
-    return webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen, list);
+    return elen-T_ATTR_O-plen;
+}
+
+/*
+ * base64 decodes and decrypts attrs into a token
+ * input buffer is modified.
+ *
+ * returns number of attrs in the resulting token
+ * or an error
+ *
+ * {key-hint}{nonce}{hmac}{token-attributes}{padding}
+ */
+
+int
+webauth_token_parse(unsigned char *input,
+                    int input_len,
+                    WEBAUTH_ATTR_LIST **list,
+                    const WEBAUTH_KEYRING *ring)
+{
+    int elen, dlen, s, i;
+    uint32_t temp;
+    time_t hint;
+    unsigned char *buff;
+
+    WEBAUTH_KEY *hkey;
+
+    assert(list != NULL);
+    assert(ring != NULL);
+
+    if (ring->num_entries == 0) {
+        return WA_ERR_BAD_KEY;
+    }
+
+    /** base64 decode (in place) first */
+    elen=webauth_base64_decode(input, input_len, input, input_len);
+    if (elen < 0) {
+        return elen;
+    }
+
+    /* quick sanity check */
+    if (elen < T_HINT_S+T_NONCE_S+T_HMAC_S+AES_BLOCK_SIZE) {
+        return WA_ERR_CORRUPT;
+    }
+
+    buff = malloc(elen);
+    if (buff == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+
+    /* use hint first */
+    memcpy(&temp, input, sizeof(temp));
+    hint = (time_t)ntohl(temp);
+    hkey = webauth_keyring_best_key(ring, 0, hint);
+
+    if (hkey != NULL) {
+        memcpy(buff, input, elen);
+        dlen = decrypt_token(hkey, buff, elen);
+        if (dlen > 0) {
+            s= webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
+            free(buff);
+            return s;
+        }
+    }
+
+    /* hint failed, try all keys, skipping hint */
+    for (i=0; i < ring->num_entries; i++) {
+        if (ring->entries[i].key != hkey) {
+            memcpy(buff, input, elen);
+            dlen = decrypt_token(ring->entries[i].key, buff, elen);
+            if (dlen > 0) {
+                s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
+                free(buff);
+                return s;
+            }
+        }
+    }
+
+    free(buff);
+    return WA_ERR_BAD_HMAC;
 }
 
 /*

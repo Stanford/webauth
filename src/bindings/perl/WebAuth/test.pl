@@ -156,7 +156,7 @@ ok(WebAuth::WA_ERR_NONE, $s);
 
 $key = undef;
 $status = undef;
-$token = WebAuth::token_create($attrs, $ring, $status);
+$token = WebAuth::token_create($attrs, 0, $ring, $status);
 
 ok(length($token));
 ok(92, $status);

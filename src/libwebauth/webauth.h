@@ -257,9 +257,13 @@ WEBAUTH_ATTR_LIST *webauth_attr_list_new();
 /** adds an attr to the attr list.
  *
  * adds a new attribute to the given attr list, growing the list
- * if need be. Note that the attr list does not copy the name
- * name or value data. It is still owned by the caller and should
- * not be freed until the attr list is also freed.
+ * if need be. Both the name and value are copied, and value
+ * always has a null added to the end of it.
+ *
+ * if vlen is 0, then strlen is used on (char*)value.
+ *
+ * return WA_ERR_NONE or WA_ERR_NO_MEM
+ *
  */
 int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
                           char *name, void *value, int vlen);
@@ -272,8 +276,8 @@ int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, char *name);
 
 /** free's an attr list
  *
- *  Frees the memory associated with an attribute list. Does not
- *  free any memory pointed to by individual attrs.
+ * Frees the memory associated with an attribute list, including
+ * all the attrs in the list.
  */
 void webauth_attr_list_free(WEBAUTH_ATTR_LIST *list);
 
@@ -302,14 +306,7 @@ int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
 
 /*
  * decodes the given buffer into an array of attributes.
- * The buffer is modifed, and the resulting names and
- * values in the attributes will point into the buffer.
- * All values will be null-terminated, for convenience
- * when dealing with values that are ASCII strings.
- *
- * if attrs is NULL, only returns the number of attributes
- * that would be decoded, or an error. In this case, buffer is
- * not modified, and max_num_attrs is ignored.
+ * The buffer is modifed.
  *
  * returns the number of attributes decoded or an error
  *
@@ -407,12 +404,27 @@ int webauth_keyring_add(WEBAUTH_KEYRING *ring,
 
 /*
  * given a key ring, return the best key on the ring for
+ * either encryption or decryption.
+ *
+ * The best key for encryption is the key with
+ * a valid valid_from time, and the latest valid valid_till time.
+ *
+ * The "best" key for decryption is the key where hint
+ * is between valid_from and valid_till.
+ *
+ */
+WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
+                                      int encryption,
+                                      time_t hint);
+
+/*
+ * given a key ring, return the best key on the ring for
  * encryption. The best key for encryption is the key with
  * a valid valid_from time, and the latest
  * valid valid_till time.
  */
 WEBAUTH_KEY *
-   webauth_keyring_best_encryption_key(const WEBAUTH_KEYRING *ring);
+ webauth_keyring_best_decryption_key(const WEBAUTH_KEYRING *ring, time_t hint);
 
 /*
  * write a key ring to a file. 
@@ -443,24 +455,27 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
  * key from the key ring that has a valid valid_from time and
  * the latest valid_to time.
  *
+ * if hint is 0 then the current time will be used.
+ *
  * returns length of base64-encoded token (not null-terminated) or an error
  *
  * errors:
  *  WA_ERR_NO_ROOM
  *  WA_ERR_NO_MEM
+ *  WA_ERR_BAD_KEY
  *  
  */
 int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
+                         time_t hint,
                          unsigned char *output,
                          int max_output_len,
                          const WEBAUTH_KEYRING *ring);
 
 /*
  * base64 decodes and decrypts attrs into a token
- * input buffer is modified, and the resulting
- * attrs point into it for their values.
+ * input buffer is modified.
  *
- * lst will point to the dynamically-allocated list
+ * list will point to the dynamically-allocated list
  * of attrs and must be freed when no longer needed.
  *
  * returns number of attrs in the resulting token or an error
@@ -469,6 +484,7 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
  *  WA_ERR_NO_MEM
  *  WA_ERR_CORRUPT
  *  WA_ERR_BAD_HMAC
+ *  WA_ERR_BAD_KEY
  */
 
 int webauth_token_parse(unsigned char *input,

@@ -30,6 +30,8 @@ int
 webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
                       char *name, void *value, int length)
 {
+    void *v;
+    char *n;
     assert(list);
     assert(list->attrs);
     if (list->num_attrs == list->capacity) {
@@ -45,10 +47,26 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
             list->attrs = new_attrs;
         }
     }
-    list->attrs[list->num_attrs].name = name;
-    list->attrs[list->num_attrs].value = value;
-    list->attrs[list->num_attrs].length = 
-        length ? length : strlen((char*)value);
+    n = strdup(name);
+    if (n == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+    if (length == 0) {
+        length = strlen((char*)value);
+    }
+
+    v = malloc(length+1);
+    if (v == NULL) {
+        free(n);
+        return WA_ERR_NO_MEM;
+    }
+
+    memcpy(v, value, length);
+    /* null terminate */
+    ((char*)v)[length] = '\0';
+    list->attrs[list->num_attrs].name = n;
+    list->attrs[list->num_attrs].value = v;
+    list->attrs[list->num_attrs].length = length;
     list->num_attrs++;
     return WA_ERR_NONE;
 }
@@ -56,8 +74,13 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
 void
 webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
 {
+    int i;
     assert(list);
     assert(list->attrs);
+    for (i=0; i < list->num_attrs; i++) {
+        free(list->attrs[i].name);
+        free(list->attrs[i].value);
+    }
     free(list->attrs);
     free(list);
 }
@@ -152,10 +175,7 @@ webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
 
 /*
  * decodes the given buffer into an array of attributes.
- * The buffer is modifed, and the resulting names and
- * values in the attributes will point into the buffer.
- * All values will be null-terminated, for convenience
- * when dealing with values that are ASCII strings.
+ * The buffer is modifed.
  */
 
 int

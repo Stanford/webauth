@@ -445,10 +445,11 @@ OUTPUT:
     RETVAL
 
 void
-webauth_token_create(attrs,ring,...)
+webauth_token_create(attrs,hint,ring,...)
 SV *attrs
+time_t hint
 WEBAUTH_KEYRING *ring
-PROTOTYPE: $$;$
+PROTOTYPE: $$$;$
 CODE:
 {
     HV *h;
@@ -479,11 +480,11 @@ CODE:
 
     out_len = webauth_token_encoded_length(list);
     ST(0) = sv_2mortal(NEWSV(0, out_len));
-    s = webauth_token_create(list, SvPVX(ST(0)), out_len, ring);
+    s = webauth_token_create(list, hint, SvPVX(ST(0)), out_len, ring);
     webauth_attr_list_free(list);
 
-    if (items > 2) {
-       sv_setiv(ST(2), s);
+    if (items > 3) {
+       sv_setiv(ST(3), s);
     }
 
     if (s < 0) {

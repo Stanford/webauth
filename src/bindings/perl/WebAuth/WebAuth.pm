@@ -207,13 +207,15 @@ Reads a key ring from a file. Returns undef on error. $status is optional,
 and if  present will get set to the result of the webauth_keyring_read_file C 
 function.
 
-=item token_create(attrs, ring[, status])
+=item token_create(attrs, hint, ring[, status])
 
-  $token = token_create($attrs, $ring[, $status])
+  $token = token_create($attrs, $hint, $ring[, $status])
 
 Takes as input $attrs (which must be a reference to a hash) and a $ring
 (created with keyring_new) and returns the basse64 encrypted token\,
-or undef in the case of an error.
+or undef in the case of an error. If hint is 0, the current time will
+be used.
+
 The values in the $attrs hash table get converted to strings if they 
 aren't already. $status is optional, and if present will get set to the
 result of the webauth_token_create C function.

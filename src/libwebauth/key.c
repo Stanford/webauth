@@ -156,7 +156,9 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring,
 }
 
 WEBAUTH_KEY *
-webauth_keyring_best_encryption_key(const WEBAUTH_KEYRING *ring)
+webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
+                         int encryption,
+                         time_t hint)
 {
     int i;
     time_t curr;
@@ -173,15 +175,25 @@ webauth_keyring_best_encryption_key(const WEBAUTH_KEYRING *ring)
     b = NULL;
     for (i=0; i < ring->num_entries; i++) {
         e = &ring->entries[i];
-        /* skip post-dated keys and skip expired-keys */
-        if (e->valid_from > curr ||e->valid_till < curr) {
-            continue;
-        }
-        if (b == NULL || b->valid_till > b->valid_till) {
-            b = e;
+        if (encryption) {
+            /* skip post-dated keys and skip expired-keys */
+            if (e->valid_from > curr ||e->valid_till < curr) {
+                continue;
+            }
+            if (b == NULL || e->valid_till > b->valid_till) {
+                b = e;
+            }
+        } else {
+            /* skip post-dated keys */
+            if (e->valid_from > curr) {
+                continue;
+            }
+            if ((hint >= e->valid_from) && (hint <= e->valid_till)) {
+                return e->key;
+            }
         }
     }
-    return  b ? b->key : NULL;
+    return  (b != NULL) ? b->key : NULL;
 }
 
 #define KEYRING_VERSION 1
