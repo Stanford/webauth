@@ -175,6 +175,10 @@ site, see doc/install-webkdc.
      resulting conf/webauth/srvtab file is not used by WebAuth and can be
      deleted after leland_srvtab is run.
 
+     After installing the keytab, make sure that it is readable by the
+     user that the web server runs as.  (It may have been created only
+     readable by root.)
+
  9.  At this point, WebAuth is available to your web server and will be
      initialized when your server starts, but is not as yet being used to
      protect any web pages.  This can now be configured.  For the most
@@ -209,16 +213,28 @@ site, see doc/install-webkdc.
      your httpd.conf file as described above, or uncomment them in the
      webauth-tests.conf file.
 
-11.  Restart the server to pick up the configuration changes, and check
+11.  Install an SSL certificate for your system, either a self-signed
+     certificate or one signed by whatever certificate authority you
+     normally use.  All access to WebAuth-protected web pages must be
+     through SSL to preserve the security of the WebAuth authentication
+     tokens.
+
+     If you have not installed an SSL certificate before, there are
+     instructions available as part of the mod_ssl FAQ.  See
+     <http://httpd.apache.org/docs-2.0/ssl/ssl_faq.html#realcert>.
+
+12.  Restart the server to pick up the configuration changes, and check
      your error log for any errors indicating a problem with the WebAuth
-     installation.
+     installation.  If you are using the default Apache 2.0 setup, be
+     sure to start Apache with apachectl startssl to enable SSL.
 
-12.  If you followed the test installation step above (#10), you should
-     now be able to go to the URL /tests/ on your web server to see the
-     test suite.  Documentation on how to walk through all of the tests
-     can be found in doc/test-plan.
+13.  If you followed the test installation step above (#10), you should
+     now be able to go to the URL https://<your-server>/tests/, where
+     <your-server> is the name of your web server, to see the test suite.
+     Documentation on how to walk through all of the tests can be found
+     in doc/test-plan.
 
-13.  Congratulations!  You have a working WebAuth server.  You can now add
+14.  Congratulations!  You have a working WebAuth server.  You can now add
      AuthType WebAuth and require valid-user (or require lines for
      particular users, or for groups containing user identities as
      returned by WebAuth) to protect the content served by your web
