@@ -73,7 +73,7 @@ sub end {
     pop(@{$self->{'stack'}});
  }
 
-sub element {
+sub add {
     my ($self, $name, $attrs, $text) = @_;
     $self->start($name, $attrs);
     $self->current->append_content($text) if defined($text);

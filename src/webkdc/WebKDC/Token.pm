@@ -582,17 +582,30 @@ sub post_url {
     return $self->{'attrs'}{&WA_TK_POST_URL};
 }
 
+sub command {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_COMMAND} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_COMMAND};
+}
+
 sub validate_token {
     my $self = shift;
 
     # FIXME: more checks for request_reason, req_token_type (sa/prt)
     croak "validate_token failed" unless
 	($self->token_type() eq 'req') && 
-	defined($self->creation_time()) &&
-	defined($self->return_url()) &&
-	($self->request_reason() eq 'na') && 
-	($self->requested_token_type() eq 'id') && 
-	($self->subject_auth() eq 'krb5');
+	defined($self->creation_time());
+
+    if ($self->command()) {
+	croak "validate_token failed" unless
+	    $self->command() eq 'getTokensRequest';
+    } else {
+	croak "validate_token failed" unless
+	    defined($self->return_url()) &&
+	    ($self->request_reason() eq 'na') && 
+	    ($self->requested_token_type() eq 'id') && 
+	    ($self->subject_auth() eq 'krb5');
+    }
 }
 
 ############################################################

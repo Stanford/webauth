@@ -14,7 +14,8 @@ use WebKDC::WebResponse;
 use WebKDC::WebKDCException;
 use WebKDC::ProtocolException;
 use WebKDC::Token;
-
+use WebKDC::XmlDoc;
+use WebKDC::XmlElement;
 
 BEGIN {
     use Exporter   ();
@@ -256,19 +257,92 @@ sub process_web_request($$) {
     }
 }
 
+sub make_service_token_from_req($$) {
+    my ($e, $rc) = @_;
+
+    # only create service tokens from krb5 creds
+    if ($rc->{'type'} ne 'krb5') {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+              "can only create service-tokens with <requesterCredential> of ".
+              "type krb5");
+    }
+
+    #FIXME: ACL CHECK: subject allowed to get a service token?
+
+    my $session_key = base64_encode(WebAuth::random_key(WA_AES_128));
+    my $creation_time = time;
+    my $expiration_time = $creation_time+$C_SERVICE_TOKEN_LIFETIME;
+
+    my $service_token = new WebKDC::WebKDCServiceToken;
+
+    $service_token->session_key($session_key);
+    $service_token->subject($rc->{'subject'});
+    $service_token->creation_time($creation_time);
+    $service_token->expiration_time($expiration_time);
+
+    return (base64_encode($service_token->to_token(get_keyring())), 
+	    $session_key, $expiration_time);
+}
+
+
+sub make_id_token_from_reqsub($$$) {
+    my ($e, $rc, $sc) = @_;
+
+    my $ae = $e->find_child('authenticator');
+    if (!defined($ae)) {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"missing <authenticator> in <token>");
+    }
+    my $at = $ae->attr('type');
+
+}
+
+#
+# parses <requesterCredential> and returns a hash:
+#
+# { 'type' => 'krb5|service',
+#   'subject' => 'subject-from-krb5-mk-req-or-service-token',
+#   # if type is service
+#   'service_token' => $service_token_object,
+#   'request_token' => $request_token_object
+#  };
+
 sub parse_requester_cred($) {
     my $e = shift;
     my $req_cred = {};
 
-    my $at = $e->attrs('type');
+    my $at = $e->attr('type');
     if ($at eq 'service') {
 	$req_cred->{'type'} = $at;
-	my $st_str = $e->content;
-	$st_str =~ s/^\s*(.*)\s*$/$1/;
-	my $service_token =
-	    new WebKDC::WebKDCServiceToken(base64_decode($st_str),
-					   get_keyring(), 0);
-	$req_cred->{'token'} = $service_token;
+	my ($service_token, $request_token);
+
+	foreach my $child (@{$e->children}) {
+	    my $name = $child-->name();
+	    if ($name eq 'serviceToken') {
+		my $st_str = $child->content;
+		$st_str =~ s/^\s*(.*)\s*$/$1/;
+		$service_token = 
+		    new WebKDC::WebKDCServiceToken(base64_decode($st_str),
+						   get_keyring(), 0);
+	    } elsif ($name eq 'requestToken') {
+		my $rt_str = $child->content;
+		$rt_str =~ s/^\s*(.*)\s*$/$1/;
+		$request_token =
+		    new WebKDC::WebKDCRequestToken(base64_decode($rt_str),
+						   get_keyring(), 0);
+	    } else {
+		die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"invalid element in <requesterCredential>: $name");
+	    }
+	}
+
+	if (!defined($service_token) || !defined($request_token)) {
+		die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+                "<requesterCredential> must have " .
+		"<serviceToken> and <requestToken>");
+	}
+	$req_cred->{'service_token'} = $service_token;
+	$req_cred->{'request_token'} = $request_token;
 	$req_cred->{'subject'} = $service_token->subject;
 	return $req_cred;
     } elsif ($at eq 'krb5') {
@@ -281,7 +355,7 @@ sub parse_requester_cred($) {
 	return $req_cred;
     } else {
 	die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
-			"unknown requesterCredential type($at)");
+			"unknown <requesterCredential> type($at)");
     }
 }
 
@@ -289,7 +363,7 @@ sub parse_subject_cred($) {
     my $e = shift;
     my $sub_cred = {};
 
-    my $at = $e->attrs('type');
+    my $at = $e->attr('type');
     if ($at eq 'proxy') {
 	$sub_cred->{'type'} = $at;
 	my $pt_str = $e->content;
@@ -300,7 +374,7 @@ sub parse_subject_cred($) {
 	return $sub_cred;
     } else {
 	die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
-			"unknown subjectCredential type($at)");
+			"unknown <subjectCredential> type($at)");
     }
 }
 
@@ -312,21 +386,84 @@ sub process_get_tokens($) {
 
     my $resp = new WebKDC::XmlDoc;
 
-    my ($tokens,$req_cred, $sub_cred);
-
-    foreach my $child (@{$req->children}) {
-	my $name = $child-->name();
+    my ($tokens,$req_cred, $sub_cred, $mid);
+    foreach my $child (@{$req->children()}) {
+	my $name = $child->name();
 	if ($name eq 'requesterCredential') {
 	    $req_cred = parse_requester_cred($child);
 	} elsif ($name eq 'subjectCredential') {
 	    $sub_cred = parse_subject_cred($child);
 	} elsif ($name eq 'tokens') {
 	    $tokens = $child;
+	} elsif ($name eq 'messageId') {
+	    $mid = $child->content();
 	} else {
 	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
-			"invalid element in getTokensRequest: $name");
+		"invalid element in <getTokensRequest>: $name");
 	}
     }
+
+    if (!(defined($tokens) && defined($req_cred))) {
+	die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+	     "<getTokensRequest> must have <requesterCredential> ".
+	       "and <tokens>");
+    }
+   
+    #FIXME: also need to check for sub_cred in certain cases
+
+    if ($req_cred->{'type'} eq 'service') {
+	my $cmd = $req_cred->{'request_token'}->command();
+	if ($cmd ne $req->name()) {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+		      "command in request-token not ".$req->name().": $cmd");
+	}
+    }
+
+    $resp->start('getTokensResponse');
+
+    # add messageId in response if in request
+    $resp->start('messageId', undef, $mid)->end() if defined($mid);
+
+    $resp->start('tokens');
+
+    # iterate through each <token>
+    foreach my $token (@{$tokens->children}) {
+	if ($token->name() ne 'token') {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			      "invalid element in <tokens>: ".$token->name());
+	}
+
+	my $id = $token->attr('id');
+	my $tt = $token->attr('type');
+	my $td;
+
+	$resp->start('token');
+	$resp->current->attr('id', $id) unless !defined($id);
+
+	if ($tt eq 'id') {
+	    $td = make_id_token_from_reqsub($token, $req_cred, $sub_cred);
+	} elsif ($tt eq 'proxy') {
+	    $td = make_proxy_token_from_reqsub($token, $req_cred, $sub_cred);
+	} elsif ($tt eq 'service') {
+	    my ($key, $et);
+	    ($td, $key, $et) = 
+		make_service_token_from_req($token, $req_cred);
+	    $resp->start('sessionKey', undef, $key)->end();
+	    $resp->start('expires', undef, $et)->end();	    
+	} elsif ($tt eq 'cred') {
+	    $td = make_cred_token_from_reqsub($token, $req_cred, $sub_cred);
+	} else {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"unknown type in <token>: $tt");
+	}
+	$resp->start('tokenData', undef, $td)->end();
+	$resp->end('token');
+
+    }
+
+    $resp->end('tokens');
+    $resp->end('getTokensResponse');
+
 }
 
 END { }       # module clean-up code here (global destructor)

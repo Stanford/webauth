@@ -151,6 +151,17 @@ sub has_children {
     return $#{$self->{'children'}} != -1;
 }
 
+# this will only find the first child with the given name
+
+sub  find_child {
+    my $self = shift;
+    my $name = shift;
+    foreach my $child (@{$self->children}) {
+	return $child if ($child->name() eq $name);
+    }
+    return undef;
+}
+
 sub add_child {
     my $self = shift;
     push @{$self->{'children'}}, shift;
