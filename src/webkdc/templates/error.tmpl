@@ -44,26 +44,26 @@ err_webkdc          :errmsg sent from webkdc -- we can change to be more specifi
                   </TABLE>
 
                   <P><STRONG><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">An error has occurred.
-                  WebLogin is not available.</FONT></STRONG></P>
+                  "Arial, Helvetica, sans-serif">An error has occurred.</FONT></STRONG></P>
 
 		<!-- Error: no respson token -->
 	        <TMPL_IF NAME=err_no_request_token>
 		    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
 			Error: The URL given is incomplete. 
-		    </FONT></STRONG></P>
+		    </FONT></P>
 	        </TMPL_IF>
 
 		<TMPL_IF NAME=err_webkdc>
 		     <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
 			Error: <TMPL_VAR NAME=err_msg> 
-		    </FONT></STRONG></P>
+		    </FONT></P>
 		</TMPL_IF>
 
                   <P><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">Please return to the
-                  preceding web page and try again in a few minutes, or
-                  report this problem to <A HREF=
+                  "Arial, Helvetica, sans-serif">To try again, please return to the
+                  preceding web page (or you may need to start your request for this
+                  web service again).
+                  For help or to report a service problem, contact <A HREF=
                   "http://helpsu.stanford.edu">HelpSU</A>.</FONT></P>
                 </TD>
               </TR>
@@ -76,7 +76,7 @@ err_webkdc          :errmsg sent from webkdc -- we can change to be more specifi
   <table width="65%" border="0" align="center">
      <tr><td><DIV ALIGN="center"><font size="1" face="Arial, Helvetica, sans-serif">Copyright
       2003 Stanford University. All Rights Reserved.<br>Last modified
-      2/16/03 by ITSS/jnk.</font></DIV></td></tr></table>  
+      6/12/03 by ITSS/jnk.</font></DIV></td></tr></table>  
 
 </BODY>
 </HTML>
