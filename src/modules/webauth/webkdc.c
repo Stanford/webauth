@@ -27,6 +27,9 @@ copy_service_token(apr_pool_t *pool,
     copy->key.type = orig->key.type;
     copy->key.data = apr_pstrmemdup(pool, orig->key.data, orig->key.length);
     copy->key.length = orig->key.length;
+    copy->app_state = apr_pstrmemdup(pool, orig->app_state,
+                                     orig->app_state_len);
+    copy->app_state_len = orig->app_state_len;
     return copy;
 }
 
@@ -808,7 +811,7 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
             /* update {last,next}_renewal_attempt */
             service_token->last_renewal_attempt = curr;
             service_token->next_renewal_attempt = curr+TOKEN_RETRY_INTERVAL;
-            write_service_token_cache(rc, token);            
+            write_service_token_cache(rc, service_token);
         }
     } else {
         /* got a new one, lets right it out*/

@@ -221,6 +221,8 @@ typedef struct {
     request_rec *r;
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
+    /* subject from token, url, etc */
+    char *subject;
     /* times from parsed/newly created app token */
     time_t creation_time;
     time_t expiration_time;

@@ -198,7 +198,9 @@ static int
 failure_redirect(MWA_REQ_CTXT *rc)
 {
     char *redirect_url, *uri;
-    
+
+    ap_discard_request_body(rc->r);
+
     uri = rc->dconf->failure_url;
 
     if (uri == NULL) {
@@ -218,7 +220,39 @@ failure_redirect(MWA_REQ_CTXT *rc)
                 
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: failufre_redirect: redirect(%s)",
+                     "mod_webauth: failure_redirect: redirect(%s)",
+                     redirect_url);
+
+    set_pending_cookies(rc);
+    return HTTP_MOVED_TEMPORARILY;
+}
+
+static int
+login_canceled_redirect(MWA_REQ_CTXT *rc)
+{
+    char *redirect_url, *uri;
+
+    ap_discard_request_body(rc->r);
+
+    uri = rc->dconf->login_canceled_url;
+
+    if (uri == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                   "mod_webauth: login_canceled_redirect: no URL configured!");
+        return failure_redirect(rc);
+    }
+
+    if (uri[0] != '/') {
+        redirect_url = uri;
+    } else {
+        redirect_url = ap_construct_url(rc->r->pool, uri, rc->r);
+    }
+
+    apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: login_canceled_redirect: redirect(%s)",
                      redirect_url);
 
     set_pending_cookies(rc);
@@ -490,7 +524,7 @@ make_app_token(const char *subject,
  */
 
 static int
-manage_token(MWA_REQ_CTXT *rc, const char *sub,
+token_maint(MWA_REQ_CTXT *rc, const char *sub,
              WEBAUTH_ATTR_LIST *alist)
 {
     time_t curr, last_used_time, expiration_time, creation_time;
@@ -618,7 +652,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
     sub = apr_pstrdup(rc->r->pool, sub);
 
-    /* get the times here, as manage_token might update last_used_time */
+    /* get the times here, as token_maint might update last_used_time */
     webauth_attr_list_get_time(alist, WA_TK_LASTUSED_TIME,
                                &rc->last_used_time, WA_F_NONE);
 
@@ -629,7 +663,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
                                &rc->expiration_time, WA_F_NONE);
 
     /* update last-use-time, check inactivity */
-    if (!manage_token(rc, sub, alist)) {
+    if (!token_maint(rc, sub, alist)) {
         sub = NULL;
         goto cleanup;
     }
@@ -856,15 +890,71 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
     return subject;
 }
 
-static char *
+static int
+handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
+{
+    int status, error_code;
+    static const char *mwa_func = "handle_error_token";
+    char *log_message;
+    const char *ec = mwa_get_str_attr(alist, WA_TK_ERROR_CODE,
+                                      rc->r, mwa_func, NULL);
+    const char *em = mwa_get_str_attr(alist, WA_TK_ERROR_MESSAGE,
+                                      rc->r, mwa_func, NULL);
+    if (ec == NULL || em == NULL) {
+        /* nothing, we already logged an error */
+        return NULL;
+    }
+
+    error_code = atoi(ec);
+
+    if (rc->sconf->debug) 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: parsed an error token(%d, %s)", 
+                     mwa_func, error_code, em);
+
+    switch (error_code) {
+        case WA_PEC_LOGIN_CANCELED:
+            /* user canceled out of login page */
+            return login_canceled_redirect(rc);
+            break;
+        case WA_PEC_UNAUTHORIZED:
+            /* mod_webauth client is not authorized to request id-token  */
+            log_message = "WebKDC denied access, unable to rquest any tokens";
+            break;
+        default:
+            /* catch other all other errors that we aren't expecting, which
+               is pretty much all of them, since if the server can't
+               even parse our request-token, it can't figure out the return
+               url.
+             */
+            log_message = "unhandled error";
+            break;
+    }
+
+    ap_log_error(APLOG_MARK, APLOG_ALERT, 0, rc->r->server,
+                 "mod_webauth: %s: %s: %s (%d)",
+                         mwa_func, log_message, em, error_code);
+        
+    return failure_redirect(rc);
+
+}
+
+/*
+ * return OK unless we need to return an HTTP_* code.
+ * see rc->subject if we were able to parse the token.
+ */
+
+static int 
 parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status;
+    int blen, status, code;
     const char *token_type;
-    char *subject;
     static const char *mwa_func = "parse_returned_token";
-    subject = NULL;
+
+    rc ->subject = NULL;
+
+    code = OK;
 
     /* if we successfully parse an id-token, write out new webauth_at cookie */
     ap_unescape_url(token);
@@ -877,7 +967,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r, status, NULL, mwa_func,
                               "webauth_token_parse_with_key");
-        return NULL;
+        return code;
     }
 
     /* get the token-type to see what we should do with it */
@@ -885,12 +975,12 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
                                   mwa_func, NULL);
     if (token_type == NULL) {
         webauth_attr_list_free(alist);
-        return NULL;
+        return code;
     }
 
     if (strcmp(token_type, WA_TT_ID) == 0) {
 
-        subject = handle_id_token(alist, rc);
+        rc->subject = handle_id_token(alist, rc);
 
     } else if (strcmp(token_type, WA_TT_PROXY) == 0) {
 
@@ -913,8 +1003,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
          *
          */
 
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: parsed an error token", mwa_func);
+        code = handle_error_token(alist, rc);
 
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -924,13 +1013,16 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     }
     webauth_attr_list_free(alist);
 
-    return subject;
+    return code;
 }
 
 /*
- * check to see if we got passed WEBAUTHR and WEBAUTHS
+ * check to see if we got passed WEBAUTHR and WEBAUTHS, and if so
+ * attempt to parse and fill in rc->subject. If we return OK,
+ * caller will check to see if rc->subject got set, otherwise
+ * it will return the HTTP_* code to the Apache framework.
  */
-static char *
+static int
 check_url(MWA_REQ_CTXT *rc)
 {
     char *subject, *wr, *ws;
@@ -940,7 +1032,7 @@ check_url(MWA_REQ_CTXT *rc)
 
     wr = mwa_remove_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {
-        return NULL;
+        return OK;
     }
 
     if (rc->sconf->debug)
@@ -954,14 +1046,14 @@ check_url(MWA_REQ_CTXT *rc)
         /* don't have to free key, its allocated from a pool */
         key = get_session_key(ws, rc);
         if (key == NULL)
-            return NULL;
-        subject = parse_returned_token(wr, key, rc);
+            return OK;
+        return parse_returned_token(wr, key, rc);
     } else {
         MWA_SERVICE_TOKEN *st = mwa_get_service_token(rc);
         if (st != NULL)
-            subject = parse_returned_token(wr, &st->key, rc);
+            return parse_returned_token(wr, &st->key, rc);
     }
-    return subject;
+    return OK;
 }
 
 static char *
@@ -1001,6 +1093,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     int tlen, olen, status;
     time_t curr = time(NULL);
 
+    ap_discard_request_body(rc->r);
+
     st = mwa_get_service_token(rc);
     if (st == NULL) {
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
@@ -1035,6 +1129,9 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     if (st->app_state != NULL) {
         SET_APP_STATE(st->app_state, st->app_state_len);
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: redirect_request_token: app state is NULL");
     }
 
     return_url = make_return_url(rc);
@@ -1148,8 +1245,13 @@ check_user_id_hook(request_rec *r)
         subject = check_cookie(&rc);
 
         if (subject == NULL) {
+            int code; 
             /* if no valid app token, look for WEBAUTHR in url */
-            subject = check_url(&rc);
+            code = check_url(&rc);
+            if (code != OK)
+                return code;
+
+            subject = rc.subject;
 
             if (subject != NULL)
                 in_url = 1;
@@ -1160,7 +1262,6 @@ check_user_id_hook(request_rec *r)
     }
 
     if (subject == NULL) {
-        ap_discard_request_body(r);
         if (r->method_number == M_GET) {
             return redirect_request_token(&rc);
         } else {
