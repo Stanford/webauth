@@ -12,6 +12,20 @@
 # The Makefile is updated in place, and everything after "DO NOT DELETE THIS
 # LINE" is removed and replaced by the dependencies.
 
+# Find the value of top_srcdir and top_builddir from the makefile.
+top_srcdir=`grep '^top_srcdir' Makefile | sed 's/.*= //'`
+if [ -z "$top_srcdir" ] ; then
+    top_srcdir=NOTFOUND
+else
+    top_srcdir=`echo "$top_srcdir" | sed 's/\./\\\\./g'`
+fi
+top_builddir=`grep '^top_builddir' Makefile | sed 's/.*= //'`
+if [ -z "$top_builddir" ] ; then
+    top_builddir=NOTFOUND
+else
+    top_builddir=`echo "$top_builddir" | sed -e 's/\./\\\\./g' -e 's%/$%%'`
+fi
+
 flags="$1"
 shift
 sed '1,/DO NOT DELETE THIS LINE/!d' < Makefile.in > .makefile.tmp
@@ -31,4 +45,6 @@ for source in "$@" ; do
         exit
     fi
 done
-mv -f .makefile.tmp Makefile.in
+sed -e "s%$top_builddir/%\$(top_builddir)/%g" \
+    -e "s%$top_srcdir/%\$(top_srcdir)/%g" .makefile.tmp > Makefile.in
+rm .makefile.tmp
