@@ -9,9 +9,9 @@ wa_keyring - WebAuth3 keyring command line tool
 
 B<wa_keyring> [-v] [-h] -f {file} I<command> [ I<args> ]
 
-B<wa_keyring> -f keyring add I<{valid-from}> I<{valid-till}>
+B<wa_keyring> -f keyring add I<{valid-after}>
 
-B<wa_keyring> -f keyring gc I<{oldest-valid-till}>
+B<wa_keyring> -f keyring gc I<{oldest-valid-after-to-keep}>
 
 B<wa_keyring> -f keyring list
 
@@ -24,10 +24,11 @@ which contain the private AES keys used by mod_webauth and mod_webkdc.
 
 =head1 COMMANDS
 
-=head2 add {valid-from} {valid-till}
+=head2 add command
 
-Adds a new key to the key ring. I<{valid-from}> and I<{valid-till}> use 
-the format: 
+    add {valid-after}
+
+Adds a new key to the key ring. I<{valid-after}> uses the format: 
 
 nnnn[s|m|h|d|w]
 
@@ -39,69 +40,105 @@ respectively.
 For example: 10d is 10 days from the current time, and -60d is 60 days before 
 the current time.
 
-=head2 gc {oldest-valid-till}
+=head2 gc command
+
+    gc {oldest-valid-after-to-keep}
 
 Garbage collects (removes) old keys on the key ring. Any keys with a
-I<{valid-till}> date older then the specified time will be removed
+I<{valid-after}> date older then the specified time will be removed
 from the key ring.
 
-The format for I<{oldest-valid-till}> is the same as I<{valid-from}> and 
-I<{valid-till}> from the B<add> command.
+The format for I<{oldest-valid-after-to-keep}> is the same as 
+I<{valid-after}> from the B<add> command.
 
-=head2 list
+=head2 list command
+
+    [-v] list
 
 Lists all the keys in the key ring. By default, a brief listing is
 used. Use "-v" to ge a verbose listing. 
 
 The following fields are present in a short listing:
 
-=over 4
+=over 8
 
 =item B<id> 
 
 The index/position of the key in the key ring.
 
-=item B<Valid from> 
+=item B<Created>
 
-The date at which the key becomes valid.
+The date the key was created.
 
-=item B<Valid till> 
+=item B<Valid after> 
 
-The date at which the key becomes expires.
+The date at which the key becomes valid (i.e., will be used for encrypting
+and decrypting new data).
 
 =item B<Fingerprint> 
 
-The MD5 digest of the key data. Used to compare keys in two key ring.
+The MD5 digest of the key data. Used to compare keys in two key rings.
 
 =back 
 
 The following fields are present in the long listing:
 
+=over 8
+
+=item B<Key-Id> 
+
+The index/position of the key in the key ring.
+
+=item B<Created>
+
+The date the key was created.
+
+=item B<Valid-After> 
+
+The date at which the key becomes valid (i.e., will be used for encrypting
+and decrypting new data).
+
+=item B<Key-Type> 
+
+The type of key, current AES is the only support key type.
+
+=item B<Key-Size> 
+
+Length in bytes of the key.
+
+=item B<Fingerprint> 
+
+The MD5 digest of the key data. Used to compare keys in two key rings.
+
+=back 
 
 
-=head2 remove {id}
+=head2 remove command
 
-Removes a key from the key ring.
+    remove {id}
+
+Removes a key from the key ring. 
 
 =head1 EXAMPLES
 
- 1. add a key to the keyring valid from now, expiring in 60 days
+ 1. add a key to the keyring valid as of the current time:
 
- wa_keyring -f keyring add 0d 60d
+ wa_keyring -f keyring add 0d
 
- 2. add a key to the keyring valid three days from now, expiring in 63 days
+ 2. add a key to the keyring valid three days from now:
 
- wa_keyring -f keyring add 3d 63d
+ wa_keyring -f keyring add 3d
 
- 3. remove keys from key ring that have expired more then 60 days ago
+ 3. remove keys from key ring that have valid afters which are older then 
+    90 days ago:
 
- wa_keyring -f keyring gc -60d
+ wa_keyring -f keyring gc -90d
 
- 4. remove first key in the key ring
+ 4. remove first key in the key ring:
 
  wa_keyring -f keyring remove 0
 
- 5. do a verbose listing of all the keys in the key ring
+ 5. do a verbose listing of all the keys in the key ring:
 
  wa_keyring -f keyring -v list
 
