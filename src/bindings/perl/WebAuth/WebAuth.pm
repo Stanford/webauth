@@ -55,45 +55,6 @@ using these functions.
 
 None
 
-=head1 CONSTANTS
-
-The following constants from webauth.h are available:
-
-  WA_ERR_NO_ROOM
-  WA_ERR_CORRUPT
-  WA_ERR_NO_MEM
-  WA_ERR_BAD_HMAC
-  WA_ERR_RAND_FAILURE
-  WA_ERR_NONE
-
-  WA_AES_128
-  WA_AES_192
-  WA_AES_256
-
-  WA_TK_APP_NAME
-  WA_TK_CRED_DATA
-  WA_TK_CRED_TYPE
-  WA_TK_CREATION_TIME
-  WA_TK_ERROR_CODE
-  WA_TK_ERROR_MESSAGE
-  WA_TK_EXPIRATION_TIME
-  WA_TK_INACTIVITY_TIMEOUT
-  WA_TK_SESSION_KEY
-  WA_TK_LASTUSED_TIME
-  WA_TK_PROXY_TYPE
-  WA_TK_PROXY_DATA
-  WA_TK_PROXY_OWNER
-  WA_TK_POST_URL
-  WA_TK_REQUEST_REASON
-  WA_TK_REQUESTED_TOKEN_TYPE
-  WA_TK_REQUESTED_TOKEN_HASH
-  WA_TK_RETURN_URL
-  WA_TK_SUBJECT
-  WA_TK_SUBJECT_AUTHENTICATOR
-  WA_TK_SERVICE_AUTHENTICATOR_NAME
-  WA_TK_TOKEN_TYPE
-  WA_TK_TOKEN_VERSION
-
 =head1 FUNCTIONS
 
 =over 4
@@ -187,7 +148,64 @@ attr decodes the $input string and returns the result as reference to a
 hash, or undef in the case of an error. $status is optional, and if 
 present will get set to the result of the webauth_attrs_decode C function.
 
+=item random_bytes(length)
+
+ $bytes = random_bytes($length);
+
+Returns the specified number of random bytes, or undef if
+random data was unavailable. The returned data is suitable
+for nonces, but not necessarily for keys. Use random_key to
+generate a suitable random key.
+
+=item random_key(length)
+
+ $key_material = random_key($length);
+
+Returns the specified number of random bytes, or undef if
+random data was unavailable. The returned data is suitable
+for use as a key. Use the constants WA_AES_128, WA_AES_192, and
+WA_AES256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
+
 =back
+
+=head1 CONSTANTS
+
+The following constants from webauth.h are available:
+
+  WA_ERR_NO_ROOM
+  WA_ERR_CORRUPT
+  WA_ERR_NO_MEM
+  WA_ERR_BAD_HMAC
+  WA_ERR_RAND_FAILURE
+  WA_ERR_NONE
+
+  WA_AES_128
+  WA_AES_192
+  WA_AES_256
+
+  WA_TK_APP_NAME
+  WA_TK_CRED_DATA
+  WA_TK_CRED_TYPE
+  WA_TK_CREATION_TIME
+  WA_TK_ERROR_CODE
+  WA_TK_ERROR_MESSAGE
+  WA_TK_EXPIRATION_TIME
+  WA_TK_INACTIVITY_TIMEOUT
+  WA_TK_SESSION_KEY
+  WA_TK_LASTUSED_TIME
+  WA_TK_PROXY_TYPE
+  WA_TK_PROXY_DATA
+  WA_TK_PROXY_OWNER
+  WA_TK_POST_URL
+  WA_TK_REQUEST_REASON
+  WA_TK_REQUESTED_TOKEN_TYPE
+  WA_TK_REQUESTED_TOKEN_HASH
+  WA_TK_RETURN_URL
+  WA_TK_SUBJECT
+  WA_TK_SUBJECT_AUTHENTICATOR
+  WA_TK_SERVICE_AUTHENTICATOR_NAME
+  WA_TK_TOKEN_TYPE
+  WA_TK_TOKEN_VERSION
 
 =head1 AUTHOR
 

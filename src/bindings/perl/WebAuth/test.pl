@@ -6,7 +6,7 @@
 # change 'tests => 1' to 'tests => last_test_to_print';
 
 use Test;
-BEGIN { plan tests => 54 };
+BEGIN { plan tests => 59 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
@@ -112,10 +112,17 @@ $status = undef;
 ok(undef, WebAuth::attrs_decode('x=1;zr', $status));
 ok(WebAuth::WA_ERR_CORRUPT, $status);
 
+######################################## random
+
+ok (16, length(WebAuth::random_bytes(16)));
+ok (1024, length(WebAuth::random_bytes(1024)));
+
+ok (WebAuth::WA_AES_128, length(WebAuth::random_key(WebAuth::WA_AES_128)));
+ok (WebAuth::WA_AES_192, length(WebAuth::random_key(WebAuth::WA_AES_192)));
+ok (WebAuth::WA_AES_256, length(WebAuth::random_key(WebAuth::WA_AES_256)));
 
 
-#  $output = webauth_attrs_encode(%attrs, [, $status]);
-#  %attrs = webauth_attrs_decode($data [, $status]);
+
 #  $bytes = webauth_random_bytes($num_bytes [, $status]);
 #  $key = webauth_random_key($key_len [, $status]);
 

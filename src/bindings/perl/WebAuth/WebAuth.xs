@@ -293,6 +293,40 @@ CODE:
     }
 }
 
+void
+webauth_random_bytes(length)
+    int length
+PROTOTYPE: $
+CODE:
+{
+    int s;
+    ST(0) = sv_2mortal(NEWSV(0, length));
+    s = webauth_random_bytes(SvPVX(ST(0)), length);
+    if (s<0) {
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), length);
+        SvPOK_only(ST(0));
+    }
+}
+
+void
+webauth_random_key(length)
+    int length
+PROTOTYPE: $
+CODE:
+{
+    int s;
+    ST(0) = sv_2mortal(NEWSV(0, length));
+    s = webauth_random_key(SvPVX(ST(0)), length);
+    if (s<0) {
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), length);
+        SvPOK_only(ST(0));
+    }
+}
+
 BOOT:
 {
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
