@@ -6,69 +6,61 @@ use warnings;
 use lib '../bindings/perl/WebAuth/blib/lib';
 use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 
-use WebAuth;
+use WebAuth qw(:base64 :const :krb5 :key);
+
 use WebKDC;
-use WebKDC::IdToken;
-use WebKDC::AppToken;
-use WebKDC::ResponseToken;
-use WebKDC::RequestToken;
+use WebKDC::Token;
 
 use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 
 $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
 $CONFIG_WAS_KEYRING_PATH = "was.keyring";
 
-sub was_get_krb5_mk_req($) {
-    my $keytab = shift;
-
-}
-
 eval {
 
-    my $c = WebAuth::krb5_new();
+    my $c = krb5_new();
 
-    WebAuth::krb5_init_via_keytab($c, $CONFIG_WAS_KEYTAB);
+    krb5_init_via_keytab($c, $CONFIG_WAS_KEYTAB);
 
-    my $princ = WebAuth::krb5_service_principal($c, 
-						$WebKDC::C_WEBKDC_K5SERVICE,
-						$WebKDC::C_WEBKDC_HOST);
-    my $request = WebAuth::krb5_mk_req($c, $princ);
+    my $princ = krb5_service_principal($c, $WebKDC::C_WEBKDC_K5SERVICE,
+				       $WebKDC::C_WEBKDC_HOST);
+    my $request = krb5_mk_req($c, $princ);
 
     my ($service_token_str, $session_key, $expiration_time) =
 	WebKDC::make_service_token_from_krb5_cred($request);
 
     print "service_token b64'd length(".length($service_token_str).")\n";
 
-    my $key = WebAuth::key_create(WebAuth::WA_AES_KEY, $session_key);
+    my $key =key_create(WA_AES_KEY, $session_key);
 
     my $req_token = new WebKDC::RequestToken;
-    $req_token->set_return_url("http://foo.bar.com/");
-    $req_token->set_creation_time(time());
-    $req_token->set_request_reason('na');
-    $req_token->set_req_token_type('id');
-    $req_token->set_subject_auth('krb5');
+    $req_token->return_url("http://foo.bar.com/");
+    $req_token->creation_time(time());
+    $req_token->request_reason('na');
+    $req_token->req_token_type('id');
+    $req_token->subject_auth('krb5');
 
     print $req_token;
 
-    my $req_token_str = $req_token->to_b64token($key);
+    my $req_token_str = base64_encode($req_token->to_token($key));
 
     print "request_token b64'd length(".length($req_token_str).")\n";
 
     my $req = new WebKDC::LoginRequest;
 
-    $req->set_user("schemers/test");
-    $req->set_pass("testing");
-    $req->set_request_token($req_token_str);
-    $req->set_service_token($service_token_str);
+    $req->user("schemers/test");
+    $req->pass("testing");
+    $req->request_token($req_token_str);
+    $req->service_token($service_token_str);
 
     my $resp = WebKDC::process_login_request($req);
 
-    my $resp_token_str = $resp->get_response_token();
+    my $resp_token_str = $resp->response_token();
 
     print "response_token b64'd length(".length($resp_token_str).")\n";
 
-    my $resp_token = new WebKDC::ResponseToken($resp_token_str,
-					       $key, $WebKDC::C_TOKEN_TTL, 1);
+    my $resp_token = new WebKDC::ResponseToken(base64_decode($resp_token_str),
+					       $key, $WebKDC::C_TOKEN_TTL);
 
     print $resp_token;
 
@@ -76,28 +68,27 @@ eval {
 	die "resp_token not ok";
     }
 
-    my $id_token = new WebKDC::IdToken($resp_token->get_req_token(),
+    my $id_token = new WebKDC::IdToken($resp_token->req_token(),
 				       $key, $WebKDC::C_TOKEN_TTL);
     print $id_token;
 
-    my $sad = $id_token->get_subject_auth_data();
+    my $sad = $id_token->subject_auth_data();
 
-    my $id_princ = WebAuth::krb5_rd_req(WebAuth::krb5_new(), $sad, 
-				     $CONFIG_WAS_KEYTAB);
+    my $id_princ = krb5_rd_req(krb5_new(), $sad, $CONFIG_WAS_KEYTAB);
 
     print "id = $id_princ\n";
 
     my $app_token = new WebKDC::AppToken;
 
-    $app_token->set_subject("krb5:$id_princ");
-    $app_token->set_creation_time(time());
-    $app_token->set_expiration_time($id_token->get_subject_expiration_time());
+    $app_token->subject("krb5:$id_princ");
+    $app_token->creation_time(time());
+    $app_token->expiration_time($id_token->subject_expiration_time());
 
     print $app_token;
 
-    my $ring = WebAuth::keyring_read_file($CONFIG_WAS_KEYRING_PATH);
+    my $ring = keyring_read_file($CONFIG_WAS_KEYRING_PATH);
 
-    my $app_token_str = $app_token->to_b64token($ring);
+    my $app_token_str = base64_encode($app_token->to_token($ring));
 
     print "app_token b64'd length(".length($app_token_str).")\n";
 
