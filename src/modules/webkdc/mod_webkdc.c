@@ -41,8 +41,6 @@
 #define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
 #define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
 
-/* initiaized in child */
-apr_thread_mutex_t *g_keyring_mutex;
 
 /*
  * generate <errorResponse> message from error stored in rc
@@ -94,43 +92,9 @@ set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
     return MWK_ERROR;
 }
 
-static void
-keyring_mutex(MWK_REQ_CTXT *rc, int lock)
-{
-#if APR_HAS_THREADS
-
-    apr_status_t astatus;
-
-    //    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-    //                 "mod_webkdc: keyring_mutex: (%d) ignored", lock);
-    //    return;
-
-    if (g_keyring_mutex != NULL) {
-        if (lock)
-            astatus = apr_thread_mutex_lock(g_keyring_mutex);
-        else 
-            astatus = apr_thread_mutex_unlock(g_keyring_mutex);
-
-        if (astatus != APR_SUCCESS) {
-            char errbuff[512];
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webkdc: keyring_mutex: %s: %s (%d)",
-                         lock ? "lock" : "unlock",
-                         apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
-                         astatus);
-            /* FIXME: now what? */
-        }
-    } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webkdc: keyring_mutex: g_keyring_mutex is NULL");
-        /* FIXME: now what? */
-        }
-#endif
-}
-
 /* 
  * should only be called (and result used) while you have
- * the keyring_mutex.
+ * the MWK_MUTEX_KEYRING mutex.
  */
 
 static WEBAUTH_KEYRING *
@@ -183,14 +147,14 @@ make_token(MWK_REQ_CTXT *rc, WEBAUTH_ATTR_LIST *alist, time_t hint,
     buffer = (char*)apr_palloc(rc->r->pool, elen);
     status = WA_ERR_NONE;
 
-    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
 
     ring = get_keyring(rc);
     if (ring != NULL) {
         status = webauth_token_create(alist, hint, buffer, &olen, elen, ring);
     }
 
-    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
 
     if (ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
@@ -394,13 +358,14 @@ parse_service_token(MWK_REQ_CTXT *rc, char *token, MWK_SERVICE_TOKEN *st)
      * just expiration
      */
 
-    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
 
     ring = get_keyring(rc);
     if (ring != NULL) {
         status = webauth_token_parse(token, blen, 0, ring, &alist);
     }
-    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
 
     if (ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
@@ -484,13 +449,14 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
      * just expiration
      */
 
-    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
 
     ring = get_keyring(rc);
     if (ring != NULL) {
         status = webauth_token_parse(token, blen, 0, ring, &alist);
     }
-    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
 
     if (ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
@@ -603,7 +569,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
 
     /* parse the token, with a TTL */
 
-    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
 
     ring = get_keyring(rc);
     if (ring != NULL) {
@@ -611,7 +577,8 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
                                      rc->sconf->token_max_ttl,
                                      ring, &alist);
     }
-    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
 
     if (ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
@@ -2119,26 +2086,8 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
 static void
 mod_webkdc_child_init(apr_pool_t *p, server_rec *s)
 {
-    apr_status_t astatus;
-    static const char *mwk_func="mod_webkdc_child_init";
-    char errbuff[512];
-
     /* initialize mutexes */
-#if APR_HAS_THREADS
-    astatus = apr_thread_mutex_create(&g_keyring_mutex, 
-                                      APR_THREAD_MUTEX_DEFAULT,
-                                      s->process->pool);
-
-    if (astatus != APR_SUCCESS) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                         "mod_webkdc: %s: apr_thread_mutex_create: %s (%d)",
-                         mwk_func,
-                         apr_strerror(astatus, errbuff, sizeof(errbuff)),
-                         astatus);
-        g_keyring_mutex = NULL;
-    }
-#endif
-
+    mwk_init_mutexes(s);
 }
 
 /*

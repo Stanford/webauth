@@ -54,6 +54,12 @@
 #define MAX_PROXY_TOKENS_ACCEPTED 64
 #define MAX_PROXY_TOKENS_RETURNED 64
 
+/* enum for mutexes */
+enum mwk_mutex_type {
+    MWK_MUTEX_KEYRING = 0,
+    MWK_MUTEX_MAX /* MUST BE LAST! */
+};
+
 /* enum for return code */
 enum mwk_status {
     MWK_ERROR = 0,
@@ -181,6 +187,25 @@ typedef struct {
 
 
 /* util.c */
+
+/*
+ * initialize all our mutexes
+ */
+void
+mwk_init_mutexes(server_rec *s);
+
+/*
+ * lock a mutex
+ */
+void
+mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
+
+/*
+ * unlock a mutex 
+ */
+void
+mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
+
 
 /*
  * get a string from an attr list, log an error if not present.

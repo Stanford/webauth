@@ -6,7 +6,82 @@
 #include "mod_webkdc.h"
 
 
-#define CHUNK_SIZE 4096
+/* initiaized in child */
+static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];
+
+void
+mwk_init_mutexes(server_rec *s)
+{
+#if APR_HAS_THREADS
+    int i;
+    apr_status_t astatus;
+    char errbuff[512];
+
+    for (i=0; i < MWK_MUTEX_MAX; i++) {
+        astatus = apr_thread_mutex_create(&mwk_mutex[i],
+                                          APR_THREAD_MUTEX_DEFAULT,
+                                          s->process->pool);
+        if (astatus != APR_SUCCESS) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                         "mod_webkdc: mwk_init_mutex: "
+                         "apr_thread_mutex_create(%d): %s (%d)",
+                         i,
+                         apr_strerror(astatus, errbuff, sizeof(errbuff)),
+                         astatus);
+            mwk_mutex[i] = NULL;
+        }
+    }
+#endif
+}
+
+static void
+lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
+{
+#if APR_HAS_THREADS
+
+    apr_status_t astatus;
+
+    if (type < 0 || type >= MWK_MUTEX_MAX) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webkdc: lock_mutex: invalid type (%d) ignored", 
+                     type);
+        return;
+    }
+        
+    if (mwk_mutex[type] != NULL) {
+        if (lock)
+            astatus = apr_thread_mutex_lock(mwk_mutex[type]);
+        else 
+            astatus = apr_thread_mutex_unlock(mwk_mutex[type]);
+
+        if (astatus != APR_SUCCESS) {
+            char errbuff[512];
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webkdc: lock_mutex(%d,%d): %s (%d)",
+                         type, lock, 
+                         apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
+                         astatus);
+            /* FIXME: now what? */
+        }
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webkdc: lock_mutex: mutex(%d) is NULL", type);
+        /* FIXME: now what? */
+        }
+#endif
+}
+
+void
+mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type)
+{
+    lock_or_unlock_mutex(rc, type, 1);
+}
+
+void
+mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type)
+{
+    lock_or_unlock_mutex(rc, type, 0);
+}
 
 /*
  *
@@ -17,6 +92,8 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
     memset(string, 0, sizeof(MWK_STRING));
     string->pool = pool;
 }
+
+#define CHUNK_SIZE 4096
 
 /*
  * given an MWA_STRING, append some new data to it.
