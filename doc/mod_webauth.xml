@@ -63,7 +63,7 @@ variables to the SSI and CGI namespace. The generated variables are listed in
 the table below. For CGI apps that have expectations about and/or restrictions
 on the names of environment variables they can handle, you can use the
 <a href="#WebAuthVarPrefix">WebAuthVarPrefix</a> directive to have 
-additional environment  variables set.
+additional environment variables set.
 </p>
 
 <table border="1">
@@ -734,14 +734,8 @@ authentication.
 Whether or not we do extra debugging in error_log.
 </p>
 
-<note><title>Note (NIY)</title> 
-    <p>This directive is <b>NOT</b> implemented yet, as mod_webauth
-    is currently always spewing a bunch of stuff to the error_log.
-    </p>
-</note>
-
 <example><title>Example</title>
-WebAuthRequireSSL off<br />
+WebAuthDebug on<br />
 </example>
 </usage>
 </directivesynopsis>
