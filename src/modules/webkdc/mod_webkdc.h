@@ -22,9 +22,6 @@
 
 #include "webauth.h"
 
-/* probably need a better place for this constant, and a real version# */
-#define WEBKDC_VERSION "WebKDC/3"
-
 /* defines for config directives */
 
 #define CD_Keyring "WebKdcKeyring"

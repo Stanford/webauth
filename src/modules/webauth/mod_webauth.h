@@ -23,9 +23,6 @@
 
 #include "webauth.h"
 
-/* probably need a better place for this constant */
-#define WEBAUTH_VERSION "WebAuth/3"
-
 /* how long to wait between trying for a new token when 
  * a renewal attempt fails
  */

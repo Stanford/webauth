@@ -396,6 +396,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 {
     MWA_SCONF *sconf;
     server_rec *scheck;
+    char *version;
 
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
@@ -411,11 +412,14 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
         init_sconf(scheck, sconf, ptemp);
     }
 
-    ap_add_version_component(pconf, WEBAUTH_VERSION);
+    version = apr_pstrcat(ptemp, "WebAuth3/", webauth_info_version(), NULL);
+    ap_add_version_component(pconf, version);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initialized");
-
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                     "mod_webauth: initialized (%s) (%s)",
+                     webauth_info_version(),
+                     webauth_info_build());
     return OK;
 }
 

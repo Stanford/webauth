@@ -2167,6 +2167,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     MWK_SCONF *sconf;
     int status;
     WEBAUTH_KEYRING *ring;
+    char *version;
 
     sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
                                              &webkdc_module);
@@ -2196,10 +2197,14 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
         webauth_keyring_free(ring);
     }
 
-    ap_add_version_component(pconf, WEBKDC_VERSION);
+    version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
+    ap_add_version_component(pconf, version);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initialized");
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                     "mod_webkdc: initialized (%s) (%s)",
+                     webauth_info_version(),
+                     webauth_info_build());
 
     return OK;
 }
