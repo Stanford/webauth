@@ -7,6 +7,7 @@ MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
 NEWS                                    Release history for WebAuth
 README                                  Basic information about WebAuth
+autogen                                 Script to bootstrap a CVS checkout
 conf                                    Sample configuration files (Directory)
 conf/README                             Explanation of sample conf files
 conf/debian                             Debian module configuration (Directory)
@@ -31,11 +32,13 @@ debian/libapache2-webauth.README.Debian Debian mod_webauth package docs
 debian/libapache2-webauth.docs          Debian mod_webauth package doc files
 debian/libapache2-webauth.examples      Debian mod_webauth package examples
 debian/libapache2-webauth.install       Debian mod_webauth package files
+debian/libapache2-webauth.prerm         Debian mod_webauth preremoval
 debian/libapache2-webauth.postinst      Debian mod_webauth postinstall
 debian/libapache2-webauth.postrm        Debian mod_webauth postremoval
 debian/libapache2-webkdc.README.Debian  Debian mod_webkdc package docs
 debian/libapache2-webkdc.docs           Debian mod_webkdc pacakge doc files
 debian/libapache2-webkdc.install        Debian mod_webkdc package files
+debian/libapache2-webkdc.prerm          Debian mod_webkdc preremoval
 debian/libapache2-webkdc.postinst       Debian mod_webkdc postinstall
 debian/libapache2-webkdc.postrm         Debian mod_webkdc postremoval
 debian/libwebauth1-dev.install          Debian dev package install rules
