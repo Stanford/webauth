@@ -93,14 +93,16 @@ EOF
 }
 
 sub login_form {
-    my ($q, $resp, $RT, $ST,) = @_;
+    my ($q, $resp, $RT, $ST, $error_message) = @_;
 
     print_headers($q, $resp->proxy_cookies);
 
-    print $q->Dump;
+    #print $q->Dump;
 
     print << "EOF";
 
+ <html>
+    $error_message
     <hr>
     <FORM method="POST" autocomplete="OFF" action="/login"
           enctype="application/x-www-form-urlencoded">
@@ -143,6 +145,7 @@ sub login_form {
       <INPUT type="hidden" name="ST" value="$ST">
     </FORM> 
     <hr>
+  </html>
 EOF
 exit(1);
 }
@@ -196,24 +199,27 @@ eval {
     WebKDC::handle_request_token($req, $resp);
 };
 
+#my $e = $@;
+
+print STDERR "FOOBAR ".$@."\n";
+
 if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     # need to prompt again, also need to limit number of times
     # we'll prompt
     # make sure to pass the request/service tokens in hidden fields
- print $q->header(-type => 'text/html');
-print "$@\n";
-    print "oops -- reprompt\n";
+    login_form($q, $resp, $request_token_str, $service_token_str,
+	       "<b>login failed! Try again...</b>");
 
 } elsif (WebKDC::WebKDCException::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
 
     # this exception indicates someone requested an id-token
-    # and either didn't have a proxy-token, or it was expired.
+    # and either didn't have a proxy-token, or it woas expired.
     # prompt the user for their username/password, making sure
     # to pass the request/service tokens in hidden fields
     
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
-    login_form($q, $resp, $request_token_str, $service_token_str);;
+    login_form($q, $resp, $request_token_str, $service_token_str, '');
 
 } elsif ($@) {
     # something nasty happened
@@ -223,9 +229,9 @@ print "$@\n";
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
  print $q->header(-type => 'text/html');
-print "$@\n";
-
-    print "oops -- nasty\n";
+print STDERR "FOOBAR ".$@."\n";
+print $@."\n";
+    print "oops, login failed, blah blah blah\n";
 
 } else {
 

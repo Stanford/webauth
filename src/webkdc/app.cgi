@@ -51,6 +51,8 @@ sub dump_stuff {
 sub handle_response($$$) {
     my ($q, $resp_token_str, $as_token_str) = @_;
 
+    print STDERR "in handle_response\n";
+
     $resp_token_str =~ tr/ /+/;
     $as_token_str =~ tr/ /+/;
     
@@ -85,6 +87,8 @@ sub handle_response($$$) {
 
     my $app_token_str = base64_encode($app_token->to_token(get_was_keyring()));
 
+    print STDERR "returning new app_token and cookie!\n";
+
     return ($app_token, $q->cookie(-name => 'webauth_at', 
 				   -value => $app_token_str));
 
@@ -100,49 +104,46 @@ sub check_for_valid_app_token {
     my ($WR) = ($URI =~ /;WEBAUTHR=([^;]+);/);
     my ($WS) = ($URI =~ /;WEBAUTHS=([^;]*);/);
 
-    print STDERR "WWR($WR) WWS($WS)\n";
+
+    my $at_str = $q->cookie('webauth_at');
+
+    # check for valid cookie first
+    if ($at_str) {
+	my $app_token = new WebKDC::AppToken(base64_decode($at_str),
+					     get_was_keyring(), 0);
+	return ($app_token, undef);
+    }
 
     if ($WR && $WS) {
 	my ($app_token, $cookie) = handle_response($q, $WR, $WS);
 	return ($app_token, $cookie);
     }
+    return (undef, undef);
 
-    my $at_str = $q->cookie('webauth_at');
-    return undef unless $at_str;
-
-    my $app_token = undef;
-    eval {
-	print STDERR "parse $at_str\n";
-
-	$app_token = new WebKDC::AppToken(base64_decode($at_str),
-					  get_was_keyring(), 0);
-    };
-
-    if ($@) {
-	print STDERR "apptoken exception: $@\n";
-    }
-    return ($app_token, undef);
 }
 
-sub old_redirect_for_webauth_login {
-    my $q = shift;
+sub redirect_for_webauth_cookie {
+    my ($q, $cookie) = @_;
 
-    my $app_token = new WebKDC::AppToken;
+    my $return_url = "http://".$ENV{'SERVER_NAME'}.":".$ENV{'SERVER_PORT'}.
+	$ENV{"REQUEST_URI"};
 
-    $app_token->subject("schemers");
-    $app_token->creation_time(time());
-    $app_token->expiration_time(time()+3600);
-    my $app_token_str = base64_encode($app_token->to_token(get_was_keyring()));
+    $return_url =~ s/;WEBAUTHR=.*;$//;
+    $return_url =~ s/;WEBAUTHS=.*;$//;
 
-    my $cookie = $q->cookie(-name=>'webauth_at',
-			-value=> $app_token_str,
-			-path=>'/');
-    print $q->header(-type => 'text/plain',
-		     -cookie => [$cookie],
-		     );
-    print "cookie set\n";
+    print STDERR "rfwc: redirect($return_url)\n";
+
+    print "Status: 302 Moved\n";
+    print "Location: $return_url\n";
+    print "Expires: Thu, 26 Mar 1998 22:00:00 GMT\n";
+    print "Pragma: no-cache\n";
+    print "Cache-Control: no-cache\n";
+    print "Content-Length: 0\n";
+    print "Set-Cookie: $cookie\n";
+    print "\n";
     exit(1);
 }
+
 
 sub redirect_for_webauth_login {
     my $q = shift;
@@ -192,7 +193,7 @@ sub redirect_for_webauth_login {
 
     print "Status: 302 Moved\n";
     print "Location: $redirect_url\n";
-    print "Expires: Tue, 06 Jul 1999 22:00:00 GMT\n";
+    print "Expires: Thu, 26 Mar 1998 22:00:00 GMT\n";
     print "Pragma: no-cache\n";
     print "Cache-Control: no-cache\n";
     print "Content-Length: 0\n";
@@ -203,7 +204,20 @@ sub redirect_for_webauth_login {
 my $q = new CGI;
 eval {
 
-    my ($app_token, $cookie) = check_for_valid_app_token($q);
+    my ($app_token, $cookie);
+
+    eval {
+	($app_token, $cookie) = check_for_valid_app_token($q);
+    };
+
+    if ($@) {
+	print STDERR "exception from cfvat: $@\n";
+    }
+
+    if ($cookie) {
+	redirect_for_webauth_cookie($q, $cookie);
+	exit(1);
+    }
 
     if (!$app_token) {
 	redirect_for_webauth_login($q);
@@ -227,6 +241,12 @@ if ($@) {
 }
 
 print "---------------\n";
+
+print "REMOTE_USER = ",$ENV{'REMOTE_USER'},"\n";
+print "(note: REMOTE_USER is fully-qualified for now)\n";
+print "---------------\n";
+exit(1);
+
 dump_stuff;
 print "---------------\n";
 my $params = $q->Vars;

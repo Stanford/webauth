@@ -132,7 +132,7 @@ sub handle_web_id_request {
 	    krb5_init_via_password($c, $user, $pass, $C_WEBKDC_KEYTAB);
 	};
 
-	if (WebKDC::WebKDCException::match($@, WA_ERR_LOGIN_FAILED)) {
+	if (WebAuth::Exception::match($@, WA_ERR_LOGIN_FAILED)) {
 	    die new WebKDC::WebKDCException(WK_ERR_LOGIN_FAILED,
 				      "krb5_init_via_password", $@);
 	} elsif ($@) {
