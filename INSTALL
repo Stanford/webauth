@@ -112,8 +112,8 @@ site, see doc/install-webkdc.
          WebAuthKeyringKeyLifetime 30d
 
          WebAuthLoginURL "https://<your-webkdc>/login/"
-         WebAuthWebKdcURL "https://<your-webkdc>:8443/webkdc-service/"
-         WebAuthWebKdcPrincipal webauth/<your-webkdc>
+         WebAuthWebKdcURL "https://<your-webkdc>/webkdc-service/"
+         WebAuthWebKdcPrincipal service/webkdc
          WebAuthKeyring conf/webauth/keyring
          WebAuthKeytab conf/webauth/keytab
          WebAuthServiceTokenCache conf/webauth/service_token.cache
