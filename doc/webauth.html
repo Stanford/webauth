@@ -1196,6 +1196,7 @@ The response message is:
          not set if &lt;loginErrorCode> is set. --></i>
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
 
+    <i>&lt;!-- set if request token requestion options has "lc" --></i>
     &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
 
     <i>&lt;!-- app state is the opaque app state passed in the
@@ -1243,15 +1244,16 @@ web front-end should prompt for the username and password.
 </table>
 
 
-<p>If the request option "ro" is set in the request token, then
+<p>If the request option attribute in the request token has "lc" in it, then
   &lt;loginCanceledToken>  will be returned. Note that it is up
 to the WebKDC web front-end to send back that token as the 
 requested token (WEBAUTHR in the return URL) if the user hits 
 the cancel button.
 
-<p>If the request option "fa" attribute is set, then this command
-will return a &lt;loginErrorCode> of 17,
-which indicates that the user is being forced to (re)login.
+<p>If the request option attribute in the request token has "fa" in it and
+we are not passing a login token, then this command will return a
+&lt;loginErrorCode> of 17, which indicates that the user is being 
+forced to (re)login. Any passed in proxy-tokens are ignored.
 
 <H3>4.4 <a name="xmlpost">Posting XML to WebKDC</a></H3>
 
