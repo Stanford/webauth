@@ -43,4 +43,4 @@ depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-wa_keyring.o: wa_keyring.c $(top_srcdir)/src/libwebauth/webauth.h
+wa_keyring.o: wa_keyring.c $(top_builddir)/config.h $(top_builddir)/src/libwebauth/webauth.h
