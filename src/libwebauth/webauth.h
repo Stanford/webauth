@@ -534,14 +534,13 @@ int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache);
 
 /*
  * initialize a context with username/password to obtain a TGT.
- * The TGT is verified using the specified service and keytab. 
+ * The TGT is verified using the specified keytab. 
  * The TGT will be placed in the specified cache, or a memory cache 
  * if cache_name is NULL.
  */
 int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                    const char *username,
                                    const char *password,
-                                   const char *service,
                                    const char *keytab,
                                    const char *cache_name);
 /*
@@ -608,7 +607,6 @@ int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
 int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                         const unsigned char *req,
                         int length,
-                        const char *service,
                         const char *keytab,
                         char **client_principal);
 
