@@ -74,7 +74,7 @@ sub parse_uri {
     $lvars->{return_url} = $uri->canonical;
     $lvars->{scheme} = $uri->scheme;
     if ((! defined $lvars->{scheme}) || ($lvars->{scheme} !~ /^https?/)) {
-        $PAGES{error}->param ('err_bad_url' => 1);
+        $PAGES{error}->param ('err_webkdc' => 1);
         return 1;
     }
     $lvars->{host} = $uri->host;
@@ -232,9 +232,11 @@ while (my $q = new CGI::Fast) {
 	    WebKDC::make_request_token_request($req, $resp);
 	
 	get_login_cancel_url(\%varhash,$resp); 
+	if ($status == WK_SUCCESS && parse_uri(\%varhash, $resp)) {
+	    $status=WK_ERR_WEBAUTH_SERVER_ERROR;
+	}
   
 	if ($status ==WK_SUCCESS && $q->cookie($TEST_COOKIE) ) {
-	    parse_uri(\%varhash, $resp);
 	    print_confirm_page($q, \%varhash, $resp );
 	    #print STDERR ("WebKDC::make_request_token_request sucess\n") if $LOGGING;
 
