@@ -802,14 +802,17 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
 static void
 webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * attr_table)
 {
-    char *a;
+    char *a, *val, *dn;
     int i;
     BerElement *ber = NULL;
     struct berval **bvals;
-    char *val;
 
     // the DN's are collected to be used in the ldap_compares of the privgroups
-    apr_table_add(attr_table, DN_ATTRIBUTE, ldap_get_dn( lc->ld, entry ));
+    dn = ldap_get_dn(lc->ld, entry);
+    apr_table_add(attr_table, DN_ATTRIBUTE, dn);
+
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                 "webauthldap: retrieved entry for DN: %s", dn);
 
     // attributes and values are stored in a table
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
@@ -899,6 +902,12 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
+
+    if (lc->numEntries == 0)
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, lc->r->server, 
+                     "webauthldap: user %s not found in ldap", 
+                     lc->r->user);
+
     return 0;
 }
 
@@ -924,15 +933,20 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
 
         rc = ldap_compare_ext_s(lc->ld, dn, attr, &bvalue, NULL, NULL);
 
-        if (rc != LDAP_COMPARE_FALSE)
+        if (rc != LDAP_COMPARE_FALSE) {
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                         "webauthldap: authn SUCCEEDED %s=%s for %s", 
+                         attr, value, dn);
             return rc;
+        }
+
     }
 
     return LDAP_COMPARE_FALSE;
 }
 
 /**
- * This will set be called with every attribute value pair that was received
+ * This will be called with every attribute value pair that was received
  * from the LDAP search. Only attributes that were requested through the conf 
  * directives as well as a few default attributes will be placed in 
  * environment variables starting with "WEBAUTH_LDAP_".
@@ -957,11 +971,9 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     if ((key == NULL) || (val == NULL))
         return 1;
 
-    /*
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
-                     "webauthldap: got attrib: %s val: %s", key, val);
-    */
+                     "webauthldap: got attribute: %s", key);
 
     // conf directive could have been in different capitalization, 
     // simpler to just lowercase for the comparison
@@ -972,6 +984,9 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     // set into the environment only those attributes, which were specified
     if (!apr_table_get(lc->envvars, newkey))
         return 1;
+
+    // to keep track which ones we have already seen
+    apr_table_unset(lc->envvars, newkey);
     
     newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
 
@@ -1015,6 +1030,26 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
 }
 
 /**
+ * This will be called with every attribute value pair that was requested
+ * to be placed in environment variables, but was not found in ldap.
+ *
+ * @param lcp main context struct for this module, for passing things around
+ * @param key the attribute name, as supplied by LDAP api
+ * @param val the value of the attribute
+ * @return always 1, which means keep going through the table
+ */
+int
+webauthldap_envnotfound(void* lcp, const char *key, const char *val)
+{
+    MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
+
+    ap_log_error(APLOG_MARK, APLOG_WARNING, 0, lc->r->server, 
+                 "webauthldap: requested attribute not found: %s", key);
+
+    return 1; // means keep going thru all available entries
+}
+
+/**
  * This is the API hook for this module, it gets called first in the 
  * auth_check stage, and is only invoked if some require directive was 
  * present at the requested location. This initializes the module, binds to 
@@ -1028,7 +1063,6 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
 static int
 auth_checker_hook(request_rec * r)
 {
-    const char *at = ap_auth_type(r);
     MWAL_LDAP_CTXT* lc;
     int rc, i;
 
@@ -1040,7 +1074,7 @@ auth_checker_hook(request_rec * r)
     int needs_further_handling;
     int authorized;
 
-    if ((at == NULL) || (strcmp(at, "WebAuth") != 0)) {
+    if (apr_table_get(r->subprocess_env, "WEBAUTH_USER") == NULL) {
         return DECLINED;
     }
 
@@ -1084,17 +1118,15 @@ auth_checker_hook(request_rec * r)
             w = ap_getword_white(r->pool, &t);
 
             if (!strcmp(w, "valid-user")) {
-                if (lc->sconf->debug)
-                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                 "webauthldap: REQUIRE: valid-user");
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                             "webauthldap: authn SUCCEEDED on require valid-user");
                 authorized = 1;
                 break;
             } else if (!strcmp(w, "user")) {
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
-                    if (lc->sconf->debug)
-                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                     "webauthldap: REQUIRE: user %s", w);
+                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                 "webauthldap: authn SUCCEEDED on require user %s", w);
 
                     if (!strcmp(r->user, w)) {
                         authorized = 1;
@@ -1137,9 +1169,8 @@ auth_checker_hook(request_rec * r)
     }
 
     if (!authorized) {
-        if (lc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                         "webauthldap: UNAUTHORIZED");
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server, 
+                     "webauthldap: user %s UNAUTHORIZED", r->user);
         ldap_unbind(lc->ld);
         return HTTP_UNAUTHORIZED;
     }
@@ -1151,6 +1182,7 @@ auth_checker_hook(request_rec * r)
     for (i=0; i<lc->numEntries; i++) {
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
     }
+    apr_table_do(webauthldap_envnotfound, lc, lc->envvars, NULL);
 
     if (lc->sconf->debug) {
         if (needs_further_handling)
