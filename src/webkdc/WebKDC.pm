@@ -36,7 +36,7 @@ our @EXPORT_OK;
 # when one exists.
 #
 our $C_WEBKDC_KEYRING_PATH = "../conf/webkdc/keyring";
-our $C_WEBKDC_URL = "https://localhost:8443/webkdc-service/";
+our $C_WEBKDC_URL = "https://localhost/webkdc-service/";
 
 our $DEBUG = 1;
 
