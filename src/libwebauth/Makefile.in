@@ -9,10 +9,12 @@ VPATH		= @srcdir@
 prefix          = @prefix@
 exec_prefix     = @exec_prefix@
 libdir		= @libdir@
+includedir	= @includedir@
 D		= $(DESTDIR)
 
 CC		= @CC@
 INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
 LIBTOOL		= $(top_builddir)libtool
 RANLIB		= @RANLIB@
 
@@ -35,6 +37,7 @@ install: $(LIBNAME).la
 	$(INSTALL) -d $D$(libdir)
 	$(LIBTOOL) --mode=install \
 	    $(INSTALL) $(LIBNAME).la $D$(libdir)/$(LIBNAME).la
+	$(INSTALL_DATA) webauth.h $(includedir)/webauth.h
 
 .c.lo:
 	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
