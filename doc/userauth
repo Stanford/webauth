@@ -1,19 +1,19 @@
          User Authentication and Authorization with WebAuth
 
-Activating general authentication in a Webauth server is as simple as
+Activating general authentication in a WebAuth server is as simple as
 adding the following two lines:
 
     AuthType WebAuth
     Require valid-user
 
-in the appropriate part of the Webauth server configuration file.  This
+in the appropriate part of the WebAuth server configuration file.  This
 will require that all accesses to that portion of the web server be
 authenticated using WebAuth.
 
 Authentication controls for WebAuth match the basic authentication
 controls within Apache.  Control directives can be asserted from within
-Location and Directory containers.  For example, to require Webauth
-authentication for all documents being served from a Webauth server, put:
+Location and Directory containers.  For example, to require WebAuth
+authentication for all documents being served from a WebAuth server, put:
 
     <Location / >
         AuthType WebAuth
@@ -66,11 +66,11 @@ Any user id other than jdoe attempting to access files in the
 /webroot/personal/jdoe directory (or any subdirectories below it) will be
 forbidden access.
 
-The WebAuth require directive will also work in combination with
-host/domain directive controls.  This allows for access to be granted
-either based on from what machine the user is browsing (host/domain
-identification) or from the user's WebAuth credentials.  This is done
-using the standard Apache "satisfy" directive.
+The require directive will also work in combination with host/domain
+directive controls.  This allows for access to be granted either based
+on from what machine the user is browsing (host/domain identification)
+or from the user's WebAuth credentials.  This is done using the standard
+Apache "satisfy" directive.
 
 For example, to limit access to the directory /webroot/personal/jdoe so
 that jdoe can access those files from anywhere OR anyone can access the
@@ -95,9 +95,30 @@ Without the "satisfy any" line, the user would have to BOTH be coming from
 a stanford.edu system AND authenticate as jdoe.  "satisfy any" grants
 access if either of those conditions are satisfied.
 
+Another common pattern is:
+
+    AuthType WebAuth
+    require valid-user
+    order deny,allow
+    deny from all
+    allow from stanford.edu
+    satisfy any
+
+which is the same as the previous one, but which allows any authenticated
+user to access the content.  This configuration can be used to provide
+light protection for content that should be restricted to only Stanford
+affiliates.
+
 If all of that just confused you, don't worry too much.  It's not
 necessary to understand all the details of how this recipe works in order
 to use it.  For more detailed information and more examples, see the
 Apache manual; all of this works exactly the same way as it does with a
 completely stock Apache server except that the user identity is
 established using WebAuth instead of some other authentication mechanism.
+
+It's important to remember that a wide variety of people may have
+access to systems within a particular domain, and that particularly at
+Stanford, many people have access to stanford.edu systems who are not
+necessarily closely affiliated with the university.  These sorts of access
+restrictions are therefore only suitable for resources that only require
+very light protection.
