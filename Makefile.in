@@ -38,7 +38,7 @@ check test tests:
 install-tests:
 	cd tests && $(MAKE) install
 
-install-webkdc
+install-webkdc:
 	cd src && $(MAKE) install-webkdc
 
 clean depend:
