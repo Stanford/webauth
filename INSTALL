@@ -177,70 +177,35 @@ site, see doc/install-webkdc.
      wish to protect.  In a future WebAuth release, you will be able to
      additionally restrict access by privilege group.
 
-10.  Set up a test URL to make sure that everything is working properly.
-     Here is an example of the sort of configuration that you could use to
-     test:
+10.  You can now test WebAuth if you wish (and if this is the first time
+     that you've set up WebAuth, it's recommended).  WebAuth comes with a
+     set of test pages that you can use to configure your installation
+     with various different configuration options.
 
-         # Set up a logout handler -- if the user goes to this URL, their
-         # cookies will be destroyed and they'll have to authenticate
-         # again to access protected content.
-         <Location /realapp/logout.cgi>
-             WebAuthDoLogout on
-         </Location>
+     To install this test suite, run:
 
-         <Directory "<apache-root>/htdocs/realapp/">
-             Options Indexes FollowSymLinks ExecCGI
-             AllowOverride All
-             Order allow,deny
-             Allow from all
-             AuthType WebAuth
-             require valid-user
-         </Directory>
+         make install-tests
 
-     replacing <apache-root> as above, and then create
-     <apache-root>/htdocs/realapp/logout.cgi with the contents:
+     The tests will be installed in htdocs/tests under the path that you
+     gave to WebAuth's --with-apache configure option.  A configuration
+     fragment will also be installed in conf/webauth-tests.conf.
 
-         #!/bin/sh
-         echo 'Content-type: text/plain'
-         echo ''
-         echo 'LOGGED OUT!'
+     Now, edit your httpd.conf file and add the line:
 
-     and <apache-root>/htdocs/realapp/dumpenv.cgi with the following
-     contents:
+         Include conf/webauth-tests.conf
 
-         #!/usr/bin/perl
-         print "Content-type: text/plain\n\n";
-         foreach $var (sort(keys(%ENV))) {
-             $val = $ENV{$var};
-             $val =~ s|\n|\\n|g;
-             $val =~ s|"|\\"|g;
-             print "${var}=\"${val}\"\n";
-         }
-
-     (replace /usr/bin/perl with a path to Perl; /usr/pubsw/bin/perl will
-     work for Stanford users with AFS installed and pubsw mounted).
+     and make sure that the basic WebAuth configuration directives are in
+     your httpd.conf file as described above, or uncomment them in the
+     webauth-tests.conf file.
 
 11.  Restart the server to pick up the configuration changes, and check
      your error log for any errors indicating a problem with the WebAuth
      installation.
 
-12.  Test the demo applicatino that you created above.  Go to:
-
-         <https://<your-system>/realapp/dumpenv.cgi>
-
-     to see the login dialog and then a dump of all environment variables
-     made available to CGI applications.  You should see WEBAUTH_USER and
-     REMOTE_USER in that list of environment variables, set to your
-     authenticated identity.  Clicking reload should not require you to
-     authenticate again.
-
-     Go to:
-
-         <https://<your-system>/realapp/logout.cgi>
-
-     to log out, and then return to the first URL.  You should have to go
-     through the login server again to re-establish credentials for your
-     server, but you shouldn't have to enter your password in again.
+12.  If you followed the test installation step above (#10), you should
+     now be able to go to the URL /tests/ on your web server to see the
+     test suite.  Documentation on how to walk through all of the tests
+     can be found in doc/test-plan.
 
 13.  Congratulations!  You have a working WebAuth server.  You can now add
      AuthType WebAuth and require valid-user (or require lines for
