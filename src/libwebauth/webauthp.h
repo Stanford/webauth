@@ -37,7 +37,12 @@ typedef struct {
     AES_KEY decryption;
 } WEBAUTH_AES_KEYP;
 
-
-
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/
 
 #endif

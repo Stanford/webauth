@@ -169,3 +169,12 @@ int webauth_attrs_decode(unsigned char *buffer,
         return n;
     }
 }
+
+
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/

@@ -290,3 +290,11 @@ int webauth_token_parse(unsigned char *input,
                          attrs,
                          max_num_attrs);
 }
+
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/

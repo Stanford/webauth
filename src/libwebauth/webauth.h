@@ -1,5 +1,5 @@
 #ifndef _WEBAUTH_H
-#define _WEBAUTH_H
+#define _WEoBAUTH_H
 
 #ifdef  __cplusplus
 //extern "C" {
@@ -84,6 +84,20 @@ typedef struct webauth_aes_key WEBAUTH_AES_KEY;
  * null-termination.
  */
 int webauth_base64_encoded_length(int length);
+
+
+/*
+ * returns the amount of space required to base64 decode data
+ * of the given length. Does not actually attempt to ensure that
+ * input contains a valid base64-encoded string, other the checking
+ * the last two characters for padding ('='). Returned length does *NOT*
+ * include room for a null-termination.
+ *
+ * errors:
+ *   WA_ERR_CORRUPT (if length is not greater then 0 and a multiple of 4)
+ *
+ */
+int webauth_base64_decoded_length(const unsigned char *input, int length);
 
 /*
  * base64 encodes the given data, does *NOT* null-terminate.
@@ -291,5 +305,13 @@ int webauth_token_parse(unsigned char *input,
 #ifdef  __cplusplus
 //}
 #endif
+
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/
 
 #endif

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     unsigned char encoded_buffer[BUFSIZE];
     unsigned char decoded_buffer[BUFSIZE];
     int i,j;
-    int elen, rlen, dlen, errors;
+    int elen, rlen, rdlen, dlen, errors;
 
     errors = 0;
     for (i=1; i < 512; i++) {
@@ -23,8 +23,15 @@ int main(int argc, char *argv[])
             fprintf(stderr, "ERROR: elen(%d) != rlen(%d)\n", elen, rlen);
             errors++;
         }
+        rdlen = webauth_base64_decoded_length(encoded_buffer, elen);
         dlen = webauth_base64_decode(encoded_buffer, elen, 
                                      decoded_buffer, BUFSIZE);
+
+        if (dlen != rdlen) {
+            fprintf(stderr, "ERROR: dlen(%d) != rdlen(%d)\n", dlen, rdlen);
+            errors++;
+        }
+
         if (dlen != i) {
             fprintf(stderr, "ERROR: dlen(%d) != i(%d)\n", dlen, i);
             errors++;

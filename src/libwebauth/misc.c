@@ -77,3 +77,11 @@ int webauth_hex_decode(unsigned char *input,
     }
     return out_len;
 }
+
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/

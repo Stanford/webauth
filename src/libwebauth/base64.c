@@ -35,6 +35,23 @@ int webauth_base64_encoded_length(int length)
     return ((length+2)/3*4);
 }
 
+int webauth_base64_decoded_length(const unsigned char *input, int input_len)
+{
+    int out_len;
+    assert(input);
+    if (!input_len || input_len%4) {
+        return WA_ERR_CORRUPT;
+    }
+    out_len = input_len/4*3;
+    if (input[input_len-1] == '=') {
+        out_len--;
+        if (input[input_len-2] == '=') {
+            out_len--;
+        }
+    }
+    return out_len;
+}
+
 int webauth_base64_encode(const unsigned char *input, 
                           int input_len, 
                           unsigned char *output, 
@@ -140,3 +157,11 @@ webauth_base64_decode(unsigned char *input,
     return WA_ERR_NO_ROOM;
 }
 
+
+/*
+**  Local variables:
+**  mode: c
+**  c-basic-offset: 4
+**  indent-tabs-mode: nil
+**  end:
+*/
