@@ -50,8 +50,8 @@ distclean: clean
 	       Makefile src/Makefile src/bindings/Makefile \
 	       src/bindings/perl/Makefile src/libwebauth/Makefile \
 	       src/modules/Makefile src/modules/webauth/Makefile \
-	       src/modules/webkdc/Makefile src/utils/Makefile tests/Makefile \
-	       tests/libwebauth/Makefile \
+	       src/modules/webkdc/Makefile src/utils/Makefile \
+	       src/webkdc/Makefile tests/Makefile tests/libwebauth/Makefile \
 	       src/bindings/perl/WebAuth/Makefile.PL *~ core \#* \
 	       autom4te*.cache LIST.* webauth-*-@PACKAGE_VERSION@
 
@@ -71,7 +71,7 @@ dist:
 	find $(TARDIR) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
 	tar cf $(TARNAME) $(TARDIR)
 	gzip -9 $(TARNAME)
-	md5sum $(TARNAME) > $(TARNAME).md5
+	md5sum $(TARNAME).gz > $(TARNAME).gz.md5
 
 # Check the MANIFEST against the files present in the current tree, building a
 # list with tools/mkmanifest and running diff between the lists.
