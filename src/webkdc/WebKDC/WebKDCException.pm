@@ -1,9 +1,11 @@
-package WebKDC::Exception;
+package WebKDC::WebKDCException;
 
 use strict;
 use warnings;
 
 use WebAuth;
+
+use UNIVERSAL qw(isa);
 
 use overload '""' => \&to_string;
 
@@ -73,7 +75,7 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebKDC::Exception");
+    return 0 if !isa($e, "WebKDC::WebKDCException");
     return @_ ? $e->status() == shift : 1;
 }
 
@@ -84,20 +86,21 @@ __END__
 
 =head1 NAME
 
-WebKDC::Exception - exceptions for WebKDC
+WebKDC::WebKDCException - exceptions for WebKDC
 
 =head1 SYNOPSIS
 
   use WebKDC;
-  use WebKDC::Exception;
+  use WebKDC::WebKDCException;
 
   eval {  
-    $data = WebKDC::base64_decode($buffer);
+    ...
+    WebKDC::process_web_request($req, $resp);
     ...
   };
-  if (WebKDC::Exception::match($@)) {
+  if (WebKDC::WebKDCException::match($@)) {
     my $e = $@;
-    # you can call the following methods on an Exception object:
+    # you can call the following methods on a WebKDCException object:
     # $e->status()
     # $e->message()
     # $e->wrapped_exception()
@@ -106,9 +109,8 @@ WebKDC::Exception - exceptions for WebKDC
 
 =head1 DESCRIPTION
 
-The various WebKDC functions can all throw exceptions if something
-wrong happens. Some of these exceptions will be of type WebKDC::Exception,
-while some may be uncaught WebAuth::Exceptions.
+The various WebKDC functions can all throw WebKDCException if something
+wrong happens.
 
 =head1 EXPORT
 

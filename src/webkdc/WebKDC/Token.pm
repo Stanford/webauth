@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use WebAuth qw(:const :hex :token);
-use WebKDC::Exception;
+use WebKDC::WebKDCException;
 
 use UNIVERSAL qw(isa);
 use Carp;

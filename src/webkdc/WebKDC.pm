@@ -11,7 +11,8 @@ use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 use WebAuth qw(:base64 :krb5 :const);
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
-use WebKDC::Exception;
+use WebKDC::WebKDCException;
+use WebKDC::ProtocolException;
 use WebKDC::Token;
 
 
@@ -110,8 +111,8 @@ sub handle_id_request {
 	    krb5_init_via_password($c, $user, $pass, $C_WEBKDC_KEYTAB);
 	};
 
-	if (WebAuth::Exception::match($@, WA_ERR_LOGIN_FAILED)) {
-	    die new WebKDC::Exception(WK_ERR_LOGIN_FAILED,
+	if (WebKDC::WebKDCException::match($@, WA_ERR_LOGIN_FAILED)) {
+	    die new WebKDC::WebKDCException(WK_ERR_LOGIN_FAILED,
 				      "krb5_init_via_password", $@);
 	} elsif ($@) {
 	    die $@;
@@ -155,7 +156,7 @@ sub handle_id_request {
 	if (WebAuth::Exception::match($@, WA_ERR_TOKEN_EXPIRED)) {
 	    # nuke expired cookie
 	    $wresp->proxy_cookie('krb5', '');
-	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+	    die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
 				      "proxy_token was expired", $@);
 	} elsif ($@) {
 	    die $@;
@@ -164,7 +165,7 @@ sub handle_id_request {
 	if ($proxy_token->proxy_type() ne 'krb5') {
 	    # nuke cookie
 	    $wresp->proxy_cookie('krb5', '');
-	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+	    die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
 				      "proxy_token type(".
 				      $proxy_token->proxy_type().
 				      ") not krb5 ");
@@ -182,7 +183,7 @@ sub handle_id_request {
 	    # nuke bogus cookie
 	    $wresp->proxy_cookie('krb5', '');
 	    #FIXME: log (this shouldn't be happening)
-	    die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+	    die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
                     "error using proxy_token with krb5_init_via_tgt", $@);
 	} elsif ($@) {
 	    die $@;
@@ -192,7 +193,7 @@ sub handle_id_request {
 	$sad = krb5_mk_req($c, $server_principal);
 
     } else {
-	die new WebKDC::Exception(WK_ERR_USER_AND_PASS_REQUIRED,
+	die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
 				  "no user/pass or proxy token");
     }
 
@@ -230,7 +231,7 @@ sub process_web_request($$) {
     my $server_principal = $service_token->subject();
 
     if ($server_principal !~ /^krb5:/) {
-	die new WebKDC::Exception(WK_ERR_UNRECOVERABLE_ERROR,
+	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
                     "server_principal($server_principal) not krb5");
     }
 
@@ -245,17 +246,88 @@ sub process_web_request($$) {
     $wresp->return_url($req_token->return_url());
     $wresp->post_url($req_token->post_url());
 
-    # FIXME: would normally poke through request to determine what to do next
     my $rtt = $req_token->requested_token_type();
     if ($rtt eq 'id') {
 	handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
     } else {
-	my $ec = WA_PEC_UNSUPP_REQUESTED_TOKEN_TYPE;
+	my $ec = WA_PEC_INVALID_REQUEST;
 	my $em = "unsupported token type($rtt) in request";
 	$wresp->response_token(make_error_token($ec, $em, $key));
     }
 }
 
+sub parse_requester_cred($) {
+    my $e = shift;
+    my $req_cred = {};
+
+    my $at = $e->attrs('type');
+    if ($at eq 'service') {
+	$req_cred->{'type'} = $at;
+	my $st_str = $e->content;
+	$st_str =~ s/^\s*(.*)\s*$/$1/;
+	my $service_token =
+	    new WebKDC::WebKDCServiceToken(base64_decode($st_str),
+					   get_keyring(), 0);
+	$req_cred->{'token'} = $service_token;
+	$req_cred->{'subject'} = $service_token->subject;
+	return $req_cred;
+    } elsif ($at eq 'krb5') {
+	$req_cred->{'type'} = $at;
+	my $kreq = $e->content;
+	$kreq =~ s/^\s*(.*)\s*$/$1/;
+	my $princ = krb5_rd_req(krb5_new(), base64_decode($kreq), 
+				$C_WEBKDC_KEYTAB);
+	$req_cred->{'subject'} = "krb5:$princ";
+	return $req_cred;
+    } else {
+	die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"unknown requesterCredential type($at)");
+    }
+}
+
+sub parse_subject_cred($) {
+    my $e = shift;
+    my $sub_cred = {};
+
+    my $at = $e->attrs('type');
+    if ($at eq 'proxy') {
+	$sub_cred->{'type'} = $at;
+	my $pt_str = $e->content;
+	$pt_str =~ s/^\s*(.*)\s*$/$1/;
+	my $proxy_token =
+	    new WebKDC::WebKDCProxy(base64_decode($pt_str), get_keyring(), 0);
+	$sub_cred->{'token'} = $proxy_token;
+	return $sub_cred;
+    } else {
+	die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"unknown subjectCredential type($at)");
+    }
+}
+
+# take as input the XmlDoc representing the GetTokensRequest and
+# return the XmlDoc representing the {GetTokens/Error}Response
+
+sub process_get_tokens($) {
+    my $req = shift;
+
+    my $resp = new WebKDC::XmlDoc;
+
+    my ($tokens,$req_cred, $sub_cred);
+
+    foreach my $child (@{$req->children}) {
+	my $name = $child-->name();
+	if ($name eq 'requesterCredential') {
+	    $req_cred = parse_requester_cred($child);
+	} elsif ($name eq 'subjectCredential') {
+	    $sub_cred = parse_subject_cred($child);
+	} elsif ($name eq 'tokens') {
+	    $tokens = $child;
+	} else {
+	    die new WebKDC::ProtocolException(WA_PEC_INVALID_REQUEST,
+			"invalid element in getTokensRequest: $name");
+	}
+    }
+}
 
 END { }       # module clean-up code here (global destructor)
 
@@ -280,7 +352,7 @@ WebKDC - functions to support the WebKDC
     ...
   };
 
-  if (WebKDC::Exception:match($@)) {
+  if (WebKDC::WebKDCException:match($@)) {
      # handle WebKDC exceptions
   } elseif (WebAuth::Exception:match($@)) {
      # handle WebAuth exceptions
@@ -293,7 +365,7 @@ WebKDC - functions to support the WebKDC
 WebKDC is a set of convenience functions built on top of mod WebAuth
 to implement the WebKDC.
 
-All functions have the potential to throw either a WebKDC::Exception
+All functions have the potential to throw either a WebKDC::WebKDCException
 or WebAuth::Exception.
 
 =head1 EXPORT
@@ -337,12 +409,12 @@ following fashion:
     WebLDC::process_web_request($req, $resp);
   };
 
-  if (WebKDC::Exception::match($@, WK_ERR_LOGIN_FAILED)) {
+  if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     # need to prompt again, also need to limit number of times
     # we'll prompt
     # make sure to pass the request/service tokens in hidden fields
 
-  } elsif (WebKDC::Exception::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
+  } elsif (WebKDC::WebKDCException::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
 
     # this exception indicates someone requested an id-token
     # and either didn't have a proxy-token, or it was expired.
@@ -378,7 +450,7 @@ Roland Schemers (schemers@stanford.edu)
 
 =head1 SEE ALSO
 
-L<WebKDC::Exception>
+L<WebKDC::WebKDCException>
 L<WebKDC::Token>
 L<WebKDC::WebRequest>
 L<WebKDC::WebRespsonse>
