@@ -65,6 +65,7 @@ monitored for security.
          ScriptAlias /login "webkdc/login.fcgi"
          ScriptAlias /logout "webkdc/logout.fcgi"
          Alias /images "webkdc/images/"
+         Alias /help.html "webkdc/help.html"
 
  5.  Set up a <VirtualHost> directive using SSL for the WebKDC service ,
      running on some port other than the standard port (since the login
