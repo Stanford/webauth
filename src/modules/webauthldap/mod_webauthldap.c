@@ -78,7 +78,7 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    //    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
+    /* MWAL_DCONF *dconf = (MWAL_DCONF *) mconf; */
 
     MWAL_SCONF *sconf = (MWAL_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webauthldap_module);
@@ -126,7 +126,7 @@ cfg_flag(cmd_parms * cmd, void *mconfig, int flag)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    //    MWAL_DCONF *dconf = (MWAL_DCONF *) mconfig;
+    /* MWAL_DCONF *dconf = (MWAL_DCONF *) mconfig; */
 
     MWAL_SCONF *sconf = (MWAL_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webauthldap_module);
@@ -341,7 +341,7 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     } else if (oconf->attribs == NULL) {
         conf->attribs = bconf->attribs;
     } else {
-        // dups here are OK
+        /* dups here are OK */
         conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
     }
 
@@ -364,7 +364,7 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
     for (scheck=s; scheck; scheck=scheck->next) {
         sconf = (MWAL_SCONF*)ap_get_module_config(scheck->module_config,
                                                   &webauthldap_module);
-        // These all must be non-null:
+        /* These all must be non-null: */
 #define NULCHECK(val, label) \
     if (val == NULL) die_directive(scheck, label, ptemp);
 
@@ -375,11 +375,11 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
         NULCHECK(sconf->privgroupattr, CD_Privgroupattr);
 #undef NULCHECK
 
-        // Global settings
+        /* Global settings */
         sconf->ldapversion = LDAP_VERSION3;
         sconf->scope = LDAP_SCOPE_SUBTREE;
 
-        //Mutex for storing ldap connections
+        /* Mutex for storing ldap connections */
         if (sconf->ldmutex == NULL) {
             apr_thread_mutex_create(&sconf->ldmutex,
                                     APR_THREAD_MUTEX_DEFAULT,
@@ -429,11 +429,11 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
                      "webauthldap(%s): filter template is %s", lc->r->user, filter_template);
     
     do {
-        // Everytime we find a marker
+        /* Everytime we find a marker */
         if (strncmp(end, FILTER_MATCH, match_length) == 0) {
 
-            // Can't apr_pstrcat nulls strings - that's how it tells where the
-            // last passed parameter is.
+            /* Can't apr_pstrcat nulls strings - that's how it tells where the
+               last passed parameter is. */
             if (filter == NULL)
                 filter = apr_pstrcat(p, apr_pstrndup(p, beg, end - beg), 
                                      userid, NULL);
@@ -445,8 +445,8 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
         }
     } while(*(++end) != '\0');
 
-    // Append the last chunk. If no substitutions were done, this is the 
-    // entire template string.
+    /* Append the last chunk. If no substitutions were done, this is the 
+       entire template string. */
     if (end > beg)
         filter = apr_pstrcat(p,filter, apr_pstrndup(p, beg, end - beg), NULL);
 
@@ -476,16 +476,16 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     kt = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->keytab, NULL);
 
-    // initialize the main struct that holds kerberos context
+    /* initialize the main struct that holds kerberos context */
     if ((code = krb5_init_context(&ctx)) != 0)
         return code;
 
-    // locate, open, and read the keytab
+    /* locate, open, and read the keytab */
     if ((code = krb5_kt_resolve(ctx, kt, &keytab)) != 0)
         return code;
 
-    // if the principal has been specified via directives, use it, 
-    // otherwise just read the first entry out of the keytab.
+    /* if the principal has been specified via directives, use it, 
+       otherwise just read the first entry out of the keytab. */
     if (lc->sconf->principal) {
         code = krb5_parse_name(ctx, lc->sconf->principal, &princ);
     } else {
@@ -507,7 +507,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
         return code;
     }
 
-    // locate and open the creadentials cache file
+    /* locate and open the creadentials cache file */
     cc_path = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->tktcache, NULL);
     if ((code = krb5_cc_resolve(ctx, cc_path, &cc)) != 0) {
         krb5_kt_close(ctx, keytab);
@@ -515,7 +515,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
         return code;
     }
     
-    // initialize it if necessary
+    /* initialize it if necessary */
     if ((code != krb5_cc_initialize(ctx, cc, princ)) != 0) {
         krb5_kt_close(ctx, keytab);
         krb5_free_principal(ctx, princ);
@@ -524,7 +524,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     
     krb5_get_init_creds_opt_init(&opts);
 
-    // get the tgt for this principal
+    /* get the tgt for this principal */
     code = krb5_get_init_creds_keytab(ctx,
                                       &creds,
                                       princ,
@@ -619,7 +619,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, "%s %s",
                      "webauthldap: invoked for user", lc->r->user);
 
-    // These come with defaults:
+    /* These come with defaults: */
     lc->filter = webauthldap_make_filter(lc);
     lc->port = atoi(lc->sconf->port);
 
@@ -627,11 +627,12 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap(%s): filter is %s", lc->r->user, lc->filter);
 
-    // Allocate the table of attributes to later put into env vars
+    /* Allocate the table of attributes to later put into env vars */
     lc->envvars = apr_table_make(lc->r->pool, 5);
 
-    // Whatever else env vars the conf file added. This will override the 
-    // defaults since apr_table_set is used here, and all names are lowercased.
+    /* Whatever else env vars the conf file added. This will override the 
+       defaults since apr_table_set is used here, and all names are
+       lowercased. */
     if (lc->dconf->attribs) {
         attribs = apr_array_copy(lc->r->pool, lc->dconf->attribs);
 
@@ -666,7 +667,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
     int rc;
     MWAL_SASL_DEFAULTS *defaults;
 
-    // Initialize the connection
+    /* Initialize the connection */
     lc->ld = ldap_init(lc->sconf->host, lc->port);
 
     if (lc->ld == NULL) {
@@ -676,7 +677,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
         return -1;
     }
 
-    // Set to no referrals
+    /* Set to no referrals */
     if (ldap_set_option(lc->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF)
         != LDAP_OPT_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
@@ -685,7 +686,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
         return -1;
     }
 
-    // Only works with version 3
+    /* Only works with version 3 */
     if (ldap_set_option(lc->ld, LDAP_OPT_PROTOCOL_VERSION, 
                         &lc->sconf->ldapversion)
         != LDAP_OPT_SUCCESS) {
@@ -695,7 +696,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
         return -1;
     }
 
-    // Turn on SSL if configured
+    /* Turn on SSL if configured */
     if (lc->sconf->ssl) {
         rc = ldap_start_tls_s(lc->ld, NULL, NULL);
         
@@ -707,7 +708,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
         }
     }
 
-    // Set up SASL defaults.
+    /* Set up SASL defaults. */
     defaults = (MWAL_SASL_DEFAULTS*) apr_pcalloc(lc->r->pool, 
                                                  sizeof(MWAL_SASL_DEFAULTS));
     ldap_get_option(lc->ld, LDAP_OPT_X_SASL_MECH, &defaults->mech);
@@ -718,20 +719,20 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
     if (!defaults->mech)
         defaults->mech = "GSSAPI";
 
-    // the bind itself
+    /* the bind itself */
     rc = ldap_sasl_interactive_bind_s(lc->ld, lc->sconf->binddn,
                                       defaults->mech, NULL, NULL,
                                       LDAP_SASL_QUIET, sasl_interact_stub,
                                       defaults);
 
-    // a bit of cleanup
+    /* a bit of cleanup */
     if (defaults->authcid != NULL) {
         ldap_memfree (defaults->authcid);
         defaults->authcid = NULL;
     }
 
-    // this likely means the ticket is missing or expired, 
-    // so we signal to try again with a fresh ticket
+    /* this likely means the ticket is missing or expired, 
+       so we signal to try again with a fresh ticket */
     if (rc == LDAP_LOCAL_ERROR) {
         if (print_local_error)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
@@ -769,7 +770,7 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap(%s): begins ldap bind", lc->r->user);
 
-    // since SASL will look there, lets put the ticket location into env
+    /* since SASL will look there, lets put the ticket location into env */
     tktenv = apr_psprintf(lc->r->pool, "%s=FILE:%s", ENV_KRB5_TICKET, 
                           lc->sconf->tktcache);
     if (putenv(tktenv) != 0) {
@@ -784,19 +785,19 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
 
     rc = webauthldap_bind(lc, 0);
 
-    if (rc == 0) { // all good
+    if (rc == 0) { /* all good */
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap(%s): using existing ticket", 
                          lc->r->user);
-    } else if (rc == -1) { // some other problem
+    } else if (rc == -1) { /* some other problem */
         return -1;
-    } else if (rc == -2) { // ticket expired
+    } else if (rc == -2) { /* ticket expired */
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                          "webauthldap(%s): getting new ticket", lc->r->user);
 
-        // so let's get a new ticket
+        /* so let's get a new ticket */
         if (stat(lc->sconf->keytab, &keytab_stat) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): cannot stat the keytab: %s %s (%d)",
@@ -841,16 +842,16 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
             return -1;
         }
 
-        // Trying the bind the second time.
+        /* Trying the bind the second time. */
 
-        // TODO should clear the previous ld using unbind(lc->ld);
-        // but current ld->ld_error bug prevents it. 
-        // so for now it leaks memory:
+        /* TODO should clear the previous ld using unbind(lc->ld);
+           but current ld->ld_error bug prevents it. 
+           so for now it leaks memory: */
         lc->ld = NULL;
         rc = webauthldap_bind(lc, 1);
         if (rc != 0) { 
-            // now we fail totally. error messages are inside
-            // the webauthldap_bind function
+            /* now we fail totally. error messages are inside
+               the webauthldap_bind function */
             return -1;
         }
 
@@ -943,7 +944,8 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
     BerElement *ber = NULL;
     struct berval **bvals;
 
-    // the DN's are collected to be used in the ldap_compares of the privgroups
+    /* the DN's are collected to be used in the ldap_compares of the
+       privgroups */
     dn = ldap_get_dn(lc->ld, entry);
     apr_table_add(attr_table, DN_ATTRIBUTE, dn);
 
@@ -952,7 +954,7 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
                  lc->r->user, dn);
     ldap_memfree( dn );
 
-    // attributes and values are stored in a table
+    /* attributes and values are stored in a table */
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
          a = ldap_next_attribute(lc->ld, entry, ber)) {
 
@@ -1126,17 +1128,17 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     if ((key == NULL) || (val == NULL))
         return 1;
 
-    // conf directive could have been in different capitalization, 
-    // simpler to just lowercase for the comparison
+    /* conf directive could have been in different capitalization, 
+       simpler to just lowercase for the comparison */
     newkey = apr_psprintf(lc->r->pool, key);
     for (p = newkey; *p != '\0'; p++)
         *p = tolower(*p);
 
-    // set into the environment only those attributes, which were specified
+    /* set into the environment only those attributes, which were specified */
     if (!apr_table_get(lc->envvars, newkey))
         return 1;
 
-    // to keep track which ones we have already seen
+    /* to keep track which ones we have already seen */
     apr_table_set(lc->envvars, newkey, "placed in env vars");
 
 #ifndef NO_STANFORD_SUPPORT
@@ -1151,13 +1153,13 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
 
     newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
 
-    // environment var names should be uppercased
+    /* environment var names should be uppercased */
     for (p = newkey; *p != '\0'; p++)
         *p = toupper(*p);
 
     existing_val = (char*) apr_table_get(lc->r->subprocess_env, newkey);
 
-    // normal case of single-valued attribute
+    /* normal case of single-valued attribute */
     if (existing_val == NULL) {
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
@@ -1165,7 +1167,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                          lc->r->user, newkey);
         apr_table_set(lc->r->subprocess_env, newkey, val);
     } else {
-        // set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH
+        /* set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH */
         numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
         if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
             if (lc->sconf->debug)
@@ -1175,7 +1177,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
             apr_table_set(lc->r->subprocess_env, numbered_key, existing_val);
         }
 
-        // now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on
+        /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
         for (i=2; i<MAX_ENV_VALUES; i++) {
             numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, i);
             if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
@@ -1190,7 +1192,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         }
     }
 
-    return 1; // means keep going thru all available entries
+    return 1; /* means keep going thru all available entries */
 }
 
 /**
@@ -1213,7 +1215,7 @@ webauthldap_envnotfound(void* lcp, const char *key, const char *val)
                      "webauthldap(%s): requested attribute not found: %s", 
                      lc->r->user, key);
 
-    return 1; // means keep going thru all available entries
+    return 1; /* means keep going thru all available entries */
 }
 
 
@@ -1242,7 +1244,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                 continue;
             }
 
-            // short circuit on the first directive to positively validate
+            /* short circuit on the first directive to positively validate */
             if (authorized)
                 break;
             
@@ -1314,9 +1316,9 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
                              "webauthldap(%s): found: require %s",  r->user, w);
             
-                    // This means some other require directive like "group" is 
-                    // encountered. Notice that we continue looking for the
-                    // ones that matter to us anyway.
+                    /* This means some other require directive like "group" is
+                       encountered. Notice that we continue looking for the
+                       ones that matter to us anyway. */
                     *needs_further_handling = 1;
                 }
             }
@@ -1392,12 +1394,10 @@ auth_checker_hook(request_rec * r)
 
     lc->legacymode = apr_table_get(r->subprocess_env, "SU_AUTH_USER") ? 1 : 0;
 
-    //
-    // See if there is anything for us to do
-    //
+    /* See if there is anything for us to do */
 
     needs_further_handling = 0;
-    // if we have attributes to set, we need to keep going
+    /* if we have attributes to set, we need to keep going */
     if (!apr_is_empty_table((const apr_table_t *)lc->dconf->attribs))
         needs_further_handling = 1;
     else if (reqs_arr) {
@@ -1411,13 +1411,13 @@ auth_checker_hook(request_rec * r)
             t = reqs[i].requirement;
             w = ap_getword_white(r->pool, &t);
 
-            // if we see PRIVGROUP_DIRECTIVEs we will need to process them
+            /* if we see PRIVGROUP_DIRECTIVEs we will need to process them */
             if (!strcmp(w, PRIVGROUP_DIRECTIVE)) {
                 needs_further_handling = 1;
                 break;
             }
 #ifndef NO_STANFORD_SUPPORT
-            // if we see oldschool stanford:groupname, process them as well
+            /* if we see oldschool stanford:groupname, process them as well */
             if ((!strcmp(w, "group")) && lc->legacymode) {
                 needs_further_handling = 1;
                 break;
@@ -1434,17 +1434,15 @@ auth_checker_hook(request_rec * r)
         return DECLINED;
     }
 
-    //
-    // So there is something for us to do. Let's init, get a connection, 
-    // and search.
-    //
+    /* So there is something for us to do. Let's init, get a connection, 
+       and search. */
 
     apr_thread_mutex_lock(lc->sconf->totalmutex); /****** LOCKING! ************/
 
     webauthldap_init(lc);
 
-    // This will get an available connection from the pool, or bind a new one
-    // if needed.
+    /* This will get an available connection from the pool, or bind a new one
+       if needed. */
     if (webauthldap_getcachedconn(lc) != 0) {
         apr_thread_mutex_unlock(lc->sconf->totalmutex); /*** ERR UNLOCKING! ***/
         return HTTP_INTERNAL_SERVER_ERROR;
@@ -1459,8 +1457,8 @@ auth_checker_hook(request_rec * r)
                   "webauthldap(%s): this connection expired",
                      lc->r->user);
 
-        // Set this to ignore Broken Pipes that always happen when unbinding
-        // expired ldap connections.
+        /* Set this to ignore Broken Pipes that always happen when unbinding
+           expired ldap connections. */
 #ifdef SIGPIPE
         old_signal = apr_signal(SIGPIPE, (void*) SIG_IGN);
         if (old_signal == SIG_ERR) {
@@ -1497,26 +1495,24 @@ auth_checker_hook(request_rec * r)
     } 
 
 
-    //
-    // Validate privgroups.
-    //
+    /* Validate privgroups. */
+
     needs_further_handling = 0;
     if ((rc = webauthldap_validate_privgroups(lc, reqs_arr,
                                               &needs_further_handling)) != 0){
         webauthldap_returnconn(lc);
         apr_thread_mutex_unlock(lc->sconf->totalmutex); /***ERR UNLOCKING! ****/
-        return rc; // means not authorized, or error
+        return rc; /* means not authorized, or error */
     }
 
 
-    // This sets a envvar for the rule on which authorization succeeded.
+    /* This sets a envvar for the rule on which authorization succeeded. */
     if (lc->sconf->set_authrule && lc->authrule)
         apr_table_set(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE", 
                        lc->authrule);
 
-    //
-    // Now set the env vars
-    //
+    /* Now set the env vars */
+
     for (i=0; i<lc->numEntries; i++) {
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
     }

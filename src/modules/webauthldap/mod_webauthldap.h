@@ -103,7 +103,7 @@ typedef struct {
 typedef struct {
 
     char* base;
-    char* binddn;           // not used with the Stanford openldap server
+    char* binddn;           /* not used with the Stanford openldap server */
     int   debug;
     char* filter_templ;
     char* host;
@@ -133,25 +133,27 @@ typedef struct {
 } MWAL_DCONF;
 
 
-// Used for passing things around
+/* Used for passing things around */
 typedef struct {
-    request_rec * r; // apache request struct
+    request_rec * r; /* apache request struct */
 
     MWAL_SCONF* sconf;
     MWAL_DCONF* dconf;
 
-    apr_table_t ** entries;  // retrieved ldap entries 
+    apr_table_t ** entries;  /* retrieved ldap entries */
     int numEntries;
 
-    apr_table_t* envvars;    // which attributes to place into environment
+    apr_table_t* envvars;    /* which attributes to place into environment */
     int legacymode;
 
     LDAP *ld;
-    char **attrs;            // attributes to retrieve from LDAP, (null = all)
+    char **attrs;            /* attributes to retrieve from LDAP, (null = all)
+                              */
     char*  filter;
     int    port;
 
-    char*  authrule; 	     // what group or rule was the user authorized on
+    char*  authrule; 	     /* what group or rule was the user authorized on
+                              */
 
 } MWAL_LDAP_CTXT;
 
