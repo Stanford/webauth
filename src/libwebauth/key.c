@@ -84,6 +84,11 @@ webauth_keyring_new(int initial_capacity)
 {
     WEBAUTH_KEYRING *ring;
 
+    /* Make sure the initial capacity is at least 1, since otherwise we try
+       to malloc 0 bytes of memory, often returning NULL. */
+    if (initial_capacity < 1)
+        initial_capacity = 1;
+
     ring = malloc(sizeof(WEBAUTH_KEYRING));
     if (ring != NULL) {
         ring->num_entries = 0;
