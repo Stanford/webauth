@@ -1,0 +1,99 @@
+
+Install instructions for the *protoype* only. 
+
+Currently, app.cgi and login.cgi must run on the same host, since 
+I don't have app.cgi post XML to the WebKDC to get its service-token 
+(its cheating and making a call into WebKDC.pm).
+
+
+------------------------------------------------------------
+installing
+------------------------------------------------------------
+# build and install Apache 2.0 with SSL (HA HA)
+# I install it in /usr/local/apache2.
+
+# assuming $TOP is your webauth3 directory:
+cd $TOP
+./configure
+make
+# need to build the perl module by hand, its not part of the build yet
+cd $TOP/src/bindings/perl/WebAuth
+make
+make install prefix=/usr/local
+
+# need to copy everything in src/webkdc to your htdocs root, i.e:
+
+cd $TOP/src/webkdc
+cp app.cgi login.cgi WebKDC.pm /usr/local/apache2/htdocs/webkdc/
+mkdir /usr/local/apache2/htdocs/webkdc/WebKDC
+cp WebKDC/*.pm /usr/local/apache2/htdocs/webkdc/WebKDC/
+
+------------------------------------------------------------
+http.conf
+------------------------------------------------------------
+
+Configure the htdocs/webkdc directory for executing CGIs:
+
+<Directory "/usr/local/apache2/htdocs/webkdc">
+    Options Indexes FollowSymLinks +ExecCGI
+    AddHandler cgi-script .cgi
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+</Directory>
+
+and set up the following ScriptAliases to make the URLs pretty:
+
+ScriptAlias /app "/usr/local/apache2/htdocs/webkdc/app.cgi"
+ScriptAlias /login "/usr/local/apache2/htdocs/webkdc/login.cgi"
+
+------------------------------------------------------------
+configuration
+------------------------------------------------------------
+
+You'll need two keytab files and two keyring files. 
+
+One keytab file represents the client's  keytab (i.e,. the webauth server),
+and one keytab represents the webkdc's keytab. The can actually
+both be the same for testing if you want.
+
+All the files listed below are placed in htdocs/webdkc for now.
+
+1. The client's keytab is configured in app.cgi:
+
+$CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
+
+2. The webkdc's keytab is configured in WebKDC.pm:
+
+our $C_WEBKDC_KEYTAB = "lichen_webauth.keytab";
+
+3. For the keyring files, you can create them using $TOP/src/utils/wa_keyring:
+
+wa_keyring -f was.keyring create
+wa_keyring -f webkdc.keyring create
+
+And the defaults in app.cgi/WebKDC.pm should be fine:
+
+our $CONFIG_WAS_KEYRING_PATH = "was.keyring";  (app.cgi)
+our $C_WEBKDC_KEYRING_PATH = "webkdc.keyring"; (WebKDC.pm)
+
+4. Need to configure the login URL in app.cgi:
+
+$CONFIG_WEBKDC_LOGIN_URL = "https://lichen.stanford.edu:8443/login";
+
+5. Need to configure the Kerberos principal name in WebKDC.pm. These
+should be the same as the principal in $C_WEBKDC_KEYTAB:
+
+our $C_WEBKDC_K5SERVICE = "webauth";
+our $C_WEBKDC_HOST = "lichen.stanford.edu";
+
+------------------------------------------------------------
+testing
+------------------------------------------------------------
+
+You should be able to now goto a /app/ url and get redirected
+to the login page:
+
+https://lichen.stanford.edu:8443/app/foo?x=1
+
+------------------------------------------------------------
