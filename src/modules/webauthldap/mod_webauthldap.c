@@ -996,7 +996,9 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
                          lc->attrs, attrsonly, NULL, NULL, NULL, 
                          LDAP_SIZELIMIT, &msgid);
 
-    if (rc != LDAP_SUCCESS) {
+    if (rc == LDAP_SERVER_DOWN || rc == LDAP_CONNECT_ERROR) {
+        return HTTP_SERVICE_UNAVAILABLE;
+    } else if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): ldap_search_ext: %s (%d)",
                      lc->r->user, ldap_err2string(rc), rc);
