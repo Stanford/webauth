@@ -1250,12 +1250,14 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
             } else if (!strcmp(w, "user")) {
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
-                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
-                                 "webauthldap: SUCCEEDED on require user %s", w);
-                    
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap: found require user %s", w);
                     if (!strcmp(r->user, w)) {
                         authorized = 1;
                         lc->authrule = apr_psprintf(lc->r->pool, "user %s", w);
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap: SUCCEEDED on require user %s", w);
                         break;
                     }
                 }
