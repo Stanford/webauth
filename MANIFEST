@@ -125,6 +125,7 @@ src/modules/webkdc/util.c               WebKDC -- Utility functions
 src/utils                               WebAuth utility programs (Directory)
 src/utils/Makefile.in                   Makefile for utility programs
 src/utils/Makefile.vc                   Windows Makefile for utility programs
+src/utils/wa_keyring.1                  Man page for wa_keyring
 src/utils/wa_keyring.c                  Manipulate the server keyring
 src/utils/wa_keyring.pod                Documentation for wa_keyring
 src/webkdc                              WebKDC -- Perl login server (Directory)
