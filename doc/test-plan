@@ -8,11 +8,11 @@ While it is expected that the web authentication system should work for any
 web browser that supports HTTP/1.1, 128-bit SSL, and cookie management, the 
 team will explicitly test the following browsers:
 
-·	Microsoft Explorer versions 5.x and 6.x
-·	Netscape 4.7, 6.x, 7.x
-·	Mozilla 1.1 and up
-·	Opera
-·	Lynx
+	Microsoft Explorer versions 5.x and 6.x
+	Netscape 4.7, 6.x, 7.x
+	Mozilla 1.1 and up
+	Opera
+	Lynx
         Safari on Max OS X?
 
 Browser will be tested on Macintosh OS X, Windows 2000 and XP, and 
@@ -31,26 +31,26 @@ will be accepted but testing and support will be left up to the contributors.
 
 Server Tests
 -------------
-·	Does the installer do permissions checking correctly?
-·	Does the installer do manifest checking correctly?
-·	Test suite complete?
-·	Load testing?  Number of concurrent authentication events? 
+	Does the installer do permissions checking correctly?
+	Does the installer do manifest checking correctly?
+	Test suite complete?
+	Load testing?  Number of concurrent authentication events? 
         Multiple virtualhosts?
-·	Performance testing?
-·	Give server incomplete data requests - properly handled?
+	Performance testing?
+	Give server incomplete data requests - properly handled?
 
 System Tests
 --------------
-·	Sniffing of traffic for exposed elements
-·	Put client behind a NAT bridge - still functional?
+	Sniffing of traffic for exposed elements
+	Put client behind a NAT bridge - still functional?
 
 
 Browser Tests
 ---------------
-·	General authentication works as designed and is repeatable.
-·	Clock issues?
-·	Permission issues that might affect webauth?
-·	Caching issues that might affect webauth?
+	General authentication works as designed and is repeatable.
+	Clock issues?
+	Permission issues that might affect webauth?
+	Caching issues that might affect webauth?
 
 Specific tests to perform
 -------------------------
