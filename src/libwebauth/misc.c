@@ -23,7 +23,7 @@ webauth_error_message(int errcode)
         EM(WA_ERR_KEYRING_READ, "Error reading from keyring file");
         EM(WA_ERR_KEYRING_VERSION,  "Bad keyring version");
         EM(WA_ERR_NOT_FOUND, "Item not found while searching");
-        EM(WA_ERR_KRB5, "A Kerberos5 error occured");
+        EM(WA_ERR_KRB5, "Kerberos V5 error");
         EM(WA_ERR_INVALID_CONTEXT, "Invalid context passed to function");
         EM(WA_ERR_LOGIN_FAILED, "Login failed (bad username/password)");
         EM(WA_ERR_TOKEN_EXPIRED, "Token has expired");
