@@ -934,7 +934,6 @@ create_service_token_from_req_er(MWK_REQ_CTXT *rc,
     int status, len, ok;
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
-    
     /* only create service tokens from krb5 creds */
     if (strcmp(req_cred->type, "krb5") != 0) {
         generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
@@ -1606,9 +1605,11 @@ mwk_do_login_er(MWK_REQ_CTXT *rc,
     static const char*mwk_func = "mwk_do_login_er";
     WEBAUTH_KRB5_CTXT *ctxt;
     char *subject, *server_principal;
-    int status, ok, tgt_len;
-    time_t tgt_expiration;
+    int status, ok, tgt_len, len;
+    time_t tgt_expiration, creation;
     void *tgt;
+    MWK_PROXY_TOKEN *pt;
+    WEBAUTH_ATTR_LIST *alist;
 
     ok = 0;
 
@@ -1674,9 +1675,58 @@ mwk_do_login_er(MWK_REQ_CTXT *rc,
         tgt = new_tgt;
     }
 
-    /* we now have everything we need to create the webkdc-proy-token */
+    /* we now have everything we need to create the webkdc-proy-token 
+     * lets load up data in the sub_cred proxy token and use it
+     * to create a token we'll return.
+     *
+     * we've already copied all this stuff into a pool, so there is no
+     * need to copy again...
+     */
 
+    pt = &sub_cred->u.proxy.pt[0];
+
+    pt->proxy_type = "krb5";
+    pt->proxy_subject = server_principal;
+    pt->subject = subject;
+    pt->proxy_data = tgt;
+    pt->proxy_data_len = tgt_len;
+
+    /* if ProxyTopkenMaxLifetime is non-zero, use the min of it 
+       and the tgt, else just use the tgt  */
+    if (rc->sconf->proxy_token_max_lifetime) {
+        pt->expiration = 
+            (tgt_expiration < rc->sconf->proxy_token_max_lifetime) ?
+            tgt_expiration : rc->sconf->proxy_token_max_lifetime;
+    } else {
+        pt->expiration = tgt_expiration;
+    }
+
+    time(&creation);
+
+    alist = new_attr_list_er(rc, mwk_func);
+    if (alist == NULL)
+        goto cleanup;
+
+    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
+    SET_PROXY_SUBJECT(pt->proxy_subject);
+    SET_PROXY_TYPE(pt->proxy_type);
+    SET_SUBJECT(pt->subject);
+    SET_PROXY_DATA(tgt, tgt_len);
+    SET_CREATION_TIME(creation);
+    SET_EXPIRATION_TIME(pt->expiration);
+
+    ok = make_token_er(rc, alist, creation,
+                       (char**)&rtokens[0].token_data, &len, 1, mwk_func);
+    if (ok) {
+        rtokens[0].type = pt->proxy_type;
+        *num_rtokens = 1;
+        sub_cred->u.proxy.num_proxy_tokens = 1;
+    }
+
+    webauth_attr_list_free(alist);
+    
  cleanup:        
+
     webauth_krb5_free(ctxt);
     return ok;
 
