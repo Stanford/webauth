@@ -99,7 +99,7 @@ Description: Perl library for WebAuth authentication
  See <http://webauthv3.stanford.edu/> for more information.
 
 Package: webauth-tests
-Architecture: any
+Architecture: all
 Depends: libapache2-webauth
 Description: Tests for the WebAuth authentication modules
  WebAuth is a cookie-based web authentication system built on top of
