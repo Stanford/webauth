@@ -345,6 +345,8 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->subject_auth_type = DF_SubjectAuthType;
     sconf->strip_url = DF_StripURL;
     sconf->require_ssl = DF_RequireSSL;
+    sconf->keyring_auto_update = DF_KeyringAutoUpdate;
+    sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
     return (void *)sconf;
 }
 
@@ -390,6 +392,12 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->require_ssl = oconf->require_ssl_ex ? 
         oconf->require_ssl : bconf->require_ssl;
+
+    conf->keyring_auto_update = oconf->keyring_auto_update_ex ? 
+        oconf->keyring_auto_update : bconf->keyring_auto_update;
+
+    conf->keyring_key_lifetime = oconf->keyring_key_lifetime_ex ? 
+        oconf->keyring_key_lifetime : bconf->keyring_key_lifetime;
 
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
@@ -1520,6 +1528,10 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             sconf->token_max_ttl = seconds(arg, &error_str);
             sconf->token_max_ttl_ex = 1;
             break;
+        case E_KeyringKeyLifetime:
+            sconf->keyring_key_lifetime = seconds(arg, &error_str);
+            sconf->keyring_key_lifetime_ex = 1;
+            break;
         case E_InactiveExpire:
             dconf->inactive_expire = seconds(arg, &error_str);
             break;
@@ -1553,6 +1565,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
         case E_Debug:
             sconf->debug = flag;
             sconf->debug_ex = 1;
+            break;
+        case E_KeyringAutoUpdate:
+            sconf->keyring_auto_update = flag;
+            sconf->keyring_auto_update_ex = 1;
             break;
         case E_RequireSSL:
             sconf->require_ssl = flag;

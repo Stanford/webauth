@@ -68,6 +68,14 @@
 #define CD_Keyring "WebAuthKeyring"
 #define CM_Keyring "path to the keyring file"
 
+#define CD_KeyringKeyLifetime "WebAuthKeyringKeyLifetime"
+#define CM_KeyringKeyLifetime "lifetime of keys we create"
+#define DF_KeyringKeyLifetime (60*60*24*30) /* 30 days */
+
+#define CD_KeyringAutoUpdate "WebAuthKeyringAutoUpdate"
+#define CM_KeyringAutoUpdate "whether or not to automatically update keyring"
+#define DF_KeyringAutoUpdate 1
+
 #define CD_Keytab "WebAuthKeytab"
 #define CM_Keytab "path to the K5 keytab file"
 
@@ -149,6 +157,8 @@ enum {
     E_ForceLogin,
     E_InactiveExpire,
     E_Keyring,
+    E_KeyringAutoUpdate,
+    E_KeyringKeyLifetime,
     E_Keytab,
     E_LastUseUpdateInterval,
     E_LoginURL,
@@ -199,6 +209,10 @@ typedef struct {
     int extra_redirect_ex; /* if it was explicitly specified in conf file */
     int strip_url;
     int strip_url_ex; 
+    int keyring_auto_update;
+    int keyring_auto_update_ex;
+    int keyring_key_lifetime;
+    int keyring_key_lifetime_ex;
     int subject_auth_type_ex;
     int token_max_ttl; 
     int token_max_ttl_ex;
