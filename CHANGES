@@ -1,5 +1,17 @@
                           WebAuth Change History
 
+WebAuth 3.2.2 (in progress)
+
+ *) Fix lots of signed char vs. unsigned char mismatches and warnings by
+    changing variable types and adding casts where appropriate.  This
+    should significantly reduce the warnings produced when using the Sun
+    compiler.
+
+ *) Change C++-style // comments to C commands to make the Sun compiler
+    happier.
+
+ *) Fix invalid HTML in the templates for the weblogin script.
+
 WebAuth 3.2.1 (2003-09-10)
 
  *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.

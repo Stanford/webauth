@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.2.2 (in progress)
+
+ *) Fix various compilation problems with Sun cc, including signed vs.
+    unsigned char mismatches and C++-style comments.
+
+ *) Fix invalid HTML in the templates for the weblogin pages.
+
 WebAuth 3.2.1 (2003-09-10)
 
  *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.
