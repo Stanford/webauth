@@ -73,15 +73,6 @@ WEBAUTH_LIB_KRB5
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 
-dnl Check for an implementation of AES, and if not found in the OpenSSL
-dnl libraries, set WEBAUTH_AES_OBJS to the *.o files required for it.
-aes="aes_cbc.o aes_cfb.o aes_core.o aes_ctr.o aes_ecb.o aes_misc.o aes_ofb.o"
-AC_CHECK_LIB(crypto, AES_cbc_encrypt, 
-    [AC_MSG_NOTICE([using AES support in -lcrypto])],
-    [AC_MSG_NOTICE([building AES support in -lwebauth])
-     WEBAUTH_AES_OBJS=$aes
-     AC_SUBST(WEBAUTH_AES_OBJS)])
-
 dnl Checks for header files.
 AC_HEADER_STDC
 
@@ -101,6 +92,8 @@ APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 AC_SUBST([APXS_CFLAGS])
 
 dnl Checks for library functions.
+WEBAUTH_FUNC_AES
+
 dnl Checks for system services.
 
 dnl Output files.
