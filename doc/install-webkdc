@@ -91,14 +91,16 @@ monitored for security.
 
          make install-webkdc
 
- 8.  Verify <apache-root>/webkdc/WebKDC.pm has the correct values
-     for $C_WEBKDC_KEYRING_PATH and $C_WEBKDC_URL:
+ 8.  If the path and URL in <apache-root>/webkdc/WebKDC/Config.pm are not
+     correct for your site, create /etc/webkdc/webkdc.conf and in it put
+     lines like:
 
-         our $C_WEBKDC_KEYRING_PATH = "../conf/webkdc/keyring";
-         our $C_WEBKDC_URL = "https://localhost/webkdc-service/";
+         our $KEYRING_PATH = "../conf/webkdc/keyring";
+         our $URL = "https://localhost/webkdc-service/";
 
-     If you follow the default recommendations on where to place the
-     keyring, you shouldn't have to change anything.
+     changing the values to what is appropriate for your site.  If you
+     follow the default recommendations on where to place the keyring
+     and CGI scripts, you shouldn't have to change anything.
 
  9.  Install a keytab for the WebKDC.  This keytab must be for the same
      identity as is mentioned in the WebAuthWebKdcPrincipal configuration
