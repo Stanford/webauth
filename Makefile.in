@@ -8,7 +8,7 @@ VPATH = @srcdir@
 @SET_MAKE@
 
 # The directory name and tar file to use when building a release.
-TARDIR      = webauth-`cat VERSION`
+TARDIR      = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 TARFILE     = $(TARDIR).tar
 
 # DISTDIRS gets all directories from the MANIFEST, and DISTFILES gets all
