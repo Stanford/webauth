@@ -10,7 +10,9 @@ configure.ac                            Source file for configure
 doc                                     WebAuth documentation (Directory)
 doc/doxygen.cfg                         Doxygen configuration file
 doc/install-webkdc                      WebKDC -- installation guide
+doc/mod_webauth.html.en                 Prebuilt version of mod_webauth.xml
 doc/mod_webauth.xml                     WebAuth Apache module documentation
+doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
 doc/old                                 Obsolete documentation (Directory)
 doc/old/addEncryptionKey.rng            Obsolete documentation
@@ -32,6 +34,7 @@ doc/old/userPasswordAuth.rng            Obsolete documentation
 doc/old/userPasswordAuth.xsd            Obsolete documentation
 doc/old/webkdc-implementation           Obsolete documentation
 doc/old/webkdc-protocol                 Obsolete documentation
+doc/test-plan                           How to test a WebAuth server
 doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
@@ -94,10 +97,19 @@ src/webkdc/WebKDC/WebRequest.pm         WebKDC -- Handle incoming request
 src/webkdc/WebKDC/WebResponse.pm        WebKDC -- Send outgoing response
 src/webkdc/WebKDC/XmlDoc.pm             WebKDC -- XML parsing
 src/webkdc/WebKDC/XmlElement.pm         WebKDC -- XML element handling
-src/webkdc/login.cgi                    WebKDC -- Login server
-src/webkdc/quad.gif                     WebKDC -- Graphic for login page
-src/webkdc/test_post                    WebKDC -- Test script
-src/webkdc/test_webkdc                  WebKDC -- Test script
+src/webkdc/images                       WebKDC -- Login images (Directory)
+src/webkdc/images/quad.gif              WebKDC -- Login images
+src/webkdc/images/quad1.gif             WebKDC -- Login images
+src/webkdc/login.fcgi                   WebKDC -- FastCGI login server
+src/webkdc/logout.fcgi                  WebKDC -- FastCGI logout page
+src/webkdc/templates                    WebKDC -- Login templates (Directory)
+src/webkdc/templates/cancel.html        WebKDC -- Login server page templates
+src/webkdc/templates/cancel.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/error.tmpl         WebKDC -- Login server page templates
+src/webkdc/templates/login2.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/logout.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/verify.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/verify2.tmpl       WebKDC -- Login server page templates
 tests                                   WebAuth test suite (Directory)
 tests/Makefile.in                       Makefile for test suite
 tests/TESTS                             List of individual tests
@@ -111,6 +123,34 @@ tests/libwebauth/krb5_test.c            Test Kerberos v5 support
 tests/libwebauth/random_test.c          Test random numbe rhandling
 tests/libwebauth/token_test.c           Test WebAuth token handling
 tests/libwebauth/webauthtest.h          Utilities for test programs
+tests/mod_webauth                       Test the WebAuth module (Directory)
+tests/mod_webauth/conf                  WebAuth test configuration (Directory)
+tests/mod_webauth/conf/webauth-tests.conf        Test configuration
+tests/mod_webauth/htdocs                         Module tests (Directory)
+tests/mod_webauth/htdocs/tests                   Module tests (Directory)
+tests/mod_webauth/htdocs/tests/auth              Module tests (Directory)
+tests/mod_webauth/htdocs/tests/auth/logout       WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test1        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test10       WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test2        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test2return  WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test3        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test4        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test5        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test5return  WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test6        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test6return  WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test7        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test7return  WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test8        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test8return  WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test9        WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/util.pl      WebAuth module tests
+tests/mod_webauth/htdocs/tests/index.html        WebAuth module tests
+tests/mod_webauth/htdocs/tests/php               WebAuth PHP tests (Directory)
+tests/mod_webauth/htdocs/tests/php/test1.php     WebAuth PHP tests
+tests/mod_webauth/htdocs/tests/unauth            Module tests (Directory)
+tests/mod_webauth/htdocs/tests/unauth/test4      WebAuth module tests
 tests/runtests.c                        Test suite driver
 tools                                   Build system tools (Directory)
 tools/config.guess                      Platform detection
