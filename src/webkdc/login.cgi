@@ -197,10 +197,10 @@ eval {
     WebKDC::handle_request_token($req, $resp);
 };
 
-#my $e = $@;
-#print STDERR "login.cgi exception ".$@."\n";
+my $e = $@;
+print STDERR "login.cgi exception ".$@."\n";
 
-if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
+if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
 
     # need to prompt again, also need to limit number of times
     # we'll prompt
@@ -209,7 +209,7 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     login_form($q, $resp, $request_token_str, $service_token_str,
 	       "<b>login failed! Try again...</b>");
 
-} elsif (WebKDC::WebKDCException::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
+} elsif (WebKDC::WebKDCException::match($e, WK_ERR_USER_AND_PASS_REQUIRED)) {
 
     # this exception indicates someone requested an id-token
     # and either didn't have a proxy-token, or it woas expired.
@@ -221,7 +221,7 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
 
     login_form($q, $resp, $request_token_str, $service_token_str, '');
 
-} elsif ($@) {
+} elsif ($e) {
 
     # something nasty happened
     # log $@, and display an error to the user that a system problem
@@ -230,8 +230,8 @@ if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
     print $q->header(-type => 'text/html');
-    print STDERR "FOOBAR ".$@."\n";
-    print $@."\n";
+    print STDERR "FOOBAR ".$e."\n";
+    print $e."\n";
     print "oops, login failed, come back later, blah blah blah\n";
 
 } else {

@@ -307,7 +307,7 @@ sub create_service_token_from_req($) {
 
     #FIXME: ACL CHECK: subject allowed to get a service token?
 
-    my $session_key = base64_encode(WebAuth::random_key(WA_AES_128));
+    my $session_key = WebAuth::random_key(WA_AES_128);
     my $creation_time = time;
     my $expiration_time = $creation_time+$C_SERVICE_TOKEN_LIFETIME;
 
@@ -319,7 +319,7 @@ sub create_service_token_from_req($) {
     $service_token->expiration_time($expiration_time);
 
     return (base64_encode($service_token->to_token(get_keyring())), 
-	    $session_key, $expiration_time);
+	    base64_encode($session_key), $expiration_time);
 }
 
 sub create_id_token_from_reqsub($$$) {
