@@ -16,7 +16,7 @@ WEBAUTH_LDFLAGS_save=$LDFLAGS
 LDFLAGS="$LDFLAGS $LDAP_LDFLAGS"
 LDAP_LIBS=
 AC_CHECK_LIB([lber], [ber_dump], [LDAP_LIBS=-llber])
-AC_CHECK_LIB([ldap], [ldap_open], [LDAP_LIBS="-lldap $LDAP_LIBS"])
+AC_CHECK_LIB([ldap], [ldap_open], [LDAP_LIBS="-lldap $LDAP_LIBS"], , -llber)
 LDFLAGS=$WEBAUTH_LDFLAGS_save
 LDAP_LIBS=`echo "$LDAP_LDFLAGS $LDAP_LIBS" | sed 's/^  *//'`
 AC_SUBST(LDAP_LIBS)
