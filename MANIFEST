@@ -7,10 +7,11 @@ MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
 NEWS                                    Release history for WebAuth
 README                                  Basic information about WebAuth
+conf                                    Sample configuration files (Directory)
 conf/README                             Explanation of sample conf files
 conf/sample-webauth.conf                Sample WebAuth Apache configuration
-conf/stanford-webauth.conf              Stanford-specific WebAuth conf
 conf/stanford-ldap.conf                 Stanford-specific WebAuthLdap conf
+conf/stanford-webauth.conf              Stanford-specific WebAuth conf
 config.h.in                             Template for configure information
 configure                               Script to configure WebAuth
 configure.ac                            Source file for configure
