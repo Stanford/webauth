@@ -28,31 +28,202 @@ get_hostname()
     return hostname;
 }
 
-int
-webauth_krb5_init(WEBAUTH_KRB5_CTXT **ctxt)
+
+/* these names are kept to a minimum since encoded creds end up
+   in cookies,etc */
+
+#define CR_ADDRTYPE "A%d"
+#define CR_ADDRCONT "a%d"
+#define CR_CLIENT "c"
+#define CR_AUTHDATATYPE "D%d"
+#define CR_AUTHDATACONT "d%d"
+#define CR_TICKETFLAGS "f"
+#define CR_ISSKEY "i"
+#define CR_SERVER "s"
+#define CR_KEYBLOCK_CONTENTS "k"
+#define CR_KEYBLOCK_ENCTYPE "K"
+#define CR_NUMADDRS "na"
+#define CR_NUMAUTHDATA "nd"
+#define CR_TICKET "t"
+#define CR_TICKET2 "t2"
+#define CR_AUTHTIME  "ta"
+#define CR_STARTTIME  "ts"
+#define CR_ENDTIME  "te"
+#define CR_RENEWTILL "tr"
+
+/*
+ * take a single krb5 cred an externalize it to a buffer
+ */
+
+static int
+cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, 
+                      krb5_creds *creds, 
+                      unsigned char **output, 
+                      int *length)
 {
-    WEBAUTH_KRB5_CTXTP *c;
+    WEBAUTH_ATTR_LIST *list;
+    int s, length_max;
 
-    *ctxt = NULL;
-    assert(ctxt);
+    assert(c);
+    assert(creds);
+    assert(output);
+    assert(length);
 
-    c = malloc(sizeof(WEBAUTH_KRB5_CTXTP));
-    if (c == NULL) {
-        return WA_ERR_NO_MEM;
+    list = webauth_attr_list_new(128);
+
+    /* clent principal */
+    if (creds->client) {
+        char *princ;
+        c->code = krb5_unparse_name(c->ctx, creds->client, &princ);
+        if (c->code != 0) {
+            s = WA_ERR_KRB5;
+            goto fail;
+        }
+        
+        s = webauth_attr_list_add_str(list, CR_CLIENT, princ, 0);
+        free(princ);
+        if (s != WA_ERR_NONE) 
+            goto fail;
     }
 
-    c->cc = NULL;
-    c->princ = NULL;
+    /* server principal */
+    if (creds->server) {
+        char *princ;
+        c->code = krb5_unparse_name(c->ctx, creds->server, &princ);
+        if (c->code != 0) {
+            s = WA_ERR_KRB5;
+            goto fail;
+        }
+        s = webauth_attr_list_add_str(list, CR_SERVER, princ, 0);
+        free(princ);
+        if (s != WA_ERR_NONE) 
+            goto fail;
+    }
+    /* keyblock */
+    s = webauth_attr_list_add_int32(list, CR_KEYBLOCK_ENCTYPE, 
+                                    creds->keyblock.enctype);
+    if (s != WA_ERR_NONE)
+        goto fail;
 
-    *ctxt = (WEBAUTH_KRB5_CTXT*) c;
+    s = webauth_attr_list_add(list, CR_KEYBLOCK_CONTENTS,
+                              creds->keyblock.contents,
+                              creds->keyblock.length);
+    if (s != WA_ERR_NONE)
+        goto fail;
 
-    c->code = krb5_init_context(&c->ctx);
+    /* times */
+    s = webauth_attr_list_add_int32(list, CR_AUTHTIME, creds->times.authtime);
+    if (s == WA_ERR_NONE) 
+        s = webauth_attr_list_add_int32(list, CR_STARTTIME, 
+                                        creds->times.starttime);
+    if ( s== WA_ERR_NONE) 
+        s = webauth_attr_list_add_int32(list, CR_ENDTIME,
+                                        creds->times.endtime);
+    if (s == WA_ERR_NONE) 
+        s = webauth_attr_list_add_int32(list, CR_RENEWTILL,
+                                        creds->times.renew_till);
+    if (s != WA_ERR_NONE)
+        goto fail;
 
-    if (c->code != 0) {
-        return WA_ERR_KRB5;
+    /* is_skey */
+    s = webauth_attr_list_add_int32(list, CR_ISSKEY, creds->is_skey);
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    /* ticket_flags */
+    s = webauth_attr_list_add_int32(list, CR_TICKETFLAGS, creds->ticket_flags);
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    /* addresses */
+    /* FIXME: We might never want to send these? */
+    /* they might not even exist if we got forwardable/proxiable tickets */
+    if (creds->addresses) {
+        int num = 0, i;
+        char name[32];
+        krb5_address **temp = creds->addresses;
+        while (*temp++)
+            num++;
+        s = webauth_attr_list_add_int32(list, CR_NUMADDRS, num);
+        if (s != WA_ERR_NONE)
+            goto fail;
+        for (i=0; i < num; i++) {
+            sprintf(name, CR_ADDRTYPE, i);
+            s = webauth_attr_list_add_int32(list, name,
+                                            creds->addresses[i]->addrtype);
+            if (s != WA_ERR_NONE)
+                goto fail;
+            sprintf(name, CR_ADDRCONT, i);
+            s = webauth_attr_list_add(list, name,
+                                      creds->addresses[i]->contents,
+                                      creds->addresses[i]->length);
+            if (s != WA_ERR_NONE)
+                goto fail;
+        }
+        
     }
 
-     return WA_ERR_NONE;
+    /* ticket */
+    if (creds->ticket.length) {
+        s = webauth_attr_list_add(list, CR_TICKET,
+                                  creds->ticket.data, creds->ticket.length);
+        if (s != WA_ERR_NONE)
+            goto fail;
+    }
+
+    /* second_ticket */
+    if (creds->second_ticket.length) {
+        s = webauth_attr_list_add(list, CR_TICKET2,
+                                  creds->second_ticket.data,
+                                  creds->second_ticket.length);
+    }
+
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    /* authdata */
+    if (creds->authdata) {
+        int num = 0, i;
+        char name[32];
+        krb5_authdata **temp = creds->authdata;
+        while (*temp++)
+            num++;
+        s = webauth_attr_list_add_int32(list, CR_NUMAUTHDATA, num);
+        if (s != WA_ERR_NONE)
+            goto fail;
+        for (i=0; i < num; i++) {
+            sprintf(name, CR_AUTHDATATYPE, i);
+            s = webauth_attr_list_add_int32(list, name,
+                                            creds->authdata[i]->ad_type);
+            if (s != WA_ERR_NONE)
+                goto fail;
+            sprintf(name, CR_AUTHDATACONT, i);
+            s = webauth_attr_list_add(list, name,
+                                      creds->authdata[i]->contents,
+                                      creds->authdata[i]->length);
+            if (s != WA_ERR_NONE)
+                goto fail;
+        }
+    }
+
+
+    length_max =  webauth_attrs_encoded_length(list);
+
+    *output = malloc(length_max);
+    
+    if (*output == NULL) {
+        s = WA_ERR_NO_MEM;
+        goto fail;
+    }
+
+    s = webauth_attrs_encode(list, *output, length, length_max);
+    if (s != WA_ERR_NONE) {
+        free (*output);
+        *output = NULL;
+    }
+ fail:
+    webauth_attr_list_free(list);
+    return s;
 }
 
 static int
@@ -110,6 +281,33 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path, const char *service)
     krb5_free_principal(c->ctx, server);
 
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
+}
+
+int
+webauth_krb5_init(WEBAUTH_KRB5_CTXT **ctxt)
+{
+    WEBAUTH_KRB5_CTXTP *c;
+
+    *ctxt = NULL;
+    assert(ctxt);
+
+    c = malloc(sizeof(WEBAUTH_KRB5_CTXTP));
+    if (c == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+
+    c->cc = NULL;
+    c->princ = NULL;
+
+    *ctxt = (WEBAUTH_KRB5_CTXT*) c;
+
+    c->code = krb5_init_context(&c->ctx);
+
+    if (c->code != 0) {
+        return WA_ERR_KRB5;
+    }
+
+     return WA_ERR_NONE;
 }
 
 int
@@ -196,6 +394,17 @@ webauth_krb5_tgt_from_password(WEBAUTH_KRB5_CTXT *context,
         krb5_free_cred_contents(c->ctx, &creds);
         return WA_ERR_KRB5;
     }
+
+    /* FIXME: remove, just testing */
+    {
+        unsigned char *buff;
+        int l,s;
+        s = cred_to_attr_encoding(c, &creds, &buff, &l);
+        if (s != WA_ERR_NONE) {
+            free(buff);
+        }
+    }
+
     krb5_free_cred_contents(c->ctx, &creds);
 
     /* lets see if the credentials are valid */

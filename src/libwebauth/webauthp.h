@@ -28,8 +28,29 @@
 
 #include "webauth.h"
 
-/* this used to have something in it, and probably will
-   again once apache work starts */
+int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 uint32_t value);
+
+int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
+                                const char *name,
+                                int32_t value);
+
+int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
+                               const char *name,
+                               time_t value);
+
+int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 uint32_t *value);
+
+int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
+                                 const char *name,
+                                 int32_t *value);
+
+int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, 
+                               const char *name,
+                               time_t *value);
 
 /*
 **  Local variables:

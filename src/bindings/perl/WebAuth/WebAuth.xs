@@ -72,15 +72,20 @@ OUTPUT:
     RETVAL
 
 int
-webauth_base64_decoded_length(input)
+webauth_base64_decoded_length(input,...)
     SV * input
-PROTOTYPE: $
+PROTOTYPE: $;$
 CODE:
 {
     STRLEN n_input;
+    int len, s;
     unsigned char *p_input;
     p_input = SvPV(input, n_input);
-    RETVAL = webauth_base64_decoded_length(p_input, n_input);
+    s = webauth_base64_decoded_length(p_input, n_input, &len);
+    if (items > 1) {
+       sv_setiv(ST(1), s);
+    }
+    RETVAL = len;
 }
 OUTPUT:
     RETVAL
@@ -92,15 +97,16 @@ PROTOTYPE: $
 CODE:
 {
     STRLEN n_input;
-    int out_len, s;
+    int out_len, out_max, s;
     unsigned char *p_input;
 
     p_input = SvPV(input, n_input);
-    out_len = webauth_base64_encoded_length(n_input);
+    out_max = webauth_base64_encoded_length(n_input);
 
-    ST(0) = sv_2mortal(NEWSV(0, out_len));
+    ST(0) = sv_2mortal(NEWSV(0, out_max));
     
-    s = webauth_base64_encode(p_input, n_input, SvPVX(ST(0)), out_len);
+    s = webauth_base64_encode(p_input, n_input, 
+                              SvPVX(ST(0)), &out_len, out_max);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
@@ -112,16 +118,15 @@ PROTOTYPE: $;$
 CODE:
 {
     STRLEN n_input;
-    int out_len, s;
+    int out_len, out_max, s;
     unsigned char *p_input;
 
     p_input = SvPV(input, n_input);
-    out_len = webauth_base64_decoded_length(p_input, n_input);
-    if (out_len > 0) {
-            ST(0) = sv_2mortal(NEWSV(0, out_len));
-            s = webauth_base64_decode(p_input, n_input, SvPVX(ST(0)), out_len);
-    } else {
-      s = out_len;
+    s = webauth_base64_decoded_length(p_input, n_input, &out_max);
+    if (s == WA_ERR_NONE) {
+            ST(0) = sv_2mortal(NEWSV(0, out_max));
+            s = webauth_base64_decode(p_input, n_input, 
+                                      SvPVX(ST(0)), &out_len, out_max);
     }
 
     if (items > 1) {
@@ -148,12 +153,17 @@ OUTPUT:
     RETVAL
 
 int
-webauth_hex_decoded_length(length)
+webauth_hex_decoded_length(length,...)
     int length
-PROTOTYPE: $
+PROTOTYPE: $;$
 CODE:
 {
-    RETVAL = webauth_hex_decoded_length(length);
+    int len, s;
+    s = webauth_hex_decoded_length(length, &len);
+    if (items > 1) {
+       sv_setiv(ST(1), s);
+    }
+    RETVAL = len;
 }
 OUTPUT:
     RETVAL
@@ -166,15 +176,15 @@ PROTOTYPE: $
 CODE:
 {
     STRLEN n_input;
-    int out_len, s;
+    int out_len, out_max, s;
     unsigned char *p_input;
 
     p_input = SvPV(input, n_input);
-    out_len = webauth_hex_encoded_length(n_input);
+    out_max = webauth_hex_encoded_length(n_input);
 
-    ST(0) = sv_2mortal(NEWSV(0, out_len));
+    ST(0) = sv_2mortal(NEWSV(0, out_max));
     
-    s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), out_len);
+    s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
@@ -186,23 +196,22 @@ PROTOTYPE: $;$
 CODE:
 {
     STRLEN n_input;
-    int out_len, s;
+    int out_len, out_max, s;
     unsigned char *p_input;
 
     p_input = SvPV(input, n_input);
-    out_len = webauth_hex_decoded_length(n_input);
-    if (out_len > 0) {
-            ST(0) = sv_2mortal(NEWSV(0, out_len));
-            s = webauth_hex_decode(p_input, n_input, SvPVX(ST(0)), out_len);
-    } else {
-      s = out_len;
+    s = webauth_hex_decoded_length(n_input, &out_max);
+    if (s == WA_ERR_NONE) {
+            ST(0) = sv_2mortal(NEWSV(0, out_max));
+            s = webauth_hex_decode(p_input, n_input,
+                                   SvPVX(ST(0)), &out_len, out_max);
     }
 
     if (items > 1) {
        sv_setiv(ST(1), s);
     }
 
-    if (s < 0) {
+    if (s != WA_ERR_NONE) {
         ST(0) = &PL_sv_undef;
     } else {
         SvCUR_set(ST(0), out_len);
@@ -254,7 +263,7 @@ CODE:
 {
     HV *h;
     SV *sv_val;
-    int num_attrs, s, out_len;
+    int num_attrs, s, out_len, out_max;
     char *key, *val;
     I32 klen;
     STRLEN vlen;
@@ -278,12 +287,12 @@ CODE:
         webauth_attr_list_add(list, key, val, vlen);
     }
 
-    out_len = webauth_attrs_encoded_length(list);
+    out_max = webauth_attrs_encoded_length(list);
 
-    ST(0) = sv_2mortal(NEWSV(0, out_len));
-    s = webauth_attrs_encode(list, SvPVX(ST(0)), out_len);
+    ST(0) = sv_2mortal(NEWSV(0, out_max));
+    s = webauth_attrs_encode(list, SvPVX(ST(0)), &out_len, out_max);
     webauth_attr_list_free(list);
-    if (s < 0) {
+    if (s != WA_ERR_NONE) {
         ST(0) = &PL_sv_undef;
     } else {
         SvCUR_set(ST(0), out_len);
@@ -312,7 +321,7 @@ CODE:
        sv_setiv(ST(1), s);
     }
 
-    if (s>0) {
+    if (s == WA_ERR_NONE) {
         hv = newHV();
         for (i=0; i < list->num_attrs; i++) {
             hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
@@ -454,7 +463,7 @@ CODE:
 {
     HV *h;
     SV *sv_val;
-    int num_attrs, s, out_len;
+    int num_attrs, s, out_len, out_max;
     char *akey, *val;
     I32 klen;
     STRLEN vlen;
@@ -478,16 +487,16 @@ CODE:
         webauth_attr_list_add(list, akey, val, vlen);
     }
 
-    out_len = webauth_token_encoded_length(list);
-    ST(0) = sv_2mortal(NEWSV(0, out_len));
-    s = webauth_token_create(list, hint, SvPVX(ST(0)), out_len, ring);
+    out_max = webauth_token_encoded_length(list);
+    ST(0) = sv_2mortal(NEWSV(0, out_max));
+    s = webauth_token_create(list, hint, SvPVX(ST(0)), &out_len, out_max, ring);
     webauth_attr_list_free(list);
 
     if (items > 3) {
        sv_setiv(ST(3), s);
     }
 
-    if (s < 0) {
+    if (s != WA_ERR_NONE) {
         ST(0) = &PL_sv_undef;
     } else {
         SvCUR_set(ST(0), out_len);

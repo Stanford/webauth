@@ -37,10 +37,15 @@ webauth_base64_encoded_length(int length)
 }
 
 int
-webauth_base64_decoded_length(const unsigned char *input, int input_len)
+webauth_base64_decoded_length(const unsigned char *input, int input_len,
+                              int *decoded_length)
 {
     int out_len;
-    assert(input);
+    assert(input != NULL);
+    assert(decoded_length != NULL);
+
+    *decoded_length = 0;
+
     if (!input_len || input_len%4) {
         return WA_ERR_CORRUPT;
     }
@@ -51,13 +56,16 @@ webauth_base64_decoded_length(const unsigned char *input, int input_len)
             out_len--;
         }
     }
-    return out_len;
+
+    *decoded_length = out_len;
+    return WA_ERR_NONE;
 }
 
 int
 webauth_base64_encode(const unsigned char *input, 
                       int input_len, 
                       unsigned char *output, 
+                      int *output_len,
                       int output_max)
 {
     int c1, c2, c3;
@@ -66,6 +74,9 @@ webauth_base64_encode(const unsigned char *input,
     assert(input != NULL);
     assert(output != NULL);
     assert(input_len > 0);
+    assert(output_len != NULL);
+
+    *output_len = 0;
 
     while (input_len) {
 	c1 = *input++;
@@ -120,7 +131,8 @@ webauth_base64_encode(const unsigned char *input,
 	out_len += 1;
     }
     
-    return(out_len);
+    *output_len = out_len;
+    return WA_ERR_NONE;
 }
 
 /*
@@ -131,6 +143,7 @@ int
 webauth_base64_decode(unsigned char *input,
                       int input_len,
                       unsigned char *output,
+                      int *output_len,
                       int output_max)
 {
     int c1, c2, c3, c4;
@@ -140,8 +153,13 @@ webauth_base64_decode(unsigned char *input,
     j = input_len - 4;
 
     assert(input != NULL);
-    assert(input_len >0 && (input_len % 4 == 0));
     assert(output != NULL);
+    assert(output_len != NULL);
+
+    *output_len = 0;
+
+    if (!(input_len >0 && (input_len % 4 == 0)))
+        return WA_ERR_CORRUPT;
 
     while (i <= j) {
 
@@ -170,7 +188,8 @@ webauth_base64_decode(unsigned char *input,
 	    if (c4 != '=') {
                 return WA_ERR_CORRUPT;
             } else {
-                return (out_len);
+                *output_len = out_len;
+                return WA_ERR_NONE;
             }
 	}
 	if (out_len == output_max) {
@@ -180,20 +199,20 @@ webauth_base64_decode(unsigned char *input,
 	                  (((CHAR64(c2)&0xf)<<4) | ((CHAR64(c3)&0x3c)>>2));
 
 	if (c4 == '=') {
-            return (out_len);
+            *output_len = out_len;
+            return WA_ERR_NONE;
         }
 
-	if (out_len == output_max) {
+	if (out_len == output_max)
             return WA_ERR_NO_ROOM;
-        }
 	output[(out_len)++] = (((CHAR64(c3)&0x3)<<6) | CHAR64(c4));
 	if (i == input_len) {
-            return (out_len);
+            *output_len = out_len;
+            return WA_ERR_NONE;
         }
     }
     return WA_ERR_NO_ROOM;
 }
-
 
 /*
 **  Local variables:

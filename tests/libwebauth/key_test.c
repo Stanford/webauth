@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     WEBAUTH_KEYRING *ring;
     WEBAUTH_KEYRING *ring2;
 
-    int s;
+    int s, len;
     unsigned char key_material[WA_AES_128];
     unsigned char hex[2048];
     time_t curr;
@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
 
-    s=webauth_hex_encode(key_material, WA_AES_128, hex, sizeof(hex));
-    hex[s] = '\0';
+    s=webauth_hex_encode(key_material, WA_AES_128, hex, &len, sizeof(hex));
+    hex[len] = '\0';
     /*printf("key[%s]\n", hex);*/
 
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
 
-    s=webauth_hex_encode(key_material, WA_AES_128, hex, sizeof(hex));
-    hex[s] = '\0';
+    s = webauth_hex_encode(key_material, WA_AES_128, hex, &len, sizeof(hex));
+    hex[len] = '\0';
     /*printf("key[%s]\n", hex);*/
 
     key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);

@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <netinet/in.h>
-#include <inttypes.h>
 
 #include <openssl/aes.h>
 #include <openssl/sha.h>
@@ -80,6 +79,7 @@ int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                      time_t hint,
                      unsigned char *output,
+                     int *output_len,
                      int max_output_len,
                      const WEBAUTH_KEYRING *ring)
 {
@@ -144,10 +144,10 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     n += T_HMAC_S;
 
     /* encode attributes */
-    alen = webauth_attrs_encode(list, ebuff+T_ATTR_O, elen-n-plen);
-    if (alen < 0) {
+    s = webauth_attrs_encode(list, ebuff+T_ATTR_O, &alen, elen-n-plen);
+    if (s != WA_ERR_NONE) {
         free(ebuff);
-        return alen;
+        return s;
     }
 
     n += alen;
@@ -176,12 +176,17 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                     aes_ivec, AES_ENCRYPT);
 
     /* now base64 token */
-    blen = webauth_base64_encode(ebuff, elen, output, max_output_len);
+    s = webauth_base64_encode(ebuff, elen, output, &blen, max_output_len);
 
     /* free buffer */
     free(ebuff);
 
-    return blen;
+    if (s != WA_ERR_NONE)
+        return s;
+
+    *output_len = blen;
+
+    return WA_ERR_NONE;
 }
 
 
@@ -244,9 +249,6 @@ decrypt_token(WEBAUTH_KEY *key, unsigned char *input, int elen)
  * base64 decodes and decrypts attrs into a token
  * input buffer is modified.
  *
- * returns number of attrs in the resulting token
- * or an error
- *
  * {key-hint}{nonce}{hmac}{token-attributes}{padding}
  */
 
@@ -271,9 +273,9 @@ webauth_token_parse(unsigned char *input,
     }
 
     /** base64 decode (in place) first */
-    elen=webauth_base64_decode(input, input_len, input, input_len);
-    if (elen < 0) {
-        return elen;
+    s = webauth_base64_decode(input, input_len, input, &elen, input_len);
+    if (s != WA_ERR_NONE) {
+        return s;
     }
 
     /* quick sanity check */
@@ -295,7 +297,7 @@ webauth_token_parse(unsigned char *input,
         memcpy(buff, input, elen);
         dlen = decrypt_token(hkey, buff, elen);
         if (dlen > 0) {
-            s= webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
+            s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
             free(buff);
             return s;
         }

@@ -41,14 +41,14 @@ print_fingerprint(WEBAUTH_KEY *key)
 {
     char md5[MD5_DIGEST_LENGTH]; 
     char hex[MD5_DIGEST_LENGTH*2+1];
-    int len;
+    int len, s;
     MD5_CTX c;
     MD5_Init(&c);
     MD5_Update(&c, key->data, key->length);
     MD5_Final(md5, &c);
  
 
-    len = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, sizeof(hex));
+    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &len, sizeof(hex));
     hex[len] = '\0';
     printf("%s", hex);
 }
@@ -151,10 +151,11 @@ verbose:
 
     } else {
         char hex[2048];
+        int l;
         ring = webauth_keyring_new(32);
         s = webauth_random_key(key_material, WA_AES_128);
-        s=webauth_hex_encode(key_material, WA_AES_128, hex, sizeof(hex));
-        hex[s] = '\0';
+        s=webauth_hex_encode(key_material, WA_AES_128, hex, &l, sizeof(hex));
+        hex[l] = '\0';
         /*printf("key[%s]\n", hex);*/
 
         key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
@@ -162,8 +163,8 @@ verbose:
         s = webauth_keyring_add(ring, curr, curr, curr+3600, key);
 
         s = webauth_random_key(key_material, WA_AES_128);
-        s=webauth_hex_encode(key_material, WA_AES_128, hex, sizeof(hex));
-        hex[s] = '\0';
+        s = webauth_hex_encode(key_material, WA_AES_128, hex, &l, sizeof(hex));
+        hex[l] = '\0';
         /*printf("key[%s]\n", hex);*/
 
         key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);

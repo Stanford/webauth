@@ -10,24 +10,27 @@ int main(int argc, char *argv[])
     unsigned char orig_buffer[BUFSIZE];
     unsigned char encoded_buffer[BUFSIZE];
     unsigned char decoded_buffer[BUFSIZE];
-    int i,j;
-    int elen, rlen, dlen, equal;
+    int i,j, s;
+    int elen, rlen, dlen, equal, dlen2;
     TEST_VARS;
 
-    START_TESTS(2048);
+    START_TESTS(3584);
 
     for (i=0; i < 512; i++) {
         for (j=0; j < i; j++) {
             orig_buffer[j] = j % 256;
         }
-        elen = webauth_hex_encode(orig_buffer, i, encoded_buffer, BUFSIZE);
+        s = webauth_hex_encode(orig_buffer, i, encoded_buffer, &elen, BUFSIZE);
         rlen = webauth_hex_encoded_length(i);
+        TEST_OK2(WA_ERR_NONE, s);
         TEST_OK(elen == rlen);
 
-        dlen = webauth_hex_decode(encoded_buffer, elen, 
-                                  decoded_buffer, BUFSIZE);
-
-        TEST_OK(dlen == webauth_hex_decoded_length(elen));
+        s = webauth_hex_decode(encoded_buffer, elen, 
+                                  decoded_buffer, &dlen, BUFSIZE);
+        TEST_OK2(WA_ERR_NONE, s);
+        s = webauth_hex_decoded_length(elen, &dlen2);
+        TEST_OK2(WA_ERR_NONE, s);
+        TEST_OK(dlen == dlen2);
         TEST_OK(dlen == i);
 
         equal=1;

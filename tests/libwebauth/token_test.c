@@ -18,14 +18,14 @@ int main(int argc, char *argv[])
     time_t curr;
     TEST_VARS;
 
-    START_TESTS(27);
+    START_TESTS(29);
 
     ain = webauth_attr_list_new(32);
-    webauth_attr_list_add(ain, WA_TK_TOKEN_TYPE, "id", 0);
-    webauth_attr_list_add(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
-    webauth_attr_list_add(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
-    webauth_attr_list_add(ain, WA_TK_CREATION_TIME, "1", 0);
-    webauth_attr_list_add(ain, WA_TK_EXPIRATION_TIME, "2", 0);
+    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTHENTICATOR, "webkdc", 0);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0);
+    webauth_attr_list_add_str(ain, WA_TK_CREATION_TIME, "1", 0);
+    webauth_attr_list_add_str(ain, WA_TK_EXPIRATION_TIME, "2", 0);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
@@ -43,8 +43,9 @@ int main(int argc, char *argv[])
     rlen = webauth_token_encoded_length(ain);
 
     token = malloc(rlen+1);
-    len = webauth_token_create(ain, 0, token, rlen, ring);
+    s = webauth_token_create(ain, 0, token, &len, rlen, ring);
 
+    TEST_OK2(WA_ERR_NONE, s);
     TEST_OK2(len, rlen);
 
     token[len] = '\0';
@@ -83,8 +84,8 @@ int main(int argc, char *argv[])
 
     rlen = webauth_token_encoded_length(ain);
     token = malloc(rlen+1);
-    len = webauth_token_create(ain, 0, token, rlen, ring2);
-
+    s = webauth_token_create(ain, 0, token, &len, rlen, ring2);
+    TEST_OK2(WA_ERR_NONE, s);
     TEST_OK2(len, rlen);
 
     token[len] = '\0';

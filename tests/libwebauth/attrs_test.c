@@ -13,12 +13,12 @@ int main(int argc, char *argv[])
 {
     unsigned char *buff;
     WEBAUTH_ATTR_LIST *attrs_in, *attrs_out;
-    int len, i, rlen;
+    int len, i, rlen, s;
     int num_out;
     unsigned char binary_data[BUFSIZE];
     TEST_VARS;
 
-    START_TESTS(54);
+    START_TESTS(55);
 
     for (i=0; i < sizeof(binary_data); i++) {
         binary_data[i] = i % 256;
@@ -26,22 +26,21 @@ int main(int argc, char *argv[])
    
     attrs_in = webauth_attr_list_new(64);
     webauth_attr_list_add(attrs_in, "bin", binary_data, sizeof(binary_data));
-    webauth_attr_list_add(attrs_in, "0", "1", 0);
-    webauth_attr_list_add(attrs_in, "1", ";", 0);
-    webauth_attr_list_add(attrs_in, "2", "", 0);
-    webauth_attr_list_add(attrs_in, "3", ";a", 0);
-    webauth_attr_list_add(attrs_in, "4", ";aaa", 0);
-    webauth_attr_list_add(attrs_in, "5", "a;", 0);
-    webauth_attr_list_add(attrs_in, "6", "aaa;", 0);
-    webauth_attr_list_add(attrs_in, "7", ";aaa;", 0);
-    webauth_attr_list_add(attrs_in, "8", "a;a", 0);
-    webauth_attr_list_add(attrs_in, "9", "a;a;", 0);
-    webauth_attr_list_add(attrs_in, "10", "a;a;;", 0);
-    webauth_attr_list_add(attrs_in, "11", ";a;a;;", 0);
-    webauth_attr_list_add(attrs_in, "12", ";;", 0);
-    webauth_attr_list_add(attrs_in, "13", ";;;", 0);
-    webauth_attr_list_add(attrs_in, "14", ";;;;a", 0);
-
+    webauth_attr_list_add_str(attrs_in, "0", "1", 0);
+    webauth_attr_list_add_str(attrs_in, "1", ";", 0);
+    webauth_attr_list_add_str(attrs_in, "2", "", 0);
+    webauth_attr_list_add_str(attrs_in, "3", ";a", 0);
+    webauth_attr_list_add_str(attrs_in, "4", ";aaa", 0);
+    webauth_attr_list_add_str(attrs_in, "5", "a;", 0);
+    webauth_attr_list_add_str(attrs_in, "6", "aaa;", 0);
+    webauth_attr_list_add_str(attrs_in, "7", ";aaa;", 0);
+    webauth_attr_list_add_str(attrs_in, "8", "a;a", 0);
+    webauth_attr_list_add_str(attrs_in, "9", "a;a;", 0);
+    webauth_attr_list_add_str(attrs_in, "10", "a;a;;", 0);
+    webauth_attr_list_add_str(attrs_in, "11", ";a;a;;", 0);
+    webauth_attr_list_add_str(attrs_in, "12", ";;", 0);
+    webauth_attr_list_add_str(attrs_in, "13", ";;;", 0);
+    webauth_attr_list_add_str(attrs_in, "14", ";;;;a", 0);
 
     TEST_OK2(5, webauth_attr_list_find(attrs_in, "4"));
     TEST_OK2(0, webauth_attr_list_find(attrs_in, "bin"));
@@ -53,8 +52,9 @@ int main(int argc, char *argv[])
 
     buff = malloc(rlen+1);
 
-    len = webauth_attrs_encode(attrs_in, buff, rlen);
+    s = webauth_attrs_encode(attrs_in, buff, &len, rlen);
 
+    TEST_OK(s == WA_ERR_NONE);
     TEST_OK(len == rlen);
 
     buff[len] = '\0';

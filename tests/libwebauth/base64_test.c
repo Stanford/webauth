@@ -13,22 +13,27 @@ int main(int argc, char *argv[])
     int i,j;
     int elen, rlen, rdlen, dlen;
     int equal;
+    int s;
     TEST_VARS;
 
-    START_TESTS(2044);
+    START_TESTS(3577);
 
     for (i=1; i < 512; i++) {
         for (j=0; j < i; j++) {
             orig_buffer[j] = j % 256;
         }
-        elen = webauth_base64_encode(orig_buffer, i, encoded_buffer, BUFSIZE);
+        s = webauth_base64_encode(orig_buffer, i,
+                                  encoded_buffer, &elen, BUFSIZE);
         rlen = webauth_base64_encoded_length(i);
+        TEST_OK(s == WA_ERR_NONE);
         TEST_OK(elen == rlen);
 
-        rdlen = webauth_base64_decoded_length(encoded_buffer, elen);
-        dlen = webauth_base64_decode(encoded_buffer, elen, 
-                                     decoded_buffer, BUFSIZE);
+        s = webauth_base64_decoded_length(encoded_buffer, elen, &rdlen);
+        TEST_OK(s == WA_ERR_NONE);
 
+        s = webauth_base64_decode(encoded_buffer, elen, 
+                                     decoded_buffer, &dlen, BUFSIZE);
+        TEST_OK(s == WA_ERR_NONE);
         TEST_OK(dlen == rdlen);
         TEST_OK(dlen == i);
 

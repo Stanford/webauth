@@ -52,7 +52,8 @@ ok('\000\001\002',
 
 # test some failures
 
-ok(WebAuth::WA_ERR_CORRUPT, WebAuth::base64_decoded_length('x'));
+$len = WebAuth::base64_decoded_length('x', $status);
+ok(WebAuth::WA_ERR_CORRUPT,  $status);
 
 ok(undef, WebAuth::base64_decode('axc', $status));
 ok(WebAuth::WA_ERR_CORRUPT, $status);
@@ -76,7 +77,8 @@ ok('hello', WebAuth::hex_decode('68656c6c6f'));
 
 # test some failures
 
-ok(WebAuth::WA_ERR_CORRUPT, WebAuth::hex_decoded_length(3));
+$len = WebAuth::hex_decoded_length(3, $status);
+ok(WebAuth::WA_ERR_CORRUPT,  $status);
 
 $status = undef;
 ok(undef, WebAuth::hex_decode('FOOBAR', $status));
@@ -104,7 +106,7 @@ ok($ea, WebAuth::attrs_encode($a));
 
 $status = undef;
 $b = WebAuth::attrs_decode($ea, $status);
-ok(3, $status);
+ok(WebAuth::WA_ERR_NONE, $status);
 ok(1, compareHashes($a,$b));
 
 # some failures
@@ -159,12 +161,12 @@ $status = undef;
 $token = WebAuth::token_create($attrs, 0, $ring, $status);
 
 ok(length($token));
-ok(92, $status);
+ok(WebAuth::WA_ERR_NONE, $status);
 
 $status = undef;
 $attrs2 = WebAuth::token_parse($token, $ring, $status);
 
-ok(3, $status);
+ok(WebAuth::WA_ERR_NONE, $status);
 ok(1, compareHashes($attrs, $attrs));
 
 # FIXME: cleanup files, compare them, should probably use temp file names, etc.

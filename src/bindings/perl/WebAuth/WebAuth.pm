@@ -66,12 +66,14 @@ $base64_len = base64_encoded_length($length)
 Given data of the specified length, returns how long the resulting
 base64-encoded data would be.
 
-=item base64_decoded_length(input)
+=item base64_decoded_length(input[, status])
 
-$len = base64_decoded_length($input)
+$len = base64_decoded_length($input[, $status])
 
 Given the string $input, returns how long the resulting
-base64-encoded data would be, or an WA_ERR_CORRUPT error. 
+base64-encoded data would be, or 0 in case of an error.
+If $status is specified, then it is set to WA_ERR_NONE or 
+WA_ERR_CORRUPT.
 Note that this function doesn't actually attempt to ensure 
 that $input contains a valid base64-encoded string, though 
 it does a sanity check to make sure the length is greater
@@ -99,12 +101,13 @@ $hex_len = hex_encoded_length($length)
 Given data of the specified length, returns how long the resulting
 hex-encoded data would be.
 
-=item hex_decoded_length(input)
+=item hex_decoded_length(input[, status])
 
-$len = hex_decoded_length($input)
+$len = hex_decoded_length($input[, $status])
 
 Given the string $input, returns how long the resulting
-hex-encoded data would be, or an WA_ERR_CORRUPT error. 
+hex-encoded data would be, or 0 in case of an error.
+If $status is specified, it is set to WA_ERR_NONE or A_ERR_CORRUPT on error. 
 Note that this function doesn't actually attempt to ensure 
 that $input contains a valid hex-encoded string, though 
 it does a sanity check to make sure the length is greater

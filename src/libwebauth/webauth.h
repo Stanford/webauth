@@ -153,12 +153,15 @@ int webauth_base64_encoded_length(int length);
  *
  * @param input Base64-encoded data.
  * @param length Length of base64-encoded data.
+ * @param decoded_length Length of decoded data
  *
- * @return Returns the required space in bytes provided that length is
- *   greater than 0 and a multiple of 4.  Otherwise, returns #WA_ERR_CORRUPT
+ * @return #WA_ERR_NONE on success, or #WA_ERR_CORRUPT if
+ *   length is not greater than 0 and a multiple of 4, 
  *   since the input data cannot be valid base64-encoded data.
  */
-int webauth_base64_decoded_length(const unsigned char *input, int length);
+int webauth_base64_decoded_length(const unsigned char *input, 
+                                  int length,
+                                  int *decoded_length);
 
 /** Base64-encode the given data.
  *
@@ -168,15 +171,17 @@ int webauth_base64_decoded_length(const unsigned char *input, int length);
  * @param input Data to encode.
  * @param input_len Length of data to encode.
  * @param output Buffer into which to write base64-encoded data.
+ * @param output_len number of bytes written to output.
  * @param max_output_len Maximum number of bytes to write to @a output.
  *
- * @return Returns the number of bytes written to @a output, or
+ * @return Returns #WA_ERR_NONE on success, or
  *   #WA_ERR_NO_ROOM if encoding the provided data would require more space
  *   than @a max_output_len.
  */
 int webauth_base64_encode(const unsigned char *input,
                           int input_len, 
                           unsigned char *output,
+                          int *output_len,
                           int max_output_len);
 
 /** Base64-decode the given data.
@@ -186,9 +191,10 @@ int webauth_base64_encode(const unsigned char *input,
  * @param input Data to decode.
  * @param input_len Length of data to decode.
  * @param output Buffer into which to write base64-decoded data.
+ * @param output_length Number of bytes written to output.
  * @param max_output_len Maximum number of bytes to write to @a output.
  *
- * @return Returns the number of bytes written to @a output, #WA_ERR_NO_ROOM
+ * @return Returns #WA_ERR_NONE on success, #WA_ERR_NO_ROOM
  *   if decoding the provided data would require more space than @a
  *   max_output_len, or #WA_ERR_CORRUPT if @a input is not valid
  *   base64-encoded data.
@@ -196,7 +202,9 @@ int webauth_base64_encode(const unsigned char *input,
 int webauth_base64_decode(unsigned char *input,
                           int input_len,
                           unsigned char *output,
+                          int *output_len,
                           int max_output_len);
+
 
 /******************** hex routines ********************/
 
@@ -212,26 +220,24 @@ int webauth_hex_encoded_length(int length);
  * returns the amount of space required to decode the hex encoded data
  * of the given length. Returned length does *NOT* include room for a
  * null-termination. 
- *
- * errors:
- *   WA_ERR_CORRUPT (if length is not greater then 0 and a multiple of 2)
+ * 
+ * @return #WA_ERR_NONE on succes, or #WA_ERR_CORRUPT 
+ * if length is not greater then 0 and a multiple of 2.
  */
-int webauth_hex_decoded_length(int length);
+int webauth_hex_decoded_length(int length, int *out_length);
 
 /*
  * hex encodes the given data, does *NOT* null-terminate.
  * output can point to input, as long as max_output_len is
  * long enough.
  *
- * returns output length or an error.
+ * @return #WA_ERR_NONE or #WA_ERR_NO_ROOM
  *
- * errors:
- *   WA_ERR_NO_ROOM
- *   
  */
 int webauth_hex_encode(unsigned char *input, 
                        int input_len,
                        unsigned char *output,
+                       int *output_len,
                        int max_output_len);
 
 
@@ -239,15 +245,13 @@ int webauth_hex_encode(unsigned char *input,
  * hex decodes the given data, does *NOT* null-terminate.
  * output can point to input.
  *
- * returns output length or an error.
+ * @return #WA_ERR_NONE , #WA_ERR_NO_ROOM, #WA_ERR_CORRUPT
  *
- * errors:
- *   WA_ERR_NO_ROOM
- *   WA_ERR_CORRUPT
  */
 int webauth_hex_decode(unsigned char *input,
                        int input_len,
-                       unsigned char *output, 
+                       unsigned char *output,
+                       int *output_length,
                        int max_output_len);
 
 /******************** attrs ********************/
@@ -257,7 +261,7 @@ int webauth_hex_decode(unsigned char *input,
  * Returns the new attr list, or NULL if out of memory
  *
  */
-WEBAUTH_ATTR_LIST *webauth_attr_list_new();
+WEBAUTH_ATTR_LIST *webauth_attr_list_new(int initial_capacity);
 
 /** adds an attr to the attr list.
  *
@@ -265,19 +269,31 @@ WEBAUTH_ATTR_LIST *webauth_attr_list_new();
  * if need be. Both the name and value are copied, and value
  * always has a null added to the end of it.
  *
- * if vlen is 0, then strlen is used on (char*)value.
- *
  * return WA_ERR_NONE or WA_ERR_NO_MEM
  *
  */
 int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
-                          char *name, void *value, int vlen);
+                          const char *name, const void *value, int vlen);
+
+/** adds an attr string to the attr list.
+ *
+ * adds a new attribute to the given attr list, growing the list
+ * if need be. Both the name and value are copied, and value
+ * always has a null added to the end of it.
+ *
+ * if vlen is 0, then strlen(value) is used.
+ *
+ * return WA_ERR_NONE or WA_ERR_NO_MEM
+ *
+ */
+int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
+                              const char *name, const char *value, int vlen);
 
 /** searches for the name attribute in the list and returns the
  * index or WA_ERR_NOT_FOUND.
  *
  */
-int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, char *name);
+int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name);
 
 /** free's an attr list
  *
@@ -299,7 +315,7 @@ int webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
  *
  * output is *NOT* null-terminated
  *
- * returns length of encoded data or an error
+ * returns WA_ERR_NONE on success, or an error.
  *
  * errors:
  *   WA_ERR_NO_ROOM
@@ -307,6 +323,7 @@ int webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
+                         int *output_len,
                          int max_output_len);
 
 /*
@@ -444,8 +461,7 @@ int webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path);
  * returns WA_ERR_NONE on success, or an error.
  */
 
-int
-webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring);
+int webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring);
 
 /******************** tokens ********************/
    
@@ -462,7 +478,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
  *
  * if hint is 0 then the current time will be used.
  *
- * returns length of base64-encoded token (not null-terminated) or an error
+ * returns WA_ERR_NONE or an error.
  *
  * errors:
  *  WA_ERR_NO_ROOM
@@ -473,6 +489,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          time_t hint,
                          unsigned char *output,
+                         int *output_len,
                          int max_output_len,
                          const WEBAUTH_KEYRING *ring);
 
@@ -483,7 +500,7 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
  * list will point to the dynamically-allocated list
  * of attrs and must be freed when no longer needed.
  *
- * returns number of attrs in the resulting token or an error
+ * returns WA_ERR_NONE on success.
  *
  * errors:
  *  WA_ERR_NO_MEM

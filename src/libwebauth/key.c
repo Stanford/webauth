@@ -223,7 +223,7 @@ webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
 int 
 webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
 {
-    uint32_t temp, creation_time, valid_from, valid_till, key_type;
+    uint32_t temp;
     int fd, i, attr_len, len;
     WEBAUTH_ATTR_LIST *attrs;
     unsigned char *attr_buff;
@@ -265,29 +265,22 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     attr_buff = NULL;
     for (i=0; status==WA_ERR_NONE && i < ring->num_entries; i++) {
         attrs->num_attrs = 0;
-        creation_time = htonl(ring->entries[i].creation_time);
-        valid_from = htonl(ring->entries[i].valid_from);
-        valid_till = htonl(ring->entries[i].valid_till);
-        key_type   = htonl(ring->entries[i].key->type);
- 
-        webauth_attr_list_add(attrs, "creation_time", &creation_time, 
-                              sizeof(creation_time));
-        webauth_attr_list_add(attrs, "valid_from", &valid_from,
-                              sizeof(valid_from));
-        webauth_attr_list_add(attrs, "valid_till", &valid_till,
-                              sizeof(valid_till));
-        webauth_attr_list_add(attrs, "key_type", &key_type,
-                              sizeof(key_type));
+        webauth_attr_list_add_time(attrs, "creation_time", 
+                                   ring->entries[i].creation_time);
+        webauth_attr_list_add_time(attrs, "valid_from",
+                                   ring->entries[i].valid_from);
+        webauth_attr_list_add_time(attrs, "valid_till",
+                                   ring->entries[i].valid_till);
+
+        webauth_attr_list_add_uint32(attrs, "key_type",
+                                     ring->entries[i].key->type);
+
         webauth_attr_list_add(attrs, "key_data", ring->entries[i].key->data,
                               ring->entries[i].key->length);
 
         attr_len = webauth_attrs_encoded_length(attrs);
         attr_buff = realloc(attr_buff, attr_len > 2048 ? attr_len : 2048);
-        len = webauth_attrs_encode(attrs, attr_buff, attr_len);
-
-        if (len < 0) {
-            status = len;
-        }
+        status = webauth_attrs_encode(attrs, attr_buff, &len, attr_len);
 
         /* write encoded entry length */
         temp = htonl(attr_len);
@@ -326,26 +319,6 @@ read_fully(int fd, char *buff, int n)
         }
     }
     return tot;
-}
-
-static int
-get_uint32_t(WEBAUTH_ATTR_LIST *list, char *name, uint32_t *v)
-{
-    int index = webauth_attr_list_find(list, name);
-
-    if (index < 0) {
-        return index;
-    }
-
-    if (list->attrs[index].length != sizeof(uint32_t)) {
-        return WA_ERR_CORRUPT;
-    }
-
-    memcpy(v, list->attrs[index].value, sizeof(uint32_t));
-
-    *v = ntohl(*v);
-
-    return WA_ERR_NONE;
 }
 
 int
@@ -422,8 +395,8 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     }
 
     for (i=0; i < num_entries; i++) {
-        uint32_t creation_time, valid_from, valid_till, key_type;
-        uint32_t entry_length;
+        time_t creation_time, valid_from, valid_till;
+        uint32_t entry_length, key_type;
         int key_data_index = WA_ERR_NOT_FOUND;
         WEBAUTH_ATTR_LIST *list;
         WEBAUTH_KEY *key;
@@ -453,15 +426,15 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
             return s;
         }
 
-        s = get_uint32_t(list, "creation_time", &creation_time);
+        s = webauth_attr_list_get_time(list, "creation_time", &creation_time);
         if (s == WA_ERR_NONE) {
-            s = get_uint32_t(list, "valid_from", &valid_from);
+            s = webauth_attr_list_get_time(list, "valid_from", &valid_from);
         }
         if (s == WA_ERR_NONE) {
-            s = get_uint32_t(list, "valid_till", &valid_till);
+            s = webauth_attr_list_get_time(list, "valid_till", &valid_till);
         }
         if (s == WA_ERR_NONE) {
-            s = get_uint32_t(list, "key_type", &key_type);
+            s = webauth_attr_list_get_uint32(list, "key_type", &key_type);
         }
 
         if (s == WA_ERR_NONE) {
@@ -477,7 +450,6 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
             webauth_attr_list_free(list);
             return s;
         }
-
 
         key = webauth_key_create(key_type, list->attrs[key_data_index].value,
                                  list->attrs[key_data_index].length);
