@@ -14,7 +14,7 @@ CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) \
 		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@ \
 		  @SIDENT_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
-LDLIBS		= $(top_builddir)src/libwebauth/libwebauth.la \
+LDLIBS		= -L$(top_builddir)src/libwebauth/.libs -lwebauth \
 		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@ @LIBGCC_LIBS@ \
 		  @SIDENT_LIBS@
 
