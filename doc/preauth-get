@@ -20,7 +20,8 @@ The fields included in the GET are as follows:
     px          The type of proxy authentication TGT requested
 
 The valid values for px are k4 or k5, representing Kerberos v4 or Kerberos
-v5 encrypted proxy authentication TGTs.
+v5 encrypted proxy authentication TGTs.  If both are requested, a value of
+"k4,k5" (without the quotes) is used.
 
 For example, suppose one attempted to access https://www.stanford.edu/auth/
 and that page requires kerberos_v5 authentication with a service name of
