@@ -9,12 +9,46 @@ NEWS                                    Release history for WebAuth
 README                                  Basic information about WebAuth
 conf                                    Sample configuration files (Directory)
 conf/README                             Explanation of sample conf files
+conf/debian                             Debian module configuration (Directory)
+conf/debian/webauth.conf                Basic Debian mod_webauth config
+conf/debian/webauth.load                Debian mod_webauth load directive
+conf/debian/webauthldap.conf            Basic Debian mod_webauthldap config
+conf/debian/webauthldap.load            Debian mod_webauthldap load directive
+conf/debian/webkdc.conf                 Basic Debian mod_webkdc config
+conf/debian/webkdc.load                 Debian mod_webkdc load directive
 conf/sample-webauth.conf                Sample WebAuth Apache configuration
 conf/stanford-ldap.conf                 Stanford-specific WebAuthLdap conf
 conf/stanford-webauth.conf              Stanford-specific WebAuth conf
 config.h.in                             Template for configure information
 configure                               Script to configure WebAuth
 configure.ac                            Source file for configure
+debian                                  Debian build instructions (Directory)
+debian/changelog                        Debian package changes
+debian/compat                           Debian debhelper version
+debian/control                          Debian package control file
+debian/copyright                        Debian package copyright information
+debian/libapache2-webauth.README.Debian Debian mod_webauth package docs
+debian/libapache2-webauth.docs          Debian mod_webauth package doc files
+debian/libapache2-webauth.examples      Debian mod_webauth package examples
+debian/libapache2-webauth.install       Debian mod_webauth package files
+debian/libapache2-webauth.postinst      Debian mod_webauth postinstall
+debian/libapache2-webauth.postrm        Debian mod_webauth postremoval
+debian/libapache2-webkdc.README.Debian  Debian mod_webkdc package docs
+debian/libapache2-webkdc.docs           Debian mod_webkdc pacakge doc files
+debian/libapache2-webkdc.install        Debian mod_webkdc package files
+debian/libapache2-webkdc.postinst       Debian mod_webkdc postinstall
+debian/libapache2-webkdc.postrm         Debian mod_webkdc postremoval
+debian/libwebauth1-dev.install          Debian dev package install rules
+debian/libwebauth1.install              Debian lib package install rules
+debian/libwebauth3-perl.install         Debian Perl bindings package files
+debian/libwebkdc-perl.install           Debian WebKDC module package files
+debian/rules                            Debian package build rules
+debian/webauth-tests.README.Debian      Debian test package docs
+debian/webauth-tests.install            Debian test package install rules
+debian/webauth-utils.install            Debian utils package install rules
+debian/webauth-weblogin.README.Debian   Debian weblogin package docs
+debian/webauth-weblogin.install         Debian weblogin package install rules
+debian/webkdc.conf                      Debian WebKDC configuration
 doc                                     WebAuth documentation (Directory)
 doc/doxygen.cfg                         Doxygen configuration file
 doc/install-webkdc                      WebKDC -- installation guide
@@ -94,9 +128,11 @@ src/utils/Makefile.vc                   Windows Makefile for utility programs
 src/utils/wa_keyring.c                  Manipulate the server keyring
 src/utils/wa_keyring.pod                Documentation for wa_keyring
 src/webkdc                              WebKDC -- Perl login server (Directory)
+src/webkdc/Makefile.PL                  WebKDC -- Perl module makefile
 src/webkdc/Makefile.in                  WebKDC -- Makefile for login server
 src/webkdc/WebKDC                       WebKDC -- Perl modules (Directory)
 src/webkdc/WebKDC.pm                    WebKDC -- Base module
+src/webkdc/WebKDC/Config.pm             WebKDC -- Configuration variables
 src/webkdc/WebKDC/Token.pm              WebKDC -- Token handling
 src/webkdc/WebKDC/WebKDCException.pm    WebKDC -- Exception handling
 src/webkdc/WebKDC/WebRequest.pm         WebKDC -- Handle incoming request
@@ -104,8 +140,16 @@ src/webkdc/WebKDC/WebResponse.pm        WebKDC -- Send outgoing response
 src/webkdc/WebKDC/XmlDoc.pm             WebKDC -- XML parsing
 src/webkdc/WebKDC/XmlElement.pm         WebKDC -- XML element handling
 src/webkdc/images                       WebKDC -- Login images (Directory)
-src/webkdc/images/gateway1.gif          WebKDC -- Login images
-src/webkdc/images/gateway1.open.gif     WebKDC -- Login images
+src/webkdc/images/confirm.png           WebKDC -- Confirm graphic
+src/webkdc/images/confirm.xcf           WebKDC -- Confirm graphic source
+src/webkdc/images/error.png             WebKDC -- Error graphic
+src/webkdc/images/error.xcf             WebKDC -- Error graphic source
+src/webkdc/images/help.png              WebKDC -- Help graphic
+src/webkdc/images/help.xcf              WebKDC -- Help graphic source
+src/webkdc/images/login.png             WebKDC -- Login graphic
+src/webkdc/images/login.xcf             WebKDC -- Login graphic source
+src/webkdc/images/logout.png            WebKDC -- Logout graphic
+src/webkdc/images/logout.xcf            WebKDC -- Logout graphic source
 src/webkdc/login.fcgi                   WebKDC -- FastCGI login server
 src/webkdc/logout.fcgi                  WebKDC -- FastCGI logout page
 src/webkdc/templates                    WebKDC -- Login templates (Directory)
