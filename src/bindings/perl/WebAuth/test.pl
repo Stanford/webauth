@@ -5,16 +5,20 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
+use strict;
+
 use Test;
 use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
 BEGIN { plan tests => 95 }
-$run_kerb = 0;
+my $run_kerb = 0;
 
 #BEGIN { plan tests => 115 }
-#$run_kerb = 1;
+#my $run_kerb = 1;
+
+my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
 
 if ($run_kerb) {
     # FIXME: need better way to config these
@@ -37,6 +41,8 @@ use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
 sub compareHashes;
+
+my ($s, $c, $len, $output);
 
 #########################
 
@@ -62,48 +68,48 @@ ok(WebAuth::base64_encoded_length(7), 12);
 ok(WebAuth::base64_encoded_length(8), 12);
 ok(WebAuth::base64_encoded_length(9), 12);
 
-($status, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1'));
+($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1'));
 ok($len, 1);
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
-($status, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('12'));
+($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('12'));
 ok($len, 2);
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
-($status, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('123'));
+($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('123'));
 ok($len, 3);
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
-($status, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1234'));
+($s, $len) = WebAuth::base64_decoded_length(WebAuth::base64_encode('1234'));
 ok($len, 4);
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
 
 ok(WebAuth::base64_encode('hello'), 'aGVsbG8=');
 
-($status, $output) = WebAuth::base64_decode('aGVsbG8=');
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) = WebAuth::base64_decode('aGVsbG8=');
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output, 'hello');
 
-($status, $output) = WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')),
+($s, $output) = WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')),
 
 ok($output,'\000\001\002');
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
 
-($status, $output) = 
+($s, $output) = 
           WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002'));
 
 ok($output, '\000\001\002');
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
 # test some failures
 
-($status, $len) = WebAuth::base64_decoded_length('x');
-ok($status, WebAuth::WA_ERR_CORRUPT);
+($s, $len) = WebAuth::base64_decoded_length('x');
+ok($s, WebAuth::WA_ERR_CORRUPT);
 
-($status, $output) = WebAuth::base64_decode('axc');
-ok($status, WebAuth::WA_ERR_CORRUPT);
+($s, $output) = WebAuth::base64_decode('axc');
+ok($s, WebAuth::WA_ERR_CORRUPT);
 ok($output, undef);
 
 ########################################  hex
@@ -113,37 +119,37 @@ ok(WebAuth::hex_encoded_length(1), 2);
 ok(WebAuth::hex_encoded_length(3), 6);
 ok(WebAuth::hex_encoded_length(5), 10);
 
-($status, $length) = WebAuth::hex_decoded_length(2);
-ok($status, WebAuth::WA_ERR_NONE);
-ok($length, 1);
+($s, $len) = WebAuth::hex_decoded_length(2);
+ok($s, WebAuth::WA_ERR_NONE);
+ok($len, 1);
 
-($status, $length) = WebAuth::hex_decoded_length(6);
-ok($status, WebAuth::WA_ERR_NONE);
-ok($length, 3);
+($s, $len) = WebAuth::hex_decoded_length(6);
+ok($s, WebAuth::WA_ERR_NONE);
+ok($len, 3);
 
-($status, $length) = WebAuth::hex_decoded_length(10);
-ok($status, WebAuth::WA_ERR_NONE);
-ok($length, 5);
+($s, $len) = WebAuth::hex_decoded_length(10);
+ok($s, WebAuth::WA_ERR_NONE);
+ok($len, 5);
 
 ok(WebAuth::hex_encode("\000\001\002\003\004\005"), '000102030405');
 
-($status, $output) = WebAuth::hex_decode('000102030405');
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) = WebAuth::hex_decode('000102030405');
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output, "\000\001\002\003\004\005");
 
 ok(WebAuth::hex_encode('hello'), '68656c6c6f');
-($status, $output) = WebAuth::hex_decode('68656c6c6f');
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) = WebAuth::hex_decode('68656c6c6f');
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output, 'hello');
 
 # test some failures
 
-($status,$len) = WebAuth::hex_decoded_length(3);
-ok($status, WebAuth::WA_ERR_CORRUPT);
+($s,$len) = WebAuth::hex_decoded_length(3);
+ok($s, WebAuth::WA_ERR_CORRUPT);
 
-$status = undef;
-($status, $output) = WebAuth::hex_decode('FOOBAR');
-ok($status, WebAuth::WA_ERR_CORRUPT);
+$s = undef;
+($s, $output) = WebAuth::hex_decode('FOOBAR');
+ok($s, WebAuth::WA_ERR_CORRUPT);
 
 ######################################### attr tests
 
@@ -153,45 +159,46 @@ ok(WebAuth::attrs_encoded_length({"x"=>"1;"}), 6);
 ok(WebAuth::attrs_encoded_length({"x"=>"1", "y"=>"2"}), 8);
 ok(WebAuth::attrs_encoded_length({"x"=>"\000", "y"=>"123"}), 10);
 
-($status, $output) =WebAuth::attrs_encode({"x"=>"1"});
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) =WebAuth::attrs_encode({"x"=>"1"});
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq "x=1;");
 
-($status, $output) =WebAuth::attrs_encode({"x"=>";"});
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) =WebAuth::attrs_encode({"x"=>";"});
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq "x=;;;");
 
-($status, $output) =WebAuth::attrs_encode({"x"=>"1;"});
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) =WebAuth::attrs_encode({"x"=>"1;"});
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq "x=1;;;");
 
-($status, $output) =WebAuth::attrs_encode({"x"=>"1", "y"=>"2"});
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) =WebAuth::attrs_encode({"x"=>"1", "y"=>"2"});
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq "x=1;y=2;");
 
-($status, $output) =WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"});
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $output) =WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"});
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq "x=\000;y=123;");
 
 # try and encode, followed by a decode and compare the hashes
-$a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
+my $a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
 
-$ea = "x=1;y=hello;z=goodbye;";
-($status, $output) = WebAuth::attrs_encode($a);
-ok($status, WebAuth::WA_ERR_NONE);
+my $ea = "x=1;y=hello;z=goodbye;";
+
+($s, $output) = WebAuth::attrs_encode($a);
+ok($s, WebAuth::WA_ERR_NONE);
 ok($output eq $ea);
 
-($status, $b) = WebAuth::attrs_decode($ea);
-ok($status, WebAuth::WA_ERR_NONE);
+($s, $b) = WebAuth::attrs_decode($ea);
+ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($a,$b), 1);
 
 # some failures
-($status, $b) = WebAuth::attrs_decode('x=1;y=23');
-ok($status, WebAuth::WA_ERR_CORRUPT);
+($s, $b) = WebAuth::attrs_decode('x=1;y=23');
+ok($s, WebAuth::WA_ERR_CORRUPT);
 ok($b, undef);
 
-($status, $b) = WebAuth::attrs_decode('x=1;zr');
-ok($status, WebAuth::WA_ERR_CORRUPT);
+($s, $b) = WebAuth::attrs_decode('x=1;zr');
+ok($s, WebAuth::WA_ERR_CORRUPT);
 ok($b, undef);
 
 ######################################## random
@@ -205,8 +212,8 @@ ok(length(WebAuth::random_key(WebAuth::WA_AES_256)), WebAuth::WA_AES_256);
 
 ######################################## keys
 
-$key = WebAuth::key_create(WebAuth::WA_AES_KEY,
-			   WebAuth::random_key(WebAuth::WA_AES_128));
+my $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
+			      WebAuth::random_key(WebAuth::WA_AES_128));
 ok(defined($key));
 ok(isa($key, 'WEBAUTH_KEYPtr'));
 
@@ -222,27 +229,28 @@ ok(!defined($key));
 
 $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			   WebAuth::random_key(WebAuth::WA_AES_128));
-$attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
+my $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-$ring = WebAuth::keyring_new(32);
+my $ring = WebAuth::keyring_new(32);
 ok(isa($ring, 'WEBAUTH_KEYRINGPtr'));
 ok ($ring != undef);
 
-$curr=time();
+my $curr=time();
 $s = WebAuth::keyring_add($ring, $curr, $curr, $curr+3600, $key);
 ok($s, WebAuth::WA_ERR_NONE);
 
 $key = undef;
-($status, $token) = WebAuth::token_create($attrs, 0, $ring);
+my $token;
+($s, $token) = WebAuth::token_create($attrs, 0, $ring);
 
 ok(length($token));
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
-$attrs2 = undef;
+my $attrs2 = undef;
 
-($status, $attrs2) = WebAuth::token_parse($token, $ring);
+($s, $attrs2) = WebAuth::token_parse($token, $ring);
 
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
 
 
@@ -250,15 +258,15 @@ $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			   WebAuth::random_key(WebAuth::WA_AES_128));
 $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-($status, $token) = WebAuth::token_create_with_key($attrs, 0, $key);
+($s, $token) = WebAuth::token_create_with_key($attrs, 0, $key);
 
 ok(length($token));
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
 $attrs2 = undef;
-($status, $attrs2) = WebAuth::token_parse_with_key($token, $key);
+($s, $attrs2) = WebAuth::token_parse_with_key($token, $key);
 
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
 
 
@@ -268,19 +276,21 @@ ok(compareHashes($attrs, $attrs2), 1);
 # FIXME: cleanup files, compare them, should probably use temp file names, etc.
 
 # write key ring
-$status = WebAuth::keyring_write_file($ring, "webauth_keyring");
-ok($status, WebAuth::WA_ERR_NONE);
+$s = WebAuth::keyring_write_file($ring, "webauth_keyring");
+ok($s, WebAuth::WA_ERR_NONE);
 
 # read key ring
-($status, $ring2) = WebAuth::keyring_read_file("webauth_keyring");
+my $ring2;
+
+($s, $ring2) = WebAuth::keyring_read_file("webauth_keyring");
 ok(isa($ring2, 'WEBAUTH_KEYRINGPtr'));
-ok($status, WebAuth::WA_ERR_NONE);
+ok($s, WebAuth::WA_ERR_NONE);
 
 # write key ring2
-$status = WebAuth::keyring_write_file($ring2, "webauth_keyring2");
-ok($status, WebAuth::WA_ERR_NONE);
+$s = WebAuth::keyring_write_file($ring2, "webauth_keyring2");
+ok($s, WebAuth::WA_ERR_NONE);
 
-#print "attrs2($attrs) status($status)\n";
+#print "attrs2($attrs) status($s)\n";
 
 
 
@@ -292,11 +302,13 @@ if ($run_kerb) {
     ok($s, WebAuth::WA_ERR_NONE);
     ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-    $code = WebAuth::krb5_error_code($c);
+    my $code = WebAuth::krb5_error_code($c);
     ok($code, 0);
 
-    $msg = WebAuth::krb5_error_message($c);
+    my $msg = WebAuth::krb5_error_message($c);
     ok($msg eq "success");
+
+    my $ctx_princ;
 
     ($s, $ctx_princ) = WebAuth::krb5_get_principal($c);
     ok($s, WebAuth::WA_ERR_INVALID_CONTEXT);
@@ -307,21 +319,27 @@ if ($run_kerb) {
     ($s, $ctx_princ) = WebAuth::krb5_get_principal($c);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my ($tgt, $expiration);
     ($s, $tgt, $expiration) = WebAuth::krb5_export_tgt($c);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my $princ;
     ($s, $princ) = WebAuth::krb5_service_principal($c, $kservice, $khost);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my $ticket;
     ($s, $ticket, $expiration) = WebAuth::krb5_export_ticket($c, $princ);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my $rprinc;
     ($s, $rprinc) = WebAuth::krb5_service_principal($c, $krservice, $krhost);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my $request;
     ($s, $request) = WebAuth::krb5_mk_req($c, $rprinc);
     ok($s, WebAuth::WA_ERR_NONE);
 
+    my $client_princ;
     ($s, $client_princ) = WebAuth::krb5_rd_req($c, $request, $kkeytab);
     ok($s, WebAuth::WA_ERR_NONE);
     #print "client = ($client_princ)\n";
@@ -358,6 +376,8 @@ sub compareHashes {
 
     my $an = scalar @akeys;
     my $bn = scalar @bkeys;
+
+    my $i;
 
     if ($an != $bn) {
 	return 0;
