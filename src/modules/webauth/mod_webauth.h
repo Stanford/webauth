@@ -36,6 +36,7 @@
 /* defines for config directives */
 #define CD_SecureCookie "WebAuthSecureCookie"
 #define CM_SecureCookie "make cookies with the 'secure' attribute"
+#define DF_SecureCookie 1
 
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
@@ -66,7 +67,7 @@
 
 #define CD_TokenMaxTTL "WebAuthTokenMaxTTL"
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
-#define DEFAULT_TokenMaxTTL 300
+#define DF_TokenMaxTTL 300
 
 #define CD_SubjectAuthType "WebAuthSubectAuthType"
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"
@@ -86,10 +87,13 @@
 #define CM_ReturnURL "url to return to after logging in"
 
 /* r->notes keys */
-#define N_WEBAUTHR "MWA_WEBAUTHR"
-#define N_WEBAUTHS "MWA_WEBAUTHS"
-#define N_SUBJECT  "MWA_SUBJECT"
-#define N_APP_COOKIE  "MWA_APP_COOKIE"
+#define N_WEBAUTHR "mod_webauth_WEBAUTHR"
+#define N_WEBAUTHS "mod_webauth_WEBAUTHS"
+#define N_SUBJECT  "mod_webauth_SUBJECT"
+#define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
+
+/* pool userdata */
+#define P_MWA_SCTXT "mod_webauth_MWA_SCTXT"
 
 /* enums for config directives */
 
@@ -131,6 +135,8 @@ typedef struct {
     int  debug;
     int secure_cookie;
     int secure_cookie_ex; /* if it was explicitly specified in conf file */
+    int token_max_ttl; 
+    int token_max_ttl_ex; /* if it was explicitly specified in conf file */
     /* end of conf */
     MWA_SCTXT *ctxt;
 } MWA_SCONF;
@@ -138,7 +144,6 @@ typedef struct {
 /* directory conf stuff */
 typedef struct {
     int app_token_lifetime;
-    int token_max_ttl;
     char *subject_auth_type;
     int inactive_expire;
     int hard_expire;
