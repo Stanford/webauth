@@ -2306,7 +2306,9 @@ check_user_id_hook(request_rec *r)
                                                 &webauth_module);
     if (rc.sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                     "mod_webauth: in check_user_id hook");
+                     "mod_webauth: in check_user_id hook(%s)",
+                     rc.r->unparsed_uri != NULL ? 
+                     rc.r->unparsed_uri : "null-uri");
 
     if ((at == NULL) ||
         ((strcmp(at, "WebAuth") != 0) &&
@@ -2328,12 +2330,26 @@ check_user_id_hook(request_rec *r)
     }
 
     /* first check if we've already validated the user */
-    rc.at.subject = mwa_get_note(r, N_SUBJECT);
+    rc.at.subject = mwa_get_note(r, N_SUBJECT); 
 
     if (rc.at.subject == NULL) {
         int code = gather_tokens(&rc);
         if (code != OK)
             return code;
+        if (rc.at.subject != NULL) {
+            /* stick it in note for future reference */
+            if (rc.sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                             "mod_webauth: stash note, user(%s)",
+                             rc.at.subject);
+            mwa_setn_note(r, N_SUBJECT, 
+                          apr_pstrdup(rc.r->pool, rc.at.subject));
+        }
+    } else {
+        if (rc.sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                         "mod_webauth: found note, user(%s)",
+                         rc.at.subject);
     }
 
     if (rc.at.subject == NULL) {
@@ -2344,9 +2360,6 @@ check_user_id_hook(request_rec *r)
                      "mod_webauth: check_user_id_hook subject still NULL!");
         return HTTP_UNAUTHORIZED;
     }
-
-    /* stick it in note for future reference */
-    mwa_setn_note(r, N_SUBJECT, rc.at.subject);
 
     if (rc.sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
@@ -2519,12 +2532,16 @@ translate_name_hook(request_rec *r)
            the ? gets stripped */
         strip_end(r->args, rmagic);
         strip_end(r->args, rmagic+1);
+        if (r->args != NULL && *r->args == 0)
+            r->args = NULL;
         strip_end(r->parsed_uri.path, rmagic);
         /* make sure to try rmagic and rmagic+1, since if there were
            no query args, rmagic ends up looking like query args and
            the ? gets stripped */
         strip_end(r->parsed_uri.query, rmagic);
         strip_end(r->parsed_uri.query, rmagic+1);
+        if (r->parsed_uri.query != NULL && *r->parsed_uri.query == 0)
+            r->parsed_uri.query = NULL;
     }
 
     /* mwa_log_request(r, "after xlate"); */

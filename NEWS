@@ -2,6 +2,9 @@
 
 WebAuth 3.2.0 (in progress)
 
+ *) Fixed bug when handling sub-requests (like in mod_autoindex). Make
+    sure to stash notes in the top-most main request.
+
  *) Removed WebAuthProxyHeaders directive. Added new documentation
     to mod_webauth.xml that recommends people use mod_headers instead.
     See "Using WebAuth with Proxy Servers" in that document.

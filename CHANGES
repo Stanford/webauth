@@ -2,6 +2,14 @@
 
 WebAuth 3.2.0 (in progress)
 
+ *) Fixed bug when handling sub-requests (like in mod_autoindex). Make
+    sure to stash notes in the top-most main request.
+
+ *) Add new webkdc commands webkdcProxyToken and webkdcProxyTokenInfo
+
+ *) add three new functions to libwebauth: webauth_krb5_{mk,rd}_req_with_data
+    and webauth_krb5_init_via_cache.
+
  *) Removed WebAuthProxyHeaders directive. Added new documentation
     to mod_webauth.xml that recommends people use mod_headers instead.
     See "Using WebAuth with Proxy Servers" in that document.

@@ -30,17 +30,29 @@ mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
     return (char*)alist->attrs[i].value;
 }
 
+static request_rec *
+get_top(request_rec *r)
+{
+    request_rec *mr = r;
+    for (;;) {
+        while (mr->main)
+            mr = mr->main;
+        while (mr->prev)
+            mr = mr->prev;
+        if (! mr->main)
+            break;
+    }
+    return mr;
+}
+
 /*
  * get note from main request 
  */
 const char *
 mwa_get_note(request_rec *r, const char *note)
 {
-    if (r->main) {
-        return apr_table_get(r->main->notes, note);
-    } else {
-        return apr_table_get(r->notes, note);
-    }
+    request_rec *top = get_top(r);
+    return apr_table_get(top->notes, note);
 }
 
 /*
@@ -51,13 +63,12 @@ char *
 mwa_remove_note(request_rec *r, const char *note)
 {
     const char *val;
-    if (r->main)
-        r = r->main;
+    request_rec *top = get_top(r);
 
-    val = apr_table_get(r->notes, note);
+    val = apr_table_get(top->notes, note);
 
     if (val != NULL)
-        apr_table_unset(r->notes, note);
+        apr_table_unset(top->notes, note);
 
     return (char*)val;
 }
@@ -68,11 +79,8 @@ mwa_remove_note(request_rec *r, const char *note)
 void
 mwa_setn_note(request_rec *r, const char *note, const char *val)
 {
-    if (r->main) {
-        apr_table_setn(r->main->notes, note, val);
-    } else {
-        apr_table_setn(r->notes, note, val);
-    }
+    request_rec *top = get_top(r);
+    apr_table_setn(top->notes, note, val);
 }
 
 void
