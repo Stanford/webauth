@@ -270,6 +270,42 @@ decrypt_token(const WEBAUTH_KEY *key,
     return WA_ERR_NONE;
 }
 
+int static
+check_token(WEBAUTH_ATTR_LIST *list, int ttl)
+{
+    int s;
+    time_t curr = 0, t;
+
+    /* see if token has explicit expiration */
+    s = webauth_attr_list_get_time(list, WA_TK_EXPIRATION_TIME, &t);
+    if (s == WA_ERR_NONE) {
+        time(&curr);
+        if (t < curr) {
+            return WA_ERR_TOKEN_EXPIRED;
+        }
+    } else if (s != WA_ERR_NOT_FOUND) {
+        return s;
+    }
+
+    /* a ttl of 0 means don't check */
+    if (ttl == 0)
+        return WA_ERR_NONE;
+
+    /* see if token has creation time */
+    s = webauth_attr_list_get_time(list, WA_TK_CREATION_TIME, &t);
+    if (s == WA_ERR_NONE) {
+        if (curr == 0)
+            time(&curr);
+        if (t+ttl < curr) {
+            return WA_ERR_TOKEN_STALE;
+        }
+    } else if (s != WA_ERR_NOT_FOUND) {
+        return s;
+    }
+
+    return WA_ERR_NONE;
+}
+
 /*
  * base64 decodes and decrypts attrs into a token
  * input buffer is modified.
@@ -280,8 +316,9 @@ decrypt_token(const WEBAUTH_KEY *key,
 int
 webauth_token_parse(unsigned char *input,
                     int input_len,
-                    WEBAUTH_ATTR_LIST **list,
-                    const WEBAUTH_KEYRING *ring)
+                    int ttl,
+                    const WEBAUTH_KEYRING *ring,
+                    WEBAUTH_ATTR_LIST **list)
 {
     int elen, dlen, s, i;
     uint32_t temp;
@@ -293,6 +330,8 @@ webauth_token_parse(unsigned char *input,
     assert(input != NULL);
     assert(list != NULL);
     assert(ring != NULL);
+
+    *list = NULL;
 
     if (ring->num_entries == 0) {
         return WA_ERR_BAD_KEY;
@@ -322,27 +361,41 @@ webauth_token_parse(unsigned char *input,
     if (hkey != NULL) {
         memcpy(buff, input, elen);
         s = decrypt_token(hkey, buff, elen, &dlen);
-        if (s == WA_ERR_NONE) {
-            s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
-            free(buff);
-            return s;
-        }
+    } else {
+        s = WA_ERR_BAD_HMAC;
     }
 
-    /* hint failed, try all keys, skipping hint */
-    for (i=0; i < ring->num_entries; i++) {
-        if (ring->entries[i].key != hkey) {
-            memcpy(buff, input, elen);
-            s = decrypt_token(ring->entries[i].key, buff, elen, &dlen);
-            if (s == WA_ERR_NONE) {
-                s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
-                free(buff);
-                return s;
+    if (s != WA_ERR_NONE) {
+        /* hint failed, try all keys, skipping hint */
+        for (i=0; i < ring->num_entries; i++) {
+            if (ring->entries[i].key != hkey) {
+                memcpy(buff, input, elen);
+                s = decrypt_token(ring->entries[i].key, buff, elen, &dlen);
+                if (s == WA_ERR_NONE)
+                    break;
             }
         }
     }
+
+    if (s == WA_ERR_NONE)
+        s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
+
     free(buff);
-    return WA_ERR_BAD_HMAC;
+
+    if (s != WA_ERR_NONE)
+        return s;
+
+    s = check_token(*list, ttl);
+
+    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED || 
+        s == WA_ERR_TOKEN_STALE) {
+            return s;
+    } else {
+        /* token had an expiration/creation time that wasn't
+           in the right format */
+        webauth_attr_list_free(*list);
+        return s;
+    }
 }
 
 
@@ -356,14 +409,17 @@ webauth_token_parse(unsigned char *input,
 int
 webauth_token_parse_with_key(unsigned char *input,
                              int input_len,
-                             WEBAUTH_ATTR_LIST **list,
-                             const WEBAUTH_KEY *key)
+                             int ttl,
+                             const WEBAUTH_KEY *key,
+                             WEBAUTH_ATTR_LIST **list)
 {
     int elen, dlen, s;
 
     assert(input != NULL);
     assert(list != NULL);
     assert(key != NULL);
+
+    *list = NULL;
 
     /** base64 decode (in place) first */
     s = webauth_base64_decode(input, input_len, input, &elen, input_len);
@@ -379,7 +435,21 @@ webauth_token_parse_with_key(unsigned char *input,
     s = decrypt_token(key, input, elen, &dlen);
     if (s == WA_ERR_NONE)
         s = webauth_attrs_decode(input+T_ATTR_O, dlen, list);
-    return s;
+
+    if (s != WA_ERR_NONE)
+        return s;
+
+    s = check_token(*list, ttl);
+
+    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED || 
+        s == WA_ERR_TOKEN_STALE) {
+            return s;
+    } else {
+        /* token had an expiration/creation time that wasn't
+           in the right format */
+        webauth_attr_list_free(*list);
+        return s;
+    }
 }
 
 /*

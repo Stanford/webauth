@@ -578,10 +578,11 @@ PPCODE:
 }
 
 void
-webauth_token_parse(buffer,ring)
+webauth_token_parse(buffer,ttl,ring)
 SV *buffer
+int ttl
 WEBAUTH_KEYRING *ring
-PROTOTYPE: $$
+PROTOTYPE: $$$
 PPCODE:
 {
     STRLEN n_input;
@@ -593,7 +594,7 @@ PPCODE:
 
     p_input = SvPV(copy, n_input);
 
-    s = webauth_token_parse(p_input, n_input, &list, ring);
+    s = webauth_token_parse(p_input, n_input, ttl, ring, &list);
     
     if (s == WA_ERR_NONE) {
         hv = newHV();
@@ -612,10 +613,11 @@ PPCODE:
 }
 
 void
-webauth_token_parse_with_key(buffer,key)
+webauth_token_parse_with_key(buffer,ttl,key)
 SV *buffer
+int ttl
 WEBAUTH_KEY *key
-PROTOTYPE: $$
+PROTOTYPE: $$$
 PPCODE:
 {
     STRLEN n_input;
@@ -627,7 +629,7 @@ PPCODE:
 
     p_input = SvPV(copy, n_input);
 
-    s = webauth_token_parse_with_key(p_input, n_input, &list, key);
+    s = webauth_token_parse_with_key(p_input, n_input, ttl, key, &list);
 
     if (s == WA_ERR_NONE) {
         hv = newHV();

@@ -513,8 +513,28 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  * on the ring will be tried first, and if that fails
  * all the remaining keys will be tried.
  *
+ * the following checks are made:
+ *
+ *    if the token has a WA_TK_EXPIRATION_TIME attr then it
+ *    must be 4 bytes long, and is assumed to be the expiration time
+ *    of the token in network byte order. It is compared against
+ *    the current time, and WA_ERR_TOKEN_EXPIRED is returned 
+ *    if the token has expired.
+ *
+ *    WA_TK_CREATION_TIME is checked if-and-only-if the token doesn't have
+ *    an explicit expiration time and ttl is non-zero.
+ * 
+ *    if the token has a WA_TK_CREATION_TIME attr 
+ *    then it must be 4 bytes long, and is assumed to be the creation time
+ *    of the token in network byte order. The creation time is compared
+ *    against the current time+ttl, and WA_ERR_TOKEN_STALE is returned 
+ *    if the token is stale.
+ * 
  * list will point to the dynamically-allocated list
  * of attrs and must be freed when no longer needed.
+ *
+ *  Note: If WA_ERR_TOKEN_EXPIRED or WA_ERR_TOKEN_STALE are returned,
+ *  an attr list is still allocated and needs to be freed.
  *
  * returns WA_ERR_NONE on success.
  *
@@ -523,33 +543,26 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  *  WA_ERR_CORRUPT
  *  WA_ERR_BAD_HMAC
  *  WA_ERR_BAD_KEY
+ *  WA_ERR_TOKEN_EXPIRED
+ *  WA_ERR_TOKEN_STALE
  */
 
 int webauth_token_parse(unsigned char *input,
                         int input_len,
-                        WEBAUTH_ATTR_LIST **list,
-                        const WEBAUTH_KEYRING *ring);
+                        int ttl, 
+                        const WEBAUTH_KEYRING *ring,
+                        WEBAUTH_ATTR_LIST **list);
 
 /*
- * base64 decodes and decrypts attrs into a token
- * input buffer is modified.
- *
- * list will point to the dynamically-allocated list
- * of attrs and must be freed when no longer needed.
- *
- * returns WA_ERR_NONE on success.
- *
- * errors:
- *  WA_ERR_NO_MEM
- *  WA_ERR_CORRUPT
- *  WA_ERR_BAD_HMAC
- *  WA_ERR_BAD_KEY
+ * same as webauth_token_parse, but takes a key instead of a key ring.
  */
 
 int webauth_token_parse_with_key(unsigned char *input,
                                  int input_len,
-                                 WEBAUTH_ATTR_LIST **list,
-                                 const WEBAUTH_KEY *key);
+                                 int ttl,
+                                 const WEBAUTH_KEY *key,
+                                 WEBAUTH_ATTR_LIST **list);
+
 
 /******************** krb5 ********************/
 

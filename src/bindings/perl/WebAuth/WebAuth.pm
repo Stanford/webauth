@@ -210,9 +210,9 @@ If hint is 0, the current time will be used.
 The values in the $attrs hash table get converted to strings if they 
 aren't already.
 
-=item token_parse(token, ring)
+=item token_parse(token, ttl, ring)
 
-  ($status, $attrs) = token_parse($token, $ring);
+  ($status, $attrs) = token_parse($token, $ttl, $ring);
 
 Takes as input a base64 encrypted token and a ring (created with 
 keyring_new) and returns the attributes.
@@ -229,9 +229,9 @@ The values in the $attrs hash table get converted to strings if they
 aren't already. $status is optional, and if present will get set to the
 result of the webauth_token_create C function.
 
-=item token_parse_with_key(token, key)
+=item token_parse_with_key(token, ttl, key)
 
-  ($status, $attrs) = token_parse_with_key($token, $key);
+  ($status, $attrs) = token_parse_with_key($token, $ttl, $key);
 
 Takes as input a base64 encrypted token and a key (created with 
 key_new) and returns the attributes.

@@ -248,7 +248,7 @@ ok($s, WebAuth::WA_ERR_NONE);
 
 my $attrs2 = undef;
 
-($s, $attrs2) = WebAuth::token_parse($token, $ring);
+($s, $attrs2) = WebAuth::token_parse($token, 0, $ring);
 
 ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
@@ -264,7 +264,7 @@ ok(length($token));
 ok($s, WebAuth::WA_ERR_NONE);
 
 $attrs2 = undef;
-($s, $attrs2) = WebAuth::token_parse_with_key($token, $key);
+($s, $attrs2) = WebAuth::token_parse_with_key($token, 0, $key);
 
 ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
