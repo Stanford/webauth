@@ -572,14 +572,36 @@ int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
                             int *tgt_len,
                             time_t *expiration);
 
+/*
+ * import a ticket that was exported via webauth_krb5_export_ticket.
+ */
 int webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
                                unsigned char *ticket,
                                int ticket_len);
+/*
+ * create a service principal (service/hostname.do.main@realm) 
+ * from a service and hostname. If service is NULL, "host" is used,
+ * and if hostname is NULL, the local hsotname is used.
+ *
+ * server_principal should be freed when it is no longer needed.
+ */
+int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
+                                   const char *service,
+                                   const char *hostname,
+                                   char **server_principal);
+/*
+ * export a ticket for the given server_principal. ticket should
+ * be freed when no longer needed.
+ *
+ * should only be called after one of the webauth_krb5_init_via* methods
+ * has been successfully called.
 
+ */
 int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
-                               char *service,
+                               char *server_principal,
                                unsigned char **ticket,
-                               int *ticket_length);
+                               int *ticket_len,
+                               time_t *expiration);
 
 /*
  * calls krb5_mk_req using the specified service, and stores the

@@ -908,7 +908,7 @@ webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
     s = cred_from_attr_encoding(c, tgt, tgt_len, &creds);
 
     if (s!= WA_ERR_NONE) 
-        return WA_ERR_KRB5;
+        return s;
 
 
     if (cache_name == NULL) {
@@ -1011,14 +1011,80 @@ webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
                            unsigned char *ticket,
                            int ticket_len)
 {
-    return WA_ERR_NONE;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    krb5_creds creds;
+    int s;
+
+    assert(c != NULL);
+    assert(ticket!= NULL);
+
+    s = cred_from_attr_encoding(c, ticket, ticket_len, &creds);
+    if (s!= WA_ERR_NONE) 
+        return s;
+
+    /* add the creds to the cache */
+    c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
+    krb5_free_cred_contents(c->ctx, &creds);
+    if (c->code != 0) {
+        return WA_ERR_KRB5;
+    } else {
+        return WA_ERR_NONE;
+    }
 }
 
 int
 webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
-                           char *service,
+                           char *server_principal,
                            unsigned char **ticket,
-                           int *ticket_length)
+                           int *ticket_len,
+                           time_t *expiration)
 {
-    return WA_ERR_NONE;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    krb5_creds *credsp, creds;
+    int s;
+
+    s = WA_ERR_KRB5;
+    memset((char *)&creds, 0, sizeof(creds));
+
+    c->code = krb5_parse_name(c->ctx, server_principal, &creds.server);
+    if (c->code != 0)
+        goto cleanup_creds;
+
+    c->code = krb5_cc_get_principal(c->ctx, c->cc, &creds.client);
+    if (c->code != 0)
+	goto cleanup_creds;
+
+    c->code = krb5_get_credentials(c->ctx, 0, c->cc, &creds, &credsp);
+    if (c->code != 0)
+	goto cleanup_creds;
+
+    s = cred_to_attr_encoding(c, credsp, ticket, ticket_len, expiration);
+    krb5_free_creds(c->ctx, credsp);
+
+ cleanup_creds:
+    krb5_free_cred_contents(c->ctx, &creds);
+    return s;
+}
+
+int
+webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
+                               const char *service,
+                               const char *hostname,
+                               char **server_principal)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    krb5_principal princ;
+
+    c->code = krb5_sname_to_principal(c->ctx,
+                                      hostname,
+                                      service,
+                                      KRB5_NT_SRV_HST,
+                                      &princ);
+    if (c->code != 0)
+        return WA_ERR_KRB5;
+
+    c->code = krb5_unparse_name(c->ctx, princ, server_principal);
+    krb5_free_principal(c->ctx, princ);
+
+    return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }

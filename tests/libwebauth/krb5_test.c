@@ -10,31 +10,37 @@
 void
 usage()
 {
-    printf("usage: krb5_test {username} {password} {keytab}\n");
-    exit(1);
+  printf("usage: krb5_test {username} {password} {keytab} {service} {host}\n");
+  printf("  keytab         name of keytab file used to verify tgt\n");
+  printf("  service/host   name of service/host to test export_ticket with\n");
+  exit(1);
 }
+
 int main(int argc, char *argv[])
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
     TEST_VARS;
-    char *username, *password, *keytab_path;
+    char *username, *password, *keytab_path, *server;
+    char *service, *host;
     char *cp;
     unsigned char *sa;
     int salen;
-    unsigned char *tgt;
-    int tgtlen;
+    unsigned char *tgt, *ticket;
+    int tgtlen, ticketlen;
     time_t expiration;
 
-    if (argc != 4) {
+    if (argc != 6) {
         usage();
     }
 
     username = argv[1];
     password = argv[2];
     keytab_path = argv[3];
+    service = argv[4];
+    host = argv[5];
 
-    START_TESTS(12);
+    START_TESTS(14);
 
     c = webauth_krb5_new();
     TEST_OK(c != NULL);
@@ -62,6 +68,15 @@ int main(int argc, char *argv[])
     s = webauth_krb5_export_tgt(c, &tgt, &tgtlen, &expiration);
     TEST_OK2(WA_ERR_NONE, s);
 
+    s = webauth_krb5_service_principal(c, service, host, &server);
+    TEST_OK2(WA_ERR_NONE, s);
+
+    s = webauth_krb5_export_ticket(c, server,
+                                   &ticket, &ticketlen, &expiration);
+    free(server);
+
+    TEST_OK2(WA_ERR_NONE, s);
+
     s = webauth_krb5_free(c, 1);
     TEST_OK2(WA_ERR_NONE, s);
         
@@ -72,6 +87,12 @@ int main(int argc, char *argv[])
         s = webauth_krb5_init_via_tgt(c, tgt, tgtlen, NULL);
         free(tgt);
         TEST_OK2(WA_ERR_NONE, s);
+
+        if (ticket != NULL) {
+            s = webauth_krb5_import_ticket(c, ticket, ticketlen);
+            free(ticket);
+            TEST_OK2(WA_ERR_NONE, s);
+        }
 
         s = webauth_krb5_free(c, 1);
         TEST_OK2(WA_ERR_NONE, s);
