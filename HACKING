@@ -33,12 +33,22 @@ Building Module Documentation
   Following that procedure (assuming Java doesn't "run out of memory",
   which occasionally happens to me) should generate:
 
-      ../mod/mod_web{auth,kdc}.html.en
+      ../mod/mod_web{auth,authldap,kdc}.html.en
 
-  which can then be copied into the WebAuth tree.  Once this
-  infrastructure is set up, regenerating the documentation is only a
-  matter of copying in new *.xml files and ./build.sh will incrementally
-  rebuild only those files.
+  which can then be copied into the WebAuth tree.  With the current set of
+  build tools as of 2003-09-08, the resulting HTML files will refer to
+  various top-level URLs.  This can be fixed so that the generated pages
+  will work as part of a manual set that isn't at / on the server by
+  running the command:
+
+      perl -i -pe 's%href=\"/%href=\"../%' mod_web*.html.en
+
+  on the resulting generated pages.
+
+  Once this infrastructure is set up, regenerating the documentation is
+  only a matter of copying in new *.xml files and ./build.sh will
+  incrementally rebuild only those files.  Don't forget to run the above
+  Perl command on the generated pages after generating them.
 
 Making a Release
 
