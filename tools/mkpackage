@@ -22,10 +22,14 @@ my $root = shift;
 my $tarname = shift;
 my $apachedir = $root;
 $apachedir =~ s%/+$%%;
-$apachedir =~ s%^.*/%%;
+if (($apachedir =~ tr%/%/%) > 1 || $apachedir !~ m%^/%) {
+    $apachedir =~ s%^.*/%%;
+} else {
+    $apachedir =~ s%^/%%;
+}
 my @files = map { "$apachedir/$_" } @ARGV;
 $tarname = getcwd . '/' . $tarname;
-chdir $root or die "$0: cannot chdir to $root: $!\n";
+chdir "$root/.." or die "$0: cannot chdir to $root: $!\n";
 system ("tar cf '$tarname' @files") == 0
     or die "$0: tar exited with status ", ($? >> 8), "\n";
 system ('gzip', '-9', $tarname) == 0
