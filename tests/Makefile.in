@@ -1,24 +1,40 @@
 # Makefile for the Webauth test suite
 # $Id$
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-VPATH = @srcdir@
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+VPATH		= @srcdir@
+
+CC		= @CC@
+CFLAGS		= @CFLAGS@
+CPPFLAGS	= @CPPFLAGS@
+LDFLAGS		= @LDFLAGS@
 
 @SET_MAKE@
 
 SUBDIRS = libwebauth
 
-.PHONY: all clean depend install
+.PHONY: all check clean depend install
 
-all: Makefile
+all check: runtests
+	@for subdir in $(SUBDIRS); do \
+	    echo "making $@ in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	done
+	./runtests TESTS
+
+clean:
+	rm -f runtests webauth_keyring*
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-clean depend install:
+depend install:
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
+
+runtests: runtests.o
+	$(CC) $(LDFLAGS) -o $@ runtests.o

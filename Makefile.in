@@ -18,9 +18,10 @@ DISTDIRS    = -e 1,2d -e '/(Directory)/!d' -e 's/ .*//'
 DISTFILES   = -e 1,2d -e '/(Directory)/d' -e 's/ .*//'
 
 
-SUBDIRS = src tests
+SUBDIRS = src
+ALLDIRS = src tests
 
-.PHONY: all check-manifest clean dist distclean doc docs install
+.PHONY: all check check-manifest clean dist distclean doc docs install
 
 all: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -28,8 +29,11 @@ all: Makefile
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
+check:
+	cd tests && $(MAKE) all
+
 clean depend install:
-	@for subdir in $(SUBDIRS); do \
+	@for subdir in $(ALLDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
