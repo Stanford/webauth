@@ -287,7 +287,7 @@ JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"<br />
 don't need to pass the other variables as well. </p>
 
 <p>In order to determine the user's identity from
-the servlet, you need use the <code>getAttribute</code> method
+the servlet, you need to use the <code>getAttribute</code> method
 on the <code>request</code> object.</p>
 
 <div class="example"><h3>JSP Example</h3><p><code>
