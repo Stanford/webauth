@@ -11,8 +11,17 @@ m4_include([m4/krb5.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
-AC_INIT([src/libwebauth/webauth.h.in])
+AC_INIT([Webauth], [2.90], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
+
+dnl Store information about the time the package was configured and the person
+dnl who configured it into another variable.
+webauth_user=`(whoami || /usr/ucb/whoami || echo UNKNOWN) 2>/dev/null`
+webauth_host=`(hostname || echo UNKNOWN) 2>/dev/null`
+webauth_date=`(date -u +"%Y-%m-%d %T UTC" || echo UNKNOWN) 2>/dev/null`
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
+    ["Built by $webauth_user@$webauth_host on $webauth_date"],
+    [Define to information about when and by whom the package was built.])
 
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
