@@ -52,6 +52,7 @@ NOTE: There is currently an Apache bug under Windows where
 	modules/mod_ssl.so               Apache mod_ssl
 	conf/stanford-webauth.conf       WebAuth
 	conf/stanford-ldap.conf          WebAuth
+	conf/webauth-ssl.conf            WebAuth
 	conf/webauth/ca-bundle.crt       cURL
  	conf/webauth/sasl.reg            WebAuth
 
@@ -101,17 +102,24 @@ NOTE: There is currently an Apache bug under Windows where
  3. edit/update Apache conf files
 
   
-    a. edit conf/httpd.conf to include stanford-webauth.conf 
-       and stanford-ldap.conf:
+    a. edit conf/httpd.conf 
 
-      Include conf/stanford-webauth.conf
-      Include conf/stanford-ldap.conf
+       include stanford-webauth.conf and stanford-ldap.conf:
+
+       Include conf/stanford-webauth.conf
+       Include conf/stanford-ldap.conf
 
        If you aren't going to run mod_webauthldap, then don't include
        stanford-ldap.conf.
 
 
+       Also, uncomment the LoadModule line for mod_ssl.so:
+
+       LoadModule ssl_module modules/mod_ssl.so
+
     b. edit conf/ssl.conf
+
+       If you have an existing conf/ssl.conf file then do the following:
 
        Comment out <IfDefine SSL> and </IfDefine> so SSL is always started
 
@@ -124,10 +132,13 @@ NOTE: There is currently an Apache bug under Windows where
  
        SSLMutex default
 
-     
-       update your DocumentRoot/ServerName/ServerAdmin/etc settings
        Also update SSLCertificateFile and SSLCertificateKeyFile if need
        be after installing your certificate file and key.
+
+       If you don't have an existing ssl.conf file (you won't if you just
+       installed Apache), then copy conf/webauth-ssl.conf to ssl.conf:
+
+       copy conf\webauth-ssl.conf conf\ssl.conf
 
 
   4. See the WebAuth installation guide for further instructions on

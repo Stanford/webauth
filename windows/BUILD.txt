@@ -266,6 +266,7 @@ VC6 also allowed us to use our modules with the Apache Group binaries.
 {WEBAUTH_PATH}/webauth3/windows/krb5.ini {APACHE}/bin/
 {WEBAUTH_PATH}/windows/stanford-webauth.conf {APACHE}/conf/
 {WEBAUTH_PATH}/conf/stanford-ldap.conf {APACHE}/conf/
+{WEBAUTH_PATH}/conf/webauth-ssl.conf {APACHE}/conf/
 {WEBAUTH_PATH}/windows/sasl.reg {APACHE}/conf/webauth/
 {WEBAUTH_PATH}/windows/INSTALL.txt {APACHE}/conf/webauth/
 
