@@ -8,6 +8,9 @@ dnl and disables the checks and S/Ident support.  -DHAVE_SIDENT=1 is added to
 dnl SIDENT_CPPFLAGS if support is enabled so that mod_webkdc doesn't have to
 dnl include the config.h file (some of it conflicts with Apache's config.h
 dnl file since they don't rename symbols).
+dnl
+dnl This macro uses the KRB5_LDFLAGS variable set by the WEBAUTH_LIB_KRB5 to
+dnl find the Kerberos libraries.
 
 AC_DEFUN([WEBAUTH_LIB_SIDENT],
 [AC_ARG_ENABLE([sident],
@@ -20,7 +23,7 @@ AC_ARG_WITH([sident],
     fi])
 if test x"$enable_sident" != xno ; then
     WEBAUTH_LDFLAGS_save=$LDFLAGS
-    LDFLAGS="$LDFLAGS $SIDENT_LDFLAGS"
+    LDFLAGS="$LDFLAGS $SIDENT_LDFLAGS $KRB5_LDFLAGS"
     SIDENT_LIBS=
     WEBAUTH_LIBS_save=$LIBS
     AC_SEARCH_LIBS([crypt], [crypt], [SIDENT_LIBS="$LIBS"])
@@ -48,7 +51,8 @@ if test x"$enable_sident" != xno ; then
          fi],
         [$SIDENT_LIBS $KRB5_LIBS])
     LDFLAGS=$WEBAUTH_LDFLAGS_save
-    SIDENT_LIBS=`echo "$SIDENT_LDFLAGS $SIDENT_LIBS" | sed 's/^  *//'`
+    SIDENT_LIBS="$SIDENT_LDFLAGS $KRB5_LDFLAGS $SIDENT_LIBS"
+    SIDENT_LIBS=`echo "$SIDENT_LIBS" | sed 's/^  *//'`
 fi
 AC_SUBST(SIDENT_LIBS)
 AC_SUBST(SIDENT_CPPFLAGS)])
