@@ -1,5 +1,13 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.2.4 (2004-08-25)
+
+ *) In the weblogin script, only check for cookies when the user is not
+    using S/Ident to authenticate.  This fixes the problem with users
+    seeing the login page even if S/Ident is enabled, and then being
+    allowed to proceed with S/Ident authentication after a simple page
+    reload.
+
 WebAuth 3.2.3 (2004-06-23)
 
  *) Long delays for some clients after redirects from mod_webauth should

@@ -1,5 +1,19 @@
                           WebAuth Change History
 
+WebAuth 3.2.4 (2004-08-25)
+
+ *) In the weblogin script, only check for cookies when the user is not
+    using S/Ident to authenticate.  This fixes the problem with users
+    seeing the login page even if S/Ident is enabled, and then being
+    allowed to proceed with S/Ident authentication after a simple page
+    reload.
+
+ *) Clean up and comment the weblogin login and logout scripts and remove
+    Perl module uses that are no longer needed.
+
+ *) Add a prerm script for the Debian module packages to call a2dismod if
+    the modules were enabled.
+
 WebAuth 3.2.3 (2004-06-23)
 
  *) Modified the redirect code in mod_webauth to not set the header-only
