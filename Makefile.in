@@ -31,8 +31,9 @@ DISTFILES	= -e 1,2d -e '/(Directory)/d' -e 's/ .*//'
 SUBDIRS		= src
 ALLDIRS		= src tests
 
-.PHONY: all check check-manifest clean dist distclean doc docs install
-.PHONY: install-tests install-webkdc test tests
+.PHONY: all check check-manifest clean deb-prep dist dist-prep distclean doc
+.PHONY: docs install install-tests install-webkdc package-webauth
+.PHONY: package-webkdc test tests
 
 all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -69,13 +70,13 @@ distclean: clean
 	       src/bindings/perl/WebAuth3/Makefile.PL *~ core \#* \
 	       autom4te*.cache LIST.*
 
-# Make a release.  We create a release by recreating the directory structure
-# and then copying over all files listed in the MANIFEST.  If it isn't in the
-# MANIFEST, it doesn't go into the release.
-dist:
+# Prepare to make a release.  We recreate the directory structure and then
+# copy over all files listed in the MANIFEST.  If it isn't in MANIFEST, it
+# doesn't go into the release.  This rule is split off from dist so that
+# we can also use it to build Debian packages.
+dist-prep:
 	cd src/utils && make wa_keyring.1
 	rm -rf $(TARDIR)
-	rm -f $(TARNAME).gz $(TARNAME).gz.md5 $(DEBNAME)* *_$(VERSION)-*.deb
 	mkdir $(TARDIR)
 	for d in `sed $(DISTDIRS) MANIFEST` ; do \
 	    mkdir -p $(TARDIR)/$$d || exit 1 ; \
@@ -84,11 +85,21 @@ dist:
 	    cp $$f $(TARDIR)/$$f || exit 1 ; \
 	done
 	find $(TARDIR) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
+
+# Make the release tarballs.
+dist: dist-prep
+	rm -f $(TARNAME).gz $(TARNAME).gz.md5
 	tar cf $(TARNAME) $(TARDIR)
 	gzip -9 $(TARNAME)
 	md5sum $(TARNAME).gz > $(TARNAME).gz.md5
-	cd $(TARDIR) && dpkg-buildpackage -rfakeroot -us -uc
-	rm -rf $(TARDIR)
+
+# Prepare to make a Debian package.  This doesn't do the actual work of
+# creating the package; there are too many different flags we might want to
+# use.  It just copies things around so that the Debian packaging will work
+# properly.
+deb-prep: dist
+	rm -f *.orig.tar.gz $(DEBNAME)* *_$(VERSION)-*.deb
+	cp $(TARNAME).gz $(PACKAGE)_$(VERSION).orig.tar.gz
 
 # Check the MANIFEST against the files present in the current tree, building a
 # list with tools/mkmanifest and running diff between the lists.
