@@ -20,6 +20,8 @@ WebAuth 3.2.3 (2004-06-23)
 
  *) Portability fix to older versions of the cURL libraries.
 
+ *) Fix a POD error in the WebKDC module.
+
 WebAuth 3.2.2 (2004-03-02)
 
  *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up
