@@ -226,6 +226,233 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     return s;
 }
 
+
+/*
+ * take an externalized cred and turn it back into a cred
+ */
+
+static int
+cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, 
+                      unsigned char *input,
+                      int input_length,
+                      krb5_creds *creds)
+
+{
+    WEBAUTH_ATTR_LIST *list;
+    int s, f;
+
+    assert(c != NULL);
+    assert(creds != NULL);
+    assert(input != NULL);
+
+    memset(creds, 0, sizeof(krb5_creds));
+
+    s = webauth_attrs_decode(input, input_length, &list);
+
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* clent principal */
+    f = webauth_attr_list_find(list, CR_CLIENT);
+    if (f != WA_ERR_NOT_FOUND) {
+        c->code = krb5_parse_name(c->ctx,
+                                  (char *)list->attrs[f].value,
+                                  &creds->client);
+        if (c->code != 0) {
+            s = WA_ERR_KRB5;
+            goto fail;
+        }
+    }
+
+    /* server principal */
+    f = webauth_attr_list_find(list, CR_SERVER);
+    if (f != WA_ERR_NOT_FOUND) {
+        c->code = krb5_parse_name(c->ctx,
+                                  (char *)list->attrs[f].value,
+                                  &creds->server);
+        if (c->code != 0) {
+            s = WA_ERR_KRB5;
+            goto fail;
+        }
+    }
+
+    /* keyblock */
+    creds->keyblock.magic = KV5M_KEYBLOCK;
+    s = webauth_attr_list_get_int32(list, CR_KEYBLOCK_ENCTYPE, 
+                                    &creds->keyblock.enctype);
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    f = webauth_attr_list_find(list, CR_KEYBLOCK_CONTENTS);
+    if (f == WA_ERR_NOT_FOUND)
+        goto fail;
+
+    creds->keyblock.contents = malloc(list->attrs[f].length);
+    if (creds->keyblock.contents == NULL) {
+        s = WA_ERR_NO_MEM;
+        goto fail;
+    }
+    creds->keyblock.length = list->attrs[f].length;
+    memcpy(creds->keyblock.contents, list->attrs[f].value, 
+           creds->keyblock.length);
+
+    /* times */
+    s = webauth_attr_list_get_int32(list, CR_AUTHTIME, &creds->times.authtime);
+    if (s != WA_ERR_NONE)
+        goto fail;
+    s = webauth_attr_list_get_int32(list, CR_STARTTIME,
+                                    &creds->times.starttime);
+    if (s != WA_ERR_NONE)
+        goto fail;
+    s = webauth_attr_list_get_int32(list, CR_ENDTIME, &creds->times.endtime);
+    if (s != WA_ERR_NONE)
+        goto fail;
+    s = webauth_attr_list_get_int32(list, CR_RENEWTILL,
+                                    &creds->times.renew_till);
+    if (s != WA_ERR_NONE)
+        goto fail;
+    /* is_skey */
+    s = webauth_attr_list_get_int32(list, CR_ISSKEY, &creds->is_skey);
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    /* ticket_flags */
+    s = webauth_attr_list_get_int32(list,
+                                    CR_TICKETFLAGS, &creds->ticket_flags);
+    if (s != WA_ERR_NONE)
+        goto fail;
+
+    /* addresses */
+    /* FIXME: We might never want to add these? */
+    /* they might not even exist if we got forwardable/proxiable tickets */
+    f = webauth_attr_list_find(list, CR_NUMADDRS);
+    if (f != WA_ERR_NOT_FOUND) {
+        int num = 0, i;
+        char name[32];
+        
+        s = webauth_attr_list_get_int32(list, CR_NUMADDRS, &num);
+        if (s != WA_ERR_NONE)
+            goto fail;
+
+        creds->addresses = 
+            (krb5_address **)calloc(num, sizeof(krb5_address *));
+        if (creds->addresses == NULL) {
+            s = WA_ERR_NO_MEM;
+            goto fail;
+        }
+
+        for (i=0; i < num; i++) {
+            creds->addresses[i] = 
+                (krb5_address *) malloc(sizeof(krb5_address));
+            if (creds->addresses[i] == NULL) {
+                goto fail;
+            }
+
+            creds->addresses[i]->magic = KV5M_ADDRESS;
+            sprintf(name, CR_ADDRTYPE, i);
+            s = webauth_attr_list_get_int32(list, name,
+                                            &creds->addresses[i]->addrtype);
+            if (s != WA_ERR_NONE)
+                goto fail;
+            sprintf(name, CR_ADDRCONT, i);
+            f = webauth_attr_list_find(list, name);
+            if (i == WA_ERR_NOT_FOUND)
+                goto fail;
+
+            creds->addresses[i]->contents = malloc(list->attrs[f].length);
+            if (creds->addresses[i]->contents == NULL) {
+                s = WA_ERR_NO_MEM;
+                goto fail;
+            }
+            creds->addresses[i]->length = list->attrs[f].length;
+            memcpy(creds->addresses[i]->contents, list->attrs[f].value,
+                   creds->addresses[i]->length);
+
+        }
+    }
+
+    /* ticket */
+    f = webauth_attr_list_find(list, CR_TICKET);
+    if (f != WA_ERR_NOT_FOUND) {
+        creds->ticket.magic = KV5M_DATA;
+        creds->ticket.data = malloc(list->attrs[f].length);
+        if (creds->ticket.data == NULL) {
+            s = WA_ERR_NO_MEM;
+            goto fail;
+        }
+        creds->ticket.length = list->attrs[f].length;
+        memcpy(creds->ticket.data, list->attrs[f].value, creds->ticket.length);
+    }
+
+    /* second_ticket */
+    f = webauth_attr_list_find(list, CR_TICKET2);
+    if (f != WA_ERR_NOT_FOUND) {
+        creds->ticket.magic = KV5M_DATA;
+        creds->second_ticket.data = malloc(list->attrs[f].length);
+        if (creds->second_ticket.data == NULL) {
+            s = WA_ERR_NO_MEM;
+            goto fail;
+        }
+        creds->second_ticket.length = list->attrs[f].length;
+        memcpy(creds->second_ticket.data,
+               list->attrs[f].value, creds->second_ticket.length);
+    }
+
+    /* authdata */
+    f = webauth_attr_list_find(list, CR_NUMAUTHDATA);
+    if (f != WA_ERR_NOT_FOUND) {
+        int num = 0, i;
+        char name[32];
+        
+        s = webauth_attr_list_get_int32(list, CR_NUMAUTHDATA, &num);
+        if (s != WA_ERR_NONE)
+            goto fail;
+
+        creds->authdata =
+            (krb5_authdata **)calloc(num, sizeof(krb5_authdata *));
+        if (creds->authdata == NULL) {
+            s = WA_ERR_NO_MEM;
+            goto fail;
+        }
+
+        for (i=0; i < num; i++) {
+            creds->authdata[i] = 
+                (krb5_authdata *) malloc(sizeof(krb5_authdata));
+            if (creds->authdata[i] == NULL) {
+                goto fail;
+            }
+
+            creds->authdata[i]->magic = KV5M_AUTHDATA;
+            sprintf(name, CR_AUTHDATATYPE, i);
+            s = webauth_attr_list_get_int32(list, name,
+                                            &creds->authdata[i]->ad_type);
+            if (s != WA_ERR_NONE)
+                goto fail;
+            sprintf(name, CR_AUTHDATACONT, i);
+            f = webauth_attr_list_find(list, name);
+            if (i == WA_ERR_NOT_FOUND)
+                goto fail;
+
+            creds->authdata[i]->contents = malloc(list->attrs[f].length);
+            if (creds->authdata[i]->contents == NULL) {
+                s = WA_ERR_NO_MEM;
+                goto fail;
+            }
+            creds->authdata[i]->length = list->attrs[f].length;
+            memcpy(creds->authdata[i]->contents, list->attrs[f].value,
+                   creds->authdata[i]->length);
+        }
+    }
+
+    s = WA_ERR_NONE;
+
+ fail:
+    webauth_attr_list_free(list);
+    if  (s != WA_ERR_NONE)
+        krb5_free_cred_contents(c->ctx, creds);
+    return s;
+}
+
 static int
 verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path, const char *service)
 {
@@ -388,21 +615,35 @@ webauth_krb5_tgt_from_password(WEBAUTH_KRB5_CTXT *context,
 
     }
 
-    /* add the creds to the cache */
-    c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
-    if (c->code != 0) {
-        krb5_free_cred_contents(c->ctx, &creds);
-        return WA_ERR_KRB5;
-    }
-
+#if 0
     /* FIXME: remove, just testing */
     {
         unsigned char *buff;
         int l,s;
         s = cred_to_attr_encoding(c, &creds, &buff, &l);
-        if (s != WA_ERR_NONE) {
+
+        if (s == WA_ERR_NONE) {
+            printf("encoded!\n");
+            krb5_free_cred_contents(c->ctx, &creds);
+            memset(&creds, 0, sizeof(creds));
+            printf("nuked!\n");
+            s = cred_from_attr_encoding(c, buff, l, &creds);
+            if (s != WA_ERR_NONE) {
+                printf("BUMMER!\n");
+                assert(0);
+            } else {
+                printf("back from the dead!\n");
+            }
             free(buff);
         }
+    }
+#endif
+
+    /* add the creds to the cache */
+    c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
+    if (c->code != 0) {
+        krb5_free_cred_contents(c->ctx, &creds);
+        return WA_ERR_KRB5;
     }
 
     krb5_free_cred_contents(c->ctx, &creds);
