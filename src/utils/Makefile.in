@@ -9,6 +9,7 @@ VPATH		= @srcdir@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 bindir		= @bindir@
+libdir		= @libdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
@@ -20,7 +21,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
 		  @CPPFLAGS@ @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 
-LDFLAGS		= -L$(top_builddir)src/libwebauth
+LDFLAGS		= -L$(top_builddir)src/libwebauth -R$(libdir)
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 PROGS		= wa_keyring
