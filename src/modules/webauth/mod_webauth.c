@@ -1000,6 +1000,10 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
     /* update last-use-time, check inactivity */
     result = app_token_maint(rc);
+    if (result == 0) {
+        /* clear out rc->at, since we couldn't use this app-token */
+        memset(&rc->at, 0, sizeof(rc->at));        
+    }
 
  cleanup:
     webauth_attr_list_free(alist);
@@ -2102,7 +2106,6 @@ check_user_id_hook(request_rec *r)
 
     rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                                 &webauth_module);
-                               
     if (rc.sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: in check_user_id hook");
@@ -2204,7 +2207,6 @@ translate_name_hook(request_rec *r)
     MWA_SCONF *sconf;
     static char *rmagic = WEBAUTHR_MAGIC;
     static char *smagic = WEBAUTHS_MAGIC;
-
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                              &webauth_module);
