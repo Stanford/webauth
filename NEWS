@@ -8,6 +8,9 @@ WebAuth 3.2.3 (2004-06-23)
     wait for a timeout.  This may (but hopefully won't) cause more looping
     problems.
 
+ *) The WebKDC package now looks at /etc/webkdc/webkdc.conf and paths can
+    be overridden by modifying that file.
+
  *) Replaced the sample weblogin server templates with generic templates
     that don't use any Stanford-copyrighted logos or design.
 

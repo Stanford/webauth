@@ -7,6 +7,9 @@ WebAuth 3.2.3 (2004-06-23)
     Content-Length header, forcing browsers that implemented keep-alive to
     time out before acting on the redirect.
 
+ *) The WebKDC package now looks at /etc/webkdc/webkdc.conf and paths can
+    be overridden by modifying that file.
+
  *) Replaced the sample weblogin server templates with generic templates
     that don't use any Stanford-copyrighted logos or design.
 
@@ -14,6 +17,8 @@ WebAuth 3.2.3 (2004-06-23)
     the make dist target.
 
  *) Added wa_keyring.1 to the distribution and to the installation rules.
+
+ *) Portability fix to older versions of the cURL libraries.
 
 WebAuth 3.2.2 (2004-03-02)
 
