@@ -92,8 +92,6 @@ APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 AC_SUBST([APXS_CFLAGS])
 
 dnl Checks for library functions.
-WEBAUTH_FUNC_AES
-
 dnl Checks for system services.
 
 dnl Output files.
