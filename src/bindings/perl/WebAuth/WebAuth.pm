@@ -38,10 +38,20 @@ our %EXPORT_TAGS = (
 				    WA_ERR_TOKEN_EXPIRED
 				    WA_ERR_TOKEN_STALE
 				    WA_PEC_SERVICE_TOKEN_EXPIRED
+				    WA_PEC_SERVICE_TOKEN_INVALID
 				    WA_PEC_PROXY_TOKEN_EXPIRED
+				    WA_PEC_PROXY_TOKEN_INVALID
 				    WA_PEC_INVALID_REQUEST
 				    WA_PEC_UNAUTHORIZED
 				    WA_PEC_SERVER_FAILURE
+				    WA_PEC_REQUEST_TOKEN_STALE
+				    WA_PEC_REQUEST_TOKEN_INVALID
+				    WA_PEC_GET_CRED_FAILURE
+				    WA_PEC_REQUESTER_KRB5_CRED_INVALID
+				    WA_PEC_LOGIN_TOKEN_STALE
+				    WA_PEC_LOGIN_TOKEN_INVALID
+				    WA_PEC_LOGIN_FAILED
+				    WA_PEC_PROXY_TOKEN_REQUIRED
 				    WA_AES_KEY
 				    WA_AES_128
 				    WA_AES_192
@@ -57,6 +67,7 @@ our %EXPORT_TAGS = (
 				    WA_TK_INACTIVITY_TIMEOUT
 				    WA_TK_SESSION_KEY
 				    WA_TK_LASTUSED_TIME
+				    WA_TK_PASSWORD
 				    WA_TK_PROXY_TYPE
 				    WA_TK_PROXY_DATA
 				    WA_TK_PROXY_SUBJECT
@@ -67,6 +78,7 @@ our %EXPORT_TAGS = (
 				    WA_TK_SUBJECT_AUTH
 				    WA_TK_SUBJECT_AUTH_DATA
 				    WA_TK_TOKEN_TYPE
+				    WA_TK_USER
 				    WA_TK_WEBKDC_TOKEN
 				    )],
 		    'hex' => [ qw(hex_encode hex_decode) ],
@@ -394,13 +406,14 @@ credential cache from being removed.
 
 =item krb5_init_via_password(context, user, password, keytab[, cache])
 
-   krb5_init_via_password($context, $user, 
-                              $password, $keytab[, $cache]);
+   $server_principal = krb5_init_via_password($context, $user, 
+                                         $password, $keytab[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
 doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
-cache will be used and destroyed when the context is destroyed.
+cache will be used and destroyed when the context is destroyed. Returns
+the server principal in the keytab used to verify the TGT.
 
 =item krb5_init_via_keytab(context, keytab[, cache])
 
@@ -568,10 +581,20 @@ The following constants from webauth.h are available:
   WA_ERR_TOKEN_STALE
 
   WA_PEC_SERVICE_TOKEN_EXPIRED
+  WA_PEC_SERVICE_TOKEN_INVALID
   WA_PEC_PROXY_TOKEN_EXPIRED
+  WA_PEC_PROXY_TOKEN_INVALID
   WA_PEC_INVALID_REQUEST
   WA_PEC_UNAUTHORIZED
   WA_PEC_SERVER_FAILURE
+  WA_PEC_REQUEST_TOKEN_STALE
+  WA_PEC_REQUEST_TOKEN_INVALID
+  WA_PEC_GET_CRED_FAILURE
+  WA_PEC_REQUESTER_KRB5_CRED_INVALID
+  WA_PEC_LOGIN_TOKEN_STALE
+  WA_PEC_LOGIN_TOKEN_INVALID
+  WA_PEC_LOGIN_FAILED
+  WA_PEC_PROXY_TOKEN_REQUIRED
 
   WA_AES_KEY
   WA_AES_128
@@ -589,6 +612,7 @@ The following constants from webauth.h are available:
   WA_TK_INACTIVITY_TIMEOUT
   WA_TK_SESSION_KEY
   WA_TK_LASTUSED_TIME
+  WA_TK_PASSWORD
   WA_TK_PROXY_TYPE
   WA_TK_PROXY_DATA
   WA_TK_PROXY_SUBJECT
@@ -599,6 +623,7 @@ The following constants from webauth.h are available:
   WA_TK_SUBJECT_AUTH
   WA_TK_SUBJECT_AUTH_DATA
   WA_TK_TOKEN_TYPE
+  WA_TK_USERNAME
   WA_TK_WEBKDC_TOKEN
 
 =head1 AUTHOR

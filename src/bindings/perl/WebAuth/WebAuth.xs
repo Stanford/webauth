@@ -64,10 +64,20 @@ BOOT:
     IV_CONST(WA_ERR_TOKEN_STALE);
 
     IV_CONST(WA_PEC_SERVICE_TOKEN_EXPIRED);
+    IV_CONST(WA_PEC_SERVICE_TOKEN_INVALID);
     IV_CONST(WA_PEC_PROXY_TOKEN_EXPIRED);
+    IV_CONST(WA_PEC_PROXY_TOKEN_INVALID);
     IV_CONST(WA_PEC_INVALID_REQUEST);
     IV_CONST(WA_PEC_UNAUTHORIZED);
     IV_CONST(WA_PEC_SERVER_FAILURE);
+    IV_CONST(WA_PEC_REQUEST_TOKEN_STALE);
+    IV_CONST(WA_PEC_REQUEST_TOKEN_INVALID);
+    IV_CONST(WA_PEC_GET_CRED_FAILURE);
+    IV_CONST(WA_PEC_REQUESTER_KRB5_CRED_INVALID);
+    IV_CONST(WA_PEC_LOGIN_TOKEN_STALE);
+    IV_CONST(WA_PEC_LOGIN_TOKEN_INVALID);
+    IV_CONST(WA_PEC_LOGIN_FAILED);
+    IV_CONST(WA_PEC_PROXY_TOKEN_REQUIRED);
 
     IV_CONST(WA_AES_KEY);
     IV_CONST(WA_AES_128);
@@ -85,6 +95,7 @@ BOOT:
     STR_CONST(WA_TK_INACTIVITY_TIMEOUT);
     STR_CONST(WA_TK_SESSION_KEY);
     STR_CONST(WA_TK_LASTUSED_TIME);
+    STR_CONST(WA_TK_PASSWORD);
     STR_CONST(WA_TK_PROXY_TYPE);
     STR_CONST(WA_TK_PROXY_DATA);
     STR_CONST(WA_TK_PROXY_SUBJECT);
@@ -95,6 +106,7 @@ BOOT:
     STR_CONST(WA_TK_SUBJECT_AUTH);
     STR_CONST(WA_TK_SUBJECT_AUTH_DATA);
     STR_CONST(WA_TK_TOKEN_TYPE);
+    STR_CONST(WA_TK_USERNAME);
     STR_CONST(WA_TK_WEBKDC_TOKEN);
 }
 
@@ -608,16 +620,23 @@ char *keytab
 PROTOTYPE: $$$$;$
 PPCODE:
 {
-    char *cred;
+    char *cred, *server_principal;
     int s;
     if (items==5) {
         cred = (char *)SvPV(ST(4),PL_na);
     } else {
         cred = NULL;
     }
-    s = webauth_krb5_init_via_password(c, name, password, keytab, cred);
+    s = webauth_krb5_init_via_password(c, name, password, keytab, 
+                                       cred, &server_principal);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_password", s, c);
+    } else {
+        SV *out = sv_newmortal();
+        sv_setpv(out, server_principal);
+        EXTEND(SP,1);
+        PUSHs(out);
+        free(server_principal);
     }
 }
 
