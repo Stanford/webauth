@@ -306,6 +306,31 @@ requires the use of two Kerberos V5 credentials.
 
 </section>
 
+<section><title>Debugging mod_webauth</title>
+<p>If you are having trouble getting <code>mod_webauth</code>
+configured, you can enable the <code>webauth</code> handler and point your browser
+at the configured URL to get some information on whether or not
+mod_webauth is configured correctly. </p>
+
+<note><title>Note</title> 
+Just to be safe, you should probably disable the <code>webauth</code> 
+handler after you have <code>mod_webauth</code> configured correctly.
+</note>
+
+<example><title>Example</title>
+<pre>
+  # WebAuthDebug must be on
+  WebAuthDebug on
+  &lt;Location /webauth-status&gt;
+  SetHandler webauth
+  Order allow,deny
+  Allow from all
+  &lt;/Location&gt; <br/>
+</pre>
+</example>
+
+</section>
+
 <directivesynopsis>
 <name>WebAuthSubjectAuthType</name>
 <description>Type of subject authenticator the WebKDC will use in the returned

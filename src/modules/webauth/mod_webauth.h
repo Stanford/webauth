@@ -18,6 +18,7 @@
 #include "apr_strings.h"
 #include "apr_pools.h"
 #include "apr_tables.h"
+#include "apr_time.h"
 #include "apr_xml.h"
 #include "apr_base64.h"
 

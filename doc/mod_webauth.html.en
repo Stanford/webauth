@@ -80,6 +80,7 @@ WebAuthUseCreds
 <li><img alt="" src="../images/down.gif" /> PHP 4.x Integration</li>
 <li><img alt="" src="../images/down.gif" /> Java/Tomcat/mod_jk Integration</li>
 <li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
+<li><img alt="" src="../images/down.gif" /> Debugging mod_webauth</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -367,6 +368,29 @@ requires the use of two Kerberos V5 credentials.
   &lt;/Location&gt;
   <br />
 </code></p></div>
+
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Debugging mod_webauth</h2>
+<p>If you are having trouble getting <code>mod_webauth</code>
+configured, you can enable the <code>webauth</code> handler and point your browser
+at the configured URL to get some information on whether or not
+mod_webauth is configured correctly. </p>
+
+<div class="note"><h3>Note</h3> 
+Just to be safe, you should probably disable the <code>webauth</code> 
+handler after you have <code>mod_webauth</code> configured correctly.
+</div>
+
+<div class="example"><h3>Example</h3><pre>
+  # WebAuthDebug must be on
+  WebAuthDebug on
+  &lt;Location /webauth-status&gt;
+  SetHandler webauth
+  Order allow,deny
+  Allow from all
+  &lt;/Location&gt; <br />
+</pre></div>
 
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>

@@ -683,17 +683,205 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 #undef MERGE_PTR
 #undef MERGE_INT
 
-/* The sample content handler */
+static const char *
+status_check_access(const char *path, apr_int32_t flag, request_rec *r)
+{
+    apr_status_t st;
+    apr_file_t *f;
+    char errbuff[512];
+
+    st = apr_file_open(&f, path, flag, APR_UREAD|APR_UWRITE, r->pool);
+    if (st != APR_SUCCESS) {
+        errbuff[0] = 0;
+        apr_strerror(st, errbuff, sizeof(errbuff)-1);
+        return apr_pstrdup(r->pool, errbuff);
+    } else {
+        apr_file_close(f);
+        return "ok";
+    }
+}
+
+static void
+dt_str(const char *n, const char *v, request_rec *r) 
+{
+    ap_rprintf(r, "<dt><strong>%s:</strong> "
+               /*"<tt>%s</tt></dt>\n", n, v);*/
+               "<font size=\"+1\"><tt>%s</tt></font></dt>\n", n, v);
+}
+
+static void
+dd_dir_str(const char *n, const char *v, request_rec *r) 
+{
+    if (v == NULL) {
+        return;
+        /*v = "(value not set)";*/
+    }
+
+    ap_rprintf(r, "<dd><tt>%s %s</tt></dd>",
+               ap_escape_html(r->pool, n),
+               ap_escape_html(r->pool, v));
+}
+
+static void
+dd_dir_int(const char *n, int v, request_rec *r) 
+{
+    ap_rprintf(r, "<dd><tt>%s %d</tt></dd>",
+               ap_escape_html(r->pool, n),
+               v);
+}
+
+
+static void
+dd_dir_time(const char *n, time_t t, request_rec *r) 
+{
+    char buffer[APR_CTIME_LEN+1];
+
+    apr_ctime(buffer, (apr_time_from_sec(t)));
+    dd_dir_str(n, buffer, r);
+}
+
+
+/* The content handler */
 static int 
 handler_hook(request_rec *r)
 {
+    MWA_DCONF *dconf;
+    MWA_SCONF *sconf;
+    MWA_SERVICE_TOKEN *st;
+
     if (strcmp(r->handler, "webauth")) {
         return DECLINED;
     }
+
+    r->allowed |= (AP_METHOD_BIT << M_GET);
+    if (r->method_number != M_GET)
+	return DECLINED;
+
+    dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
+                                                &webauth_module);
+
+    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
+                                                &webauth_module);
+
     r->content_type = "text/html";      
 
-    if (!r->header_only)
-        ap_rputs("The sample page from mod_webauth.c\n", r);
+    if (!sconf->debug) {
+        ap_rputs(DOCTYPE_HTML_3_2
+                 "<html><head><title>mod_webauth status</title></head>\n", r);
+        ap_rputs("<body><h1 align=\"center\">mod_webauth status</h1>\n", r);
+        ap_rputs("<b>You must have \"WebAuthDebug on\" in your config file "
+                 "to enable this information.</b>", r);
+        ap_rputs("</body></html>\n", r);
+        return OK;
+    }
+
+    ap_rputs(DOCTYPE_HTML_3_2
+	     "<html><head><title>mod_webauth status</title></head>\n", r);
+    ap_rputs("<body><h1 align=\"center\">mod_webauth status</h1>\n", r);
+    ap_rputs("<hr/>", r);
+
+    ap_rputs("<dl>", r);
+    dt_str("Server Version", ap_get_server_version(), r);
+    dt_str("Server Built",   ap_get_server_built(), r);
+    dt_str("Hostname/port", 
+           apr_psprintf(r->pool, "%s:%u",
+                        ap_get_server_name(r), ap_get_server_port(r)), r);
+    ap_rputs("</dl>", r);
+    ap_rputs("<hr/>", r);
+
+    ap_rputs("<dl>", r);
+    
+    dt_str("WebAuth Info Version", webauth_info_version(), r);
+    dt_str("WebAuth Info Build", webauth_info_build(), r);
+
+    ap_rputs("<dt><strong>Current Configuration (server directives only):</strong></dt>\n", r);
+
+
+    dd_dir_str("WebAuthAuthType", sconf->auth_type, r);
+    dd_dir_str("WebAuthCredCacheDir", sconf->cred_cache_dir, r);
+    dd_dir_str("WebAuthDebug", sconf->debug ? "on" : "off", r);
+    dd_dir_str("WebAuthKeyRing", sconf->keyring_path, r);
+    dd_dir_str("WebAuthKeyRingAutoUpdate", sconf->keyring_auto_update ? "on" : "off", r);
+    dd_dir_str("WebAuthKeyRingKeyLifetime", 
+               apr_psprintf(r->pool, "%ds", sconf->keyring_key_lifetime), r);
+    if (sconf->keytab_principal == NULL) {
+        dd_dir_str("WebAuthKeytab", sconf->keytab_path, r);
+    } else {
+        dd_dir_str("WebAuthKeytab",
+                   apr_psprintf(r->pool, "%s %s", 
+                                sconf->keytab_path,
+                                sconf->keytab_principal), r);
+    }
+    dd_dir_str("WebAuthLoginUrl", sconf->login_url, r);
+    dd_dir_str("WebAuthProxyHeaders", sconf->proxy_headers ? "on" : "off", r);
+    dd_dir_str("WebAuthServiceTokenCache", sconf->st_cache_path, r);
+    dd_dir_str("WebAuthSubjectAuthType", sconf->subject_auth_type, r);
+    dd_dir_str("WebAuthTokenMaxTTL", 
+               apr_psprintf(r->pool, "%ds", sconf->token_max_ttl), r);
+    dd_dir_str("WebAuthWebKdcPrincipal", sconf->webkdc_principal, r);
+    dd_dir_str("WebAuthWebKdcSSLCertFile", sconf->webkdc_cert_file, r);
+    dd_dir_str("WebAuthWebKdcURL", sconf->webkdc_url, r);
+
+    ap_rputs("</dl>", r);
+    ap_rputs("<hr/>", r);
+
+    ap_rputs("<dl>", r);
+    dt_str("Keyring read check", 
+           status_check_access(sconf->keyring_path, APR_READ, r), r);
+    ap_rputs("<dt><strong>Keyring info:</strong></dt>\n", r);
+
+    if (sconf->ring == NULL) {
+        ap_rputs("<dd>"
+                 "keyring is NULL. This usually indicates a permissions "
+                 "problem with the keyring file."
+                 "</dd>", r);
+    } else {
+        int i;
+        dd_dir_int("num_entries", sconf->ring->num_entries, r);
+        for (i=0; i < sconf->ring->num_entries; i++) {
+            dd_dir_time(apr_psprintf(r->pool, "entry %d creation time", i),
+                        sconf->ring->entries[i].creation_time, r);
+            dd_dir_time(apr_psprintf(r->pool, "entry %d valid after", i),
+                        sconf->ring->entries[i].valid_after, r);
+        }
+    }
+
+    ap_rputs("</dl>", r);
+    ap_rputs("<hr/>", r);
+
+    ap_rputs("<dl>", r);
+
+    dt_str("Keytab read check", 
+           status_check_access(sconf->keytab_path, APR_READ, r), r);
+    ap_rputs("</dl>", r);
+    ap_rputs("<hr/>", r);
+
+    ap_rputs("<dl>", r);
+
+    st = mwa_get_service_token(r->server, sconf, r->pool, 0);
+
+    dt_str("Service Token Cache read/write check", 
+           status_check_access(sconf->st_cache_path, 
+                               APR_READ|APR_WRITE|APR_CREATE, r), r);
+    ap_rputs("<dt><strong>Service Token info:</strong></dt>\n", r);
+    
+    if (st == NULL) {
+        ap_rputs("<dd>"
+                 "service_token is NULL. This usually indicates a permissions "
+                 "problem with the service token cache and/or keytab file ."
+                 "</dd>", r);
+    } else {
+        dd_dir_time("created", st->created, r);
+        dd_dir_time("expires", st->expires, r);
+        dd_dir_time("next_renewal_attempt", st->next_renewal_attempt, r);
+        if (st->last_renewal_attempt != 0)
+            dd_dir_time("last_renewal_attempt", st->last_renewal_attempt, r);
+    }
+
+    ap_rputs("</dl>", r);
+    ap_rputs("<hr/>", r);
+    ap_rputs(ap_psignature("",r), r);
+    ap_rputs("</body></html>\n", r);
     return OK;
 }
 
