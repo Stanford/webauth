@@ -16,9 +16,9 @@ LDLIBS		= @SSL_LIBS@ @KRB5_LIBS@ @LDAP_LIBS@ @LIBS@
 
 SOURCES		= mod_webauthldap.c
 
-all: mod_webauth.o
+all: mod_webauthldap.o
 
-mod_webauth.o: $(SOURCES) mod_webauthldap.h
+mod_webauthldap.o: $(SOURCES) mod_webauthldap.h
 	$(APXS) -c $(APXS_CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LDLIBS) $(SOURCES)
 
 install:
