@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <openssl/md5.h>
 
 #include "webauth.h"
 
@@ -24,54 +25,132 @@ static void usage(char *prog)
     exit(1);
 }
 
+
+void
+print_time(time_t t)
+{
+    struct tm *tm;
+    char buff[128];
+    tm = localtime(&t);
+    strftime(buff, sizeof(buff), "%D %T", tm);
+    printf("%s", buff);
+}
+
+void
+print_fingerprint(WEBAUTH_KEY *key)
+{
+    char md5[MD5_DIGEST_LENGTH]; 
+    char hex[MD5_DIGEST_LENGTH*2+1];
+    int len;
+    MD5_CTX c;
+    MD5_Init(&c);
+    MD5_Update(&c, key->data, key->length);
+    MD5_Final(md5, &c);
+ 
+
+    len = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, sizeof(hex));
+    hex[len] = '\0';
+    printf("%s", hex);
+}
+
+void
+print_short(WEBAUTH_KEYRING_ENTRY *e)
+{
+    print_time(e->valid_from);
+    printf("  ");
+    print_time(e->valid_till);
+    printf("  ");
+    print_fingerprint(e->key);
+    printf("\n");
+}
+
+
+void
+print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
+{
+    printf("    Key-Index: %d\n", i);
+    printf("      Created: ");
+    print_time(e->creation_time);
+    printf("\n");
+    printf("   Valid-From: ");
+    print_time(e->valid_from);
+    printf("\n");
+    printf("   Valid-Till: ");
+    print_time(e->valid_till);
+    printf("\n");
+    printf("     Key-Type: %d (", e->key->type);
+    switch (e->key->type) {
+        case WA_AES_KEY:
+            printf("AES");
+            break;
+        default:
+            printf("UNKNOWN");
+            break;
+    }
+    printf(")\n");
+    printf("   Key-Length: %d (%d bits)\n",
+           e->key->length, e->key->length*8);
+    printf("  Fingerprint: ");
+    print_fingerprint(e->key);
+    printf("\n\n");
+}
+
 int main(int argc, char *argv[])
 {
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring;
 
+    char *path = "webauth_keyring";
     int s,i ;
     unsigned char key_material[WA_AES_128];
-    unsigned char hex[2048];
-    time_t curr;
+     time_t curr;
 
     /*
-
-
 default:
 
 ------------------------------------------------------------
 Path: webauth_keyring
 
 Valid from      Valid till      Fingerprint
-10/16/02 12:25  10/16/02 22:25  85E6 D033 0F87 B1D9 89B7 4FE2 A239 F990
+10/16/02 12:25:11 10/16/02 22:25:11  85e6 d033 0f87 b1d9 89b7 4fe2 a239 f990
 ------------------------------------------------------------
 
 verbose:
 
 ------------------------------------------------------------
-       Path: webauth_keyring
-    Version: 1
-       Keys: 1
+         Path: webauth_keyring
+      Version: 1
+         Keys: 1
 
-  Key-Index: 0
-    Created: 10/16/02 12:25:03
- Valid-From: 10/16/02 12:25:03
- Valid-Till: 10/17/02 12:25:03
-   Key-Type: 1 (AES)
- Key-Length: 16 (128 bits)
-Fingerprint: 85E6 D033 0F87 B1D9 89B7 4FE2 A239 F990
+    Key-Index: 0
+      Created: 10/16/02 12:25:03
+   Valid-From: 10/16/02 12:25:03
+   Valid-Till: 10/17/02 12:25:03
+     Key-Type: 1 (AES)
+   Key-Length: 16 (128 bits)
+  Fingerprint: 85E6 D033 0F87 B1D9 89B7 4FE2 A239 F990
 
 ------------------------------------------------------------
 
 
 
      */
-    if (argc>1) {
-        s = webauth_keyring_read_file("webauth_keyring", &ring);
-        for (i=0; i < ring->num_entries; i++) {
-
+    if (argc<2) {
+        s = webauth_keyring_read_file(path, &ring);
+        printf("Path: %s\n", path);
+        printf("Num-Keys: %d\n\n", ring->num_entries);
+        printf("Valid from         Valid till         Fingerprint\n");
+        if (ring->num_entries>0) {
+            
         }
+        for (i=0; i < ring->num_entries; i++) {
+            //      print_short(&ring->entries[i]);
+            print_long(&ring->entries[i], i);
+        }
+
+
     } else {
+        char hex[2048];
         ring = webauth_keyring_new(32);
         s = webauth_random_key(key_material, WA_AES_128);
         s=webauth_hex_encode(key_material, WA_AES_128, hex, sizeof(hex));
