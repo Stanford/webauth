@@ -8,7 +8,7 @@
 # Destroy all webauth_wpt cookies
 #
 #--------------------------------------------------------------------------
-$ENV{HTML_TEMPLATE_ROOT} = '/chroot/web/webkdc/templates';
+$ENV{HTML_TEMPLATE_ROOT} = 'templates';
 %PAGES = ('logout' => 'logout.tmpl');
 
 use strict;
