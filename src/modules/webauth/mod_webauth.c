@@ -39,7 +39,6 @@
 
 #include "mod_webauth.h"
 
-
 /* attr list macros to make code easier to read and audit 
  * we don't need to check error codes since we are using
  * WA_F_NONE, which doesn't allocate any memory.
@@ -284,24 +283,37 @@ die(const char *message, server_rec *s)
     exit(1);
 }
 
+static void 
+die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
+{
+    char *msg;
+
+    if (s->is_virtual) {
+        msg = apr_psprintf(ptemp, 
+                          "directive %s must be set for virtual host %s:%d", 
+                          dir, s->defn_name, s->defn_line_number);
+    } else {
+        msg = apr_psprintf(ptemp, 
+                          "directive %s must be set in main config", 
+                          dir);
+    }
+    die(msg, s);
+}
+
 /*
- * called after config has been loaded in parent process
+ * check server conf directives for server,
+ * also cache keyring
  */
-static int
-mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
-                 apr_pool_t *ptemp, server_rec *s)
+static void
+init_sconf(server_rec *s, apr_pool_t *ptemp)
 {
     MWA_SCONF *sconf;
-    WEBAUTH_KEYRING *ring;
 
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
 
-    if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initializing");
-
-#define CHECK_DIR(field,dir) if (sconf->field == NULL) \
-             die(apr_psprintf(ptemp, "directive %s must be set", dir), s)
+#define CHECK_DIR(field,dir) \
+            if (sconf->field == NULL) die_directive(s, dir, ptemp);
 
     CHECK_DIR(login_url, CD_LoginURL);
     CHECK_DIR(keyring_path, CD_Keyring);
@@ -312,15 +324,61 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 
 #undef CHECK_DIR
 
-    /* FIXME: this might be broken wrt to virtual hosts having differnt
-              key ring files
-    */
-    mwa_init_keyring(s, sconf);
+    mwa_cache_keyring(s, sconf);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                 "mod_webauth: keyring_path(%s) %d\n", 
+                 sconf->keyring_path,
+                 (int)getpid());
+}
+
+/*
+ * called on restarts
+ */
+static apr_status_t
+mod_webauth_cleanup(void *data)
+{
+    server_rec *s = (server_rec*) data;
+    MWA_SCONF *sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
+                                                        &webauth_module);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: cleanup(%d)",
+                 getpid());
+    mwa_free_keyring_cache(s, sconf);
+}
+
+/*
+ * called after config has been loaded in parent process
+ */
+static int
+mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
+                 apr_pool_t *ptemp, server_rec *s)
+{
+    MWA_SCONF *sconf;
+    server_rec *scheck;
+
+    sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
+                                                 &webauth_module);
+
+    apr_pool_cleanup_register(pconf, s, 
+                              mod_webauth_cleanup,
+                              apr_pool_cleanup_null);
+
+    if (sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initializing");
+
+
+    mwa_init_keyring_cache(s, sconf, ptemp);
+
+    for (scheck=s; scheck; scheck=scheck->next) {
+        init_sconf(scheck, ptemp);
+    }
 
     ap_add_version_component(pconf, WEBAUTH_VERSION);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initialized");
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                     "mod_webauth: initialized(%d)", (int)getpid());
 
     return OK;
 }
@@ -508,7 +566,7 @@ make_app_token(const char *subject,
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL, "make_app_token",
-                              "webauth_token_create");
+                              "webauth_token_create", subject);
         return;
     }
 
@@ -642,7 +700,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,
-                              "parse_app_token", "webauth_token_parse");
+                              "parse_app_token", "webauth_token_parse", NULL);
         return NULL;
     }
 
@@ -757,7 +815,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,
-                              "get_session_key", "webauth_token_parse");
+                              "get_session_key", "webauth_token_parse", NULL);
         return NULL;
     }
 
@@ -831,7 +889,7 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, ctxt, "validate_krb5_sad",
-                              "webauth_krb5_rd_req");
+                              "webauth_krb5_rd_req", NULL);
         return NULL;
     }
 
@@ -975,7 +1033,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
-                              "webauth_token_parse_with_key");
+                              "webauth_token_parse_with_key", NULL);
         return code;
     }
 
@@ -1152,7 +1210,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, 
                               NULL, "redirect_request_token",
-                              "webauth_token_create_with_key");
+                              "webauth_token_create_with_key", NULL);
         return failure_redirect(rc);
     }
 

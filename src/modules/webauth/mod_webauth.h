@@ -327,7 +327,27 @@ mwa_log_webauth_error(server_rec *r,
                       int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
-                      const char *func);
+                      const char *func,
+                      const char *extra);
+
+/*
+ * this should only be called in the module init routine
+ */
+int
+mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf);
+
+/*
+ * this should only be called in the module init routine
+ */
+int
+mwa_init_keyring_cache(server_rec *serv, MWA_SCONF *sconf,
+                       apr_pool_t *ptemp);
+
+/*
+ * this should only be called in the module cleanup routine
+ */
+int
+mwa_free_keyring_cache(server_rec *s, MWA_SCONF *sconf);
 
 /* 
  * should only be called (and result used) while you have
@@ -336,11 +356,5 @@ mwa_log_webauth_error(server_rec *r,
 
 WEBAUTH_KEYRING *
 mwa_get_keyring(MWA_REQ_CTXT *rc);
-
-/* 
- * called during module init to check/update the keyring
- */
-void
-mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf);
 
 #endif

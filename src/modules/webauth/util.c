@@ -201,7 +201,8 @@ mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func)
     status = webauth_krb5_new(&ctxt);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(r->server, 
-                              status, ctxt, mwa_func, "webauth_krb5_new");
+                              status, ctxt, mwa_func, "webauth_krb5_new",
+                              NULL);
         if (status == WA_ERR_KRB5)
             webauth_krb5_free(ctxt);
         return NULL;
@@ -215,20 +216,25 @@ mwa_log_webauth_error(server_rec *s,
                        int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
-                      const char *func)
+                      const char *func,
+                      const char *extra)
 {
     if (status == WA_ERR_KRB5 && ctxt != NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s failed: %s (%d): %s %d",
+                     "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
                      mwa_func, func,
+                     extra == NULL ? "" : " ",
+                     extra == NULL ? "" : extra,
                      webauth_error_message(status), status,
                      webauth_krb5_error_message(ctxt), 
                      webauth_krb5_error_code(ctxt));
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s failed: %s (%d)",
+                     "mod_webauth: %s: %s%s%s failed: %s (%d)",
                      mwa_func,
                      func,
+                     extra == NULL ? "" : " ",
+                     extra == NULL ? "" : extra,
                      webauth_error_message(status), status);
     }
 }
@@ -248,13 +254,15 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
     ring = webauth_keyring_new(32);
     if (ring == NULL) {
         mwa_log_webauth_error(serv, WA_ERR_NO_MEM, 
-                              NULL, mwa_func, "webauth_keyring_new");
+                              NULL, mwa_func, "webauth_keyring_new", 
+                              sconf->keyring_path);
         return NULL;
     }
     
     s = webauth_random_key(key_material, WA_AES_128);
     if (s != WA_ERR_NONE) {
-        mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key");
+        mwa_log_webauth_error(serv, s, NULL, mwa_func, "webauth_random_key",
+                              sconf->keyring_path);
         webauth_keyring_free(ring);
         return NULL;
     }
@@ -264,7 +272,7 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
     s = webauth_keyring_add(ring, va, va, key);
     if (s != WA_ERR_NONE) {
         mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_add");
+                              "webauth_keyring_add", sconf->keyring_path);
         webauth_key_free(key);
         webauth_keyring_free(ring);
         return NULL;
@@ -275,22 +283,83 @@ auto_create(server_rec *serv, MWA_SCONF *sconf)
     s = webauth_keyring_write_file(ring, sconf->keyring_path);
     if (s != WA_ERR_NONE) {
         mwa_log_webauth_error(serv, s, NULL, mwa_func,
-                              "webauth_keyring_add");
+                              "webauth_keyring_write_file", 
+                              sconf->keyring_path);
         webauth_keyring_free(ring);
         return NULL;
     }
     return ring;
 }
 
+static apr_hash_t *key_rings = NULL;
+
 /*
- * called by module init
+ * this should only be called in the module cleanup routine
  */
-void
-mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf)
+mwa_free_keyring_cache(server_rec *s, MWA_SCONF *sconf)
+{
+    /* free old keyrings and hash */
+    if (key_rings != NULL) {
+        apr_hash_index_t *hi;
+        WEBAUTH_KEYRING *old;
+        /* enumerate through all cached keyrings and free them */
+        for (hi = apr_hash_first(apr_hash_pool_get(key_rings), key_rings); hi;
+             hi = apr_hash_next(hi)) {
+            char *hkey;
+            apr_hash_this(hi, (const void**)&hkey, NULL, (void**)&old);
+            if (old != NULL) {
+                if (sconf->debug) 
+                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                                 "mod_webauth: freeing keyring: %s ", hkey);
+                webauth_keyring_free(old);
+            }
+        }
+        /* free the hash too */
+        apr_pool_destroy(apr_hash_pool_get(key_rings));
+        key_rings = NULL;
+        if (sconf->debug) 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                         "mod_webauth: destroyed key_rings hash");
+    }
+}
+
+/*
+ * this should only be called in the module init routine
+ */
+mwa_init_keyring_cache(server_rec *serv, MWA_SCONF *sconf,
+                       apr_pool_t *ptemp)
+{
+    apr_pool_t *p;
+
+    if (key_rings == NULL) {
+        /* create new hash */
+        apr_pool_create(&p, NULL);
+        key_rings = apr_hash_make(p);
+        if (sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                         "mod_webauth: created key_rings hash");
+    }
+}
+
+int
+mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 {
     int status;
     WEBAUTH_KEYRING *ring;
     static const char *mwa_func = "mwa_init_keyring";
+
+    ring = (WEBAUTH_KEYRING*) apr_hash_get(key_rings,
+                                           sconf->keyring_path,
+                                           APR_HASH_KEY_STRING);
+    if (ring != NULL) {
+        /* already cached, return */
+        if (sconf->debug) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                         "mod_webauth: found keyring in hash: %s ", 
+                         sconf->keyring_path);
+        }
+        return 1;
+    }
 
     /* attempt to open up keyring */
     status = webauth_keyring_read_file(sconf->keyring_path, &ring);
@@ -310,34 +379,51 @@ mwa_init_keyring(server_rec *serv, MWA_SCONF *sconf)
             }
         } else {
             mwa_log_webauth_error(serv, status, NULL,
-                                  mwa_func, "webauth_keyring_read_file");
+                                  mwa_func, 
+                                  "webauth_keyring_read_file",
+                                  sconf->keyring_path);
         }
+    } else {
+        /* see if we need to update keyring */
     }
-    if (ring != NULL)
-        webauth_keyring_free(ring);
+
+    if (ring != NULL) {
+        /* cache it */
+        char *key =  apr_pstrdup(apr_hash_pool_get(key_rings),
+                                 sconf->keyring_path);
+        apr_hash_set(key_rings, key, APR_HASH_KEY_STRING, ring);
+        if (sconf->debug) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                         "mod_webauth: adding keyring to hash: %s ", 
+                         sconf->keyring_path);
+        }
+
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webauth: keyring ok: %s ", sconf->keyring_path);
+    }
 }
 
 /* 
  * should only be called (and result used) while you have
- * the MWA_MUTEX_KEYRING mutex.
+ * the MWA_MUTEX_KEYRING mutex. This assumes the keyring
+ * file already exists and doesn't change for the lifetime of 
+ * the server.
  */
 
 WEBAUTH_KEYRING *
 mwa_get_keyring(MWA_REQ_CTXT *rc)
 {
     int status;
-    static WEBAUTH_KEYRING *ring = NULL;
     static const char *mwa_func = "mwa_get_keyring";
+    WEBAUTH_KEYRING *ring;
 
-    if (ring != NULL) {
-        return ring;
-    }
-
-    /* attempt to open up keyring */
-    status = webauth_keyring_read_file(rc->sconf->keyring_path, &ring);
-    if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL,
-                              mwa_func, "webauth_keyring_read_file");
+    ring = (WEBAUTH_KEYRING*) apr_hash_get(key_rings,
+                                           rc->sconf->keyring_path,
+                                           APR_HASH_KEY_STRING);
+    if (ring == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+                     "mod_webauth: %s: can't get keyring: %s",
+                     mwa_func, rc->sconf->keyring_path);
     }
     return ring;
 }
