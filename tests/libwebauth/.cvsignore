@@ -1,1 +1,6 @@
 Makefile
+attrs_test
+base64_test
+hex_test
+random_test
+token_test
