@@ -354,6 +354,7 @@ static int
 post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s) 
 {
+    char* version;
     MWAL_SCONF *sconf = (MWAL_SCONF*)ap_get_module_config(s->module_config,
                                                           &webauthldap_module);
     if (sconf->debug) ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
@@ -384,6 +385,9 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
         sconf->ldcount = 0;
         sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
     }
+
+    version = apr_pstrcat(ptemp, "WebAuthLdap", NULL);
+    ap_add_version_component(pconf, version);
 
     return OK;
 }
