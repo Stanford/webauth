@@ -521,11 +521,13 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     version = apr_pstrcat(ptemp, "WebAuth/", webauth_info_version(), NULL);
     ap_add_version_component(pconf, version);
 
-    if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
-                     "mod_webauth: initialized (%s) (%s)",
-                     webauth_info_version(),
-                     webauth_info_build());
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
+                 "mod_webauth: initialized (%s)%s",
+                 webauth_info_version(),
+                 sconf->debug ?
+                 apr_pstrcat(ptemp," (", webauth_info_build(), ")", NULL) : 
+                 "");
+ 
     return OK;
 }
 
