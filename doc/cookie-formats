@@ -1,6 +1,7 @@
 Type One (authentication cookie):
 
     Protocol Version            number          2 bytes
+    Session ID                  number          8 bytes
     Local/Remote Flag           boolean         1 byte
     Authentication Type         number          2 bytes
     Data Length                 number          2 bytes
@@ -13,12 +14,8 @@ the webauth release itself if we need to rev the cookie format.  All
 fields after the data field should be ignored, so we can tack new fields
 onto the end with a higher protocol rev.
 
-Do we want to leave the additional logging data for a future rev of the
-cookie format?  With the above specification and a guarantee that the
-initial fields will be constant for newer protocol revs, we could easily
-add it later.  (On the other hand, that would require decoding additional
-fields at variable offsets found by decoding the data length first, but
-that doesn't seem like a huge problem to me.)
+The session ID is provided by the webauth server (see the preauth protocol
+below) and sent back as-is to the webauth server from the weblogin server.
 
 The local/remote flag would just be 0 for local and 1 for remote (the
 weblogin handoff).  This field is supposed to be unnecessary as the domain
@@ -32,13 +29,21 @@ service tickets.
 The data for our initial authentication protocol would be a service ticket
 for the web server in question.
 
+Do we want to leave the additional logging data for a future rev of the
+cookie format?  With the above specification and a guarantee that the
+initial fields will be constant for newer protocol revs, we could easily
+add it later.  (On the other hand, that would require decoding additional
+fields at variable offsets found by decoding the data length first, but
+that doesn't seem like a huge problem to me.)
+
 Do we need to store either the identity of the user or the identity of the
 server to which they're authenticating outside of the service ticket or
 outside of the data field in general?  I don't *think* we do, but does
 anyone have any other opinions?
 
-Do we need a checksum/signature/etc. in here?  I don't *think* we do, but
-again, please check me on this.
+Any checksum or signature isn't useful unless it's encrypted somehow, so
+this is left to the authentication data for those authentication protocols
+that need something like this.
 
 The only difference between the cookie set by weblogin to pass this
 information and the cookie set by the webauth server (if it wishes to
@@ -49,6 +54,7 @@ setting.
 Type Three (preauthentication handoff to weblogin):
 
     Protocol Version            number          2 bytes
+    Session ID                  number          8 bytes
     Authentication Type         number          2 bytes
     Identity Length             number          2 bytes
     Identity Data               data            <specified above>
@@ -59,6 +65,10 @@ cookie format.  The identity data is the identity of the server to obtain
 authentication information for; for a Kerberos authentication type, this
 will be a principal name.  Identity length may be zero if the specified
 authentication type requires no server identity.
+
+The session ID is any data that the webauth server wishes to use to track
+the client, passed in this cookie so that a matching value can be included
+in the authentication cookie.
 
 Both cookies will be encoded in base64 before passing them to the client.
 The key for the Type One ticket will be webauth-auth.  The key for the
