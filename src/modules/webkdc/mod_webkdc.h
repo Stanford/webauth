@@ -83,6 +83,10 @@ typedef struct {
 typedef struct {
     request_rec *r;
     MWK_SCONF *sconf;
+    int error_code; /* set if an error happened */
+    const char *error_message;
+    const char *mwk_func; /* function error occured in */
+    int need_to_log; /* set if we need to log error  */
 } MWK_REQ_CTXT;
 
 /* interesting stuff from a parsed webkdc-service-token */
