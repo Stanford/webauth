@@ -44,6 +44,7 @@ WebAuthCredCacheDir
 </a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthdebug">WebAuthDebug</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthdologout">WebAuthDoLogout</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthdontcache">WebAuthDontCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthextraredirect">WebAuthExtraRedirect</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthfailureurl">WebAuthFailureURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthforcelogin">WebAuthForceLogin</a></li>
@@ -551,13 +552,45 @@ are removed if the user accesses this URL.
 
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthDontCache" id="WebAuthDontCache">WebAuthDontCache</a> <a name="webauthdontcache" id="webauthdontcache">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on expire header
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDontCache on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDontCache off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+Setting this to on will cause Apache to include an <code>Expires</code>
+header with the current time on it to tell browsers not to cache the 
+document. Internally, this is just setting <code>no_cache</code> in the
+Apache request structure to 1.
+</p>
+
+<p>
+It is recommended this only be turned on for sensitive documents and not
+all documents (and images) on the server. Also see
+<seealso><a href="mod_expires.html.en">mod_expires</a></seealso>.
+</p>
+
+
+
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthDontCache on<br />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthExtraRedirect" id="WebAuthExtraRedirect">WebAuthExtraRedirect</a> <a name="webauthextraredirect" id="webauthextraredirect">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to do an extra redirect upon return from the WebKDC
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthExtraRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthExtraRedirect off</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
@@ -855,7 +888,7 @@ WebAuthLastUseUpdateInterval 10m
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginCanceledURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
@@ -972,7 +1005,7 @@ the target server.
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(url user originally requested)</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
@@ -1133,7 +1166,7 @@ the <a href="#WebAuthCred">WebAuthCred</a> directive.
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthVarPrefix <em>string</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthVarPrefix ""</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>

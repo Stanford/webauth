@@ -148,6 +148,33 @@
 #define CD_LoginCanceledURL "WebAuthLoginCanceledURL"
 #define CM_LoginCanceledURL "url to return if user cancel's out of login"
 
+#define CD_DontCache "WebAuthDontCache"
+#define CM_DontCache "sets Expires header to current date"
+
+#ifndef NO_STANFORD_SUPPORT
+
+/* Stanford WebAuth 2.5 compat */
+#define SCD_ConfirmMsg "StanfordAuthConfirmMsg"
+#define SCM_ConfirmMsg "unsupported WebAuth 2.5 option"
+
+#define SCD_DoConfirm "StanfordAuthDoConfirm"
+#define SCM_DoConfirm "unsupported WebAuth 2.5 option"
+
+#define SCD_DontCache "StanfordAuthDontCache"
+#define SCM_DontCache "ignored"
+
+#define SCD_ForceReload "StanfordAuthForceReload"
+#define SCM_ForceReload "maps to WebAuthExtraRedirect"
+
+/* StanfordAuthGroups to be handled by mod_webauthldap */
+
+#define SCD_Life "StanfordAuthLife"
+#define SCM_Life "maps to WebAuthAppTokenLifetime and enables WebAuthForceLogin"
+#define SCD_ReturnURL "StanfordAuthReturnURL"
+#define SCM_ReturnURL "maps to WebAuthReturnURL"
+
+#endif
+
 /* r->notes keys */
 #define N_WEBAUTHR "mod_webauth_WEBAUTHR"
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
@@ -199,6 +226,7 @@ enum {
     E_Cred,
     E_CredCacheDir,
     E_Debug,
+    E_DontCache,
     E_DoLogout,
     E_ExtraRedirect,
     E_FailureURL,
@@ -223,6 +251,14 @@ enum {
     E_WebKdcPrincipal,
     E_WebKdcSSLCertFile,
     E_WebKdcURL,
+#ifndef NO_STANFORD_SUPPORT
+    SE_ConfirmMsg,
+    SE_DoConfirm,
+    SE_DontCache,
+    SE_ForceReload,
+    SE_Life,
+    SE_ReturnURL,
+#endif
 };
 
 extern module webauth_module;
@@ -295,6 +331,8 @@ typedef struct {
     int extra_redirect_ex; /* if it was explicitly specified in conf file */
     char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
+    int dont_cache;
+    int dont_cache_ex;
 } MWA_DCONF;
 
 /* a cred, used to keep track of WebAuthCred directives. */

@@ -639,18 +639,24 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->force_login = oconf->force_login_ex ? 
         oconf->force_login : bconf->force_login;
-    conf->force_login_ex = oconf->force_login_ex;
+    conf->force_login_ex = oconf->force_login_ex || bconf->force_login_ex;
 
     conf->use_creds = oconf->use_creds_ex ? 
         oconf->use_creds : bconf->use_creds;
-    conf->use_creds_ex = oconf->use_creds_ex;
+    conf->use_creds_ex = oconf->use_creds_ex || bconf->use_creds_ex;
 
     conf->do_logout = oconf->do_logout_ex ? 
         oconf->do_logout : bconf->do_logout;
-    conf->do_logout_ex = oconf->do_logout_ex;
+    conf->do_logout_ex = oconf->do_logout_ex || bconf->do_logout_ex;
 
     conf->extra_redirect = oconf->extra_redirect_ex ?
         oconf->extra_redirect : bconf->extra_redirect;
+    conf->extra_redirect_ex = oconf->extra_redirect_ex || 
+        bconf->extra_redirect_ex;
+
+    conf->dont_cache = oconf->dont_cache_ex ? 
+        oconf->dont_cache : bconf->dont_cache;
+    conf->dont_cache_ex = oconf->dont_cache_ex || bconf->dont_cache_ex;
 
     MERGE_INT(app_token_lifetime);
     MERGE_INT(inactive_expire);
@@ -2095,6 +2101,9 @@ check_user_id_hook(request_rec *r)
     if (wtlu != NULL) 
         mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
 
+    if (rc.dconf->dont_cache_ex) 
+        r->no_cache = rc.dconf->dont_cache;
+
 #ifndef NO_STANFORD_SUPPORT
     if (strcmp(at, "StanfordAuth") == 0) {
         mwa_setenv(&rc, "SU_AUTH_USER", rc.at.subject);
@@ -2105,8 +2114,19 @@ check_user_id_hook(request_rec *r)
             mwa_setenv(&rc, "SU_AUTH_AGE", 
                        apr_psprintf(rc.r->pool, "%d", (int) age));
         }
+        /* if no_cache isn't already set, and it wasn't explicitly
+           turned off, it should default to on */
+        if (!r->no_cache && !rc.dconf->dont_cache_ex) {
+            r->no_cache = 1;
+        }
     }
 #endif 
+
+    if (rc.sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                     "mod_webauth: check_user_id_hook: no_cache(%d) dont_cache(%d) dont_cache_ex(%d)", r->no_cache, 
+                     rc.dconf->dont_cache, rc.dconf->dont_cache_ex);
+    }
 
     if (rc.sconf->proxy_headers) {
         apr_table_set(r->headers_in, "X-WebAuth-User", rc.at.subject);
@@ -2378,6 +2398,23 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_LastUseUpdateInterval:
             dconf->last_use_update_interval = seconds(arg, &error_str);
             break;
+#ifndef NO_STANFORD_SUPPORT
+        case SE_ConfirmMsg:
+            /*
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, NULL,
+                         "mod_webauth: ignoring WebAuth 2.5 directive: %s",
+                         cmd->directive->directive);
+            */
+            break;
+        case SE_Life:
+            dconf->app_token_lifetime = atoi(arg) * 60;
+            dconf->force_login = 1;
+            dconf->force_login_ex = 1;
+            break;
+        case SE_ReturnURL:
+            dconf->return_url = apr_pstrdup(cmd->pool, arg);
+            break;
+#endif
         default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -2439,6 +2476,27 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             dconf->extra_redirect = flag;
             dconf->extra_redirect_ex = 1;
             break;
+        case E_DontCache:
+            dconf->dont_cache = flag;
+            dconf->dont_cache_ex = 1;
+            break;
+#ifndef NO_STANFORD_SUPPORT
+        case SE_DoConfirm:
+            if (flag) {
+                ap_log_error(APLOG_MARK, APLOG_WARNING, 0, NULL,
+                             "mod_webauth: ignoring WebAuth 2.5 directive: %s",
+                             cmd->directive->directive);
+            }
+            break;
+        case SE_DontCache:
+            dconf->dont_cache = flag;
+            dconf->dont_cache_ex = 1;
+            break;
+        case SE_ForceReload:
+            dconf->extra_redirect = flag;
+            dconf->extra_redirect_ex = 1;
+            break;
+#endif
         default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -2519,6 +2577,7 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 
 static const command_rec cmds[] = {
     /* server/vhost */
+
     SSTR(CD_WebKdcURL, E_WebKdcURL, CM_WebKdcURL),
     SSTR(CD_WebKdcPrincipal, E_WebKdcPrincipal, CM_WebKdcPrincipal),
     SSTR(CD_WebKdcSSLCertFile, E_WebKdcSSLCertFile, CM_WebKdcSSLCertFile),
@@ -2536,19 +2595,33 @@ static const command_rec cmds[] = {
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
+
     /* directory */
+
     ADSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
     ADSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     ADSTR(CD_LastUseUpdateInterval, E_LastUseUpdateInterval, CM_LastUseUpdateInterval),
     ADFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     ADFLAG(CD_UseCreds, E_UseCreds, CM_UseCreds),
     ADFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
-    ADFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
-    ADSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
-    ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
-    ADSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
-    ADSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     ADTAKE12(CD_Cred, E_Cred, CM_Cred),
+    ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
+
+    /* directory or .htaccess if override auth config */
+    DFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
+    DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
+    DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
+    DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
+    DSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
+
+#ifndef NO_STANFORD_SUPPORT
+    DSTR(SCD_ConfirmMsg, SE_ConfirmMsg, SCM_ConfirmMsg),
+    DFLAG(SCD_DoConfirm, SE_DoConfirm, SCM_DoConfirm),
+    DSTR(SCD_Life, SE_Life, SCM_Life),
+    DSTR(SCD_ReturnURL, SE_ReturnURL, SCM_ReturnURL),
+    DFLAG(SCD_DontCache, SE_DontCache, SCM_DontCache),
+    DFLAG(SCD_ForceReload, SE_ForceReload, SCM_ForceReload),
+#endif 
     { NULL }
 };
 

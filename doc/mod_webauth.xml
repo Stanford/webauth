@@ -392,7 +392,7 @@ WebAuthTokenMaxTTL 10m
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
 <default>WebAuthExtraRedirect off</default>
-<contextlist><context>directory</context></contextlist>
+<contextlist><context>directory</context><context>.htaccess</context></contextlist>
 
 <usage>
 <p>
@@ -689,8 +689,7 @@ WebAuthAppTokenLifetime 2h
 </description>
 <syntax>WebAuthReturnURL <em>url</em></syntax>
 <default>(url user originally requested)</default>
-<contextlist>
-<context>directory</context></contextlist>
+<contextlist><context>directory</context><context>.htaccess</context></contextlist>
 
 <usage>
 <p>
@@ -713,8 +712,7 @@ WebAuthReturnURL /myapp/
 </description>
 <syntax>WebAuthLoginCanceledURL <em>url</em></syntax>
 <default>(none)</default>
-<contextlist>
-<context>directory</context></contextlist>
+<contextlist><context>directory</context><context>.htaccess</context></contextlist>
 
 <usage>
 <p>
@@ -737,8 +735,7 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 </description>
 <syntax>WebAuthVarPrefix <em>string</em></syntax>
 <default>WebAuthVarPrefix ""</default>
-<contextlist><context>directory</context>
-</contextlist>
+<contextlist><context>directory</context><context>.htaccess</context></contextlist>
 
 <usage>
 <p>
@@ -923,6 +920,38 @@ well.
 <example><title>Example</title>
 WebAuthDebug on<br />
 LogLevel debug<br />
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthDontCache</name>
+<description>Turn on expire header
+</description>
+<syntax>WebAuthDontCache on|off</syntax>
+<default>WebAuthDontCache off</default>
+<contextlist><context>directory</context><context>.htaccess</context>
+</contextlist>
+
+<usage>
+<p>
+Setting this to on will cause Apache to include an <code>Expires</code>
+header with the current time on it to tell browsers not to cache the 
+document. Internally, this is just setting <code>no_cache</code> in the
+Apache request structure to 1.
+</p>
+
+<p>
+It is recommended this only be turned on for sensitive documents and not
+all documents (and images) on the server. Also see
+<seealso><a href="mod_expires.html.en">mod_expires</a></seealso>.
+</p>
+
+
+
+
+<example><title>Example</title>
+WebAuthDontCache on<br />
 </example>
 </usage>
 </directivesynopsis>
