@@ -13,8 +13,10 @@
 #ifndef _WEBAUTH_H
 #define _WEBAUTH_H
 
+#include <time.h>
+
 #ifdef  __cplusplus
-//extern "C" {
+extern "C" {
 #endif
 
 /******************** error codes ********************/
@@ -96,11 +98,30 @@ typedef struct {
     int num_attrs;
     int capacity;
     WEBAUTH_ATTR *attrs;
-    /* don't add anything here as attrs can expand */
 } WEBAUTH_ATTR_LIST;
 
-/* an crypto key */
-typedef struct webauth_key WEBAUTH_KEY;
+/* a crypto key */
+typedef struct {
+    int type;
+    unsigned char *data;
+    int length;
+} WEBAUTH_KEY;
+
+/* a key ring to hold private keys */
+typedef struct {
+    time_t creation_time;
+    time_t valid_from;
+    time_t valid_till;
+    WEBAUTH_KEY *key;
+} WEBAUTH_KEY_RING_ENTRY;
+
+typedef struct {
+    int version;
+    int num_entries;
+    int capacity;
+    WEBAUTH_KEY_RING_ENTRY *entries;
+} WEBAUTH_KEY_RING;
+
 
 /******************** base64 ********************/
 
@@ -340,10 +361,49 @@ WEBAUTH_KEY *webauth_key_create(int key_type,
                                 int key_len);
 
 /*
+ * copies a key
+ */
+
+WEBAUTH_KEY *webauth_key_copy(const WEBAUTH_KEY *key);
+
+/*
  * zeros out key memory and then frees it
  */
 
-void webauth_key_destroy(WEBAUTH_KEY *key);
+void webauth_key_free(WEBAUTH_KEY *key);
+
+/*
+ * create a new key ring
+ */
+WEBAUTH_KEY_RING * webauth_key_ring_new(int initial_capacity);
+
+/*
+ * free a key ring, and any keys in it
+ */
+void webauth_key_ring_free(WEBAUTH_KEY_RING *ring);
+
+/*
+ * add a new entry to a key ring. After the call, "key" will
+ * be owned by the key ring, and will be freed when the 
+ * the key ring is freed.
+ *
+ * If creation_time or valid_from time is 0, then the current time is used.
+ */
+
+int webauth_key_ring_add(WEBAUTH_KEY_RING *ring,
+                         time_t creation_time,
+                         time_t valid_from,
+                         time_t valid_till,
+                         WEBAUTH_KEY *key);
+
+/*
+ * given a key ring, return the best key on the ring for
+ * encryption. The best key for encryption is the key with
+ * a valid valid_from time, and the latest
+ * valid valid_till time.
+ */
+WEBAUTH_KEY *
+   webauth_key_ring_best_encryption_key(const WEBAUTH_KEY_RING *ring);
 
 /******************** tokens ********************/
    
@@ -354,7 +414,9 @@ void webauth_key_destroy(WEBAUTH_KEY *key);
 int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
- * encrypts and base64 encodes attrs into a token
+ * encrypts and base64 encodes attrs into a token, using the
+ * key from the key ring that has a valid valid_from time and
+ * the latest valid_to time.
  *
  * returns length of base64-encoded token (not null-terminated) or an error
  *
@@ -366,7 +428,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
                          int max_output_len,
-                         const WEBAUTH_KEY *key);
+                         const WEBAUTH_KEY_RING *ring);
 
 /*
  * base64 decodes and decrypts attrs into a token
@@ -387,10 +449,10 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR_LIST **list,
-                        const WEBAUTH_KEY *key);
+                        const WEBAUTH_KEY_RING *ring);
 
 #ifdef  __cplusplus
-//}
+}
 #endif
 
 /*

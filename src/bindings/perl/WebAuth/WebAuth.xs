@@ -371,10 +371,48 @@ OUTPUT:
     RETVAL
 
 
-void
-webauth_token_create(attrs,key,...)
-SV *attrs
+WEBAUTH_KEY_RING *
+webauth_key_ring_new(initial_capacity)
+int initial_capacity
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = webauth_key_ring_new(initial_capacity);
+}
+OUTPUT:
+    RETVAL
+
+
+int
+webauth_key_ring_add(ring,creation_time,valid_from,valid_till,key)
+WEBAUTH_KEY_RING *ring
+time_t creation_time
+time_t valid_from
+time_t valid_till
 WEBAUTH_KEY *key
+PROTOTYPE: $$$$$
+CODE:
+{
+    WEBAUTH_KEY *copy;
+
+    copy = webauth_key_copy(key);
+    if (copy == NULL) {
+        RETVAL = WA_ERR_NO_MEM;    
+    } else {
+        RETVAL = webauth_key_ring_add(ring, creation_time, 
+                                      valid_from, valid_till, copy);
+        if (RETVAL != WA_ERR_NONE) {
+            webauth_key_free(copy);
+        }
+    }
+}
+OUTPUT:
+    RETVAL
+
+void
+webauth_token_create(attrs,ring,...)
+SV *attrs
+WEBAUTH_KEY_RING *ring
 PROTOTYPE: $$;$
 CODE:
 {
@@ -406,7 +444,7 @@ CODE:
 
     out_len = webauth_token_encoded_length(list);
     ST(0) = sv_2mortal(NEWSV(0, out_len));
-    s = webauth_token_create(list, SvPVX(ST(0)), out_len, key);
+    s = webauth_token_create(list, SvPVX(ST(0)), out_len, ring);
     webauth_attr_list_free(list);
 
     if (items > 2) {
@@ -422,9 +460,9 @@ CODE:
 }
 
 void
-webauth_token_parse(buffer,key,...)
+webauth_token_parse(buffer,ring,...)
 SV *buffer
-WEBAUTH_KEY *key
+WEBAUTH_KEY_RING *ring
 PROTOTYPE: $$;$
 CODE:
 {
@@ -437,7 +475,7 @@ CODE:
 
     p_input = SvPV(copy, n_input);
 
-    num_attrs = webauth_token_parse(p_input, n_input, &list, key);
+    num_attrs = webauth_token_parse(p_input, n_input, &list, ring);
 
     if (items > 1) {
        sv_setiv(ST(2), num_attrs);
@@ -462,7 +500,15 @@ void
 webauth_DESTROY(key)
     WEBAUTH_KEY *key
 CODE:
-    webauth_key_destroy(key);
+    webauth_key_free(key);
+
+MODULE = WebAuth        PACKAGE = WEBAUTH_KEY_RINGPtr  PREFIX = webauth_
+
+void
+webauth_DESTROY(ring)
+    WEBAUTH_KEY_RING *ring
+CODE:
+    webauth_key_ring_free(ring);
 
  /*
  **  Local variables:

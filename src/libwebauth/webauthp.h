@@ -21,16 +21,6 @@
 
 #include "webauth.h"
 
-/******************** types ********************/
-
-
-/* the private version of WEBAUTH_KEY */
-
-typedef struct {
-    int type;
-    unsigned char *data;
-    int length;
-} WEBAUTH_KEYP;
 
 /*
 **  Local variables:

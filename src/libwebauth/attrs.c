@@ -14,7 +14,7 @@ webauth_attr_list_new(int initial_capacity)
     WEBAUTH_ATTR_LIST *al;
 
     al = malloc(sizeof(WEBAUTH_ATTR_LIST));
-    if (al!=NULL) {
+    if (al != NULL) {
         al->num_attrs = 0;
         al->capacity = initial_capacity;
         al->attrs = malloc(sizeof(WEBAUTH_ATTR)*initial_capacity);

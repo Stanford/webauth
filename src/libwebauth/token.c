@@ -75,7 +75,7 @@ int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                      unsigned char *output,
                      int max_output_len,
-                     const WEBAUTH_KEY *key)
+                     const WEBAUTH_KEY_RING *ring)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i;
@@ -86,15 +86,24 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
     AES_KEY aes_key;
-    WEBAUTH_KEYP *keyp = (WEBAUTH_KEYP*)key;
+    WEBAUTH_KEY *key;
 
     assert(list!= NULL);
     assert(list->num_attrs);
     assert(output != NULL);
     assert(max_output_len);
-    assert(key != NULL);
+    assert(ring != NULL);
+
+    /* find the best key */
+    key = webauth_key_ring_best_encryption_key(ring);
+    if (key == NULL) {
+        return WA_ERR_BAD_KEY;
+    }
+
+    if (AES_set_encrypt_key(key->data, key->length*8, &aes_key)) {
+        return WA_ERR_BAD_KEY;
+    }
 
     /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
 
@@ -157,11 +166,6 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     /* AES_cbc_encrypt doesn't return anything */
 
 
-    if (AES_set_encrypt_key(keyp->data, keyp->length*8, &aes_key)) {
-        free(ebuff);
-        return WA_ERR_BAD_KEY;
-    }
-
     AES_cbc_encrypt(ebuff+T_NONCE_O,
                     ebuff+T_NONCE_O, /* encrypt in-place */
                     elen-T_HINT_S,
@@ -194,7 +198,7 @@ int
 webauth_token_parse(unsigned char *input,
                     int input_len,
                     WEBAUTH_ATTR_LIST **list,
-                    const WEBAUTH_KEY *key)
+                    const WEBAUTH_KEY_RING *ring)
 {
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 
@@ -203,10 +207,24 @@ webauth_token_parse(unsigned char *input,
     unsigned char computed_hmac[T_HMAC_S];
     int plen, i, elen;
     AES_KEY aes_key;
-    WEBAUTH_KEYP *keyp = (WEBAUTH_KEYP*)key;
+    WEBAUTH_KEY *key;
 
     assert (key != NULL);
     assert(list);
+    assert(ring);
+
+    if (ring->num_entries == 0) {
+        return WA_ERR_BAD_KEY;
+    }
+
+    /* FIXME: need to use key hint and potentially iterate through
+       all keys in the ring to decrypt, for now, we use the first */
+
+    key = ring->entries[0].key;
+
+    if (AES_set_decrypt_key(key->data, key->length*8, &aes_key)) {
+        return WA_ERR_BAD_KEY;
+    }
 
     /** base64 decode (in place) first */
     elen=webauth_base64_decode(input, input_len, input, input_len);
@@ -214,18 +232,10 @@ webauth_token_parse(unsigned char *input,
         return elen;
     }
 
-    /* first thing we'd normally do is check key-hint
-     * to determine which key to used
-     */
 
     /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
 
-
     /* decrypt using our key */
-    if (AES_set_decrypt_key(keyp->data, keyp->length*8, &aes_key)) {
-        return WA_ERR_BAD_KEY;
-    }
-
     /* now AES decrypt everything but the time at the front */
     /* AES_cbc_encrypt doesn't return anything useful */
     AES_cbc_encrypt(input+T_NONCE_O,

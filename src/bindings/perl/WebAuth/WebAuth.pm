@@ -178,23 +178,38 @@ be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
 
-=item token_create(attrs, key[, status])
+=item key_ring_new(initial_capacity)
 
-  $token = token_create($attrs, $key[, $status])
+ $ring = key_ring_new($initial_capacity);
 
-Takes as input $attrs (which must be a reference to a hash) and a $key
-(created with key_create_aes) and returns the basse64 encrypted token\,
+Creates a reference to a WEBAUTH_KEY_RINGPtr object, or undef
+on error.
+
+=item key_ring_add(ring, creation_time, valid_from, valid_till, key)
+
+ $status = key_ring_add($ring, $c, $vf, $vt, $key);
+
+Adds a key to the key ring. creation_time and valid_from can both be
+0, in which case the current time is used. key is copied internally, and
+can be undef'd after calling this function.
+
+=item token_create(attrs, ring[, status])
+
+  $token = token_create($attrs, $ring[, $status])
+
+Takes as input $attrs (which must be a reference to a hash) and a $ring
+(created with key_ring_new) and returns the basse64 encrypted token\,
 or undef in the case of an error.
 The values in the $attrs hash table get converted to strings if they 
 aren't already. $status is optional, and if present will get set to the
 result of the webauth_token_create C function.
 
-=item token_parse(token, key[, status])
+=item token_parse(token, ring[, status])
 
-  $attrs = token_parse($token, $key[, $status])
+  $attrs = token_parse($token, $ring[, $status])
 
-Takes as input a base64 encrypted token and an aes key (creatged with 
-key_create_aes) and returns the attributes, or undef in the case of an error.
+Takes as input a base64 encrypted token and a ring (created with 
+key_ring_new) and returns the attributes, or undef in the case of an error.
 $status is optional, and if present will get set to the
 result of the webauth_token_parse C function.
 
