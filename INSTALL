@@ -270,7 +270,9 @@ site, see doc/install-webkdc.
          Include conf/stanford-ldap.conf
 
      to their httpd.conf file.  Stanford users will also need to submit a
-     HelpSU ticket to be added to the ACLs on the directory servers.
+     HelpSU ticket to be added to the ACLs on the directory servers.  See
+     <http://www.stanford.edu/services/directory/access/> for more
+     information.
 
      For users at other sites, the basic set of directives are:
 
