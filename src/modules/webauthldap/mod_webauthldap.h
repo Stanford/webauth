@@ -24,7 +24,7 @@
 /* constants */
 #define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1
-#define REQUIRE_DIRECTIVE "webauth-group"
+#define PRIVGROUP_DIRECTIVE "webauth-group"
 
 /* environment variables */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
@@ -76,16 +76,12 @@
 #define CM_SSL "use ssl or not"
 #define DF_SSL 0
 
-#define CD_Groups "WebAuthRequireGroup"
-#define CM_Groups "ldap groups required for authorization"
-
 enum {
     E_Attribs,
     E_Base,
     E_Binddn,
     E_Debug,
     E_Filter_templ,
-    E_Groups,
     E_Host,
     E_Keytab,
     E_Port,
@@ -131,7 +127,6 @@ typedef struct {
 
 /* directory conf stuff - looks like nothing so far*/
 typedef struct {
-    apr_array_header_t* groups;
 } MWAL_DCONF;
 
 
