@@ -44,13 +44,17 @@ cookies_flag : found cookies
                     </TR>
                   </TABLE>
 
-                  <P><STRONG><FONT SIZE="2" FACE=
-                  "Arial, Helvetica, sans-serif">
-		  You have chosen to remove your single sign-on cookie for Stanford WebAuth.
+                  <P><FONT SIZE="2" FACE=
+                  "Arial, Helvetica, sans-serif"><STRONG>
+		  You are now logged out of the web application. However, you are still logged into
+		  Stanford Web Authentication. </STRONG></FONT></P>
+		 <p><STRONG><FONT SIZE="2" FACE=
+                  "Arial, Helvetica, sans-serif">To logout completely, quit this browser program
+                  when you are finished.
 		</FONT></STRONG></P>
-		<!--The logout found cookies -->
+		<!--The logout found cookies
 		<TMPL_IF NAME=cookies_flag>
-		    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
+		    <p><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
 		    Results: Single sign-on cookie has been deleted.
 		    </FONT></STRONG></P>
 		<TMPL_ELSE> 
@@ -58,8 +62,9 @@ cookies_flag : found cookies
                     Results: No single sign-on cookies found to delete.
 		    </FONT></STRONG></P>
 		</TMPL_IF>
-		    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
-                  <A HREF ="http://www.stanford.edu">Stanford Home Page</A>.</FONT></P>
+		-->
+				    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
+                  <A HREF ="http://www.stanford.edu">Stanford Home Page</A></FONT></P>
                 </TD>
               </TR>
             </TABLE>
@@ -67,12 +72,21 @@ cookies_flag : found cookies
         </TR>
       </TABLE>
     </FORM>
-  <table width="65%" border="0" align="center">
+    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif"><strong>Quit the web browser you are using when
+		you are finished with this browser session. </strong> If you do not, anyone subsequently using 
+		your computer will be able to use the browser program to go to Web Authenticated      
+		websites, and the websites will treat that person as you, giving that     
+		person access to Stanford's and your web assets. You are responsible for     
+		preventing that from happening with this web session, and the best way     
+		to do it is to quit the browser program when you are finished with it,     
+		or lock your computer if you need to leave your computer but aren't     
+		through with the browser.</font></p>
+
+<table width="65%" border="0" align="center">
      <tr><td><DIV ALIGN="center"><font size="1" face="Arial, Helvetica, sans-serif">Copyright
       2003 Stanford University. All Rights Reserved.<br>Last modified
-      2/16/03 by ITSS/jnk.</font></DIV></td></tr></table>  
+      8/12/03 by ITSS/jnk.</font></DIV></td></tr></table>  
 
 
   </BODY>
 </HTML>
-
