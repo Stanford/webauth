@@ -78,7 +78,7 @@ our %EXPORT_TAGS = (
 				    WA_TK_SUBJECT_AUTH
 				    WA_TK_SUBJECT_AUTH_DATA
 				    WA_TK_TOKEN_TYPE
-				    WA_TK_USER
+				    WA_TK_USERNAME
 				    WA_TK_WEBKDC_TOKEN
 				    )],
 		    'hex' => [ qw(hex_encode hex_decode) ],
