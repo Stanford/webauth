@@ -61,8 +61,6 @@ new_service_token(apr_pool_t *pool,
 
     token->key.data = apr_pstrmemdup(pool, kdata, kd_len);
     token->key.length = kd_len;
-
-    /* FIXME: should validate key.length */
     return token;
 }
 

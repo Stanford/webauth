@@ -1603,10 +1603,9 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         if (rc->needed_proxy_type) {
             SET_PROXY_TYPE(rc->needed_proxy_type);
         } else {
+            /* if we don't know which one we need, lets request a proxy
+               token for the first one in the list. */
             MWA_WACRED *cred = (MWA_WACRED*)rc->dconf->creds->elts;
-            /* FIXME: this only requests the first proxy-type listed in the
-               creds. it should actually determine which proxy-type we
-               need to request */
             SET_PROXY_TYPE(cred->type);
         }
 
@@ -1920,7 +1919,8 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
            will log any errors. We could either cause a failure_redirect
            or let the request continue without all the desired credentials
            and let the app cope. This might need to be a directive.
-           for now, lets just continue... */
+           for now, lets just continue, since that seems like the most
+           reasonable choice... */
 
         if (rc->sconf->debug) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -2032,11 +2032,14 @@ gather_creds(MWA_REQ_CTXT *rc)
         /* foreach proxy type, process the creds */
         for (i=0; i < all_proxy_types->nelts; i++) {
             if (!prepare_creds(rc, proxy[i], cred, gathered_creds->nelts)) {
-                /* FIXME: what do we do? */
+                /* FIXME: similar as case where we can't get
+                   creds from the webkdc. prepare_creds will log
+                   any errors. For now, we continue and let the
+                   app cope. 
+                */
             }
         }
     }
-
 
     return OK;
 }
