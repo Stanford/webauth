@@ -1,3 +1,10 @@
+webauth (3.2.4-2) unstable; urgency=low
+
+  * No source changes.
+  * Rebuild for libcurl migration.
+
+ -- Russ Allbery <rra@stanford.edu>  Mon,  7 Mar 2005 14:47:24 -0800
+
 webauth (3.2.4-1) unstable; urgency=low
 
   * New upstream release.
