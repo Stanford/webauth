@@ -34,6 +34,9 @@
 #define AT_COOKIE_NAME_EQ "webauth_at="
 
 /* defines for config directives */
+#define CD_SecureCookie "WebAuthSecureCookie"
+#define CM_SecureCookie "make cookies with the 'secure' attribute"
+
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
 
@@ -91,6 +94,7 @@
 /* enums for config directives */
 
 enum {
+    E_SecureCookie,
     E_WebKDCURL,
     E_LoginURL,
     E_FailureURL,
@@ -110,6 +114,11 @@ enum {
 
 module webauth_module;
 
+/* server context */
+typedef struct {
+    WEBAUTH_KEYRING *ring; /* from keyring_path */
+} MWA_SCTXT;
+
 /* server conf stuff */
 typedef struct {
     char *webkdc_url;
@@ -120,9 +129,10 @@ typedef struct {
     char *st_cache_path;
     char *var_prefix;
     int  debug;
+    int secure_cookie;
+    int secure_cookie_ex; /* if it was explicitly specified in conf file */
     /* end of conf */
-    WEBAUTH_KEYRING *ring; /* from keyring_path */
-
+    MWA_SCTXT *ctxt;
 } MWA_SCONF;
 
 /* directory conf stuff */
@@ -135,5 +145,11 @@ typedef struct {
     int force_login;
     char *return_url;
 } MWA_DCONF;
+
+typedef struct {
+    request_rec *r;
+    MWA_SCONF *sconf;
+    MWA_DCONF *dconf;
+} MWA_CHECK_USER_CTXT;
 
 #endif

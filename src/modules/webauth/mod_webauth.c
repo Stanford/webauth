@@ -40,27 +40,6 @@
 #include "mod_webauth.h"
 
 /*
- * returns 1 if uri scheme for main request is https
- *
- */
-int
-is_https(request_rec *r)
-{
-    if (r->main)
-        r = r->main;
-
-    if (r->parsed_uri.is_initialized) {
-        return strcmp(r->parsed_uri.scheme, "https") == 0 ? 1 : 0;
-    } else {
-        /* FIXME: should poke around for ssl module notes */
-        /* for now, we return 1 */
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                "mod_webauth: is_https r->parsed_uri.is_initialzed not set!");
-        return 1;
-    }
-}
-
-/*
  * get note from main request 
  */
 const char *
@@ -161,8 +140,11 @@ mod_webauth_cleanup(void *data)
 {
     MWA_SCONF *sconf = (MWA_SCONF*) data;
 
-    if (sconf->ring != NULL) {
-        webauth_keyring_free(sconf->ring);
+    if (sconf->ctxt == NULL)
+        return APR_SUCCESS;
+
+    if (sconf->ctxt->ring != NULL) {
+        webauth_keyring_free(sconf->ctxt->ring);
     }
     return APR_SUCCESS;
 }
@@ -175,6 +157,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
+    MWA_SCTXT *sctxt;
     int status;
 
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
@@ -193,8 +176,11 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     apr_pool_cleanup_register(pconf, sconf, mod_webauth_cleanup, 
                               apr_pool_cleanup_null);
 
+
+    sctxt = (MWA_SCTXT *) apr_palloc(pconf, sizeof(MWA_SCTXT));
+
     /* attempt to open up keyring */
-    status = webauth_keyring_read_file(sconf->keyring_path, &sconf->ring);
+    status = webauth_keyring_read_file(sconf->keyring_path, &sctxt->ring);
     if (status != WA_ERR_NONE) {
         die(apr_psprintf(ptemp, 
                  "mod_webauth: webauth_keyring_read_file(%s) failed: %s (%d)",
@@ -204,6 +190,10 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
         /* FIXME: should probably make sure we have at least one
            valid (not expired/postdated) key in the ring */
     }
+
+    /* stash the sctxt in the server's process pool */
+    apr_pool_userdata_set(sctxt, "MWA_SCTXT", 
+                          apr_pool_cleanup_null, s->process->pool);
 
     ap_add_version_component(pconf, WEBAUTH_VERSION);
 
@@ -240,7 +230,10 @@ config_server_create(apr_pool_t *p, server_rec *s)
     MWA_SCONF *sconf;
 
     sconf = (MWA_SCONF*)apr_pcalloc(p, sizeof(MWA_SCONF));
-    /* no defaults */
+    /* only one with a default */
+    sconf->secure_cookie = 1;
+    /* grab server context too */
+    apr_pool_userdata_get((void*)&sconf->ctxt, "MWA_SCTXT", s->process->pool);
     return (void *)sconf;
 }
 
@@ -254,7 +247,7 @@ config_dir_create(apr_pool_t *p, char *path)
 }
 
 
-#define SET_STR(field) \
+#define SET_PTR(field) \
     conf->field = (oconf->field != NULL) ? oconf->field : bconf->field
 
 #define SET_INT(field) \
@@ -269,14 +262,23 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     bconf = (MWA_SCONF*) basev;
     oconf = (MWA_SCONF*) overv;
 
-    SET_STR(webkdc_url);
-    SET_STR(login_url);
-    SET_STR(failure_url);
-    SET_STR(keyring_path);
-    SET_STR(keytab_path);
-    SET_STR(st_cache_path);
-    SET_STR(var_prefix);
+    /* secure_cookie is 1 by default, so we need to check if
+       it was explicitly set in the override */
+    if (oconf->secure_cookie_ex) {
+        conf ->secure_cookie = oconf->secure_cookie;
+    } else {
+        conf ->secure_cookie = bconf->secure_cookie;
+    }
+
+    SET_PTR(webkdc_url);
+    SET_PTR(login_url);
+    SET_PTR(failure_url);
+    SET_PTR(keyring_path);
+    SET_PTR(keytab_path);
+    SET_PTR(st_cache_path);
+    SET_PTR(var_prefix);
     SET_INT(debug);
+    SET_PTR(ctxt);
     return (void *)conf;
 }
 
@@ -291,15 +293,15 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 
     SET_INT(app_token_lifetime);
     SET_INT(token_max_ttl);
-    SET_STR(subject_auth_type);
+    SET_PTR(subject_auth_type);
     SET_INT(inactive_expire);
     SET_INT(hard_expire);
     SET_INT(force_login);
-    SET_STR(return_url);
+    SET_PTR(return_url);
     return (void *)conf;
 }
 
-#undef SET_STR
+#undef SET_PTR
 #undef SET_INT
 
 /* The sample content handler */
@@ -330,7 +332,7 @@ parse_app_token(char *token,
     /* parse the token, TTL is zero because app-tokens don't have ttl,
      * just expiration
      */
-    status = webauth_token_parse(token, blen, 0, sconf->ring, &alist);
+    status = webauth_token_parse(token, blen, 0, sconf->ctxt->ring, &alist);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: webauth_token_parse failed: %s (%d)",
@@ -389,10 +391,9 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
         cval = apr_pstrmemdup(r->pool, cs, ce-cs);
     }
 
-    alist = parse_app_token(cval, r, sconf, dconf);
-
     sub = NULL;
 
+    alist = parse_app_token(cval, r, sconf, dconf);
     if (alist != NULL) {
         /* pull out subject */
         status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
@@ -402,22 +403,22 @@ check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                      "mod_webauth: check_cookie: can't find subject in token");
         }
+        webauth_attr_list_free(alist);
     }
 
-    if (alist == NULL || sub == NULL) {
+    if (sub == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
         char *cookie = apr_psprintf(r->pool,
                                     "%s=; path=/; expires=%s;%s",
                                     AT_COOKIE_NAME,
                                     "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    is_https(r) ? "secure" : "");
+                                    sconf->secure_cookie ? "secure" : "");
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webauth: nuking cookie(%s): (%s)\n", 
                      AT_COOKIE_NAME, cookie);
         setn_note(r, N_APP_COOKIE, cookie);
+        return NULL;
     }
-
-    webauth_attr_list_free(alist);
 
     if (sub != NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
@@ -514,7 +515,6 @@ check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
     const char *subject, *cookie;
-
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
 
@@ -806,6 +806,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
     
     switch (e) {
         /* server configs */
+        case E_SecureCookie:
+            sconf->secure_cookie = flag;
+            sconf->secure_cookie_ex = 1;
+            break;
         case E_Debug:
             sconf->debug = flag;
             break;
@@ -895,6 +899,7 @@ static const command_rec cmds[] = {
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
     SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_SecureCookie, E_SecureCookie, CM_SecureCookie),
 
     /* directory */
     DINT(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
