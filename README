@@ -46,21 +46,29 @@ DESCRIPTION
 
       <http://webauthv3.stanford.edu/>
 
+  WebAuth also provides a second module that can do LDAP directory lookups
+  using Kerberos v5 GSS-API authentication and use the result to authorize
+  web clients by privilege groups or provide directory information to web
+  applications in environment variables.
+
   Future releases of this software will also support obtaining of
   credentials on behalf of the user by trusted application servers,
-  allowing cleaner implementation of portal-style applications.  Future
-  releases will also include integration with LDAP, including use of
-  privilege groups in LDAP for authorization.
+  allowing cleaner implementation of portal-style applications.
 
 
 REQUIREMENTS
 
   WebAuth requires the following additional packages:
 
-      Apache 2.0.43 or later
+      Apache 2.0.43 or later (2.0.45 or later recommended)
       OpenSSL 0.9.7 or later
-      MIT Kerberos v5 1.2.x or later
+      MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
       cURL (tested with 7.10.2)
+
+  LDAP support also requires:
+
+      Cyrus SASL 2.x (tested with 2.1.13)
+      OpenLDAP 2.x (tested with 2.1.17)
 
   Apache 2.0 must be built with --enable-ssl and --enable-so.  WebAuth
   uses apxs to build its Apache modules.
