@@ -499,6 +499,10 @@ make_app_token(const char *subject,
                  "mod_webauth: make_app_token setting cookie(%s): (%s)\n", 
                  AT_COOKIE_NAME, cookie);
     mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
+
+    rc->last_used_time = last_used_time;
+    rc->creation_time = creation_time;
+    rc->expiration_time = expiration_time;
 }
 
 /*
@@ -507,14 +511,20 @@ make_app_token(const char *subject,
  */
 
 static int
-manage_inactivity(MWA_REQ_CTXT *rc, const char *sub,
-                  WEBAUTH_ATTR_LIST *alist)
+manage_token(MWA_REQ_CTXT *rc, const char *sub,
+             WEBAUTH_ATTR_LIST *alist)
 {
     time_t curr, last_used_time, expiration_time, creation_time;
     int status;
 
+    if (!rc->dconf->inactive_expire && 
+        !rc->dconf->last_use_update_interval) {
+        return 1;
+    }
+
     status = webauth_attr_list_get_time(alist, WA_TK_LASTUSED_TIME,
                                         &last_used_time, WA_F_NONE);
+
     if (status != WA_ERR_NONE) {
         /* hum, can't find last-used-time, bail */
         return 0;
@@ -522,25 +532,24 @@ manage_inactivity(MWA_REQ_CTXT *rc, const char *sub,
 
     curr = time(NULL);
 
-    if (last_used_time + rc->dconf->inactive_expire < curr) {
+    /* see if its inactive */
+    if (rc->dconf->inactive_expire && 
+        (last_used_time + rc->dconf->inactive_expire < curr)) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: manage_inactivity: inactive(%s)",
                      sub);
         return 0;
     }
-    
-
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                 "mod_webauth: lut(%d) updint(%d) curr(%d)", 
-                 last_used_time, rc->dconf->last_use_update_interval,
-                 curr);
 
     /* see if last_used_time is older then the interval we update
        tokens */
-    if (last_used_time + rc->dconf->last_use_update_interval > curr) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: manage_inactivity: not updating yet(%s)",
-                     sub);
+    if ((rc->dconf->last_use_update_interval == 0) ||
+        (last_used_time + rc->dconf->last_use_update_interval > curr)) {
+        /*
+         *ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+         * "mod_webauth: manage_inactivity: not updating yet(%s)",
+         * sub);
+        */
         return 1;
     }
 
@@ -614,14 +623,23 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
     sub = apr_pstrdup(rc->r->pool, sub);
 
+    /* get the times here, as manage_token might update last_used_time */
+    webauth_attr_list_get_time(alist, WA_TK_LASTUSED_TIME,
+                               &rc->last_used_time, WA_F_NONE);
+
+    webauth_attr_list_get_time(alist, WA_TK_CREATION_TIME,
+                               &rc->creation_time, WA_F_NONE);
+
+    webauth_attr_list_get_time(alist, WA_TK_EXPIRATION_TIME,
+                               &rc->expiration_time, WA_F_NONE);
+
     /* update last-use-time, check inactivity */
-    if (rc->dconf->inactive_expire) {
-        if (!manage_inactivity(rc, sub, alist)) {
-            sub = NULL;
-            goto cleanup;
-        }
+    if (!manage_token(rc, sub, alist)) {
+        sub = NULL;
+        goto cleanup;
     }
 
+    
  cleanup:
     webauth_attr_list_free(alist);
     return sub;
@@ -818,7 +836,7 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
         make_app_token(subject, 
                        curr,
                        expiration_time, 
-                       rc->dconf->inactive_expire ? curr : 0,
+                       rc->dconf->last_use_update_interval ? curr : 0,
                        rc);
     } else {
         /* FIXME: everyone else should have logged something, right? */
@@ -1081,7 +1099,9 @@ check_user_id_hook(request_rec *r)
     const char *subject;
     int in_url = 0;
     MWA_REQ_CTXT rc;
-   
+
+    memset(&rc, 0, sizeof(rc));
+
     rc.r = r;
 
     rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
@@ -1135,7 +1155,6 @@ check_user_id_hook(request_rec *r)
                      subject);
         r->user = (char*)subject;
         r->ap_auth_type = (char*)at;
-        return OK;
     } else {
         if (r->method_number == M_GET) {
             ap_discard_request_body(r);
@@ -1145,6 +1164,24 @@ check_user_id_hook(request_rec *r)
         }
     }
 
+    /* set environment variables */
+    subject = mwa_get_note(r, N_SUBJECT);
+    if (subject) 
+        set_env(&rc, ENV_WEBAUTH_USER, subject);
+
+    if (rc.expiration_time)
+        set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, 
+                apr_psprintf(rc.r->pool, "%d", rc.expiration_time));
+
+    if (rc.creation_time)
+        set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, 
+                apr_psprintf(rc.r->pool, "%d", rc.creation_time));
+
+    if (rc.last_used_time) 
+        set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED,
+                apr_psprintf(rc.r->pool, "%d", rc.last_used_time));
+
+    return OK;
 }
 
 #if 0 
@@ -1268,6 +1305,8 @@ fixups_hook(request_rec *r)
     const char *subject;
     MWA_REQ_CTXT rc;
 
+    memset(&rc, 0, sizeof(rc));
+
     rc.r = r;
     rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
                                                  &webauth_module);
@@ -1281,12 +1320,7 @@ fixups_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                      "mod_webauth: subreq fixups url(%s)", r->unparsed_uri);
     }
-
-    /* set environment variable */
-    subject = mwa_get_note(r, N_SUBJECT);
-    if (subject) 
-        set_env(&rc, ENV_WEBAUTH_USER, subject);
-
+    
     if (rc.dconf->do_logout) {
         nuke_all_webauth_cookies(&rc);
     } else {

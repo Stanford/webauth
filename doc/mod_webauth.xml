@@ -74,11 +74,24 @@ additional environment  variables set.
 </tr>
 <tr><td><code>WEBAUTH_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user</td></tr>
 
+<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>                         <td>number</td>      <td>When the token was created</td></tr>
+
+<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>                         <td>number</td>      <td>When the token will expire</td></tr>
+<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td>                         <td>number</td>      <td>When the token was last used, if WebAuthLastUseUpdateInterval is non-zero</td></tr>
+
 <tr><td><code>REMOTE_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user</td></tr>
 
 <tr><td><code>AUTH_TYPE</code></td>                         <td>string</td>      <td>Will be set to <code>WebAuth</code></td></tr>
 
 </table>
+
+<example><title>Example</title>
+WEBAUTH_USER=schemers<br/>
+WEBAUTH_TOKEN_CREATION=103872393<br/>
+WEBAUTH_TOKEN_EXPIRATION=1038759389<br/>
+WEBAUTH_TOKEN_LASTUSED=103872393<br/>
+</example>
+
 </section>
 
 
@@ -193,7 +206,7 @@ as Apache (and CGI apps, etc) will treat it as being part of the
 requested URL. </p>
 
 <note><title>Note</title> 
-    <p>Giving all the caveats, should this directive even be documented?
+    <p>Given all the caveats, should this directive even be documented?
     </p>
 </note>
 
@@ -627,7 +640,7 @@ WebAuthLastUseUpdateInterval 10m
 <description>How often to update the main webauth cookie
 </description>
 <syntax>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></syntax>
-<default>(disabled)</default>
+<default>WebAuthLastUsedUpdateInterval 0</default>
 <contextlist><context>.htaccess</context>
 <context>directory</context></contextlist>
 
@@ -635,17 +648,24 @@ WebAuthLastUseUpdateInterval 10m
 <p>
     This value determines how often we update the webauth_at cookie
     to indicate when the token was last used. Setting this too small
-    will cause too many cookie updates. 
+    will cause too many cookie updates.  A value of 0 will disable
+    updating of the cookie.
 </p>
 
-<p> This directive is only used if the 
-   <a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a> directive is
-set.
+<p> This directive is normally only used with 
+   <a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a>, though
+it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</code> 
+ environment variable updated.
 </p>
 
 <p>The units for the time are specified by appending a single letter,
 which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
+
+<note><title>Note</title> 
+    <p>Should we enforce a minimum value, like 1m or 5m?
+    </p>
+</note>
 
 <example><title>Example</title>
 # timeout an app-token if it isn't used for <br/>

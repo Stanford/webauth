@@ -35,8 +35,11 @@
 /* name of our main app-token cookie */
 #define AT_COOKIE_NAME "webauth_at"
 
-/* environment variable to set */
+/* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
+#define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
+#define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
+#define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
 
 /* defines for config directives */
 #define CD_WebKDCURL "WebAuthWebKDCURL"
@@ -190,6 +193,10 @@ typedef struct {
     request_rec *r;
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
+    /* times from parsed/newly created app token */
+    time_t creation_time;
+    time_t expiration_time;
+    time_t last_used_time;
 } MWA_REQ_CTXT;
 
 /* used to append a bunch of data together */
