@@ -99,7 +99,7 @@ enum {
     E_TokenMaxTTL,
 };
 
-module webkdc_module;
+extern module webkdc_module;
 
 /* server conf stuff */
 typedef struct {

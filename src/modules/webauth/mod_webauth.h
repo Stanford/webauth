@@ -216,7 +216,7 @@ enum {
     E_WebKdcURL,
 };
 
-module webauth_module;
+extern module webauth_module;
 
 /* a service token and associated data, all memory (including key)
  * is allocated from a pool
