@@ -1,0 +1,56 @@
+Overview:
+
+	This document discusses some of the issues in implementing
+the webkdc part of the Stanford Webauth V3 authentication system. 
+The purpose of this part of the webauthv3 system is to obtain long lived
+user credentials that can be used by the rest of the system 
+to obtain short term credentials for a specific service. The protocol
+is discussed in webkdc-protocol. 
+
+
+Requirements:
+
+	The basic requirement is to support the protocol, but
+there are some additional usage requirements. 
+
+	There needs to be more than one webKDC machine for 
+load balancing and reliability requirements. 
+
+	The credentials issued by any one of the webKDCs must
+be useable at any other webKDCs. 
+
+	The rough estimate of maximum load on the whole system
+is 5 requests/sec. 
+
+	The webKDC needs to be able to make authority decisions
+on what tickets to provide based on the following criteria:
+
+	1. Type of authentication (username/passwd vs tgt)
+
+	2. User principal ( optional in first release )
+
+	3. Requesting server
+
+	4. Service principal requested. 
+
+	The underlying connection protocol (i.e. ssl ) must provide
+date security and integrity, but does not need to provide authentication.
+
+	A very strong form of encryption is needed for encrypting/decrypting
+the ticket granting tickets. 
+
+	The encryption keys used for encrypting/decrypting the tgt's
+must be changed on a regular basis. 
+
+Design: 
+
+	Overall deamon:
+
+	XML handling: 
+
+	Session handling: 
+
+	Credentials handling: 
+
+	Encryption Issues: 
+	
