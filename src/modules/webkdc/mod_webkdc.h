@@ -302,5 +302,7 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool);
 void 
 mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
 
+int
+mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf);
 
 #endif

@@ -1781,7 +1781,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     int sub_cred_parsed = 0;
     int num_tokens, i, did_login;
     int login_ec;
-    const char *login_em;
+    const char *login_em = NULL;
 
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
@@ -2205,7 +2205,6 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
                 apr_pool_t *ptemp, server_rec *s)
 {
     MWK_SCONF *sconf;
-    int status;
     server_rec *scheck;
     char *version;
 

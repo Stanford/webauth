@@ -24,7 +24,6 @@ add_entry(MWK_REQ_CTXT *rc,
           const char *cred)
 {
     apr_hash_t *hash;
-    int found;
 
     hash = ap_is_matchexp(subject) ? acl->wild_entries : acl->entries;
 
@@ -96,7 +95,6 @@ get_acl(MWK_REQ_CTXT *rc)
     const char *mwk_func="get_acl";
     apr_status_t astatus;
     apr_file_t *acl_file;
-    apr_finfo_t finfo;
     apr_pool_t *acl_pool;
     int lineno, error; 
     char line[1024];
@@ -143,7 +141,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
     while ((astatus = apr_file_gets(line, sizeof(line)-1, acl_file)) == 
            APR_SUCCESS) {
-        char *subject, *type, *proxy_type, *cred;
+        char *subject, *type;
         char *last;
 
         lineno++;
@@ -253,7 +251,7 @@ get_acl(MWK_REQ_CTXT *rc)
        it was set */
     if (error) {
         apr_pool_destroy(new_acl->pool);
-        new_acl == NULL;
+        new_acl = NULL;
         if (acl != NULL) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webkdc: %s: couldn't load new acl file, "
