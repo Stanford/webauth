@@ -1,4 +1,4 @@
-# Makefile for Webauth language bindings
+# Makefile for WebAuth language bindings
 # $Id$
 
 srcdir = @srcdir@
@@ -7,18 +7,18 @@ VPATH = @srcdir@
 
 @SET_MAKE@
 
-SUBDIRS = perl
+SUBDIRS = @BINDINGS@
 
 .PHONY: all clean depend install
 
 all: Makefile
-	@for subdir in $(SUBDIRS); do \
+	@l='$(SUBDIRS)'; for subdir in $$l; do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
 clean depend install:
-	@for subdir in $(SUBDIRS); do \
+	@l='$(SUBDIRS)'; for subdir in $$l; do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
