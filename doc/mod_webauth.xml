@@ -513,14 +513,14 @@ available at the time of document or application serving. They are
 all prefixed by "WEBAUTH" (for instance WEBAUTH_USER), but some CGI apps 
 (specifically the Oracle WRB) have expectations about and/or restrictions 
 on the names of environment variables they can handle. Set this to a string
- you want prepended instead of "WEBAUTH" to the environment variables this 
+ you want prepended to the environment variables this 
 module defines, and they will be set in addition to the standard "WEBAUTH" 
 ones.</p>
 
 <example><title>Example</title>
 # this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br/>
 # environment variables to get set.<br/>
-WebAuthVarPrefix HTTP
+WebAuthVarPrefix HTTP_
 </example>
 </usage>
 </directivesynopsis>
@@ -621,6 +621,33 @@ authentication.
   WebAuthForceLogin on<br/>
   WebAuthAppTokenLifetime 20m<br/>
   &lt;/Location&gt;
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthDebug</name>
+<description>Turn on extra debugging in Apache error_log
+</description>
+<syntax>WebAuthDebug on|off</syntax>
+<default>WebAuthDebug off</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+Whehter or not we do extra debugging in error_log.
+</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet, as mod_webauth
+    is currently always spewing a bunch of stuff to the error_log.
+    </p>
+</note>
+
+<example><title>Example</title>
+WebAuthRequireSSL off<br />
 </example>
 </usage>
 </directivesynopsis>
