@@ -526,7 +526,11 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c,
                                           out_principal);
             /* use tcode fromt this point so we don't lose value of c->code */
             /* FIXME: when logging is in, log if error if tcode != 0 */
+#ifdef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
             tcode = krb5_free_keytab_entry_contents(c->ctx, &entry);
+#else
+            tcode = krb5_kt_free_entry(c->ctx, &entry);
+#endif 
         }
         /* FIXME: when logging is in, log if error if tcode != 0 */
         tcode = krb5_kt_end_seq_get(c->ctx, id, &cursor);
