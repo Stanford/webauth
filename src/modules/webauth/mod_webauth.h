@@ -78,7 +78,7 @@
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL 300
 
-#define CD_SubjectAuthType "WebAuthSubectAuthType"
+#define CD_SubjectAuthType "WebAuthSubjectAuthType"
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"
 #define DF_SubjectAuthType "krb5"
 
