@@ -292,18 +292,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     if (s != WA_ERR_NONE)
         goto cleanup;
 
-    f = webauth_attr_list_find(list, CR_KEYBLOCK_CONTENTS);
-    if (f == WA_ERR_NOT_FOUND)
+    s = webauth_attr_list_get_void(list, CR_KEYBLOCK_CONTENTS,
+                                   (void**)&creds->keyblock.contents,
+                                   &creds->keyblock.length);
+    if (s != WA_ERR_NONE)
         goto cleanup;
-
-    creds->keyblock.contents = malloc(list->attrs[f].length);
-    if (creds->keyblock.contents == NULL) {
-        s = WA_ERR_NO_MEM;
-        goto cleanup;
-    }
-    creds->keyblock.length = list->attrs[f].length;
-    memcpy(creds->keyblock.contents, list->attrs[f].value, 
-           creds->keyblock.length);
 
     /* times */
     s = webauth_attr_list_get_int32(list, CR_AUTHTIME, &creds->times.authtime);
@@ -366,19 +359,12 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
             if (s != WA_ERR_NONE)
                 goto cleanup;
             sprintf(name, CR_ADDRCONT, i);
-            f = webauth_attr_list_find(list, name);
-            if (i == WA_ERR_NOT_FOUND)
-                goto cleanup;
 
-            creds->addresses[i]->contents = malloc(list->attrs[f].length);
-            if (creds->addresses[i]->contents == NULL) {
-                s = WA_ERR_NO_MEM;
+            s = webauth_attr_list_get_void(list, name,
+                                      (void**)&creds->addresses[i]->contents,
+                                      &creds->addresses[i]->length);
+            if (s != WA_ERR_NONE)
                 goto cleanup;
-            }
-            creds->addresses[i]->length = list->attrs[f].length;
-            memcpy(creds->addresses[i]->contents, list->attrs[f].value,
-                   creds->addresses[i]->length);
-
         }
     }
 
@@ -386,27 +372,24 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     f = webauth_attr_list_find(list, CR_TICKET);
     if (f != WA_ERR_NOT_FOUND) {
         creds->ticket.magic = KV5M_DATA;
-        creds->ticket.data = malloc(list->attrs[f].length);
-        if (creds->ticket.data == NULL) {
-            s = WA_ERR_NO_MEM;
+
+        s = webauth_attr_list_get_void(list, CR_TICKET,
+                                       (void**)&creds->ticket.data,
+                                       &creds->ticket.length);
+        if (s != WA_ERR_NONE)
             goto cleanup;
-        }
-        creds->ticket.length = list->attrs[f].length;
-        memcpy(creds->ticket.data, list->attrs[f].value, creds->ticket.length);
     }
 
     /* second_ticket */
     f = webauth_attr_list_find(list, CR_TICKET2);
     if (f != WA_ERR_NOT_FOUND) {
         creds->ticket.magic = KV5M_DATA;
-        creds->second_ticket.data = malloc(list->attrs[f].length);
-        if (creds->second_ticket.data == NULL) {
-            s = WA_ERR_NO_MEM;
+
+        s = webauth_attr_list_get_void(list, CR_TICKET2,
+                                       (void**)&creds->second_ticket.data,
+                                       &creds->second_ticket.length);
+        if (s != WA_ERR_NONE)
             goto cleanup;
-        }
-        creds->second_ticket.length = list->attrs[f].length;
-        memcpy(creds->second_ticket.data,
-               list->attrs[f].value, creds->second_ticket.length);
     }
 
     /* authdata */
@@ -442,18 +425,12 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
             if (s != WA_ERR_NONE)
                 goto cleanup;
             sprintf(name, CR_AUTHDATACONT, i);
-            f = webauth_attr_list_find(list, name);
-            if (i == WA_ERR_NOT_FOUND)
-                goto cleanup;
 
-            creds->authdata[i]->contents = malloc(list->attrs[f].length);
-            if (creds->authdata[i]->contents == NULL) {
-                s = WA_ERR_NO_MEM;
+            s = webauth_attr_list_get_void(list, name,
+                                        (void**)&creds->authdata[i]->contents,
+                                        &creds->authdata[i]->length);
+            if (s != WA_ERR_NONE)
                 goto cleanup;
-            }
-            creds->authdata[i]->length = list->attrs[f].length;
-            memcpy(creds->authdata[i]->contents, list->attrs[f].value,
-                   creds->authdata[i]->length);
         }
     }
 

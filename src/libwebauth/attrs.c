@@ -149,6 +149,31 @@ webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name)
 }
 
 int
+webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
+                           const char *name,
+                           void **value,
+                           int *value_len)
+{
+    int i;
+
+    assert(list != NULL);
+    assert(name != NULL);
+    assert(value!= NULL);
+    assert(value_len != NULL);
+
+    i = webauth_attr_list_find(list, name);
+    if (i == WA_ERR_NOT_FOUND)
+        return i;
+
+    *value_len = list->attrs[i].length;
+    *value = malloc(*value_len);
+    if (*value == NULL)
+        return WA_ERR_NO_MEM;
+    memcpy(*value, list->attrs[i].value, *value_len);
+    return WA_ERR_NONE;
+}
+
+int
 webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
                              const char *name,
                              uint32_t *value)
@@ -160,12 +185,10 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
     assert(value!= NULL);
 
     i = webauth_attr_list_find(list, name);
-    if (i == WA_ERR_NOT_FOUND) {
+    if (i == WA_ERR_NOT_FOUND)
         return i;
-    }
-    if (list->attrs[i].length != sizeof(uint32_t)) {
+    if (list->attrs[i].length != sizeof(uint32_t)) 
         return WA_ERR_CORRUPT;
-    }
     memcpy(value, list->attrs[i].value, sizeof(uint32_t));
     *value = ntohl(*value);
     return WA_ERR_NONE;
