@@ -1,4 +1,4 @@
-package WebKDC::XmlOutput;
+package WebKDC::XmlDoc;
 
 use strict;
 use warnings;
@@ -23,9 +23,6 @@ our @EXPORT_OK;
 sub new {
     my $type = shift;
     my $self = {};
-    if (@_) {
-	$self->{'root'} = shift;
-    }
     bless $self, $type;
     return $self;
 }

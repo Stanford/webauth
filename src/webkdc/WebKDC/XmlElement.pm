@@ -3,6 +3,8 @@ package WebKDC::XmlElement;
 use strict;
 use warnings;
 
+use XML::Parser;
+
 #use overload '""' => \&to_string;
 
 BEGIN {
@@ -22,13 +24,37 @@ BEGIN {
 
 our @EXPORT_OK;
 
+sub convert_tree {
+    my ($doc, $tree) = @_;
+    $doc->attrs(shift @$tree);
+    my ($element, $content);
+
+    while (defined($element = shift @$tree)) {
+	$content = shift @$tree;
+	if ($element eq '0') {
+	    $doc->append_content($content) if $content ne '';
+	} elsif (ref $content eq 'ARRAY') {
+	    my $child = new WebKDC::XmlElement;
+	    $child->name($element);
+	    convert_tree($child, $content);
+	    $doc->add_child($child);
+	} else {
+	    die "convert tree error";
+	}
+    }
+};
+
 sub new {
     my $type = shift;
-    my $self = { 'name' => shift, 'attrs' => {}, 'children' => []};
-    if (@_) {
-	$self->{'root'} = shift;
-    }
+    my $self = { 'attrs' => {}, 'children' => []};
     bless $self, $type;
+    if (@_) {
+	my $xml = shift;
+	my $parser = new XML::Parser(Style => 'Tree');
+	my $tree = $parser->parse($xml);
+	$self->name(shift @$tree);
+	convert_tree($self, shift @$tree);
+    }
     return $self;
 }
 

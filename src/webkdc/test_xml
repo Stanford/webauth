@@ -11,8 +11,8 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use Dumpvalue;
 
 use WebKDC;
-use WebKDC::XmlInput;
-use WebKDC::XmlOutput;
+use WebKDC::XmlElement;
+use WebKDC::XmlDoc;
 use WebKDC::Token;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
@@ -23,7 +23,7 @@ use UNIVERSAL qw(isa);
 use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 
 
-my $out = new WebKDC::XmlOutput;
+my $out = new WebKDC::XmlDoc;
 
 $out->start('getTokensRequest');
 $out->start('requestCredential', {'type' => 'krb5'});
@@ -42,7 +42,7 @@ print "-------- generated --------\n";
 print "$xml\n";
 print "-------- generated --------\n";
 
-my $doc = WebKDC::XmlInput::parse($xml);
+my $doc = new WebKDC::XmlElement($xml);
 
 
 print "-------- parsed --------\n";
