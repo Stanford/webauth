@@ -33,6 +33,58 @@
 
 </section>
 
+<section><title>Requesting Credentials</title>
+
+<p>One of the features of WebAuth is the ability to request credentials
+ for a particular request (or group of requests). </p>
+
+<p>Depending on the credential type, temporary files containing credentials
+  may need to be created. These crdentials will be stored in the directory
+  specified by the <a href="#WebAuthCredCacheDir">WebAuthCredCacheDir</a> directive.</p>
+
+<p>The <a href="#WebAuthCred">WebAuthCred</a> directive is use to request which credentials a
+particular request may need. Credentials are not actually requested 
+from the WebKDC until a page with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive set to 
+"on" is served. At that point, they will be cached (encrypted) in cookies 
+and used to satisfy future requests.</p>
+
+<p>Saving credentials on every single request (for example, an image
+or static page) is expensive, since it may involve decrypting credentials
+stored in a cookie, processing them, and storing them in a temporary file.
+The <a href="#WebAuthUseCreds">WebAuthUseCreds</a> directive is used to control which requests will actually
+go through this process.</p>
+
+<p>The following example shows one scenario where every page under
+/myapp/ is WebAuth-protected, and every page under /myapp/commands/
+requires the use of two Kerberos V5 credentials.
+</p>
+
+<example><title>Example</title>
+  # this first WebAuthCred directive will cause us to<br/>
+  # acquire a proxy-token on the initial redirect when<br/>
+  # determining the user's identity. It saves an extra redirect<br/>
+  # later on when we actually use/acquire credentials.<br/>
+  <br/>
+  &lt;Location /myapp/&gt;<br/>
+  AuthType WebAuth<br/>
+  require valid-user<br/>
+  WebAuthCred krb5<br/>
+  &lt;/Location&gt; <br/>
+  <br/>
+  # these next WebAuthCred directives will cause us to acquire<br/>
+  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br/>
+  <br/>
+  &lt;Location /myapp/commands/&gt;<br/>
+  WebAuthUseCreds on<br/>
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br/>
+  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br/>
+  &lt;/Location&gt;
+  <br/>
+</example>
+
+</section>
+
+
 <section><title>Minimal Config File</title>
 
     <p>The following example shows the minimum config file required
@@ -66,6 +118,11 @@ on the names of environment variables they can handle, you can use the
 additional environment variables set.
 </p>
 
+<p>Additionally, requesting credentials for a particular request may
+cause envrionment variables to get set. For example, request Kerberos V5
+credentials will result in the KRB5CCNAME envionment variable being
+set.
+</p>
 <table border="1">
 <tr>
  <th>Variable Name:</th>
@@ -751,6 +808,108 @@ hours, days, and weeks respectively.</p>
 
 <example><title>Example</title>
 WebAuthKeyringKeyLifetime 60d<br/>
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>
+<a name="WebAuthCredCacheDir">WebAuthCredCacheDir</a>
+</name>
+<description>Name of the directory containing cached credentials
+</description>
+<syntax>WebAuthCredCacheDir <em>path</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the directory where credentials are cached
+for the duration of a single request. </p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set if the <a href="#WebAuthCred">WebAuthCred</a> and <a href="#WebAuthUseCreds">WebAuthUseCreds</a>
+directives are used.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthCredCacheDir conf/webauth/credcache
+</example>
+</usage>
+</directivesynopsis>
+
+
+
+<directivesynopsis>
+<name>
+<a name="WebAuthUseCreds">WebAuthUseCreds</a>
+</name>
+<description>Whether or not save credentials to the cache
+</description>
+<syntax>WebAuthUseCreds on|off</syntax>
+<default>WebAuthUseCreds off</default>
+<contextlist>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls whether or not any acquired credentials will
+actually be saved to the credential cache directory and made available
+as part of the current request. It should be used in conjunction with
+the <a href="#WebAuthCred">WebAuthCred</a> directive.
+</p>
+
+<example><title>Example</title>
+  &lt;Location /myapp/command&gt;<br />
+  WebAuthUseCreds on<br />
+  &lt;/Location&gt;
+</example>
+</usage>
+</directivesynopsis>
+
+
+
+<directivesynopsis>
+<name>
+<a name="WebAuthCred">WebAuthCred</a>
+</name>
+<description>Which credentials to acquire
+</description>
+<syntax>WebAuthCred <em>type</em> [<em>service</em>]</syntax>
+<default>(none)</default>
+<contextlist>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive specifies which credentials a particular request may need.
+It should be used should be used in conjunction with the <a href="#WebAuthUseCreds">WebAuthUseCreds</a> 
+directive.
+</p>
+
+<p>Note that service is optional. If service is not present, then this is
+used to indicate that a page further down in the hierarchy will eventually
+acquire credentials of the specified type, by specifying credentials
+with a service name, and setting <a href="#WebAuthUseCreds">WebAuthUseCreds</a> to "on".</p>
+
+<p>This directive may be used multiple times in the same location to
+specify that multiple credentials are required.</p>
+
+<example>
+<title>Example</title>
+  # get and use the following krb5 credential on every<br/>
+  # request under /myapp/.<br/>
+  &lt;Location /myapp/&gt;<br/>
+  AuthType WebAuth<br/>
+  require valid-user<br/>
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br/>
+  &lt;/Location&gt; <br/>
+  <br/>
 </example>
 </usage>
 </directivesynopsis>
