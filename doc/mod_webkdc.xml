@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<!DOCTYPE modulesynopsis SYSTEM "../style/modulesynopsis.dtd">
+<?xml-stylesheet type="text/xsl" href="../style/manual.en.xsl"?>
+<modulesynopsis>
+
+<name>mod_webkdc</name>
+<description>WebAuth V3 WebKDC module</description>
+<status>Contributed</status>
+<sourcefile>mod_webkdc.c and friends</sourcefile>
+<identifier>webkdc_module</identifier>
+
+<summary>
+<p>This module implements the server-side of the WebAuth V3 protocol.
+FIXME: BLAH BLAH BLAH.</p>
+
+<p>Further details are provided in the 
+<a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
+
+</summary>
+
+<section><title>Setting up the WebKDC</title>
+
+    <p>describe how to configure keyrings, acls, handler, etc.
+       FIXME: blah blah blah.
+    </p>
+
+</section>
+
+<section><title>Minimal Config File</title>
+
+    <p>The following example shows the minimum config file required
+    to configure and use mod_webwkdc.</p>
+
+<example><title>Example</title>
+LoadModule webkdc_module modules/mod_webkdc.so<br/>
+<br/>
+  WebKdcServiceTokenLifetime 30d<br/>
+  WebKdcKeyring conf/webkdc_keyring<br/>
+  WebKdcKeytab conf/webkdc_keytab<br/>
+<br/>
+  &lt;VirtualHost _default_:443><br/>
+    &lt;Location /webkdc-service><br/>
+       SetHandler webkdc<br/>
+    &lt;/Location><br/>
+  &lt;/VirtualHost><br/>
+</example>
+
+</section>
+
+<directivesynopsis>
+<name><a name="WebKdcTokenMaxTTL">WebkdcTokenMaxTTL</a></name>
+<description>How old a token that was should be recently created is valid for.
+</description>
+<syntax>WebKdcTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>WebKdcTokenMaxTTL 300s</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive sets how old tokens that must be considered recent can be 
+before they are considered stale. It is used to help prevent tokens from 
+being replayed, and to ignore those token if they occur in cookies, URLs, 
+etc. This requires clocks between the web server and the WebKDC to be 
+synchronized. </p>
+
+<p>The units for the TTL are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+# ten minute TTL<br/>
+WebKdcTokenMaxTTL 10m
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcKeyring</name>
+<description>Name of the file containing the WebKDC's keyring
+</description>
+<syntax>WebKdcKeyring <em>path</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the file containing the WebKDC'sh keyring, which is
+a file that contains the server's private AES key(s). </p>
+
+<p>The keyring file gets read once per child and cached for the duration
+of a child.
+</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebKdcKeyRing conf/webkdc_keyring
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name><a name="WebKdcKeytab">WebKdcKeytab</a></name>
+<description>Name of the Kerberos V5 keytab file
+</description>
+<syntax>WebKdcKeytab <em>path</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the Kerberos V5 keytab file. The keytab must only contain
+the principal used for the WebKDC operations, such as service/webkdc@realm.
+This is because the principal is determined by reading the keytab file and 
+using the first principal found.</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebKdcKeytab conf/webkdc_keytab
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcProxyTokenLifetime</name>
+<description>lifetime of webkdc-proxy tokens we create.
+</description>
+<syntax>WebKdcProxyTokenLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>(lifetime of underlying proxied-credential)</default>
+<contextlist>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls the lifetime of the webkdc-proxy token (the 
+main single-sign-oncookie containing the user's proxied credentials).
+If not specified, the lifetime time used is the expiration time of the 
+underlying credential (i.e., the lifetime of the Kerberos TGT for example).
+</p>
+
+<p>Tokens created with a webkdc-proxy token (id, proxy, cred) will 
+have the same expiration time as the webkdc-proxy token, so this directive
+also controls the lifetime of those tokens as well.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<note><title>Note</title> 
+<p>
+The upper bound of the webkdc-proxy token is always bounded
+by the expiration time of the underlying proxied credential. For 
+example, if the Kerberos V5 TGT expires in 25 hours, then the WebKDC
+will not create a webkdc-proxy token with a lifetime greater then 25 hours,
+even if this directive is set higher then 25 hours.
+</p>
+</note>
+
+<example><title>Example</title>
+# create a webkdc-proxy token valid for 2 hours<br/>
+WebKdcProxyTokenLifetime 2h
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcServiceTokenLifetime</name>
+<description>lifetime of webkdc-service tokens we create.
+</description>
+<syntax>WebKdcServiceTokenLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>(none)</default>
+<contextlist>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls the lifetime of the webkdc-service token
+we create. This controls how often a webauth server needs to re-authenticate
+with the WebKDC to get a new service token. The lifetime of the service
+token (and the webkdc-proxy-token) control how often the WebKDC can change
+its private key, and how long it should retain the previous key for.
+</p>
+<p>A reasonable setting for this directive is 30 days, with the
+private key of the WebKDC being changed every 60 days or so, keeping
+the previous WebKDC private key around for 30 days after it expires.
+</p>
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+# create a webkdc-service token valid for 30 days<br/>
+WebKdcServiceTokenLifetime 30d
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcDebug</name>
+<description>Turn on extra debugging in Apache error_log
+</description>
+<syntax>WebKdcDebug on|off</syntax>
+<default>WebKdcDebug off</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+Whether or not we do extra debugging in error_log.
+</p>
+
+<example><title>Example</title>
+WebKdcDebug on<br />
+</example>
+</usage>
+</directivesynopsis>
+
+</modulesynopsis>
