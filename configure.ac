@@ -8,6 +8,7 @@ m4_include([m4/int32.m4])
 AC_REVISION($Revision$)dnl
 AC_PREREQ(2.53)
 AC_INIT(src/libwebauth/webauth.h)
+AC_CONFIG_AUX_DIR(tools)
 
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
