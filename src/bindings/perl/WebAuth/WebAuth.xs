@@ -642,17 +642,20 @@ PPCODE:
     PUSHs(output);
 }
 
-int
-webauth_krb5_new(OUT ctxt)
-WEBAUTH_KRB5_CTXT *ctxt;
-PROTOTYPE: $
-CODE:
+void
+webauth_krb5_new()
+PROTOTYPE: 
+PPCODE:
 {
-    RETVAL = webauth_krb5_new(&ctxt);
+    WEBAUTH_KRB5_CTXT *ctxt;
+    int s= webauth_krb5_new(&ctxt);
+    SV *output = sv_newmortal();
+    sv_setref_pv(output, "WEBAUTH_KRB5_CTXTPtr", (void*)ctxt);
+    EXTEND(SP,2);
+    PUSHs(sv_2mortal(newSViv(s)));
+    PUSHs(output);
 }
-OUTPUT:
-    RETVAL
-    ctxt
+
 
 int
 webauth_krb5_error_code(c)

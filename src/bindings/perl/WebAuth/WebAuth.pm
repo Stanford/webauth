@@ -236,12 +236,14 @@ result of the webauth_token_create C function.
 Takes as input a base64 encrypted token and a key (created with 
 key_new) and returns the attributes.
 
-=item krb5_new(context)
+=item krb5_new()
 
-  $status = krb5_new($context);
+  ($status, $context) = krb5_new();
 
 Creates a new WEBAUTH_KRB5_CTXT reference in $context, and returns
-the webauth status code, which will be WA_ERR_NONE on success.
+the webauth status code, which will be WA_ERR_NONE on success. If 
+$status is WA_ERR_KRB5, then context can be used with only the
+krb5_error_code and krb5_error_message calls.
 
 =item krb5_error_code(context)
 

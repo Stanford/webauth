@@ -297,7 +297,7 @@ ok($s, WebAuth::WA_ERR_NONE);
 ######################################## krb5
 
 if ($run_kerb) {
-    $s = WebAuth::krb5_new($c);
+    ($s, $c) = WebAuth::krb5_new();
 
     ok($s, WebAuth::WA_ERR_NONE);
     ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
@@ -346,7 +346,7 @@ if ($run_kerb) {
 
     # nuke current context and import from tgt we created
     $c = undef;
-    $s = WebAuth::krb5_new($c);
+    ($s, $c) = WebAuth::krb5_new();
     ok($s, WebAuth::WA_ERR_NONE);
     ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
@@ -359,7 +359,7 @@ if ($run_kerb) {
 
     # nuke current context and get from keytab
     $c = undef;
-    $s = WebAuth::krb5_new($c);
+    ($s, $c) = WebAuth::krb5_new();
     ok($s, WebAuth::WA_ERR_NONE);
     ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
