@@ -118,7 +118,9 @@ sub handle_web_id_request {
     my ($user,$pass) = ($wreq->user(), $wreq->pass());
     my $proxy_token_str;
 
-    my ($et, $sad);
+    my ($et, $sad, $subject);
+
+    my $sa = $req_token->subject_auth();
 
     if (defined($user)) { 	
 	# attempt login via user/pass
@@ -141,7 +143,14 @@ sub handle_web_id_request {
 
 	# now get subject authenticator
 	$server_principal =~ s/^krb5://;
-	$sad = krb5_mk_req($c, $server_principal);
+	if ($sa eq 'krb5') {
+	    $sad = krb5_mk_req($c, $server_principal);
+	} elsif ($sa eq 'webkdc') {
+	    $subject = "krb5:$cp";
+	} else {
+	    die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
+					    "unknown sa: $sa");
+	}
 
 	# now get proxy data
 	($prd, $et) = krb5_export_tgt($c);
@@ -192,24 +201,31 @@ sub handle_web_id_request {
 
 	$et =$proxy_token->expiration_time();
 
-	my $c = krb5_new();
+	if ($sa eq 'krb5') {
+	    my $c = krb5_new();
 
-	eval {
-	    krb5_init_via_tgt($c, $proxy_token->proxy_data());
-	};
+	    eval {
+		krb5_init_via_tgt($c, $proxy_token->proxy_data());
+	    };
 
-	if (WebAuth::Exception::match($@)) {
-	    # nuke bogus cookie
-	    $wresp->proxy_cookie('krb5', '');
-	    #FIXME: log (this shouldn't be happening)
-	    die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
-                    "error using proxy_token with krb5_init_via_tgt", $@);
-	} elsif ($@) {
-	    die $@;
+	    if (WebAuth::Exception::match($@)) {
+		# nuke bogus cookie
+		$wresp->proxy_cookie('krb5', '');
+		#FIXME: log (this shouldn't be happening)
+		die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
+			 "error using proxy_token with krb5_init_via_tgt", $@);
+	    } elsif ($@) {
+		die $@;
+	    }
+	    # now get subject authenticator
+	    $server_principal =~ s/^krb5://;
+	    $sad = krb5_mk_req($c, $server_principal);
+	} elsif ($sa eq 'webkdc') {
+	    $subject = $proxy_token->subject();
+	} else {
+	    die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
+					    "unknown sa: $sa");
 	}
-	# now get subject authenticator
-	$server_principal =~ s/^krb5://;
-	$sad = krb5_mk_req($c, $server_principal);
 
     } else {
 	die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
@@ -217,8 +233,13 @@ sub handle_web_id_request {
     }
 
     my $id_token = new WebKDC::IdToken;
-    $id_token->subject_auth('krb5');
-    $id_token->subject_auth_data($sad);
+
+    $id_token->subject_auth($sa);
+    if ($sa eq 'krb5') {
+	$id_token->subject_auth_data($sad);
+    } else {
+	$id_token->subject($subject);
+    }
     $id_token->creation_time(time());
     $id_token->expiration_time($et);
     $wresp->response_token(base64_encode($id_token->to_token($key)));

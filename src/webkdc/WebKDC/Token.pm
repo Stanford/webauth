@@ -327,8 +327,10 @@ sub validate_token {
     # FIXME: add support for sa=webkdc as well
     croak "validate_token failed" unless
 	($self->token_type() eq 'id') && 
-	($self->subject_auth() eq 'krb5') && 
-	defined($self->subject_auth_data()) &&
+	(($self->subject_auth() eq 'krb5' && 
+	  defined($self->subject_auth_data())) ||
+	 ($self->subject_auth() eq 'webkdc' &&
+	  defined($self->subject()))) && 
 	defined($self->creation_time()) &&
 	defined($self->expiration_time());
 }
@@ -697,7 +699,8 @@ sub validate_token {
 	    defined($self->return_url()) &&
 	    ($self->request_reason() eq 'na') && 
 	    ($self->requested_token_type() eq 'id') && 
-	    ($self->subject_auth() eq 'krb5');
+	    ($self->subject_auth() eq 'krb5' ||
+	     ($self->subject_auth() eq 'webkdc'));
     }
 }
 
