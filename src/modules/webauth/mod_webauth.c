@@ -389,6 +389,7 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
     CHECK_DIR(keyring_path, CD_Keyring);
     CHECK_DIR(webkdc_url, CD_WebKdcURL);
     CHECK_DIR(keytab_path, CD_Keytab);
+    /*CHECK_DIR(cred_cache_dir, CD_CredCacheDir);*/
     CHECK_DIR(webkdc_principal, CD_WebKdcPrincipal);
     CHECK_DIR(st_cache_path, CD_ServiceTokenCache);
 
@@ -541,6 +542,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(login_url);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
+    MERGE_PTR(cred_cache_dir);
     MERGE_PTR(st_cache_path);
     MERGE_PTR(var_prefix);
     return (void *)conf;
@@ -558,6 +560,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     conf->force_login = oconf->force_login_ex ? 
         oconf->force_login : bconf->force_login;
 
+    conf->save_creds = oconf->save_creds_ex ? 
+        oconf->save_creds : bconf->save_creds;
+
     conf->do_logout = oconf->do_logout_ex ? 
         oconf->do_logout : bconf->do_logout;
 
@@ -567,6 +572,16 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(return_url);
     MERGE_PTR(login_canceled_url);
     MERGE_PTR(failure_url);
+
+    if (bconf->creds == NULL) {
+        conf->creds = oconf->creds;
+    } else if (oconf->creds == NULL) {
+        conf->creds = bconf->creds;
+    } else {
+        /* FIXME: should probably remove dups */
+        conf->creds = apr_array_append(p, bconf->creds, oconf->creds);
+    }
+
     return (void *)conf;
 }
 
@@ -1523,7 +1538,28 @@ fixups_hook(request_rec *r)
     set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, mwa_get_note(r, N_EXPIRATION));
     set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, mwa_get_note(r, N_CREATION));
     set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, mwa_get_note(r, N_LASTUSED));
+#if 0
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
+               "mod_webauth: cache dir: (%s)\n", 
+               rc.sconf->cred_cache_dir ? rc.sconf->cred_cache_dir : "(NULL)");
 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
+                 "mod_webauth: save creds: (%d)\n", 
+                 rc.dconf->save_creds);
+
+    if (rc.dconf->creds) {
+        int i;
+        MWA_WACRED *cred = (MWA_WACRED*)rc.dconf->creds->elts;
+        for (i=0; i < rc.dconf->creds->nelts; i++) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
+                         "mod_webauth: creds(%s, %s)\n",
+                         cred[i].type, cred[i].service);
+        }
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
+                     "mod_webauth: no creds\n");
+    }
+#endif
     return DECLINED;
 }
 
@@ -1597,6 +1633,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_Keytab:
             sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
+            break;
+        case E_CredCacheDir:
+            sconf->cred_cache_dir = ap_server_root_relative(cmd->pool, arg);
             break;
         case E_LoginCanceledURL:
             dconf->login_canceled_url = apr_pstrdup(cmd->pool, arg);
@@ -1681,6 +1720,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             dconf->force_login = flag;
             dconf->force_login_ex = 1;
             break;
+        case E_SaveCreds:
+            dconf->save_creds = flag;
+            dconf->save_creds_ex = 1;
+            break;
         case E_StripURL:
             sconf->strip_url = flag;
             sconf->strip_url_ex = 1;
@@ -1697,6 +1740,36 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
                              cmd->directive->directive);
             break;
 
+    }
+    return error_str;
+}
+
+static const char *
+cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
+{
+    int e = (int)cmd->info;
+    char *error_str = NULL;
+    MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
+    MWA_WACRED *cred;
+    
+    switch (e) {
+            /* start of dconfigs */
+        case E_Cred:
+            if (dconf->creds == NULL) {
+                dconf->creds = 
+                    apr_array_make(cmd->pool, 5, sizeof(MWA_WACRED));
+            }
+            cred = apr_array_push(dconf->creds);
+            cred->type = apr_pstrdup(cmd->pool, w1);
+            cred->service = (w2 == NULL) ? NULL : apr_pstrdup(cmd->pool, w2);
+            break;
+        default:
+            error_str = 
+                apr_psprintf(cmd->pool,
+                             "Invalid value cmd->info(%d) for directive %s",
+                             e,
+                             cmd->directive->directive);
+            break;
     }
     return error_str;
 }
@@ -1722,6 +1795,9 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 #define ADFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, ACCESS_CONF, FLAG, help}
 
+#define ADTAKE12(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_take12,(void*)mconfig, ACCESS_CONF, TAKE12, help}
+
 static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_WebKdcURL, E_WebKdcURL, CM_WebKdcURL),
@@ -1729,6 +1805,7 @@ static const command_rec cmds[] = {
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
+    SSTR(CD_CredCacheDir, E_CredCacheDir,  CM_CredCacheDir),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
     SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
     SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
@@ -1744,10 +1821,12 @@ static const command_rec cmds[] = {
     ADSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     ADSTR(CD_LastUseUpdateInterval, E_LastUseUpdateInterval, CM_LastUseUpdateInterval),
     ADFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
+    ADFLAG(CD_SaveCreds, E_SaveCreds, CM_SaveCreds),
     ADFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
     ADSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
     ADSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
+    ADTAKE12(CD_Cred, E_Cred, CM_Cred),
     { NULL }
 };
 
@@ -1757,6 +1836,9 @@ static const command_rec cmds[] = {
 #undef DSTR
 #undef DFLAG
 #undef DINT
+#undef ADSTR
+#undef ADFLAG
+#undef ADTAKE12
 
 static void 
 register_hooks(apr_pool_t *p)

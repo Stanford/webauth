@@ -76,6 +76,9 @@
 #define CD_Keytab "WebAuthKeytab"
 #define CM_Keytab "path to the K5 keytab file"
 
+#define CD_CredCacheDir "WebAuthCredCacheDir"
+#define CM_CredCacheDir "path to the credential cache directory"
+
 #define CD_ServiceTokenCache "WebAuthServiceTokenCache"
 #define CM_ServiceTokenCache "path to the service token cache file"
 
@@ -94,6 +97,9 @@
 
 #define CD_AppTokenLifetime "WebAuthAppTokenLifetime"
 #define CM_AppTokenLifetime "lifetime of app-tokens"
+
+#define CD_Cred "WebAuthCred"
+#define CM_Cred "credential to obtain"
 
 #define CD_TokenMaxTTL "WebAuthTokenMaxTTL"
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
@@ -120,6 +126,9 @@
 #define CM_ForceLogin "having no valid app-token forces a "\
                       "username/password prompt"
 
+#define CD_SaveCreds "WebAuthSaveCreds"
+#define CM_SaveCreds "whether or not to create a cred cache file"
+
 #define CD_ReturnURL "WebAuthReturnURL"
 #define CM_ReturnURL "url to return to after logging in"
 
@@ -139,6 +148,8 @@
 
 enum {
     E_AppTokenLifetime,
+    E_Cred,
+    E_CredCacheDir,
     E_Debug,
     E_DoLogout,
     E_ExtraRedirect,
@@ -154,6 +165,7 @@ enum {
     E_LoginCanceledURL,
     E_ReturnURL,
     E_RequireSSL,
+    E_SaveCreds,
     E_ServiceTokenCache,
     E_StripURL,
     E_SubjectAuthType,
@@ -187,6 +199,7 @@ typedef struct {
     char *login_url;
     char *keyring_path;
     char *keytab_path;
+    char *cred_cache_dir;
     char *st_cache_path;
     char *var_prefix;
     int  debug;
@@ -219,12 +232,21 @@ typedef struct {
     int last_use_update_interval;
     int force_login;
     int force_login_ex;
+    int save_creds;
+    int save_creds_ex;
     int do_logout;
     int do_logout_ex;
     char *return_url;
     char *failure_url;
     char *login_canceled_url;
+    apr_array_header_t *creds; /* array of MWA_WACRED's */
 } MWA_DCONF;
+
+/* a cred, used to keep track of WebAuthCred directives. */
+typedef struct {
+    char *type;
+    char *service;
+} MWA_WACRED;
 
 /* handy bunch of bits to pass around during a request */
 typedef struct {
