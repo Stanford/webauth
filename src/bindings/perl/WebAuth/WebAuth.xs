@@ -69,7 +69,7 @@ BOOT:
 }
 
 char *
-webauth_error_messsage(status)
+webauth_error_message(status)
     int status
 PROTOTYPE: $
 CODE:
