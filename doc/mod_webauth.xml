@@ -174,7 +174,7 @@ WebAuthTokenMaxTTL 10m
 <usage>
 <p>
 When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string <code>;WEBAUTHR=...;;WEBAUTHS=...;</code>
+returned in the URL, by appending the string "<code>;WEBAUTHR=...;;WEBAUTHS=...;</code>"
 to the URL.</p>
 
 <p>This directive controls whether or not that string is stripped off the
@@ -219,7 +219,7 @@ WebAuthExtraRedirect on<br />
 <usage>
 <p>
 When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string <code>;WEBAUTHR=...;;WEBAUTHS=...;</code>
+returned in the URL, by appending the string "<code>;WEBAUTHR=...;;WEBAUTHS=...;</code>"
 to the URL.</p>
 
 <p>This directive controls whether or not an extra redirect will be sent
@@ -229,7 +229,7 @@ is the user's won't see the extra WebAuth information in the URL, and
 won't be able to bookmark it, etc. Note that bookmarking a URL
 with the extra information shouldn't really cause any problems, as
 the tokens in the extra information will only be valid for a limited
-amount of time (see <a href="#WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a>, 
+amount of time (see <a href="#WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a>), 
 after which they will be ignored.
 </p>
 
@@ -611,7 +611,10 @@ hours, days, and weeks respectively.</p>
 <example><title>Example</title>
 # timeout an app-token if it isn't used for more <br/>
 # then 20 minutes<br/>
-WebAuthInactiveExpire 20m
+WebAuthInactiveExpire 20m<br/>
+# update the last-used-time in the cookie if its older<br/>
+# then 10 minutes<br/>
+WebAuthLastUseUpdateInterval 10m
 </example>
 </usage>
 </directivesynopsis>
