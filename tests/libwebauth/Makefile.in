@@ -2,6 +2,7 @@
 # $Id$
 
 srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
 CC		= @CC@
@@ -11,19 +12,17 @@ RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
 
-CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
-		  -I@top_srcdir@/src/libwebauth @CPPFLAGS@ \
+CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include \
+		  -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 
-LDFLAGS		= -L@top_srcdir@/src/libwebauth
+LDFLAGS		= @top_builddir@/src/libwebauth
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 TESTS		= attrs_test base64_test key_test krb5_test token_test \
 		  hex_test random_test
 
 all: $(TESTS)
-
-depend:
 
 attrs_test: attrs_test.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ attrs_test.o $(LDLIBS)
@@ -47,4 +46,21 @@ random_test: random_test.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ random_test.o $(LDLIBS)
 
 clean:
-	rm -rf $(TESTS) *.o .libs *~ core \#*
+	rm -rf $(TESTS) *.o .libs *~ core \#* webauth_keyring*
+
+depend:
+	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+attrs_test.o: attrs_test.c $(top_srcdir)/src/libwebauth/webauth.h \
+ webauthtest.h
+base64_test.o: base64_test.c $(top_srcdir)/src/libwebauth/webauth.h \
+ webauthtest.h
+hex_test.o: hex_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
+key_test.o: key_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
+krb5_test.o: krb5_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
+random_test.o: random_test.c $(top_srcdir)/src/libwebauth/webauth.h \
+ webauthtest.h
+token_test.o: token_test.c $(top_srcdir)/src/libwebauth/webauth.h \
+ $(top_srcdir)/src/libwebauth/webauthp.h $(top_srcdir)/src/common/include/conf.h \
+ webauthtest.h

@@ -3,20 +3,22 @@
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
 VPATH		= @srcdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
-LIBTOOL		= @top_builddir@/libtool
+LIBTOOL		= $(top_builddir)/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
 
-CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include \
+CPPFLAGS	= -I. -I$(top_builddir)/src/common/include \
+		  -I$(top_srcdir)/src/common/include \
 		  -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 
-LDFLAGS		= -L$(top_srcdir)/src/libwebauth
+LDFLAGS		= -L$(top_builddir)/src/libwebauth
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 PROGS		= wa_keyring
@@ -33,4 +35,4 @@ depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-wa_keyring.o: wa_keyring.c ../../src/libwebauth/webauth.h
+wa_keyring.o: wa_keyring.c $(top_builddir)/src/libwebauth/webauth.h

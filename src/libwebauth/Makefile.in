@@ -3,17 +3,19 @@
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
 VPATH		= @srcdir@
 
 libdir		= @libdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
-LIBTOOL		= @top_builddir@/libtool
+LIBTOOL		= $(top_builddir)/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include @CPPFLAGS@ \
+CPPFLAGS	= -I. -I$(top_builddir)/src/common/include \
+		  -I$(top_srcdir)/src/common/include @CPPFLAGS@ \
 		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LDLIBS		= @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
@@ -49,12 +51,12 @@ aes_ctr.o: aes_ctr.c aes_locl.h
 aes_ecb.o: aes_ecb.c aes_locl.h
 aes_misc.o: aes_misc.c aes_locl.h
 aes_ofb.o: aes_ofb.c aes_locl.h
-attrs.o: attrs.c webauthp.h ../../src/common/include/conf.h webauth.h
-base64.o: base64.c webauthp.h ../../src/common/include/conf.h \
+attrs.o: attrs.c webauthp.h $(top_builddir)/src/common/include/conf.h webauth.h
+base64.o: base64.c webauthp.h $(top_builddir)/src/common/include/conf.h \
  webauth.h
-key.o: key.c webauthp.h ../../src/common/include/conf.h webauth.h
-krb5.o: krb5.c webauthp.h ../../src/common/include/conf.h webauth.h
-misc.o: misc.c webauthp.h ../../src/common/include/conf.h webauth.h
-random.o: random.c webauthp.h ../../src/common/include/conf.h \
+key.o: key.c webauthp.h $(top_builddir)/src/common/include/conf.h webauth.h
+krb5.o: krb5.c webauthp.h $(top_builddir)/src/common/include/conf.h webauth.h
+misc.o: misc.c webauthp.h $(top_builddir)/src/common/include/conf.h webauth.h
+random.o: random.c webauthp.h $(top_builddir)/src/common/include/conf.h \
  webauth.h
-token.o: token.c webauthp.h ../../src/common/include/conf.h webauth.h
+token.o: token.c webauthp.h $(top_builddir)/src/common/include/conf.h webauth.h
