@@ -74,6 +74,7 @@ typedef enum {
 #define WA_TK_SUBJECT "s"
 #define WA_TK_SUBJECT_AUTH "sa"
 #define WA_TK_SUBJECT_AUTH_DATA "sad"
+#define WA_TK_SUBJECT_EXPIRATION_TIME "se"
 #define WA_TK_TOKEN_TYPE "t"
 
 

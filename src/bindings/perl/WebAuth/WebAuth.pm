@@ -491,6 +491,7 @@ The following constants from webauth.h are available:
   WA_TK_SUBJECT
   WA_TK_SUBJECT_AUTH
   WA_TK_SUBJECT_AUTH_DATA
+  WA_TK_SUBJECT_EXPIRATION_TIME
   WA_TK_TOKEN_TYPE
 
 =head1 AUTHOR
