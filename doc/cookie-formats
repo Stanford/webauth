@@ -1,7 +1,7 @@
 Type One (authentication cookie):
 
     Protocol Version            number          2 bytes
-    Session ID                  number          8 bytes
+    Session ID                  data            8 bytes
     Local/Remote Flag           boolean         1 byte
     Authentication Type         number          2 bytes
     Data Length                 number          2 bytes
@@ -54,7 +54,7 @@ setting.
 Type Three (preauthentication handoff to weblogin):
 
     Protocol Version            number          2 bytes
-    Session ID                  number          8 bytes
+    Session ID                  data            8 bytes
     Authentication Type         number          2 bytes
     Identity Length             number          2 bytes
     Identity Data               data            <specified above>
