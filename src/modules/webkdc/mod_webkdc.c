@@ -4,7 +4,7 @@
 
 #include "mod_webkdc.h"
 
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
 #include <errno.h>
 #include <sident.h>
 #include <sys/socket.h>
@@ -324,7 +324,7 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     return NULL;
 }
 
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
 static MWK_PROXY_TOKEN *
 attempt_sident(MWK_REQ_CTXT *rc,
                MWK_REQUEST_INFO *req_info,
@@ -407,7 +407,6 @@ attempt_sident(MWK_REQ_CTXT *rc,
         }
     }
 
-    
     if (ident == NULL)
         return NULL;
 
@@ -1380,7 +1379,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     if (strcmp(auth_type, "webkdc") == 0) {
         /* check krb5 or sident */
         sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func, 0);
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
         if (sub_pt == NULL)
             sub_pt = find_proxy_token(rc, sub_cred, "sident", mwk_func, 0);
         if (sub_pt == NULL && 
@@ -3007,7 +3006,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
     ap_add_version_component(pconf, version);
 
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
     ident_set_authflag("USER-INTERACTION", "YES");
 #endif
 
@@ -3191,8 +3190,9 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
+#if HAVE_SIDENT
     MWK_IDENT_AUTH_TYPE *iat;
-
+#endif 
     MWK_SCONF *sconf = (MWK_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webkdc_module);
     
@@ -3203,7 +3203,7 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
             sconf->keytab_principal = 
                 (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
             break;
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
         case E_SIdentAuthType:
             if (sconf->sident_auth_types == NULL) {
                 sconf->sident_auth_types = 
@@ -3284,7 +3284,7 @@ static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
-#ifndef HAVE_SIDENT
+#if HAVE_SIDENT
     SSTR12(CD_SIdentAuthType, E_SIdentAuthType,  CM_SIdentAuthType),
 #endif
     SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
