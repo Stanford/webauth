@@ -57,7 +57,9 @@ Making a Release
    1. Make sure that tools/config.guess and tools/config.sub are the
       latest available versions from <ftp://ftp.gnu.org/gnu/config/>.  If
       newer versions are available, download them and check them in; we do
-      not have any local changes to those files.
+      not have any local changes to those files.  (Note that currently
+      these files are not available from ftp.gnu.org; one can use the
+      versions shipped with Debian instead.)
 
    2. Check out a copy of the WebAuth tree, run autoconf and autoheader
       (making sure to get the Autoconf 2.57 or later versions), run
