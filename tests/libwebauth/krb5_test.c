@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
     char *username, *password;
     unsigned char *sa;
     int salen;
+    unsigned char *tgt;
+    int tgtlen;
+    time_t expiration;
 
     if (argc != 3) {
         usage();
@@ -29,13 +32,13 @@ int main(int argc, char *argv[])
     username = argv[1];
     password = argv[2];
 
-    START_TESTS(5);
+    START_TESTS(9);
 
     for (i=0; i<1; i++) {
-        s = webauth_krb5_init(&c);
-        TEST_OK2(WA_ERR_NONE, s);
+        c = webauth_krb5_new();
+        TEST_OK(c != NULL);
 
-        s = webauth_krb5_tgt_from_password(c, username, password, 
+        s = webauth_krb5_init_via_password(c, username, password, 
                                            "host", "keytab");
 
         TEST_OK2(WA_ERR_NONE, s);
@@ -51,8 +54,26 @@ int main(int argc, char *argv[])
         if (sa != NULL) {
             free(sa);
         }
+
+        tgt = NULL;
+        s = webauth_krb5_export_tgt(c, &tgt, &tgtlen, &expiration);
+        TEST_OK2(WA_ERR_NONE, s);
+
         s = webauth_krb5_free(c);
         TEST_OK2(WA_ERR_NONE, s);
+        
+        if (tgt != NULL) {
+            c = webauth_krb5_new();
+            TEST_OK(c != NULL);
+            
+            s = webauth_krb5_init_via_tgt(c, tgt, tgtlen);
+            free(tgt);
+            TEST_OK2(WA_ERR_NONE, s);
+
+            s = webauth_krb5_free(c);
+            TEST_OK2(WA_ERR_NONE, s);
+        }
+        
     }
 
     END_TESTS;

@@ -515,34 +515,35 @@ int webauth_token_parse(unsigned char *input,
                         const WEBAUTH_KEYRING *ring);
 
 /******************** krb5 ********************/
-int webauth_krb5_init(WEBAUTH_KRB5_CTXT **context);
+WEBAUTH_KRB5_CTXT *webauth_krb5_new();
 
 int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
 
-int webauth_krb5_tgt_from_password(WEBAUTH_KRB5_CTXT *context,
+int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                    const char *username,
                                    const char *password,
                                    const char *service,
                                    const char *keytab);
 
-int webauth_krb5_tgt_from_keytab(WEBAUTH_KRB5_CTXT *context, char *path);
+int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, char *path);
 
-int webauth_krb5_import_tgt(WEBAUTH_KRB5_CTXT *context,
-                            unsigned char *tgt,
-                            int tgt_len);
+int webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
+                              unsigned char *tgt,
+                              int tgt_len);
 
 int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
                             unsigned char **tgt,
-                            int *tgt_len);
+                            int *tgt_len,
+                            time_t *expiration);
 
 int webauth_krb5_import_ticket(WEBAUTH_KRB5_CTXT *context,
-                           unsigned char *ticket,
-                           int ticket_len);
+                               unsigned char *ticket,
+                               int ticket_len);
 
 int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
-                           char *service,
-                           unsigned char **ticket,
-                           int *ticket_length);
+                               char *service,
+                               unsigned char **ticket,
+                               int *ticket_length);
 
 int webauth_krb5_get_subject_auth(WEBAUTH_KRB5_CTXT *context,
                                   const char *hostname,
