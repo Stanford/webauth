@@ -42,7 +42,7 @@ our %ta_desc =
      &WA_TK_LASTUSED_TIME => 'lastused-time',
      &WA_TK_PROXY_TYPE => 'proxy-type',
      &WA_TK_PROXY_DATA => 'proxy-data',
-     &WA_TK_PROXY_OWNER => 'proxy-owner',
+     &WA_TK_PROXY_SUBJECT => 'proxy-subject',
      &WA_TK_POST_URL => 'post-url',
      &WA_TK_REQUEST_REASON => 'request-reason',
      &WA_TK_REQUESTED_TOKEN_TYPE => 'req-token-type',
@@ -529,10 +529,10 @@ sub init {
     $self->token_type('webkdc-proxy');
 }
 
-sub proxy_owner {
+sub proxy_subject {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_PROXY_OWNER} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_PROXY_OWNER};
+    $self->{'attrs'}{&WA_TK_PROXY_SUBJECT} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_PROXY_SUBJECT};
 }
 
 sub proxy_type {
@@ -581,7 +581,7 @@ sub validate_token {
     croak "validate_token failed" unless
 	($self->token_type() eq 'webkdc-proxy') && 
 	($self->proxy_type() eq 'krb5') && 
-	defined($self->proxy_owner()) &&
+	defined($self->proxy_subject()) &&
 	defined($self->proxy_data()) &&
 	defined($self->creation_time());
 	defined($self->expiration_time());
@@ -1038,7 +1038,7 @@ webkdc-proxy-tokens.
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
   $token->proxy_data([$new_value])
-  $token->proxy_owner([$new_value])
+  $token->proxy_subject([$new_value])
   $token->proxy_type([$new_value])
   $token->subject([$new_value])
 

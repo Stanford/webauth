@@ -151,7 +151,7 @@ sub handle_web_id_request {
 				   $WebKDC::C_WEBKDC_K5SERVICE,
 				   $WebKDC::C_WEBKDC_HOST);
 	my $proxy_token = new WebKDC::WebKDCProxyToken;
-	$proxy_token->proxy_owner("krb5:$webkdc_princ");
+	$proxy_token->proxy_subject("krb5:$webkdc_princ");
 	$proxy_token->proxy_type('krb5');
 	$proxy_token->proxy_data($prd);
 	$proxy_token->subject("krb5:$cp");
@@ -409,7 +409,7 @@ sub create_proxy_token_from_reqsub($$$) {
 
     # create the webkdc-proxy-token first, using existing proxy-token
     my $new_wpt = new WebKDC::WebKDCProxyToken;
-    $new_wpt->proxy_owner($st->subject());
+    $new_wpt->proxy_subject($st->subject());
     $new_wpt->proxy_type($pt->proxy_type());
     $new_wpt->proxy_data($pt->proxy_data());
     $new_wpt->subject($pt->subject());
