@@ -19,6 +19,7 @@ copy_service_token(apr_pool_t *pool,
 
     copy = (MWA_SERVICE_TOKEN*) apr_pcalloc(pool, sizeof(MWA_SERVICE_TOKEN));
 
+    copy->pool = pool;
     copy->expires = orig->expires;
     copy->created = orig->created;
     copy->token = apr_pstrdup(pool, orig->token);
@@ -177,8 +178,7 @@ read_service_token_cache(MWA_REQ_CTXT *rc)
         return NULL;
     }
 
-    /* be careful to alloc all memory for token from process pool */
-    token = new_service_token(rc->r->server->process->pool,
+    token = new_service_token(rc->r->pool,
                               key_type, key, klen, tok, tlen, expires, created,
                               lra, nra);
     webauth_attr_list_free(alist);
@@ -480,9 +480,6 @@ log_error_response(apr_xml_elem *e,
 
 }
 
-/*
- * pass in st_pool in case we want service token in process pool
- */
 static MWA_SERVICE_TOKEN *
 parse_service_token_response(apr_xml_doc *xd,
                              MWA_REQ_CTXT *rc,
@@ -568,7 +565,7 @@ parse_service_token_response(apr_xml_doc *xd,
     first_renewal_attempt = 
         curr + ((expiration-curr) * START_RENEWAL_ATTEMPT_PERCENT);
 
-    st = new_service_token(rc->r->server->process->pool,
+    st = new_service_token(rc->r->pool,
                            WA_AES_KEY, /* FIXME: hardcoded for now */
                            bskey,
                            bskey_len,
@@ -710,7 +707,7 @@ get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
 
     tlen = webauth_token_encoded_length(alist);
 
-    as = (char*)apr_palloc(rc->r->server->process->pool, tlen);
+    as = (char*)apr_palloc(rc->r->pool, tlen);
 
 
     mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
@@ -740,6 +737,26 @@ get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
 }
 
 /*
+ * create a pool for the static service token and copy the new 
+ * token into it. If the old_service_token is set, then destroy
+ * its pool.
+ */
+
+static MWA_SERVICE_TOKEN *
+set_service_token(MWA_SERVICE_TOKEN *new_token,
+                         MWA_SERVICE_TOKEN *old_service_token)
+{
+    apr_pool_t *p;
+
+    if (old_service_token)
+        apr_pool_destroy(old_service_token->pool);
+
+    apr_pool_create(&p, NULL);
+
+    return copy_service_token(p, new_token);
+}
+
+/*
  * this function returns a service-token to ues.
  * 
  * it looks in memory first, then the service token cache, then makes
@@ -757,14 +774,6 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
     MWA_SERVICE_TOKEN *token;
     time_t curr = time(NULL); 
 
-    /* FIXME: slow leak in service token handling. We create
-     * service_token in the process pool, so assuming this
-     * process runs for 30+ days (lifetime of a token), we'll
-     * leak the previous token :) Better solution would be to
-     * create the service token in its own top-level pool, and free that
-     * pool when re-assining service_token.  Maybe some day...
-     */
-
     /* FIXME: might not want to block all threads while one thread
      *        is read/writing/request a new token. This should be
      *        good enough though, since we normally only
@@ -778,6 +787,7 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
     if (service_token != NULL) {
         /* return the current one, unless we should attempt a renewal */
         if (service_token->next_renewal_attempt > curr) {
+            token = copy_service_token(rc->r->pool, service_token);            
             goto done;
         }
         /* else lets force a re-read, and maybe force a re-request */
@@ -791,10 +801,12 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
          * someone might have already.
          */
         if (token->next_renewal_attempt > curr) {
-            service_token = token;
             /* app state is generated on read so it always uses
                the current keying */
-            get_app_state(rc, service_token, curr);
+            get_app_state(rc, token, curr);
+            /* copy into its own pool for future use */
+            
+            service_token = set_service_token(token, service_token);
             goto done;
         }
     }
@@ -817,14 +829,11 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
         /* got a new one, lets right it out*/
         write_service_token_cache(rc, token);
         get_app_state(rc, token, curr);
-        service_token = token;
+        service_token = set_service_token(token, service_token);
         goto done;
     }
 
  done:
-
-    /* copy *before* unlocking */
-    token = copy_service_token(rc->r->pool, service_token);
 
     mwa_unlock_mutex(rc, MWA_MUTEX_SERVICE_TOKEN); /***** UNLOCKING! ********/
 

@@ -14,6 +14,7 @@
 #include "apr_file_info.h"
 #include "apr_errno.h"
 #include "apr_strings.h"
+#include "apr_pools.h"
 #include "apr_tables.h"
 #include "apr_xml.h"
 #include "apr_base64.h"
@@ -169,6 +170,7 @@ module webauth_module;
  * is allocated from a pool
  */
 typedef struct {
+    apr_pool_t *pool; /* pool this token belongs to */
     WEBAUTH_KEY key;
     time_t expires;
     unsigned char *token;
