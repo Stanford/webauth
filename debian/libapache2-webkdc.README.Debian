@@ -84,7 +84,7 @@ WebKDC available:
 
  9. Restart Apache:
 
-        /etc/init.d/apache restart
+        apache2ctl graceful
 
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
@@ -115,7 +115,7 @@ wherever else you store local configuration:
 
     WebKdcSIdentAuthType "GSSAPI" "/etc/webkdc/keytab.ident"
 
-Restart Apache with /etc/init.d/apache restart and S/Ident authentication
-should now be enabled.
+Restart Apache with apache2ctl graceful and S/Ident authentication should
+now be enabled.
 
- -- Russ Allbery <rra@stanford.edu>, Tue Jun 22 22:55:18 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:17:45 2004

@@ -66,8 +66,8 @@ users only use SSL to contact the server, but you may also want to put the
 above in a virtual host specifically for SSL and set up a separate non-SSL
 virtual host that redirects all accesses to the SSL URL.
 
-Now, reload Apache's configuration file with /etc/init.d/apache2 reload.
-After you've tested and everything is working, you will probably want to
+Now, reload Apache's configuration file with apache2ctl graceful.  After
+you've tested and everything is working, you will probably want to
 customize the templates as described above.
 
 
@@ -128,7 +128,7 @@ add the line:
 
     AddHandler fastcgi-script .fcgi
 
-After you restart Apache with /etc/init.d/apache2 restart, the Weblogin
-scripts should run under FastCGI.
+After you restart Apache with apache2ctl graceful, the Weblogin scripts
+should run under FastCGI.
 
- -- Russ Allbery <rra@stanford.edu>, Tue Jun 22 22:19:50 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:18:20 2004

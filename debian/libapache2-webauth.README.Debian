@@ -75,7 +75,7 @@ installing this package.  You must also do the following:
 
  5. Restart Apache:
 
-        /etc/init.d/apache restart
+        apache2ctl graceful
 
 At this point, WebAuth authentication is available.  In order to protect a
 section of your web site with WebAuth, just add something like:
@@ -120,7 +120,7 @@ following:
 
     and restart Apache:
 
-        /etc/init.d/apache restart
+        apache2ctl graceful
 
 You may now use the WebAuthLdapAttribute directive in <Location>,
 <Directory>, or <Files> blocks or .htaccess files to request that
@@ -129,4 +129,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@stanford.edu>, Tue Jun 22 20:50:56 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:17:25 2004
