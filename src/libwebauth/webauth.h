@@ -333,18 +333,20 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
  * input buffer is modified, and the resulting
  * attrs point into it for their values.
  *
+ * attrs will point to the dynamically-allocated array
+ * of attrs and must be freed when no longer needed.
+ *
  * returns number of attrs in the resulting token or an error
  *
  * errors:
- *  WA_ERR_NO_ROOM
+ *  WA_ERR_NO_MEM
  *  WA_ERR_CORRUPT
  *  WA_ERR_BAD_HMAC
  */
 
 int webauth_token_parse(unsigned char *input,
                         int input_len,
-                        WEBAUTH_ATTR *attrs,
-                        int max_num_attrs,
+                        WEBAUTH_ATTR **attrs,
                         const WEBAUTH_AES_KEY *key);
 
 #ifdef  __cplusplus

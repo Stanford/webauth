@@ -228,6 +228,9 @@ CODE:
     num_attrs = hv_iterinit(h);
 
     c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+    if (c_attrs == NULL) {
+        croak("can't malloc attrs");
+    }
     i = 0;
     while(sv_val = hv_iternextsv(h, &key, &klen)) {
         val = SvPV(sv_val, vlen);
@@ -241,7 +244,6 @@ CODE:
     free(c_attrs);
     ST(0) = sv_2mortal(newSViv(s));
 }
-
 
 void
 webauth_attrs_encode(attrs)
@@ -267,6 +269,9 @@ CODE:
     num_attrs = hv_iterinit(h);
 
     c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+    if (c_attrs == NULL) {
+        croak("can't malloc attrs");
+    }
     i = 0;
     while(sv_val = hv_iternextsv(h, &key, &klen)) {
         val = SvPV(sv_val, vlen);
@@ -291,7 +296,6 @@ CODE:
     }
 }
 
-
 void
 webauth_attrs_decode(buffer,...)
 SV *buffer
@@ -303,20 +307,24 @@ CODE:
     WEBAUTH_ATTR *c_attrs;
     int i, s, ok, num_attrs;
     HV *hv;
+    SV *copy = sv_2mortal(newSVsv(buffer));
 
-    p_input = SvPV(buffer, n_input);
+    p_input = SvPV(copy, n_input);
 
     num_attrs = webauth_attrs_decode(p_input, n_input, NULL, 0);
 
     ok = (num_attrs > 0);
     if (ok) {
         c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+        if (c_attrs == NULL) {
+            croak("can't malloc attrs");
+        }
         i = 0;
         s = webauth_attrs_decode(p_input, n_input, c_attrs, num_attrs);
         num_attrs = s;
         ok = (num_attrs > 0);
         if (ok) {
-            hv = (HV*) sv_2mortal((SV*)newHV());
+            hv = newHV();
             for (i=0; i < num_attrs; i++) {
                 hv_store(hv, c_attrs[i].name, strlen(c_attrs[i].name),
                          newSVpvn(c_attrs[i].value, c_attrs[i].length), 0);
@@ -330,7 +338,7 @@ CODE:
     }
 
     if (ok) {
-       ST(0) = newRV((SV*)hv);
+       ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
     } else {
        ST(0) =  &PL_sv_undef;
     }
@@ -383,6 +391,96 @@ CODE:
 }
 OUTPUT:
     RETVAL
+
+
+void
+webauth_token_create(attrs,key,...)
+SV *attrs
+WEBAUTH_AES_KEY *key
+PROTOTYPE: $$;$
+CODE:
+{
+    HV *h;
+    HE *entry;
+    SV *sv_val;
+    int num_attrs, s, out_len;
+    char *akey, *val;
+    I32 klen, i;
+    STRLEN vlen;
+    WEBAUTH_ATTR *c_attrs;
+
+    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
+        croak("attrs must be reference to a hash");
+    }
+
+    h = (HV*)SvRV(attrs);
+
+    num_attrs = hv_iterinit(h);
+
+    c_attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+    if (c_attrs == NULL) {
+        croak("can't malloc attrs");
+    }
+    i = 0;
+    while(sv_val = hv_iternextsv(h, &akey, &klen)) {
+        val = SvPV(sv_val, vlen);
+        c_attrs[i].name = akey;
+        c_attrs[i].value = val;
+        c_attrs[i].length = vlen;   
+        i++;
+    }
+
+    out_len = webauth_token_encoded_length(c_attrs, num_attrs);
+
+    ST(0) = sv_2mortal(NEWSV(0, out_len));
+    s = webauth_token_create(c_attrs, num_attrs, SvPVX(ST(0)), out_len, key);
+    free(c_attrs);
+
+    if (items > 2) {
+       sv_setiv(ST(2), s);
+    }
+
+    if (s < 0) {
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), out_len);
+        SvPOK_only(ST(0));
+    }
+}
+
+void
+webauth_token_parse(buffer,key,...)
+SV *buffer
+WEBAUTH_AES_KEY *key
+PROTOTYPE: $$;$
+CODE:
+{
+    STRLEN n_input;
+    unsigned char *p_input;
+    WEBAUTH_ATTR *c_attrs;
+    int i, s, ok, num_attrs;
+    HV *hv;
+    SV *copy = sv_2mortal(newSVsv(buffer));
+
+    p_input = SvPV(copy, n_input);
+
+    num_attrs = webauth_token_parse(p_input, n_input, &c_attrs, key);
+    if (items > 1) {
+       sv_setiv(ST(2), num_attrs);
+    }
+
+    if (num_attrs > 0) {
+        hv = newHV();
+        for (i=0; i < num_attrs; i++) {
+            hv_store(hv, c_attrs[i].name, strlen(c_attrs[i].name),
+                     newSVpvn(c_attrs[i].value, c_attrs[i].length), 0);
+        }
+        ST(0) = sv_2mortal(newRV_noinc((SV*)hv));
+        free(c_attrs);
+    } else {
+        ST(0) =  &PL_sv_undef;
+    }
+}
 
 MODULE = WebAuth        PACKAGE = WEBAUTH_AES_KEYPtr  PREFIX = webauth_
 

@@ -36,9 +36,6 @@ webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs,
 
 /*
  * given an array of attributes, encode them into output.
- * The output buffer will dynamically be allocated if it
- * is NULL on input. If it is not NULL, then output_max must
- * be set to the maxium size of the output buffer.
  */
 
 int

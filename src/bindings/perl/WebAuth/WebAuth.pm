@@ -89,7 +89,7 @@ base64 encodes the $input string and returns the result.
  $output = base64_decode($input[, $status] );
 
 base64 decodes the $input string and returns the result, or undef
-in case of an error. $status is optional, and if present will get
+in the case of an error. $status is optional, and if present will get
 set to the result of the webauth_base64_decode C function. 
 
 =item hex_encoded_length(length)
@@ -137,7 +137,7 @@ the resulting length of encoding the attributes into a string.
 $output = attrs_encode($attrs);
 
 Takes as input $attrs (which must be a reference to a hash) and returns
-a string of the encoded attributes.  The values in the
+a string of the encoded attributes.  The values in the $attrs
 hash table get converted to strings if they aren't already.
 
 =item attrs_decode(input[, status);
@@ -147,6 +147,8 @@ hash table get converted to strings if they aren't already.
 attr decodes the $input string and returns the result as reference to a
 hash, or undef in the case of an error. $status is optional, and if 
 present will get set to the result of the webauth_attrs_decode C function.
+
+Note: $input will be modified. Pass in a copy if this in undesirable.
 
 =item random_bytes(length)
 
@@ -174,6 +176,26 @@ Creates a reference to a WEBAUTH_AES_KEYPtr object, or undef
 on error. $key_material must be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256. $key should be set
 to undef when the key is no longer needed.
+
+=item token_create(attrs, key[, status])
+
+  $token = token_create($attrs, $key[, $status])
+
+Takes as input $attrs (which must be a reference to a hash) and a $key
+(created with key_create_aes) and returns the basse64 encrypted token\,
+or undef in the case of an error.
+The values in the $attrs hash table get converted to strings if they 
+aren't already. $status is optional, and if present will get set to the
+result of the webauth_token_create C function.
+
+=item token_parse(token, key[, status])
+
+  $attrs = token_parse($token, $key[, $status])
+
+Takes as input a base64 encrypted token and an aes key (creatged with 
+key_create_aes) and returns the attributes, or undef in the case of an error.
+$status is optional, and if present will get set to the
+result of the webauth_token_parse C function.
 
 =back
 

@@ -11,8 +11,9 @@ int main(int argc, char *argv[])
 {
     WEBAUTH_AES_KEY *key;
     unsigned char material[16] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 };
-    WEBAUTH_ATTR attrs[MAX_ATTRS], dattrs[MAX_ATTRS];
-    int num_attrs, len, dnum_attrs;
+    WEBAUTH_ATTR attrs[MAX_ATTRS];
+    WEBAUTH_ATTR *wap;
+    int num_attrs, len, dnum_attrs, x;
     unsigned char *token;
 
     num_attrs = 0;
@@ -27,20 +28,16 @@ int main(int argc, char *argv[])
     len = webauth_token_encoded_length(attrs, num_attrs);
     printf("len = %d\n", len);
 
-
     token = malloc(len+1);
-    len = webauth_token_create(attrs, num_attrs,
-                               token, len,
-                               key);
+    len = webauth_token_create(attrs, num_attrs, token, len, key);
     token[len] = '\0';
 
-    printf("token[%s]\n", token);
+    //printf("token[%s]\n", token);
     /* now lets try and decode the token */
-    dnum_attrs = webauth_token_parse(token, len,
-                                     dattrs,
-                                     MAX_ATTRS,
-                                     key);
-                              
+    wap = NULL;
+    dnum_attrs = webauth_token_parse(token, len, &wap, key);
+    free(wap);
+    free(token);
     printf("%d\n", dnum_attrs);
 
     webauth_key_destroy_aes(key);

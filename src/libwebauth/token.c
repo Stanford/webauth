@@ -170,6 +170,7 @@ webauth_token_create(const WEBAUTH_ATTR *attrs,
     alen = webauth_attrs_encode(attrs, num_attrs, 
                                 ebuff+T_ATTR_O, elen-n-plen);
     if (alen < 0) {
+        free(ebuff);
         return alen;
     }
 
@@ -224,8 +225,7 @@ webauth_token_create(const WEBAUTH_ATTR *attrs,
 int
 webauth_token_parse(unsigned char *input,
                     int input_len,
-                    WEBAUTH_ATTR *attrs,
-                    int max_num_attrs,
+                    WEBAUTH_ATTR **attrs,
                     const WEBAUTH_AES_KEY *key)
 {
     /* ivec is always 0 since we use nonce as ivec */
@@ -233,16 +233,14 @@ webauth_token_parse(unsigned char *input,
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     /* hmac we compute from data */
     unsigned char computed_hmac[T_HMAC_S];
-    int plen, i, elen;
+    int plen, i, elen, num_attrs, s;
 
     WEBAUTH_AES_KEYP *keyp = (WEBAUTH_AES_KEYP*)key;
 
     assert (key != NULL);
+    assert(attrs);
 
-    /*
-     * FIXME: should put an ASSERT here to check input_len is
-     * at least as big as the smallest possible packet 
-     */
+    *attrs = NULL;
 
     /** base64 decode (in place) first */
     elen=webauth_base64_decode(input, input_len, input, input_len);
@@ -250,9 +248,8 @@ webauth_token_parse(unsigned char *input,
         return elen;
     }
 
-
     /* first thing we'd normally do is check key-hint
-     * to detemrine which key to used
+     * to determine which key to used
      */
 
     /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
@@ -293,12 +290,26 @@ webauth_token_parse(unsigned char *input,
         }
     }
 
-    /* now decode attrs */
-    
-    return webauth_attrs_decode(input+T_ATTR_O,
-                         elen-T_ATTR_O-plen,
-                         attrs,
-                         max_num_attrs);
+    /* now decode attrs, count number needed first */
+    num_attrs = webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen,
+                                     NULL, 0);
+    if (num_attrs < 0) {
+        return num_attrs;
+    }
+
+    *attrs = malloc(sizeof(WEBAUTH_ATTR)*num_attrs);
+
+    if (*attrs == NULL) {
+        return WA_ERR_NO_MEM;
+    }
+
+    s = webauth_attrs_decode(input+T_ATTR_O, elen-T_ATTR_O-plen, 
+                             *attrs, num_attrs);
+    if (s<0) {
+        free(*attrs);
+        *attrs = NULL;
+    }
+    return s;
 }
 
 /*

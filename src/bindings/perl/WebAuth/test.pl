@@ -8,11 +8,12 @@
 use Test;
 use UNIVERSAL qw(isa);
 
-BEGIN { plan tests => 62 };
+BEGIN { plan tests => 66 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
 sub compareHashes;
+
 
 #########################
 
@@ -129,19 +130,26 @@ $key = WebAuth::key_create_aes(WebAuth::random_key(WebAuth::WA_AES_128));
 ok(defined($key));
 ok(isa($key, 'WEBAUTH_AES_KEYPtr'));
 
+# invalid key material length
 $key = WebAuth::key_create_aes(WebAuth::random_key(2));
 ok(undef, $key);
 
-#  $bytes = webauth_random_bytes($num_bytes [, $status]);
-#  $key = webauth_random_key($key_len [, $status]);
+######################################## tokens
 
-# $wakey = webauth_key_create($key);
+$key = WebAuth::key_create_aes(WebAuth::random_key(WebAuth::WA_AES_128));
+$attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-# 
+$token = WebAuth::token_create($attrs, $key, $status);
 
-# $token = webauth_token_create(%attrs, $wakey [, $status]);
+ok(length($token));
+ok(92, $status);
 
-# %attrs = webauth_token_parse($token, $wakey [, $status]);
+$attrs2 = WebAuth::token_parse($token, $key, $status);
+
+ok(3, $status);
+ok(1, compareHashes($attrs, $attrs));
+
+#print "attrs2($attrs) status($status)\n";
 
 sub compareHashes {
     my $a = shift;
