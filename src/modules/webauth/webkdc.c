@@ -341,7 +341,7 @@ post_gather(void *in_data, size_t size, size_t nmemb,
 }
 
 /*
- *post some xml to the webkdc and return response
+ * post some xml to the webkdc and return response
  *
  * FIXME: need to think about retry/timeout policy
  */

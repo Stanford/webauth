@@ -1763,7 +1763,6 @@ cred_cache_destroy(void *data)
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
                  "mod_webauth: cleanup cred: %s", path);
     */
-    /* FIXME: logging */
     if (unlink(path) == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
                      "mod_webauth: cleanup cred: unlink(%s) errno(%d)", 
