@@ -62,8 +62,6 @@ src/libwebauth/base64.c                 Base64 encoding and decoding
 src/libwebauth/key.c                    Key handling
 src/libwebauth/krb5.c                   Kerberos v5 interface
 src/libwebauth/misc.c                   Utility functions
-src/libwebauth/openssl                  AES include files (Directory)
-src/libwebauth/openssl/aes.h            AES support
 src/libwebauth/random.c                 Random number handling
 src/libwebauth/token.c                  WebAuth token handling
 src/libwebauth/webauth.h.in             Library interface
