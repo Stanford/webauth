@@ -6,6 +6,8 @@ use warnings;
 use WebAuth;
 use WebKDC::Token;
 
+use Carp;
+
 BEGIN {
     use Exporter   ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -23,48 +25,26 @@ BEGIN {
 
 our @EXPORT_OK;
 
-sub new {
-    my $type = shift;
-    my $self = { "attrs" => {}};
-    bless $self, $type;
-    if (@_) {
-	$self->init_from_token('service', @_);
-    } else {
-	$self->set_token_type('service');
-    }
-    return $self;
+sub init {
+    my $self = shift;
+    $self->token_type('service');
 }
 
-sub set_session_key {
-    my ($self, $sa) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SESSION_KEY} = $sa;
-    return $self;
+sub session_key {
+    my $self = shift;
+    $self->{'attrs'}{&WebAuth::WA_TK_SESSION_KEY} = shift if @_;
+    return $self->{'attrs'}{&WebAuth::WA_TK_SESSION_KEY};    
 }
 
-sub get_session_key {
-    my ($self) = @_;
-    return $self->{'attrs'}{&WebAuth::WA_TK_SESSION_KEY};
-}
-
-sub set_subject {
-    my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT} = $val;
-    return $self;
-}
-
-sub get_subject {
-    my ($self) = @_;
+sub subject {
+    my $self = shift;
+    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT} = shift if @_;
     return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT};
 }
 
-sub set_creation_time {
-    my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_CREATION_TIME} = pack("N", $val);
-    return $self;
-}
-
-sub get_creation_time {
-    my ($self) = @_;
+sub creation_time {
+    my $self = shift;
+    $self->{'attrs'}{&WebAuth::WA_TK_CREATION_TIME} = pack("N", shift) if @_;
     my $time = $self->{'attrs'}{&WebAuth::WA_TK_CREATION_TIME};
     if (defined($time)) {
 	return unpack('N', $time);
@@ -73,20 +53,26 @@ sub get_creation_time {
     }
 }
 
-sub set_expiration_time {
-    my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME} = pack("N", $val);
-    return $self;
-}
-
-sub get_expiration_time {
-    my ($self) = @_;
+sub expiration_time {
+    my $self = shift;
+    $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME} = pack("N", shift) if @_;
     my $time = $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME};
     if (defined($time)) {
 	return unpack('N', $time);
     } else {
 	return $time;
     }
+}
+
+sub validate_token {
+    my $self = shift;
+
+    croak "validate_token failed" unless
+	($self->token_type() eq 'service') && 
+	defined($self->session_key()) &&
+	defined($self->subject()) &&
+	defined($self->creation_time()) &&
+	defined($self->expiration_time());
 }
 
 1;

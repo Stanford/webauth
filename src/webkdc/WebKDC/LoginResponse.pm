@@ -27,66 +27,34 @@ sub new {
     return $self;
 }
 
-sub set_server_principal {
-    my ($self, $sp) = @_;
-    $self->{'server_principal'} = $sp;
-    return $self;
-}
-
-sub get_server_principal {
-    my ($self) = @_;
-    return $self->{'server_principal'};
-}
-
-sub set_return_url {
-    my ($self, $ru) = @_;
-    $self->{'return_url'} = $ru;
-    return $self;
-}
-
-sub get_return_url {
-    my ($self) = @_;
+sub return_url {
+    my $self = shift;
+    $self->{'return_url'} = shift if @_;
     return $self->{'return_url'};
 }
 
-sub set_post_url {
-    my ($self, $ru) = @_;
-    $self->{'post_url'} = $ru;
-    return $self;
-}
-
-sub get_post_url {
-    my ($self) = @_;
+sub post_url {
+    my $self = shift;
+    $self->{'post_url'} = shift if @_;
     return $self->{'post_url'};
 }
 
-sub add_proxy_cookie {
-    my ($self, $type, $value) = @_;
-    $self->{'cookies'}{"webauth_pt_$type"} = $value;
-    return $self;
-}
-
-sub get_proxy_cookie {
-    my ($self, $type) = @_;
-
+sub proxy_cookie {
+    my $self = shift;
+    my $type = shift;
+    $self->{'cookies'}{"webauth_pt_$type"} = shift if @_;
     return $self->{'cookies'}{"webauth_pt_$type"};
 }
 
-sub get_proxy_cookies {
-    my ($self) = @_;
+sub proxy_cookies {
+    my $self = shift;
     return $self->{'cookies'};
 }
 
-sub set_response_token {
-    my ($self, $token) = @_;
-    $self->{'response_token'} = $token;
-    return $self;
-}
-
-sub get_response_token {
-    my ($self) = @_;
+sub response_token {
+    my $self = shift;
+    $self->{'response_token'} = shift if @_;
     return $self->{'response_token'};
 }
 
 1;
-

@@ -27,63 +27,39 @@ sub new {
     return $self;
 }
 
-sub set_user {
-    my ($self, $user) = @_;
-    $self->{'user'} = $user;
-    return $self;
-}
-
-sub get_user {
-    my ($self) = @_;
+sub user {
+    my $self = shift;
+    $self->{'user'} = shift if @_;
     return $self->{'user'};
 }
 
-sub set_pass {
-    my ($self, $pass) = @_;
-    $self->{'pass'} = $pass;
-    return $self;
-}
-
-sub get_pass {
-    my ($self) = @_;
+sub pass {
+    my $self = shift;
+    $self->{'pass'} = shift if @_;
     return $self->{'pass'};
 }
 
-sub add_proxy_cookie {
-    my ($self, $name, $value) = @_;
-    $self->{'cookies'}{$name} = $value;
-    return $self;
-}
-
-sub get_proxy_cookie {
-    my ($self, $name) = @_;
+sub proxy_cookie {
+    my $self = shift;
+    my $name = shift;
+    $self->{'cookies'}{$name} = shift if @_;
     return $self->{'cookies'}{$name};
 }
 
-sub get_proxy_cookies {
+sub proxy_cookies {
     my ($self) = @_;
     return $self->{'cookies'};
 }
 
-sub set_request_token {
-    my ($self, $token) = @_;
-    $self->{'request_token'} = $token;
-    return $self;
-}
-
-sub get_request_token {
-    my ($self) = @_;
+sub request_token {
+    my $self = shift;
+    $self->{'request_token'} = shift if @_;
     return $self->{'request_token'};
 }
 
-sub set_service_token {
-    my ($self, $token) = @_;
-    $self->{'service_token'} = $token;
-    return $self;
-}
-
-sub get_service_token {
-    my ($self) = @_;
+sub service_token {
+    my $self = shift;
+    $self->{'service_token'} = shift if @_;
     return $self->{'service_token'};
 }
 
