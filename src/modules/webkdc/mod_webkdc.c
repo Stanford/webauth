@@ -71,7 +71,8 @@ generate_errorResponse(MWK_REQ_CTXT *rc)
 
     if (rc->need_to_log) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webkdc: %s: %s", rc->mwk_func, rc->error_message);
+                     "mod_webkdc: %s: %s (%d)", rc->mwk_func, 
+                     rc->error_message, rc->error_code);
     }
     return OK;
 }
@@ -1658,7 +1659,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     MWK_PROXY_TOKEN *pt;
     WEBAUTH_ATTR_LIST *alist;
 
-    ms = 0;
+    ms = MWK_ERROR;
 
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     if (ctxt == NULL) {
@@ -1677,6 +1678,12 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "login failed");
+
+
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+
+
         /* FIXME: we normally wouldn't log failures, would we? */
         set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
@@ -1787,19 +1794,23 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     char *request_token;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL parsed_sub_cred, login_sub_cred, *sub_cred;
-
+    enum mwk_status ms;
     MWK_REQUEST_TOKEN req_token;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
     int num_tokens, i, did_login;
+    int login_ec;
+    const char *login_em;
 
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
 
+    login_ec = 0;
     request_token = NULL;
     memset(&req_cred, 0, sizeof(req_cred));
     memset(&sub_cred, 0, sizeof(sub_cred));
     memset(&req_token, 0, sizeof(req_token));
+    memset(&rtoken, 0, sizeof(rtoken));
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
@@ -1863,8 +1874,17 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
      */
     if (strcmp(parsed_sub_cred.type, "login") == 0) {
         if (!mwk_do_login(rc, &parsed_sub_cred.u.lt, 
-                      &login_sub_cred, rptokens, &num_tokens))
-            return MWK_ERROR;
+                          &login_sub_cred, rptokens, &num_tokens)) {
+            if (rc->error_code == WA_PEC_LOGIN_FAILED) {
+                login_ec = rc->error_code;
+                login_em = rc->error_message;
+                rc->error_code = 0;
+                rc->error_message = NULL;
+                goto send_response;
+            } else {
+                return MWK_ERROR;
+            }
+        }
         sub_cred = &login_sub_cred;
         did_login = 1;
     } else {
@@ -1879,20 +1899,19 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     if ((ap_strstr(req_token.request_options, "fa") != 0) &&
         !did_login) {
         const char *msg = "forced authentication, need to login";
-        return set_errorResponse(rc, WA_PEC_LOGIN_FORCED,
-                                 msg, mwk_func, 1);
+        login_ec = WA_PEC_LOGIN_FORCED;
+        login_em = msg;
+        goto send_response;
     }
 
     /* now examine req_token to see what they asked for */
     
     if (strcmp(req_token.requested_token_type, "id") == 0) {
-        if (!create_id_token_from_req(rc, req_token.u.subject_auth_type,
-                                         &req_cred, sub_cred, &rtoken))
-            return MWK_ERROR;
+        ms = create_id_token_from_req(rc, req_token.u.subject_auth_type,
+                                      &req_cred, sub_cred, &rtoken);
     } else if (strcmp(req_token.requested_token_type, "proxy") == 0) {
-        if (!create_proxy_token_from_req(rc, req_token.u.proxy_type,
-                                         &req_cred, sub_cred, &rtoken))
-            return MWK_ERROR;
+        ms = create_proxy_token_from_req(rc, req_token.u.proxy_type,
+                                         &req_cred, sub_cred, &rtoken);
     } else {
         char *msg = apr_psprintf(rc->r->pool, 
                                  "unsupported requested-token-type: %s",
@@ -1902,8 +1921,43 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         return MWK_ERROR;
     }
 
-    /* if we got here, we made it! */
+    if (ms != MWK_OK) {
+        switch (rc->error_code) {
+            case WA_PEC_PROXY_TOKEN_REQUIRED:
+                login_ec = rc->error_code;
+                login_em = rc->error_message;
+                goto send_response;
+            case WA_PEC_UNAUTHORIZED:
+                /* for some error codes we want to return 
+                   an error token as the requestedToken */
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                             "mod_webkdc: %s: %s (%d)", rc->mwk_func, 
+                             rc->error_message, rc->error_code);
+
+                ms = create_error_token_from_req(rc, 
+                                                 rc->error_code,
+                                                 rc->error_message,
+                                                 &req_cred,
+                                                 &rtoken);
+                if (ms == MWK_OK)
+                    goto send_response;
+                else 
+                    return MWK_ERROR;                    
+            default:
+                return MWK_ERROR;
+        }
+    }
+
+
+ send_response:
+
     ap_rvputs(rc->r, "<requestTokenResponse>", NULL);
+
+    if (login_ec) {
+        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>", login_ec);
+        ap_rprintf(rc->r, "<loginErrorMessage>%s</loginErrorMessage>", 
+                   apr_xml_quote_string(rc->r->pool, login_em, 0));
+    }
 
     if (num_tokens) {
         ap_rvputs(rc->r, "<proxyTokens>", NULL);
@@ -1922,14 +1976,18 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
               "</returnUrl>", NULL);
 
     /* requesterSubject */
-    ap_rvputs(rc->r,"<requesterSubject>",
+    ap_rvputs(rc->r,
+              "<requesterSubject>",
               apr_xml_quote_string(rc->r->pool, req_cred.subject, 1),
               "</requesterSubject>", NULL);
 
     /* requestedToken, don't need to quote */
-    ap_rvputs(rc->r,
-              "<requestedToken>", rtoken.token_data, "</requestedToken>", 
-              NULL);
+    if (rtoken.token_data)
+        ap_rvputs(rc->r,
+                  "<requestedToken>", 
+                  rtoken.token_data,
+                  "</requestedToken>", 
+                  NULL);
 
     if (ap_strstr(req_token.request_options, "lc")) {
         MWK_RETURNED_TOKEN lc_token;

@@ -79,12 +79,9 @@ sub get_child_value {
 
     my $child = $e->find_child($name);
     if (!defined($child)) {
-	if (!defined($e)) {
-	    die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-				    "webkdc response missing: <$name>")
-		unless $opt;
-	    return undef;
-	}
+	return undef if $opt;
+	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
+					"webkdc response missing: <$name>");
     } else {
 	return $child->content;
     }
@@ -132,9 +129,13 @@ sub request_token_request($$) {
 	    $webkdc_doc->start('proxyToken',  undef, $token)->end;
 	}
     } else {
-	# need to prompt for username/password
-	die new WebKDC::WebKDCException(WK_ERR_USER_AND_PASS_REQUIRED,
-					"no cookies or username/password");
+	# we used to short-circuit here and just raise
+	# WK_ER_USER_AND_PASS_REQUIRED, but now we make a call
+	# to potentially get back a login-canceled token.
+	# we use subjectCredential of type proxy with no proxy tokens.
+	# further note: its probably also better to go to the WebKDC
+	# as we'll validate the request-token too the first time around...
+	$webkdc_doc->current->attr('type','proxy');
     }
     $webkdc_doc->end('subjectCredential');
     $webkdc_doc->start('requestToken',  undef, $request_token)->end;
@@ -194,14 +195,16 @@ sub request_token_request($$) {
 					"($error_code)", $error_code);
 					
     } elsif ($root->name() eq 'requestTokenResponse') {
-	my $return_url = get_child_value($root, 'returnUrl', 1);
-	my $requester_sub = get_child_value($root, 'requesterSubject', 1);
+	my $return_url = get_child_value($root, 'returnUrl', 0);
+	my $requester_sub = get_child_value($root, 'requesterSubject', 0);
 	my $returned_token = get_child_value($root, 'requestedToken', 1);
-	my $app_state = get_child_value($root, 'appState', 0);
+	my $app_state = get_child_value($root, 'appState', 1);
 	my $login_canceled_token = get_child_value($root, 'loginCanceledToken',
-						   0);
-	
+						   1);
 	my $proxy_tokens = $root->find_child('proxyTokens');
+	my $error_code = get_child_value($root, 'loginErrorCode', 1);
+	my $error_message = get_child_value($root, 'loginErrorMessage', 1);
+
 	if (defined($proxy_tokens)) {
 	    foreach my $token (@{$proxy_tokens->children}) {
 		my $type = $token->attr('type');
@@ -214,6 +217,16 @@ sub request_token_request($$) {
 	$wresp->app_state($app_state) if defined($app_state);
 	$wresp->login_canceled_token($login_canceled_token) 
 	    if defined($login_canceled_token);
+
+	if ($error_code) {
+	    my $wk_err = $pec_mapping{$error_code} || 
+		WK_ERR_UNRECOVERABLE_ERROR;
+	    print STDERR "ERROR: wk_err($wk_err)\n";
+
+	    die new WebKDC::WebKDCException($wk_err, 
+					    "Login error: $error_message ".
+					    "($error_code)", $error_code);
+	}
 	return;
     } else {
 	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,

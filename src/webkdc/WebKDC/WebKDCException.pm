@@ -27,9 +27,9 @@ our @EXPORT_OK;
 
 sub WK_ERR_USER_AND_PASS_REQUIRED      () {1;}
 sub WK_ERR_LOGIN_FAILED                () {2;}
-sub WK_ERR_UNRECOVERABLE_ERROR	       () {32}
+sub WK_ERR_UNRECOVERABLE_ERROR	       () {3;}
 
-our @ErrorNames = qw(USER_AND_PASS_REQUIRED
+our @ErrorNames = qw(UNUSED USER_AND_PASS_REQUIRED
 		     LOGIN_FAILED
 		     UNRECOVERABLE_ERROR);
 

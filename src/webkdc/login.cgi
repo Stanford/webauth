@@ -47,11 +47,21 @@ sub print_headers {
 }
 
 sub cancel_page {
-    my $q = shift;
+    my ($q, $LC) = @_;
+
+    my $can_stuff;
+
+    if ($LC) {
+	eval {
+	    my $can_url = base64_decode($LC);
+	    $can_stuff = "Click <a href=\"$can_url\">here</a> to return to the ".
+		"application you came from without logging in.";
+	};
+    }
 
     print $q->header(-type => 'text/html');
 
-    print << 'EOF';
+    print << "EOF";
 
 <HTML>
   <HEAD>
@@ -68,6 +78,7 @@ sub cancel_page {
         </TD>
         <TH colspan="3" align="center">
           <H2>Weblogin Canceled</h2>
+	  $can_stuff
         </TH>
       </TR>
     </TABLE>
@@ -93,11 +104,12 @@ EOF
 }
 
 sub login_form {
-    my ($q, $resp, $RT, $ST, $error_message) = @_;
+    my ($q, $resp, $RT, $ST, $can_url, $error_message) = @_;
 
     print_headers($q, $resp->proxy_cookies);
-
     #print $q->Dump;
+
+    my $LC = base64_encode($can_url);
 
     print << "EOF";
 
@@ -143,6 +155,7 @@ sub login_form {
 
       <INPUT type="hidden" name="RT" value="$RT">
       <INPUT type="hidden" name="ST" value="$ST">
+      <INPUT type="hidden" name="LC" value="$LC">
     </FORM> 
     <hr>
   </html>
@@ -154,12 +167,12 @@ my $q = new CGI;
 
 my $request_token_str = $q->param('RT');
 my $service_token_str = $q->param('ST');
+my $login_cancel_url = $q->param('LC');
 my $submit = $q->param('submit') || '';
 
 
 if ($submit eq 'Cancel') {
-    # FIXME: we need to check for a login canceled token too 
-    cancel_page($q);
+    cancel_page($q, $login_cancel_url);
     exit(0);
 }
 
@@ -207,7 +220,16 @@ if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
     # we'll prompt
     # make sure to pass the request/service tokens in hidden fields
 
-    login_form($q, $resp, $request_token_str, $service_token_str,
+    my $lc = $resp->login_canceled_token;
+    my $can_url;
+    if ($lc) {
+	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
+	    unless !$resp->app_state();
+    }
+
+    login_form($q, $resp, $request_token_str, 
+	       $service_token_str, $can_url,
 	       "<b>login failed! Try again...</b>");
 
 } elsif (WebKDC::WebKDCException::match($e, WK_ERR_USER_AND_PASS_REQUIRED)) {
@@ -220,7 +242,16 @@ if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
     # also need to check $resp->proxy_cookies() to see if we have
     # to update any proxy cookies
 
-    login_form($q, $resp, $request_token_str, $service_token_str, '');
+    my $lc = $resp->login_canceled_token;
+    my $can_url;
+    if ($lc) {
+	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
+	    unless !$resp->app_state();
+    }
+
+    login_form($q, $resp, $request_token_str, 
+	       $service_token_str, $can_url, '');
 
 } elsif ($e) {
 
@@ -246,7 +277,16 @@ if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
     my $return_url = $resp->return_url();
     $return_url .= ";WEBAUTHR=".$resp->response_token().";";
     $return_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();
-    print "click <a href=\"$return_url\">here</a> to return!\n";
+    print "click <a href=\"$return_url\">here</a> to return!<br>";
+
+    my $lc = $resp->login_canceled_token;
+    if (defined($lc)) {
+	my $can_url = $resp->return_url();
+	$can_url .= ";WEBAUTHR=$lc;";
+	$can_url .= ";WEBAUTHS=".$resp->app_state().";" unless !$resp->app_state();
+	print "Click <a href=\"$can_url\">here</a> to return to the ".
+	    "application you came from without logging in.<br>";
+    }
 }
 
 exit(0);
