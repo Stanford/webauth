@@ -61,6 +61,7 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
     int status;
     char *principal, *subject;
     const char *mwa_func = "krb5_validate_sad";
+    char *kt;
 
     if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
@@ -71,7 +72,9 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
     if (ctxt == NULL)
         return NULL;
 
-    status = webauth_krb5_rd_req(ctxt, sad, sad_len, rc->sconf->keytab_path,
+    kt = apr_pstrcat(rc->r->pool, "FILE:", rc->sconf->keytab_path, NULL);
+    
+    status = webauth_krb5_rd_req(ctxt, sad, sad_len, kt,
                                  rc->sconf->keytab_principal,
                                  &principal, 1);
     webauth_krb5_free(ctxt);
@@ -204,17 +207,19 @@ krb5_webkdc_credential(server_rec *server,
     unsigned char *k5_req, *bk5_req;
     int status, k5_req_len, bk5_req_len;
     static const char *mwa_func = "krb5_webkdc_credential";
+    char *kt;
 
     ctxt = get_webauth_krb5_ctxt(server, mwa_func);
     if (ctxt == NULL)
         return 0;
 
-    status = webauth_krb5_init_via_keytab(ctxt, sconf->keytab_path, 
+    kt = apr_pstrcat(pool, "FILE:", sconf->keytab_path, NULL);
+
+    status = webauth_krb5_init_via_keytab(ctxt, kt, 
                                           sconf->keytab_principal, NULL);
     if (status != WA_ERR_NONE) {
         log_webauth_error(server, status, ctxt, mwa_func,
-                          "webauth_krb5_init_via_keytab", 
-                          sconf->keytab_path);
+                          "webauth_krb5_init_via_keytab", kt);
         webauth_krb5_free(ctxt);
         return 0;
     }

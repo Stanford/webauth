@@ -39,6 +39,7 @@
 
 #include "mod_webauth.h"
 
+module AP_MODULE_DECLARE_DATA webauth_module;
 
 /*
  * remove a string from the end of another string

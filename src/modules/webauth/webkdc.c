@@ -256,7 +256,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     if (ok) {
         astatus = apr_file_perms_set(templ, APR_UREAD|APR_UWRITE);
 
-        if (astatus != APR_SUCCESS) {
+        if (astatus != APR_SUCCESS && astatus != APR_ENOTIMPL) {
             mwa_log_apr_error(server, astatus, mwa_func, "apr_file_perms_set",
                           templ, NULL);
             /* not ok anymore */

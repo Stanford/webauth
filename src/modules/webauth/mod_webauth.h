@@ -1,8 +1,6 @@
 #ifndef MOD_WEBAUTH_H
 #define MOD_WEBAUTH_H
 
-#include <unistd.h>
-
 #include "httpd.h"
 #include "http_config.h"
 #include "http_log.h"
@@ -23,6 +21,10 @@
 #include "apr_base64.h"
 
 #include <curl/curl.h>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "webauth.h"
 
@@ -276,8 +278,6 @@ enum {
     SE_Groups,
 #endif
 };
-
-extern module webauth_module;
 
 /* a service token and associated data, all memory (including key)
  * is allocated from a pool
