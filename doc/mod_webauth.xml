@@ -160,7 +160,7 @@ WebAuthSubjectAuthType krb5
 
 
 <directivesynopsis>
-<name><a name="WebauthTokenMaxTTL">WebAuthTokenMaxTTL</a></name>
+<name><a name="WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a></name>
 <description>How old a token that was should be recently created is valid for.
 </description>
 <syntax>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></syntax>
