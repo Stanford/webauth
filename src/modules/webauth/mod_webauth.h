@@ -350,6 +350,31 @@ typedef struct {
     apr_pool_t *pool;
 } MWA_STRING;
 
+/* structure that defines the proxy/credential interface */
+typedef struct {
+    /* proxy/cred type (i.e., "krb5") */
+    const char *type;
+
+    /* function to validate subject-authenticator-data */
+    const char *(*validate_sad) (MWA_REQ_CTXT *rc, 
+                                 void *sad, 
+                                 int sad_len);
+
+    /* function to run through all the cred tokens and prepare any
+       cred tokens that are the same as our type for use by CGI */
+    int (*prepare_creds)(MWA_REQ_CTXT *rc,
+                         MWA_CRED_TOKEN **creds, 
+                         int num_creds);
+
+    /* get the base64'd blob that we would send to the WebKDC
+       in the <requesterCredential> element. */
+    const char *(*webkdc_credential)(server_rec *server, 
+                                     MWA_SCONF *sconf,
+                                     apr_pool_t *pool);
+
+} MWA_CRED_INTERFACE;
+
+
 /* webkdc.c */
 
 MWA_SERVICE_TOKEN *
@@ -402,19 +427,17 @@ void
 mwa_log_request(request_rec *r, const char *msg);
 
 /*
- * get a WEBAUTH_KRB5_CTXT, log errors
+ * stores an env variable that will get set in fixups
  */
-WEBAUTH_KRB5_CTXT *
-mwa_get_webauth_krb5_ctxt(server_rec *s, const char *mwa_func);
-
+void
+mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value);
 
 /*
- * log a webauth-related error. ctxt can be NULL.
+ * log a webauth-related error
  */
 void
 mwa_log_webauth_error(server_rec *r, 
                       int status, 
-                      WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
                       const char *func,
                       const char *extra);
@@ -441,12 +464,26 @@ mwa_parse_cred_token(char *token,
                      WEBAUTH_KEY *key, 
                      MWA_REQ_CTXT *rc);
 
-void
+void 
 mwa_log_apr_error(server_rec *server,
                   apr_status_t astatus,
                   const char *mwa_func,
                   const char *ap_func,
                   const char *path1,
                   const char *path2);
+
+
+void
+mwa_register_cred_interface(server_rec *server,
+                            MWA_SCONF *sconf,
+                            apr_pool_t *pool,
+                            MWA_CRED_INTERFACE *interface);
+
+MWA_CRED_INTERFACE *
+mwa_find_cred_interface(server_rec *server,
+                        const char *type);
+
+/* krb5.c */
+MWA_CRED_INTERFACE *mwa_krb5_cred_interface;
 
 #endif

@@ -425,6 +425,16 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
 
 #undef CHECK_DIR
 
+    /* unlink any existing service-token cache */
+    /* FIXME: should this be a directive? */
+    if (unlink(sconf->st_cache_path) == -1) {
+        if (errno != ENOENT) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+                         "mod_webauth: init_sconf: unlink(%s) errno(%d)", 
+                         sconf->st_cache_path, errno);
+        }
+    }
+
     /* init mutex first */
     if (sconf->mutex == NULL) {
         apr_thread_mutex_create(&sconf->mutex,
@@ -463,6 +473,9 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
+
+    /* FIXME: this needs to be configurable at some point */
+    mwa_register_cred_interface(s, sconf, pconf, mwa_krb5_cred_interface);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webauth: initializing");
@@ -728,7 +741,7 @@ make_proxy_cookie(const char *proxy_type,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_create", subject);
         return 0;
     }
@@ -794,7 +807,7 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_create", ct->subject);
         return 0;
     }
@@ -864,7 +877,7 @@ make_app_cookie(const char *subject,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_create", subject);
         return 0;
     }
@@ -965,7 +978,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_parse", NULL);
         return 0;
     }
@@ -1069,7 +1082,7 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_parse", NULL);
         return NULL;
     }
@@ -1184,7 +1197,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_parse", NULL);
         return NULL;
     }
@@ -1230,55 +1243,11 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     return key;
 }
 
-/*
- * FIXME: This would be part of a "pluggable" proxy/cred interface.
- */
-static char *
-validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
-
-{
-    WEBAUTH_KRB5_CTXT *ctxt;
-    int status, i;
-    char *principal, *subject;
-    const char *mwa_func = "validate_krb5_sad";
-
-    status = webauth_attr_list_find(alist, WA_TK_SUBJECT_AUTH_DATA, &i);
-    if (i == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: %s: can't find subject auth data", 
-                     mwa_func);
-        return NULL;
-    }
-
-    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, mwa_func);
-    if (ctxt == NULL)
-        return NULL;
-
-    status = webauth_krb5_rd_req(ctxt,
-                                 alist->attrs[i].value,
-                                 alist->attrs[i].length,
-                                 rc->sconf->keytab_path,
-                                 &principal, 1);
-
-    webauth_krb5_free(ctxt);
-
-    if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, ctxt, mwa_func,
-                              "webauth_krb5_rd_req", NULL);
-        return NULL;
-    }
-
-    /* subject = apr_pstrcat(rc->r->pool, "krb5:", principal, NULL);*/
-    subject = apr_pstrdup(rc->r->pool, principal);
-    free(principal);
-    return subject;
-}
-
 static int
 handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
-    char *subject;
-    int status;
+    const char *subject;
+    int status, i;
     const char *sa;
     const char *mwa_func="handle_id_token";
 
@@ -1288,8 +1257,16 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
         return 0;
     }
 
-    if (strcmp(sa, WA_SA_KRB5) == 0) {
-        subject = validate_krb5_sad(alist, rc);
+    status = webauth_attr_list_find(alist, WA_TK_SUBJECT_AUTH_DATA, &i);
+    if (i != -1) {
+        MWA_CRED_INTERFACE *mci = mwa_find_cred_interface(rc->r->server, sa);
+
+        if (mci == NULL)
+            return 0;
+
+        subject = mci->validate_sad(rc,
+                                    alist->attrs[i].value,
+                                    alist->attrs[i].length);
     } else if (strcmp(sa, WA_SA_WEBKDC) == 0) {
         /* subject is all set */
         const char *tsub = mwa_get_str_attr(alist, WA_TK_SUBJECT,
@@ -1453,7 +1430,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
                                           key, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_parse_with_key", NULL);
         return code;
     }
@@ -1652,8 +1629,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, 
-                              NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_create_with_key", NULL);
         return failure_redirect(rc);
     }
@@ -1753,115 +1729,6 @@ add_proxy_type(apr_array_header_t *a, char *type)
 }
 
 /*
- * called when the request pool gets cleaned up
- */
-static apr_status_t
-cred_cache_destroy(void *data)
-{
-    char *path = (char*)data;
-    /* 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                 "mod_webauth: cleanup cred: %s", path);
-    */
-    if (unlink(path) == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)", 
-                     path, errno);
-    }
-    return APR_SUCCESS;
-}
-
-/*
- * prepare any krb5 creds
- * FIXME: This would be part of a "pluggable" proxy/cred interface.
- */
-static int 
-prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
-{
-    const char *mwa_func="prepare_krb5_creds";
-    WEBAUTH_KRB5_CTXT *ctxt;
-    int i, status;
-    char *temp_cred_file;
-    apr_file_t *fp;
-    apr_status_t astatus;
-
-    if (rc->sconf->cred_cache_dir == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: cred_cache_dir is not set (%s)\n", 
-                     mwa_func, CM_CredCacheDir);
-        return 0;
-    }
-
-    astatus = apr_filepath_merge(&temp_cred_file, 
-                                 rc->sconf->cred_cache_dir,
-                                 "temp.krb5.XXXXXX",
-                                 0,
-                                 rc->r->pool);
-
-    astatus = apr_file_mktemp(&fp, temp_cred_file,
-                              APR_CREATE|APR_READ|APR_WRITE|APR_EXCL,
-                              rc->r->pool);
-    if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
-                          "apr_file_mktemp", temp_cred_file, NULL);
-        return 0;
-    }
-
-    /* we close it here, and register a pool cleanup handler */
-    astatus = apr_file_close(fp);
-    if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
-                          "apr_file_close", temp_cred_file, NULL);
-        return 0;
-    }
-
-    apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
-                              cred_cache_destroy,
-                              apr_pool_cleanup_null);
-    
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                     "mod_webauth: %s: temp_cred_file mktemp(%s)\n", 
-                     mwa_func, temp_cred_file);
-
-    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, mwa_func);
-    if (ctxt == NULL)
-        return 0;
-
-    webauth_krb5_keep_cred_cache(ctxt);
-
-    for (i=0; i < num_creds; i++) {
-        if (strcmp(creds[i]->cred_type, "krb5") == 0) {
-            if (rc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                             "mod_webauth: %s: prepare (%s) for (%s)",
-                             mwa_func, creds[i]->cred_server, 
-                             creds[i]->subject);
-            if (i == 0) {
-                status = webauth_krb5_init_via_cred(ctxt,
-                                                    creds[i]->cred_data,
-                                                    creds[i]->cred_data_len,
-                                                    temp_cred_file);
-            } else {
-                status = webauth_krb5_import_cred(ctxt,
-                                                  creds[i]->cred_data,
-                                                  creds[i]->cred_data_len);
-            }
-            if (status != WA_ERR_NONE)
-                mwa_log_webauth_error(rc->r->server, 
-                                      status, ctxt, mwa_func,
-                                      i == 0 ? "webauth_krb5_init_via_cred" :
-                                      "webauth_krb5_import_cred", NULL);
-        }
-    }
-    webauth_krb5_free(ctxt);
-
-    /* stash an env for fixups */
-    fixup_setenv(rc, ENV_KRB5CCNAME, temp_cred_file);
-    return 1;
-}
-
-/*
  * take all the creds for the given proxy_type and
  * prepare them. i.e., for krb5 this means creating
  * a credential cache file and setting KRB5CCNAME.
@@ -1872,8 +1739,11 @@ prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
 {
     const char *mwa_func="prepare_creds";
 
-    if (strcmp(proxy_type, "krb5") == 0) {
-        return prepare_krb5_creds(rc, creds, num_creds);
+    MWA_CRED_INTERFACE *mci = 
+        mwa_find_cred_interface(rc->r->server, proxy_type);
+
+    if (mci != NULL) {
+        return mci->prepare_creds(rc, creds, num_creds);
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: unhandled proxy type: (%s)",
@@ -2392,6 +2262,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_SubjectAuthType:
             sconf->subject_auth_type = apr_pstrdup(cmd->pool, arg);
             sconf->subject_auth_type_ex = 1;
+            /* FIXME: this check needs to be more dynamic, or done later */
             if (strcmp(arg, "krb5") && strcmp(arg,"webkdc")) {
                 error_str = apr_psprintf(cmd->pool,
                                          "Invalid value directive %s: %s",

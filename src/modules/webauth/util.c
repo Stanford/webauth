@@ -128,54 +128,20 @@ mwa_log_request(request_rec *r, const char *msg)
 #undef LOG_D
 }
 
-/*
- * get a WEBAUTH_KRB5_CTXT
- */
-WEBAUTH_KRB5_CTXT *
-mwa_get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
-{
-    WEBAUTH_KRB5_CTXT *ctxt;
-    int status;
-
-    status = webauth_krb5_new(&ctxt);
-    if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, 
-                              status, ctxt, mwa_func, "webauth_krb5_new",
-                              NULL);
-        if (status == WA_ERR_KRB5)
-            webauth_krb5_free(ctxt);
-        return NULL;
-    }
-    return ctxt;
-}
-
-
 void
 mwa_log_webauth_error(server_rec *s, 
                        int status, 
-                      WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
                       const char *func,
                       const char *extra)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
-                     mwa_func, func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(status), status,
-                     webauth_krb5_error_message(ctxt), 
-                     webauth_krb5_error_code(ctxt));
-    } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s%s%s failed: %s (%d)",
-                     mwa_func,
-                     func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(status), status);
-    }
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                 "mod_webauth: %s: %s%s%s failed: %s (%d)",
+                 mwa_func,
+                 func,
+                 extra == NULL ? "" : " ",
+                 extra == NULL ? "" : extra,
+                 webauth_error_message(status), status);
 }
 
 int
@@ -195,15 +161,13 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
                                          &update_status);
 
     if (status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, NULL,
-                                  mwa_func, 
+            mwa_log_webauth_error(serv, status, mwa_func, 
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
     }
 
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, NULL,
-                                  mwa_func, 
+            mwa_log_webauth_error(serv, status, mwa_func, 
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
             /* complain even more */
@@ -305,7 +269,7 @@ mwa_parse_cred_token(char *token,
         
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL,
+        mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_parse", NULL);
         return NULL;
     }
@@ -373,4 +337,57 @@ mwa_parse_cred_token(char *token,
  cleanup:
     webauth_attr_list_free(alist);
     return nct;
+}
+
+/*
+ * stores an env variable that will get set in fixups
+ */
+void
+mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
+{
+    char *key;
+
+    key = apr_pstrcat(rc->r->pool, "mod_webauth_ENV_", name, NULL);
+    mwa_setn_note(rc->r, key, value);
+}
+
+static apr_array_header_t *cred_interfaces = NULL;
+
+void
+mwa_register_cred_interface(server_rec *server,
+                            MWA_SCONF *sconf,
+                            apr_pool_t *pool,
+                            MWA_CRED_INTERFACE *interface)
+{
+    MWA_CRED_INTERFACE **new_interface;
+
+    if (cred_interfaces == NULL)
+        cred_interfaces = apr_array_make(pool, 5, sizeof(MWA_CRED_INTERFACE*));
+    new_interface = apr_array_push(cred_interfaces);
+    *new_interface = interface;
+
+    if (sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
+                     "mod_webauth: registering cred interface: %s\n",
+                     interface->type);
+}
+
+MWA_CRED_INTERFACE *
+mwa_find_cred_interface(server_rec *server,
+                        const char *type)
+{
+    if (cred_interfaces != NULL) {
+        int i;
+        MWA_CRED_INTERFACE **interfaces;
+
+        interfaces = (MWA_CRED_INTERFACE **)cred_interfaces->elts;
+        for (i=0; i < cred_interfaces->nelts; i++) {
+            if (strcmp(interfaces[i]->type, type) == 0)
+                return interfaces[i];
+        }
+    }
+    ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
+                 "mod_webauth: mwa_find_cred_interface: not found: %s",
+                 type);
+    return NULL;
 }

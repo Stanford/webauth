@@ -15,7 +15,7 @@ LDFLAGS		= @LDFLAGS@
 LDLIBS		= $(top_builddir)src/libwebauth/libwebauth.la \
 		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@
 
-SOURCES		= mod_webauth.c util.c webkdc.c
+SOURCES		= mod_webauth.c util.c webkdc.c krb5.c
 
 all: mod_webauth.o
 

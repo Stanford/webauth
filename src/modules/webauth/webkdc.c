@@ -119,7 +119,7 @@ read_service_token_cache(server_rec *server,
     status = webauth_attrs_decode(buffer, finfo.size, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, NULL, "mwa_func", 
+        mwa_log_webauth_error(server, status, "mwa_func", 
                               "webauth_attrs_decode", 
                               sconf->st_cache_path);
         return NULL;
@@ -574,44 +574,24 @@ request_service_token(server_rec *server,
                       apr_pool_t *pool,
                       time_t curr)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
     apr_xml_parser *xp;
     apr_xml_doc *xd;
     char *xml_request, *xml_response;
-    unsigned char *k5_req, *bk5_req;
-    int status, k5_req_len, bk5_req_len;
+    const char *bk5_req;
     static const char *mwa_func = "request_service_token";
     apr_status_t astatus;
+    MWA_CRED_INTERFACE *mci;
 
-    ctxt = mwa_get_webauth_krb5_ctxt(server, mwa_func);
-    if (ctxt == NULL)
-        return 0;
+    /* FIXME: this is currently hardcoded to krb5, but should be a directive */
+    mci = mwa_find_cred_interface(server, "krb5");
+    if (mci == NULL) 
+        return NULL;
 
-    status = webauth_krb5_init_via_keytab(ctxt, sconf->keytab_path, NULL);
-    if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, ctxt, mwa_func,
-                              "webauth_krb5_init_via_keytab", 
-                              sconf->keytab_path);
-        webauth_krb5_free(ctxt);
-        return 0;
-    }
+    bk5_req = mci->webkdc_credential(server, sconf, pool);
 
-    status = webauth_krb5_mk_req(ctxt, sconf->webkdc_principal, 
-                                 &k5_req, &k5_req_len);
-    if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, ctxt, mwa_func,
-                              "webauth_krb5_mk_req",
-                              sconf->webkdc_principal);
-        webauth_krb5_free(ctxt);
-        return 0;
-    }
-    webauth_krb5_free(ctxt);
+    if (bk5_req == NULL)
+        return NULL;
 
-    bk5_req_len = apr_base64_encode_len(k5_req_len);
-    bk5_req = (char*) apr_palloc(pool, bk5_req_len);
-    apr_base64_encode(bk5_req, k5_req, k5_req_len);
-    free(k5_req);
-    
     xml_request = apr_pstrcat(pool, 
                               "<getTokensRequest>"
                               "<requesterCredential type='krb5'>",
@@ -710,8 +690,7 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, NULL,
-                              "set_app_state",
+        mwa_log_webauth_error(server, status, "set_app_state",
                               "webauth_token_create", NULL);
     } else {
         token->app_state = as;
@@ -884,8 +863,7 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, 
-                              NULL, mwa_func,
+        mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_create_with_key", NULL);
         return NULL;
     }
