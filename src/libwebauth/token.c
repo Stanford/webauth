@@ -24,8 +24,9 @@
  * construct new AES key. 
  */
 
-WEBAUTH_AES_KEY *webauth_key_create(const unsigned char *key,
-                                    int key_len) {
+WEBAUTH_AES_KEY *
+webauth_key_create(const unsigned char *key, int key_len) 
+{
     WEBAUTH_AES_KEYP *k;
     int bits;
 
@@ -52,15 +53,18 @@ WEBAUTH_AES_KEY *webauth_key_create(const unsigned char *key,
     return (WEBAUTH_AES_KEY*)k;
 }
 
-void webauth_key_destroy(WEBAUTH_AES_KEY *key) {
+void
+webauth_key_destroy(WEBAUTH_AES_KEY *key) 
+{
     assert(key != NULL);
     memset(key, 0, sizeof(WEBAUTH_AES_KEYP));
     free(key);
 }
 
-static int binary_encoded_length(const WEBAUTH_ATTR *attrs,
-                                 int num_attrs,
-                                 int *plen)
+static int 
+binary_encoded_length(const WEBAUTH_ATTR *attrs,
+                      int num_attrs,
+                      int *plen)
 {
     int len, m;
 
@@ -89,8 +93,9 @@ static int binary_encoded_length(const WEBAUTH_ATTR *attrs,
     return len;
 }
 
-int webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
-                                 int num_attrs)
+int
+webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
+                             int num_attrs)
 {
     int plen;
     int blen;
@@ -101,15 +106,15 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR *attrs,
     return webauth_base64_encoded_length(blen);
 }
 
-
 /*
  * encrypts and base64 encodes attrs into a token
  */
-int webauth_token_create(const WEBAUTH_ATTR *attrs,
-                         int num_attrs,
-                         unsigned char *output,
-                         int max_output_len,
-                         const WEBAUTH_AES_KEY *key)
+int
+webauth_token_create(const WEBAUTH_ATTR *attrs,
+                     int num_attrs,
+                     unsigned char *output,
+                     int max_output_len,
+                     const WEBAUTH_AES_KEY *key)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i;
@@ -216,11 +221,12 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
  * and let webauth_toke_parse pick the best key from the key ring
  */
 
-int webauth_token_parse(unsigned char *input,
-                        int input_len,
-                        WEBAUTH_ATTR *attrs,
-                        int max_num_attrs,
-                        const WEBAUTH_AES_KEY *key)
+int
+webauth_token_parse(unsigned char *input,
+                    int input_len,
+                    WEBAUTH_ATTR *attrs,
+                    int max_num_attrs,
+                    const WEBAUTH_AES_KEY *key)
 {
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 

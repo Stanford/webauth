@@ -6,7 +6,7 @@
 # change 'tests => 1' to 'tests => last_test_to_print';
 
 use Test;
-BEGIN { plan tests => 19 };
+BEGIN { plan tests => 34 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
@@ -24,7 +24,6 @@ ok("an" eq WebAuth::WA_TK_APP_NAME);
 
 ########################################  base64
 
-# basic encoded_length tests
 ok(4, WebAuth::base64_encoded_length(1));
 ok(4, WebAuth::base64_encoded_length(2));
 ok(4, WebAuth::base64_encoded_length(3));
@@ -35,9 +34,16 @@ ok(12, WebAuth::base64_encoded_length(7));
 ok(12, WebAuth::base64_encoded_length(8));
 ok(12, WebAuth::base64_encoded_length(9));
 
-# basic base64_encode/decode tests
+ok(1, WebAuth::base64_decoded_length(WebAuth::base64_encode('1')));
+ok(2, WebAuth::base64_decoded_length(WebAuth::base64_encode('12')));
+ok(3, WebAuth::base64_decoded_length(WebAuth::base64_encode('123')));
+ok(4, WebAuth::base64_decoded_length(WebAuth::base64_encode('1234')));
+
+
 ok('aGVsbG8=', WebAuth::base64_encode('hello'));
 ok('hello', WebAuth::base64_decode('aGVsbG8='));
+ok('\000\001\002', 
+   WebAuth::base64_decode(WebAuth::base64_encode('\000\001\002')));
 
 # test some failures
 
@@ -46,9 +52,23 @@ ok(WebAuth::WA_ERR_CORRUPT, WebAuth::base64_decoded_length('x'));
 ok(undef, WebAuth::base64_decode('axc', $status));
 ok(WebAuth::WA_ERR_CORRUPT, $status);
 
-#  $len = webauth_base64_encoded_length($length);
-#  $output = webauth_base64_encode($data);
-#  $output = webauth_base64_decode($data [, $status]);
+########################################  hex
+
+# basic hex lenth tests
+ok(2, WebAuth::hex_encoded_length(1));
+ok(6, WebAuth::hex_encoded_length(3));
+ok(10, WebAuth::hex_encoded_length(5));
+
+ok(1, WebAuth::hex_decoded_length(2));
+ok(3, WebAuth::hex_decoded_length(6));
+ok(5, WebAuth::hex_decoded_length(10));
+
+ok('000102030405', WebAuth::hex_encode("\000\001\002\003\004\005"));
+ok("\000\001\002\003\004\005", WebAuth::hex_decode('000102030405'));
+
+ok('68656c6c6f', WebAuth::hex_encode('hello'));
+ok('hello', WebAuth::hex_decode('68656c6c6f'));
+
 #  $output = webauth_attrs_encode(%attrs, [, $status]);
 #  %attrs = webauth_attrs_decode($data [, $status]);
 #  $bytes = webauth_random_bytes($num_bytes [, $status]);

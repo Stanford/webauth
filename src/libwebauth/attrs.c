@@ -9,8 +9,9 @@
 #define VAL_TERM ';'
 
 
-int webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs, 
-                                 int num_attrs)
+int
+webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs, 
+                             int num_attrs)
 {
     int space, i, len;
     unsigned char *p, *v;
@@ -40,10 +41,11 @@ int webauth_attrs_encoded_length(const WEBAUTH_ATTR *attrs,
  * be set to the maxium size of the output buffer.
  */
 
-int webauth_attrs_encode(const WEBAUTH_ATTR *attrs, 
-                         int num_attrs,
-                         unsigned char *output,
-                          int max_output_len)
+int
+webauth_attrs_encode(const WEBAUTH_ATTR *attrs, 
+                     int num_attrs,
+                     unsigned char *output,
+                     int max_output_len)
 {
    int i, len, slen, rlen;
    unsigned char *p, *v, *d;
@@ -94,10 +96,11 @@ int webauth_attrs_encode(const WEBAUTH_ATTR *attrs,
  * when dealing with values that are ASCII strings.
  */
 
-int webauth_attrs_decode(unsigned char *buffer, 
-                         int input_len,
-                         WEBAUTH_ATTR *attrs,
-                         int max_num_attrs)
+int
+webauth_attrs_decode(unsigned char *buffer, 
+                     int input_len,
+                     WEBAUTH_ATTR *attrs,
+                     int max_num_attrs)
 {
     int n, i;
     int in_val;

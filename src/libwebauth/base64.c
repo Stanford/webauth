@@ -29,13 +29,15 @@ static char basis_64[] =
    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 
-int webauth_base64_encoded_length(int length)
+int
+webauth_base64_encoded_length(int length)
 {
     assert(length > 0);
     return ((length+2)/3*4);
 }
 
-int webauth_base64_decoded_length(const unsigned char *input, int input_len)
+int
+webauth_base64_decoded_length(const unsigned char *input, int input_len)
 {
     int out_len;
     assert(input);
@@ -52,10 +54,11 @@ int webauth_base64_decoded_length(const unsigned char *input, int input_len)
     return out_len;
 }
 
-int webauth_base64_encode(const unsigned char *input, 
-                          int input_len, 
-                          unsigned char *output, 
-                          int output_max)
+int
+webauth_base64_encode(const unsigned char *input, 
+                      int input_len, 
+                      unsigned char *output, 
+                      int output_max)
 {
     int c1, c2, c3;
     int out_len = 0;

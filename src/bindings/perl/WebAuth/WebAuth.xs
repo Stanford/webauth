@@ -87,6 +87,80 @@ CODE:
     }
 }
 
+int
+webauth_hex_encoded_length(length)
+    int length
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = webauth_hex_encoded_length(length);
+}
+OUTPUT:
+    RETVAL
+
+int
+webauth_hex_decoded_length(length)
+    int length
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = webauth_hex_decoded_length(length);
+}
+OUTPUT:
+    RETVAL
+
+
+void
+webauth_hex_encode(input)
+SV * input
+PROTOTYPE: $
+CODE:
+{
+    STRLEN n_input, n_output;
+    int out_len, s;
+    unsigned char *p_input;
+
+    p_input = SvPV(input, n_input);
+    out_len = webauth_hex_encoded_length(n_input);
+
+    ST(0) = sv_2mortal(NEWSV(0, out_len));
+    
+    s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), out_len);
+    SvCUR_set(ST(0), out_len);
+    SvPOK_only(ST(0));
+}
+
+void
+webauth_hex_decode(input, ...)
+SV * input
+PROTOTYPE: $;$
+CODE:
+{
+    STRLEN n_input, n_output;
+    int out_len, s;
+    unsigned char *p_input;
+
+    p_input = SvPV(input, n_input);
+    out_len = webauth_hex_decoded_length(n_input);
+    if (out_len > 0) {
+            ST(0) = sv_2mortal(NEWSV(0, out_len));
+            s = webauth_hex_decode(p_input, n_input, SvPVX(ST(0)), out_len);
+    } else {
+      s = out_len;
+    }
+
+    if (items > 1) {
+       sv_setiv(ST(1), s);
+    }
+
+    if (s < 0) {
+        ST(0) = &PL_sv_undef;
+    } else {
+        SvCUR_set(ST(0), out_len);
+        SvPOK_only(ST(0));
+    }
+}
+
 BOOT:
 {
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))

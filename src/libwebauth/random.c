@@ -2,7 +2,8 @@
 
 #include "webauthp.h"
 
-int webauth_random_bytes(unsigned char *output, int num_bytes)
+int
+webauth_random_bytes(unsigned char *output, int num_bytes)
 {
     int s;
     /* FIXME: leave as assert for now, later, need to handle
@@ -17,7 +18,8 @@ int webauth_random_bytes(unsigned char *output, int num_bytes)
     return (s==-1) ? WA_ERR_RAND_FAILURE : WA_ERR_NONE;
 }
 
-int webauth_random_key(unsigned char *key, int key_len)
+int
+webauth_random_key(unsigned char *key, int key_len)
 {
     int s;
     /* FIXME: leave as assert for now, later, need to handle

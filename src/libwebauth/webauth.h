@@ -40,7 +40,7 @@ typedef enum {
 #define WA_TK_RETURN_URL "ru"
 #define WA_TK_SUBJECT "s"
 #define WA_TK_SUBJECT_AUTHENTICATOR "sa"
-#define WA_TK_SERVICE_AUTHEENTICATOR_NAME "san"
+#define WA_TK_SERVICE_AUTHENTICATOR_NAME "san"
 #define WA_TK_TOKEN_TYPE "t"
 #define WA_TK_TOKEN_VERSION "ver"
 
@@ -138,6 +138,14 @@ webauth_base64_decode(unsigned char *input,
  * null-termination.
  */
 int webauth_hex_encoded_length(int length);
+
+
+/*
+ * returns the amount of space required to decode the hex encoded data
+ * of the given length. Returned length does *NOT* include room for a
+ * null-termination. 
+ */
+int webauth_hex_decoded_length(int length);
 
 /*
  * hex encodes the given data, does *NOT* null-terminate.

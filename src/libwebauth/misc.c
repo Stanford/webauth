@@ -4,17 +4,25 @@
 
 static char hex[] = "0123456789abcdef";
 
-
-int webauth_hex_encoded_length(int length)
+int
+webauth_hex_encoded_length(int length)
 {
     return length*2;
 }
 
 
-int webauth_hex_encode(unsigned char *input, 
-                       int input_len,
-                       unsigned char *output,
-                       int max_output_len)
+int
+webauth_hex_decoded_length(int length)
+{
+    return length/2;
+}
+
+
+int
+webauth_hex_encode(unsigned char *input, 
+                   int input_len,
+                   unsigned char *output,
+                   int max_output_len)
 {
     int out_len;
     unsigned char *s;
@@ -40,10 +48,11 @@ int webauth_hex_encode(unsigned char *input,
 #define hex2int(c)\
 (isdigit(c) ? (c- '0') : ((c >= 'A' && c <= 'F') ? (c-'A'+10) : (c-'a'+10)))
 
-int webauth_hex_decode(unsigned char *input,
-                       int input_len,
-                       unsigned char *output, 
-                       int max_output_len)
+int
+webauth_hex_decode(unsigned char *input,
+                   int input_len,
+                   unsigned char *output, 
+                   int max_output_len)
 {
     unsigned char *s = input;
     unsigned char *d = output;
