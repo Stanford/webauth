@@ -1,8 +1,8 @@
 File Name                               Description
 -------------------------------------------------------------------------------
 CHANGES                                 Comprehensive change log
-INSTALL                                 Installation guide
 HACKING                                 Instructions for WebAuth developers
+INSTALL                                 Installation guide
 MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
 NEWS                                    Release history for WebAuth
@@ -21,6 +21,7 @@ doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
+doc/webauth-stanford.conf               Stanford-specific WebAuth conf
 doc/webauth.conf                        Sample WebAuth Apache configuration
 doc/webauthldap-stanford.conf           Stanford-specific WebAuthLdap conf
 doc/webauthv3_spec.html                 WebAuth protocol documentation
@@ -29,6 +30,7 @@ m4/apache.m4                            Probes for Apache
 m4/curl.m4                              Probes for cURL
 m4/int32.m4                             Probes for int32_t and uint32_t
 m4/krb5.m4                              Probes for Kerberos v5
+m4/ldap.m4                              Probes for OpenLDAP
 m4/libtool.m4                           Probes for library build support
 m4/ssl.m4                               Probes for OpenSSL characteristics
 src                                     WebAuth source code (Directory)
@@ -117,27 +119,34 @@ tests/libwebauth/token_test.c           Test WebAuth token handling
 tests/libwebauth/webauthtest.h          Utilities for test programs
 tests/mod_webauth                       Test the WebAuth module (Directory)
 tests/mod_webauth/conf                  WebAuth test configuration (Directory)
+tests/mod_webauth/conf/ldaptests.conf            Test configuration
 tests/mod_webauth/conf/webauth-tests.conf        Test configuration
 tests/mod_webauth/htdocs                         Module tests (Directory)
 tests/mod_webauth/htdocs/ldaptests               Module tests (Directory)
 tests/mod_webauth/htdocs/ldaptests/index.html    WebAuthLdap tests top file
-tests/mod_webauth/htdocs/ldaptests/test1/        WebAuthLdap tests (Directory)
+tests/mod_webauth/htdocs/ldaptests/test1         WebAuthLdap tests (Directory)
 tests/mod_webauth/htdocs/ldaptests/test1/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test2/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test1/util.pl WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test2         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test2/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test3/        WebAuthLdap tests (Directory) 
-tests/mod_webauth/htdocs/ldaptests/test4/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test2/util.pl WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test4         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test4/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test5/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test4/util.pl WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test5         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test5/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test6/        WebAuthLdap tests (Directory) 
+tests/mod_webauth/htdocs/ldaptests/test5/util.pl WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test6         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test6/test    WebAuthLdap tests
+tests/mod_webauth/htdocs/ldaptests/test6/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/util.pl       WebAuthLdap module tests
 tests/mod_webauth/htdocs/tests                   Module tests (Directory)
 tests/mod_webauth/htdocs/tests/auth              Module tests (Directory)
 tests/mod_webauth/htdocs/tests/auth/logout       WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test1        WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test10       WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test11       WebAuth module tests
+tests/mod_webauth/htdocs/tests/auth/test11return WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test2        WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test2return  WebAuth module tests
 tests/mod_webauth/htdocs/tests/auth/test3        WebAuth module tests
