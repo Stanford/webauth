@@ -55,13 +55,14 @@ typedef enum {
  */
 typedef enum {
     WA_PEC_SERVICE_TOKEN_EXPIRED = 1,
-    WA_PEC_PROXY_TOKEN_EXPIRED = 1,
-    WA_PEC_UNSUPP_REQUESTED_TOKEN_TYPE,
+    WA_PEC_PROXY_TOKEN_EXPIRED,
+    WA_PEC_INVALID_REQUEST,
     WA_PEC_UNAUTHORIZED,
 }  WEBAUTH_ET_ERR;    
 
 /******************** constants for token attributes **********/
 
+#define WA_TK_COMMAND "cmd"
 #define WA_TK_CRED_DATA "crd"
 #define WA_TK_CRED_TYPE "crt"
 #define WA_TK_CREATION_TIME "ct"

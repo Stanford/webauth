@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.6, Modified 11/01/02</b></H4>
+<H4><b>DRAFT Version  0.61, Modified 11/03/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -750,7 +750,8 @@ The request message is:
 
     &lt;requesterCredential type="service|krb5">
        <i>&lt;!-- for type="service" --></i>
-       {base64-webkdc-service-token}
+       &lt;serviceToken>{base64-webkdc-service-token}&lt;/serviceToken>
+       &lt;requestToken>{base64-request-token}&lt;/requestToken>
        <i>&lt;!-- for type="krb5" --></i>
        {base64-krb5-mk-req-data}
     &lt;/requesterCredential>
@@ -844,7 +845,8 @@ The webkdc-proxy-token's type must match the requested credential's type.
 <pre><code>
  &lt;getTokensRequest>
    &lt;requesterCredential type="service">
-       {base64-webkdc-service-token}
+       &lt;serviceToken>{base64-webkdc-service-token}&lt;/serviceToken>
+       &lt;requestToken>{base64-request-token}&lt;/requestToken>
    &lt;/requesterCredential>
 
    &lt;subjectCredential type="proxy">
@@ -931,6 +933,7 @@ seconds since 00:00:00 UTC, January 1, 1970.
 <pre>
 name     description
 ----     -----------
+cmd      XML command name (i.e. getTokensRequest)
 crd      credential data (i.e., a krb5 ticket)
 crt      credential type (krb4, krb5)
 ct       creation time of the token
@@ -1009,7 +1012,12 @@ webkdc-proxy-token.
 <H4>5.3.3 request-token encoding</H4>
 
 A request-token gets sent to the WebKDC server by WAS, along with the WAS's
-webkdc-service-token. They are used to request tokens via the HTML interface.
+webkdc-service-token. They are used to request tokens via the HTML interface,
+and are also used with the XML interface (in a restricted form) to allow
+the WebKDC to verify that a request being made with a service token is
+recent.
+
+<p> the first form is used with the HTML interface:
 
 <pre><code>
   t=req
@@ -1024,6 +1032,14 @@ webkdc-service-token. They are used to request tokens via the HTML interface.
   prt=krb5|krb4
 </code></pre>
 
+<p> The second form is used with the XML interface:
+
+<pre><code>
+  t=req
+  ct={creation-time}
+  cmd={xml-command-we-are-going-to-execute}
+</code></pre>
+
 <p>notes:
 
 <p>  All attributes are AES-encrypted in the webkdc-service-token session-key
@@ -1031,6 +1047,9 @@ webkdc-service-token. They are used to request tokens via the HTML interface.
 <p>  The value of <code>ct</code> is used to prevent replay attacks. Values older then 
   a certain time (probably 5 minutes by default) should be rejected as
   a replay.
+
+<p>  <code>cmd</code> indicates which XML command we are invoking
+   (i.e., getTokensRequest).
 
 <p>  <code>rr</code> (request-reason) describes why a request is being made.
 
@@ -1309,6 +1328,20 @@ WebAuthEndSession redirect|clearLogin|on|off
              instead of having them in another tag
          <li>wrap tokens in &lt;tokens> element to make it easier
              to iterate through all the tokens in a &lt;getTokensRequest>
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>11/03/2002</td>
+  <td>0.61</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>add new form of request-token that gets sent in XML requests
+             along with a service-token to indicate which XML command
+             is being requested.
+         <li> update &lt;requesterCredential&gt; for type "service" to
+              include &lt;serviceToken&gt; and &lt;requestToken&gt;.
        </ul>
    </td>
 </tr>
