@@ -3,6 +3,8 @@ package WebKDC::XmlDoc;
 use strict;
 use warnings;
 
+use WebKDC::XmlElement;
+
 BEGIN {
     use Exporter   ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -36,6 +38,9 @@ sub start {
 	my $attrs = shift;
 	$element->attrs($attrs) if defined($attrs);
     }
+    if (@_) {
+	$element->content(shift);
+    }
     if (!defined($self->{'root'})) {
 	$self->{'root'} = $element;
     } else {
@@ -44,6 +49,7 @@ sub start {
 	$parent->add_child($element);
     }
     push(@{$self->{'stack'}}, $element);
+    return $self;
 }
 
 sub current {

@@ -170,6 +170,7 @@ sub recursive_to_string {
     my ($e, $out, $pretty, $level) = @_;
     my $name = $e->name;
     my $closed = 0;
+    my $cont = 0;
     $$out .= ' ' x $level if $pretty;
     $$out .= "<$name";
     while (my($attr,$val) = each(%{$e->attrs})) {
@@ -177,6 +178,18 @@ sub recursive_to_string {
 	$$out .= " $attr=\"$val\"";
     }
     my $child;
+
+    if (defined($e->content)) {
+	if (!$closed) {
+	    $$out .= ">";
+	    $closed=1;
+	}
+	$cont = 1;
+	my $c = $e->content;
+	escape(\$c);
+	$$out .= $c;
+    }
+
     foreach $child (@{$e->children}) {
 	    if (!$closed) {
 		$$out .= ">";
@@ -186,20 +199,8 @@ sub recursive_to_string {
 	    recursive_to_string($child, $out, $pretty, $level+2);
 	}
     
-    if (defined($e->content)) {
-	if (!$closed) {
-	    $$out .= ">";
-	    $$out .= "\n" if $pretty;
-	    $closed=1;
-	}
-	my $c = $e->content;
-	escape(\$c);
-	$$out .= ' ' x ($level+2) if $pretty;
-	$$out .= $c;
-	$$out .= "\n" if $pretty;
-    }
     if ($closed) {
-	$$out .= ' ' x $level if $pretty;
+	$$out .= ' ' x $level if $pretty && !$cont;
 	$$out .= "</$name>";
 	$$out .= "\n" if $pretty;
     } else {

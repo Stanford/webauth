@@ -26,11 +26,10 @@ use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 my $out = new WebKDC::XmlDoc;
 
 $out->start('getTokensRequest');
-$out->start('requestCredential', {'type' => 'krb5'});
-$out->current->content('{some-base64d-data}<>');
-$out->end;
+my $data = "{some-base64d-data}";
+$out->start('requestCredential', {'type' => 'krb5'}, $data)->end();
 $out->start('tokens');
-$out->element('token', {'type'=>'service', 'id'=> 0});
+$out->start('token', {'type'=>'service', 'id'=> 0})->end();
 $out->end('tokens');
 $out->end('getTokensRequest');
 
@@ -50,6 +49,15 @@ print "-------- parsed --------\n";
 #$dumper->dumpValue($doc);
 print $doc->to_string(),"\n";
 print "-------- parsed --------\n";
+
+my ($ec,$em) = (1,'wtf');
+$doc = new WebKDC::XmlDoc;
+$doc->start("errorResponse");
+$doc->start("errorCode", undef, $ec)->end;
+$doc->start("errorMessage", undef, $em)->end if defined($em);
+$doc->end;
+print "Content-type: text/xml\n\n";
+print $doc->root->to_string(1);
 
 __END__
 
