@@ -17,12 +17,12 @@ The fields included in the GET are as follows:
     id          Server identity to use, e.g. service/stanford-you
     ru          Return URL (the page to send the client back to after auth)
 
-For example, suppose one attempted to access http://www.stanford.edu/auth/
+For example, suppose one attempted to access https://www.stanford.edu/auth/
 and that page requires kerberos_v5 authentication with a service name of
 service/www-auth.  The user would be redirected to the URL:
 
-    http://webloginplus.stanford.edu/auth?at=kerberos_v5;id=service/www-auth
-        ;ru=http://www.stanford.edu/auth/
+    https://webloginplus.stanford.edu/auth?at=kerberos_v5
+        ;id=service/www-auth;ru=https://www.stanford.edu/auth/
 
 (all as a single URL; the line breaking above is for the convenience of
 the reader).  Note that si, the session ID, may be omitted if the server
