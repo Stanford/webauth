@@ -164,7 +164,16 @@ generate a suitable random key.
 Returns the specified number of random bytes, or undef if
 random data was unavailable. The returned data is suitable
 for use as a key. Use the constants WA_AES_128, WA_AES_192, and
-WA_AES256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
+WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
+
+=item key_create_aes(key_material)
+
+ $key = key_create_aes($key_material);
+
+Creates a reference to a WEBAUTH_AES_KEYPtr object, or undef
+on error. $key_material must be a string with a length of
+WA_AES_128, WA_AES_192, or WA_AES_256. $key should be set
+to undef when the key is no longer needed.
 
 =back
 
