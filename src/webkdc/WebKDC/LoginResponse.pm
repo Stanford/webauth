@@ -61,14 +61,15 @@ sub get_post_url {
 }
 
 sub add_proxy_cookie {
-    my ($self, $name, $value) = @_;
-    $self->{'cookies'}{$name} = $value;
+    my ($self, $type, $value) = @_;
+    $self->{'cookies'}{"webauth_pt_$type"} = $value;
     return $self;
 }
 
 sub get_proxy_cookie {
-    my ($self, $name) = @_;
-    return $self->{'cookies'}{$name};
+    my ($self, $type) = @_;
+
+    return $self->{'cookies'}{"webauth_pt_$type"};
 }
 
 sub get_proxy_cookies {

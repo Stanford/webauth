@@ -1,4 +1,4 @@
-package WebKDC::IdToken;
+package WebKDC::ProxyToken;
 
 use strict;
 use warnings;
@@ -28,22 +28,44 @@ sub new {
     my $self = { "attrs" => {}};
     bless $self, $type;
     if (@_) {
-	$self->init_from_token('id', @_);
+	$self->init_from_token('proxy', @_);
     } else {
-	$self->set_token_type('id');
+	$self->set_token_type('proxy');
     }
     return $self;
 }
 
-sub set_subject_auth {
-    my ($self, $sa) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH} = $sa;
+sub set_proxy_owner {
+    my ($self, $value) = @_;
+    $self->{'attrs'}{&WebAuth::WA_TK_PROXY_OWNER} = $value;
     return $self;
 }
 
-sub get_subject_auth {
+sub get_proxy_owner {
     my ($self) = @_;
-    return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH};
+    return $self->{'attrs'}{&WebAuth::WA_TK_PROXY_OWNER};
+}
+
+sub set_proxy_type {
+    my ($self, $value) = @_;
+    $self->{'attrs'}{&WebAuth::WA_TK_PROXY_TYPE} = $value;
+    return $self;
+}
+
+sub get_proxy_type {
+    my ($self) = @_;
+    return $self->{'attrs'}{&WebAuth::WA_TK_PROXY_TYPE};
+}
+
+sub set_proxy_data {
+    my ($self, $value) = @_;
+    $self->{'attrs'}{&WebAuth::WA_TK_PROXY_DATA} = $value;
+    return $self;
+}
+
+sub get_proxy_data {
+    my ($self) = @_;
+    return $self->{'attrs'}{&WebAuth::WA_TK_PROXY_DATA};
 }
 
 sub set_subject {
@@ -55,17 +77,6 @@ sub set_subject {
 sub get_subject {
     my ($self) = @_;
     return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT};
-}
-
-sub set_subject_auth_data {
-    my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH_DATA} = $val;
-    return $self;
-}
-
-sub get_subject_auth_data {
-    my ($self) = @_;
-    return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH_DATA};
 }
 
 sub set_creation_time {
@@ -84,16 +95,15 @@ sub get_creation_time {
     }
 }
 
-sub set_subject_expiration_time {
+sub set_expiration_time {
     my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME} = 
-	pack("N", $val);
+    $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME} = pack("N", $val);
     return $self;
 }
 
-sub get_subject_expiration_time {
+sub get_expiration_time {
     my ($self) = @_;
-    my $time = $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME};
+    my $time = $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME};
     if (defined($time)) {
 	return unpack('N', $time);
     } else {

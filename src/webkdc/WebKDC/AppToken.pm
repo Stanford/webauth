@@ -1,4 +1,4 @@
-package WebKDC::IdToken;
+package WebKDC::AppToken;
 
 use strict;
 use warnings;
@@ -28,22 +28,11 @@ sub new {
     my $self = { "attrs" => {}};
     bless $self, $type;
     if (@_) {
-	$self->init_from_token('id', @_);
+	$self->init_from_token('app', @_);
     } else {
-	$self->set_token_type('id');
+	$self->set_token_type('app');
     }
     return $self;
-}
-
-sub set_subject_auth {
-    my ($self, $sa) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH} = $sa;
-    return $self;
-}
-
-sub get_subject_auth {
-    my ($self) = @_;
-    return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH};
 }
 
 sub set_subject {
@@ -57,15 +46,16 @@ sub get_subject {
     return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT};
 }
 
-sub set_subject_auth_data {
+
+sub set_inactivity_timeout {
     my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH_DATA} = $val;
+    $self->{'attrs'}{&WebAuth::WA_TK_INACTIVITY_TIMEOUT} = $val;
     return $self;
 }
 
-sub get_subject_auth_data {
+sub get_inactivity_timeout {
     my ($self) = @_;
-    return $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_AUTH_DATA};
+    return $self->{'attrs'}{&WebAuth::WA_TK_INACTIVITY_TIMEOUT};
 }
 
 sub set_creation_time {
@@ -84,21 +74,47 @@ sub get_creation_time {
     }
 }
 
-sub set_subject_expiration_time {
+sub set_expiration_time {
     my ($self, $val) = @_;
-    $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME} = 
-	pack("N", $val);
+    $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME} = pack("N", $val);
     return $self;
 }
 
-sub get_subject_expiration_time {
+sub get_expiration_time {
     my ($self) = @_;
-    my $time = $self->{'attrs'}{&WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME};
+    my $time = $self->{'attrs'}{&WebAuth::WA_TK_EXPIRATION_TIME};
     if (defined($time)) {
 	return unpack('N', $time);
     } else {
 	return $time;
     }
+}
+
+sub set_lastused_time {
+    my ($self, $val) = @_;
+    $self->{'attrs'}{&WebAuth::WA_TK_LASTUSED_TIME} = pack("N", $val);
+    return $self;
+}
+
+sub get_lastused_time {
+    my ($self) = @_;
+    my $time = $self->{'attrs'}{&WebAuth::WA_TK_LASTUSED_TIME};
+    if (defined($time)) {
+	return unpack('N', $time);
+    } else {
+	return $time;
+    }
+}
+
+sub set_app_data {
+    my ($self, $name, $val) = @_;
+    $self->{'attrs'}{$name} = $val;
+    return $self;
+}
+
+sub get_app_data {
+    my ($self, $name) = @_;
+    return $self->{'attrs'}{$name};
 }
 
 1;

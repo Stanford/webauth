@@ -50,6 +50,7 @@ our %ta_desc =
      &WebAuth::WA_TK_SUBJECT => 'subject',
      &WebAuth::WA_TK_SUBJECT_AUTH => 'subject-auth',
      &WebAuth::WA_TK_SUBJECT_AUTH_DATA => 'subject-auth-data',
+     &WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME => 'subject-exp-time',
      &WebAuth::WA_TK_TOKEN_TYPE => 'token-type',
      );	       
 
@@ -71,6 +72,7 @@ sub to_string {
 	if ($key eq WebAuth::WA_TK_CREATION_TIME ||
 	    $key eq WebAuth::WA_TK_LASTUSED_TIME ||
 	    $key eq WebAuth::WA_TK_REQ_TOKEN_EXPIRATION ||
+	    $key eq WebAuth::WA_TK_SUBJECT_EXPIRATION_TIME ||
 	    $key eq WebAuth::WA_TK_EXPIRATION_TIME) {
 	    $val = localtime(unpack("N", $val));
 	} elsif ($key eq WebAuth::WA_TK_SESSION_KEY ||
