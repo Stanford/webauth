@@ -1,0 +1,232 @@
+                    WebAuth Installation Instructions
+
+These installation instructions are for the typical WebAuth user who wants
+to set up a web server with content protected by WebAuth and take
+advantage of an existing site WebAuth infrastructure (including a login
+server and WebKDC).  For details on how to install the site
+infrastructure, which is more complex and only has to be done once at each
+site, see doc/install-webkdc.
+
+ 1.  Make sure that you have all of the required packages installed.
+     WebAuth is implemented as Apache 2.0 modules, and therefore requires
+     an installation of Apache 2.0 built with --enable-so and
+     --enable-ssl.  It also requires MIT Kerberos v5 (Heimdal may work but
+     is not tested), cURL, and OpenSSL (0.9.7 or later preferred for the
+     AES implementation).  See README for more version dependencies.
+
+     Note that all of these packages should be installed on local disk.
+     We do not recommend using libraries installed on shared file systems
+     such as AFS, since the reliability of your web server will then be
+     tied to the availability of that remote file system.  The required
+     libraries aren't large, particularly given the average size of modern
+     disks.
+
+ 2.  If you are building a CVS pull of the WebAuth distribution (as
+     opposed to a packaged release, which already includes the generated
+     configure script), cd to the top of the source tree and run:
+
+         autoconf
+         autoheader
+
+     to generate the configure script.  Autoconf 2.53 or later is
+     required.
+
+ 3.  Run configure.  The command will look something like:
+
+         ./configure --with-apache=/usr/local/apache2 \
+             --with-krb5=/usr/local --with-openssl=/usr/local \
+             --with-curl=/usr/local
+
+     Adjust the paths to match where you have installed those packages.
+     You can omit --with-krb5, --with-openssl, and --with-curl if the
+     packages are installed in locations automatically searched by your
+     compiler (which will be the case if you're using Linux and the
+     packages that come with your Linux distribution).  You can omit
+     --with-apache if the right version of apxs is in your path;
+     otherwise, apxs should be in a bin subdirectory of the path that you
+     give to --with-apache.
+
+     Whatever version of Perl is found first on your path will be used to
+     build the Perl bindings.  You can override this check by setting the
+     environment variable PERL to the full path of the Perl binary that
+     you want to use.
+
+     configure will detect various things about your system and will
+     generate the makefiles and include files required to build WebAuth.
+
+     To change the compiler, set the environment variable CC before
+     running configure.  Similarly, you can set CFLAGS to whatever
+     compiler flags you wish to build WebAuth with.  See
+
+         ./configure --help
+
+     for information about other available options.  WebAuth's library
+     will by default be installed in /usr/local/lib and its utility
+     programs will be installed in /usr/local/bin; to change those
+     locations, pass the --prefix option to configure with whatever path
+     you want to serve as the installation root.  The install location of
+     the Apache modules will be derived from Apache and the install
+     location of the Perl modules will be derived from Perl's
+     configuration; neither are affected by --prefix.
+
+ 4.  Build WebAuth by running:
+
+         make
+
+     You can then also run:
+
+         make check
+
+     to have WebAuth build and run some internal consistency checks to
+     make sure that the library functions are working correctly.
+
+ 5.  Install WebAuth with:
+
+         make install
+
+     This will install the shared library, use apxs to install the Apache
+     modules, and install the Perl bindings as a Perl module.  At this
+     point, the software is available but will not be used.  Without
+     additional configuration changes to your server, WebAuth is not
+     active and will not protect any web pages.
+
+ 6.  Add Apache directives for WebAuth to your httpd.conf or equivalent
+     file.  The basic set of directives are:
+
+         LoadModule webauth_module modules/mod_webauth.so
+
+         WebAuthKeyringAutoUpdate on
+         WebAuthKeyringKeyLifetime 30d
+
+         WebAuthLoginURL "https://<your-webkdc>/login/"
+         WebAuthWebKdcURL "https://<your-webkdc>:8443/webkdc-service/"
+         WebAuthWebKdcPrincipal webauth/<your-webkdc>
+         WebAuthKeyring conf/webauth/keyring
+         WebAuthKeytab conf/webauth/keytab
+         WebAuthServiceTokenCache conf/webauth/service_token.cache
+
+     In all instances above, replace <your-webkdc> with the hostname of
+     the WebKDC server at your site.
+
+     If you are testing a beta release, please also add:
+
+         WebAuthDebug on
+
+     so that your server will generate more complete logs if anything goes
+     wrong.  This may also be useful if this is the first time you've
+     installed a WebAuth v3 server.
+
+ 7.  Make sure that the conf/webauth directory exists:
+
+         cd <apache-root>
+         mkdir -p conf/webauth
+
+     where <apache-root> is the root of your Apache 2.0 installation.
+
+ 8.  Install a keytab in <apache-root>/conf/webauth/keytab.  The
+     recommended principal name is webauth/<your-system> where
+     <your-system> is the fully qualified, all-lowercase name of your
+     system.  For example, if you were installing WebAuth on a system
+     named app-server at Stanford, the recommended principal name is
+     webauth/app-server.stanford.edu.
+
+     Stanford users can request a keytab be created for their system by
+     sending mail to srvtab-request@stanford.edu, specifying the SUNet ID
+     that should be able to download the keytab.  The keytab can then be
+     downloaded with the command:
+
+         /usr/pubsw/sbin/leland_srvtab \
+             -f <apache-root>/conf/webauth/srvtab \
+             -k <apache-root>/conf/webauth/keytab \
+             webauth/<your-system>
+
+     replacing <apache-root> and <your-system> as above.  Note that
+     Stanford's current keytab download system doesn't allow a keytab to
+     be downloaded without simultaneously downloading a srvtab, but the
+     resulting conf/webauth/srvtab file is not used by WebAuth and can be
+     deleted after leland_srvtab is run.
+
+ 9.  At this point, WebAuth is available to your web server and will be
+     initialized when your server starts, but is not as yet being used to
+     protect any web pages.  This can now be configured.  For the most
+     basic use of WebAuth, just requiring a valid user login to view a
+     portion of the web pages served out by the server, add the lines:
+
+         AuthType WebAuth
+         require valid-user
+
+     to the <Directory> block for the portion of your web site that you
+     wish to protect.  In a future WebAuth release, you will be able to
+     additionally restrict access by privilege group.
+
+10.  Set up a test URL to make sure that everything is working properly.
+     Here is an example of the sort of configuration that you could use to
+     test:
+
+         # Set up a logout handler -- if the user goes to this URL, their
+         # cookies will be destroyed and they'll have to authenticate
+         # again to access protected content.
+         <Location /realapp/logout.cgi>
+             WebAuthDoLogout on
+         </Location>
+
+         <Directory "<apache-root>/htdocs/realapp/">
+             Options Indexes FollowSymLinks ExecCGI
+             AllowOverride All
+             Order allow,deny
+             Allow from all
+             AuthType WebAuth
+             require valid-user
+         </Directory>
+
+     replacing <apache-root> as above, and then create
+     <apache-root>/htdocs/realapp/logout.cgi with the contents:
+
+         #!/bin/sh
+         echo 'Content-type: text/plain'
+         echo ''
+         echo 'LOGGED OUT!'
+
+     and <apache-root>/htdocs/realapp/dumpenv.cgi with the following
+     contents:
+
+         #!/usr/bin/perl
+         print "Content-type: text/plain\n\n";
+         foreach $var (sort(keys(%ENV))) {
+             $val = $ENV{$var};
+             $val =~ s|\n|\\n|g;
+             $val =~ s|"|\\"|g;
+             print "${var}=\"${val}\"\n";
+         }
+
+     (replace /usr/bin/perl with a path to Perl; /usr/pubsw/bin/perl will
+     work for Stanford users with AFS installed and pubsw mounted).
+
+11.  Restart the server to pick up the configuration changes, and check
+     your error log for any errors indicating a problem with the WebAuth
+     installation.
+
+12.  Test the demo applicatino that you created above.  Go to:
+
+         <https://<your-system>/realapp/dumpenv.cgi>
+
+     to see the login dialog and then a dump of all environment variables
+     made available to CGI applications.  You should see WEBAUTH_USER and
+     REMOTE_USER in that list of environment variables, set to your
+     authenticated identity.  Clicking reload should not requite you to
+     authenticate again.
+
+     Go to:
+
+         <https://<your-system>/realapp/logout.cgi>
+
+     to log out, and then return to the first URL.  You should have to go
+     through the login server again to re-establish credentials for your
+     server, but you shouldn't have to enter your password in again.
+
+13.  Congratulations!  You have a working WebAuth server.  You can now add
+     AuthType WebAuth and require valid-user (or require lines for
+     particular users, or for groups containing user identities as
+     returned by WebAuth) to protect the content served by your web
+     server, and make use of the REMOTE_USER or WEBAUTH_USER environment
+     variables in your CGI scripts.

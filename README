@@ -1,0 +1,125 @@
+                           WebAuth release 2.90
+                  (site-wide web authentication system)
+
+                        Written by Roland Schemers
+
+  Copyright 2002, 2003 Board of Trustees, Leland Stanford Jr. University.
+  This package at present may not be redistributed without permission from
+  Stanford University.  This will be replaced with a free software license
+  after the first public release.
+
+  AES functions copyright 1998-2002 The OpenSSL Project.  This product
+  includes software developed by the OpenSSL Project for use in the
+  OpenSSL Toolkit. (http://www.openssl.org/)
+
+
+DESCRIPTION
+
+  WebAuth is a comprehensive system for authenticating web users, built on
+  top of Apache 2.0.  It relies on a login server (the WebKDC) to which
+  users are redirected at their first attempt to access a protected web
+  site, uses AES-encrypted chunks of data called tokens which can be sent
+  either in URLs or in cookies and are used to communicate between the
+  login server and each participating web server, and implements a
+  protocol able to use whichever initial user authentication mechanism is
+  convenient to establish the user's identity.  Once the user has logged
+  in to the login server, their identity is carried in a cookie set by
+  that login server and they will not again need to enter their password
+  until their credentials expire, even if they visit multiple different
+  protected web sites.
+
+  At present, WebAuth relies on Kerberos v5 to establish the user's
+  identity and only that authentication mechanism is implemented by the
+  current release, but the protocol should be sufficiently general to
+  allow for other methods to be added.
+
+  This is a substantial reworking of the previous Stanford WebAuth system,
+  which was based primarily around the S/Ident protocol for user
+  authentication but supported a fallback to a web login server and used
+  domain-wide cookies to pass that authentication information to
+  individual web servers.  This implementation was heavily inspired by
+  that previous work but shares no common code, only uses cookies scoped
+  to individual systems, and is now built primarily around the login
+  server model with "web single sign-on" (single sign-on that works for
+  all authenticated web sites within an authentication realm, but which
+  does not necessarily tie into desktop single sign-on systems).
+
+  For more information on the Stanford WebAuth project, see:
+
+      <http://webauthv3.stanford.edu/>
+
+  Future releases of this software will also support obtaining of
+  credentials on behalf of the user by trusted application servers,
+  allowing cleaner implementation of portal-style applications.  Future
+  releases will also include integration with LDAP, including use of
+  privilege groups in LDAP for authorization.
+
+
+REQUIREMENTS
+
+  WebAuth requires the following additional packages:
+
+      Apache 2.0.43 or later
+      OpenSSL 0.9.6, 0.9.7, or later (0.9.7 preferred)
+      MIT Kerberos v5 1.2.x or later
+      cURL (tested with 7.10.2)
+
+  Heimdal Kerberos v5 may also work, but has not been tested.
+
+  Apache 2.0 must be built with --enable-ssl and --enable-so.  WebAuth
+  uses apxs to build its Apache modules.
+
+  The WebAuth Perl bindings, which at present are always built, have only
+  been tested with Perl 5.6.1, although they may work with earlier
+  versions of Perl.
+
+  For the end user, WebAuth requires that the user's browser be able to
+  handle cookies of moderate length (up to 1KB) and URLs of a similar
+  length.  Cookies must be enabled for the systems that use WebAuth
+  authentication.  All communication with WebAuth servers is required to
+  be over SSL/TLS to protect the user's credentials.  No other special
+  browser capabilities are required.
+
+  WebAuth is written in C and requires a C compiler and a standard make
+  program to build.  It does not (at least intentionally) use any special
+  make features.
+
+  WebAuth is primarily tested with GCC on Solaris 8 and Linux (glibc 2.2).
+  Other Unix platforms that support Apache 2.0 should also work, but have
+  not been tested.  Some amount of porting may be required.  WebAuth does
+  use libtool to try to build shared libraries portably.
+
+
+SUPPORT
+
+  For Stanford affiliates, the WebAuth modules are a supported product of
+  the ITSS Infrastructure Services team.  You can report problems or
+  request help with WebAuth by submitting a HelpSU ticket at:
+
+      <http://helpsu.stanford.edu/>
+
+  Please note that we do *not* support Apache 2.0, and we cannot help you
+  set up a web server.  We can help you configure WebAuth and may provide
+  a prebuilt Apache 2.0 server for your platform for convenience, but
+  general web server problems unrelated to WebAuth are outside the scope
+  of what we can help with.
+
+  For non-Stanford users, please see the contact information at:
+
+      <http://webauthv3.stanford.edu/>
+
+  We cannot provide any formal support for non-Stanford users, nor do we
+  make any promises or committments related to this software.  Please feel
+  free to use it on an as-is basis, and please do feel free to send us any
+  patches or improvements that you wish to contribute and we will evaluate
+  them for future releases.  Our primary focus is supporting the needs of
+  Stanford University, however, and problems that don't affect Stanford's
+  use of WebAuth will generally not be prioritized.
+
+
+LICENSE
+
+  Copyright 2002, 2003 Board of Trustees, Leland Stanford Jr. University.
+  This package at present may not be redistributed without permission from
+  Stanford University.  This will be replaced with a free software license
+  after the first public release.
