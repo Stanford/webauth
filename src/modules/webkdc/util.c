@@ -115,6 +115,27 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
 }
 
 
+char *
+mwk_webauth_error_message(request_rec *r, 
+                          int status, 
+                          WEBAUTH_KRB5_CTXT *ctxt,
+                          const char *webauth_func)
+{
+    if (status == WA_ERR_KRB5 && ctxt != NULL) {
+        return apr_psprintf(r->pool,
+                            "%s failed: %s (%d): %s %d",
+                            webauth_func,
+                            webauth_error_message(status), status,
+                            webauth_krb5_error_message(ctxt), 
+                            webauth_krb5_error_code(ctxt));
+    } else {
+        return apr_psprintf(r->pool,
+                            "%s failed: %s (%d)",
+                            webauth_func,
+                            webauth_error_message(status), status);
+    }
+}
+
 void
 mwk_log_webauth_error(request_rec *r, 
                       int status, 
@@ -122,18 +143,8 @@ mwk_log_webauth_error(request_rec *r,
                       const char *mwk_func,
                       const char *func)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webkdc: %s: %s failed: %s (%d): %s %d",
-                     mwk_func, func,
-                     webauth_error_message(status), status,
-                     webauth_krb5_error_message(ctxt), 
-                     webauth_krb5_error_code(ctxt));
-    } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webkdc: %s: %s failed: %s (%d)",
-                     mwk_func,
-                     func,
-                     webauth_error_message(status), status);
-    }
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webkdc: %s: %s",
+                 mwk_func, 
+                 mwk_webauth_error_message(r, status, ctxt, func));
 }

@@ -151,6 +151,16 @@ WEBAUTH_KRB5_CTXT *
 mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func);
 
 /*
+ * construct a detailed error message
+ */
+
+char *
+mwk_webauth_error_message(request_rec *r, 
+                          int status, 
+                          WEBAUTH_KRB5_CTXT *ctxt,
+                          const char *webauth_func);
+
+/*
  * log a webauth-related error. ctxt can be NULL.
  */
 void
