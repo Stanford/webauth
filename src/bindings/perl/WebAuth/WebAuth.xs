@@ -124,24 +124,31 @@ PPCODE:
     STRLEN n_input;
     int out_len, out_max, s;
     unsigned char *p_input;
-    SV *output;
+    unsigned char *buff;
 
     p_input = SvPV(input, n_input);
+    buff = NULL;
+
     s = webauth_base64_decoded_length(p_input, n_input, &out_max);
     if (s == WA_ERR_NONE) {
-            output = sv_2mortal(NEWSV(0, out_max));
-            s = webauth_base64_decode(p_input, n_input, 
-                                      SvPVX(output), &out_len, out_max);
-            if (s == WA_ERR_NONE) {
-                SvCUR_set(output, out_len);
-                SvPOK_only(output);
+            buff = malloc(out_max);
+            if (buff == NULL) {
+                croak("can't create buffer");
             }
-    } else {
-        output = &PL_sv_undef;
+            s = webauth_base64_decode(p_input, n_input, 
+                                      buff, &out_len, out_max);
     }
+
     EXTEND(SP,2);
     PUSHs(sv_2mortal(newSViv(s)));
-    PUSHs(output);
+    if (buff != NULL) {
+        SV *output = sv_newmortal();
+        sv_setpvn(output, buff, out_len);
+        free(buff);
+        PUSHs(output);
+    } else {
+        PUSHs(&PL_sv_undef);
+    }
 }
 
 int
@@ -182,7 +189,6 @@ CODE:
     out_max = webauth_hex_encoded_length(n_input);
 
     ST(0) = sv_2mortal(NEWSV(0, out_max));
-    
     s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
@@ -196,25 +202,28 @@ PPCODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
-    unsigned char *p_input;
-    SV *output;
+    unsigned char *p_input, *buff;
 
     p_input = SvPV(input, n_input);
     s = webauth_hex_decoded_length(n_input, &out_max);
     if (s == WA_ERR_NONE) {
-            output = sv_2mortal(NEWSV(0, out_max));
-            s = webauth_hex_decode(p_input, n_input,
-                                   SvPVX(output), &out_len, out_max);
-            if (s == WA_ERR_NONE) {
-                SvCUR_set(output, out_len);
-                SvPOK_only(output);
+            buff = malloc(out_max);
+            if (buff == NULL) {
+                croak("can't create buffer");
             }
-    } else {
-        output = &PL_sv_undef;
+            s = webauth_hex_decode(p_input, n_input, buff, &out_len, out_max);
     }
+
     EXTEND(SP,2);
     PUSHs(sv_2mortal(newSViv(s)));
-    PUSHs(output);
+    if (buff != NULL) {
+        SV *output = sv_newmortal();
+        sv_setpvn(output, buff, out_len);
+        free(buff);
+        PUSHs(output);
+    } else {
+        PUSHs(&PL_sv_undef);
+    }
 }
 
 void
