@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 #--------------------------------------------------------------------------
 # File   : Weblogin logout
@@ -8,7 +8,7 @@
 # Destroy all webauth_wpt cookies
 #
 #--------------------------------------------------------------------------
-$ENV{HTML_TEMPLATE_ROOT} = 'templates';
+$ENV{HTML_TEMPLATE_ROOT} = '/chroot/web/webkdc/templates';
 %PAGES = ('logout' => 'logout.tmpl');
 
 use strict;
@@ -25,7 +25,7 @@ sub get_cookie_values {
     {
          my @fields = split(/;/,$value);
          ($n,$$cookies{$name}) = split(/=/,$fields[0]);
-	 print STDERR "cookie is $name\n";
+	 #print STDERR "cookie is $name\n";
     }
 }
 ###############################################
@@ -38,9 +38,9 @@ while (my $q = new CGI::Fast) {
 
     my %cookies = fetch CGI::Cookie;
     my $num_cookies = (keys(%cookies));
-    print STDERR "***********the number of cookies is $num_cookies\n";
-    print STDERR "the env http cookies are$ENV{HTTP_COOKIE}\n";
-    print STDERR "the env cookies are$ENV{COOKIE}\n";
+#     print STDERR "***********the number of cookies is $num_cookies\n";
+#     print STDERR "the env http cookies are$ENV{HTTP_COOKIE}\n";
+#     print STDERR "the env cookies are$ENV{COOKIE}\n";
   
     my $ca;
 
