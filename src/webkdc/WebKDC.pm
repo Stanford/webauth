@@ -4,8 +4,6 @@ use strict;
 use warnings;
 use UNIVERSAL qw(isa);
 
-#use blib '../bindings/perl/WebAuth3';
-
 use LWP::UserAgent;
 
 use WebAuth3 qw(:base64 :krb5 :const);
@@ -37,9 +35,8 @@ our @EXPORT_OK;
 # all the $C_ variables are candidates for a config file
 # when one exists.
 #
-our $C_WEBKDC_KEYRING_PATH = "/usr/local/apache2/conf/webkdc/keyring";
-our $C_WEBKDC_URL = "https://slapshot.stanford.edu:8443/webkdc-service/";
-#our $C_WEBKDC_URL = "http://lichen.stanford.edu:8080/webkdc-service/";
+our $C_WEBKDC_KEYRING_PATH = "../conf/webkdc/keyring";
+our $C_WEBKDC_URL = "https://localhost:8443/webkdc-service/";
 
 our $DEBUG = 1;
 

@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<!-- $Id$
+This is the template for the StanfordWebAuth v2 error page which is shown
+whenever the su-auth CGI script on the weblogin server encounters an error.
+This template takes the following variables:
+
+error codes:
+  err_no_request_token :no request token
+  err_cookies          : smart force requires cookies to be set  
+  err_ldap             : ldap bind error
+  err_webkdc           : webkdc error
+
+variables:
+  return_url          : the return url
+  err_msg              : variable error mesage
+-->
+
+<HTML>
+  <HEAD>
+    <HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+    <TITLE>Weblogin Canceled</TITLE>
+  </HEAD>
+  
+  <BODY bgcolor="#FFFFFF">
+    <HR>
+    <TABLE border="0">
+      <TR>
+        <TD rowspan="5">
+          <IMG src="/images/quad.gif" alt="[Stanford Quad]">
+        </TD>
+        <TD colspan="3" align="center">
+          <H2>Weblogin Error</H2>
+          <P align=center>
+            <B>
+
+    <!-- Error: no respsone token -->
+    <TMPL_IF NAME=err_no_request_token>
+      Error: Sorry, the URL given is incomplete.  The referring URL should
+      have included a response token in the query string.  <br>For example:
+      https://weblogin.stanford.edu?RT=PjGXnVdMq(some encypted stuff)
+      </TMPL_IF>
+    <TMPL_IF NAME=err_bad_url>
+      Error: Sorry, the return URL has a bad format.  The return URL should
+      be have a http or https scheme.  <br>For example:
+      https://weblogin.stanford.edu?return_url=http://wa-example.stanford.edu
+    </TMPL_IF>
+    <!-- Error: the return URL is not on a Stanford server. -->
+    <TMPL_IF NAME=err_local_domain>
+      Error: Sorry, the return URL must be for a Stanford University host.
+      <br>return_url: <TMPL_VAR NAME=return_url>
+    </TMPL_IF>
+    <!-- Error: SmartForce cannot be accessed without cookie support. -->
+    <TMPL_IF NAME=err_cookies>
+      Error: Your web browser must support cookies and you must have cookies
+      enabled.
+    </TMPL_IF>
+    <!-- Error: LDAP bind error. -->
+    <TMPL_IF NAME=err_ldap>
+      Error: Sorry, there is a problem retrieving information from the LDAP
+      server. Please try again or contact helpsu with this error.  
+    </TMPL_IF>
+   <TMPL_IF NAME=err_webkdc>
+    Error: Sorry, <TMPL_VAR NAME=err_msg> 
+    </TMPL_IF>
+
+
+            </B>
+          </P>
+        </TD>
+      </TR>
+    </TABLE>
+
+    <HR size="2">
+
+    <H4 align="center">Help for this page</H4>
+    <P>
+      On the previous Web page, you were asked to identify yourself with
+      your SUNet ID and password. An error occurred, described in the
+      message above, in handling your response.
+    </P>
+    <P>
+      If you have forgotten your SUNet ID or password, contact Stanford IT
+      Help Desk, phone 725-HELP(725-4357), or submit a helpsu ticket at <A
+      HREF="http://helpsu.stanford.edu">HelpSU Online</A>
+    </P>
+    <P>
+      If the problem involves a server computer, you may want to try again
+      later, or try to contact the server's administrator for further
+      information.
+    </P>
+    <P>
+      Try the <strong>Back</strong> button or command to return. (Most Web
+      browser programs, such as Netscape Navigator and Lynx, have one.) If
+      you go Back one page, you can try entering a SUNet ID and password
+      again. You may need to go Back two or more pages to return to a page
+      before Stanford's Weblogin service was called.
+    </P>
+
+  </BODY>
+  <HEAD>
+    <HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+  </HEAD>
+</HTML>
