@@ -36,14 +36,12 @@
 	  </element>
       </zeroOrMore>
 <zeroOrMore>
-	   <element name="errorCreds">
+	   <element name="errorCred">
 		<element name="authType">
 	    	<choice>
 	        <value>kerberos_4</value>
 		<value>kerberos_5</value>
-                <value>encrypted_k4</value>
-	        <value>encrypted_k5></value>
-	        </choice>
+                </choice>
 		</element>
 	        <element name="serviceName">
 		  <text/>

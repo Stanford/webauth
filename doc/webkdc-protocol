@@ -135,7 +135,10 @@ The specific element fields are
 
 	<encryptedUserCreds>
 	    This is just the encrypted tgt handed out in response
-	to the userPasswordAuth message. 
+	to the userPasswordAuth message. Note that it contains
+	both a keyHint and encrypted key. The keyHint is meant
+	to serve as an index into the current ring of working
+	keys.
 	
 	<authRequest>
 	    This is very similar to the authRequest defined in
@@ -178,16 +181,60 @@ passwordAuthResponse
 	This message is the response to a valid userPasswordAuth
 message. 
 
+The specific element fields are
+	<messageID>
+	<procotolVersion>
+
+	<authResponse>
+	This is a list of 3 kinds of credentials.
+		
+		<encryptedCred>
+		These are encrypted tgt's and the cooresponding
+		<keyHint> for the encryption key used to encrypt
+		the key. keyHints are text indexes into the working
+		key ring of the webKDC. They are meant to function
+	        like keys of a Perl Hash. 
+		
+		<serviceCred>	
+		These are either kerberos_4 or kerberos_5 service
+		tickets. They are not encrypted, thus the underlying
+		tcp connection is needed to provide security for 
+		this data. They could be encrypted in the session
+		key of the service ticket of the proxyAuthData.
+		Doing this would enable the underlying connection
+		protocol to not be encrypted. 
+
+		<errorCred> 
+		These are error messages for specific credentials
+		that could not be returned for various reasons.
+		
+
+credAuthResponse.rng      
+		
+	This message is the response to a valid encryptedCredAuth
+message. 
 
 The specific element fields are
 	<messageID>
 	<procotolVersion>
 
-	
-	
+	<authResponse>
+	This is a list of 2 kinds of credentials.
+		
+		<serviceCred>	
+		These are either kerberos_4 or kerberos_5 service
+		tickets. They are not encrypted, thus the underlying
+		tcp connection is needed to provide security for 
+		this data. They could be encrypted in the session
+		key of the service ticket of the proxyAuthData.
+		Doing this would enable the underlying connection
+		protocol to not be encrypted. 
 
-credAuthResponse.rng      
-
+		<errorCred> 
+		These are error messages for specific credentials
+		that could not be returned for various reasons.
+		
+	
 
 
 Internal webKDC Message Types: 
