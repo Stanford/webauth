@@ -30,7 +30,9 @@
     <p>When combining with other require directives, the order of checking is
     top to bottom, so e.g. by placing "require valid-user" at the top, all
     authenticated users will be authorized no matter what group restrictions 
-    are below it.</p>
+    are below it. By default, if a user is authorized, the WEBAUTH_LDAPAUTHRULE
+    variable will be set to indicate what rule succeded in authorizing a user.
+    </p>
 
     <p>It is possible to combine "Require privgroup" with basic auth's "Require
     group". In this case if no LDAP group matches, the basic auth groups
@@ -57,12 +59,7 @@
     to the WebAuth server can be set into environment variables for use in 
     cgi scripts. In case the requested attribute is not available from the 
     LDAP server, there is no error and the environment variable is simply not 
-    set for that attribute. The specified attributes will be set in addition 
-    to the defaults, set in all cases when the data is available:</p>
-    <ul>
-      <li><code>WEBAUTH_LDAP_DISPLAYNAME</code> - User's name in "firstname lastname" format.</li>
-      <li><code>WEBAUTH_LDAP_MAIL</code> - User's primary email address</li>
-    </ul>
+    set for that attribute. </p>
 
     <p>The name of the environment variable is formed by prepending 
     WEBAUTH_LDAP_ to the uppercased attribute name. In the case of mulivalued 
@@ -83,7 +80,7 @@
 
 </section>
 
-<section><title>Minimal Config File</title>
+<section><title>Generic Minimal Config File</title>
 
     <p>The following example shows the minimum config file required
     to configure and use mod_webauthldap.</p>
@@ -92,9 +89,9 @@
   LoadModule webauthldap_module modules/mod_webauthldap.so<br/>
   <br/>
 
-  WebAuthLdapHost ldap.acme.com
-  WebAuthLdapBase dc=acme,dc=com
-  WebAuthLdapAuthorizationAttribute priviledgeAttribute
+  WebAuthLdapHost ldap.acme.com<br />
+  WebAuthLdapBase dc=acme,dc=com<br />
+  WebAuthLdapAuthorizationAttribute priviledgeAttribute<br />
   WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername<br/>
   WebAuthLdapTktCache /tmp/webauthldap.tkt<br/>
 
@@ -106,6 +103,41 @@
 </example>
 
 </section>
+
+
+<section><title>Webauth 2.x backward compatibility</title>
+
+    <p>StanfordAuth as an AuthType is supported as a form of backward 
+       compatibility, to ease the transition. When it is used, require group
+       directives are interpreted as checks on ldap privgroups.</p>
+
+<example><title>StanfordAuth Example</title>
+  &lt;Location /private/&gt;<br />
+  AuthType StanfordAuth<br />
+  require group stanford:stanford<br />
+  &lt;/Location&gt;<br/>
+</example>
+
+    <p>If you wish to have the legacy SU_AUTH_DIRNAME and SU_AUTH_DIRMAIL 
+       variables set, you need to use the new WebAuthLdapAttribute directives
+       explicitly. If you dont want to go through and change numerous .htaccess
+       files, you can set the WebAuthLdapAttribute directive on some top 
+       location above all the .htaccess files and they wil be inherited down.
+       </p>
+
+<example><title>With Name and Mail variables:</title>
+  &lt;Location /top/&gt;<br />
+  WebAuthLdapAttribute mail<br />
+  WebAuthLdapAttribute displayName<br />
+  &lt;/Location&gt;<br/>
+<br/>
+  # .htaccess file in /top/mydir can remain like this:<br />
+  AuthType StanfordAuth<br />
+  require group stanford:stanford<br />
+</example>
+
+</section>
+
 
 <directivesynopsis>
 <name>WebAuthLdapHost</name>
@@ -314,5 +346,16 @@ WebAuthLdapPort 389
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 </directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthLdapAuthrule</name>
+<description>This is a flag that controls whether the environment variable WEBAUTH_LDAPAUTHRULE is set to indicate how a user was authorized. Its values can be: "valid-user", "user suchnsuch", or "groupname".</description>
+<syntax>WebAuthLdapAuthrule <em>on|off</em></syntax>
+<default>on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+</directivesynopsis>
+
+
 
 </modulesynopsis>

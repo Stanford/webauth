@@ -17,7 +17,7 @@
 
 <p>For other Webauth documentation see the
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
-</div><div id="quickview"><h3 class="directives">Directives</h3><ul id="toc"><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li></ul><h3>Topics</h3><ul id="topics"><li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li><li><img alt="" src="../images/down.gif" /> Adhoc attributes lookup</li><li><img alt="" src="../images/down.gif" /> Minimal Config File</li></ul></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Using WebAuthLdap Authorization</h2>
+</div><div id="quickview"><h3 class="directives">Directives</h3><ul id="toc"><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthrule">WebAuthLdapAuthrule</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li><li><img alt="" src="../images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li></ul><h3>Topics</h3><ul id="topics"><li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li><li><img alt="" src="../images/down.gif" /> Adhoc attributes lookup</li><li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li><li><img alt="" src="../images/down.gif" /> Webauth 2.x backward compatibility</li></ul></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Using WebAuthLdap Authorization</h2>
 
     <p>To restrict access to particular priviledge group(s) place the 
     "require privgroup  &lt;group name&gt;" directives in a .htaccess 
@@ -27,7 +27,9 @@
     <p>When combining with other require directives, the order of checking is
     top to bottom, so e.g. by placing "require valid-user" at the top, all
     authenticated users will be authorized no matter what group restrictions 
-    are below it.</p>
+    are below it. By default, if a user is authorized, the WEBAUTH_LDAPAUTHRULE
+    variable will be set to indicate what rule succeded in authorizing a user.
+    </p>
 
     <p>It is possible to combine "Require privgroup" with basic auth's "Require
     group". In this case if no LDAP group matches, the basic auth groups
@@ -52,12 +54,7 @@
     to the WebAuth server can be set into environment variables for use in 
     cgi scripts. In case the requested attribute is not available from the 
     LDAP server, there is no error and the environment variable is simply not 
-    set for that attribute. The specified attributes will be set in addition 
-    to the defaults, set in all cases when the data is available:</p>
-    <ul>
-      <li><code>WEBAUTH_LDAP_DISPLAYNAME</code> - User's name in "firstname lastname" format.</li>
-      <li><code>WEBAUTH_LDAP_MAIL</code> - User's primary email address</li>
-    </ul>
+    set for that attribute. </p>
 
     <p>The name of the environment variable is formed by prepending 
     WEBAUTH_LDAP_ to the uppercased attribute name. In the case of mulivalued 
@@ -76,7 +73,7 @@
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Minimal Config File</h2>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Generic Minimal Config File</h2>
 
     <p>The following example shows the minimum config file required
     to configure and use mod_webauthldap.</p>
@@ -85,9 +82,9 @@
   LoadModule webauthldap_module modules/mod_webauthldap.so<br />
   <br />
 
-  WebAuthLdapHost ldap.acme.com
-  WebAuthLdapBase dc=acme,dc=com
-  WebAuthLdapAuthorizationAttribute priviledgeAttribute
+  WebAuthLdapHost ldap.acme.com<br />
+  WebAuthLdapBase dc=acme,dc=com<br />
+  WebAuthLdapAuthorizationAttribute priviledgeAttribute<br />
   WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername<br />
   WebAuthLdapTktCache /tmp/webauthldap.tkt<br />
 
@@ -96,6 +93,37 @@
   AuthType WebAuth<br />
   Require privgroup mygroup<br />
   &lt;/Location&gt;<br />
+</code></p></div>
+
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="section"><h2>Webauth 2.x backward compatibility</h2>
+
+    <p>StanfordAuth as an AuthType is supported as a form of backward 
+       compatibility, to ease the transition. When it is used, require group
+       directives are interpreted as checks on ldap privgroups.</p>
+
+<div class="example"><h3>StanfordAuth Example</h3><p><code>
+  &lt;Location /private/&gt;<br />
+  AuthType StanfordAuth<br />
+  require group stanford:stanford<br />
+  &lt;/Location&gt;<br />
+</code></p></div>
+
+    <p>If you wish to have the legacy SU_AUTH_DIRNAME and SU_AUTH_DIRMAIL 
+       variables set, you need to use the new WebAuthLdapAttribute directives
+       explicitly. If you dont want to go through and change numerous .htaccess
+       files, you can set the WebAuthLdapAttribute directive on some top 
+       location above all the .htaccess files and they wil be inherited down.
+       </p>
+
+<div class="example"><h3>With Name and Mail variables:</h3><p><code>
+  &lt;Location /top/&gt;<br />
+  WebAuthLdapAttribute mail<br />
+  WebAuthLdapAttribute displayName<br />
+  &lt;/Location&gt;<br />
+<br />
+  # .htaccess file in /top/mydir can remain like this:<br />
+  AuthType StanfordAuth<br />
+  require group stanford:stanford<br />
 </code></p></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
@@ -135,7 +163,13 @@ WebAuthLdapAttribute phoneNumber<br />
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapAuthorizationAttribute priviledgeAttribute
 </code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapBase" id="WebAuthLdapBase">WebAuthLdapBase</a> <a name="webauthldapbase" id="webauthldapbase">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapAuthrule" id="WebAuthLdapAuthrule">WebAuthLdapAuthrule</a> <a name="webauthldapauthrule" id="webauthldapauthrule">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
+              </a></th><td>This is a flag that controls whether the environment variable WEBAUTH_LDAPAUTHRULE is set to indicate how a user was authorized. Its values can be: "valid-user", "user suchnsuch", or "groupname".</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
+              </a></th><td>WebAuthLdapAuthrule <em>on|off</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
+              </a></th><td><code>on</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
+              </a></th><td>server config, virtual host</td></tr><tr><th><a href="directive-dict.html#Status">Status:
+              </a></th><td>Contributed</td></tr><tr><th><a href="directive-dict.html#Module">Module:
+              </a></th><td>mod_webauthldap</td></tr></table></div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div><div class="directive-section"><h2><a name="WebAuthLdapBase" id="WebAuthLdapBase">WebAuthLdapBase</a> <a name="webauthldapbase" id="webauthldapbase">Directive</a></h2><table class="directive"><tr><th><a href="directive-dict.html#Description">Description: 
               </a></th><td>The base for the LDAP lookup</td></tr><tr><th><a href="directive-dict.html#Syntax">Syntax:
               </a></th><td>WebAuthLdapBase <em>valid_search_base</em></td></tr><tr><th><a href="directive-dict.html#Default">Default: 
               </a></th><td><code>none</code></td></tr><tr><th><a href="directive-dict.html#Context">Context:
