@@ -64,7 +64,7 @@ mwa_remove_note(request_rec *r, const char *note)
 }
 
 /*
- * set note to main request. does not make copy of data
+ * set note in main request. does not make copy of data
  */
 void
 mwa_setn_note(request_rec *r, const char *note, const char *val)

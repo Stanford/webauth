@@ -38,9 +38,6 @@
 /* environment variable to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
 
-/* for searching Cookie: header */
-#define AT_COOKIE_NAME_EQ "webauth_at="
-
 /* defines for config directives */
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
@@ -68,6 +65,9 @@
 
 #define CD_Debug "WebAuthDebug"
 #define CM_Debug "turn debugging on or off"
+
+#define CD_DoLogout "WebAuthDoLogout"
+#define CM_DoLogout "nuke all WebAuth cookies"
 
 #define CD_RequireSSL "WebAuthRequireSSL"
 #define CM_RequireSSL "whether or not SSL is required"
@@ -112,6 +112,7 @@
 enum {
     E_AppTokenLifetime,
     E_Debug,
+    E_DoLogout,
     E_ExtraRedirect,
     E_FailureURL,
     E_ForceLogin,
@@ -174,6 +175,8 @@ typedef struct {
     int inactive_expire;
     int force_login;
     int force_login_ex;
+    int do_logout;
+    int do_logout_ex;
     char *return_url;
 } MWA_DCONF;
 

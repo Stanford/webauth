@@ -84,8 +84,118 @@ WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
 
 
+/*
+ * return 1 if current request is "https"
+ */
+static int
+is_https(request_rec *r)
+{
+    const char *scheme = ap_run_http_method(r);
+    return (scheme != NULL) && strcmp(scheme, "https") == 0;
+}
+
+/*
+ * find a cookie in the Cookie header and return its value, otherwise
+ * return NULL.
+ */
+static char *
+find_cookie(MWA_REQ_CTXT *rc, const char *name)
+{
+    const char *c;
+    char *cs, *ce, *cval;
+    int len;
+
+    c = apr_table_get(rc->r->headers_in, "Cookie");
+    if (c == NULL) 
+        return NULL;
+
+    len = strlen(name);
+
+    while ((cs = ap_strstr(c, name))) {
+        if (cs[len] == '=') {
+            cs += len+1;
+            break;
+        }
+        c += len;
+    }
+
+    if (cs == NULL)
+        return NULL;
+
+    ce = ap_strchr(cs, ';');
+
+    if (ce == NULL) {
+        cval = apr_pstrdup(rc->r->pool, cs);
+    } else {
+        cval = apr_pstrmemdup(rc->r->pool, cs, ce-cs);
+    }
+
+    return cval;
+}
+
+/*
+ * nuke a cooke by directly updating r->err_headers_out. If
+ * if_set is true, then only nuke the cookie if its set.
+ */
+static void
+nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
+{
+    char *cookie;
+
+    if (if_set && find_cookie(rc, name) == NULL)
+        return;
+
+    cookie = apr_psprintf(rc->r->pool,
+                          "%s=; path=/; expires=%s;%s",
+                          name,
+                          "Thu, 26-Mar-1998 00:00:01 GMT",
+                          is_https(rc->r) ? "secure" : "");
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: nuking cookie(%s): (%s)\n", 
+                 AT_COOKIE_NAME, cookie);
+    apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
+}
+
+/* see if we have to update our cookie and save it in err_headers_out
+ * so it always gets sent. check_cookie and check_url both will
+ * set the N_APP_COOKIE note if they need a new cooke 
+ */
+static void
+set_pending_cookies(MWA_REQ_CTXT *rc) 
+{
+    const char *cookie = mwa_get_note(rc->r, N_APP_COOKIE);
+    if (cookie != NULL)
+        apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
+}
+
+/*
+ * nuke all webauth cookies. FIXME: should eventually enumerate
+ * through all cookies and nuke those that start with "webauth_".
+ */
+static void
+nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
+{
+    nuke_cookie(rc, AT_COOKIE_NAME, 1);
+}
+
+/*
+ * set an environment variable (two if WebAuthVarPrefix is set)
+ */
+static void
+set_env(MWA_REQ_CTXT *rc, const char *name, const char *value)
+{
+    apr_table_setn(rc->r->subprocess_env, name, value);
+    
+    if (rc->sconf->var_prefix != NULL) {
+        name = apr_pstrcat(rc->r->pool, rc->sconf->var_prefix, name, NULL);
+        apr_table_setn(rc->r->subprocess_env, name, value);
+    }
+}
+
 /* FIXME: should we pass some query paramters along with
-   failure_redirect to indicate what failure occured? */
+ *        failure_redirect to indicate what failure occured? 
+ *        
+ */
 static int
 failure_redirect(MWA_REQ_CTXT *rc)
 {
@@ -96,6 +206,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
     if (uri == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: failure_redirect: no URL configured");
+        set_pending_cookies(rc);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -129,14 +240,8 @@ failure_redirect(MWA_REQ_CTXT *rc)
                  "mod_webauth: failufre_redirect: redirect(%s)",
                  redirect_url);
 
+    set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
-}
-
-static int
-is_https(request_rec *r)
-{
-    const char *scheme = ap_run_http_method(r);
-    return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
 /*
@@ -312,6 +417,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     conf->force_login = oconf->force_login_ex ? 
         oconf->force_login : bconf->force_login;
 
+    conf->do_logout = oconf->do_logout_ex ? 
+        oconf->do_logout : bconf->do_logout;
+
     MERGE_INT(app_token_lifetime);
     MERGE_INT(inactive_expire);
     MERGE_PTR(return_url);
@@ -370,33 +478,17 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
 /*
  * check cookie for valid app-token. If an epxired one is found,
- * do a Set-Cookie (in fixups) to blank it out.
+ * do a Set-Cookie to blank it out.
  */
 static char *
 check_cookie(MWA_REQ_CTXT *rc)
 {
-    const char *c;
-    char *cs, *ce, *cval, *sub;
+    char *cval, *sub;
     WEBAUTH_ATTR_LIST *alist;
 
-    c = apr_table_get(rc->r->headers_in, "Cookie");
-    if (c == NULL) 
+    cval = find_cookie(rc, AT_COOKIE_NAME);
+    if (cval == NULL)
         return NULL;
-
-    cs = ap_strstr(c, AT_COOKIE_NAME_EQ);
-    if (cs == NULL) {
-        return NULL;
-    } else {
-        cs += sizeof(AT_COOKIE_NAME_EQ)-1;
-    }
-
-    ce = ap_strchr(cs, ';');
-
-    if (ce == NULL) {
-        cval = apr_pstrdup(rc->r->pool, cs);
-    } else {
-        cval = apr_pstrmemdup(rc->r->pool, cs, ce-cs);
-    }
 
     sub = NULL;
 
@@ -847,6 +939,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
                  "mod_webauth: redirect_requst_token: redirect(%s)",
                  redirect_url);
 
+    set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
 }
 
@@ -866,6 +959,7 @@ extra_redirect(MWA_REQ_CTXT *rc)
                  "mod_webauth: extra_redirect: redirect(%s)",
                  redirect_url);
 
+    set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
 }
 
@@ -874,7 +968,7 @@ static int
 check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
-    const char *subject, *cookie;
+    const char *subject;
     int in_url = 0;
     MWA_REQ_CTXT rc;
    
@@ -920,15 +1014,6 @@ check_user_id_hook(request_rec *r)
         if (subject != NULL) 
             mwa_setn_note(r, N_SUBJECT, subject);
     }
-
-    /* see if we have to update our cookie and save it in err_headers_out
-     * so it always gets sent. check_cookie and check_url both will
-     * set the N_APP_COOKIE note if they need a new cooke 
-     */
-
-    cookie = mwa_remove_note(r, N_APP_COOKIE);
-    if (cookie != NULL)
-        apr_table_addn(r->err_headers_out, "Set-Cookie", cookie);
 
     if (subject != NULL) {
 
@@ -1089,27 +1174,15 @@ fixups_hook(request_rec *r)
 
     /* set environment variable */
     subject = mwa_get_note(r, N_SUBJECT);
-    if (subject) {
-        char *name = ENV_WEBAUTH_USER;
+    if (subject) 
+        set_env(&rc, ENV_WEBAUTH_USER, subject);
 
-        apr_table_setn(r->subprocess_env, name, subject);
-
-        if (rc.sconf->var_prefix) {
-            name = apr_pstrcat(r->pool, rc.sconf->var_prefix,
-                               ENV_WEBAUTH_USER, NULL);
-            apr_table_setn(r->subprocess_env, name, subject);
-        }
-
-        /*
-        {
-            MWA_SERVICE_TOKEN *st = mwa_get_service_token(&rc);
-            if (st != NULL) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                             "mod_webauth: st->expires(%d)", st->expires);
-            }
-        }
-        */
+    if (rc.dconf->do_logout) {
+        nuke_all_webauth_cookies(&rc);
+    } else {
+        set_pending_cookies(&rc);
     }
+
     return DECLINED;
 }
 
@@ -1245,6 +1318,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->require_ssl_ex = 1;
             break;
             /* start of dconfigs */
+        case E_DoLogout:
+            dconf->do_logout = flag;
+            dconf->do_logout_ex = 1;
+            break;
         case E_ForceLogin:
             dconf->force_login = flag;
             dconf->force_login_ex = 1;
@@ -1301,6 +1378,7 @@ static const command_rec cmds[] = {
     DSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
     DSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
+    DFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
 
     { NULL }

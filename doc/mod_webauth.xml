@@ -566,10 +566,6 @@ This directive controls whether or not all WebAuth-related cookies
 are removed if the user accesses this URL.
 </p>
 
-<note><title>Note (NIY)</title> 
-    <p>This directive is <b>NOT</b> implemented yet.</p>
-</note>
-
 <example><title>Example</title>
   &lt;Location /myapp/logout&gt;<br />
   WebAuthDoLogout on<br />
@@ -659,7 +655,7 @@ authentication.
 
 <usage>
 <p>
-Whehter or not we do extra debugging in error_log.
+Whether or not we do extra debugging in error_log.
 </p>
 
 <note><title>Note (NIY)</title> 
