@@ -188,51 +188,6 @@ WebAuthTokenMaxTTL 10m
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthStripURL</name>
-<description>Whether or not to strip off WebAuth-related information in URLs
-</description>
-<syntax>WebAuthStripURL on|off</syntax>
-<default>WebAuthStripURL on</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
-
-<usage>
-<p>
-When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string "<code>;WEBAUTHR=...;;WEBAUTHS=...;</code>"
-to the URL.</p>
-
-<p>This directive controls whether or not that string is stripped off the
-URL after the tokens have been processed. Stripping them off will prevent
-them from showing up in the <code>access_log</code> and is generally a
-good idea.</p>
-<p>This directive should only be turned off if used in conjunction
-with the <a href="#WebAuthExtraRedirect">WebAuthExtraRedirect</a> 
-directive enabled. Even then,
-turning it off may cause problems with log parsers, etc. Turning
-it off is probably only useful for debugging.</p>
-
-<p> Turning
-it off without the extra redirect will most certainly break things,
-as Apache (and CGI apps, etc) will treat it as being part of the
-requested URL. </p>
-
-<note><title>Note</title> 
-    <p>Given all the caveats, should this directive even be documented?
-    </p>
-</note>
-
-<example><title>Example</title>
-&lt;VirtualHost _default_:443&gt;<br />
-WebAuthStripURL off<br />
-WebAuthExtraRedirect on<br />
-...<br />
-&lt;/VirtualHost&gt;
-</example>
-</usage>
-</directivesynopsis>
-
-<directivesynopsis>
 <name><a name="WebAuthExtraRedirect">WebAuthExtraRedirect</a></name>
 <description>Whether or not to do an extra redirect upon return from the WebKDC
 </description>
@@ -357,8 +312,8 @@ error occurs
 </description>
 <syntax>WebAuthFaliureURL <em>url</em></syntax>
 <default>(none)</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
 
 <usage>
 <p>
@@ -517,7 +472,7 @@ requested.
 </p>
 
 <example><title>Example</title>
-# if authenticated when accessing a URL, authenticate<br/>
+# if unauthenticated when accessing a URL, authenticate<br/>
 # and return to front-page<br/>
 WebAuthReturnURL /myapp/
 </example>
@@ -525,29 +480,28 @@ WebAuthReturnURL /myapp/
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthRequireSSL</name>
-<description>Whether or not to require SSL (i.e., https) acccess
-to webauth-protected pages.
+<name>WebAuthLoginCanceledURL</name>
+<description>URL to return to if user cancels out of login
 </description>
-<syntax>WebAuthRequireSSL on|off</syntax>
-<default>WebAuthRequireSSL on</default>
-<contextlist><context>server config</context>
-<context>virtual host</context></contextlist>
+<syntax>WebAuthLoginCanceledURL <em>url</em></syntax>
+<default>(none)</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
 
 <usage>
 <p>
-Whether or not we require webauth-protected pages to be accessed only
-via SSL. If this is on (the default) and the request comes in via
-http instead of https, then an HTTP 402 (unauthorized) error will
-be returned to the browser and an error logged to error_log.
+This directive controls which URL the user is returned to if they
+have to login, but hit the cancel button while logging in. 
+</p>
+<p>If this directive is not set and the user hits the cancel button,
+they will be taken to a standard "login canceled" page at the WebKDC.
 </p>
 
 <example><title>Example</title>
-WebAuthRequireSSL off<br />
+WebAuthLoginCanceledURL /nonwebauth/info.html
 </example>
 </usage>
 </directivesynopsis>
-
 
 <directivesynopsis>
 <name><a name="WebAuthVarPrefix">WebAuthVarPrefix</a></name>

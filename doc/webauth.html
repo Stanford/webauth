@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.92, Modified 11/30/02</b></H4>
+<H4><b>DRAFT Version  0.99, Modified 12/04/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -1051,6 +1051,18 @@ This is a numeric error code that is present in an errorResponse message.
  </td>
 </tr>
 
+<tr>
+ <td>16</td> <td>The user hit the cancel button during the login process.
+        
+ </td>
+</tr>
+
+<tr>
+ <td>17</td> <td>The WAS server requested a "forced" login.
+
+ </td>
+</tr>
+
 </table>
 
 <H4>4.2.4 &lt;errorMessage></H4>
@@ -1177,6 +1189,8 @@ The response message is:
     <i>&lt;!-- requestedToken will either be an error, id, or proxy token. --></i>
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
 
+    &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
+
     <i>&lt;!-- app state is the opaque app state passed in the
          request token that we hand back to WAS --></i>
     &lt;appState>{base64-state}&lt;/appState>
@@ -1185,6 +1199,16 @@ The response message is:
 </code></pre>
 
 <p>If any errors occur, then an &lt;errorResponse> message will be returned.
+
+<p>If the request option "ro" is set in the request token, then
+  &lt;loginCanceledToken>  will be returned. Note that it is up
+to the WebKDC web front-end to send back that token as the 
+requested token (WEBAUTHR in the return URL) if the user hits 
+the cancel button.
+
+<p>If the request option "fa" attribute is set, then this command
+will return an &lt;errorMessage> with the &lt;errorCode> set to 17,
+which indicates that the user is being forced to (re)login.
 
 <H3>4.4 <a name="xmlpost">Posting XML to WebKDC</a></H3>
 
@@ -1391,11 +1415,9 @@ service-token used when the proxy-token was granted.
  <td>pt</td><td>string</td><td>proxy type (krb4/krb5)</td>
 </tr>
 <tr>
- <td>rr</td><td>string</td>
-<td>reason for request:
-       na = no app-token,
-       ea = expired app-token,
-       st = session timeout,
+ <td>ro</td><td>string</td>
+<td>comma-separated list of request options:
+       lc = return the app an error code if login is canceled,
        fa = forced authentication (app is requesting "live" authentication)
 </td>
 </tr>
@@ -1492,8 +1514,8 @@ both recent, and for the specified command.
   t=req
   ct={creation-time}
   [as={binary-app-token-used-for-state}]
-  ru={return-get-redirect-url}
-  rr=na|ea|st|fa
+  ru={return-redirect-url}
+  [ro=fa,lc]
   rtt=id|proxy
   # for rt=id
   sa=krb5|webkdc
@@ -1864,8 +1886,8 @@ FIXME: Insert link to mod_webauth documentation
 </tr>
 
 <tr>
-  <td>11/30/2002</td>
-  <td>0.92</td>
+  <td>12/04/2002</td>
+  <td>0.99</td>
   <td>schemers</td>
    <td><ul>
          <li>document error codes for &lt;errorCode>
@@ -1887,6 +1909,12 @@ FIXME: Insert link to mod_webauth documentation
 	     the call to krb5_aname_to_localname fails, in which case
              the fully-qualified principal name will be used).
          <li>remove inactivity timeout value from token.
+         <li>change rr (request-reason) token attribute to ro (request-options)
+         <li>add "lc" (login-canceled) and "fa" (forced-authentication)
+             request options.
+         <li>add &ltg;loginCanceledToken> to requestToken command response.
+         <li>add two new error codes for forced-authentication and
+             login-canceled.
        </ul>
    </td>
 </tr>
