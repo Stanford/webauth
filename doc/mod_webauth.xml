@@ -1,0 +1,467 @@
+<?xml version="1.0"?>
+<!DOCTYPE modulesynopsis SYSTEM "../style/modulesynopsis.dtd">
+<?xml-stylesheet type="text/xsl" href="../style/manual.en.xsl"?>
+<modulesynopsis>
+
+<name>mod_webauth</name>
+<description>Support for the WebAuth V3 protocol</description>
+<status>Contributed</status>
+<sourcefile>mod_webauth.c and friends</sourcefile>
+<identifier>webauth_module</identifier>
+
+<summary>
+<p>This module provides WebAuth V3 support. FIXME: BLAH BLAH BLAH.</p>
+
+<p>Further details are provided in the 
+<a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
+
+</summary>
+
+<section><title>Using WebAuth Authentication</title>
+
+    <p>Using WebAuth authentication is very simple. Simply set
+    up authentication normally, using "AuthType WebAuth"
+    instead of the normal "AuthType Basic", plus a "require valid-user"
+    directive.
+
+    Example:</p>
+<example>
+  &lt;Location /private/&gt;<br />
+  AuthType WebAuth<br />
+  Require valid-user<br />
+  &lt;/Location&gt;
+</example>
+
+</section>
+
+<section><title>Environment Variables</title>
+
+<p>This module provides some information as additional environment
+variables to the SSI and CGI namespace. The generated variables are listed in
+the table below. For CGI apps that have expectations about and/or restrictions
+on the names of environment variables they can handle, you can use the
+FIXME:VARPREFIX directive to have additional environment variables set.</p>
+
+<table border="1">
+<tr>
+ <th>Variable Name:</th>
+ <th>Value Type:</th>
+ <th>Description:</th>
+</tr>
+<tr><td><code>WEBAUTH_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user.</td></tr>
+
+<tr><td><code>REMOTE_USER</code></td>                         <td>string</td>      <td>Name of the WebAuth authenticated user.</td></tr>
+
+<tr><td><code>AUTH_TYPE</code></td>                         <td>string</td>      <td>Will be set to <code>WebAuth</code> if user was authenticated via WebAuth.</td></tr>
+
+</table>
+</section>
+
+
+<directivesynopsis>
+<name>WebAuthSubjectAuthType</name>
+<description>Type of subject authenticator the WebKDC will use in the returned
+id-token</description>
+<syntax>WebAuthSubjectAuthType <em>type</em></syntax>
+<default>WebAuthSubjectAuthType webkdc</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+When mod_webauth needs to make a request for an id-token, it needs to
+specify what type of subect authenticator that it expects returned. This
+directive configures which type of subject authenticator is requested
+by <em>type</em>:</p>
+<ul>
+<li><code>krb5</code>
+    <p>
+    When this type of subject authenticator is used, the WebKDC will use
+    the user's Kerberos V5 credentials to make a <code>krb5_mk_req</code>
+    call, using the requesting web server's Kerberos V5 principal. When
+    mod_webauth gets back the id-token, it will then use it's keytab to
+    verify the subject authenticator using <code>krb5_rd_req</code>.</p>
+    <p>This basically means that even if the WebKDC is compromised, a
+    user's identity cannot be forged, unless that user happens to be logged
+    in and using the WebKDC.</p>
+    <p>The downside to using this option is that returned id-token will
+    be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
+    <p>
+    Specifying this also requires that FIXME:ref WebAuthKeytab be set.
+    (FIXME: it is already always required for obtaining a service-token, though
+     it will probably become optional at some point).</p>
+</li>
+<li><code>webkdc</code>
+    <p>
+    This is the default.</p>
+    <p>
+    When this type of subject authenticator is used, the WebKDC will
+    place the already verified username in the returned id-token (encrypted,
+    of course). When mod_webauth gets back the id-token, it will trust that
+    the WebKDC as sufficiently authenticated the user, and use the returned
+    username.</p>
+ </li>
+</ul>
+<p>
+Example:</p>
+<example>
+WebAuthSubjectAuthType krb5
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthTokenMaxTTL</name>
+<description>How old a token that was should be recently created is valid for.
+</description>
+<syntax>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>WebAuthTokenMaxTTL 300s</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This directive sets how old tokens that must be considered recent can be 
+before they are considered stale. It is used to help prevent tokens from 
+being replayed, and to ignore those token if they occur in cookies, URLs, 
+etc. This requires clocks between the web server and the WebKDC to be 
+synchronized. </p>
+
+<p>The units for the TTL are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+# ten minute TTL<br/>
+WebAuthTokenMaxTTL 10m
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthStripURL</name>
+<description>Whether or not to strip off WebAuth-related information in URLs
+</description>
+<syntax>WebAuthStripURL on|off</syntax>
+<default>WebAuthStripURL on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+When browsers get redirected back from the WebKDC, tokens will be
+returned in the URL, by appending the string <code>;WEBAUTHR=...;;WEBAUTHS=...;</code>
+to the URL.</p>
+
+<p>This directive controls whether or not that string is stripped off the
+URL after the tokens have been processed. Stripping them off will prevent
+them from showing up in the <code>access_log</code> and is generally a
+good idea.</p>
+<p>This directive should only be turned off if used in conjunction
+with the FIXME:ref WebAuthExtraRedirect directive enabled. Even then,
+turning it off may cause problems with log parsers, etc. Turning
+it off is probably only useful for debugging.</p>
+
+<p> Turning
+it off without the extra redirect will most certainly break things,
+as Apache (and CGI apps, etc) will treat it as being part of the
+requested URL. </p>
+
+<example><title>Example</title>
+&lt;VirtualHost _default_:443&gt;<br />
+WebAuthStripURL off<br />
+WebAuthExtraRedirect on<br />
+...<br />
+&lt;/VirtualHost&gt;
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthExtraRedirect</name>
+<description>Whether or not to do an extra redirect upon return from the WebKDC
+</description>
+<syntax>WebAuthExtraRedirect on|off</syntax>
+<default>WebAuthExtraRedirect on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+When browsers get redirected back from the WebKDC, tokens will be
+returned in the URL, by appending the string <code>;WEBAUTHR=...;;WEBAUTHS=...;</code>
+to the URL.</p>
+
+<p>This directive controls whether or not an extra redirect will be sent
+to the browser, with this information removed from the URL after the
+user has been authenticated. The benefit of performing the extra redirect
+is the user's won't see the extra WebAuth information in the URL, and
+won't be able to bookmark it, etc. Note that bookmarking a URL
+with the extra information shouldn't really cause any problems, as
+the tokens in the extra information will only be valid for a limited
+amount of time (FIXME:ref see WebAuthTokenMaxTTL), after which they
+will be ignored.</p>
+
+<p>The downside to enabling this directive is the extra redirect will
+require another round-trip from the server to the user's browser, and
+under certain circumstances maybe also trigger a caching bug in the
+user's browser (though hopefully this should never happen).</p>
+
+<example><title>Example</title>
+&lt;VirtualHost _default_:443&gt;<br />
+WebAuthExtraRedirect on<br />
+...<br />
+&lt;/VirtualHost&gt;
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthWebKDCURL</name>
+<description>The URL used to contact the WebKDC when posting XML.
+</description>
+<syntax>WebAuthWebKDCURL <em>url</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the URL used to post XML requests to the WebKDC, and
+should use always SSL. </p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthWebKDCURL https://webkdc.stanford.edu/webkdc-service/
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthWebKDCPrincipal</name>
+<description>The Kerberos V5 principal name of the WebKDC
+</description>
+<syntax>WebAuthWebKDCPrincipal <em>principal</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the Kerberos V5 Principal to use when communicating with
+the WebKDC. It used to request a service-token from the WebKDC. </p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+# if realm isn't specified, the default realm will be used<br/>
+WebAuthWebKDCPrincipal service/webkdc@stanford.edu
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthLoginURL</name>
+<description>The URL browsers get redirected to when the user is 
+unauthenticated
+</description>
+<syntax>WebAuthLoginURL <em>url</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the URL browsers get redirected to when the user is unauthenticated
+and needs to either login or reuse an existing single-sign-on credential.
+This should alway use SSL. </p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthLoginURL https://webkdc.stanford.edu/login/
+</example>
+</usage>
+</directivesynopsis>
+
+
+
+<directivesynopsis>
+<name>WebAuthFailureURL</name>
+<description>The URL browsers get redirected to when a fatal mod_webauth
+error occurs
+</description>
+<syntax>WebAuthFaliureURL <em>url</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the URL browsers get redirected to when mod_webauth encounters
+a fatal error. If it is not set, then the server will return a
+"500 Internal Server Error" when a fatal error occurs.
+</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthFailureURL /app/failure
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthKeyring</name>
+<description>Name of the file containing the webauth keyring
+</description>
+<syntax>WebAuthKeyring <em>path</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the file containing the webauth keyring, which is
+a file that contains the server's private AES key(s). </p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthKeyRing conf/webauth_keyring
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthKeytab</name>
+<description>Name of the Kerberos V5 keytab file
+</description>
+<syntax>WebAuthKeytab <em>path</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the Kerberos V5 keytab file. The keytab must only contain
+the principal used for webauth operations, such as webauth/hostname@realm.
+This is because the principal is determined by reading the keytab file and 
+using the first principal found.</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthKeytab conf/webauth_keytab
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthServiceTokenCache</name>
+<description>Name of the service-token cache file.
+</description>
+<syntax>WebAuthServiceTokenCache <em>path</em></syntax>
+<default>None</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the service-token cache file. This file is used to
+maintain a cached copy of the service-token that gets shared between
+all the web server's child processes. It will get generated
+and maintained automatically.
+</p>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+
+<example><title>Example</title>
+WebAuthKeytab conf/webauth_keytab
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthAppTokenLifetime</name>
+<description>Lifetime of app-tokens we create.
+</description>
+<syntax>WebAuthAppTokenLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>(lifetime of id-token returned from WebKDC)</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls how long the app-token (the main cookie containing
+a user's authenticated identity) is valid for. If not specified, the
+expiration time in the id-token returned from the WebKDC is used, which
+is the recommended configuration.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+# create an app-token valid for 2 hours<br/>
+WebAuthAppTokenLifetime 2h
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthReturnURL</name>
+<description>URL to return to after authenticating
+</description>
+<syntax>WebAuthReturnURL <em>url</em></syntax>
+<default>(url user originally requested)</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls which URL the user is returned to after authenicating
+with the WebKDC. By default, they will return the URL they originally
+requested.
+</p>
+
+<example><title>Example</title>
+# if authenticated when accessing a URL, authenticate<br/>
+# and return to front-page<br/>
+WebAuthReturnURL /myapp/
+</example>
+</usage>
+</directivesynopsis>
+
+
+</modulesynopsis>
