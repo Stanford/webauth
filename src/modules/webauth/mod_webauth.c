@@ -176,7 +176,7 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
  * do nothing if value is NULL.
  */
 static void
-set_env(MWA_REQ_CTXT *rc, const char *name, const char *value)
+mwa_set_env(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
     if (value == NULL)
         return;
@@ -197,6 +197,7 @@ static int
 failure_redirect(MWA_REQ_CTXT *rc)
 {
     char *redirect_url, *uri;
+    const char *mwa_func="failure_redirect";
 
     ap_discard_request_body(rc->r);
 
@@ -204,7 +205,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
 
     if (uri == NULL) {
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                     "mod_webauth: failure_redirect: no URL configured");
+                     "mod_webauth: %s: no URL configured", mwa_func);
         set_pending_cookies(rc);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -219,8 +220,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
                 
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: failure_redirect: redirect(%s)",
-                     redirect_url);
+                     "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
 
     set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
@@ -230,14 +230,14 @@ static int
 login_canceled_redirect(MWA_REQ_CTXT *rc)
 {
     char *redirect_url, *uri;
-
+    const char *mwa_func = "login_canceled_redirect";
     ap_discard_request_body(rc->r);
 
     uri = rc->dconf->login_canceled_url;
 
     if (uri == NULL) {
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                   "mod_webauth: login_canceled_redirect: no URL configured!");
+                   "mod_webauth: %s: no URL configured!", mwa_func);
         return failure_redirect(rc);
     }
 
@@ -251,8 +251,7 @@ login_canceled_redirect(MWA_REQ_CTXT *rc)
                 
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: login_canceled_redirect: redirect(%s)",
-                     redirect_url);
+                     "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
 
     set_pending_cookies(rc);
     return HTTP_MOVED_TEMPORARILY;
@@ -659,9 +658,10 @@ make_proxy_cookie(const char *proxy_type,
     char *token, *btoken, *cookie;
     int tlen, olen, status;
     const char *mwa_func="make_proxy_cookie";
-    status = WA_ERR_NONE;
     time_t creation_time;
     char *cookie_name;
+
+    status = WA_ERR_NONE;
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
@@ -735,9 +735,10 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     char *token, *btoken, *cookie;
     int tlen, olen, status;
     const char *mwa_func="make_cred_cookie";
-    status = WA_ERR_NONE;
     time_t creation_time;
     char *cookie_name;
+
+    status = WA_ERR_NONE;
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
@@ -807,14 +808,15 @@ make_app_cookie(const char *subject,
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken, *cookie;
     int tlen, olen, status;
+    const char *mwa_func = "make_app_cookie";
 
     status = WA_ERR_NONE;
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
-                     "mod_webauth: make_app_cookie: "
-                     "webauth_attr_list_new failed");
+                     "mod_webauth: %s: webauth_attr_list_new failed",
+                     mwa_func);
         return 0;
     }
 
@@ -847,7 +849,7 @@ make_app_cookie(const char *subject,
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL, "make_app_cookie",
+        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
                               "webauth_token_create", subject);
         return 0;
     }
@@ -862,8 +864,8 @@ make_app_cookie(const char *subject,
                           is_https(rc->r) ? "secure" : "");
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: make_app_cookie setting cookie(%s): (%s)\n", 
-                     AT_COOKIE_NAME, cookie);
+                     "mod_webauth: %s: setting cookie(%s): (%s)\n",
+                     mwa_func, AT_COOKIE_NAME, cookie);
     mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
 
     rc->at.subject = apr_pstrdup(rc->r->pool, subject);
@@ -941,6 +943,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     const char *tt;
     char *sub;
     int result = 0;
+    const char *mwa_func = "parse_app_token";
 
     ap_unescape_url(token);
     blen = apr_base64_decode(token, token);
@@ -956,8 +959,8 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, NULL,
-                              "parse_app_token", "webauth_token_parse", NULL);
+        mwa_log_webauth_error(rc->r->server, status, NULL, mwa_func,
+                              "webauth_token_parse", NULL);
         return 0;
     }
 
@@ -966,14 +969,13 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
                           "parse_app_token", NULL);
     if (tt == NULL || strcmp(tt, WA_TT_APP) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: parse_app_token: token type(%s) not (%s)",
-                     tt ? tt : "(null)", WA_TT_APP);
+                     "mod_webauth: %s: token type(%s) not (%s)",
+                     mwa_func, tt ? tt : "(null)", WA_TT_APP);
         goto cleanup;
     }
 
     /* pull out subject */
-    sub = mwa_get_str_attr(alist, WA_TK_SUBJECT, rc->r, "parse_app_token", 
-                           NULL);
+    sub = mwa_get_str_attr(alist, WA_TK_SUBJECT, rc->r, mwa_func, NULL);
     
     if (sub == NULL) {
         goto cleanup;
@@ -1008,6 +1010,7 @@ static int
 parse_app_token_cookie(MWA_REQ_CTXT *rc)
 {
     char *cval;
+    const char *mwa_func = "parse_app_token_cookie";
 
     cval = find_cookie(rc, AT_COOKIE_NAME);
     if (cval == NULL)
@@ -1022,15 +1025,15 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
                                     is_https(rc->r) ? "secure" : "");
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: nuking cookie(%s): (%s)\n", 
-                         AT_COOKIE_NAME, cookie);
+                         "mod_webauth: %s: nuking cookie(%s): (%s)\n", 
+                         mwa_func, AT_COOKIE_NAME, cookie);
         mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
         return 0;
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: found valid %s cookie for (%s)", 
-                         AT_COOKIE_NAME,
+                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+                         mwa_func, AT_COOKIE_NAME,
                          rc->at.subject);
         return 1;
     }
@@ -2312,11 +2315,12 @@ fixups_hook(request_rec *r)
     }
 
     /* set environment variables */
-    set_env(&rc, ENV_WEBAUTH_USER, mwa_get_note(r, N_SUBJECT));
-    set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, mwa_get_note(r, N_EXPIRATION));
-    set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, mwa_get_note(r, N_CREATION));
-    set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, mwa_get_note(r, N_LASTUSED));
-    set_env(&rc, ENV_WEBAUTH_KRB5CCNAME, mwa_get_note(r, N_KRB5CCNAME));
+    mwa_set_env(&rc, ENV_WEBAUTH_USER, mwa_get_note(r, N_SUBJECT));
+    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, 
+                mwa_get_note(r, N_EXPIRATION));
+    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, mwa_get_note(r, N_CREATION));
+    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, mwa_get_note(r, N_LASTUSED));
+    mwa_set_env(&rc, ENV_WEBAUTH_KRB5CCNAME, mwa_get_note(r, N_KRB5CCNAME));
 
 #if 0
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
