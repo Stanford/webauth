@@ -143,7 +143,6 @@ write_service_token_cache(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token)
     apr_file_t *cache;
     unsigned char *buffer;
     apr_status_t astatus;
-    time_t expires;
     int status, buff_len, ebuff_len, bytes_written;
     WEBAUTH_ATTR_LIST *alist;
     static char *prefix = "mod_webauth: write_service_token_cache";
@@ -416,7 +415,7 @@ parse_service_token_response(apr_xml_doc *xd,
     if (!e || strcmp(e->name, "tokens") != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                      "mod_webauth: %s: can't find <tokens>", 
-                     mwa_func, e->name);
+                     mwa_func);
         return NULL;
     }
 
@@ -424,7 +423,7 @@ parse_service_token_response(apr_xml_doc *xd,
     if (!e || strcmp(e->name, "token") != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                      "mod_webauth: %s: can't find <token>", 
-                     mwa_func, e->name);
+                     mwa_func);
         return NULL;
     }
 
@@ -624,7 +623,6 @@ get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
 MWA_SERVICE_TOKEN *
 mwa_get_service_token(MWA_REQ_CTXT *rc)
 {
-    apr_status_t astatus;
     MWA_SERVICE_TOKEN *token;
     time_t curr = time(NULL); /* rc->r->request_time didn't seem reliable */
     /* FIXME: LOCKING OF GLOBAL VARIABLE */

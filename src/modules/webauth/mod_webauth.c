@@ -79,8 +79,6 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
-    int status;
-
     sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
                                                  &webauth_module);
 
@@ -251,7 +249,7 @@ static WEBAUTH_ATTR_LIST *
 parse_app_token(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, i;
+    int blen, status;
     const char *tt;
 
     ap_unescape_url(token);
@@ -289,8 +287,6 @@ check_cookie(MWA_REQ_CTXT *rc)
 {
     const char *c;
     char *cs, *ce, *cval, *sub;
-    int status, blen;
-    int i;
     WEBAUTH_ATTR_LIST *alist;
 
     c = apr_table_get(rc->r->headers_in, "Cookie");
@@ -510,7 +506,11 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                                             rc->r, "handle_id_token", NULL);
         subject = apr_pstrdup(rc->r->pool, tsub);
     } else {
-
+        /* FIXME: HUM.... */
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: handle_id_token: "
+                     "unknown subject auth type: %s", sa);
+        subject = NULL;
     }
         
     if (subject != NULL) {
@@ -615,6 +615,8 @@ check_url(MWA_REQ_CTXT *rc)
 {
     char *subject, *wr, *ws;
     WEBAUTH_KEY *key = NULL;
+
+    subject = NULL;
 
     wr = mwa_remove_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {
@@ -835,7 +837,8 @@ check_user_id_hook(request_rec *r)
      * set the N_APP_COOKIE note if they need a new cooke 
      */
 
-    if (cookie = mwa_remove_note(r, N_APP_COOKIE))
+    cookie = mwa_remove_note(r, N_APP_COOKIE);
+    if (cookie != NULL)
         apr_table_addn(r->err_headers_out, "Set-Cookie", cookie);
 
     if (subject != NULL) {
@@ -861,11 +864,13 @@ check_user_id_hook(request_rec *r)
 
 }
 
+#if 0 
 static int 
 auth_checker_hook(request_rec *r)
 {
     return DECLINED;
 }
+#endif
 
 /*
  * this hook will attempt to find the returned-token and the
@@ -988,12 +993,6 @@ fixups_hook(request_rec *r)
                                                 &webauth_module);
 
     if (ap_is_initial_req(r)) {
-        char *new_cookie;
-        const char *at;
-        /*new_cookie = apr_psprintf(r->pool, "MOD_WEBAUTH=%d; path=/",
-                                  apr_time_now());
-        apr_table_setn(r->headers_out, "Set-Cookie", new_cookie);
-        */
         mwa_log_request(r, "in fixups");
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 

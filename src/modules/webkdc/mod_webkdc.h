@@ -16,6 +16,7 @@
 #include "apr_tables.h"
 #include "apr_xml.h"
 #include "apr_thread_mutex.h"
+#include "apr_base64.h"
 
 #include <curl/curl.h>
 
