@@ -271,17 +271,35 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     int fd, i, attr_len, len;
     WEBAUTH_ATTR_LIST *alist;
     unsigned char *attr_buff;
-    int status;
+    int status, retry;
     char name[32];
+    char *temp;
 
     assert(ring);
 
     attr_buff = NULL;
+    temp = NULL;
+    fd = -1;
+    attr_buff = NULL;
+    alist = NULL;
 
-    /* FIXME: locking */
-    fd = open(path, O_WRONLY|O_TRUNC|O_CREAT, 0600);
-    if (fd == -1) {
-        return WA_ERR_KEYRING_OPENWRITE;
+    temp = malloc(strlen(path)+7+1); // .XXXXXX\0
+    if (temp == NULL)
+        return WA_ERR_NO_MEM;
+
+
+    retry = 0;
+    fd = -1;
+    while ((fd == -1) && (retry++ < 10)) {
+        sprintf(temp, "%s.XXXXXX", path);
+        mktemp(temp);
+
+        fd = open(temp, O_WRONLY|O_TRUNC|O_CREAT|O_EXCL, 0600);
+
+        if ((fd == -1) && (errno != EEXIST)) {
+            status = WA_ERR_KEYRING_OPENWRITE;
+            goto cleanup;
+        }
     }
 
     alist = webauth_attr_list_new(ring->num_entries*5+2);
@@ -349,18 +367,41 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     if (status != WA_ERR_NONE)
         goto cleanup;
 
-    if (write(fd, attr_buff, attr_len) != attr_len)
+    if (write(fd, attr_buff, attr_len) != attr_len) {
         status = WA_ERR_KEYRING_WRITE;
+        goto cleanup;
+    }
+
+    if (close(fd) != 0) {
+        status = WA_ERR_KEYRING_WRITE;
+        goto cleanup;
+    } else {
+        fd = -1;
+    }
+
+    if (rename(temp, path) != 0) {
+        status = WA_ERR_KEYRING_WRITE;
+        goto cleanup;
+    }
+
+    status = WA_ERR_NONE;
 
  cleanup:
 
-    close(fd);
-
-    if (alist)
+    if (alist != NULL)
         webauth_attr_list_free(alist);
 
-    if (attr_buff)
+    if (attr_buff != NULL)
         free(attr_buff);
+
+    /* should be -1 and closed by now, else an error occured */
+    if (fd != -1) {
+        close(fd);
+        unlink(temp);
+    }
+
+    if (temp != NULL)
+        free(temp);
 
     return status;
 
