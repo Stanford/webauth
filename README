@@ -177,3 +177,8 @@ CREDITS
   together by Russ Allbery.  Huaqing Zheng provided builds of supporting
   packages and Jonathan Pilat helped greatly with testing.  Xueshan Feng
   oversaw the project.
+
+  Thanks to pod for improvements, particularly to the WebKDC, to make it
+  easier to package for a Linux distribution, for the initial Debian
+  package build rules, and for generic WebKDC templates suitable for a new
+  installation and for use as examples.
