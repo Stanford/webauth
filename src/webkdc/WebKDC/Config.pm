@@ -6,6 +6,7 @@ use warnings;
 my $conf = "/etc/webkdc/webkdc.conf";
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";
+our $TEMPLATE_PATH = "./generic";
 our $URL = "https://localhost/webkdc-service/";
 
 if (-f $conf) {
