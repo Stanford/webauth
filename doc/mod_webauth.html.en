@@ -274,7 +274,7 @@ AuthType WebAuth<br />
 Require valid-user<br />
 &lt;/Location&gt;<br />
 <br />
- Send everything for context /private/ to worker1 (ajp13)<br />
+# Send everything for /private/ to worker1<br />
 JkMount /private/* worker1 <br />
 # webauth-related environment variables to pass<br />
 JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"<br />
