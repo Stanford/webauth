@@ -1,5 +1,17 @@
+/** \file
+ * Interface to the libwebauth utility library.
+ *
+ * The libwebauth utility library contains the basic token handling functions
+ * used by all other parts of the webauth code.  It contains functions to
+ * encode and decode lists of attributes, generate tokens from them, encode
+ * and decode tokens in base64 or hex encoding, and some additional utility
+ * functions to generate random numbers or new AES keys.
+ *
+ * $Id$
+ */
+
 #ifndef _WEBAUTH_H
-#define _WEoBAUTH_H
+#define _WEBAUTH_H
 
 #ifdef  __cplusplus
 //extern "C" {
@@ -7,14 +19,20 @@
 
 /******************** error codes ********************/
 
+/** libwebauth error codes.
+ *
+ * Many libwebauth functions return an error status, or 0 on success.  For
+ * those functions, the error codes are chosen from the following enum.
+ */
 typedef enum {
-    WA_ERR_NO_ROOM = -2000,  /* supplied buffer too small */
-    WA_ERR_CORRUPT,          /* data is incorrectly formatted */
-    WA_ERR_NO_MEM,           /* no memory */
-    WA_ERR_BAD_HMAC,         /* hmac check failed */
-    WA_ERR_RAND_FAILURE,     /* unable to get random data */
+    WA_ERR_NO_ROOM = -2000,  /**< Supplied buffer too small. */
+    WA_ERR_CORRUPT,          /**< Data is incorrectly formatted. */
+    WA_ERR_NO_MEM,           /**< No memory. */
+    WA_ERR_BAD_HMAC,         /**< HMAC check failed. */
+    WA_ERR_RAND_FAILURE,     /**< Unable to get random data. */
+
     /* must be last */
-    WA_ERR_NONE = 0          /* no error occured */
+    WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
 }  WEBAUTH_ERR;    
 
@@ -60,17 +78,16 @@ typedef enum {
 
 /******************** types ********************/
 
-/*
- * generic name/value attributes for constructing tokens
- * names MUST not contain an "=", and values *MAY*
- * contain binary data, since the length *MUST* be specified.
+/** A generic attribute.
+ *
+ * Holds a generic name/value attribute for constructing and parsing tokens.
+ * Names <b>must not</b> contain "=", and values \b may contain binary data,
+ * since the length \b must be specified.
  */
-
-/* a generic attribute */
 typedef struct {
-    char *name;
-    void *value;
-    int length;
+    char *name;                 /**< Name of attribute. */
+    void *value;                /**< Value of attribute (binary data). */
+    int length;                 /**< Length of attribute value in bytes. */
 } WEBAUTH_ATTR;
 
 /* an AES key */
@@ -78,57 +95,70 @@ typedef struct webauth_aes_key WEBAUTH_AES_KEY;
 
 /******************** base64 ********************/
 
-/*
- * returns the amount of space required to base64 encode data
- * of the given length. Returned length does *NOT* include room for a
- * null-termination.
+/** Amount of space required to base64-encode data.
+ *
+ * Returns the amount of space required to base64-encode data.  Returned
+ * length does \b NOT include room for nul-termination.
+ *
+ * \param length Length of data to be encoded.
+ * \return Space base64-encoded data will require.
  */
 int webauth_base64_encoded_length(int length);
 
-
-/*
- * returns the amount of space required to base64 decode data
- * of the given length. Does not actually attempt to ensure that
- * input contains a valid base64-encoded string, other the checking
- * the last two characters for padding ('='). Returned length does *NOT*
- * include room for a null-termination.
+/** Amount of space required to base64-decode data.
  *
- * errors:
- *   WA_ERR_CORRUPT (if length is not greater then 0 and a multiple of 4)
+ * Returns the amount of space required to base64-decode data of the given
+ * length.  Does not actually attempt to ensure that the input contains a
+ * valid base64-encoded string, other than checking the last two characters
+ * for padding ("=").  Returned length does \b NOT include room for
+ * nul-termination.
  *
+ * \param input Base64-encoded data.
+ * \param length Length of base64-encoded data.
+ *
+ * \return Returns the required space in bytes provided that length is
+ *   greater than 0 and a multiple of 4.  Otherwise, returns #WA_ERR_CORRUPT
+ *   since the input data cannot be valid base64-encoded data.
  */
 int webauth_base64_decoded_length(const unsigned char *input, int length);
 
-/*
- * base64 encodes the given data, does *NOT* null-terminate.
- * output can *not* point to input.
+/** Base64-encode the given data.
  *
- * returns output length or an error.
+ * Does \b NOT nul-terminate.  Output cannot point to the same memory space as
+ * input.
  *
- * errors:
- *   WA_ERR_NO_ROOM
- *   
+ * \param input Data to encode.
+ * \param input_len Length of data to encode.
+ * \param output Buffer into which to write base64-encoded data.
+ * \param max_output_len Maximum number of bytes to write to \a output.
+ *
+ * \return Returns the number of bytes written to \a output, or
+ *   #WA_ERR_NO_ROOM if encoding the provided data would require more space
+ *   than \a max_output_len.
  */
 int webauth_base64_encode(const unsigned char *input,
                           int input_len, 
                           unsigned char *output,
                           int max_output_len);
 
-/*
- * base64 decodes the given data, does *NOT* null-terminate.
- * output can point to input.
+/** Base64-decode the given data.
  *
- * returns output length or an error.
+ * Does \b NOT nul-terminate.  Output may point to input.
  *
- * errors:
- *   WA_ERR_NO_ROOM
- *   WA_ERR_CORRUPT
+ * \param input Data to decode.
+ * \param input_len Length of data to decode.
+ * \param output Buffer into which to write base64-decoded data.
+ * \param max_output_len Maximum number of bytes to write to \a output.
+ *
+ * \return Returns the number of bytes written to \a output, #WA_ERR_NO_ROOM
+ *   if decoding the provided data would require more space than \a
+ *   max_output_len, or #WA_ERR_CORRUPT if \a input is not valid
+ *   base64-encoded data.
  */
-int 
-webauth_base64_decode(unsigned char *input,
-                      int input_len,
-                      unsigned char *output,
-                      int max_output_len);
+int webauth_base64_decode(unsigned char *input,
+                          int input_len,
+                          unsigned char *output,
+                          int max_output_len);
 
 /******************** hex routines ********************/
 
