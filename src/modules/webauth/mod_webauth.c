@@ -563,7 +563,10 @@ check_user_id_hook(request_rec *r)
         r->ap_auth_type = (char*)at;
         return OK;
     } else {
-        return DECLINED;
+        /* we would normally redirect at this point */
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: check_user_id_hook: no valid user found");
+        return HTTP_UNAUTHORIZED;
     }
 
     /* FIXME: would normally return DECLINED at this point */
