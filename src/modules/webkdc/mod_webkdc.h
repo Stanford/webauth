@@ -81,7 +81,7 @@ typedef struct {
 
 /* interesting stuff from a parsed webkdc-service-token */
 typedef struct {
-    void *key;
+    unsigned char *key;
     int key_len;
     char *subject;
 } MWK_SERVICE_TOKEN;
