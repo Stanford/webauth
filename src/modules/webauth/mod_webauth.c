@@ -425,16 +425,6 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
 
 #undef CHECK_DIR
 
-    /* unlink any existing service-token cache */
-    /* FIXME: should this be a directive? */
-    if (unlink(sconf->st_cache_path) == -1) {
-        if (errno != ENOENT) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                         "mod_webauth: init_sconf: unlink(%s) errno(%d)", 
-                         sconf->st_cache_path, errno);
-        }
-    }
-
     /* init mutex first */
     if (sconf->mutex == NULL) {
         apr_thread_mutex_create(&sconf->mutex,
@@ -455,8 +445,21 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
         }
     }
 
+    /* unlink any existing service-token cache */
+    /* FIXME: should this be a directive? */
+    if (unlink(sconf->st_cache_path) == -1) {
+        if (errno != ENOENT) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+                         "mod_webauth: init_sconf: unlink(%s) errno(%d)", 
+                         sconf->st_cache_path, errno);
+        }
+    }
+
+#if 0
+    /* if'd out, since we are now unlinking the service token cache */
     /* load service token cache. must be done after we init keyring  */
     (void)mwa_get_service_token(s, sconf, ptemp, 1);
+#endif 
 
 }
 

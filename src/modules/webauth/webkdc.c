@@ -723,7 +723,7 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
 }
 
 /*
- * this function returns a service-token to ues.
+ * this function returns a service-token to use.
  * 
  * it looks in memory first, then the service token cache, then makes
  * a request if all else fails.
