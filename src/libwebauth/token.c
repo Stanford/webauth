@@ -5,12 +5,6 @@
 #include <netinet/in.h>
 #include <inttypes.h>
 
-#include <openssl/aes.h>
-#include <openssl/sha.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
-
-
 /* 
  *  define some macros for offsets (_O) and sizes (_S) in token
  *  {key-hint}{nonce}{hmac}{token-attributes}{padding} 
@@ -26,11 +20,6 @@
 #define T_ATTR_O (T_HMAC_O+T_HMAC_S)
 
 
-typedef struct {
-    AES_KEY encryption;
-    AES_KEY decryption;
-} WEBAUTH_AES_KEYP;
-
 /*
  * construct new AES key. 
  */
@@ -42,10 +31,13 @@ WEBAUTH_AES_KEY *webauth_key_create(const unsigned char *key,
 
     assert(key != NULL);
 
-    bits = key_len*8;
-    if (bits != 128 && bits != 192 && bits != 256) {
+    if (key_len != WA_AES_128 && 
+        key_len != WA_AES_192 &&
+        key_len != WA_AES_256) {
         return NULL;
     }
+
+    bits = key_len*8;
 
     k = malloc(sizeof(WEBAUTH_AES_KEYP));
     if (k == NULL) {
@@ -117,7 +109,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
                          int num_attrs,
                          unsigned char *output,
                          int max_output_len,
-                         WEBAUTH_AES_KEY *key)
+                         const WEBAUTH_AES_KEY *key)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i;
@@ -156,8 +148,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
     currt = htonl((uint32_t)time(NULL));
 
     /* XXX: hint might need to optionally be passed in
-     * if we need to propagate it 
-     */
+       if we need to propagate it */
 
     /* copy in current time */
     memcpy(ebuff, &currt, T_HINT_S);
@@ -184,9 +175,8 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
     n += plen;
 
     /* calculate hmac over data+padding, using nonce as key
-     * XXX: change hmac key to something better. might want
-     * to always carry around a an AES_KEY and an HMAC key,
-     */
+       XXX: change hmac key to something better. might want
+       to always carry around a an AES_KEY and an HMAC key, */
 
     /* HMAC doesn't return an errors */
     HMAC(EVP_sha1(), 
@@ -228,7 +218,7 @@ int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR *attrs,
                         int max_num_attrs,
-                        WEBAUTH_AES_KEY *key)
+                        const WEBAUTH_AES_KEY *key)
 {
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 

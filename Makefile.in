@@ -26,4 +26,5 @@ distclean: clean
 	rm -f config.status config.cache config.log autom4te.cache \
                common/include/config.h Makefile \
                src/Makefile src/libwebauth/Makefile \
+               tests/Makefile tests/libwebauth/Makefile \
                *~ core \#*

@@ -8,11 +8,11 @@
 /******************** error codes ********************/
 
 typedef enum {
-
     WA_ERR_NO_ROOM = -2000,  /* supplied buffer too small */
     WA_ERR_CORRUPT,          /* data is incorrectly formatted */
     WA_ERR_NO_MEM,           /* no memory */
     WA_ERR_BAD_HMAC,         /* hmac check failed */
+    WA_ERR_RAND_FAILURE,     /* unable to get random data */
     /* must be last */
     WA_ERR_NONE = 0          /* no error occured */
     /* must be last */
@@ -44,8 +44,14 @@ typedef enum {
 #define WA_TK_TOKEN_TYPE "t"
 #define WA_TK_TOKEN_VERSION "ver"
 
+/******************** other constants *****************/
 
-/********************* macros to set attrs **********/
+/* supported AES key sizes */
+#define WA_AES_128 16
+#define WA_AES_192 24
+#define WA_AES_256 32
+
+/********************* convenience macros to set attrs **********/
 #define WA_ATTR_STR(a, n, v) \
   { WEBAUTH_ATTR *t = &a; t->name=n; t->value=v; t->length=strlen(t->value);}
 
@@ -53,6 +59,12 @@ typedef enum {
   { WEBAUTH_ATTR *t= &a; t->name=n; t->value=v; t->length=l;}
 
 /******************** types ********************/
+
+/*
+ * generic name/value attributes for constructing tokens
+ * names MUST not contain an "=", and values *MAY*
+ * contain binary data, since the length *MUST* be specified.
+ */
 
 /* a generic attribute */
 typedef struct {
@@ -68,7 +80,7 @@ typedef struct webauth_aes_key WEBAUTH_AES_KEY;
 
 /*
  * returns the amount of space required to base64 encode data
- * of the given length. Returned length does *NOT* include room for the
+ * of the given length. Returned length does *NOT* include room for a
  * null-termination.
  */
 int webauth_base64_encoded_length(int length);
@@ -104,11 +116,46 @@ webauth_base64_decode(unsigned char *input,
                       unsigned char *output,
                       int max_output_len);
 
+/******************** hex routines ********************/
+
 /*
- * generic name/value attributes for constructing tokens
- * names MUST not contain an "=", and values *MAY*
- * contain binary data, since the length *MUST* be specified.
+ * returns the amount of space required to hex encode data
+ * of the given length. Returned length does *NOT* include room for a
+ * null-termination.
  */
+int webauth_hex_encoded_length(int length);
+
+/*
+ * hex encodes the given data, does *NOT* null-terminate.
+ * output can point to input, as long as max_output_len is
+ * long enough.
+ *
+ * returns output length or an error.
+ *
+ * errors:
+ *   WA_ERR_NO_ROOM
+ *   
+ */
+int webauth_hex_encode(unsigned char *input, 
+                       int input_len,
+                       unsigned char *output,
+                       int max_output_len);
+
+
+/*
+ * hex decodes the given data, does *NOT* null-terminate.
+ * output can point to input.
+ *
+ * returns output length or an error.
+ *
+ * errors:
+ *   WA_ERR_NO_ROOM
+ *   WA_ERR_CORRUPT
+ */
+int webauth_hex_decode(unsigned char *input,
+                       int input_len,
+                       unsigned char *output, 
+                       int max_output_len);
 
 /******************** attrs ********************/
 
@@ -157,12 +204,32 @@ int webauth_attrs_decode(unsigned char *buffer,
                          int max_num_attrs);
 
 
+/******************** random data ********************/
+
+/*
+ * returns pseudo random bytes, suitable for use a nonce
+ * or random data, but not necessarily suitable for use
+ * as an encryption key. Use webauth_random_key for that.
+ * The number of bytes specified by output_len is placed in
+ * output, which must contain enough room to contain the
+ * requested number of bytes.
+ */
+int webauth_random_bytes(unsigned char *output, int num_bytes);
+
+/*
+ * used to create random bytes suitable for use as a key.
+ * The number of bytes specified in key_len is placed in key, which
+ * must contain enough room to hold key_len byte of data.
+ */
+
+int webauth_random_key(unsigned char *key, int key_len);
+
 /******************** keys ********************/
 
 /*
  * construct new AES key. 
  * key_len is the length of the key material and should
- * be 16 (128 bit), 24 (192 bit), or 32 (256 bit).
+ * be WA_AES_128, WA_AES_192, or WA_AES_256.
  *
  * returns newly allocated key, or NULL on error
  *
@@ -200,7 +267,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
                          int num_attrs,
                          unsigned char *output,
                          int max_output_len,
-                         WEBAUTH_AES_KEY *key);
+                         const WEBAUTH_AES_KEY *key);
 
 /*
  * base64 decodes and decrypts attrs into a token
@@ -219,7 +286,7 @@ int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR *attrs,
                         int max_num_attrs,
-                        WEBAUTH_AES_KEY *key);
+                        const WEBAUTH_AES_KEY *key);
 
 #ifdef  __cplusplus
 //}

@@ -2,7 +2,7 @@
 
 #include "webauth.h"
 
-#define BUFSIZE 1024
+#define BUFSIZE 2048
 
 int main(int argc, char *argv[])
 {
@@ -13,18 +13,19 @@ int main(int argc, char *argv[])
     int elen, rlen, dlen, errors;
 
     errors = 0;
-    for (i=1; i < 512; i++) {
+    for (i=0; i < 512; i++) {
         for (j=0; j < i; j++) {
             orig_buffer[j] = j % 256;
         }
-        elen = webauth_base64_encode(orig_buffer, i, encoded_buffer, BUFSIZE);
-        rlen = webauth_base64_encoded_length(i);
+        elen = webauth_hex_encode(orig_buffer, i, encoded_buffer, BUFSIZE);
+        rlen = webauth_hex_encoded_length(i);
         if (elen != rlen) {
             fprintf(stderr, "ERROR: elen(%d) != rlen(%d)\n", elen, rlen);
             errors++;
         }
-        dlen = webauth_base64_decode(encoded_buffer, elen, 
-                                     decoded_buffer, BUFSIZE);
+
+        dlen = webauth_hex_decode(encoded_buffer, elen, 
+                                  decoded_buffer, BUFSIZE);
         if (dlen != i) {
             fprintf(stderr, "ERROR: dlen(%d) != i(%d)\n", dlen, i);
             errors++;

@@ -16,7 +16,7 @@ LIBS		= @LIBS@
 
 LIBNAME		= libwebauth
 
-OBJS		= base64.o attrs.o token.o @WEBAUTH_AES_OBJS@
+OBJS		= attrs.o base64.o misc.o random.o token.o @WEBAUTH_AES_OBJS@
 
 all: $(LIBNAME).a
 

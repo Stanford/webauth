@@ -139,3 +139,4 @@ webauth_base64_decode(unsigned char *input,
     }
     return WA_ERR_NO_ROOM;
 }
+
