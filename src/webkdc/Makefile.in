@@ -6,6 +6,7 @@ top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
 APACHE_ROOT	= @APACHE_ROOT@
+D		= $(DESTDIR)
 
 INSTALL		= @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -18,19 +19,19 @@ INSTALL_SCRIPT	= @INSTALL_SCRIPT@
 all clean depend:
 
 install:
-	$(INSTALL) -d $(APACHE_ROOT)/webkdc
-	$(INSTALL) -d $(APACHE_ROOT)/webkdc/WebKDC
-	$(INSTALL) -d $(APACHE_ROOT)/webkdc/images
-	$(INSTALL) -d $(APACHE_ROOT)/webkdc/templates
-	$(INSTALL_SCRIPT) login.fcgi $(APACHE_ROOT)/webkdc/login.fcgi
-	$(INSTALL_SCRIPT) logout.fcgi $(APACHE_ROOT)/webkdc/logout.fcgi
-	$(INSTALL_DATA) WebKDC.pm $(APACHE_ROOT)/webkdc/WebKDC.pm
+	$(INSTALL) -d $$D$(APACHE_ROOT)/webkdc
+	$(INSTALL) -d $$D$(APACHE_ROOT)/webkdc/WebKDC
+	$(INSTALL) -d $$D$(APACHE_ROOT)/webkdc/images
+	$(INSTALL) -d $$D$(APACHE_ROOT)/webkdc/templates
+	$(INSTALL_SCRIPT) login.fcgi $$D$(APACHE_ROOT)/webkdc/login.fcgi
+	$(INSTALL_SCRIPT) logout.fcgi $$D$(APACHE_ROOT)/webkdc/logout.fcgi
+	$(INSTALL_DATA) WebKDC.pm $$D$(APACHE_ROOT)/webkdc/WebKDC.pm
 	for f in images/*.gif ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/images/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/images/$$f; \
 	done
 	for f in WebKDC/*.pm ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/WebKDC/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/WebKDC/$$f; \
 	done
 	for f in templates/*.html templates/*.tmpl ; do \
-	    $(INSTALL_DATA) $$f $(APACHE_ROOT)/webkdc/templates/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/templates/$$f; \
 	done

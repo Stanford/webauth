@@ -6,6 +6,7 @@ top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
 APACHE_ROOT	= @APACHE_ROOT@
+D		= $(DESTDIR)
 
 CC		= @CC@
 CFLAGS		= @CFLAGS@
@@ -39,10 +40,10 @@ depend:
 	done
 
 install:
-	cp mod_webauth/conf/webauth-tests.conf $(APACHE_ROOT)/conf/
-	cp -r mod_webauth/htdocs/tests $(APACHE_ROOT)/htdocs/
-	@echo 'WebAuth tests have been installed in $(APACHE_ROOT)'
-	@echo 'Read $(APACHE_ROOT)/conf/webauth-tests.conf for more'
+	cp mod_webauth/conf/webauth-tests.conf $$D$(APACHE_ROOT)/conf/
+	cp -r mod_webauth/htdocs/tests $$D$(APACHE_ROOT)/htdocs/
+	@echo 'WebAuth tests have been installed in $$D$(APACHE_ROOT)'
+	@echo 'Read $$D$(APACHE_ROOT)/conf/webauth-tests.conf for more'
 	@echo 'information on how to configure the test suite.'
 
 runtests: runtests.o
