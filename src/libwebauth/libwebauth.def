@@ -1,0 +1,73 @@
+;
+; Definition file for the DLL version of the LIBWEBAUTH library
+;
+
+LIBRARY		LIBWEBAUTH
+
+;DESCRIPTION	'WebAuth libwebauth - http://webauthv3.stanford.edu'
+
+EXPORTS
+	webauth_attr_list_new
+	webauth_error_message
+	webauth_info_version
+	webauth_info_build
+	webauth_base64_encoded_length
+	webauth_base64_decoded_length
+	webauth_base64_encode
+	webauth_base64_decode
+	webauth_hex_encoded_length
+	webauth_hex_decoded_length
+	webauth_hex_encode
+	webauth_hex_decode
+	webauth_attr_list_new
+	webauth_attr_list_add
+	webauth_attr_list_add_str
+	webauth_attr_list_add_uint32
+	webauth_attr_list_add_int32
+	webauth_attr_list_add_time
+	webauth_attr_list_get
+	webauth_attr_list_get_str
+	webauth_attr_list_get_uint32
+	webauth_attr_list_get_int32
+	webauth_attr_list_get_time
+	webauth_attr_list_find
+	webauth_attr_list_free
+	webauth_attrs_encoded_length
+	webauth_attrs_encode
+	webauth_attrs_decode
+	webauth_random_bytes
+	webauth_random_key
+	webauth_key_create
+	webauth_key_copy
+	webauth_key_free
+	webauth_keyring_free
+	webauth_keyring_new
+	webauth_keyring_add
+	webauth_keyring_remove
+	webauth_keyring_best_key
+	webauth_keyring_encode
+	webauth_keyring_decode
+	webauth_keyring_write_file
+	webauth_keyring_read_file
+	webauth_keyring_auto_update
+	webauth_token_encoded_length
+	webauth_token_create
+	webauth_token_create_with_key
+	webauth_token_parse
+	webauth_token_parse_with_key
+	webauth_krb5_new
+	webauth_krb5_keep_cred_cache
+	webauth_krb5_free
+	webauth_krb5_error_code
+	webauth_krb5_error_message
+	webauth_krb5_init_via_password
+	webauth_krb5_init_via_keytab
+	webauth_krb5_init_via_cred
+	webauth_krb5_export_tgt
+	webauth_krb5_import_cred
+	webauth_krb5_service_principal
+	webauth_krb5_get_principal
+	webauth_krb5_export_ticket
+	webauth_krb5_mk_req
+	webauth_krb5_rd_req
+
