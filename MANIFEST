@@ -57,14 +57,6 @@ src/bindings/perl/WebAuth3/test.pl        Tests for Perl module
 src/bindings/perl/WebAuth3/typemap        Type mapping for Perl bindings
 src/libwebauth                          The WebAuth library (Directory)
 src/libwebauth/Makefile.in              Makefile for WebAuth library
-src/libwebauth/aes_cbc.c                AES support
-src/libwebauth/aes_cfb.c                AES support
-src/libwebauth/aes_core.c               AES support
-src/libwebauth/aes_ctr.c                AES support
-src/libwebauth/aes_ecb.c                AES support
-src/libwebauth/aes_locl.h               AES support
-src/libwebauth/aes_misc.c               AES support
-src/libwebauth/aes_ofb.c                AES support
 src/libwebauth/attrs.c                  Token attribute handling
 src/libwebauth/base64.c                 Base64 encoding and decoding
 src/libwebauth/key.c                    Key handling
