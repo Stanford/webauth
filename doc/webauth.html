@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.90, Modified 11/13/02</b></H4>
+<H4><b>DRAFT Version  0.91, Modified 11/14/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -765,8 +765,8 @@ We will now go over each step in detail.
    <p>
 <LI>
    <p>After verifying the id-token, mod_webauth will then rewrite the 
-   id-token into an app-token, and also rewrite the credential token(s)
-   into app-tokens as well. All the app-tokens will be placed
+   id-token into an app-token, and also re-encrypt the credential token(s)
+   using its private key. All the tokens will be placed
    into cookies for future requests. The proxy-token can be discarded.
 
    <p>mod_webauth will then strip off the token from the URL, and let
@@ -1483,11 +1483,9 @@ cookies will be encoded in base64 before passing them to the UA.
 proxy-tokens, app-tokens, and cred-tokens. The following naming convention
 will be used to name cookies.
 
-<p><b>NOTE:</b> proxy-tokens and cred-tokens will get re-written into 
-app-tokens, so they can be re-encrypted in the WAS private key. The
-resulting app-token will have a type (<b>t</b>) attribute of "app",
-all the attributes from the original token, and a new "x-t" attribute 
-which will be set to the original token type (cred or proxy).
+<p><b>NOTE:</b> proxy-tokens and cred-tokens get decrypted using
+a session key, but will get re-encrypted using the WAS private
+key before getting stored in a cookie.
 
 <p>app-token cookies will have the name:
 
@@ -1495,21 +1493,19 @@ which will be set to the original token type (cred or proxy).
 
 <p>webkdc-proxy-token cookies have the following naming convention:
 
+<pre>  <code>webauth_wpt_{proxy-type}</code></pre>
+
+<p>Where proxy-type is krb4 or krb5 depending on the type of the proxy-token.
+
+<p>proxy-tokens will have following naming convention:
+
 <pre>  <code>webauth_pt_{proxy-type}</code></pre>
 
 <p>Where proxy-type is krb4 or krb5 depending on the type of the proxy-token.
 
-<p>proxy-tokens that have been re-written into app-tokens
-will have cookies with the following naming convention:
+<p>cred-tokens will have the following naming convention:
 
-<pre>  <code>webauth_at_pt_{proxy-type}</code></pre>
-
-<p>Where proxy-type is krb4 or krb5 depending on the type of the proxy-token.
-
-<p>cred-tokens that have been re-written into app-tokens  will have
-cookies with the following naming convention:
-
-<pre>  <code>webauth_at_ct_{cred-type}_{service-name}</code></pre>
+<pre>  <code>webauth_ct_{cred-type}_{service-name}</code></pre>
 
 <p>where cred-type is krb4 or krb5 depending on the type of the cred-token.
 service-name will be the krb4 or krb5 service name, potentially with
@@ -1682,6 +1678,19 @@ WebAuthEndSession redirect|clearLogin|on|off
              we can get away without doing the extra redirect.
 	 <li>add some text to "Security Model" section describing what
              happens if a user bookmarks or replays a url with a token in it.
+       </ul>
+   </td>
+</tr>
+<tr>
+  <td>11/14/2002</td>
+  <td>0.91</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>don't rewrite proxy/cred-tokens into app-tokens before
+             storing them in cookies, just re-encrypt them using
+             the WAS private key. This is so they can't be used
+             as app-tokens.
+         <li>change name of proxy/webkdc-proxy cookies
        </ul>
    </td>
 </tr>
