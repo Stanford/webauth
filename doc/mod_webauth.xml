@@ -312,7 +312,7 @@ error occurs
 </description>
 <syntax>WebAuthFaliureURL <em>url</em></syntax>
 <default>(none)</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -426,7 +426,7 @@ WebAuthServiceTokenCache conf/service_token_cache
 </description>
 <syntax>WebAuthAppTokenLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
 <default>(lifetime of id-token returned from WebKDC)</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -461,7 +461,7 @@ WebAuthAppTokenLifetime 2h
 </description>
 <syntax>WebAuthReturnURL <em>url</em></syntax>
 <default>(url user originally requested)</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -485,7 +485,7 @@ WebAuthReturnURL /myapp/
 </description>
 <syntax>WebAuthLoginCanceledURL <em>url</em></syntax>
 <default>(none)</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -537,7 +537,7 @@ WebAuthVarPrefix HTTP_
 </description>
 <syntax>WebAuthDoLogout on|off</syntax>
 <default>WebAuthDoLogout off</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -561,7 +561,7 @@ are removed if the user accesses this URL.
 </description>
 <syntax>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></syntax>
 <default>(disabled)</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -607,7 +607,7 @@ WebAuthLastUseUpdateInterval 10m
 </description>
 <syntax>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></syntax>
 <default>WebAuthLastUsedUpdateInterval 0</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>
@@ -650,7 +650,7 @@ WebAuthLastUseUpdateInterval 10m
 </description>
 <syntax>WebAuthForceLogin on|off</syntax>
 <default>WebAuthForceLogin off</default>
-<contextlist><context>.htaccess</context>
+<contextlist>
 <context>directory</context></contextlist>
 
 <usage>

@@ -51,7 +51,7 @@ sub cancel_page {
 
     my $can_stuff;
 
-    if ($LC) {
+    if (strlen($LC)) {
 	eval {
 	    my $can_url = base64_decode($LC);
 	    $can_stuff = "Click <a href=\"$can_url\">here</a> to return to the ".
@@ -109,7 +109,7 @@ sub login_form {
     print_headers($q, $resp->proxy_cookies);
     #print $q->Dump;
 
-    my $LC = base64_encode($can_url);
+    my $LC = length($can_url) ? base64_encode($can_url) : "";
 
     print << "EOF";
 

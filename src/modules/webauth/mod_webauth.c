@@ -1618,6 +1618,15 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 #define DFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
 
+
+/* these can only be in the server .conf file */
+
+#define ADSTR(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_str,(void*)mconfig, ACCESS_CONF, TAKE1, help}
+
+#define ADFLAG(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_flag,(void*)mconfig, ACCESS_CONF, FLAG, help}
+
 static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_WebKDCURL, E_WebKDCURL, CM_WebKDCURL),
@@ -1634,14 +1643,14 @@ static const command_rec cmds[] = {
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     /* directory */
-    DSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
-    DSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
-    DSTR(CD_LastUseUpdateInterval, E_LastUseUpdateInterval, CM_LastUseUpdateInterval),
-    DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
-    DFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
-    DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
-    DSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
-    DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
+    ADSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
+    ADSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
+    ADSTR(CD_LastUseUpdateInterval, E_LastUseUpdateInterval, CM_LastUseUpdateInterval),
+    ADFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
+    ADFLAG(CD_DoLogout, E_DoLogout, CM_DoLogout),
+    ADSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
+    ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
+    ADSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
     { NULL }
 };
 
