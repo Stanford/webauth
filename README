@@ -58,7 +58,7 @@ REQUIREMENTS
 
   WebAuth requires the following additional packages:
 
-      Apache 2.0.43 or later (2.0.45 or later recommended)
+      Apache 2.0.43 or later (2.0.46 or later recommended)
       OpenSSL 0.9.7 or later
       MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
       cURL (tested with 7.10.2)
@@ -66,7 +66,7 @@ REQUIREMENTS
   LDAP support also requires:
 
       Cyrus SASL 2.x (tested with 2.1.13)
-      OpenLDAP 2.x (tested with 2.1.17)
+      OpenLDAP 2.x (tested with 2.1.17 and later)
 
   Apache 2.0 must be built with --enable-ssl and --enable-so.  WebAuth
   uses apxs to build its Apache modules.
