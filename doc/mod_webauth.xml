@@ -458,7 +458,8 @@ is the recommended configuration.
 </p>
 
 <p> To be effective, this directive should be used with the 
-<code>WebAuthForceLogin</code> directive, otherwise single-sign-on 
+<a href="#WebAuthForceLogin">WebAuthForceLogin</a>
+directive, otherwise single-sign-on 
 will automatically log the user back in when the token expires.
 </p>
 
@@ -576,7 +577,7 @@ are removed if the user accesses this URL.
 
 
 <directivesynopsis>
-<name>WebAuthInactiveExpire</name>
+<name><a name="WebAuthInactiveExpire">WebAuthInactiveExpire</a></name>
 <description>Expires app-tokens that haven't been used recently
 </description>
 <syntax>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></syntax>
@@ -588,34 +589,74 @@ are removed if the user accesses this URL.
 <p>
     Duration of inactivity allowed before an app-token (webauth_at cookie)
     is considered expired and re-auth occurs. Setting this requires 
-    mod_webauth to periodically update the webauth_at cookie.
-</p>
-<p> The time specified should be a multiple of 5 minutes, as the cookie
-will be updated every 5 minutes as it is actively used.
+    mod_webauth to periodically update the webauth_at cookie, based on the
+    setting of the 
+  <a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+  directive.
 </p>
 
-<p> To be effective, this directive should be used with the <code>WebAuthForceLogin</code> directive, otherwise single-sign-on will automatically log the
-user back in when the token expires due to inactivity.
+<p> To be effective, this directive should be used with the 
+<a href="#WebAuthForceLogin">WebAuthForceLogin</a>
+directive, otherwise single-sign-on will automatically log the
+user back in when the token expires due to inactivity. Additionally, 
+this value should be higher then the value of 
+  <a href="#WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>,
+otherwise the cookie will expire before the last-used-time is updated.
 </p>
 
 <p>The units for the time are specified by appending a single letter,
 which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
-<note><title>Note (NIY)</title> 
-    <p>This directive is <b>NOT</b> implemented yet. Also need to 
-determine the frequency with which we'll update the cookie</p>
-</note>
-
 <example><title>Example</title>
-# timeout an app-token if it isn't used for more then 20 minutes<br/>
+# timeout an app-token if it isn't used for more <br/>
+# then 20 minutes<br/>
 WebAuthInactiveExpire 20m
 </example>
 </usage>
 </directivesynopsis>
 
+
 <directivesynopsis>
-<name>WebAuthForceLogin</name>
+<name>
+<a name="WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a>
+</name>
+<description>How often to update the main webauth cookie
+</description>
+<syntax>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>(disabled)</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+    This value determines how often we update the webauth_at cookie
+    to indicate when the token was last used. Setting this too small
+    will cause too many cookie updates. 
+</p>
+
+<p> This directive is only used if the 
+   <a href="#WebAuthInactiveExpire">WebAuthInactiveExpire</a> directive is
+set.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<example><title>Example</title>
+# timeout an app-token if it isn't used for <br/>
+# more then 20 minutes<br/>
+WebAuthInactiveExpire 20m<br/>
+# update the last-used-time in the cookie if its older<br/>
+# then 10 minutes<br/>
+WebAuthLastUseUpdateInterval 10m
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name><a name="WebAuthForceLogin">WebAuthForceLogin</a></name>
 <description>Forces username/password prompt when user is not authenticated
 </description>
 <syntax>WebAuthForceLogin on|off</syntax>

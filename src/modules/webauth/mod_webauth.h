@@ -94,6 +94,9 @@
 #define CD_InactiveExpire "WebAuthInactiveExpire"
 #define CM_InactiveExpire "duration of inactivity before an app-token expires"
 
+#define CD_LastUseUpdateInterval "WebAuthLastUseUpdateInterval"
+#define CM_LastUseUpdateInterval "how often to update last-used-time in cookie"
+
 #define CD_ForceLogin "WebAuthForceLogin"
 #define CM_ForceLogin "having no valid app-token forces a "\
                       "username/password prompt"
@@ -119,6 +122,7 @@ enum {
     E_InactiveExpire,
     E_Keyring,
     E_Keytab,
+    E_LastUseUpdateInterval,
     E_LoginURL,
     E_RequireSSL,
     E_ReturnURL,
@@ -173,6 +177,7 @@ typedef struct {
 typedef struct {
     int app_token_lifetime;
     int inactive_expire;
+    int last_use_update_interval;
     int force_login;
     int force_login_ex;
     int do_logout;
