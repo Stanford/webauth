@@ -1,5 +1,6 @@
-autom4te25.cache
+LIST.*
 Makefile
+autom4te25.cache
 config.log
 config.status
 configure
