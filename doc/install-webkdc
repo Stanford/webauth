@@ -14,8 +14,9 @@ system should be locked down as tightly as possible and proactively
 monitored for security.
 
  1.  Follow the standard WebAuth installation instructions as given in the
-     INSTALL file at the top of the source tree, but also pass the flag
-     --enable-mod_webkdc to ./configure.  This will install the WebKDC
+     INSTALL file at the top of the source tree, but also pass the flags
+     --enable-mod_webkdc, --disable-mod_webauth, and 
+     --disable-mod_webauthldap to ./configure.  This will install the WebKDC
      module as well as the basic WebAuth module, and it will also install
      the Perl bindings (into the site_perl directory for the first version
      of Perl found on your path).
