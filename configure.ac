@@ -4,14 +4,15 @@ dnl $Id$
 dnl Put more complex macros into separate files to make them easier to
 dnl maintain.  (Also good for macros that should be used in other projects as
 dnl well.)
+m4_include([m4/apache.m4])
 m4_include([m4/crypto.m4])
 m4_include([m4/int32.m4])
-m4_include([m4/libtool.m4])
 m4_include([m4/krb5.m4])
+m4_include([m4/libtool.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
-AC_INIT([Webauth], [2.90], [webauth-team@lists.stanford.edu])
+AC_INIT([Webauth], [2.90.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
 
 dnl Store information about the time the package was configured and the person
@@ -49,6 +50,9 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
+
+dnl Find apxs, which may be in a separate Apache 2.x installation location.
+WEBAUTH_APACHE
 
 dnl Checks for libraries
 
