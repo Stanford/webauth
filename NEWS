@@ -14,7 +14,8 @@ WebAuth 3.2.3 (2004-06-23)
  *) Replaced the sample weblogin server templates with generic templates
     that don't use any Stanford-copyrighted logos or design.
 
- *) Install a man page for wa_keyring.
+ *) Install a man page for wa_keyring and the header file for the webauth
+    library.
 
  *) Added configuration and rules for Debian packages.
 

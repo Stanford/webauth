@@ -18,6 +18,8 @@ WebAuth 3.2.3 (2004-06-23)
 
  *) Added wa_keyring.1 to the distribution and to the installation rules.
 
+ *) Install the webauth.h header file along with the library.
+
  *) Portability fix to older versions of the cURL libraries.
 
  *) Fix a POD error in the WebKDC module.
