@@ -39,7 +39,6 @@ our %ta_desc =
      &WA_TK_ERROR_CODE => 'error-code',
      &WA_TK_ERROR_MESSAGE => 'error-message',
      &WA_TK_EXPIRATION_TIME => 'expiration-time',
-     &WA_TK_INACTIVITY_TIMEOUT => 'inactivity-timeout',
      &WA_TK_SESSION_KEY => 'session-key',
      &WA_TK_LASTUSED_TIME => 'lastused-time',
      &WA_TK_PASSWORD => 'password',
@@ -193,12 +192,6 @@ sub subject {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_SUBJECT} = shift if @_;
     return $self->{'attrs'}{&WA_TK_SUBJECT};
-}
-
-sub inactivity_timeout {
-    my $self = shift;
-    $self->{'attrs'}{&WA_TK_INACTIVITY_TIMEOUT} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_INACTIVITY_TIMEOUT};
 }
 
 sub creation_time {
@@ -1036,7 +1029,6 @@ The WebKDC::AppToken object is used to represent WebAuth app-tokens.
   $token->app_data($name[, $new_value])
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
-  $token->inactivity_timeout([$new_value])
   $token->lastused_time([$lastused_time])
   $token->subject([$new_value])
 

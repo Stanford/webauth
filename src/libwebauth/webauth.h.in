@@ -87,7 +87,6 @@ typedef enum {
 #define WA_TK_ERROR_CODE "ec"
 #define WA_TK_ERROR_MESSAGE "em"
 #define WA_TK_EXPIRATION_TIME "et"
-#define WA_TK_INACTIVITY_TIMEOUT "it"
 #define WA_TK_SESSION_KEY "k"
 #define WA_TK_LASTUSED_TIME "lt"
 #define WA_TK_PASSWORD "p"

@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.92, Modified 11/27/02</b></H4>
+<H4><b>DRAFT Version  0.92, Modified 11/30/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -1370,11 +1370,6 @@ returned in XML messages.</td>
  <td>et</td><td>binary time</td><td>expiration time of the token</td>
 </tr>
 <tr>
- <td>it</td> <td>string</td><td>inactivity timeout in seconds. If this attribute is set in an app-token, then when the token is used the current time minus
-the <b>it</b> value is compared against the  <b>lt</b> </td> attribute to
-see if the token has timed out due to inactivity.
-</tr>
-<tr>
  <td>k</td><td>binary</td><td>AES session key.</td>
 </tr>
 <tr>
@@ -1639,7 +1634,6 @@ is to cache the idenity within an id-token after it has been verified.
   [ct={creation-time}]
   [s={username}]
   [k=session-key]
-  [it={inactivity-timeout}]
   [lt={last-use-time}]
 </code></pre>
 
@@ -1648,12 +1642,8 @@ is to cache the idenity within an id-token after it has been verified.
 <p>  app-tokens are created by mod_webauth on first receipt of an id-token.
   After the id-token is verified, it gets converted into an app-token.
 
-<p>  last-use-time is only included if session timeouts are turned on.
-  The app-token would periodically get updated as it was used.
-
-<p>  inactivity-timeout is used to compare the last-use-time against the
-  current time to see if an app-token has become inactive due to not being
-  used.
+<p>  last-use-time is only included if the webauth module is 
+configured to keep track of it.
 
 <p> session-key is only present when an app-token is being used
 as the application-state inside of a request-token.
@@ -1701,14 +1691,7 @@ a krb4 and krb5 service name against valid characters in a cookie name.
 
 <H2><B>7. <a name="apache">Apache Directives</a></B></H2>
 
-apache directives:
-
-AuthType WebAuth|StanfordAuth?
-WebAuthAuthenticator krb5|webkdc
-WebAuthInactiveExpire {seconds}
-WebAuthHardExpire {seconds}
-WebAuthCauseReAuth on|off
-WebAuthEndSession redirect|clearLogin|on|off
+FIXME: Insert link to mod_webauth documentation
 
 </pre>
 <hr>
@@ -1881,7 +1864,7 @@ WebAuthEndSession redirect|clearLogin|on|off
 </tr>
 
 <tr>
-  <td>11/27/2002</td>
+  <td>11/30/2002</td>
   <td>0.92</td>
   <td>schemers</td>
    <td><ul>
@@ -1903,6 +1886,7 @@ WebAuthEndSession redirect|clearLogin|on|off
              will have only the username (unless krb5 is used and
 	     the call to krb5_aname_to_localname fails, in which case
              the fully-qualified principal name will be used).
+         <li>remove inactivity timeout value from token.
        </ul>
    </td>
 </tr>
