@@ -116,6 +116,14 @@
 #define N_LASTUSED   "mod_webauth_LASTUSED"
 #define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
 
+
+/* enum for mutexes */
+enum mwa_mutex_type {
+    MWA_MUTEX_KEYRING = 0,
+    MWA_MUTEX_SERVICE_TOKEN,
+    MWA_MUTEX_MAX /* MUST BE LAST! */
+};
+
 /* enums for config directives */
 
 enum {
@@ -212,7 +220,6 @@ typedef struct {
 
 
 /* globals */
-WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
 
 /* webkdc.c */
@@ -221,6 +228,24 @@ MWA_SERVICE_TOKEN *
 mwa_get_service_token(MWA_REQ_CTXT *rc);
 
 /* util.c */
+
+/*
+ * initialize all our mutexes
+ */
+void
+mwa_init_mutexes(server_rec *s);
+
+/*
+ * lock a mutex
+ */
+void
+mwa_lock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type);
+
+/*
+ * unlock a mutex 
+ */
+void
+mwa_unlock_mutex(MWA_REQ_CTXT *rc, enum mwa_mutex_type type);
 
 /*
  * get a string from an attr list, log an error if not present.
@@ -272,5 +297,13 @@ mwa_log_webauth_error(request_rec *r,
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwa_func,
                       const char *func);
+
+/* 
+ * should only be called (and result used) while you have
+ * the MWA_MUTEX_KEYRING mutex.
+ */
+
+WEBAUTH_KEYRING *
+mwa_get_keyring(MWA_REQ_CTXT *rc);
 
 #endif

@@ -80,9 +80,7 @@
 /*
  * initialized only in mod_webauth_child_init
  */
-WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
-
 
 /*
  * return 1 if current request is "https"
@@ -298,23 +296,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
 static void
 mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 {
-    MWA_SCONF *sconf;
-    int status;
-
-    sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-                                             &webauth_module);
-
-    /* attempt to open up keyring */
-    status = webauth_keyring_read_file(sconf->keyring_path, &mwa_g_ring);
-    if (status != WA_ERR_NONE) {
-        die(apr_psprintf(p, 
-                 "mod_webauth: webauth_keyring_read_file(%s) failed: %s (%d)",
-                         sconf->keyring_path, webauth_error_message(status), 
-                         status), s);
-    } else {
-        /* FIXME: should probably make sure we have at least one
-           valid (not expired/postdated) key in the ring */
-    }
+    mwa_init_mutexes(s);
 
     /* FIXME: should probably attempt to read_service_token_cache */
     mwa_g_service_token = NULL;
@@ -434,7 +416,7 @@ handler_hook(request_rec *r)
     return OK;
 }
 
-
+/* FIXME: this should probably return status */
 static void
 make_app_token(const char *subject, 
                time_t creation_time,
@@ -445,6 +427,9 @@ make_app_token(const char *subject,
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken, *cookie;
     int tlen, olen, status;
+    WEBAUTH_KEYRING *ring;
+
+    status = WA_ERR_NONE;
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
@@ -466,8 +451,18 @@ make_app_token(const char *subject,
     tlen = webauth_token_encoded_length(alist);
     token = (char*)apr_palloc(rc->r->pool, tlen);
 
-    status = webauth_token_create(alist, 0,
-                                  token, &olen, tlen, mwa_g_ring);
+    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
+
+    ring = mwa_get_keyring(rc);
+
+    if (ring != NULL) {
+        status = webauth_token_create(alist, 0, token, &olen, tlen, ring);
+    }
+
+    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
+
+    if (ring == NULL)
+        return;
 
     webauth_attr_list_free(alist);
 
@@ -581,15 +576,30 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     int blen, status;
     const char *tt;
     char *sub;
+    WEBAUTH_KEYRING *ring;
 
     sub = NULL;
     ap_unescape_url(token);
     blen = apr_base64_decode(token, token);
+    status = WA_ERR_NONE;
 
     /* parse the token, TTL is zero because app-tokens don't have ttl,
      * just expiration
      */
-    status = webauth_token_parse(token, blen, 0, mwa_g_ring, &alist);
+
+    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
+
+    ring = mwa_get_keyring(rc);
+
+    if (ring != NULL) {
+        status = webauth_token_parse(token, blen, 0, ring, &alist);
+    }
+
+    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
+
+    if (ring == NULL)
+        return NULL;
+
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r, status, NULL,
                               "parse_app_token", "webauth_token_parse");
@@ -680,17 +690,31 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     WEBAUTH_KEY *key;
+    WEBAUTH_KEYRING *ring;
     const char *tt;
     int status, i , klen, blen;
 
     ap_unescape_url(token);
     blen = apr_base64_decode(token, token);
     key = NULL;
+    status = WA_ERR_NONE;
 
     /* parse the token, TTL is zero because app-tokens don't have ttl,
      * just expiration
      */
-    status = webauth_token_parse(token, blen, 0, mwa_g_ring, &alist);
+
+    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
+
+    ring = mwa_get_keyring(rc);
+
+    if (ring != NULL) {
+        status = webauth_token_parse(token, blen, 0, ring, &alist);
+    }
+    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
+
+    if (ring == NULL)
+        return NULL;
+
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r, status, NULL,
                               "get_session_key", "webauth_token_parse");

@@ -567,37 +567,55 @@ request_service_token(MWA_REQ_CTXT *rc)
 
 /*
  * generate our app-state blob once and re-use it
+ * FIXME: this should return status...
  */
 static void
 get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
 {
-   WEBAUTH_ATTR_LIST *alist;
-   int tlen, olen, status;
-   void *as;
+    WEBAUTH_ATTR_LIST *alist;
+    int tlen, olen, status;
+    void *as;
+    WEBAUTH_KEYRING *ring;
 
-   token->app_state = NULL;
-   token->app_state_len = 0;   
+    status = WA_ERR_NONE;
 
-   alist = webauth_attr_list_new(10);
-   if (alist == NULL) {
-       ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                    "mod_webauth: get_app_state: "
-                    "webauth_attr_list_new failed");
-       return;
-   }
-   webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
-                             WA_F_NONE);
-   webauth_attr_list_add(alist, WA_TK_SESSION_KEY, 
-                         token->key.data, token->key.length, WA_F_NONE);
-   webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
-                              token->expires, WA_F_NONE);
+    token->app_state = NULL;
+    token->app_state_len = 0;   
 
-   tlen = webauth_token_encoded_length(alist);
+    alist = webauth_attr_list_new(10);
 
-   as = (char*)apr_palloc(rc->r->server->process->pool, tlen);
+    if (alist == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: get_app_state: "
+                     "webauth_attr_list_new failed");
+        return;
+    }
 
-   status = webauth_token_create(alist, curr,
-                                 (unsigned char*)as, &olen, tlen, mwa_g_ring);
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
+                              WA_F_NONE);
+    webauth_attr_list_add(alist, WA_TK_SESSION_KEY, 
+                          token->key.data, token->key.length, WA_F_NONE);
+    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
+                               token->expires, WA_F_NONE);
+
+    tlen = webauth_token_encoded_length(alist);
+
+    as = (char*)apr_palloc(rc->r->server->process->pool, tlen);
+
+
+    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
+
+    ring = mwa_get_keyring(rc);
+
+    if (ring != NULL) {
+        status = webauth_token_create(alist, curr,
+                                      (unsigned char*)as, &olen, tlen, ring);
+    }
+    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
+
+    if (ring == NULL)
+        return;
+
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
