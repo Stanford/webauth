@@ -38,8 +38,8 @@ our @EXPORT_OK;
 # when one exists.
 #
 our $C_WEBKDC_KEYRING_PATH = "/usr/local/apache2/conf/webkdc_keyring";
-#our $C_WEBKDC_URL = "https://lichen.stanford.edu:8443/webkdc-service/";
-our $C_WEBKDC_URL = "http://lichen.stanford.edu:8080/webkdc-service/";
+our $C_WEBKDC_URL = "https://lichen.stanford.edu:8443/webkdc-service/";
+#our $C_WEBKDC_URL = "http://lichen.stanford.edu:8080/webkdc-service/";
 
 our $DEBUG = 1;
 
