@@ -2,6 +2,8 @@
 
 WebAuth 3.0.1 (in progress)
 
+ *) clean up header includes in tests and wa_keyring
+
  *) mod_{webauth,webkdc}.h - "module" declaration should be extern
 
  *) Remove the service token cache in mod_webauth on restarts.

@@ -1,5 +1,15 @@
-#include <stdlib.h>
+
+#include "config.h"
+
 #include <stdio.h>
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
 
 #include "webauth.h"
 #include "webauthtest.h"
@@ -43,7 +53,7 @@ int main(int argc, char *argv[])
 
     cprinc = NULL;
 
-    START_TESTS(26);
+    START_TESTS(25);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
@@ -58,10 +68,9 @@ int main(int argc, char *argv[])
 
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(server_principal != NULL);
-    free(server_principal);
 
     s = webauth_krb5_get_principal(c, &cprinc, 1);
-    printf("cprinc = %s\n", cprinc);
+    /*printf("cprinc = %s\n", cprinc);*/
     TEST_OK2(WA_ERR_NONE, s);
 
     /*
@@ -72,16 +81,13 @@ int main(int argc, char *argv[])
 
     sa = NULL;
 
-    s = webauth_krb5_service_principal(c, 
-                                       "host", "lichen.stanford.edu", &server);
-    TEST_OK2(WA_ERR_NONE, s);
+    s = webauth_krb5_mk_req(c, server_principal, &sa, &salen);
+    free(server_principal);
 
-    s = webauth_krb5_mk_req(c, server, &sa, &salen);
-    free(server);
     TEST_OK2(WA_ERR_NONE, s);
 
     s = webauth_krb5_rd_req(c, sa, salen, keytab_path, &cp, 1);
-    printf("cp = %s\n", cp);
+    /*printf("cp = %s\n", cp);*/
     TEST_OK2(WA_ERR_NONE, s);
     if (cp) {
         free(cp);
