@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>Version  1.02, Modified 1/14/03</b></H4>
+<H4><b>Version  1.03, Modified 1/20/03</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -1414,6 +1414,9 @@ seconds since 00:00:00 UTC, January 1, 1970.
 <td>credential data (i.e., an encoded krb5 service ticket)</td> 
 </tr>
 <tr>
+ <td>crs</td><td>string</td><td>credential server princpal</td>
+</tr>
+<tr>
  <td>crt</td><td>string</td><td>credential type (krb4, krb5)</td>
 </tr>
 <tr>
@@ -1663,7 +1666,8 @@ A credential-token is k4/k5 service ticket returned by the WebKDC for a WAS.
 
 <pre><code>
   t=cred
-  ct=krb5|krb4|...
+  crs={server-principal}
+  crt=krb5|krb4|...
   s={username}
   cd={credential-data}
   ct={creation-date}
@@ -1991,6 +1995,19 @@ FIXME: Insert link to mod_webauth documentation
    <td><ul>
          <li>return &lt;subject> in &lt;requestToken> response so web front-end
           can display the authenticated username.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>1/20/2003</td>
+  <td>1.03</td>
+  <td>schemers</td>
+   <td>
+       <ul>
+         <li>fix typo in credential token encoding example, change
+             "ct" to "crt".
+         <li>add "crs" attribute to credential token
        </ul>
    </td>
 </tr>

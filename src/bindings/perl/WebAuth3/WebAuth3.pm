@@ -61,6 +61,7 @@ our %EXPORT_TAGS = (
 				    WA_TK_APP_STATE
 				    WA_TK_COMMAND
 				    WA_TK_CRED_DATA
+				    WA_TK_CRED_SERVER
 				    WA_TK_CRED_TYPE
 				    WA_TK_CREATION_TIME
 				    WA_TK_ERROR_CODE
@@ -611,6 +612,7 @@ The following constants from webauth.h are available:
   WA_TK_APP_STATE
   WA_TK_COMMAND
   WA_TK_CRED_DATA
+  WA_TK_CRED_SERVER
   WA_TK_CRED_TYPE
   WA_TK_CREATION_TIME
   WA_TK_ERROR_CODE
