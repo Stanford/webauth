@@ -78,11 +78,6 @@
 #define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
 
 /*
- * initialized only in mod_webauth_child_init
- */
-MWA_SERVICE_TOKEN *mwa_g_service_token;
-
-/*
  * return 1 if current request is "https"
  */
 static int
@@ -207,7 +202,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
     uri = rc->dconf->failure_url;
 
     if (uri == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
                      "mod_webauth: failure_redirect: no URL configured");
         set_pending_cookies(rc);
         return HTTP_INTERNAL_SERVER_ERROR;
@@ -297,9 +292,6 @@ static void
 mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 {
     mwa_init_mutexes(s);
-
-    /* FIXME: should probably attempt to read_service_token_cache */
-    mwa_g_service_token = NULL;
 }
 
 /*
@@ -434,7 +426,7 @@ make_app_token(const char *subject,
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
                      "mod_webauth: make_app_token: "
                      "webauth_attr_list_new failed");
         return;
@@ -1011,7 +1003,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     st = mwa_get_service_token(rc);
     if (st == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
                      "mod_webauth: redirect_request_token: "
                      "no service token, denying request");
         return failure_redirect(rc);
@@ -1019,7 +1011,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
                      "mod_webauth: redirect_request_token: "
                      "webauth_attr_list_new failed");
         return failure_redirect(rc);
@@ -1143,9 +1135,8 @@ check_user_id_hook(request_rec *r)
 
     /* check to see if SSL is required */
     if (rc.sconf->require_ssl && !is_https(r)) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webauth: %s is enabled and connection is "
-                     "not https, denying request", CD_RequireSSL);
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+                     "mod_webauth: connection is not https, denying request");
         return HTTP_UNAUTHORIZED;
     }
 
@@ -1247,12 +1238,6 @@ translate_name_hook(request_rec *r)
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                              &webauth_module);
-    /*
-      ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-      "mod_webauth: translate_name_hook disabled for now");
-      return DECLINED;
-    */
-
     if (!ap_is_initial_req(r)) {
         return DECLINED;
     }

@@ -25,6 +25,16 @@
 /* probably need a better place for this constant */
 #define WEBAUTH_VERSION "WebAuth/3"
 
+/* how long to wait between trying for a new token when 
+ * a renewal attempt fails
+ */
+#define TOKEN_RETRY_INTERVAL  600
+
+/* 
+ * how long into the tokens lifetime do we attempt our first revnewal 
+ */
+#define START_RENEWAL_ATTEMPT_PERCENT (0.90)
+
 /* where to look in URL for returned tokens */
 #define WEBAUTHR_MAGIC ";WEBAUTHR="
 #define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
@@ -162,7 +172,9 @@ typedef struct {
     WEBAUTH_KEY key;
     time_t expires;
     unsigned char *token;
-    time_t last_renewal_attempt; /* timed we last tried to renew */
+    time_t created; /* when we first obtained this token */
+    time_t next_renewal_attempt; /* next time we try to renew */
+    time_t last_renewal_attempt; /* time we last tried to renew */
     void *app_state; /* used as "as" attribute in request tokens */
     int app_state_len;
 } MWA_SERVICE_TOKEN;
@@ -222,10 +234,6 @@ typedef struct {
     int capacity;
     apr_pool_t *pool;
 } MWA_STRING;
-
-
-/* globals */
-MWA_SERVICE_TOKEN *mwa_g_service_token;
 
 /* webkdc.c */
 
