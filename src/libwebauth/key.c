@@ -268,13 +268,13 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
     }
 
     status = webauth_attr_list_add_uint32(alist, A_VERSION,
-                                          KEYRING_VERSION, WA_F_NONE);
+                                          KEYRING_VERSION, WA_F_FMT_STR);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
     status = webauth_attr_list_add_uint32(alist, A_NUM_ENTRIES,
                                           ring->num_entries, 
-                                          WA_F_NONE);
+                                          WA_F_FMT_STR);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
@@ -282,28 +282,28 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
         sprintf(name, A_CREATION_TIME, i);
         status = webauth_attr_list_add_time(alist, name, 
                                             ring->entries[i].creation_time,
-                                            WA_F_COPY_NAME);
+                                            WA_F_COPY_NAME|WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_VALID_FROM, i);
         status = webauth_attr_list_add_time(alist, name, 
                                             ring->entries[i].valid_from,
-                                            WA_F_COPY_NAME);
+                                            WA_F_COPY_NAME|WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_VALID_TILL, i);
         status = webauth_attr_list_add_time(alist, name, 
                                             ring->entries[i].valid_till,
-                                            WA_F_COPY_NAME);
+                                            WA_F_COPY_NAME|WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_KEY_TYPE, i);
         status = webauth_attr_list_add_uint32(alist, name, 
                                               ring->entries[i].key->type,
-                                              WA_F_COPY_NAME);
+                                              WA_F_COPY_NAME|WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
@@ -311,7 +311,7 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, char *path)
         status = webauth_attr_list_add(alist, name, 
                                        ring->entries[i].key->data,
                                        ring->entries[i].key->length,
-                                       WA_F_COPY_BOTH);
+                                       WA_F_COPY_BOTH|WA_F_FMT_HEX);
         if (status != WA_ERR_NONE)
             goto cleanup;
     }
@@ -390,7 +390,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     if (s != WA_ERR_NONE)
         goto cleanup;
 
-    s = webauth_attr_list_get_uint32(alist, A_VERSION, &version, WA_F_NONE);
+    s = webauth_attr_list_get_uint32(alist, A_VERSION, &version, WA_F_FMT_STR);
     if (s != WA_ERR_NONE)
         goto cleanup;
 
@@ -400,7 +400,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     }
 
     s = webauth_attr_list_get_uint32(alist, A_NUM_ENTRIES, 
-                                     &num_entries, WA_F_NONE);
+                                     &num_entries, WA_F_FMT_STR);
     if (s != WA_ERR_NONE)
         goto cleanup;
 
@@ -418,28 +418,33 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
         WEBAUTH_KEY *key;
 
         sprintf(name, A_CREATION_TIME, i);
-        s = webauth_attr_list_get_time(alist, name, &creation_time, WA_F_NONE);
+        s = webauth_attr_list_get_time(alist, name, &creation_time, 
+                                       WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_VALID_FROM, i);
-        s = webauth_attr_list_get_time(alist, name, &valid_from, WA_F_NONE);
+        s = webauth_attr_list_get_time(alist, name, &valid_from, 
+                                       WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_VALID_TILL, i);
-        s = webauth_attr_list_get_time(alist, name, &valid_till, WA_F_NONE);
+        s = webauth_attr_list_get_time(alist, name, &valid_till, 
+                                       WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_KEY_TYPE, i);
-        s = webauth_attr_list_get_uint32(alist, name, &key_type, WA_F_NONE);
+        s = webauth_attr_list_get_uint32(alist, name, &key_type, 
+                                         WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_KEY_DATA, i);
         s = webauth_attr_list_get(alist, name,
-                                  (void*)&key_data, &key_len, WA_F_NONE);
+                                  (void*)&key_data, &key_len, 
+                                  WA_F_FMT_HEX);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
@@ -462,6 +467,9 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
 
     if (fd != -1)
         close(fd);
+
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
 
     if (s != WA_ERR_NONE && *ring != NULL) 
         webauth_keyring_free(*ring);
