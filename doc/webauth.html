@@ -925,9 +925,9 @@ prd      proxy data (i.e., a krb5 tgt)
 pro      proxy owner (name of user allowed to use proxy token)
 pu       post URL
 rr       reason for request
-rtt      requested token type
 rt       requested token 
 rt-et    expiration-time of the requested token
+rt-t     requested token type
 ru       return URL
 s        subject of authentication
 sa       subject authenticator type (krb5, webkdc)
@@ -971,10 +971,10 @@ service-token. They are used to request tokens via the HTML interface.
   ru={return-as-url}
   [pu={return-post-url}]
   rr=na|ea|st|fa
-  rtt=id|proxy
-  # for rtt=id
+  rt-t=id|proxy
+  # for rt-t=id
   sa=krb5|webkdc
-  # for rtt=proxy
+  # for rt-t=proxy
   prt=krb5|krb4
 </code></pre>
 
@@ -1007,6 +1007,7 @@ A response-token gets sent from the WebKDC as a response to a request-token.
   [em={error-message}]
   [rt={the-requseted-token-in-binary-form}]
   [rt-et={expiration-time-of-requested-token}]
+  [rt-t=id|proxy]
 </code></pre>
 
 <p>notes:
@@ -1024,7 +1025,6 @@ A response-token gets sent from the WebKDC as a response to a request-token.
 the result of the request, and is present if there were no errors.
 <p>  <code>rt-et</code> is the expiration-time of the requested token, if
      the requested token was a proxy-token.
-
 
 <H4>5.3.4 id-token encoding</H4>
 
@@ -1232,7 +1232,7 @@ WebAuthEndSession redirect|clearLogin|on|off
          <li>requested token is now contained within the response-token
          <li>got rid of uneeded/not-fleshed-out token attributes 
              (rth, san, ver)
-         <li>add new token attributes (rt, rtt, rt-et)
+         <li>add new token attributes (rt, rt-t, rt-et)
              
        </ul>
    </td>
