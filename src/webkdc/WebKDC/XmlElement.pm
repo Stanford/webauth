@@ -123,6 +123,13 @@ sub content {
     return $self->{'content'};
 }
 
+sub content_trimmed {
+    my $self = shift;
+    my $c = $self->{'content'};
+    $c =~ ~ s/^\s*(.*)\s*$/$1/;
+    return $c; 
+}
+
 sub append_content {
     my $self = shift;
     $self->{'content'} .= shift if @_;

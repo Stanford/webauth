@@ -5,6 +5,8 @@ use warnings;
 
 use WebAuth;
 
+use UNIVERSAL qw(isa);
+
 use overload '""' => \&to_string;
 
 BEGIN {
