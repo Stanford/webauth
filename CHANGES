@@ -8,13 +8,17 @@ WebAuth 3.2.4 (2004-08-25)
     allowed to proceed with S/Ident authentication after a simple page
     reload.
 
- *) Clean up and comment the weblogin login and logout scripts and remove
-    Perl module uses that are no longer needed.
+ *) Cleaned up and commented the weblogin login and logout scripts and
+    remove Perl module uses that are no longer needed.
 
- *) Add a make maintclean target to remove everything that isn't in CVS.
+ *) Fixed the error reporting in the WebKDC module when S/Ident requests
+    fail.  Previously, the actual error would never be reported.
 
- *) Add a prerm script for the Debian module packages to call a2dismod if
-    the modules were enabled.
+ *) Added a make maintclean target to remove everything that isn't in
+    CVS.
+
+ *) Added a prerm script for the Debian module packages to call a2dismod
+    if the modules were enabled.
 
 WebAuth 3.2.3 (2004-06-23)
 
