@@ -2,8 +2,15 @@
 $Id$
 */
 
+#include "httpd.h"
+#include "http_config.h"
+#include "http_protocol.h"
+#include "ap_config.h"
+
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -11,13 +18,9 @@ $Id$
 #include <krb5.h>
 #include <ldap.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_protocol.h"
-#include "ap_config.h"
-
 #include "mod_webauthldap.h"
 
+module AP_MODULE_DECLARE_DATA webauthldap_module;
 
 /** 
  *  Stolen from mod_webauth
@@ -468,13 +471,16 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_principal princ;
     krb5_error_code code;
     krb5_error_code tcode;
+    char *kt, *cc_path;
+
+    kt = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->keytab, NULL);
 
     // initialize the main struct that holds kerberos context
     if ((code = krb5_init_context(&ctx)) != 0)
         return code;
 
     // locate, open, and read the keytab
-    if ((code = krb5_kt_resolve(ctx, lc->sconf->keytab, &keytab)) != 0)
+    if ((code = krb5_kt_resolve(ctx, kt, &keytab)) != 0)
         return code;
 
     // if the principal has been specified via directives, use it, 
@@ -489,7 +495,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
         if ((code = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
             code = krb5_copy_principal(ctx, entry.principal, &princ);
-            tcode = krb5_kt_free_entry(ctx, &entry);
+            tcode = krb5_free_keytab_entry_contents(ctx, &entry);
         }
         tcode = krb5_kt_end_seq_get(ctx, keytab, &cursor);
     }
@@ -500,7 +506,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     }
 
     // locate and open the creadentials cache file
-    if ((code = krb5_cc_resolve(ctx, lc->sconf->tktcache, &cc)) != 0) {
+    cc_path = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->tktcache, NULL);
+    if ((code = krb5_cc_resolve(ctx, cc_path, &cc)) != 0) {
         krb5_kt_close(ctx, keytab);
         return code;
     }
@@ -711,7 +718,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         defaults->mech = "GSSAPI";
 
     // since SASL will look there, lets put the ticket location into env
-    tktenv = apr_psprintf(lc->r->pool, "%s=%s", ENV_KRB5_TICKET, 
+    tktenv = apr_psprintf(lc->r->pool, "%s=FILE:%s", ENV_KRB5_TICKET, 
                           lc->sconf->tktcache);
     if (putenv(tktenv) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,

@@ -20,7 +20,6 @@
 #include "apr_xml.h"
 #include "apr_base64.h"
 
-
 /* constants */
 #define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1
@@ -89,8 +88,6 @@ enum {
     E_Tktcache
 
 };
-
-module webauthldap_module;
 
 /* defaults struct passed to SASL */
 typedef struct {
