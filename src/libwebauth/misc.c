@@ -4,6 +4,38 @@
 
 static char hex[] = "0123456789abcdef";
 
+
+const char *
+webauth_error_message(int errcode)
+{
+#define EM(c,m) case c: return m; break
+    switch(errcode) {
+        EM(WA_ERR_NONE,    "No error occurred");
+        EM(WA_ERR_NO_ROOM, "Supplied buffer too small");
+        EM(WA_ERR_CORRUPT, "Data is incorrectly formatted");
+        EM(WA_ERR_NO_MEM,  "No memory");
+        EM(WA_ERR_BAD_HMAC, "HMAC check failed");
+        EM(WA_ERR_RAND_FAILURE, "Unable to get random data");
+        EM(WA_ERR_BAD_KEY,  "Unable to use key");
+        EM(WA_ERR_KEYRING_OPENWRITE, "Unable to open keyring for writing");
+        EM(WA_ERR_KEYRING_WRITE, "Error writing key ring");
+        EM(WA_ERR_KEYRING_OPENREAD, "Unable to open keyring for reading");
+        EM(WA_ERR_KEYRING_READ, "Error reading from keyring file");
+        EM(WA_ERR_KEYRING_VERSION,  "Bad keyring version");
+        EM(WA_ERR_NOT_FOUND, "Item not found while searching");
+        EM(WA_ERR_KRB5, "A Kerberos5 error occured");
+        EM(WA_ERR_INVALID_CONTEXT, "Invalid context passed to function");
+        EM(WA_ERR_LOGIN_FAILED, "Login failed (bad username/password)");
+        EM(WA_ERR_TOKEN_EXPIRED, "Token has expired");
+        EM(WA_ERR_TOKEN_STALE, "Token is stale");
+        default:
+            return "unknown error code";
+            break;
+    }
+#undef EM
+}
+
+
 int
 webauth_hex_encoded_length(int length)
 {

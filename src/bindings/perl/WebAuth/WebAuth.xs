@@ -68,6 +68,18 @@ BOOT:
     STR_CONST(WA_TK_TOKEN_TYPE);
 }
 
+char *
+webauth_error_messsage(status)
+    int status
+PROTOTYPE: $
+CODE:
+{
+    RETVAL = (char*) webauth_error_message(status);
+}
+OUTPUT:
+    RETVAL
+
+
 int
 webauth_base64_encoded_length(length)
     int length

@@ -10,21 +10,81 @@
 /*
  * FIXME: this will eventually be the tool that 
  * creates keyring files and keeps them up to date.
- * more of a test program right now (and a bad one at that)
+ * right now it just creates two keys and lists the keys in the ring.
  *
  */
 
 
-static void usage(char *prog)
+/*
+ * GLOBALS
+ */
+static char *prog = "wa_keyring";
+static int verbose = 0;
+static char *keyring_path = NULL;
+
+static void croak(int s)
 {
-    printf("usage: %s -f keyring [options]\n", prog);
-    printf("  -f <keyring file>   keyring file to use\n");
-    printf("  -h                  help\n");
-    printf("  -l                  list keyring file\n");
-    printf("  -v                  verbose\n");
+    fprintf(stderr, "%s: error code %d: %s\n", prog, s, webauth_error_message(s));
     exit(1);
 }
 
+static void usage(int exitcode)
+{
+    fprintf(stderr, "usage: %s -f keyring [list|create]\n", prog);
+    fprintf(stderr, "  -f <keyring file>   keyring file to use\n");
+    fprintf(stderr, "  -h                  help\n");
+    fprintf(stderr, "  -v                  verbose listing\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  list (default) lists the keys in the ring\n");
+    fprintf(stderr, "  create will create two keys in the key ring\n");
+    exit(exitcode);
+}
+
+char **
+read_options(int argc, char **argv)
+{
+  int c;
+  extern int opterr;
+  opterr = 0;
+
+  prog = argv[0];
+
+  /* A quick hack to honor --help and --version */
+  if (argv[1])
+    if (argv[1][0] == '-' && argv[1][1] == '-' && argv[1][2] != '\0') {
+      switch(argv[1][2]) {
+      case 'h':
+	usage(0);
+	break;
+      default:
+	usage(1);
+	break;
+      }
+    }
+ 
+  while ((c = getopt(argc, argv, "hvf:")) != EOF) {
+      switch (c) {
+          case 'f': /* keyring File */
+              keyring_path = optarg;
+              break;
+          case 'h': /* Help */
+              usage(0);
+              break;
+          case 'v':
+              verbose=1;
+              break;
+          default:
+              usage(1);
+              break;
+      }
+  }
+
+  if (keyring_path == NULL || optind > argc) {
+      usage(1);
+  }
+
+  return argv+optind;
+}
 
 void
 print_time(time_t t)
@@ -95,29 +155,19 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
     printf("\n\n");
 }
 
-int main(int argc, char *argv[])
-{
-    WEBAUTH_KEY *key;
-    WEBAUTH_KEYRING *ring;
+/*
+  default:
 
-    char *path = "webauth_keyring";
-    int s,i ;
-    unsigned char key_material[WA_AES_128];
-     time_t curr;
+  ------------------------------------------------------------
+  Path: webauth_keyring
 
-    /*
-default:
+  Valid from      Valid till      Fingerprint
+  10/16/02 12:25:11 10/16/02 22:25:11  85e6 d033 0f87 b1d9 89b7 4fe2 a239 f990
+  ------------------------------------------------------------
 
-------------------------------------------------------------
-Path: webauth_keyring
+  verbose:
 
-Valid from      Valid till      Fingerprint
-10/16/02 12:25:11 10/16/02 22:25:11  85e6 d033 0f87 b1d9 89b7 4fe2 a239 f990
-------------------------------------------------------------
-
-verbose:
-
-------------------------------------------------------------
+  ------------------------------------------------------------
          Path: webauth_keyring
       Version: 1
          Keys: 1
@@ -130,48 +180,94 @@ verbose:
    Key-Length: 16 (128 bits)
   Fingerprint: 85E6 D033 0F87 B1D9 89B7 4FE2 A239 F990
 
-------------------------------------------------------------
-
-
-
+  ------------------------------------------------------------
      */
-    if (argc<2) {
-        s = webauth_keyring_read_file(path, &ring);
-        printf("Path: %s\n", path);
-        printf("Num-Keys: %d\n\n", ring->num_entries);
-        printf("Valid from         Valid till         Fingerprint\n");
-        if (ring->num_entries>0) {
-            
-        }
-        for (i=0; i < ring->num_entries; i++) {
-            //      print_short(&ring->entries[i]);
-            print_long(&ring->entries[i], i);
-        }
 
+void list_keyring()
+{
+    WEBAUTH_KEYRING *ring;
+    int s, i;
+    
+    s = webauth_keyring_read_file(keyring_path, &ring);
+    if (s != WA_ERR_NONE)
+        croak(s);
 
+    if (verbose) {
+        printf("         Path: %s\n", keyring_path);
+        printf("     Num-Keys: %d\n\n", ring->num_entries);
     } else {
-        char hex[2048];
-        int l;
-        ring = webauth_keyring_new(32);
-        s = webauth_random_key(key_material, WA_AES_128);
-        s=webauth_hex_encode(key_material, WA_AES_128, hex, &l, sizeof(hex));
-        hex[l] = '\0';
-        /*printf("key[%s]\n", hex);*/
+        printf("Path: %s\n", keyring_path);
+        printf("\n");
+        printf("Valid from         Valid till         Fingerprint\n");
+    }
 
-        key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-        time(&curr);
-        s = webauth_keyring_add(ring, curr, curr, curr+3600*24*30, key);
-
-        s = webauth_random_key(key_material, WA_AES_128);
-        s = webauth_hex_encode(key_material, WA_AES_128, hex, &l, sizeof(hex));
-        hex[l] = '\0';
-        /*printf("key[%s]\n", hex);*/
-
-        key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
-        s = webauth_keyring_add(ring, curr, curr+1+3600*24*30, curr+1+3600*24*30*2, key);
-        s = webauth_keyring_write_file(ring,"webauth_keyring");
+    for (i=0; i < ring->num_entries; i++) {
+        if (verbose) {
+            print_long(&ring->entries[i], i);
+        } else {
+            print_short(&ring->entries[i]);
+        }
     }
     webauth_keyring_free(ring);
+}
 
+void create_keyring()
+{
+    WEBAUTH_KEY *key;
+    WEBAUTH_KEYRING *ring;
+    int s;
+    unsigned char key_material[WA_AES_128];
+    time_t curr;
+     
+    ring = webauth_keyring_new(32);
+    s = webauth_random_key(key_material, WA_AES_128);
+    if (s != WA_ERR_NONE)
+        croak(s);
+    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+    time(&curr);
+    s = webauth_keyring_add(ring, curr, curr, curr+3600*24*30, key);
+    if (s != WA_ERR_NONE)
+        croak(s);
+
+    s = webauth_random_key(key_material, WA_AES_128);
+    if (s != WA_ERR_NONE)
+        croak(s);
+
+    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+    s = webauth_keyring_add(ring, curr, 
+                            curr+1+3600*24*30, curr+1+3600*24*30*2, key);
+    if (s != WA_ERR_NONE)
+        croak(s);
+
+    s = webauth_keyring_write_file(ring, keyring_path);
+    if (s != WA_ERR_NONE)
+        croak(s);
+
+    webauth_keyring_free(ring);
+}
+
+int main(int argc, char **argv)
+{
+    char *cmd = NULL;
+
+    argv = read_options(argc, argv);
+
+    if (!*argv) {
+        cmd = "list";
+    } else {
+        cmd = *argv++;
+    }
+
+    if (*argv) {
+        usage(1);
+    }
+
+    if (strcmp(cmd, "list") == 0) {
+        list_keyring();
+    } else if (strcmp(cmd, "create") == 0) {
+        create_keyring();
+    } else {
+        usage(1);
+    }
     exit(0);
 }

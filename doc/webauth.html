@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.4, Modified 10/26/02</b></H4>
+<H4><b>DRAFT Version  0.41, Modified 10/28/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -678,22 +678,34 @@ message response from the server.
 <p> The message is posted to the WebKDC using HTTPS.
 
 <p>
-The general command request/response format is:
+The command request format is:
 <pre><code>
   &lt;xxxxRequest>
     &lt;messageId>{message-id}&lt;/messageId>   &lt;!-- optional, no default -->
     &lt;protocolVersion>1&lt;/protocolVersion>  &lt;!-- optional, default is 1 -->
     &lt;!-- rest depends on command -->
   &lt;/xxxxRequest>
+</code></pre>
 
+The command response format on success is:
+<pre><code>
   &lt;xxxxResponse>
     &lt;messageId>{message-id}&lt;/messageId>   &lt;!-- only if present in request -->
-    &lt;errorCode>{numeric}&lt;errorCode>       &lt;!-- only if an error occurred -->
-    &lt;errorString>{message}&lt;errorString>   &lt;!-- only if an error occurred -->
     &lt;!-- rest depends on command -->
   &lt;/xxxxResponse>
 
 </code></pre>
+
+The command response format on failure is:
+<pre><code>
+  &lt;errorResponse>
+    &lt;messageId>{message-id}&lt;/messageId>   &lt;!-- only if present in request -->
+    &lt;errorCode>{numeric}&lt;errorCode>
+    &lt;errorString>{message}&lt;errorString>
+  &lt;/errorResponse>
+
+</code></pre>
+
 
 <H3>4.2 Common Elements</H3>
 The following elements are common cross all commands.
@@ -708,14 +720,13 @@ in use. The default value if not specified is 1. Currently, the only
 supported protocol is version 1, using any other value <b>MUST</b> return
 an error.
 
-
 <H4>4.2.3 &lt;errorCode></H4>
-This is a numeric error code that is present in a response message
-<b>iff</b> an error occurred.
+This is a numeric error code that is present in an errorResponse message.
+
 
 <H4>4.2.4 &lt;errorMessage></H4>
-This is a text explanation of the error code, meant to be human readable, but
-not actually displayed to the user (it is not localized). 
+This is a textual description of the error code, meant to be human readable, 
+but not actually displayed to the user (it is not localized). 
 
 <H3>4.3 Commands</H3>
 There is currently a single command defined, getTokens.
@@ -1237,6 +1248,16 @@ WebAuthEndSession redirect|clearLogin|on|off
              (rth, san, ver)
          <li>add new token attributes (rt, rt-t, rt-et, sad)
          <li>change id-token to use "sad" instead of "s" for krb5
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>10/28/2002</td>
+  <td>0.41</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>use errorResponse message for indicating errors
        </ul>
    </td>
 </tr>

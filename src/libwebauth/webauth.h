@@ -25,6 +25,8 @@
  *
  * Many libwebauth functions return an error status, or 0 on success.  For
  * those functions, the error codes are chosen from the following enum.
+ *
+ * Use webauth_error_message(code) to get the corresponding error message.
  */
 typedef enum {
     WA_ERR_NONE = 0,         /**< No error occured. */
@@ -45,7 +47,7 @@ typedef enum {
     WA_ERR_LOGIN_FAILED,     /**< Bad username/password. */
     WA_ERR_TOKEN_EXPIRED,    /**< Token has expired. */
     WA_ERR_TOKEN_STALE,      /**< Token is stale. */
-
+    /* update webauth_error_message when adding */
 }  WEBAUTH_ERR;    
 
 /******************** constants for token attributes **********/
@@ -134,6 +136,13 @@ typedef struct {
 
 /* krb5 context */
 typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
+
+/******************** error message ********************/
+
+/** Returns the error message for the specified error code
+ *  or "unknown error code"  if there is none.
+ */
+const char *webauth_error_message(int errcode);
 
 /******************** base64 ********************/
 

@@ -57,6 +57,12 @@ None
 
 =over 4
 
+=item error_message(status)
+
+$message = error_message($status)
+
+Returns an error message for the specified status.
+
 =item base64_encoded_length(length)
 
 $base64_len = base64_encoded_length($length)
