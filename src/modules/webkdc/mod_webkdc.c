@@ -1882,6 +1882,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
 
+    did_login = 0;
     num_proxy_tokens = 0;
     login_ec = 0;
     request_token = NULL;
@@ -1972,7 +1973,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         did_login = 1;
     } else {
         sub_cred = &parsed_sub_cred;
-        did_login = 0;
         /* grab first subject from passed in proxy tokens as subject_out */
         if (strcmp(parsed_sub_cred.type, "proxy") == 0) {
             for (i=0; i < parsed_sub_cred.u.proxy.num_proxy_tokens; i++) {
@@ -2122,7 +2122,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                   *req_token.request_options == '\0') ? "" :
                  apr_psprintf(rc->r->pool, " ro=%s", 
                               req_token.request_options),
-                 login_ec == 0 ? "" : 
+                 (login_ec == 0 && !did_login) ? "" : 
                  apr_psprintf(rc->r->pool, " lec=%d", login_ec),
                  login_em == NULL ? "" :
                  apr_psprintf(rc->r->pool, " lem=%s", log_escape(rc, login_em))
