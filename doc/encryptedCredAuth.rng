@@ -48,10 +48,12 @@
   <a:documentation>
   The service creds requested. (What do they want?)
   </a:documentation> 
+  <oneOrMore>
   <element name="authRequest">
 	<element name="authType">
 	<choice>
 	<value>kerberos_5</value>
+	<value>kerberos_4</value>
 	<choice>
 	</element>
         <element name="serviceName">
@@ -63,4 +65,5 @@
 	</element>
 	</optional>
   </element>
+  </oneOrMore>
 </element>

@@ -4,7 +4,9 @@ Overview
 link of the Stanford webauthv3 authentication system. The purpose
 of this part of the webauthv3 system is to obtain long lived
 user credentials that can be used by the rest of the system 
-to obtain short term credentials for a specific service. 
+to obtain short term credentials for a specific service. For
+discussion purposes, this document defines "Stanford webKDC 
+protocol version 1".  
 
 	The protocol consists of an exchange of xml formatted 
 messages over a secure tcp based connection. The format of the xml
@@ -17,36 +19,192 @@ from the client and a single xml message response from the server.
 It should be possible for multiple messages to be processed over
 a single underlying transport connection. 
 
-	The message formats will be defined using the W3C Xschema
+Message Formats. 
+
+	The message formats will be defined using the RELAX NG schema
 definition language, but the exact methods of parsing of the xml 
-is left to the implementation.  
+is left to the implementation. For each initial message the webKDC
+MUST either respond with the valid response method for the specific
+initial message or an errorResponse message. While the exact format
+of the messages is given by the cooresponding .rng file, the 
+discussion below will focus on the semantics of the various
+elements of the message. 
 
-Message Types: 
+Common Elements: 
+	
+<messageID>
 
-Initial Client messages: 
+	Every message MUST contain a <messageID> tag at the beginning.
+This is an integer value that SHOULD be unique to the current
+connection session, but does not need to be unique across the
+entire system. Any response to an intial message MUST contain
+the same messageID. For any webKDC session there MUST be at
+most one initial message and one response message with any
+given messageID. 
 
-	Type 1 Username/Password
+<protocolVersion>
 
-	Type 2 Proxy tgt service request
+	This is an optional integer value that specifies the
+version of the protocol in use. If absent, the version is assumed
+to be 1. 
 
-Server Responses: 
+Initial Message Types: 
 
-	Error message
+userPasswordAuth
 
-	Type1 response
+	This message is used to get long term credentials 
+for a user given a username and password. In addition, the 
+message may optionally request service credentials. It is 
+intended to be only used by the webloginplus[1] servers. 
 
-	Type2 response
+The specific element fields are
+	<messageID>
+	<procotolVersion>
 
-WebKDC Internal messages: 
+	<proxyAuthData>
+	   This element is the credentials of the service
+	requesting the user credentials. In the current version
+	of the protocol only one type is supported kerberos_5.
+	The associated data with this type MUST be a service
+	ticket for the service webkdc/host.domain.edu [2]. 
+	
+	<authData>
+	   This consists of two elements, the username and 
+	password. These elements should be encrypted in the
+	session key available in the service ticket used
+	in proxyAuthData. They are base64binary encoded
+	in the XML. 
 
-	Add this key to keyring
+	<authRequest>
+	   This is a list of the credentials requested to be obtained
+	and returned to the service. If no authRequest elements are 
+	present, the default value is to return an encrypted
+	kerberos 5 tgt credential. If authRequest elements are
+	listed then ONLY the credentails listed will be returned.
+	For the simplest webloginplus case the following two
+	authRequests will
 
-	Give me your current working set of keys
+		<authRequest>
+			<authType>encrypted_k5</authType>
+	                <serviceName>krbtgt/domain.edu@DOMAIN.EDU</serviceName> 
+	        </authRequest>
+		<authRequest>
+			<authType>kerberos_k5</authType>
+	                <serviceName>webauth/webhost.domain.edu@DOMAIN.EDU</serviceName> 
+	        </authRequest>
 
-	Added key ring response
+	The webKDC can apply any interior logic it wants to granting
+	the result, there is no guarantee that all requested tickets
+	will be returned. In the case of access denied to a specific
+	ticket the webKDC will only return the available tickets. 
+	However, the webKDC MUST NEVER return a ticket of the krbtgt
+	flavor in anything other than the cooresponding encrypted tgt
+	format. Any request to do this SHOULD only generate an error
+	response, regardless of the validity of the rest of the requests. 
 
-	Working set of keys response
+	The ticketOptions element for kerberos credentials should 
+	consist of comma separated entries of the type found in 
+	krb5.conf files. (i.e. default_lifetime = 5hrs, no_address = true ).
+	This option is included for completeness only, it is not
+	expected to be used in the initial version of the protocol. 
+
+The only valid responses to a userPasswordAuth message are 
+an <errorResponse> or a <passwordAuthResponse> 
+	         
+encryptedCredAuth
+
+	This message type is used to obtain short-lived service
+credentials using an encrypted_k4 or encrypted_k5 ticket-granting
+ticket. This message is intended to be used by both the webloginplus
+service and any other services which need to proxy user credentials. 
+
+
+The specific element fields are
+	<messageID>
+	<procotolVersion>
+
+	<proxyAuthData>
+	   This element is the credentials of the service
+	requesting the user credentials. In the current version
+	of the protocol only one type is supported kerberos_5.
+	The associated data with this type MUST be a service
+	ticket for the service webkdc/host.domain.edu [2]. 
+	The requesting principal of this service ticket will
+	be used to make authorization decisions about what
+	tickets if any to hand out. 
+
+	<encryptedUserCreds>
+	    This is just the encrypted tgt handed out in response
+	to the userPasswordAuth message. 
+	
+	<authRequest>
+	    This is very similar to the authRequest defined in
+	the userPassword auth request with two exceptions.
+
+	1. There is no default value returned if the authRequest
+	is missing. 
+
+	2. Only kerberos 4 and 5 service tickets can be returned.
+	The webKDC server MUST NEVER return a krbtgt service ticket
+	in response to a <encryptedCredAuth> message. 
+
+The valid responses are a <credAuthResponse> or an <errorResponse>
+message. 
+
+Response Message Types:
+
+errorResponse
+
+	This message is a generic error response to any message
+in the protocol. There is no recovery from an errorResponse message.
+No further messages with that messageID will be responded to in 
+the current session by the server. 
+
+
+The specific element fields are
+	<messageID>
+	<procotolVersion>
+
+	<errorCode>
+	 An integer code value. 
+
+	<errorString>
+	A text explaination of the error code, meant to be human
+	readable. 
+		
+
+passwordAuthResponse
+
+	This message is the response to a valid userPasswordAuth
+message. 
+
+
+The specific element fields are
+	<messageID>
+	<procotolVersion>
+
+	
+	
+
+credAuthResponse.rng      
 
 
 
+Internal webKDC Message Types: 
 
+	I am somewhat uncertain about the way that these messages 
+are currently constructed. I think that they need some kind of 
+mutual authentication to be secure. I have some ideas about how
+to do this, but for now I'll just list the corresponding 
+schema files. 
+
+addEncryptionKey.rng      
+
+sendEncryptionKeys.rng   
+
+addKeyResponse.rng        
+
+sendKeysResponse.rng      
+
+
+- Booker C. Bense : June 3, 2002.
