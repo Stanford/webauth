@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     WEBAUTH_KRB5_CTXT *c;
     TEST_VARS;
     char *username, *password;
+    char *cp;
     unsigned char *sa;
     int salen;
     unsigned char *tgt;
@@ -39,17 +40,19 @@ int main(int argc, char *argv[])
         TEST_OK(c != NULL);
 
         s = webauth_krb5_init_via_password(c, username, password, 
-                                           "host", "keytab");
+                                           "host", "keytab", NULL);
 
         TEST_OK2(WA_ERR_NONE, s);
 
         sa = NULL;
-        s = webauth_krb5_get_subject_auth(c, "lichen", "host", &sa, &salen);
+        s = webauth_krb5_mk_req(c, "lichen.stanford.edu", "host", &sa, &salen);
         TEST_OK2(WA_ERR_NONE, s);
 
-
-        s = webauth_krb5_verify_subject_auth(c, sa, salen, "host", "keytab");
+        s = webauth_krb5_rd_req(c, sa, salen, "host", "keytab", &cp);
         TEST_OK2(WA_ERR_NONE, s);
+        if (cp) {
+            free(cp);
+        }
 
         if (sa != NULL) {
             free(sa);
@@ -59,18 +62,18 @@ int main(int argc, char *argv[])
         s = webauth_krb5_export_tgt(c, &tgt, &tgtlen, &expiration);
         TEST_OK2(WA_ERR_NONE, s);
 
-        s = webauth_krb5_free(c);
+        s = webauth_krb5_free(c, 1);
         TEST_OK2(WA_ERR_NONE, s);
         
         if (tgt != NULL) {
             c = webauth_krb5_new();
             TEST_OK(c != NULL);
             
-            s = webauth_krb5_init_via_tgt(c, tgt, tgtlen);
+            s = webauth_krb5_init_via_tgt(c, tgt, tgtlen, NULL);
             free(tgt);
             TEST_OK2(WA_ERR_NONE, s);
 
-            s = webauth_krb5_free(c);
+            s = webauth_krb5_free(c, 1);
             TEST_OK2(WA_ERR_NONE, s);
         }
         

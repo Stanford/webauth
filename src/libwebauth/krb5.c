@@ -13,7 +13,7 @@ typedef struct {
     krb5_error_code code;
 } WEBAUTH_KRB5_CTXTP;
 
-#define WA_CRED_DEBUG 1
+/*#define WA_CRED_DEBUG 1 */
 
 static char *
 get_hostname()
@@ -237,9 +237,9 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 
 static int
 cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, 
-                      unsigned char *input,
-                      int input_length,
-                      krb5_creds *creds)
+                        unsigned char *input,
+                        int input_length,
+                        krb5_creds *creds)
 
 {
     WEBAUTH_ATTR_LIST *list;
@@ -338,8 +338,10 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
         if (s != WA_ERR_NONE)
             goto cleanup;
 
+        /* don't forget to add 1 to num for the null address at the
+           end of the list */
         creds->addresses = 
-            (krb5_address **)calloc(num, sizeof(krb5_address *));
+            (krb5_address **)calloc(num+1, sizeof(krb5_address *));
         if (creds->addresses == NULL) {
             s = WA_ERR_NO_MEM;
             goto cleanup;
@@ -412,8 +414,10 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
         if (s != WA_ERR_NONE)
             goto cleanup;
 
+        /* don't forget to add 1 to num for the null address at the
+           end of the list */
         creds->authdata =
-            (krb5_authdata **)calloc(num, sizeof(krb5_authdata *));
+            (krb5_authdata **)calloc(num+1, sizeof(krb5_authdata *));
         if (creds->authdata == NULL) {
             s = WA_ERR_NO_MEM;
             goto cleanup;
@@ -538,7 +542,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username,
                                const char *password,
                                const char *service,
-                               const char *keytab)
+                               const char *keytab,
+                               const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     char ccname[128];
@@ -558,13 +563,11 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
     }
 
-   /* FIXME: is %p portable? */
-#ifndef WA_CRED_DEBUG
-    sprintf(ccname, "MEMORY:%p", c);
-#else 
-    unlink("/tmp/webauth_krb5");
-    sprintf(ccname, "FILE:/tmp/webauth_krb5");
-#endif
+    if (cache_name == NULL) {
+        sprintf(ccname, "MEMORY:%p", c);
+        cache_name = ccname;
+    }
+
     c->code = krb5_cc_resolve(c->ctx, ccname, &c->cc);
 
     if (c->code != 0) {
@@ -651,17 +654,17 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
 
 int
-webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
+webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache)
 {    
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     assert(c != NULL);
 
     if (c->cc) {
-#ifndef WA_CRED_DEBUG
-        krb5_cc_destroy(c->ctx, c->cc);
-#else
-        krb5_cc_close(c->ctx, c->cc);
-#endif
+        if (destroy_cache) {
+            krb5_cc_destroy(c->ctx, c->cc);
+        } else {
+            krb5_cc_close(c->ctx, c->cc);
+        }
     }
     if (c->princ) {
         krb5_free_principal(c->ctx, c->princ);
@@ -672,11 +675,11 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
 }
 
 int
-webauth_krb5_get_subject_auth(WEBAUTH_KRB5_CTXT *context,
-                              const char *hostname,
-                              const char *service,
-                              unsigned char **output,
-                              int *length)
+webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
+                    const char *hostname,
+                    const char *service,
+                    unsigned char **output,
+                    int *length)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_auth_context auth;
@@ -714,11 +717,12 @@ webauth_krb5_get_subject_auth(WEBAUTH_KRB5_CTXT *context,
 }
 
 int
-webauth_krb5_verify_subject_auth(WEBAUTH_KRB5_CTXT *context,
-                                 const unsigned char *authenticator,
-                                 int length,
-                                 const char *service,
-                                 const char *keytab_path)
+webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
+                    const unsigned char *req,
+                    int length,
+                    const char *service,
+                    const char *keytab_path,
+                    char **client_principal)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     char *hname = get_hostname();
@@ -729,8 +733,9 @@ webauth_krb5_verify_subject_auth(WEBAUTH_KRB5_CTXT *context,
 
     assert(c != NULL);
     assert(keytab_path != NULL);
-    assert(authenticator != NULL);
+    assert(req != NULL);
     assert(service != NULL);
+    assert(client_principal);
 
     if (hname == NULL) {
         return WA_ERR_GETHOSTNAME;
@@ -752,11 +757,22 @@ webauth_krb5_verify_subject_auth(WEBAUTH_KRB5_CTXT *context,
 
     auth = NULL;
 
-    buf.data = (char*) authenticator;
+    buf.data = (char*) req;
     buf.length = length;
     c->code = krb5_rd_req(c->ctx, &auth, &buf, server, keytab, NULL, NULL);
-    if (auth != NULL) {
-        krb5_auth_con_free(c->ctx, auth);
+    if (c->code == 0) {
+        if (auth != NULL) {
+            krb5_authenticator *ka;
+            c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
+            if (c->code == 0) {
+                c->code = krb5_unparse_name(c->ctx, ka->client, 
+                                            client_principal);
+                krb5_free_authenticator(c->ctx, ka);
+            } else {
+                *client_principal = NULL;
+            }
+            krb5_auth_con_free(c->ctx, auth);
+        }
     }
 
     krb5_kt_close(c->ctx, keytab);
@@ -774,7 +790,8 @@ webauth_krb5_init_from_keytab(WEBAUTH_KRB5_CTXT *context, char *path)
 int
 webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
                           unsigned char *tgt,
-                          int tgt_len)
+                          int tgt_len,
+                          const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_creds creds;
@@ -790,13 +807,10 @@ webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
 
-   /* FIXME: is %p portable? */
-#ifndef WA_CRED_DEBUG
-    sprintf(ccname, "MEMORY:%p", c);
-#else 
-    unlink("/tmp/webauth_krb5");
-    sprintf(ccname, "FILE:/tmp/webauth_krb5");
-#endif
+    if (cache_name == NULL) {
+        sprintf(ccname, "MEMORY:%p", c);
+        cache_name = ccname;
+    }
     c->code = krb5_cc_resolve(c->ctx, ccname, &c->cc);
 
     if (c->code != 0) {

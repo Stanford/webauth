@@ -515,22 +515,59 @@ int webauth_token_parse(unsigned char *input,
                         const WEBAUTH_KEYRING *ring);
 
 /******************** krb5 ********************/
+
+/*
+ * create new webauth krb5 context for use with all the webauth_krb5_*
+ * calls. context must be freed with webauth_krb5_free when finished.
+ * one of the various webauth_krb5_init_via* calls should be made
+ * before the context is fully usable, except when using webauth_krb5_rd_req.
+ */
 WEBAUTH_KRB5_CTXT *webauth_krb5_new();
 
-int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
+/*
+ * frees a context. If destroy_cache is non-zero, then any credential
+ * cache created as the result of a call to webauth_krb5_init_via*
+ * will be destroyed via krb5_cc_destroy, otherwise the the cache 
+ * will only be closed with krb5_cc_close.
+ */
+int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache);
 
+/*
+ * initialize a context with username/password to obtain a TGT.
+ * The TGT is verified using the specified service and keytab. 
+ * The TGT will be placed in the specified cache, or a memory cache 
+ * if cache_name is NULL.
+ */
 int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                    const char *username,
                                    const char *password,
                                    const char *service,
-                                   const char *keytab);
+                                   const char *keytab,
+                                   const char *cache_name);
+/*
+ * initialize a context with a keytab. Credentials
+ * will be placed in the specified cache, or a memory cache if cache_name
+ * is NULL.
+ */
+int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, 
+                                 const char *path,
+                                 const char *cache_name);
 
-int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, char *path);
-
+/*
+ * initialize a context with a tgt that was created via 
+ * webauth_krb5_export_tgt.
+ */
 int webauth_krb5_init_via_tgt(WEBAUTH_KRB5_CTXT *context,
                               unsigned char *tgt,
-                              int tgt_len);
+                              int tgt_len,
+                              const char *cache_name);
 
+/*
+ * export the TGT from the context. Used in constructing a proxy-token
+ * after a call to webauth_krb5_init_via_password or webauth_krb5_init_via_tgt.
+ *
+ * memory returned in tgt should be freed when it is no longer needed.
+ */
 int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
                             unsigned char **tgt,
                             int *tgt_len,
@@ -545,17 +582,35 @@ int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
                                unsigned char **ticket,
                                int *ticket_length);
 
-int webauth_krb5_get_subject_auth(WEBAUTH_KRB5_CTXT *context,
-                                  const char *hostname,
-                                  const char *service,
-                                  unsigned char **authenticator,
-                                  int *length);
+/*
+ * calls krb5_mk_req using the specified service, and stores the
+ * resulting req in req, which should be freed when it is no longer
+ * needed.
+ *
+ * should only be called after one of the webauth_krb5_init_via* methods
+ * has been successfully called.
+ */
+int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
+                        const char *hostname,
+                        const char *service,
+                        unsigned char **req,
+                        int *length);
 
-int webauth_krb5_verify_subject_auth(WEBAUTH_KRB5_CTXT *context,
-                                     const unsigned char *authenticator,
-                                     int length,
-                                     const char *service,
-                                     const char *keytab);
+/*
+ * calls krb5_rd_req on the specified request, and returns the
+ * client principal in client_principal on success.
+ * client_principal should be freed when it is no longer
+ * needed.
+ *
+ * can be called anytime after calling webauth_krb5_new.
+ */
+
+int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
+                        const unsigned char *req,
+                        int length,
+                        const char *service,
+                        const char *keytab,
+                        char **client_principal);
 
 #ifdef  __cplusplus
     /*}*/
