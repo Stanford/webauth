@@ -354,41 +354,46 @@ static int
 post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
                  apr_pool_t *ptemp, server_rec *s) 
 {
-    MWAL_SCONF *sconf = (MWAL_SCONF*)ap_get_module_config(s->module_config,
-                                                          &webauthldap_module);
+    server_rec *scheck;
+    MWAL_SCONF *sconf;
 
-    // These all must be non-null:
+    for (scheck=s; scheck; scheck=scheck->next) {
+        sconf = (MWAL_SCONF*)ap_get_module_config(scheck->module_config,
+                                                  &webauthldap_module);
+        // These all must be non-null:
 #define NULCHECK(val, label) \
-    if (val == NULL) die_directive(s, label, ptemp);
+    if (val == NULL) die_directive(scheck, label, ptemp);
 
-    NULCHECK(sconf->keytab, CD_Keytab);
-    NULCHECK(sconf->tktcache, CD_Tktcache);
-    NULCHECK(sconf->host, CD_Host);
-    NULCHECK(sconf->base, CD_Base);
-    NULCHECK(sconf->privgroupattr, CD_Privgroupattr);
+        NULCHECK(sconf->keytab, CD_Keytab);
+        NULCHECK(sconf->tktcache, CD_Tktcache);
+        NULCHECK(sconf->host, CD_Host);
+        NULCHECK(sconf->base, CD_Base);
+        NULCHECK(sconf->privgroupattr, CD_Privgroupattr);
 #undef NULCHECK
 
-    // Global settings
-    sconf->ldapversion = LDAP_VERSION3;
-    sconf->scope = LDAP_SCOPE_SUBTREE;
+        // Global settings
+        sconf->ldapversion = LDAP_VERSION3;
+        sconf->scope = LDAP_SCOPE_SUBTREE;
 
-    //Mutex for storing ldap connections
-    if (sconf->ldmutex == NULL) {
-        apr_thread_mutex_create(&sconf->ldmutex,
-                                APR_THREAD_MUTEX_DEFAULT,
-                                pconf);
-    }
+        //Mutex for storing ldap connections
+        if (sconf->ldmutex == NULL) {
+            apr_thread_mutex_create(&sconf->ldmutex,
+                                    APR_THREAD_MUTEX_DEFAULT,
+                                    pconf);
+        }
 
-    if (sconf->totalmutex == NULL) {
-        apr_thread_mutex_create(&sconf->totalmutex,
-                                APR_THREAD_MUTEX_DEFAULT,
-                                pconf);
-    }
+        if (sconf->totalmutex == NULL) {
+            apr_thread_mutex_create(&sconf->totalmutex,
+                                    APR_THREAD_MUTEX_DEFAULT,
+                                    pconf);
+        }
   
-    if (sconf->ldarray == NULL) {
-        sconf->ldcount = 0;
-        sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
+        if (sconf->ldarray == NULL) {
+            sconf->ldcount = 0;
+            sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
+        }
     }
+
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
                  "mod_webauthldap: initialized");
@@ -1280,7 +1285,6 @@ auth_checker_hook(request_rec * r)
 {
     MWAL_LDAP_CTXT* lc;
     int rc, i;
-    apr_array_header_t* newarray;
 
     const apr_array_header_t *reqs_arr = ap_requires(r);
     require_line *reqs;
