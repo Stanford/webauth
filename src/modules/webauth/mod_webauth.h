@@ -14,6 +14,19 @@
 
 #include "webauth.h"
 
+/* where to look in URL for returned tokens */
+#define WEBAUTHR_MAGIC ";WEBAUTHR="
+#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
+
+#define WEBAUTHS_MAGIC ";WEBAUTHS="
+#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC)-1)
+
+/* name of our main app-token cookie */
+#define AT_COOKIE_NAME "webauth_at"
+
+/* for searching Cookie: header */
+#define AT_COOKIE_NAME_EQ "webauth_at="
+
 /* defines for config directives */
 #define CD_WebKDCURL "WebAuthWebKDCURL"
 #define CM_WebKDCURL "URL for the WebKDC XML service"
@@ -44,6 +57,7 @@
 
 #define CD_TokenMaxTTL "WebAuthTokenMaxTTL"
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
+#define DEFAULT_TokenMaxTTL 300
 
 #define CD_SubjectAuthType "WebAuthSubectAuthType"
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"

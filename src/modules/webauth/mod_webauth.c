@@ -280,9 +280,76 @@ handler_hook(request_rec *r)
  * do a Set-Cookie (in fixups) to blank it out.
  */
 static char *
-check_cookie(request_rec *r)
+check_cookie(request_rec *r, MWA_SCONF *sconf, MWA_DCONF *dconf)
 {
-    return NULL;
+    const char *c;
+    char *cs, *ce, *cval, *sub;
+    int status, blen;
+    int i;
+    WEBAUTH_ATTR_LIST *alist;
+
+    c = apr_table_get(r->headers_in, "Cookie");
+    if (c == NULL) 
+        return NULL;
+
+    cs = ap_strstr(c, AT_COOKIE_NAME_EQ);
+    if (cs == NULL) {
+        return NULL;
+    } else {
+        cs += sizeof(AT_COOKIE_NAME_EQ)-1;
+    }
+
+    ce = ap_strchr(cs, ';');
+
+    if (ce == NULL) {
+        cval = apr_pstrdup(r->pool, cs);
+    } else {
+        cval = apr_pstrmemdup(r->pool, cs, ce-cs);
+    }
+
+    ap_unescape_url(cval);
+
+    error_log(r, apr_psprintf(r->pool, "found cookie(%s)", cval));
+
+    /* decode in place */
+    blen = apr_base64_decode_binary(cval, cval);
+
+    /* parse the token, TTL is zero because app-tokens don't have ttl,
+     * just expiration
+     */
+    status = webauth_token_parse(cval, blen, 0, sconf->ring, &alist);
+    if (status != WA_ERR_NONE) {
+        error_log(r, apr_psprintf(r->pool,
+                                  "webauth_token_parse failed: %s (%d)",
+                                  webauth_error_message(status), 
+                                  status));
+        return NULL;
+    }
+
+    /* make sure its an app-token */
+    status = webauth_attr_list_find(alist, WA_TK_TOKEN_TYPE, &i);
+    if (i == -1) {
+        error_log(r, "check_cookie: can't find token type in token");
+        return NULL;
+    }
+
+    if (strcmp((char*)alist->attrs[i].value, "app") != 0) {
+        error_log(r, "check_cookie: token type not app");
+        return NULL;
+    }
+
+    /* pull out subject */
+    status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
+    if (i == -1) {
+        error_log(r, "check_cookie: can't find subject in token");
+        return NULL;
+    }
+
+    sub = apr_pstrdup(r->pool, (char*)alist->attrs[i].value);
+
+    webauth_attr_list_free(alist);
+
+    return sub;
 }
 
 static char *
@@ -326,7 +393,7 @@ check_user_id_hook(request_rec *r)
 
     if (subject == NULL) {
         /* next, check for valid app-token cookie */
-        subject = check_cookie(r);
+        subject = check_cookie(r, sconf, dconf);
 
         if (subject == NULL) {
             /* if no valid app token, look for WEBAUTHR in url */
@@ -335,6 +402,9 @@ check_user_id_hook(request_rec *r)
     }
 
     if (subject != NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: check_user_id_hook setting user(%s)",
+                     subject);
         r->user = (char*)subject;
         r->ap_auth_type = (char*)at;
         return OK;
@@ -397,14 +467,10 @@ translate_name_hook(request_rec *r)
     char *p, *s, *rp;
     char *wr, *ws;
 
-#define WEBAUTHR_MAGIC ";WEBAUTHR="
-#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
-
-#define WEBAUTHS_MAGIC ";WEBAUTHS="
-#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC)-1)
-
     static char *rmagic = WEBAUTHR_MAGIC;
     static char *smagic = WEBAUTHS_MAGIC;
+
+    return DECLINED;
 
     if (!ap_is_initial_req(r)) {
         return DECLINED;
@@ -606,16 +672,16 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
         switch (e) {
             /* start of dconfigs */
             case E_AppTokenLifetime:
-                dconf->app_token_lifetime = val;
+                dconf->app_token_lifetime = val*60; /*convert from minutes */
                 break;
             case E_TokenMaxTTL:
-                dconf->token_max_ttl = val;
+                dconf->token_max_ttl = val*60; /* convert from minutes */
                 break;
             case E_InactiveExpire:
-                dconf->inactive_expire = val;
+                dconf->inactive_expire = val*60; /* convert from minutes */
                 break;
             case E_HardExpire:
-                dconf->hard_expire = val;
+                dconf->hard_expire = val*60; /* convert from minutes */
                 break;
             default:
                 error_str = 
