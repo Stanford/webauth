@@ -485,7 +485,7 @@ get_principal_from_keytab(WEBAUTH_KRB5_CTXTP *c,
     assert(c != NULL);
     assert(keytab_path != NULL);
     assert(princ != NULL);
-    assert(id_out);
+    assert(id_out != NULL);
 
     c->code = krb5_kt_resolve(c->ctx, keytab_path, &id);
     if (c->code != 0)
@@ -556,7 +556,8 @@ mk_req_with_principal(krb5_context context,
 }
 
 static int
-verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path)
+verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
+           char **server_principal)
 {
     krb5_principal server;
     krb5_keytab keytab;
@@ -566,6 +567,9 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path)
 
     assert(c != NULL);
     assert(keytab_path != NULL);
+    assert(server_principal != NULL);
+
+    *server_principal = NULL;
 
     s = get_principal_from_keytab(c, keytab_path, &server, &keytab);
     if (s != WA_ERR_NONE)
@@ -591,6 +595,11 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path)
                           
     krb5_free_data_contents(c->ctx, &outbuf);
     krb5_kt_close(c->ctx, keytab);
+
+    if (c->code == 0) {
+        c->code = krb5_unparse_name(c->ctx, server, server_principal);
+    }
+
     krb5_free_principal(c->ctx, server);
 
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
@@ -642,7 +651,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username,
                                const char *password,
                                const char *keytab,
-                               const char *cache_name)
+                               const char *cache_name,
+                               char **server_principal)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     char ccname[128];
@@ -654,6 +664,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     assert(username != NULL);
     assert(password != NULL);
     assert(keytab != NULL);
+    assert(server_principal != NULL);
 
     c->code = krb5_parse_name(c->ctx, username, &c->princ);
 
@@ -719,7 +730,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
     } else {
         /* lets see if the credentials are valid */
-        return verify_tgt(c, keytab);
+        return verify_tgt(c, keytab, server_principal);
     }
 }
 

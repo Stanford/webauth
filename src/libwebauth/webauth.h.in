@@ -70,6 +70,11 @@ typedef enum {
     WA_PEC_REQUEST_TOKEN_INVALID = 9, /* unable to decrypt and/or bad format */
     WA_PEC_GET_CRED_FAILURE = 10, /* unable to get requested credential */
     WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
+    WA_PEC_LOGIN_TOKEN_STALE = 12, 
+    WA_PEC_LOGIN_TOKEN_INVALID = 13, /* unable to decrypt and/or bad format */
+    WA_PEC_LOGIN_FAILED = 14,        /* login with username/passwword failed */
+    WA_PEC_PROXY_TOKEN_REQUIRED = 15, /* missing a required proxy-token.
+                                         login and try again */
 }  WEBAUTH_ET_ERR;    
 
 /******************** constants for token attributes **********/
@@ -85,6 +90,7 @@ typedef enum {
 #define WA_TK_INACTIVITY_TIMEOUT "it"
 #define WA_TK_SESSION_KEY "k"
 #define WA_TK_LASTUSED_TIME "lt"
+#define WA_TK_PASSWORD "p"
 #define WA_TK_PROXY_TYPE "pt"
 #define WA_TK_PROXY_DATA "pd"
 #define WA_TK_PROXY_SUBJECT "ps"
@@ -95,6 +101,7 @@ typedef enum {
 #define WA_TK_SUBJECT_AUTH "sa"
 #define WA_TK_SUBJECT_AUTH_DATA "sad"
 #define WA_TK_TOKEN_TYPE "t"
+#define WA_TK_USERNAME "u"
 #define WA_TK_WEBKDC_TOKEN "wt"
 
 /******************** constants for token types ****/
@@ -107,6 +114,7 @@ typedef enum {
 #define WA_TT_PROXY "proxy"
 #define WA_TT_CRED "cred"
 #define WA_TT_APP "app"
+#define WA_TT_LOGIN "login"
 
 /******************** constants for subject auth type ****/
 #define WA_SA_KRB5 "krb5"
@@ -718,12 +726,17 @@ const char *webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *content);
  * The TGT is verified using the specified keytab. 
  * The TGT will be placed in the specified cache, or a memory cache 
  * if cache_name is NULL.
+ * 
+ * server_principal will be set to the server_principal used in
+ * keytab to verify the tgt, and should be freed if WA_ERR_NONE
+ * is returned.
  */
 int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                    const char *username,
                                    const char *password,
                                    const char *keytab,
-                                   const char *cache_name);
+                                   const char *cache_name,
+                                   char **server_principal);
 /*
  * initialize a context with a keytab. Credentials
  * will be placed in the specified cache, or a memory cache if cache_name
