@@ -1,0 +1,29 @@
+# $Id$
+#
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+CC		= @CC@
+INSTALL		= @INSTALL@
+RANLIB		= @RANLIB@
+
+CFLAGS		= @CFLAGS@
+#CPPFLAGS	= -I. -I../common/include @CPPFLAGS@
+CPPFLAGS	= -I. -I@top_srcdir@/src/common/include @CPPFLAGS@
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
+
+LIBNAME		= libwebauth
+
+OBJS		= base64.o attrs.o token.o @WEBAUTH_AES_OBJS@
+
+all: $(LIBNAME).a
+
+$(LIBNAME).a: $(OBJS)
+	rm -f $@
+	ar cq $@ $(OBJS)
+	$(RANLIB) $@
+
+clean:
+	rm -f $(LIBNAME).a $(OBJS) *~ core \#*

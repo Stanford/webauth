@@ -1,0 +1,29 @@
+# Makefile for the webauth software
+# $Id$
+#
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+
+@SET_MAKE@
+
+SUBDIRS = src tests
+
+all: Makefile 
+	@for subdir in $(SUBDIRS); do \
+	    echo "making $@ in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	done
+
+clean install:
+	@for subdir in $(SUBDIRS); do \
+	    echo "making $@ in $$subdir"; \
+	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+	done
+
+distclean: clean
+	rm -f config.status config.cache config.log autom4te.cache \
+               common/include/config.h Makefile \
+               src/Makefile src/libwebauth/Makefile \
+               *~ core \#*
