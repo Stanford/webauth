@@ -915,10 +915,6 @@ handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
             /* user canceled out of login page */
             return login_canceled_redirect(rc);
             break;
-        case WA_PEC_UNAUTHORIZED:
-            /* mod_webauth client is not authorized to request id-token  */
-            log_message = "WebKDC denied access, unable to rquest any tokens";
-            break;
         default:
             /* catch other all other errors that we aren't expecting, which
                is pretty much all of them, since if the server can't
