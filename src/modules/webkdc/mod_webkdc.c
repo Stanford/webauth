@@ -238,9 +238,10 @@ parse_service_token_er(MWK_REQ_CTXT *rc, char *token,
         webauth_attr_list_free(alist);
         return 0;
     }
-    st->key_len = alist->attrs[i].length;
-    st->key = apr_palloc(rc->r->pool, st->key_len);
-    memcpy(st->key, alist->attrs[i].value, st->key_len);
+    st->key.length = alist->attrs[i].length;
+    st->key.data = apr_palloc(rc->r->pool, st->key.length);
+    memcpy(st->key.data, alist->attrs[i].value, st->key.length);
+    st->key.type = WA_AES_KEY; /* HARCODED */
 
     /* pull out subject */
     status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
@@ -396,7 +397,6 @@ parse_xml_request_token_er(MWK_REQ_CTXT *rc, char *token,
                            MWK_REQUESTER_CREDENTIAL *req_cred)
 {
     WEBAUTH_ATTR_LIST *alist;
-    WEBAUTH_KEY *key;
     int blen, status, i;
     const char *tt;
     static const char *mwk_func = "parse_xml_request_token";
@@ -404,24 +404,9 @@ parse_xml_request_token_er(MWK_REQ_CTXT *rc, char *token,
     blen = apr_base64_decode(token, token);
 
     /* parse the token, use TTL  */
-
-    key = webauth_key_create(WA_AES_KEY,
-                             (unsigned char*)req_cred->u.service.st.key,
-                             req_cred->u.service.st.key_len);
-
-    if (key == NULL) {
-        char *msg = "unable to create key from session_key";
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webkdc: %s: %s", mwk_func, msg);
-        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
-        return 0;
-    }
-
     status = webauth_token_parse_with_key(token, blen, 
                                           rc->sconf->token_max_ttl,
-                                          key, &alist);
-    webauth_key_free(key);
-
+                                          &req_cred->u.service.st.key, &alist);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r, status, NULL, "parse_xml_request_token", 
                               "webauth_token_parse");
@@ -679,7 +664,10 @@ create_service_token_from_req_er(MWK_REQ_CTXT *rc,
         status = webauth_token_create(alist, creation,
                                       token, &olen, tlen, ring);
     }
+
     keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    webauth_attr_list_free(alist);
 
     if (ring == NULL) {
         char *msg = "no keyring";
@@ -698,7 +686,6 @@ create_service_token_from_req_er(MWK_REQ_CTXT *rc,
                                "token create failed");
         return 0;
     }
-    webauth_attr_list_free(alist);
 
     rtoken->token_data = (char*) 
         apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
@@ -747,7 +734,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
                                       "server failure");
         return 0;
     }
-    status = krb5_init_via_tgt(ctxt,
+    status = webauth_krb5_init_via_tgt(ctxt,
                                sub_cred->u.pt.proxy_data,
                                sub_cred->u.pt.proxy_data_len,
                                NULL);
@@ -809,7 +796,6 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
     unsigned char *token;
-    WEBAUTH_KEY *key;
     apr_xml_elem *authenticator;
     const char *at, *subject;
     unsigned char *sad;
@@ -907,21 +893,9 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
     token = (char*)apr_palloc(rc->r->pool, tlen);
 
     /* need to use key from session key! */
-    
-    key = webauth_key_create(WA_AES_KEY, 
-                             req_cred->u.service.st.key,
-                             req_cred->u.service.st.key_len);
-
-    if (key == NULL) {
-        char *msg = "webauth_key_create from session key cailed";
-        service_token_invalid_er(rc, msg, mwk_func);
-        return 0;
-    }
-
     status = webauth_token_create_with_key(alist, creation,
-                                           token, &olen, tlen, key);
-
-    webauth_key_free(key);
+                                           token, &olen, tlen, 
+                                           &req_cred->u.service.st.key);
 
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
@@ -931,6 +905,191 @@ create_id_token_from_req_er(MWK_REQ_CTXT *rc,
         return 0;
     }
     webauth_attr_list_free(alist);
+
+    rtoken->token_data = (char*) 
+        apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(rtoken->token_data, token, olen);
+
+    return 1;
+}
+
+
+/*
+ * returns 1 on success, 0 on failure
+ */
+static int
+create_proxy_token_from_req_er(MWK_REQ_CTXT *rc, 
+                            apr_xml_elem *e,
+                            MWK_REQUESTER_CREDENTIAL *req_cred,
+                            MWK_SUBJECT_CREDENTIAL *sub_cred,
+                            MWK_RETURNED_TOKEN *rtoken)
+{
+    static const char *mwk_func="create_proxy_token_from_req_er";
+    unsigned char session_key[WA_AES_128];
+    int status, tlen, olen, blen, wkdc_len, wkdc_olen;
+    time_t creation, expiration;
+    WEBAUTH_ATTR_LIST *alist;
+    unsigned char *token, *wkdc_token;
+    WEBAUTH_KEYRING *ring;
+    apr_xml_elem *proxy_type;
+    const char *pt;
+
+    
+    /* only create proxy tokens from service creds */
+    if (strcmp(req_cred->type, "service") != 0) {
+        char *msg = "can only create proxy-tokens with <requesterCredential>"
+            " of type service";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+        return 0;
+    }
+
+    /* make sure we have a subject cred with a type='proxy' */
+    if (strcmp(sub_cred->type, "proxy") != 0) {
+        char *msg = "can only create proxy-tokens with <subjectCredential>"
+            " of type proxy";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+        return 0;
+    }
+
+    /* FIXME: ACL CHECK: requester allowed to get a proxy token
+     *        using subject cred?
+     */
+
+    proxy_type = get_element_er(rc, e, "proxyType", 1, mwk_func);
+
+    if (proxy_type == NULL)
+        return 0;
+
+    pt = mwk_get_elem_text(rc, proxy_type, NULL);
+
+    if (pt == NULL) 
+        return 0;
+
+    /* make sure we are creating a proxy-tyoken that has
+       the same type as the proxy-token we using to create it */
+    if (strcmp(pt, sub_cred->u.pt.proxy_type) != 0) {
+        char *msg = "can't create a proxy-token with a different "
+            "type then the exist proxy-token";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+        return 0;
+    }
+
+    /* create the webkdc-proxy-token first, using existing proxy-token */
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        char *msg = "no memory for attr list";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
+        return 0;
+    }
+
+    time(&creation);
+
+    /* expiration comes from expiration of proxy-token */
+    expiration = sub_cred->u.pt.expiration;
+
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE,
+                              WA_TT_WEBKDC_PROXY, 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_PROXY_TYPE,
+                              sub_cred->u.pt.proxy_type, 0, WA_F_NONE);
+
+    /* make sure to use subject from service-token for new proxy-subject */
+    webauth_attr_list_add_str(alist, WA_TK_PROXY_SUBJECT,
+                              req_cred->u.service.st.subject, 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT,
+                              sub_cred->u.pt.subject, 0, WA_F_NONE);
+
+    webauth_attr_list_add(alist, WA_TK_PROXY_DATA,
+                          sub_cred->u.pt.proxy_data,
+                          sub_cred->u.pt.proxy_data_len, WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME,
+                               creation, WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
+                               expiration, WA_F_NONE);
+
+    wkdc_len = webauth_token_encoded_length(alist);
+    wkdc_token = (char*)apr_palloc(rc->r->pool, wkdc_len);
+
+    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+
+    ring = get_keyring(rc);
+    if (ring != NULL) {
+        status = webauth_token_create(alist, creation,
+                                      wkdc_token, &wkdc_olen, wkdc_len, ring);
+    }
+
+    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    webauth_attr_list_free(alist);
+
+    if (ring == NULL) {
+        char *msg = "no keyring";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
+        return 0;
+    } else {
+        ring = NULL;
+    }
+
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
+                              "webauth_token_create");
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                               "token create failed");
+        return 0;
+    }
+
+    /* now create the proxy-token */
+
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        char *msg = "no memory for attr list";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
+        return 0;
+    }
+
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE,
+                              WA_TT_PROXY, 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT,
+                              sub_cred->u.pt.subject, 0, WA_F_NONE);
+
+    webauth_attr_list_add(alist, WA_TK_WEBKDC_TOKEN,
+                          wkdc_token, wkdc_len, WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME,
+                               creation, WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
+                               expiration, WA_F_NONE);
+
+    /* need to use key from session key! */
+    status = webauth_token_create_with_key(alist, creation,
+                                           token, &olen, tlen, 
+                                           &req_cred->u.service.st.key);
+    webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
+                              "webauth_token_create");
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                               "token create failed");
+        return 0;
+    }
 
     rtoken->token_data = (char*) 
         apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
@@ -1052,6 +1211,12 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
             if (!create_id_token_from_req_er(rc, token,
                                              &req_cred, &sub_cred,
                                              &rtokens[num_tokens])) {
+                return OK;
+            }
+        } else if (strcmp(tt, "proxy") == 0) {
+            if (!create_proxy_token_from_req_er(rc, token,
+                                               &req_cred, &sub_cred,
+                                               &rtokens[num_tokens])) {
                 return OK;
             }
         } else {
