@@ -1350,6 +1350,7 @@ auth_checker_hook(request_rec * r)
     char *w;
     int m = r->method_number;
     int needs_further_handling;
+    int old_signal;
 
 #ifndef NO_STANFORD_SUPPORT
     if (!apr_table_get(r->subprocess_env, "SU_AUTH_USER") &&
@@ -1445,8 +1446,25 @@ auth_checker_hook(request_rec * r)
                   "webauthldap(%s): this connection expired",
                      lc->r->user);
 
-        // TODO ideally we should unbind the current ld, but current 
-        // openldap consistently issues broken pipes
+        // Set this to ignore Broken Pipes that always happen when unbinding
+        // expired ldap connections.
+        old_signal = (int) signal(SIGPIPE, (void*) SIG_IGN);
+        if (old_signal != (int) SIG_ERR) {
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                             "webauthldap(%s): unbinding the expired connection",
+                             lc->r->user);
+            ldap_unbind(lc->ld);
+            lc->ld = NULL;
+            signal(SIGPIPE, (void*) old_signal);
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                         "webauthldap(%s): %s %s (%d)",
+                         "can't set SIGPIPE signals to SIG_IGN: ",
+                         lc->r->user, strerror(errno), errno);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+
         if (webauthldap_managedbind(lc) != 0) {
             apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING! */
             return HTTP_INTERNAL_SERVER_ERROR;
