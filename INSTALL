@@ -244,8 +244,7 @@ site, see doc/install-webkdc.
      Stanford users, for university applications, can obtain one of the
      SSL certificates the university has licensed from a certificate
      vendor.  There is a fee to offset the licensing charge.  For more
-     information, see
-     <http://www.stanford.edu/dept/itss/tss/ti/SSLCerts.html>.
+     information, see <http://www.stanford.edu/services/ssl/>.
 
      This is only for Stanford users.
 
