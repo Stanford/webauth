@@ -4,6 +4,8 @@ use strict;
 use warnings;
 
 use WebAuth qw(:const :hex :token);
+use WebKDC::Exception;
+
 use UNIVERSAL qw(isa);
 use Carp;
 
@@ -655,7 +657,8 @@ sub validate_token {
     croak "validate_token failed" unless
 	($self->token_type() eq 'error') && 
 	defined($self->creation_time()) &&
-	defined($self->error_code());
+	defined($self->error_code()) &&
+	defined($self->error_message());
 
 }
 

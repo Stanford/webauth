@@ -10,6 +10,8 @@ use WebAuth qw(:base64 :const :krb5 :key);
 
 use WebKDC;
 use WebKDC::Token;
+use WebKDC::WebRequest;
+use WebKDC::WebResponse;
 
 use Carp;
 use UNIVERSAL qw(isa);
@@ -32,7 +34,9 @@ sub handle_response($$) {
 					$key, $WebKDC::C_TOKEN_TTL);
 
     if (!isa($id_token, 'WebKDC::IdToken')) {
+	print $id_token;
 	croak "response not an IdToken";
+
     }
     print $id_token;
 

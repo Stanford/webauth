@@ -32,6 +32,11 @@ BEGIN {
 
 our @EXPORT_OK;
 
+#
+# all the $C_ variables are candidates for a config file
+# when one exists.
+#
+
 # exported package globals go here
 our $C_WEBKDC_K5SERVICE = "webauth";
 our $C_WEBKDC_HOST = "lichen.stanford.edu";
@@ -196,29 +201,37 @@ sub handle_id_request {
     $id_token->subject_auth_data($sad);
     $id_token->creation_time(time());
     $id_token->expiration_time($et);
-
-    $wresp->return_url($req_token->return_url());
-    $wresp->post_url($req_token->post_url());
     $wresp->response_token(base64_encode($id_token->to_token($key)));
     return;
 }
 
+# create an error token
 
-# takes a WebKDC::WebRequest and returns a WebKDC::WebResponse
+sub make_error_token($$$) {
+    my($ec, $em, $key) = @_;
+    my $error_token = new WebKDC::ErrorToken;
+    $error_token->creation_time(time());
+    $error_token->error_code($ec);
+    $error_token->error_message($em);
+    return base64_encode($error_token->to_token($key));
+}
+
+# takes a WebKDC::WebRequest and WebKDC::WebResponse
 
 sub process_web_request($$) {
     my ($wreq, $wresp) = @_;
 
     # first parse service-token to get session key
 
-    my $service_token = 
-	new WebKDC::WebKDCServiceToken(base64_decode($wreq->service_token()), 
-				       get_keyring(), 0);
+    my $st_str = base64_decode($wreq->service_token());
+    my $service_token =
+	new WebKDC::WebKDCServiceToken($st_str, get_keyring(), 0);
 
     my $server_principal = $service_token->subject();
 
     if ($server_principal !~ /^krb5:/) {
-	die "ERROR: only krb5 principals supported in service tokens";
+	die new WebKDC::Exception(WK_ERR_UNRECOVERABLE_ERROR,
+                    "server_principal($server_principal) not krb5");
     }
 
     # use session key to parse request token
@@ -228,12 +241,146 @@ sub process_web_request($$) {
 	new WebKDC::RequestToken(base64_decode($wreq->request_token()), 
 				 $key, $C_TOKEN_TTL);
 
+    # add return_url and post_url if present in request-token
+    $wresp->return_url($req_token->return_url());
+    $wresp->post_url($req_token->post_url());
+
     # FIXME: would normally poke through request to determine what to do next
-    handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
-    return;
+    my $rtt = $req_token->requested_token_type();
+    if ($rtt eq 'id') {
+	handle_id_request($wreq, $wresp, $service_token, $req_token, $key);
+    } else {
+	my $ec = WA_PEC_UNSUPP_REQUESTED_TOKEN_TYPE;
+	my $em = "unsupported token type($rtt) in request";
+	$wresp->response_token(make_error_token($ec, $em, $key));
+    }
 }
 
 
 END { }       # module clean-up code here (global destructor)
 
 1;
+
+
+=head1 NAME
+
+WebKDC - functions to support the WebKDC
+
+=head1 SYNOPSIS
+
+  use WebAuth;
+  use WebKDC;
+  use WebKDC::WebRequest;
+  use WebKDC::WebResponse;
+
+  eval {
+    ...
+    WebKDC::process_web_request($req, $resp);
+    ...
+  };
+
+  if (WebKDC::Exception:match($@)) {
+     # handle WebKDC exceptions
+  } elseif (WebAuth::Exception:match($@)) {
+     # handle WebAuth exceptions
+  } elsif ($@) {
+     # handle other exceptions
+  }
+
+=head1 DESCRIPTION
+
+WebKDC is a set of convenience functions built on top of mod WebAuth
+to implement the WebKDC.
+
+All functions have the potential to throw either a WebKDC::Exception
+or WebAuth::Exception.
+
+=head1 EXPORT
+
+None
+
+=head1 FUNCTIONS
+
+=over 4
+
+=process_web_request(req,resp)
+
+  WebKDC::process_web_request($req, $resp);
+
+Used to process an incoming request token. It should be used in the
+following fashion:
+
+  my $req = new WebKDC::WebRequest;
+  my $resp = new WebKDC::WebResponse;
+
+  # if the user just submitted their username/password, include them
+  if ($username && $password) {
+    $req->user($username);
+    $req->pass($password);
+  }
+
+  # pass in any proxy-tokens we have from a cookies
+  # i.e., enumerate through all cookies that start with webauth_pt
+  # and put them into a hash:
+  # $cookies = { "webauth_pt_krb5" => $cookie_value }
+   
+  $req->proxy_cookies($cookies);
+
+  # $req_token_str and $service_token_str would normally get
+  # passed in via query/post parameters
+
+  $req->request_token($req_token_str);
+  $req->service_token($service_token_str);
+
+  eval {
+    WebLDC::process_web_request($req, $resp);
+  };
+
+  if (WebKDC::Exception::match($@, WK_ERR_LOGIN_FAILED)) {
+    # need to prompt again, also need to limit number of times
+    # we'll prompt
+    # make sure to pass the request/service tokens in hidden fields
+
+  } elsif (WebKDC::Exception::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
+
+    # this exception indicates someone requested an id-token
+    # and either didn't have a proxy-token, or it was expired.
+    # prompt the user for their username/password, making sure
+    # to pass the request/service tokens in hidden fields
+    
+    # also need to check $resp->proxy_cookies() to see if we have
+    # to update any proxy cookies
+
+  } elsif ($@) {
+    
+    # something nasty happened
+    # log $@, and display an error to the user that a system problem
+    # has occurred and tell them to try again later
+
+    # also need to check $resp->proxy_cookies() to see if we have
+    # to update any proxy cookies
+
+  } else {
+
+    # everything went ok
+    # $resp->return_url  will have the return_url for a redirect
+    # FIXME: check post_url first?
+
+    # also need to check $resp->proxy_cookies() to see if we have
+    # to update any proxy cookies
+
+  }
+
+=head1 AUTHOR
+
+Roland Schemers (schemers@stanford.edu)
+
+=head1 SEE ALSO
+
+L<WebKDC::Exception>
+L<WebKDC::Token>
+L<WebKDC::WebRequest>
+L<WebKDC::WebRespsonse>
+L<WebAuth>.
+
+=cut
