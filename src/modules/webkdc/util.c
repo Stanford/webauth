@@ -182,7 +182,7 @@ mwk_webauth_error_message(request_rec *r,
 {
     if (status == WA_ERR_KRB5 && ctxt != NULL) {
         return apr_psprintf(r->pool,
-                            "%s%s%s failed: %s (%d): %s %d",
+                            "%s%s%s error: %s (%d): %s %d",
                             webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
@@ -191,7 +191,7 @@ mwk_webauth_error_message(request_rec *r,
                             webauth_krb5_error_code(ctxt));
     } else {
         return apr_psprintf(r->pool,
-                            "%s%s%s failed: %s (%d)",
+                            "%s%s%s error: %s (%d)",
                             webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,

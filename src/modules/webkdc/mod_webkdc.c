@@ -44,6 +44,47 @@
 
 
 /*
+ * if msg has any whitespace or double quotes in it, enclose
+ * it in double quotes, and escape any inner double quotes
+ */
+static const char *
+log_escape(MWK_REQ_CTXT *rc, const char *msg)
+{
+    int len, space, quotes;
+    const char *p;
+    char *d, *q;
+
+    len = 0;
+    space = 0;
+    quotes = 0;
+
+    for (p=msg; *p; p++) {
+        len++;
+        if (apr_isspace(*p))
+            space = 1;
+        else if (*p == '"') {
+            quotes = 1;
+            len++;
+        }
+    }
+
+    if (quotes == 0 && space == 0)
+        return msg;
+
+    d = q = apr_palloc(rc->r->pool, len+3); /* two quotes + \0 */
+
+    *d++ = '"';
+    for (p=msg; *p; p++) {
+        *d++ = *p;
+        if (*p == '"')
+            *d++ = '"';
+    }
+    *d++ = '"';
+    *d++ = '\0';
+    return q;
+}
+
+/*
  * generate <errorResponse> message from error stored in rc
  */
 static int
@@ -733,11 +774,14 @@ parse_request_token(MWK_REQ_CTXT *rc,
 static enum mwk_status
 parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e, 
                           MWK_REQUESTER_CREDENTIAL *req_cred,
-                          int expecting_reqToken)
+                          int expecting_reqToken,
+                          char **req_subject_out)
 {
     int status;
     static const char*mwk_func = "parse_requesterCredential";
     const char *at = get_attr_value(rc, e, "type",  1, mwk_func);
+
+    *req_subject_out = "<unknown>";
 
     if (at == NULL) {
         return MWK_ERROR;
@@ -756,7 +800,6 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         /* pull out subject from service token */
         req_cred->subject = req_cred->u.st.subject;
-        return MWK_OK;
     } else if (strcmp(at, "krb5") == 0) {
         const char *req;
         int blen;
@@ -793,7 +836,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         req_cred->subject = apr_pstrcat(rc->r->pool, "krb5:", client_principal,
                                         NULL);
         free(client_principal);
-        return MWK_OK;
+
     } else {
         char *msg = apr_psprintf(rc->r->pool, 
                                  "unknown <requesterCredential> type: %s",
@@ -801,7 +844,14 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, 
                                  msg, mwk_func, 1);
     }
-    return MWK_ERROR;
+
+    /*
+    *req_subject_out = apr_pstrcat(rc->r->pool, req_cred->type,
+                                   ":", req_cred->subject, NULL);
+
+    */
+    *req_subject_out = req_cred->subject;
+    return MWK_OK;
 }
 
 
@@ -931,6 +981,9 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
         apr_palloc(rc->r->pool, apr_base64_encode_len(len));
     apr_base64_encode((char*)rtoken->session_key, session_key, len);
 
+    rtoken->subject = req_cred->subject;
+    rtoken->info = " type=service";
+
     return MWK_OK;
 }
 
@@ -1054,7 +1107,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
     MWK_PROXY_TOKEN *sub_pt;
-    const char *subject;
     unsigned char *sad;
 
     ms = MWK_ERROR;
@@ -1091,14 +1143,11 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     }
 
     sad = NULL;
-    subject = NULL;
-
     if (strcmp(auth_type, "webkdc") == 0) {
         /* FIXME: are we going to have a webkc proxy type? */
         sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func);
         if (sub_pt == NULL)
             return MWK_ERROR;
-        subject = sub_pt->subject;
     } else if (strcmp(auth_type, "krb5") == 0) {
         /* find a proxy-token of the right type */
         sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func);
@@ -1122,6 +1171,8 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, 1);
     }
 
+
+
     alist = new_attr_list(rc, mwk_func);
     if (alist == NULL)
         return MWK_ERROR;
@@ -1132,9 +1183,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
 
     SET_TOKEN_TYPE(WA_TT_ID);
     SET_SUBJECT_AUTH(auth_type);
-    if (subject != NULL) {
-        SET_SUBJECT(subject);
-    }
+    SET_SUBJECT(sub_pt->subject);
     if (sad != NULL) {
         SET_SUBJECT_AUTH_DATA(sad, sad_len);
     }
@@ -1146,6 +1195,10 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                              (char**)&rtoken->token_data, 
                              &tlen, 1, mwk_func);
     webauth_attr_list_free(alist);
+
+    rtoken->subject = sub_pt->subject;
+    rtoken->info = 
+        apr_pstrcat(rc->r->pool, " type=id sa=", auth_type, NULL);
 
     return ms;
 }
@@ -1250,6 +1303,10 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     SET_WEBKDC_TOKEN(wkdc_token, wkdc_len);
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
+
+    rtoken->subject = sub_pt->subject;
+    rtoken->info =  
+        apr_pstrcat(rc->r->pool, " type=proxy pt=", proxy_type, NULL);
 
     ms = make_token_with_key(rc, &req_cred->u.st.key,
                              alist, creation,
@@ -1401,6 +1458,11 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
 
+    rtoken->subject = sub_pt->subject;
+
+    rtoken->info =  
+        apr_pstrcat(rc->r->pool, " type=cred crt=", ct, " crs=", sp,NULL);
+
     ms = make_token_with_key(rc, &req_cred->u.st.key,
                              alist, creation,
                              (char**)&rtoken->token_data, 
@@ -1411,7 +1473,9 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 }
 
 static enum mwk_status
-handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
+handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                        char **req_subject_out,
+                        char **subject_out)
 {
     apr_xml_elem *child, *tokens, *token;
     static const char *mwk_func="handle_getTokensRequest";
@@ -1426,6 +1490,8 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
 
     MWK_RETURNED_TOKEN rtokens[MAX_TOKENS_RETURNED];
 
+    *subject_out = "<unknown>";
+    *req_subject_out = "<unkknown>";
     tokens = NULL;
     request_token = NULL;
     memset(&req_cred, 0, sizeof(req_cred));
@@ -1434,7 +1500,8 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     /* walk through each child element in <getTokensRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential(rc, child, &req_cred, 1))
+            if (!parse_requesterCredential(rc, child, &req_cred, 1,
+                                           req_subject_out))
                 return MWK_ERROR;
             req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
@@ -1520,8 +1587,11 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         rtokens[num_tokens].session_key = NULL;
         rtokens[num_tokens].expires = NULL;
         rtokens[num_tokens].token_data = NULL;
+        rtokens[num_tokens].subject = "<unknown>";
         rtokens[num_tokens].id = get_attr_value(rc, token, "id",
                                                    0, mwk_func);
+
+        rtokens[num_tokens].info = "";
 
         tt = get_attr_value(rc, token, "type", 1, mwk_func);
         if (tt == NULL)
@@ -1542,6 +1612,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                                                &rtokens[num_tokens])) {
                 return MWK_ERROR;
             }
+
         } else if (strcmp(tt, "id") == 0) {
             const char *at;
             apr_xml_elem *auth;
@@ -1592,6 +1663,9 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     ap_rvputs(rc->r, "<getTokensResponse><tokens>", NULL);
 
     for (i = 0; i < num_tokens; i++) {
+        if (i==0) 
+            *subject_out = (char*)rtokens[0].subject;
+
         if (rtokens[i].id != NULL) {
             ap_rprintf(rc->r, "<token id=\"%s\">",
                         apr_xml_quote_string(rc->r->pool, rtokens[i].id, 1));
@@ -1611,6 +1685,14 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                       "</expires>", NULL);
         }
         ap_rvputs(rc->r, "</token>", NULL);
+
+
+        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
+                     "mod_webkdc: event=getTokens "
+                     "server=%s user=%s%s",
+                     *req_subject_out,
+                     rtokens[i].subject,
+                     rtokens[i].info);
     }
     ap_rvputs(rc->r, "</tokens></getTokensResponse>", NULL);
     ap_rflush(rc->r);
@@ -1668,7 +1750,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "login failed", NULL);
+                                             "mwk_do_login", NULL);
         set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
     } else if (status != WA_ERR_NONE) {
@@ -1777,7 +1859,9 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 }
 
 static enum mwk_status
-handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
+handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                           char **req_subject_out,
+                           char **subject_out)
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
@@ -1791,7 +1875,9 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     int num_proxy_tokens, i, did_login;
     int login_ec;
     const char *login_em = NULL;
-    char *subject_out = NULL;
+    char *req_token_info;
+    *subject_out = "<unknown>";
+    *req_subject_out = "<unkknown>";
 
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
@@ -1801,6 +1887,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     request_token = NULL;
     sub_cred = NULL;
 
+    req_token_info = "";
+
     memset(&req_cred, 0, sizeof(req_cred));
     memset(&req_token, 0, sizeof(req_token));
     memset(&rtoken, 0, sizeof(rtoken));
@@ -1808,7 +1896,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential(rc, child, &req_cred, 0))
+            if (!parse_requesterCredential(rc, child, &req_cred, 0, 
+                                           req_subject_out))
                 return MWK_ERROR;
             req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
@@ -1867,7 +1956,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
      */
     if (strcmp(parsed_sub_cred.type, "login") == 0) {
         if (!mwk_do_login(rc, &parsed_sub_cred.u.lt, &login_sub_cred, 
-                          rptokens, &num_proxy_tokens, &subject_out)) {
+                          rptokens, &num_proxy_tokens, subject_out)) {
+            *subject_out = parsed_sub_cred.u.lt.username;
             if (rc->error_code == WA_PEC_LOGIN_FAILED) {
                 login_ec = rc->error_code;
                 login_em = rc->error_message;
@@ -1887,7 +1977,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         if (strcmp(parsed_sub_cred.type, "proxy") == 0) {
             for (i=0; i < parsed_sub_cred.u.proxy.num_proxy_tokens; i++) {
                 if (parsed_sub_cred.u.proxy.pt[i].subject) {
-                    subject_out = parsed_sub_cred.u.proxy.pt[i].subject;
+                    *subject_out = parsed_sub_cred.u.proxy.pt[i].subject;
                     break;
                 }
             }
@@ -1900,9 +1990,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
        prompt for a username/password */
     if ((ap_strstr(req_token.request_options, "fa") != 0) &&
         !did_login) {
-        const char *msg = "forced authentication, need to login";
         login_ec = WA_PEC_LOGIN_FORCED;
-        login_em = msg;
+        login_em = "forced authentication, need to login";
         goto send_response;
     }
 
@@ -1911,9 +2000,17 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     if (strcmp(req_token.requested_token_type, "id") == 0) {
         ms = create_id_token_from_req(rc, req_token.u.subject_auth_type,
                                       &req_cred, sub_cred, &rtoken);
+        req_token_info = apr_pstrcat(rc->r->pool,
+                                     " sa=", 
+                                     req_token.u.subject_auth_type,
+                                     NULL);
     } else if (strcmp(req_token.requested_token_type, "proxy") == 0) {
         ms = create_proxy_token_from_req(rc, req_token.u.proxy_type,
                                          &req_cred, sub_cred, &rtoken);
+        req_token_info = apr_pstrcat(rc->r->pool,
+                                     " pt=", 
+                                     req_token.u.proxy_type,
+                                     NULL);
     } else {
         char *msg = apr_psprintf(rc->r->pool, 
                                  "unsupported requested-token-type: %s",
@@ -1967,10 +2064,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
               "</requesterSubject>", NULL);
 
     /* subject */
-    if (subject_out != NULL) {
+    if (*subject_out != NULL) {
         ap_rvputs(rc->r,
                   "<subject>",
-                  apr_xml_quote_string(rc->r->pool, subject_out, 1),
+                  apr_xml_quote_string(rc->r->pool, *subject_out, 1),
                   "</subject>", NULL);
     }
 
@@ -2013,6 +2110,23 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     }
     ap_rvputs(rc->r, "</requestTokenResponse>", NULL);
     ap_rflush(rc->r);
+
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
+                 "mod_webkdc: event=requestToken "
+                 "server=%s user=%s rtt=%s%s%s%s%s",
+                 *req_subject_out,
+                 *subject_out,
+                 req_token.requested_token_type,
+                 req_token_info,
+                 (req_token.request_options == NULL ||
+                  *req_token.request_options == '\0') ? "" :
+                 apr_psprintf(rc->r->pool, " ro=%s", 
+                              req_token.request_options),
+                 login_ec == 0 ? "" : 
+                 apr_psprintf(rc->r->pool, " lec=%d", login_ec),
+                 login_em == NULL ? "" :
+                 apr_psprintf(rc->r->pool, " lem=%s", log_escape(rc, login_em))
+                 );
 
     return MWK_OK;
 }
@@ -2078,11 +2192,39 @@ parse_request(MWK_REQ_CTXT *rc)
     }
 
     if (strcmp(xd->root->name, "getTokensRequest") == 0) {
-        if (!handle_getTokensRequest(rc, xd->root))
+        char *req, *sub;
+        if (!handle_getTokensRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
+                         "mod_webkdc: event=getTokens "
+                         "server=%s user=%s%s%s",
+                         req,
+                         sub,
+                         rc->error_code == 0 ? "" : 
+                         apr_psprintf(rc->r->pool, 
+                                      " errorCode=%d", rc->error_code),
+                         rc->error_message == NULL ? "" :
+                         apr_psprintf(rc->r->pool, " errorMessage=%s", 
+                                      log_escape(rc, rc->error_message))
+                         );
+        }
     } else if (strcmp(xd->root->name, "requestTokenRequest") == 0) {
-        if (!handle_requestTokenRequest(rc, xd->root))
+        char *req, *sub;
+        if (!handle_requestTokenRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
+                         "mod_webkdc: event=requestToken "
+                         "server=%s user=%s%s%s",
+                         req,
+                         sub,
+                         rc->error_code == 0 ? "" : 
+                         apr_psprintf(rc->r->pool, 
+                                      " errorCode=%d", rc->error_code),
+                         rc->error_message == NULL ? "" :
+                         apr_psprintf(rc->r->pool, " errorMessage=%s", 
+                                      log_escape(rc, rc->error_message))
+                         );
+        }
     } else {
         char *m = apr_psprintf(rc->r->pool, "invalid command: %s", 
                                xd->root->name);

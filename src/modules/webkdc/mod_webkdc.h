@@ -198,6 +198,8 @@ typedef struct {
     const char *token_data;
     const char *session_key; /* might be NULL */
     const char *expires; /* might be NULL */
+    const char *subject; /* used only for logging */
+    const char *info; /* used only for logging */
 } MWK_RETURNED_TOKEN;
 
 /* used to represent returned proxy-tokens for 
