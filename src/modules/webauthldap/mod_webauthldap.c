@@ -997,13 +997,18 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
                          LDAP_SIZELIMIT, &msgid);
 
     if (rc != LDAP_SUCCESS) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap(%s): ldap_search_ext: %s (%d)",
-                     lc->r->user, ldap_err2string(rc), rc);
-        if (rc == LDAP_SERVER_DOWN || rc == LDAP_CONNECT_ERROR)
+        if (rc == LDAP_SERVER_DOWN || rc == LDAP_CONNECT_ERROR) {
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
+                            "webauthldap(%s): timeout during ldap_search_ext: %s (%d)",
+                             lc->r->user, ldap_err2string(rc), rc);
             return HTTP_SERVICE_UNAVAILABLE;
-        else
+        } else {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
+                         "webauthldap(%s): ldap_search_ext: %s (%d)",
+                         lc->r->user, ldap_err2string(rc), rc);
             return HTTP_INTERNAL_SERVER_ERROR;
+        }
     }
 
     if ((rc = 
