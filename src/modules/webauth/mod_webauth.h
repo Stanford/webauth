@@ -173,5 +173,67 @@ typedef struct {
 } MWA_CURL_POST_GATHER_CTXT;
 
 
+/* globals */
+WEBAUTH_KEYRING *mwa_g_ring;
+MWA_SERVICE_TOKEN *mwa_g_service_token;
+
+/* service_token.c */
+
+MWA_SERVICE_TOKEN *
+mwa_get_service_token(request_rec *r,
+                      MWA_SCONF *sconf, MWA_DCONF *dconf);
+
+/* util.c */
+
+/*
+ * get a string from an attr list, log an error if not present.
+ * vlen is optional and can be set to NULL.
+ */
+
+char *
+mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, 
+                 request_rec *r, const char *func, int *vlen);
+
+/*
+ * get note from main request 
+ */
+const char *
+mwa_get_note(request_rec *r, const char *note);
+
+/*
+ * remove note from main request, and return it if it was set, or NULL
+ * if unset
+ */
+char *
+mwa_remove_note(request_rec *r, const char *note);
+
+/*
+ * set note to main request. does not make copy of data
+ */
+void
+mwa_setn_note(request_rec *r, const char *note, const char *val);
+
+/*
+ * log interesting stuff from the request
+ */
+void 
+mwa_log_request(request_rec *r, const char *msg);
+
+/*
+ * get a WEBAUTH_KRB5_CTXT, log errors
+ */
+WEBAUTH_KRB5_CTXT *
+mwa_get_webauth_krb5_ctxt(request_rec *r, const char *mwa_func);
+
+
+/*
+ * log a webauth-related error. ctxt can be NULL.
+ */
+void
+mwa_log_webauth_error(request_rec *r, 
+                      int status, 
+                      WEBAUTH_KRB5_CTXT *ctxt,
+                      const char *mwa_func,
+                      const char *func);
 
 #endif
