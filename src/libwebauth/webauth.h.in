@@ -117,7 +117,6 @@ typedef enum {
 #define WA_TK_WEBKDC_TOKEN "wt"
 
 /******************** constants for token types ****/
-#define WA_TT_PROXY "proxy"
 #define WA_TT_WEBKDC_SERVICE "webkdc-service"
 #define WA_TT_WEBKDC_PROXY "webkdc-proxy"
 #define WA_TT_REQUEST "req"
