@@ -101,18 +101,16 @@ src/webkdc/WebKDC/WebResponse.pm        WebKDC -- Send outgoing response
 src/webkdc/WebKDC/XmlDoc.pm             WebKDC -- XML parsing
 src/webkdc/WebKDC/XmlElement.pm         WebKDC -- XML element handling
 src/webkdc/images                       WebKDC -- Login images (Directory)
-src/webkdc/images/quad.gif              WebKDC -- Login images
-src/webkdc/images/quad1.gif             WebKDC -- Login images
+src/webkdc/images/gateway1.gif          WebKDC -- Login images
+src/webkdc/images/gateway1.open.gif     WebKDC -- Login images
 src/webkdc/login.fcgi                   WebKDC -- FastCGI login server
 src/webkdc/logout.fcgi                  WebKDC -- FastCGI logout page
 src/webkdc/templates                    WebKDC -- Login templates (Directory)
-src/webkdc/templates/cancel.html        WebKDC -- Login server page templates
-src/webkdc/templates/cancel.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/confirm.tmpl       WebKDC -- Login server page templates
 src/webkdc/templates/error.tmpl         WebKDC -- Login server page templates
-src/webkdc/templates/login2.tmpl        WebKDC -- Login server page templates
+src/webkdc/templates/help.html          WebKDC -- Login server page templates
+src/webkdc/templates/login.tmpl         WebKDC -- Login server page templates
 src/webkdc/templates/logout.tmpl        WebKDC -- Login server page templates
-src/webkdc/templates/verify.tmpl        WebKDC -- Login server page templates
-src/webkdc/templates/verify2.tmpl       WebKDC -- Login server page templates
 tests                                   WebAuth test suite (Directory)
 tests/Makefile.in                       Makefile for test suite
 tests/TESTS                             List of individual tests
