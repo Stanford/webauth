@@ -1,7 +1,8 @@
+# Makefile for libwebauth
 # $Id$
-#
 
 srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
 CC		= @CC@
@@ -9,8 +10,7 @@ INSTALL		= @INSTALL@
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
-#CPPFLAGS	= -I. -I../common/include @CPPFLAGS@
-CPPFLAGS	= -I. -I@top_srcdir@/src/common/include @CPPFLAGS@
+CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include @CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LIBS		= @LIBS@
 
@@ -28,3 +28,24 @@ $(LIBNAME).a: $(OBJS)
 
 clean:
 	rm -f $(LIBNAME).a $(OBJS) *~ core \#*
+
+depend:
+	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+aes_cbc.o: aes_cbc.c aes_locl.h
+aes_cfb.o: aes_cfb.c aes_locl.h
+aes_core.o: aes_core.c aes_locl.h
+aes_ctr.o: aes_ctr.c aes_locl.h
+aes_ecb.o: aes_ecb.c aes_locl.h
+aes_misc.o: aes_misc.c aes_locl.h
+aes_ofb.o: aes_ofb.c aes_locl.h
+attrs.o: attrs.c webauthp.h ../../src/common/include/conf.h webauth.h
+base64.o: base64.c webauthp.h ../../src/common/include/conf.h \
+ webauth.h
+key.o: key.c webauthp.h ../../src/common/include/conf.h webauth.h
+krb5.o: krb5.c webauthp.h ../../src/common/include/conf.h webauth.h
+misc.o: misc.c webauthp.h ../../src/common/include/conf.h webauth.h
+random.o: random.c webauthp.h ../../src/common/include/conf.h \
+ webauth.h
+token.o: token.c webauthp.h ../../src/common/include/conf.h webauth.h

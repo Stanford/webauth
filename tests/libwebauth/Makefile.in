@@ -1,5 +1,5 @@
+# Makefile for the Webauth test suite
 # $Id$
-#
 
 srcdir		= @srcdir@
 VPATH		= @srcdir@
@@ -15,9 +15,12 @@ CPPFLAGS	= -I. -I@top_srcdir@/src/common/include \
 
 LDLIBS		= -L@top_srcdir@/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@ @KRB5_LIB@ @KRB5_CRYPTO_LIB@ @COM_ERR_LIB@
 
-TESTS		= attrs_test base64_test key_test krb5_test token_test hex_test random_test
+TESTS		= attrs_test base64_test key_test krb5_test token_test \
+		  hex_test random_test
 
 all: $(TESTS)
+
+depend:
 
 attrs_test: attrs_test.o
 

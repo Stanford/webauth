@@ -1,6 +1,5 @@
-# Makefile for the sident software
+# Makefile for the Webauth test suite
 # $Id$
-#
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -10,13 +9,15 @@ VPATH = @srcdir@
 
 SUBDIRS = libwebauth
 
+.PHONY: all clean depend install
+
 all: Makefile
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-clean install:
+clean depend install:
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \

@@ -28,7 +28,7 @@ all: Makefile
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-clean install:
+clean depend install:
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
