@@ -24,7 +24,7 @@
 /* constants */
 #define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1
-#define PRIVGROUP_DIRECTIVE "webauth-group"
+#define PRIVGROUP_DIRECTIVE "privgroup"
 
 /* environment variables */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
