@@ -235,7 +235,7 @@ decrypt_token(const WEBAUTH_KEY *key,
 
     /* check padding length validity */
     plen = *(input+elen-1);
-    if (plen >= AES_BLOCK_SIZE || plen > elen) {
+    if (plen > AES_BLOCK_SIZE || plen > elen) {
         return WA_ERR_CORRUPT;
     }
     /* check padding data validity */
