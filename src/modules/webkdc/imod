@@ -1,1 +1,0 @@
-/usr/local/apache2/bin/apxs -i mod_webkdc.la
