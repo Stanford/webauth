@@ -8,7 +8,7 @@ dnl the appropriate preprocessor and linker flags.
 AC_DEFUN([WEBAUTH_LIB_KRB5],
 [AC_ARG_WITH([krb5],
              AC_HELP_STRING([--with-krb5=PATH], [Path to Kerberos v5 install]),
-             [if test x"$withval" != xno && test x"$withval" != yes ; then
+             [if test x"$withval" != xno && test x"$withval" != xyes ; then
                  KRB5_LDFLAGS=-L$withval/lib
                  KRB5_CPPFLAGS=-I$withval/include
               fi])
