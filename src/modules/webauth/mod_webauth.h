@@ -69,6 +69,10 @@
 #define CD_Debug "WebAuthDebug"
 #define CM_Debug "turn debugging on or off"
 
+#define CD_RequireSSL "WebAuthRequireSSL"
+#define CM_RequireSSL "whether or not SSL is required"
+#define DF_RequireSSL 1
+
 #define CD_AppTokenLifetime "WebAuthAppTokenLifetime"
 #define CM_AppTokenLifetime "lifetime of app-tokens"
 
@@ -115,6 +119,7 @@ enum {
     E_Keyring,
     E_Keytab,
     E_LoginURL,
+    E_RequireSSL,
     E_ReturnURL,
     E_ServiceTokenCache,
     E_StripURL,
@@ -151,6 +156,8 @@ typedef struct {
     char *var_prefix;
     int  debug;
     int debug_ex;
+    int  require_ssl;
+    int require_ssl_ex;
     char *subject_auth_type;
     int extra_redirect;
     int extra_redirect_ex; /* if it was explicitly specified in conf file */

@@ -155,6 +155,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->token_max_ttl = DF_TokenMaxTTL;
     sconf->subject_auth_type = DF_SubjectAuthType;
     sconf->strip_url = DF_StripURL;
+    sconf->require_ssl = DF_RequireSSL;
     return (void *)sconf;
 }
 
@@ -197,6 +198,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->extra_redirect : bconf->extra_redirect;
 
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
+
+    conf->require_ssl = oconf->require_ssl_ex ? 
+        oconf->require_ssl : bconf->require_ssl;
 
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
@@ -647,6 +651,7 @@ static char *
 make_return_url(MWA_REQ_CTXT *rc)
 {
     char port[32];
+    apr_port_t p;
     const char *scheme;
     const char *uri = rc->r->unparsed_uri;
 
@@ -660,10 +665,12 @@ make_return_url(MWA_REQ_CTXT *rc)
 
     scheme = ap_run_http_method(rc->r);
 
-    if (ap_is_default_port(rc->r->server->port, rc->r)) {
+    p = ap_get_server_port(rc->r);
+
+    if (ap_is_default_port(p, rc->r)) {
         port[0] = '\0';
     } else {
-        sprintf(port, ":%d", rc->r->server->port);
+        sprintf(port, ":%d", p);
     }
 
     return apr_pstrcat(rc->r->pool,
@@ -811,6 +818,15 @@ check_user_id_hook(request_rec *r)
 
     if ((at == NULL) || (strcmp(at, "WebAuth") != 0)) {
         return DECLINED;
+    }
+
+
+    /* check to see if SSL is required */
+    if (rc.sconf->require_ssl && !is_https(r)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                     "mod_webauth: %s is enabled and connection is "
+                     "not https, denying request", CD_RequireSSL);
+        return HTTP_UNAUTHORIZED;
     }
 
     /* first check if we've already validated the user */
@@ -1152,6 +1168,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->debug = flag;
             sconf->debug_ex = 1;
             break;
+        case E_RequireSSL:
+            sconf->require_ssl = flag;
+            sconf->require_ssl_ex = 1;
+            break;
             /* start of dconfigs */
         case E_ForceLogin:
             dconf->force_login = flag;
@@ -1203,6 +1223,7 @@ static const command_rec cmds[] = {
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     /* directory */
     DSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
