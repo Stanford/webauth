@@ -12,10 +12,10 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-BEGIN { plan tests => 45 }
+BEGIN { plan tests => 42 }
 my $run_kerb = 0;
 
-#BEGIN { plan tests => 49 }
+#BEGIN { plan tests => 46 }
 #my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
@@ -104,15 +104,18 @@ ok (WebAuth::Exception::match($@));
 ok(WebAuth::attrs_encode({"x"=>"1"}) eq "x=1;");
 ok(WebAuth::attrs_encode({"x"=>";"}) eq "x=;;;");
 ok(WebAuth::attrs_encode({"x"=>"1;"}) eq "x=1;;;");
-ok(WebAuth::attrs_encode({"x"=>"1", "y"=>"2"}) eq "x=1;y=2;");
-ok(WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"}) eq "x=\000;y=123;");
+
+#these are bogus unless we sort the hash table internally
+#ok(WebAuth::attrs_encode({"x"=>"1", "y"=>"2"}) eq "x=1;y=2;");
+#ok(WebAuth::attrs_encode({"x"=>"\000", "y"=>"123"}) eq "x=\000;y=123;");
 
 # try and encode, followed by a decode and compare the hashes
 my $a = {"x"=> "1", "y"=> "hello", "z" => "goodbye"};
 
 my $ea = "x=1;y=hello;z=goodbye;";
 
-ok(WebAuth::attrs_encode($a) eq $ea);
+#also bogus
+#ok(WebAuth::attrs_encode($a) eq $ea);
 $b = WebAuth::attrs_decode($ea);
 ok(compareHashes($a,$b), 1);
 
