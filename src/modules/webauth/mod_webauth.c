@@ -301,11 +301,58 @@ die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
 }
 
 /*
+ * called on restarts
+ */
+static apr_status_t
+mod_webauth_cleanup(void *data)
+{
+    server_rec *s = (server_rec*) data;
+    server_rec *t;
+    MWA_SCONF *sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
+                                                        &webauth_module);
+
+    if (sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: cleanup");
+    }
+
+    /* walk through list of services and clean up */
+    for (t=s; t; t=t->next) {
+        MWA_SCONF *tconf = (MWA_SCONF*)ap_get_module_config(t->module_config,
+                                                            &webauth_module);
+
+        if (tconf->ring && tconf->free_ring) {
+            if (sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                             "mod_webauth: cleanup ring: %s",
+                             tconf->keyring_path);
+            }
+            webauth_keyring_free(tconf->ring);
+            tconf->ring = NULL;
+            tconf->free_ring = 0;
+        }
+
+        /* service_token is currently never set in the parent,
+         * add it here in case we change caching strategy.
+         */
+        if (tconf->service_token) {
+            apr_pool_destroy(tconf->service_token->pool);
+            tconf->service_token = NULL;
+            if (sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                             "mod_webauth: cleanup service_token: %s",
+                             tconf->st_cache_path);
+            }
+        }
+    }
+    return APR_SUCCESS;
+}
+
+/*
  * check server conf directives for server,
  * also cache keyring
  */
 static void
-init_sconf(server_rec *s, apr_pool_t *ptemp)
+init_sconf(server_rec *s, MWA_SCONF *bconf, apr_pool_t *ptemp)
 {
     MWA_SCONF *sconf;
 
@@ -324,27 +371,20 @@ init_sconf(server_rec *s, apr_pool_t *ptemp)
 
 #undef CHECK_DIR
 
-    mwa_cache_keyring(s, sconf);
+    /* load up the keyring */
+    
+    if (sconf->ring == NULL) {
+        if ((bconf->ring != NULL) &&
+            (strcmp(sconf->keyring_path, bconf->keyring_path) == 0)) {
+            sconf->ring = bconf->ring;
+            sconf->free_ring = 0;
+        } else {
+            mwa_cache_keyring(s, sconf);
+            if (sconf->ring)
+                sconf->free_ring = 1;
+        }
+    }
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
-                 "mod_webauth: keyring_path(%s) %d\n", 
-                 sconf->keyring_path,
-                 (int)getpid());
-}
-
-/*
- * called on restarts
- */
-static apr_status_t
-mod_webauth_cleanup(void *data)
-{
-    server_rec *s = (server_rec*) data;
-    MWA_SCONF *sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-                                                        &webauth_module);
-
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: cleanup(%d)",
-                 getpid());
-    mwa_free_keyring_cache(s, sconf);
 }
 
 /*
@@ -367,18 +407,14 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initializing");
 
-
-    mwa_init_keyring_cache(s, sconf, ptemp);
-
     for (scheck=s; scheck; scheck=scheck->next) {
-        init_sconf(scheck, ptemp);
+        init_sconf(scheck, sconf, ptemp);
     }
 
     ap_add_version_component(pconf, WEBAUTH_VERSION);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
-                     "mod_webauth: initialized(%d)", (int)getpid());
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: initialized");
 
     return OK;
 }
@@ -525,7 +561,6 @@ make_app_token(const char *subject,
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken, *cookie;
     int tlen, olen, status;
-    WEBAUTH_KEYRING *ring;
 
     status = WA_ERR_NONE;
 
@@ -549,19 +584,11 @@ make_app_token(const char *subject,
     tlen = webauth_token_encoded_length(alist);
     token = (char*)apr_palloc(rc->r->pool, tlen);
 
-    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = mwa_get_keyring(rc);
-
-    if (ring != NULL) {
-        status = webauth_token_create(alist, 0, token, &olen, tlen, ring);
-    }
-
-    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL)
+    if (rc->sconf->ring == NULL)
         return;
 
+    status = webauth_token_create(alist, 0, token, 
+                                  &olen, tlen, rc->sconf->ring);
     webauth_attr_list_free(alist);
 
     if (status != WA_ERR_NONE) {
@@ -674,7 +701,6 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     int blen, status;
     const char *tt;
     char *sub;
-    WEBAUTH_KEYRING *ring;
 
     sub = NULL;
     ap_unescape_url(token);
@@ -685,18 +711,10 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
      * just expiration
      */
 
-    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = mwa_get_keyring(rc);
-
-    if (ring != NULL) {
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
-    }
-
-    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL)
+    if (rc->sconf->ring == NULL)
         return NULL;
+
+    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,
@@ -788,7 +806,6 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     WEBAUTH_KEY *key;
-    WEBAUTH_KEYRING *ring;
     const char *tt;
     int status, i , klen, blen;
 
@@ -801,17 +818,10 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
      * just expiration
      */
 
-    mwa_lock_mutex(rc, MWA_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = mwa_get_keyring(rc);
-
-    if (ring != NULL) {
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
-    }
-    mwa_unlock_mutex(rc, MWA_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL)
+    if (rc->sconf->ring == NULL)
         return NULL;
+
+    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,
@@ -964,7 +974,7 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 static int
 handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
-    int status, error_code;
+    int error_code;
     static const char *mwa_func = "handle_error_token";
     char *log_message;
     const char *ec = mwa_get_str_attr(alist, WA_TK_ERROR_CODE,
@@ -1122,18 +1132,6 @@ make_return_url(MWA_REQ_CTXT *rc)
             uri = rc->dconf->return_url;
     }
     return ap_construct_url(rc->r->pool, uri, rc->r);
-}
-
-static char *
-make_login_canceled_url(MWA_REQ_CTXT *rc)
-{
-    if (!rc->dconf->login_canceled_url)
-        return NULL;
-    else if (rc->dconf->login_canceled_url[0] != '/')
-        return rc->dconf->login_canceled_url;
-    else 
-        return ap_construct_url(rc->r->pool, 
-                                rc->dconf->login_canceled_url, rc->r);
 }
 
 static int
@@ -1703,8 +1701,10 @@ static const command_rec cmds[] = {
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SFLAG(CD_RequireSSL, E_RequireSSL, CM_RequireSSL),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
+    SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
     /* directory */
     ADSTR(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
     ADSTR(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),

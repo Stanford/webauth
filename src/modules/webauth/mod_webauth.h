@@ -141,8 +141,7 @@
 
 /* enum for mutexes */
 enum mwa_mutex_type {
-    MWA_MUTEX_KEYRING = 0,
-    MWA_MUTEX_SERVICE_TOKEN,
+    MWA_MUTEX_SERVICE_TOKEN = 0,
     MWA_MUTEX_MAX /* MUST BE LAST! */
 };
 
@@ -216,6 +215,10 @@ typedef struct {
     int subject_auth_type_ex;
     int token_max_ttl; 
     int token_max_ttl_ex;
+    /* stuff we need to clean up on restarts and what not */
+    WEBAUTH_KEYRING *ring; /* our keyring */
+    int free_ring;         /* set if we should free ring */
+    MWA_SERVICE_TOKEN *service_token; /*cached service_token, always free */
 } MWA_SCONF;
 
 /* directory conf stuff */
@@ -335,26 +338,5 @@ mwa_log_webauth_error(server_rec *r,
  */
 int
 mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf);
-
-/*
- * this should only be called in the module init routine
- */
-int
-mwa_init_keyring_cache(server_rec *serv, MWA_SCONF *sconf,
-                       apr_pool_t *ptemp);
-
-/*
- * this should only be called in the module cleanup routine
- */
-int
-mwa_free_keyring_cache(server_rec *s, MWA_SCONF *sconf);
-
-/* 
- * should only be called (and result used) while you have
- * the MWA_MUTEX_KEYRING mutex.
- */
-
-WEBAUTH_KEYRING *
-mwa_get_keyring(MWA_REQ_CTXT *rc);
 
 #endif
