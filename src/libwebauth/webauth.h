@@ -612,8 +612,7 @@ int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
  * has been successfully called.
  */
 int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
-                        const char *hostname,
-                        const char *service,
+                        const char *service_principal,
                         unsigned char **req,
                         int *length);
 

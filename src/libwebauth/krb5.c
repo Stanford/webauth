@@ -724,33 +724,35 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context, int destroy_cache)
 
 int
 webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
-                    const char *hostname,
-                    const char *service,
+                    const char *server_principal,
                     unsigned char **output,
                     int *length)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     krb5_auth_context auth;
     krb5_data outbuf;
+    krb5_principal princ;
     int s;
 
     assert(c != NULL);
-    assert(hostname != NULL);
-    assert(service != NULL);
+    assert(server_principal != NULL);
     assert(output != NULL);
     assert(length != NULL);
 
-    auth = NULL;
-    c->code = krb5_mk_req(c->ctx, &auth, 0, (char*)service, (char*)hostname, 
-                          NULL, c->cc, &outbuf);
-
-    if (c->code != 0) {
+    c->code = krb5_parse_name(c->ctx, server_principal, &princ);
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    }
 
-    if (auth != NULL) {
+    auth = NULL;
+    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ,
+                                    NULL, c->cc, &outbuf);
+    krb5_free_principal(c->ctx, princ);
+
+    if (c->code != 0)
+        return WA_ERR_KRB5;
+
+    if (auth != NULL)
         krb5_auth_con_free(c->ctx, auth);
-    }
 
     *output = malloc(outbuf.length);
     if (*output == NULL) {

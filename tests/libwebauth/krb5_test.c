@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     service = argv[4];
     host = argv[5];
 
-    START_TESTS(14);
+    START_TESTS(16);
 
     c = webauth_krb5_new();
     TEST_OK(c != NULL);
@@ -51,7 +51,13 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
 
     sa = NULL;
-    s = webauth_krb5_mk_req(c, "lichen.stanford.edu", "host", &sa, &salen);
+
+    s = webauth_krb5_service_principal(c, 
+                                       "host", "lichen.stanford.edu", &server);
+    TEST_OK2(WA_ERR_NONE, s);
+
+    s = webauth_krb5_mk_req(c, server, &sa, &salen);
+    free(server);
     TEST_OK2(WA_ERR_NONE, s);
 
     s = webauth_krb5_rd_req(c, sa, salen, keytab_path, &cp);
