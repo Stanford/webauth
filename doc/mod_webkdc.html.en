@@ -23,7 +23,7 @@
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>WebAuth V3 WebKDC module</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webkdc_module</td></tr>
-<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c and friends</td></tr></table>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c</td></tr></table>
 <h3>Summary</h3>
 
 <p>This module implements the server-side of the WebAuth V3 protocol.</p>
@@ -62,7 +62,7 @@
 <h2>Minimal Config File</h2>
 
     <p>The following example shows the minimum config file required
-    to configure and use mod_webwkdc.</p>
+    to configure and use mod_webkdc.</p>
 
 <div class="example"><h3>Example</h3><pre>
 LoadModule webkdc_module modules/mod_webkdc.so
@@ -85,7 +85,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <p>WebAuth V3 was designed so that it would be fairly easy
 to setup multiple WebKDCs for load balancing and redundancy. There
 are three pieces of information that need to be shared between
-WebKDC servers in order to acheive this:
+WebKDC servers in order to achieve this:
     </p>
 
 <ol>
@@ -100,7 +100,7 @@ WebKDC servers in order to acheive this:
 </div>
 
 <p>
-By covention, one of the WebKDC's should be designated as the "master"
+By convention, one of the WebKDC's should be designated as the "master"
 and other WebKDC's should be designated as "slaves". These files should
 only be updated on the "master" and pushed manually to the "slaves".
 </p>
@@ -150,7 +150,7 @@ post-dated key in the file called "keyring" you should do the following:
 That example generates a new key that will be valid in seven days. Any
 existing keys in the keyring file are left as-is so outstanding tokens
 continue to work. The new keyring file can then safely be distributed
-to the "slave" WebKDCs. Old keys in the keyring file should also peridically
+to the "slave" WebKDCs. Old keys in the keyring file should also periodically
 be removed. This can manually be done with <code>wa_keyring</code> using the 
 <code>list</code> and <code>remove</code> commands. For example:
 </p>
@@ -244,7 +244,7 @@ WebKdcDebug on<br />
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 <p>
-This is the name of the file containing the WebKDC'sh keyring, which is
+This is the name of the file containing the WebKDC's keyring, which is
 a file that contains the server's private AES key(s). </p>
 
 <p>The keyring file gets read once per child and cached for the duration
@@ -288,7 +288,7 @@ That too will eventually be automated.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringAutoUdpate off<br />
+WebKdcKeyringAutoUpdate off<br />
 </code></p></div>
 
 </div>
@@ -328,7 +328,7 @@ WebKdcKeyringKeyLifetime 60d<br />
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
 </td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeytab <em>path</em> [<em>princpal</em>]</code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
@@ -336,7 +336,7 @@ WebKdcKeyringKeyLifetime 60d<br />
 </table>
 <p>
 This is the name of the Kerberos V5 keytab file. If principal is not
-specified, then the first princpal in the keytab file be used.</p>
+specified, then the first principal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>

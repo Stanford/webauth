@@ -23,7 +23,7 @@
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth V3 protocol</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauth_module</td></tr>
-<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c and friends</td></tr></table>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
 <h3>Summary</h3>
 
 <p>This module provides WebAuth V3 support.</p>
@@ -61,6 +61,8 @@ WebAuthLastUseUpdateInterval
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthproxyheaders">WebAuthProxyHeaders</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#&#10;webauthusecreds&#10;">
@@ -201,7 +203,7 @@ assume that all pages under http://yourserver/private/ are to be protected:</p>
 </code></p></div>
 
 <p>Then, in order to determine the user's identity from
-the Perl script, it is simply a matter of accessing the evnrionment
+the Perl script, it is simply a matter of accessing the environment
 variables set by mod_webauth within your Perl script:</p>
 
 <div class="example"><h3>Perl Example</h3><p><code>
@@ -236,7 +238,7 @@ For example:</p>
 
 <p>Then, in order to determine the user's identity from
 the PHP script, you can either use the PHP getenv function, or access
-the special <code>$_SERVER</code> array variable. For eample:</p>
+the special <code>$_SERVER</code> array variable. For example:</p>
 
 <div class="example"><h3>PHP Example</h3><p><code>
 <code>
@@ -257,7 +259,7 @@ print "The authenticated user is $WEBAUTH_USER\n";
 In looking at the source for PHP 4.3, it appears that the <code>getenv</code>
 is looking only in the <code>$_SERVER</code> array, so there is a one-to-one 
 mapping between the two. Oddly enough, getenv isn't looking the 
-<code>$_ENV</code> array. See the PHP documention for more information
+<code>$_ENV</code> array. See the PHP documentation for more information
 on <a href="http://www.php.net/manual/en/reserved.variables.php">predefined variables</a> in PHP.</p>
 <p>
 Any of the environment variables described in the 
@@ -400,7 +402,7 @@ handler after you have <code>mod_webauth</code> configured correctly.
 <p>WebAuth V3 was designed so that it would be fairly easy
 to setup multiple WebAuth servers for load balancing and redundancy. There
 are two pieces of information that need to be shared between
-WebAuth servers in order to acheive this:
+WebAuth servers in order to achieve this:
     </p>
 
 <ol>
@@ -415,7 +417,7 @@ kerberized <code>rcp</code>.</p>
 </div>
 
 <p>
-By covention, one of the WebAuth servers should be designated as the master
+By convention, one of the WebAuth servers should be designated as the master
 and other servers should be designated as slaves. These files should
 only be updated on the master and pushed manually to the slaves.
 </p>
@@ -457,7 +459,7 @@ post-dated key in the file called "keyring" you should do the following:
 That example generates a new key that will be valid in seven days. Any
 existing keys in the keyring file are left as-is so outstanding tokens
 continue to work. The new keyring file can then safely be distributed
-to the slave servers. Old keys in the keyring file should also peridically
+to the slave servers. Old keys in the keyring file should also periodically
 be removed. This can manually be done with <code>wa_keyring</code> using the 
 <code>list</code> and <code>remove</code> commands. For example:
 </p>
@@ -961,7 +963,7 @@ WebAuthKeyringKeyLifetime 60d<br />
 </table>
 <p>
 This is the name of the Kerberos V5 keytab file. If principal is not
-specified, then the first princpal in the keytab file be used.</p>
+specified, then the first principal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -1004,11 +1006,6 @@ it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</
 <p>The units for the time are specified by appending a single letter,
 which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
-
-<div class="note"><h3>Note</h3> 
-    <p>Should we enforce a minimum value, like 1m or 5m?
-    </p>
-</div>
 
 <div class="example"><h3>Example</h3><p><code>
 # timeout an app-token if it isn't used for <br />
@@ -1193,6 +1190,64 @@ WebAuthServiceTokenCache conf/webauth/service_token_cache
 
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthSSLRedirect" id="WebAuthSSLRedirect">WebAuthSSLRedirect</a> <a name="webauthsslredirect" id="webauthsslredirect">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Redirect to https when accessing a WebAuth-protected page via http
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirect on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+If a user attempts to access a WebAuth-protected page via <code>http</code>
+instead of <code>https</code> and this directive is turned off, then access 
+will be denied. If this directive is tuned on, then the user will 
+be redirected to the same URL using <code>https</code> instead of 
+<code>http</code>. Once accessing pages using <code>https</code>, they will
+remain accessing pages via <code>https</code> unless the application
+redirects the user back to <code>http</code>.
+</p>
+
+<div class="note"><h3>Note</h3> 
+    <p>If the server is not configured to run SSL on the default port, then
+    the <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a> directive
+    must be used to specify which port to redirect the user to.
+    </p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthSSLRedirect on<br />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthSSLRedirectPort" id="WebAuthSSLRedirectPort">WebAuthSSLRedirectPort</a> <a name="webauthsslredirectport" id="webauthsslredirectport">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>port to use when redirecting the user to https
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirectPort <em>port</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect 443</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+<p>
+This is used in conjunction with the 
+<a href="#webauthsslredirect">WebAuthSSLRedirect</a> directive and controls
+which port the user is redirected to when redirecting them to the 
+<code>https</code> version of the URL. This is useful during development if
+you run the Apache server on ports 8080 and 8443, for example.
+</p>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthSSLRedirect on<br />
+WebAuthSSLRedirectPort 8443<br />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSubjectAuthType" id="WebAuthSubjectAuthType">WebAuthSubjectAuthType</a> <a name="webauthsubjectauthtype" id="webauthsubjectauthtype">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Type of subject authenticator the WebKDC will use in the returned
@@ -1356,7 +1411,7 @@ WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertCheck" id="WebAuthWebKdcSSLCertCheck">WebAuthWebKdcSSLCertCheck</a> <a name="webauthwebkdcsslcertcheck" id="webauthwebkdcsslcertcheck">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to peform SSL certificate checking on the WebKDC's
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to perform SSL certificate checking on the WebKDC's
 certificate
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertCheck on|off</code></td></tr>
@@ -1399,7 +1454,7 @@ WebAuthWebKdcSSLCertCheck off
 This is the name of a file holding one or more certificates to verify the 
 WebKDC's SSL Certificate with. This directive is only needed if you
 are using a self-signed certificate with your WebKDC. If you are using a
-self-signed certifcate, you should copy that certificate (the file
+self-signed certificate, you should copy that certificate (the file
 mentioned in the WebKDC's Apache SSLCertificateFile directive) to a local
 file, and point to that file with this directive.
 </p>
@@ -1410,7 +1465,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 <div class="note"><h3>Note</h3> 
     <p>This directive is only needed when the <b>WebKDC</b> is using a
 self-signed certificate. It is not needed if your WebAuth server is using
-a self-signed ceritficate</p>
+a self-signed certificate</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>

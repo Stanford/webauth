@@ -6,7 +6,7 @@
 <name>mod_webauth</name>
 <description>Support for the WebAuth V3 protocol</description>
 <status>Contributed</status>
-<sourcefile>mod_webauth.c and friends</sourcefile>
+<sourcefile>mod_webauth.c</sourcefile>
 <identifier>webauth_module</identifier>
 
 <summary>
@@ -133,7 +133,7 @@ assume that all pages under http://yourserver/private/ are to be protected:</p>
 </example>
 
 <p>Then, in order to determine the user's identity from
-the Perl script, it is simply a matter of accessing the evnrionment
+the Perl script, it is simply a matter of accessing the environment
 variables set by mod_webauth within your Perl script:</p>
 
 <example><title>Perl Example</title>
@@ -168,7 +168,7 @@ For example:</p>
 
 <p>Then, in order to determine the user's identity from
 the PHP script, you can either use the PHP getenv function, or access
-the special <code>$_SERVER</code> array variable. For eample:</p>
+the special <code>$_SERVER</code> array variable. For example:</p>
 
 <example><title>PHP Example</title>
 <code>
@@ -189,7 +189,7 @@ print "The authenticated user is $WEBAUTH_USER\n";
 In looking at the source for PHP 4.3, it appears that the <code>getenv</code>
 is looking only in the <code>$_SERVER</code> array, so there is a one-to-one 
 mapping between the two. Oddly enough, getenv isn't looking the 
-<code>$_ENV</code> array. See the PHP documention for more information
+<code>$_ENV</code> array. See the PHP documentation for more information
 on <a href="http://www.php.net/manual/en/reserved.variables.php">predefined variables</a> in PHP.</p>
 <p>
 Any of the environment variables described in the 
@@ -335,7 +335,7 @@ handler after you have <code>mod_webauth</code> configured correctly.
 <p>WebAuth V3 was designed so that it would be fairly easy
 to setup multiple WebAuth servers for load balancing and redundancy. There
 are two pieces of information that need to be shared between
-WebAuth servers in order to acheive this:
+WebAuth servers in order to achieve this:
     </p>
 
 <ol>
@@ -350,7 +350,7 @@ kerberized <code>rcp</code>.</p>
 </note>
 
 <p>
-By covention, one of the WebAuth servers should be designated as the master
+By convention, one of the WebAuth servers should be designated as the master
 and other servers should be designated as slaves. These files should
 only be updated on the master and pushed manually to the slaves.
 </p>
@@ -392,7 +392,7 @@ post-dated key in the file called "keyring" you should do the following:
 That example generates a new key that will be valid in seven days. Any
 existing keys in the keyring file are left as-is so outstanding tokens
 continue to work. The new keyring file can then safely be distributed
-to the slave servers. Old keys in the keyring file should also peridically
+to the slave servers. Old keys in the keyring file should also periodically
 be removed. This can manually be done with <code>wa_keyring</code> using the 
 <code>list</code> and <code>remove</code> commands. For example:
 </p>
@@ -748,7 +748,7 @@ WebAuthKeyRing conf/webauth/keyring
 <usage>
 <p>
 This is the name of the Kerberos V5 keytab file. If principal is not
-specified, then the first princpal in the keytab file be used.</p>
+specified, then the first principal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -1001,11 +1001,6 @@ it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</
 which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
 
-<note><title>Note</title> 
-    <p>Should we enforce a minimum value, like 1m or 5m?
-    </p>
-</note>
-
 <example><title>Example</title>
 # timeout an app-token if it isn't used for <br/>
 # more then 20 minutes<br/>
@@ -1069,6 +1064,70 @@ LogLevel debug<br />
 </example>
 </usage>
 </directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthSSLRedirect</name>
+<description>Redirect to https when accessing a WebAuth-protected page via http
+</description>
+<syntax>WebAuthSSLRedirect on|off</syntax>
+<default>WebAuthSSLRedirect off</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+If a user attempts to access a WebAuth-protected page via <code>http</code>
+instead of <code>https</code> and this directive is turned off, then access 
+will be denied. If this directive is tuned on, then the user will 
+be redirected to the same URL using <code>https</code> instead of 
+<code>http</code>. Once accessing pages using <code>https</code>, they will
+remain accessing pages via <code>https</code> unless the application
+redirects the user back to <code>http</code>.
+</p>
+
+<note><title>Note</title> 
+    <p>If the server is not configured to run SSL on the default port, then
+    the <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a> directive
+    must be used to specify which port to redirect the user to.
+    </p>
+</note>
+
+<example><title>Example</title>
+WebAuthSSLRedirect on<br />
+</example>
+</usage>
+</directivesynopsis>
+
+
+
+
+<directivesynopsis>
+<name>WebAuthSSLRedirectPort</name>
+<description>port to use when redirecting the user to https
+</description>
+<syntax>WebAuthSSLRedirectPort <em>port</em></syntax>
+<default>WebAuthSSLRedirect 443</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is used in conjunction with the 
+<a href="#webauthsslredirect">WebAuthSSLRedirect</a> directive and controls
+which port the user is redirected to when redirecting them to the 
+<code>https</code> version of the URL. This is useful during development if
+you run the Apache server on ports 8080 and 8443, for example.
+</p>
+
+<example><title>Example</title>
+WebAuthSSLRedirect on<br />
+WebAuthSSLRedirectPort 8443<br />
+</example>
+</usage>
+</directivesynopsis>
+
+
 
 <directivesynopsis>
 <name>WebAuthDontCache</name>
@@ -1279,7 +1338,7 @@ specify that multiple credentials are required.</p>
 This is the name of a file holding one or more certificates to verify the 
 WebKDC's SSL Certificate with. This directive is only needed if you
 are using a self-signed certificate with your WebKDC. If you are using a
-self-signed certifcate, you should copy that certificate (the file
+self-signed certificate, you should copy that certificate (the file
 mentioned in the WebKDC's Apache SSLCertificateFile directive) to a local
 file, and point to that file with this directive.
 </p>
@@ -1290,7 +1349,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 <note><title>Note</title> 
     <p>This directive is only needed when the <b>WebKDC</b> is using a
 self-signed certificate. It is not needed if your WebAuth server is using
-a self-signed ceritficate</p>
+a self-signed certificate</p>
 </note>
 
 <example><title>Example</title>
@@ -1301,7 +1360,7 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 
 <directivesynopsis>
 <name>WebAuthWebKdcSSLCertCheck</name>
-<description>Whether or not to peform SSL certificate checking on the WebKDC's
+<description>Whether or not to perform SSL certificate checking on the WebKDC's
 certificate
 </description>
 <syntax>WebAuthWebkdcSSLCertCheck on|off</syntax>
