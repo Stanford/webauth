@@ -589,9 +589,9 @@ PPCODE:
     WEBAUTH_ATTR_LIST *list;
     int i, s;
     HV *hv;
-    SV *output, *copy = sv_2mortal(newSVsv(buffer));
+    SV *output;
 
-    p_input = SvPV(copy, n_input);
+    p_input = SvPV(buffer, n_input);
 
     s = webauth_token_parse(p_input, n_input, ttl, ring, &list);
     
@@ -624,9 +624,9 @@ PPCODE:
     WEBAUTH_ATTR_LIST *list;
     int i, s;
     HV *hv;
-    SV *output, *copy = sv_2mortal(newSVsv(buffer));
+    SV *output;
 
-    p_input = SvPV(copy, n_input);
+    p_input = SvPV(buffer, n_input);
 
     s = webauth_token_parse_with_key(p_input, n_input, ttl, key, &list);
 

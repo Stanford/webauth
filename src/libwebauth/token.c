@@ -287,13 +287,12 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
 
 /*
  * decrypts and decodes attrs from token.
- * input buffer is modified.
  *
  * {key-hint}{nonce}{hmac}{token-attributes}{padding}
  */
 
 int
-webauth_token_parse(unsigned char *input,
+webauth_token_parse(const unsigned char *input,
                     int input_len,
                     int ttl,
                     const WEBAUTH_KEYRING *ring,
@@ -375,19 +374,19 @@ webauth_token_parse(unsigned char *input,
 
 /*
  * decrypts and decodes attrs from token
- * input buffer is modified.
  *
  * {key-hint}{nonce}{hmac}{token-attributes}{padding}
  */
 
 int
-webauth_token_parse_with_key(unsigned char *input,
+webauth_token_parse_with_key(const unsigned char *input,
                              int input_len,
                              int ttl,
                              const WEBAUTH_KEY *key,
                              WEBAUTH_ATTR_LIST **list)
 {
     int dlen, s;
+    unsigned char *buff;
 
     assert(input != NULL);
     assert(list != NULL);
@@ -400,9 +399,16 @@ webauth_token_parse_with_key(unsigned char *input,
         return WA_ERR_CORRUPT;
     }
 
-    s = decrypt_token(key, input, input_len, &dlen);
+    buff = malloc(input_len);
+    if (buff == NULL) 
+        return WA_ERR_NO_MEM;
+
+    memcpy(buff, input, input_len);
+
+    s = decrypt_token(key, buff, input_len, &dlen);
     if (s == WA_ERR_NONE)
-        s = webauth_attrs_decode(input+T_ATTR_O, dlen, list);
+        s = webauth_attrs_decode(buff+T_ATTR_O, dlen, list);
+    free(buff);
 
     if (s != WA_ERR_NONE)
         return s;

@@ -508,8 +508,7 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
                                   const WEBAUTH_KEY *key);
 
 /*
- * decrypts and decodes attrs from a token
- * input buffer is modified. The best decryption key
+ * decrypts and decodes attrs from a token. The best decryption key
  * on the ring will be tried first, and if that fails
  * all the remaining keys will be tried.
  *
@@ -547,7 +546,7 @@ int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  *  WA_ERR_TOKEN_STALE
  */
 
-int webauth_token_parse(unsigned char *input,
+int webauth_token_parse(const unsigned char *input,
                         int input_len,
                         int ttl, 
                         const WEBAUTH_KEYRING *ring,
@@ -557,7 +556,7 @@ int webauth_token_parse(unsigned char *input,
  * same as webauth_token_parse, but takes a key instead of a key ring.
  */
 
-int webauth_token_parse_with_key(unsigned char *input,
+int webauth_token_parse_with_key(const unsigned char *input,
                                  int input_len,
                                  int ttl,
                                  const WEBAUTH_KEY *key,
