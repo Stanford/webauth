@@ -1002,15 +1002,16 @@ fixups_hook(request_rec *r)
     /* set environment variable */
     subject = mwa_get_note(r, N_SUBJECT);
     if (subject) {
+        char *name = ENV_WEBAUTH_USER;
 
-        char *name;
-        if (rc.sconf->var_prefix) {
-            name = apr_pstrcat(r->pool, rc.sconf->var_prefix, 
-                               ENV_WEBAUTH_USER, NULL);
-        } else {
-            name = ENV_WEBAUTH_USER;
-        }
         apr_table_setn(r->subprocess_env, name, subject);
+
+        if (rc.sconf->var_prefix) {
+            name = apr_pstrcat(r->pool, rc.sconf->var_prefix,
+                               ENV_WEBAUTH_USER, NULL);
+            apr_table_setn(r->subprocess_env, name, subject);
+        }
+
         /*
         {
             MWA_SERVICE_TOKEN *st = mwa_get_service_token(&rc);

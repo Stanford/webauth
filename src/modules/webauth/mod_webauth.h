@@ -78,7 +78,7 @@
 
 #define CD_SubjectAuthType "WebAuthSubjectAuthType"
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"
-#define DF_SubjectAuthType "krb5"
+#define DF_SubjectAuthType "webkdc"
 
 #define CD_StripURL "WebAuthStripURL"
 #define CM_StripURL "strip returned webkdc tokens from URL"
