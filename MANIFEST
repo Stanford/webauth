@@ -7,6 +7,9 @@ MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
 NEWS                                    Release history for WebAuth
 README                                  Basic information about WebAuth
+conf/sample-webauth.conf                Sample WebAuth Apache configuration
+conf/stanford-webauth.conf              Stanford-specific WebAuth conf
+conf/stanford-ldap.conf                 Stanford-specific WebAuthLdap conf
 config.h.in                             Template for configure information
 configure                               Script to configure WebAuth
 configure.ac                            Source file for configure
@@ -21,9 +24,6 @@ doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
-doc/webauth-stanford.conf               Stanford-specific WebAuth conf
-doc/webauth.conf                        Sample WebAuth Apache configuration
-doc/webauthldap-stanford.conf           Stanford-specific WebAuthLdap conf
 doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
