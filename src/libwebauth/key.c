@@ -413,7 +413,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
     for (i=0; i < num_entries; i++) {
         uint32_t creation_time, valid_from, valid_till, key_type;
         uint32_t entry_length;
-        int key_data_index;
+        int key_data_index = WA_ERR_NOT_FOUND;
         WEBAUTH_ATTR_LIST *list;
         WEBAUTH_KEY *key;
 
