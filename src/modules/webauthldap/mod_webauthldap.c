@@ -10,11 +10,6 @@ $Id$
 
 #include <krb5.h>
 #include <ldap.h>
-#include "ldif.h"
-#include "lutil.h"
-#include "lutil_ldap.h"
-#include "ldap_defaults.h"
-#include "ldap_log.h"
 
 #include "httpd.h"
 #include "http_config.h"
@@ -79,7 +74,7 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
+    //    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
 
     MWAL_SCONF *sconf = (MWAL_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webauthldap_module);
@@ -107,6 +102,9 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
     case E_Principal:
         sconf->principal = apr_pstrdup(cmd->pool, arg);
         break;
+    case E_Privgroupattr:
+        sconf->privgroupattr = apr_pstrdup(cmd->pool, arg);
+        break;
     case E_Tktcache:
         sconf->tktcache = apr_pstrdup(cmd->pool, arg);
         break;
@@ -130,7 +128,7 @@ cfg_flag(cmd_parms * cmd, void *mconfig, int flag)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    MWAL_DCONF *dconf = (MWAL_DCONF *) mconfig;
+    //    MWAL_DCONF *dconf = (MWAL_DCONF *) mconfig;
 
     MWAL_SCONF *sconf = (MWAL_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webauthldap_module);
@@ -162,8 +160,7 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
-    char** group;
+    //MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
     char** attrib;
 
     MWAL_SCONF *sconf = (MWAL_SCONF *)
@@ -171,14 +168,6 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
 
     switch (e) {
         /* server configs */
-    case E_Groups:
-        if (dconf->groups == NULL) {
-            dconf->groups = apr_array_make(cmd->pool, 5, sizeof(char*));
-        }
-
-        group = apr_array_push(dconf->groups);
-        *group = apr_pstrdup(cmd->pool, arg);
-        break;
     case E_Attribs:
         if (sconf->attribs == NULL) {
             sconf->attribs = apr_array_make(cmd->pool, 5, sizeof(char*));
@@ -233,7 +222,6 @@ static const command_rec cmds[] = {
     SFLAG(CD_Debug, E_Debug, CM_Debug),
 
     SITSTR(CD_Attribs, E_Attribs, CM_Attribs),
-    DITSTR(CD_Groups, E_Groups, CM_Groups),
     {NULL}
 };
 
@@ -318,6 +306,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
     }
 
+    return (void *)conf;
 }
 
 /**
@@ -326,20 +315,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 static void *
 config_dir_merge(apr_pool_t *p, void *basev, void *overv) 
 {
-    MWAL_DCONF *conf, *bconf, *oconf;
+    MWAL_DCONF *conf;
 
     conf = (MWAL_DCONF*) apr_pcalloc(p, sizeof(MWAL_DCONF));
-    bconf = (MWAL_DCONF*) basev;
-    oconf = (MWAL_DCONF*) overv;
-
-    if (bconf->groups == NULL) {
-        conf->groups = oconf->groups;
-    } else if (oconf->groups == NULL) {
-        conf->groups = bconf->groups;
-    } else {
-        // dups here are OK
-        conf->groups = apr_array_append(p, bconf->groups, oconf->groups);
-    }
 
     return (void *)conf;
 }
@@ -374,8 +352,6 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 
     return OK;
 }
-
-
 /**
  * This inserts the userid in every marked spot in the filter string. So
  * e.g. if the marker is the string "USER", a filter like 
@@ -416,12 +392,12 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
             beg = end + match_length;
         }
     } while(*(++end) != '\0');
-    
+
     // Append the last chunk. If no substitutions were done, this is the 
     // entire template string.
     if (end > beg)
         filter = apr_pstrcat(p,filter, apr_pstrndup(p, beg, end - beg), NULL);
-    
+
     return filter;
 }
 
@@ -667,7 +643,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         
         if (rc != LDAP_SUCCESS) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                         "webauthldap: Could not start tls: %s",
+                         "webauthldap: Could not start tls: %s (%d)",
                          ldap_err2string(rc), rc);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -751,14 +727,12 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
  * @return nothing
  */
 static void
-webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, 
-                        apr_table_t * attr_table)
+webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * attr_table)
 {
-    char *a, *dn;
-    int i, rc;
+    char *a;
+    int i;
     BerElement *ber = NULL;
     struct berval **bvals;
-    FILE *tmpfp;
     char *val;
 
     for (a = ldap_first_attribute(lc->ld, entry, &ber); a != NULL;
@@ -877,12 +851,14 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     char* newkey, *numbered_key, *p, *existing_val;
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
 
-    if (key == NULL | val == NULL)
+    if ((key == NULL) || (val == NULL))
         return 1;
 
+    /*
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap: got attrib: %s val: %s", key, val);
+    */
 
     // conf directive could have been in different capitalization, 
     // simpler to just lowercase for the comparison
@@ -953,16 +929,12 @@ auth_checker_hook(request_rec * r)
     MWAL_LDAP_CTXT* lc;
     int rc, i;
 
-    apr_array_header_t *reqs_arr;
-    apr_array_header_t *reqs_temp;
+    const apr_array_header_t *reqs_arr = ap_requires(r);
     require_line *reqs;
     const char *t, *w;
     int m = r->method_number;
-    require_line* popper;
-    require_line* pusher;
-
-    apr_array_header_t* groups;
-    char** group;
+    int needs_further_handling;
+    int authorized;
 
     if ((at == NULL) || (strcmp(at, "WebAuth") != 0)) {
         return DECLINED;
@@ -987,67 +959,74 @@ auth_checker_hook(request_rec * r)
         return rc;
 
     //
-    // Validate privgroups. this code is inspired by similar code in mod_auth.c
-    // except in this case, we pull out our own group require's and leave the 
-    // rest to mod_auth.c to deal with
-    reqs_arr = (apr_array_header_t*)ap_requires(r);
+    // Validate privgroups. this code mostly stolen from mod_auth.c
+    //
+    needs_further_handling = 0;
+    authorized = 1;
     if (reqs_arr) {
         reqs = (require_line *)reqs_arr->elts;
-        reqs_temp = apr_array_make(r->pool, 5, sizeof(require_line*));
-
-        while ((popper = apr_array_pop(reqs_arr)) != NULL) {
-            if (!(popper->method_mask & (AP_METHOD_BIT << m))) {
-                pusher = apr_array_push(reqs_temp);
-                *pusher = *popper;
+        
+        authorized = 0;
+        for (i = 0; i < reqs_arr->nelts; i++) {
+            if (!(reqs[i].method_mask & (AP_METHOD_BIT << m))) {
                 continue;
             }
 
-            t = popper->requirement;
+            t = reqs[i].requirement;
             w = ap_getword_white(r->pool, &t);
-            if (!strcmp(w, REQUIRE_DIRECTIVE)) {
+
+            if (!strcmp(w, "valid-user")) {
+                if (lc->sconf->debug)
+                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                 "webauthldap: REQUIRE: valid-user");
+
+                authorized = 1;
+                break;
+            }
+            if (!strcmp(w, "user")) {
                 while (t[0]) {
                     w = ap_getword_conf(r->pool, &t);
-                    if (apr_table_get(lc->privgroups, w) == NULL) {
-                        if (lc->sconf->debug)
-                            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                                         "%s %s %s", 
-                                         "webauthldap: UNAUTHORIZED:",
-                                         "does not have group", w);
-                        return HTTP_UNAUTHORIZED;
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap: REQUIRE: user %s", w);
+
+                    if (!strcmp(r->user, w)) {
+                        authorized = 1;
+                        break;
+                    }
+                }
+            }
+            else if (!strcmp(w, PRIVGROUP_DIRECTIVE)) {
+                while (t[0]) {
+                    w = ap_getword_conf(r->pool, &t);
+                    if (lc->sconf->debug)
+                        ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                     "webauthldap: REQUIRE: %s %s", 
+                                     PRIVGROUP_DIRECTIVE, w);
+
+                    if (apr_table_get(lc->privgroups, w)) {
+                        authorized = 1;
+                        break;
                     }
                 }
             } else {
-                pusher = apr_array_push(reqs_temp);
-                *pusher = *popper;
-            }
-        }
-
-         while ((popper = apr_array_pop(reqs_temp)) != NULL) {
-             pusher = apr_array_push(reqs_arr);
-             *pusher = *popper;
-         }
-    }
-
-
-    /*
-    // FIXME remains to be decided which version of privgroups code to use
-    // Alternate Validate privgroups code in case the mod_auth trick wont fly
-    //
-    if (lc->dconf->groups != NULL) {
-        groups = apr_array_copy(lc->r->pool, lc->dconf->groups);
-
-        while((group = apr_array_pop(groups)) != NULL) {
-            if (apr_table_get(lc->privgroups, *group) == NULL) {
                 if (lc->sconf->debug)
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                                 "%s %s %s", 
-                                 "webauthldap: UNAUTHORIZED:",
-                                 "does not have group", *group);
-                return HTTP_UNAUTHORIZED;
+                    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                                 "webauthldap: REQUIRE: %s", w);
+
+                // this means "group" or some other directive is there
+                needs_further_handling = 1;
             }
         }
     }
-    */
+
+    if (!authorized) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                         "webauthldap: UNAUTHORIZED");
+        return HTTP_UNAUTHORIZED;
+    }
+
 
     //
     // Set the env vars
@@ -1057,12 +1036,20 @@ auth_checker_hook(request_rec * r)
         apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
     }
 
-    if (lc->sconf->debug)
+    if (lc->sconf->debug) {
+        if (needs_further_handling)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                         "webauthldap: returning DECLINED");
+        else
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, 
+                         "webauthldap: returning OK");
+
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, "%s %s %s",
                      "webauthldap: finished for user", lc->r->user,
                      "\n***************************************************");
+    }
 
-    return DECLINED; // this is so modules like mod_auth get to run
+    return (needs_further_handling ? DECLINED : OK);
 }
 
 /**
