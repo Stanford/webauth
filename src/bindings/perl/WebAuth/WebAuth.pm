@@ -107,6 +107,7 @@ use warnings;
 use WebAuth;
 
 use overload '""' => \&to_string;
+use UNIVERSAL qw(isa);
 
 BEGIN {
     use Exporter   ();
@@ -172,7 +173,7 @@ sub verbose_message {
     my $msg = WebAuth::error_message($s);
     my $detail = $self->{'detail'};
     if (defined($detail)) {
-	$msg = "$detail: $msg";
+	$msg = "WebAuth::Exception $detail: $msg";
     }
     if ($s == &WebAuth::WA_ERR_KRB5) {
 	my $kec = $self->{'krb5_ec'};
@@ -188,6 +189,12 @@ sub verbose_message {
 sub to_string {
     my ($self) = @_;
     return $self->verbose_message();
+}
+
+sub match {
+    my $e = shift;
+    return 0 if !isa($e, "WebAuth::Exception");
+    return @_ ? $e->status() == shift : 1;
 }
 
 1;
@@ -469,7 +476,7 @@ For example:
     $data = WebAuth::base64_decode($buffer);
     ...
   };
-  if (isa($@, "WebAuth::Exception")) {
+  if (WebAuth::Exception::match($@)) {
     my $e = $@;
     # you can call the following methods on an Exception object:
     # $e->status()
@@ -480,8 +487,13 @@ For example:
     # $e->verbose_message()
   }
 
-
 =over 4
+
+=item match($exception[, $status])
+
+  This class function (not a method) returns true if the given
+  $exception is a WebAuth::Exception. If $status is specified, then
+  $exception->status() will also be compared to $status.
 
 =item status()
 

@@ -12,10 +12,10 @@ use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
-BEGIN { plan tests => 41 }
+BEGIN { plan tests => 45 }
 my $run_kerb = 0;
 
-#BEGIN { plan tests => 45 }
+#BEGIN { plan tests => 49 }
 #my $run_kerb = 1;
 
 my ($kuser, $kpass, $kkeytab, $kservice, $khost, $krservice, $krhost);
@@ -41,7 +41,7 @@ if ($run_kerb) {
 
 eval {
 
-use WebAuth;
+use WebAuth qw(:const);
 ok(1); # If we made it this far, we're ok.
 
 #use WebAuth::Exception;
@@ -57,7 +57,7 @@ my ($len, $output);
 
 ########################################
 # hardcode a few constant tests
-ok(WebAuth::WA_AES_128, 16);
+ok(WA_AES_128, 16);
 ok(WebAuth::WA_AES_192, 24);
 ok(WebAuth::WA_AES_256, 32);
 ok("t" eq WebAuth::WA_TK_TOKEN_TYPE);
@@ -77,6 +77,8 @@ eval {
 };
 
 ok (isa($@, "WebAuth::Exception"));
+ok (WebAuth::Exception::match($@, WA_ERR_CORRUPT));
+ok (WebAuth::Exception::match($@));
 
 ########################################  hex
 
@@ -93,6 +95,8 @@ eval {
     ok(WebAuth::hex_decode('FOOBAR'), undef);
 };
 ok (isa($@, "WebAuth::Exception"));
+ok (WebAuth::Exception::match($@, WA_ERR_CORRUPT));
+ok (WebAuth::Exception::match($@));
 
 ######################################### attr tests
 
