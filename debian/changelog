@@ -1,46 +1,5 @@
-webauth (3.2.2-1.ox.0) unstable; urgency=low
+webauth (3.2.2-1) unstable; urgency=low
 
-  * new upstream version
+  * Initial release.
 
- -- pod <pod@herald.ox.ac.uk>  Wed, 31 Mar 2004 14:58:34 +0100
-
-webauth (3.2.1-1.ox.0) unstable; urgency=low
-
-  * new upstream version
-
- -- pod <pod@herald.ox.ac.uk>  Mon, 22 Sep 2003 19:51:33 +0100
-
-webauth (3.2.0-1.ox.2) unstable; urgency=low
-
-  * create separate webauth-kdc-site-stanford package for user visible
-    site data
-
- -- pod <pod@herald.ox.ac.uk>  Wed, 10 Sep 2003 18:54:34 +0100
-
-webauth (3.2.0-1.ox.1) unstable; urgency=low
-
-  * webauth-kdc depends on libwww-perl, libxml-parser-perl,
-    libhtml-template-perl, libcgi-fast-perl
-  * problem with WebAuth3 perl bindings such that WebAuth3.so was only
-    partially linked
-
- -- pod <pod@herald.ox.ac.uk>  Thu, 28 Aug 2003 15:40:03 +0100
-
-webauth (3.2.0-1.ox.0) unstable; urgency=low
-
-  * new upstream version 3.2.0
-
- -- pod <pod@herald.ox.ac.uk>  Wed, 27 Aug 2003 17:35:22 +0100
-
-webauth (3.0.0-1.ox.1) unstable; urgency=low
-
-  * link against SSL enabled libcurl
-
- -- pod <pod@herald.ox.ac.uk>  Tue, 15 Apr 2003 19:51:43 +0100
-
-webauth (3.0.0-1.ox.0) unstable; urgency=low
-
-  * Initial Release.
-
- -- pod <pod@herald.ox.ac.uk>  Fri, 11 Apr 2003 17:24:50 +0100
-
+ --

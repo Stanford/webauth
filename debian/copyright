@@ -1,34 +1,25 @@
-This package was debianized by pod <pod@herald.ox.ac.uk> on
-Wed, 27 Aug 2003 14:46:40 +0100.
+The WebAuth v3 protocol and core implementation was written by Roland
+Schemers, based on design documents by the entire Stanford WebAuth team
+(with considerable work by Tim Torgenrud and Booker Bense) and based in
+part on the functionality of WebAuth v2.5, written and maintained by a
+cast of dozens over the years but most notably Jeff Lewis, Anton Ushakov,
+and Jeanmarie Lucker.
 
-It was downloaded from <http://webauthv3.stanford.edu/dist/>
+The mod_webauthldap module was written by Anton Ushakov.
 
-Upstream Author(s):
+The configuration and build system and WebAuth packaging was put together
+by Russ Allbery.  Huaqing Zheng provided builds of supporting packages and
+Jonathan Pilat helped greatly with testing.  Xueshan Feng oversaw the
+project.
 
-  The WebAuth v3 protocol and core implementation was written by Roland
-  Schemers, based on design documents by the entire Stanford WebAuth team
-  (with considerable work by Tim Torgenrud and Booker Bense) and based in
-  part on the functionality of WebAuth v2.5, written and maintained by a
-  cast of dozens over the years but most notably Jeff Lewis, Anton
-  Ushakov, and Jeanmarie Lucker.
+The original source of this package may be downloaded from:
 
-  The mod_webauthldap module was written by Anton Ushakov.
-
-  The configuration and build system and WebAuth packaging was put
-  together by Russ Allbery.  Huaqing Zheng provided builds of supporting
-  packages and Jonathan Pilat helped greatly with testing.  Xueshan Feng
-  oversaw the project.
-
+    <http://webauthv3.stanford.edu/>
 
 Copyright:
 
-  Copyright 2002, 2003 Board of Trustees, Leland Stanford Jr. University.
-  This software is distributed under an MIT-style license.  Please see the
-  section LICENSE below for terms of use and redistribution.
-
-LICENSE
-
-  Copyright 2003 Board of Trustees, Leland Stanford Jr. University.
+  Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr.
+  University.
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the

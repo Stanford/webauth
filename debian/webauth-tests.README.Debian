@@ -1,0 +1,22 @@
+WebAuth Tests for Debian
+------------------------
+
+To enable these tests, add the following to /etc/apache2/httpd.conf or
+wherever you put local configuration:
+
+    Include /usr/share/webauth/conf/webauth-tests.conf
+    Include /usr/share/webauth/conf/ldaptests.conf
+
+    Alias /tests/ /usr/share/webauth/htdocs/tests/
+    Alias /ldaptests/ /usr/share/webauth/htdocs/ldaptests/
+
+and then reload the configuration with /etc/init.d/apache2 reload.  You
+can then go to /tests/ and /ldaptests/ on your site to see the test
+suite.
+
+The LDAP tests are fairly Stanford-specific in that they use attributes
+peculiar to Stanford's directory servers and privgroups specific to
+Stanford, so you may need to modify ldaptests.conf to make it a better
+test for your site.
+
+ -- Russ Allbery <rra@stanford.edu>, Tue Jun 22 23:11:43 2004

@@ -1,188 +1,155 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper. 
-# GNU copyright 1997 by Joey Hess.
-#
-# This version is for a hypothetical package that builds an
-# architecture-dependant package, as well as an architecture-independent
-# package.
+# -*- makefile -*-
+# GNU copyright 1997 to 1999 by Joey Hess.
+# Further updates by Russ Allbery <rra@stanford.edu>
 
-# Uncomment this to turn on verbose mode. 
+# Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-# This is the debhelper compatibility version to use.
-export DH_COMPAT=3
 
 # These are used for cross-compiling and for saving the configure script
 # from having to guess our platform (since we know it already)
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
+
+CFLAGS = -Wall -g
+
 ifndef PERL
 PERL = /usr/bin/perl
 endif
 
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+        CFLAGS += -O0
+else
+        CFLAGS += -O2
 endif
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	INSTALL_PROGRAM += -s
+        INSTALL_PROGRAM += -s
 endif
-
-PKG_DIR_USER=$(CURDIR)/debian/webauth
-PKG_DIR_KDC=$(CURDIR)/debian/webauth-kdc
-PKG_DIR_SITE=$(CURDIR)/debian/webauth-kdc-site-stanford
 
 config.status: configure
 	dh_testdir
-	# Add here commands to configure the package.
-	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 --disable-sident
-	cd src/bindings/perl/WebAuth3 && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) \
+	    --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr \
+	    --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
+	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2
 
+build: build-stamp
 
-build-arch:  config.status build-arch-stamp
-build-arch-stamp:
+build-stamp: config.status
 	dh_testdir
-
-	# Add here command to compile/build the package.
 	$(MAKE)
-
-	touch build-arch-stamp
-
-build-indep: config.status  build-indep-stamp
-build-indep-stamp:
-	dh_testdir
-
-	# Add here command to compile/build the arch indep package.
-	# It's ok not to do anything here, if you don't need to build
-	#  anything for this package.
-	#/usr/bin/docbook-to-man debian/webauth.sgml > webauth.1
-
-	touch build-indep-stamp
-
-build: build-arch build-indep
+	cd src/bindings/perl/WebAuth3 && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	cd src/bindings/perl/WebAuth3 && $(MAKE) OPTIMIZE="-O2 -g -Wall"
+	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	cd src/webkdc && $(MAKE) OPTIMIZE="-O2 -g -Wall"
+	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-arch-stamp 
-	rm -f build-indep-stamp 
-
-	# Add here commands to clean up after the build process.
+	rm -f build-stamp
 	-$(MAKE) distclean
-	-rm -rf src/modules/webauthldap/Makefile \
-	        src/bindings/perl/WebAuth3/Makefile.old \
-	        src/webkdc/blib \
-	        src/webkdc/Makefile.old
-#	-test -r /usr/share/misc/config.sub && \
-#	  cp -f /usr/share/misc/config.sub config.sub
-#	-test -r /usr/share/misc/config.guess && \
-#	  cp -f /usr/share/misc/config.guess config.guess
-
-
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+        cp -f /usr/share/misc/config.sub tools/config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+        cp -f /usr/share/misc/config.guess tools/config.guess
+endif
 	dh_clean
 
-install: DH_OPTIONS=
+# Unfortunately, we have to run make install in the various directories
+# separately because apxs with the current Makefiles doesn't correctly handle
+# DESTDIR.
 install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
-	dh_installdirs
-
-	# webauth
-	cd src/libwebauth; $(MAKE) DESTDIR=$(CURDIR)/debian/webauth install
-
-#	XXX dirtyhack.  Work around a problem with libtool
-	src=src/modules/webauth/mod_webauth.la; ln $$src $$src.orig; \
-	  sed -e "/relink_command/s;gcc;gcc -L$(PKG_DIR_USER)/usr/lib;" $$src > $$src.tmp && mv $$src.tmp $$src; \
-	  (cd src/modules/webauth; apxs2 -S LIBEXECDIR=$(PKG_DIR_USER)/usr/lib/apache2/modules -i mod_webauth.la;); \
-	  mv $$src.orig $$src
-
-	cd src/modules/webauthldap; apxs2 -S LIBEXECDIR=$(PKG_DIR_USER)/usr/lib/apache2/modules -i mod_webauthldap.la
-	cd src/utils; $(MAKE) DESTDIR=$(PKG_DIR_USER) install
-
-	# webauth-kdc
-#	XXX dirtyhack.  Work around a problem with libtool
-	src=src/modules/webkdc/mod_webkdc.la; ln $$src $$src.orig; \
-	  sed -e "/relink_command/s;gcc;gcc -L$(PKG_DIR_USER)/usr/lib;" $$src > $$src.tmp && mv $$src.tmp $$src; \
-	  (cd src/modules/webkdc; apxs2 -S LIBEXECDIR=$(PKG_DIR_KDC)/usr/lib/apache2/modules -i mod_webkdc.la;); \
-	  mv $$src.orig $$src
-
-	cd src/bindings/perl/WebAuth3; $(MAKE) install PREFIX=$(PKG_DIR_KDC)/usr
-	cd src/webkdc; $(MAKE) install PREFIX=$(PKG_DIR_KDC)/usr
-
-	# webauth-kdc-site-stanford
-	install -d $(PKG_DIR_SITE)/var/www/webkdc
-	install -d $(PKG_DIR_SITE)/var/www/webkdc/images
-	install -d $(PKG_DIR_SITE)/var/www/webkdc/templates
-	cd src/webkdc; for f in login.fcgi logout.fcgi; do \
-	  install -m 755 $$f $(PKG_DIR_SITE)/var/www/webkdc/$$f; \
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/apache2/modules
+	cd src/libwebauth && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	cd src/utils && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	cp src/modules/webauth/.libs/mod_webauth.so \
+	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
+	cp src/modules/webauthldap/.libs/mod_webauthldap.so \
+	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
+	cp src/modules/webkdc/.libs/mod_webkdc.so \
+	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
+	mkdir -p $(CURDIR)/debian/tmp/etc/webauth
+	mkdir -p $(CURDIR)/debian/tmp/etc/webkdc
+	cp src/modules/webkdc/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
+	cp debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
+	cd conf/debian && for f in *.conf *.load ; do \
+	    install -m 644 $$f \
+	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f \
+	            || exit 1 ;
 	done
-	cd src/webkdc; for f in templates/*.html templates/*.tmpl; do \
-	  install -m 644 $$f $(PKG_DIR_SITE)/var/www/webkdc/$$f; \
+	cd src/bindings/perl/WebAuth3 \
+	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
+	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin
+	cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
+	    install -m 755 $$f \
+	        $(CURDIR)/debian/tmp/usr/share/weblogin/$$f || exit 1 ; \
 	done
-	cd src/webkdc; for f in images/*.gif; do \
-	  install -m 644 $$f $(PKG_DIR_SITE)/var/www/webkdc/$$f; \
+	cd src/webkdc && for f in templates/*.tmpl ; do \
+	    install -m 644 $$f \
+	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
+	            || exit 1 ; \
 	done
+	install -m 644 src/webkdc/templates/help.html \
+	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
+	cd src/webkdc && for f in images/*.png ; do \
+	    install -m 644 $$f \
+	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
+	            || exit 1 ; \
+	done
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/conf
+	cp tests/mod_webauth/conf/*.conf \
+	    $(CURDIR)/debian/tmp/usr/share/webauth/conf/
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/htdocs
+	cp -r tests/mod_webauth/htdocs/tests \
+	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
+	cp -r tests/mod_webauth/htdocs/ldaptests \
+	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
 
-# Build architecture-dependent files here.
-binary-arch: build install
-	dh_testdir -a
-	dh_testroot -a
-#	dh_installdebconf -a
-	dh_installdocs -a
-	dh_installexamples -a
-	dh_installmenu -a
-#	dh_installlogrotate -a
-#	dh_installemacsen -a
-#	dh_installpam -a
-#	dh_installmime -a
-#	dh_installinit -a
-	dh_installcron -a
-#	dh_installman -a
-	dh_installinfo -a
-#	dh_undocumented -a
-	dh_installchangelogs  -a
-	dh_strip -a
-	dh_link -a
-	dh_compress -a
-	dh_fixperms -a
-#	dh_makeshlibs -a
-	dh_installdeb -a
-#	dh_perl -a
-	dh_shlibdeps -a
-	dh_gencontrol -a
-	dh_md5sums -a
-	dh_builddeb -a
-
+# Build the architecture-independent packages.
 binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
-#	dh_installdebconf -i
+	dh_installchangelogs -i
 	dh_installdocs -i
 	dh_installexamples -i
-	dh_installmenu -i
-#	dh_installlogrotate -i
-#	dh_installemacsen -i
-#	dh_installpam -i
-#	dh_installmime -i
-#	dh_installinit -i
-	dh_installcron -i
-#	dh_installman -i
-	dh_installinfo -i
-#	dh_undocumented -i
-	dh_installchangelogs  -i
-	dh_strip -i
+	dh_install -i --sourcedir=debian/tmp
 	dh_link -i
 	dh_compress -i
 	dh_fixperms -i
-#	dh_makeshlibs -i
+	dh_perl -i
 	dh_installdeb -i
-#	dh_perl -i
-	dh_shlibdeps -i
 	dh_gencontrol -i
 	dh_md5sums -i
 	dh_builddeb -i
 
+# Build the architecture-dependent packages.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+	dh_installchangelogs -a
+	dh_installdocs -a
+	dh_installexamples -a
+	dh_install -a --sourcedir=debian/tmp
+	dh_installman -a
+	dh_link -a
+	dh_strip -a
+	dh_compress -a
+	dh_fixperms -a
+	dh_perl -a
+	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_shlibdeps -a -L libwebauth1 -l debian/libwebauth1/usr/lib
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
 binary: binary-arch binary-indep
-.PHONY: build clean binary-indep binary-arch binary install 
+.PHONY: build clean binary-indep binary-arch binary install

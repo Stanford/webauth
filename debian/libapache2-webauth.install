@@ -1,0 +1,3 @@
+etc/webauth
+usr/lib/apache2/modules/mod_webauth.so
+usr/lib/apache2/modules/mod_webauthldap.so
