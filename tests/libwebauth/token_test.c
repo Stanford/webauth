@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-    WEBAUTH_AES_KEY *key;
+    WEBAUTH_KEY *key;
     unsigned char material[16] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 };
     WEBAUTH_ATTR_LIST *ain, *aout;
     int rlen, len, dnum_attrs, i;
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     webauth_attr_list_add(ain, WA_TK_CREATION_TIME, "1", 0);
     webauth_attr_list_add(ain, WA_TK_EXPIRATION_TIME, "2", 0);
 
-    key = webauth_key_create_aes(material, WA_AES_128);
+    key = webauth_key_create(WA_AES_KEY, material, WA_AES_128);
 
     rlen = webauth_token_encoded_length(ain);
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     webauth_attr_list_free(ain);
     webauth_attr_list_free(aout);
     free(token);
-    webauth_key_destroy_aes(key);
+    webauth_key_destroy(key);
 
     END_TESTS;
     exit(NUM_FAILED_TESTS ? 1 : 0);

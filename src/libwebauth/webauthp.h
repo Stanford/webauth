@@ -17,11 +17,6 @@
 #include <strings.h>
 #endif 
 
-#include <openssl/aes.h>
-#include <openssl/sha.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
-
 #include <assert.h>
 
 #include "webauth.h"
@@ -29,12 +24,13 @@
 /******************** types ********************/
 
 
-/* the private version of WEBAUTH_AES_KEY */
+/* the private version of WEBAUTH_KEY */
 
 typedef struct {
-    AES_KEY encryption;
-    AES_KEY decryption;
-} WEBAUTH_AES_KEYP;
+    int type;
+    unsigned char *data;
+    int length;
+} WEBAUTH_KEYP;
 
 /*
 **  Local variables:

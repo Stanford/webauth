@@ -30,7 +30,7 @@ typedef enum {
     WA_ERR_NO_MEM,           /**< No memory. */
     WA_ERR_BAD_HMAC,         /**< HMAC check failed. */
     WA_ERR_RAND_FAILURE,     /**< Unable to get random data. */
-
+    WA_ERR_BAD_KEY,          /**< Unable to use key. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
@@ -64,6 +64,9 @@ typedef enum {
 
 /******************** other constants *****************/
 
+/* supported key types */
+#define WA_AES_KEY 1
+
 /* supported AES key sizes */
 #define WA_AES_128 16
 #define WA_AES_192 24
@@ -96,8 +99,8 @@ typedef struct {
     /* don't add anything here as attrs can expand */
 } WEBAUTH_ATTR_LIST;
 
-/* an AES key */
-typedef struct webauth_aes_key WEBAUTH_AES_KEY;
+/* an crypto key */
+typedef struct webauth_key WEBAUTH_KEY;
 
 /******************** base64 ********************/
 
@@ -317,22 +320,30 @@ int webauth_random_key(unsigned char *key, int key_len);
 /******************** keys ********************/
 
 /*
- * construct new AES key. 
+ * construct new key. 
+ *
+ * key_type is the key type, and currently the only supported type
+ * is WA_AES_KEY.
+ *
+ * key_material points to the key material, and will get coppied
+ * into the new key.
+ *
  * key_len is the length of the key material and should
  * be WA_AES_128, WA_AES_192, or WA_AES_256.
- *
+ * 
  * returns newly allocated key, or NULL on error
  *
  */
 
-WEBAUTH_AES_KEY *webauth_key_create_aes(const unsigned char *key,
-                                    int key_len);
+WEBAUTH_KEY *webauth_key_create(int key_type,
+                                const unsigned char *key_material,
+                                int key_len);
 
 /*
  * zeros out key memory and then frees it
  */
 
-void webauth_key_destroy_aes(WEBAUTH_AES_KEY *key);
+void webauth_key_destroy(WEBAUTH_KEY *key);
 
 /******************** tokens ********************/
    
@@ -355,7 +366,7 @@ int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                          unsigned char *output,
                          int max_output_len,
-                         const WEBAUTH_AES_KEY *key);
+                         const WEBAUTH_KEY *key);
 
 /*
  * base64 decodes and decrypts attrs into a token
@@ -376,7 +387,7 @@ int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 int webauth_token_parse(unsigned char *input,
                         int input_len,
                         WEBAUTH_ATTR_LIST **list,
-                        const WEBAUTH_AES_KEY *key);
+                        const WEBAUTH_KEY *key);
 
 #ifdef  __cplusplus
 //}

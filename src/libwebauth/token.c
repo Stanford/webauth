@@ -5,6 +5,11 @@
 #include <netinet/in.h>
 #include <inttypes.h>
 
+#include <openssl/aes.h>
+#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+
 /* 
  *  define some macros for offsets (_O) and sizes (_S) in token
  *  {key-hint}{nonce}{hmac}{token-attributes}{padding} 
@@ -19,47 +24,6 @@
 #define T_HMAC_O (T_NONCE_O+T_NONCE_S)
 #define T_ATTR_O (T_HMAC_O+T_HMAC_S)
 
-
-/*
- * construct new AES key. 
- */
-
-WEBAUTH_AES_KEY *
-webauth_key_create_aes(const unsigned char *key, int key_len) 
-{
-    WEBAUTH_AES_KEYP *k;
-    int bits;
-
-    assert(key != NULL);
-
-    if (key_len != WA_AES_128 && 
-        key_len != WA_AES_192 &&
-        key_len != WA_AES_256) {
-        return NULL;
-    }
-
-    bits = key_len*8;
-
-    k = malloc(sizeof(WEBAUTH_AES_KEYP));
-    if (k == NULL) {
-        return NULL;
-    }
-
-    if (AES_set_encrypt_key(key, bits, &k->encryption) ||
-        AES_set_decrypt_key(key, bits, &k->decryption)) {
-        webauth_key_destroy_aes((WEBAUTH_AES_KEY*)k);
-        return NULL;
-    }
-    return (WEBAUTH_AES_KEY*)k;
-}
-
-void
-webauth_key_destroy_aes(WEBAUTH_AES_KEY *key) 
-{
-    assert(key != NULL);
-    memset(key, 0, sizeof(WEBAUTH_AES_KEYP));
-    free(key);
-}
 
 static int 
 binary_encoded_length(const WEBAUTH_ATTR_LIST *list,
@@ -111,7 +75,7 @@ int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                      unsigned char *output,
                      int max_output_len,
-                     const WEBAUTH_AES_KEY *key)
+                     const WEBAUTH_KEY *key)
 {
     unsigned char *ebuff;
     int elen, blen, plen, alen, n, i;
@@ -123,7 +87,8 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-    WEBAUTH_AES_KEYP *keyp = (WEBAUTH_AES_KEYP*)key;
+    AES_KEY aes_key;
+    WEBAUTH_KEYP *keyp = (WEBAUTH_KEYP*)key;
 
     assert(list!= NULL);
     assert(list->num_attrs);
@@ -190,10 +155,17 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
 
     /* now AES encrypt everything but the time at the front */
     /* AES_cbc_encrypt doesn't return anything */
+
+
+    if (AES_set_encrypt_key(keyp->data, keyp->length*8, &aes_key)) {
+        free(ebuff);
+        return WA_ERR_BAD_KEY;
+    }
+
     AES_cbc_encrypt(ebuff+T_NONCE_O,
                     ebuff+T_NONCE_O, /* encrypt in-place */
                     elen-T_HINT_S,
-                    &keyp->encryption,
+                    &aes_key,
                     aes_ivec, AES_ENCRYPT);
 
     /* now base64 token */
@@ -222,7 +194,7 @@ int
 webauth_token_parse(unsigned char *input,
                     int input_len,
                     WEBAUTH_ATTR_LIST **list,
-                    const WEBAUTH_AES_KEY *key)
+                    const WEBAUTH_KEY *key)
 {
     /* ivec is always 0 since we use nonce as ivec */
     unsigned char aes_ivec[AES_BLOCK_SIZE] = 
@@ -230,8 +202,8 @@ webauth_token_parse(unsigned char *input,
     /* hmac we compute from data */
     unsigned char computed_hmac[T_HMAC_S];
     int plen, i, elen;
-
-    WEBAUTH_AES_KEYP *keyp = (WEBAUTH_AES_KEYP*)key;
+    AES_KEY aes_key;
+    WEBAUTH_KEYP *keyp = (WEBAUTH_KEYP*)key;
 
     assert (key != NULL);
     assert(list);
@@ -248,13 +220,18 @@ webauth_token_parse(unsigned char *input,
 
     /* {key-hint}{nonce}{hmac}{token-attributes}{padding} */
 
+
     /* decrypt using our key */
+    if (AES_set_decrypt_key(keyp->data, keyp->length*8, &aes_key)) {
+        return WA_ERR_BAD_KEY;
+    }
+
     /* now AES decrypt everything but the time at the front */
     /* AES_cbc_encrypt doesn't return anything useful */
     AES_cbc_encrypt(input+T_NONCE_O,
                     input+T_NONCE_O,  /* decrypt in-place */
                     elen-T_HINT_S,
-                    &keyp->decryption,
+                    &aes_key,
                     aes_ivec, AES_DECRYPT);
 
     /* we now need to compute HMAC to see if decryption succeeded */
