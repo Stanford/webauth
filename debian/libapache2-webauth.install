@@ -1,3 +1,7 @@
+etc/apache2/mods-available/webauth.conf
+etc/apache2/mods-available/webauth.load
+etc/apache2/mods-available/webauthldap.conf
+etc/apache2/mods-available/webauthldap.load
 etc/webauth
 usr/lib/apache2/modules/mod_webauth.so
 usr/lib/apache2/modules/mod_webauthldap.so
