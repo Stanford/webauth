@@ -6,6 +6,7 @@ $Id$
 #include "http_config.h"
 #include "http_protocol.h"
 #include "ap_config.h"
+#include "apr_signal.h"
 
 #include <string.h>
 #ifdef HAVE_UNISTD_H
@@ -1350,7 +1351,13 @@ auth_checker_hook(request_rec * r)
     char *w;
     int m = r->method_number;
     int needs_further_handling;
-    int old_signal;
+#ifdef SIGPIPE
+#if APR_HAVE_SIGACTION
+    apr_sigfunc_t *old_signal;
+#else
+    void *old_signal;
+#endif
+#endif
 
 #ifndef NO_STANFORD_SUPPORT
     if (!apr_table_get(r->subprocess_env, "SU_AUTH_USER") &&
@@ -1448,22 +1455,25 @@ auth_checker_hook(request_rec * r)
 
         // Set this to ignore Broken Pipes that always happen when unbinding
         // expired ldap connections.
-        old_signal = (int) signal(SIGPIPE, (void*) SIG_IGN);
-        if (old_signal != (int) SIG_ERR) {
-            if (lc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
-                             "webauthldap(%s): unbinding the expired connection",
-                             lc->r->user);
-            ldap_unbind(lc->ld);
-            lc->ld = NULL;
-            signal(SIGPIPE, (void*) old_signal);
-        } else {
+#ifdef SIGPIPE
+        old_signal = apr_signal(SIGPIPE, (void*) SIG_IGN);
+        if (old_signal == SIG_ERR) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): %s %s (%d)",
                          "can't set SIGPIPE signals to SIG_IGN: ",
                          lc->r->user, strerror(errno), errno);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
+#endif
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                         "webauthldap(%s): unbinding the expired connection",
+                             lc->r->user);
+        ldap_unbind(lc->ld);
+        lc->ld = NULL;
+#ifdef SIGPIPE
+        apr_signal(SIGPIPE, old_signal);
+#endif
 
         if (webauthldap_managedbind(lc) != 0) {
             apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING! */
