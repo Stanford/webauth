@@ -22,50 +22,35 @@ use UNIVERSAL qw(isa);
 
 use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 
-my $xml = <<'XML';
-<getTokensRequest>
-   <requesterCredential type="krb5">
-              {base64-krb5-mk-req-data}
-   </requesterCredential>
-  <tokens>
-    <token type="service" id="0"/>
-  </tokens>
-</getTokensRequest>
-XML
-
-my $doc = WebKDC::XmlInput::parse($xml);
-
-my $dumper = new Dumpvalue;
-$dumper->dumpValue($doc);
-
-print "-------\n";
-
-#print $doc->{'name'}, "\n";
-#
-#my $child;
-#
-#foreach $child (@{$doc->{'children'}}) {
-#    print "$child\n";
-#    print $child->{'name'}, "\n";
-#}
-
 
 my $out = new WebKDC::XmlOutput;
 
-
 $out->start('getTokensRequest');
-$out->element('requestCredential', {'type' => 'krb5'},'{some-base64d-data}');
+$out->start('requestCredential', {'type' => 'krb5'});
+$out->current->content('{some-base64d-data}<>');
+$out->end;
 $out->start('tokens');
-$out->element('token',{'type'=>'service', 'id'=> 0});
+$out->element('token', {'type'=>'service', 'id'=> 0});
 $out->end('tokens');
 $out->end('getTokensRequest');
 
 #$dumper->dumpValue($out);
 
-print $out->output(1),"\n";
+my $xml = $out->root->to_string(1);
 
-#print scalar(%foo),"\n";
-#print scalar(%bar),"\n";
+print "-------- generated --------\n";
+print "$xml\n";
+print "-------- generated --------\n";
+
+my $doc = WebKDC::XmlInput::parse($xml);
+
+
+print "-------- parsed --------\n";
+#my $dumper = new Dumpvalue;
+#$dumper->dumpValue($doc);
+print $doc->to_string(),"\n";
+print "-------- parsed --------\n";
+
 __END__
 
 
