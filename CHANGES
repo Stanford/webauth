@@ -2,26 +2,26 @@
 
 WebAuth 3.1.0 (in progress)
 
- *) have the WebKDC re-read the token ACL file if its mtime changes
+ *) Have the WebKDC re-read the token ACL file if its mtime changes.
 
  *) Added WebAuthAuthType directive to help people transistion to
-    mod_webauth. This directive allows you to specify an additional
-    AuthType name that will be treated the same as WebAuth. If
+    mod_webauth.  This directive allows you to specify an additional
+    AuthType name that will be treated the same as WebAuth.  If
     this directive is set to StanfordAuth, it will also set two
     extra environment variables: SU_AUTH_USER and SU_AUTH_AGE.
 
- *) cleanup environment variable setting. Set environment variables
+ *) Cleanup environment variable setting. Set environment variables
     (r->subprocess_env) in check_user_id hook instead of waiting
     until fixups hook to make them more accessible to other hooks/modules.
 
- *) when scrubbing tokens from r->args and r->parsed_uri.query, look
+ *) When scrubbing tokens from r->args and r->parsed_uri.query, look
     for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
     query args, the tokens could get parsed as query args. This
-    caused tokens to show up as query args when we changed from ";WEBAUTHR="
-    to "?WEBAUTHR=".
+    caused tokens to show up as query args when we changed from
+    ";WEBAUTHR=" to "?WEBAUTHR=".
 
- *) if we are proxying a request, strip out all webauth_* cookies and
-    and webauth tokens from Referer header. Also, if we are proxying
+ *) If we are proxying a request, strip out all webauth_* cookies and
+    and webauth tokens from Referer header.  Also, if we are proxying
     or the URI passed to the server in the HTTP request has a scheme,
     use it as the return URL instead of constructing one relative to the
     server.
@@ -31,18 +31,21 @@ WebAuth 3.1.0 (in progress)
     the specified keytab, instead of using the first principal found.
     This required modifying webauth_krb5_* APIs.
  
- *) implement WebAuthProxyHeaders directive. See WebAuth module
+ *) Implement WebAuthProxyHeaders directive.  See WebAuth module
     documentation for more information.
 
- *) clean up header includes in tests and wa_keyring
+ *) Clean up header includes in tests and wa_keyring.
 
- *) mod_{webauth,webkdc}.h - "module" declaration should be extern
+ *) mod_{webauth,webkdc}.h - "module" declaration should be extern.
 
  *) Remove the service token cache in mod_webauth on restarts.
 
  *) Restructured the mod_webauth code to define a pluggable credential
     interface, isolating all credential-related functions so that new
     credential types can easily be supported.
+
+ *) Added --with-apxs configure option to set the path to apxs
+    independently from the path to the Apache installation.
 
 WebAuth 3.0.0 (2003-02-18)
 

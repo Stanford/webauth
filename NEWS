@@ -2,29 +2,32 @@
 
 WebAuth 3.1.0 (in progress)
 
- *) have the WebKDC re-read the token ACL file if its mtime changes
+ *) Have the WebKDC re-read the token ACL file if its mtime changes.
 
  *) Added WebAuthAuthType directive to help people transistion to
-    mod_webauth. This directive allows you to specify an additional
-    AuthType name that will be treated the same as WebAuth. If
+    mod_webauth.  This directive allows you to specify an additional
+    AuthType name that will be treated the same as WebAuth.  If
     this directive is set to StanfordAuth, it will also set two
     extra environment variables: SU_AUTH_USER and SU_AUTH_AGE.
 
- *) when scrubbing tokens from r->args and r->parsed_uri.query, look
+ *) When scrubbing tokens from r->args and r->parsed_uri.query, look
     for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
-    query args, the tokens could get parsed as query args. This
-    caused tokens to show up as query args when we changed from ";WEBAUTHR="
-    to "?WEBAUTHR=".
+    query args, the tokens could get parsed as query args.  This
+    caused tokens to show up as query args when we changed from
+    ";WEBAUTHR=" to "?WEBAUTHR=".
 
- *) Modify WebAuthKeytab and WebKdcKeytab directives so 
-    you can optionally specify which principal to use with
-    the specified keytab, instead of using the first principal found.
+ *) Modify WebAuthKeytab and WebKdcKeytab directives so you can
+    optionally specify which principal to use with the specified keytab,
+    instead of using the first principal found.
 
  *) Added WebAuthProxyHeaders directive to pass WebAuth information to
-    a proxied server. See the WebAuth module documentation for more
+    a proxied server.  See the WebAuth module documentation for more
     information.
 
  *) Remove the service token cache on restarts
+
+ *) Added --with-apxs configure option to set the path to apxs
+    independently from the path to the Apache installation.
 
 WebAuth 3.0.0 (2003-02-18)
 
