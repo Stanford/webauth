@@ -287,6 +287,7 @@ find_proxy_token(MWK_REQ_CTXT *rc,
 {
     int i;
     char *msg;
+
     if (strcmp(sub_cred->type, "proxy") == 0) {
         for (i=0; i < sub_cred->u.proxy.num_proxy_tokens; i++) {
             if (strcmp(sub_cred->u.proxy.pt[i].proxy_type, type) == 0) {
@@ -1488,7 +1489,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         }
         /* parse request_token */
         if (!parse_request_token(rc, request_token, 
-                                    &req_cred.u.st, &req_token, 0)) {
+                                    &req_cred.u.st, &req_token, 1)) {
             return MWK_ERROR;
         }
 
