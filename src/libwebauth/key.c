@@ -462,6 +462,7 @@ webauth_keyring_read_file(char *path, WEBAUTH_KEYRING **ring)
                              (time_t)valid_from, 
                              (time_t)valid_till,
                              key);
+        webauth_key_free(key);
         webauth_attr_list_free(list);
         p += entry_length;
         len -= entry_length;

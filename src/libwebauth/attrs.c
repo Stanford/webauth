@@ -83,6 +83,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
     }
 
     if (FLAG_ISSET(flags, WA_COPY_VALUE)) {
+        /* see if it fits in val_buff first */
         if (length < sizeof(list->attrs[i].val_buff)) {
             FLAG_CLEAR(flags, WA_COPY_VALUE);
             memcpy(list->attrs[i].val_buff, value, length);
