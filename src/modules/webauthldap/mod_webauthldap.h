@@ -26,6 +26,7 @@
 #define LDAP_SIZELIMIT -1
 #define PRIVGROUP_DIRECTIVE "privgroup"
 #define DN_ATTRIBUTE "dn"
+#define MAX_LDAP_CONN 16
 
 /* environment variables */
 #define ENV_KRB5_TICKET "KRB5CCNAME"
@@ -118,6 +119,10 @@ typedef struct {
     char* tktcache;
     int ldapversion;
     int scope;
+
+    int ldcount;
+    apr_array_header_t* ldarray;
+    apr_thread_mutex_t* ldmutex;
 
 } MWAL_SCONF;
 

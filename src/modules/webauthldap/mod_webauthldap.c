@@ -373,6 +373,18 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
     sconf->ldapversion = LDAP_VERSION3;
     sconf->scope = LDAP_SCOPE_SUBTREE;
 
+    //Mutex for storing ldap connections
+    if (sconf->ldmutex == NULL) {
+        apr_thread_mutex_create(&sconf->ldmutex,
+                                APR_THREAD_MUTEX_DEFAULT,
+                                pconf);
+    }
+  
+    if (sconf->ldarray == NULL) {
+        sconf->ldcount = 0;
+        sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
+    }
+
     return OK;
 }
 /**
@@ -567,7 +579,7 @@ webauthldap_undup(apr_array_header_t* orig, int lowercase)
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
-int 
+void
 webauthldap_init(MWAL_LDAP_CTXT* lc) 
 {
     int i;
@@ -610,8 +622,6 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
                      "webauthldap(%s): initialized sucessfully", lc->r->user);
-
-    return 0;
 }
 
 
@@ -643,7 +653,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): ldap_init failure ld is NULL", 
                      lc->r->user);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return -1;
     }
 
     // Set to no referrals
@@ -652,7 +662,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): Could not set LDAP_OPT_REFERRALS", 
                      lc->r->user);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return -1;
     }
 
     // Only works with version 3
@@ -662,7 +672,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): Could not set LDAP_OPT_PROTOCOL_VERSION %d",
                      lc->r->user, lc->sconf->ldapversion);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return -1;
     }
 
     if (lc->sconf->ssl) {
@@ -672,7 +682,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                          "webauthldap(%s): Could not start tls: %s (%d)",
                          lc->r->user, ldap_err2string(rc), rc);
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return -1;
         }
     }
 
@@ -694,7 +704,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                      "webauthldap(%s): cannot set ticket cache env var", 
                      lc->r->user);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return -1;
     }
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server, 
@@ -722,7 +732,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                          "webauthldap(%s): cannot stat the keytab: %s %s (%d)",
                          lc->r->user, 
                          lc->sconf->keytab, strerror(errno), errno);
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return -1;
         }
 
         if ((fd = open(lc->sconf->keytab, O_RDONLY, 0)) < 0) {
@@ -731,7 +741,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                          lc->r->user, lc->sconf->keytab, 
                          strerror(errno), errno);
             close(fd);
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return -1;
         }
         close(fd);
 
@@ -753,12 +763,12 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                              lc->sconf->keytab,
                              "is valid and only contains the right principal");
 
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return -1;
         } if (rc != 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): cannot get ticket: %s (%d)", 
                          lc->r->user, error_message(rc), rc);
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return -1;
         }
 
         // and try to bind one more time
@@ -780,7 +790,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): ldap_sasl_interactive_bind_s: %s (%d)",
                      lc->r->user, ldap_err2string(rc), rc);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return -1;
     }
 
     if (lc->sconf->debug)
@@ -791,7 +801,56 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
     return 0;
 }
 
+int
+webauthldap_getcachedconn(MWAL_LDAP_CTXT* lc)
+{
 
+    LDAP** newld;
+
+    lc->ld = NULL;
+    apr_thread_mutex_lock(lc->sconf->ldmutex); /****** LOCKING! ************/
+
+    if (!apr_is_empty_array(lc->sconf->ldarray)) {
+        newld = (LDAP**) apr_array_pop(lc->sconf->ldarray);
+        lc->ld = *newld;
+        lc->sconf->ldcount--;
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                     "webauthldap(%s): got cached conn - cache size %d", 
+                     lc->r->user, lc->sconf->ldcount);
+    }
+
+    apr_thread_mutex_unlock(lc->sconf->ldmutex); /****** UNLOCKING! ********/
+
+    return (lc->ld != NULL) ? 0 : webauthldap_bind(lc);
+
+}
+
+void
+webauthldap_returnconn(MWAL_LDAP_CTXT* lc)
+{
+
+    LDAP** newld = NULL;
+
+    apr_thread_mutex_lock(lc->sconf->ldmutex); /****** LOCKING! ************/
+
+    if (lc->sconf->ldarray->nelts < MAX_LDAP_CONN) {
+        newld = apr_array_push(lc->sconf->ldarray);
+        *newld = lc->ld;
+        lc->sconf->ldcount++;
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                     "webauthldap(%s): cached this conn - cache size %d", 
+                     lc->r->user, lc->sconf->ldcount);
+    }
+
+    apr_thread_mutex_unlock(lc->sconf->ldmutex); /****** UNLOCKING! ********/
+
+    if (newld == NULL) {
+        ldap_unbind(lc->ld); 
+    }
+
+}
 
 /**
  * This will parse a given ldap entry, placing all attributes and values into
@@ -867,7 +926,6 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
                      "webauthldap(%s): ldap_search_ext: %s (%d)",
                      lc->r->user, ldap_err2string(rc), rc);
-        ldap_unbind(lc->ld);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -906,11 +964,7 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
     }
 
     if ((rc == -1) || (rc == 0)) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap(%s): ldap_result: %s (%d)",
-                     lc->r->user, ldap_err2string(rc), rc);
-        ldap_unbind(lc->ld);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return HTTP_SERVICE_UNAVAILABLE;
     }
 
 
@@ -1002,6 +1056,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRMAIL", val);
     } else if (!strcmp(newkey, "displayname") && lc->legacymode) {
         apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRNAME", val);
+    } else if (!strcmp(newkey, "suunivid") && lc->legacymode) {
+        apr_table_set(lc->r->subprocess_env, "SU_AUTH_UNIVID", val);
     }
 #endif
 
@@ -1292,17 +1348,36 @@ auth_checker_hook(request_rec * r)
     }
 
     //
-    // So there is something for us to do. Let's init, bind, and search.
+    // So there is something for us to do. Let's init, get a connection, 
+    // and search.
     //
 
-    if ((rc = webauthldap_init(lc)) != 0)
-        return rc;
+    webauthldap_init(lc);
 
-    if ((rc = webauthldap_bind(lc)) != 0)
-        return rc;
+    // This will get an available connection from the pool, or bind a new one
+    // if needed.
+    if (webauthldap_getcachedconn(lc) != 0)
+        return HTTP_INTERNAL_SERVER_ERROR;
 
-    if ((rc = webauthldap_dosearch(lc)) != 0)
-        return rc;
+    rc = webauthldap_dosearch(lc);
+
+    if (rc == HTTP_SERVICE_UNAVAILABLE) {
+
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+                  "webauthldap(%s): this connection expired",
+                     lc->r->user);
+
+        if (webauthldap_bind(lc) != 0)
+            return HTTP_INTERNAL_SERVER_ERROR;
+
+        if (webauthldap_dosearch(lc) != 0)
+            return HTTP_INTERNAL_SERVER_ERROR;
+
+    } else if (rc != 0) {
+        return HTTP_INTERNAL_SERVER_ERROR;
+    } 
+
 
     //
     // Validate privgroups.
@@ -1310,7 +1385,7 @@ auth_checker_hook(request_rec * r)
     needs_further_handling = 0;
     if ((rc = webauthldap_validate_privgroups(lc, reqs_arr,
                                               &needs_further_handling)) != 0){
-        ldap_unbind(lc->ld);
+        webauthldap_returnconn(lc);
         return rc; // means not authorized, or error
     }
 
@@ -1328,6 +1403,7 @@ auth_checker_hook(request_rec * r)
     }
     apr_table_do(webauthldap_envnotfound, lc, lc->envvars, NULL);
 
+    webauthldap_returnconn(lc);
 
     if (lc->sconf->debug) {
         if (needs_further_handling)
@@ -1341,7 +1417,6 @@ auth_checker_hook(request_rec * r)
                      "webauthldap: finished for user", lc->r->user);
     }
 
-    ldap_unbind(lc->ld);
     return (needs_further_handling ? DECLINED : OK);
 }
 
