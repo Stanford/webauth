@@ -1,2 +1,2 @@
-/usr/local/apache2/bin/apxs -c -I../../libwebauth -L/usr/local/lib -lcurl -L/usr/lpubsw/lib -lssl -lcrypto -lkrb5 -lk5crypto -lcom_err  mod_webauth.c util.c service_token.c ../../libwebauth/libwebauth.a 
+/usr/local/apache2/bin/apxs -c -I../../libwebauth -L/usr/local/lib -lcurl -L/usr/lpubsw/lib -lssl -lcrypto -lkrb5 -lk5crypto -lcom_err  mod_webauth.c util.c webkdc.c ../../libwebauth/libwebauth.a 
 

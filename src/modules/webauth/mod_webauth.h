@@ -215,7 +215,7 @@ typedef struct {
 WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
 
-/* service_token.c */
+/* webkdc.c */
 
 MWA_SERVICE_TOKEN *
 mwa_get_service_token(MWA_REQ_CTXT *rc);
