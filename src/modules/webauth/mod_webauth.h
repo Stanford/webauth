@@ -295,7 +295,8 @@ typedef struct {
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
     MWA_APP_TOKEN at;
-    apr_array_header_t *proxy_tokens; /* proxy token(s) */
+    char *needed_proxy_type; /* set if we are redirecting for a proxy-token */
+    MWA_PROXY_TOKEN *pt; /* proxy-token that came from URL */
     apr_array_header_t *cred_tokens; /* cred token(s) */
 } MWA_REQ_CTXT;
 
