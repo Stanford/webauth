@@ -359,16 +359,8 @@ attempt_sident(MWK_REQ_CTXT *rc,
     ident = NULL;
 
     iat = (MWK_IDENT_AUTH_TYPE*) rc->sconf->sident_auth_types->elts;
-    /* go in reverse order since we pushed them initially */
-    //for (i = rc->sconf->sident_auth_types->nelts-1; i >= 0; i--) {
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                 "mod_webkdc: %s: nelts: %d", mwk_func,
-                 rc->sconf->sident_auth_types->nelts);
 
     for (i = 0; i < rc->sconf->sident_auth_types->nelts; i++) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webkdc: %s: try ident: %d", mwk_func, i);
-
         s  = ident_set_authtype(iat[i].type, iat[i].data);
         if (s != IDENT_AUTH_OKAY) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
@@ -395,9 +387,11 @@ attempt_sident(MWK_REQ_CTXT *rc,
         
             if (rc->sconf->debug) {
                 if (ident == NULL) {
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                               "mod_webkdc: %s: ident_query failed: errno: %d",
-                                 mwk_func, errno);
+                    if (rc->sconf->debug) {
+                        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                                     "mod_webkdc: %s: ident_query: errno: %d",
+                                     mwk_func, errno);
+                    }
                 } else {
                     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                                  "mod_webkdc: %s: ident_query failed: %s (%d)",
