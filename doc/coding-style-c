@@ -83,6 +83,7 @@ Syntax and Indentation
       **  mode: c
       **  c-basic-offset: 4
       **  indent-tabs-mode: nil
+      **  end:
       */
 
   If enough users start using vim to edit code, the corresponding vim
