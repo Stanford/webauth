@@ -141,6 +141,7 @@ typedef struct {
     int numEntries;
 
     apr_table_t* envvars;    // which attributes to place into environment
+    int legacymode;
 
     LDAP *ld;
     char **attrs;            // attributes to retrieve from LDAP, (null = all)
