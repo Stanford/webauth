@@ -7,4 +7,5 @@ config.log
 config.status
 configure
 libtool
+mod-config.h
 webauth-*

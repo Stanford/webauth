@@ -154,7 +154,7 @@ dnl Checks for library functions.
 dnl Checks for system services.
 
 dnl Output files.
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.h mod-config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile

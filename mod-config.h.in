@@ -1,0 +1,14 @@
+/* mod-config.h.in -- Stripped config.h.in for use with Apache modules.
+   $Id$
+
+   We can't include the regular config.h into Apache modules because many
+   of the symbols defined by Autoconf conflict with symbols that are also
+   defined by the APR headers.  This is a hand-maintained template that
+   contains a small subset of what config.h defines, just those symbols
+   that we want to use in the module code. */
+
+/* Define to 1 if you have the `krb5_free_keytab_entry_contents' function. */
+#undef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
+
+/* Define to 1 to include S/Ident support. */
+#undef HAVE_SIDENT
