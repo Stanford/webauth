@@ -237,10 +237,10 @@ krb5_webkdc_credential(server_rec *server,
     webauth_krb5_free(ctxt);
 
     bk5_req_len = apr_base64_encode_len(k5_req_len);
-    bk5_req = (char*) apr_palloc(pool, bk5_req_len);
-    apr_base64_encode(bk5_req, k5_req, k5_req_len);
+    bk5_req = apr_palloc(pool, bk5_req_len);
+    apr_base64_encode((char *) bk5_req, (char *) k5_req, k5_req_len);
     free(k5_req);
-    return bk5_req;
+    return (char *) bk5_req;
 }
 
 static MWA_CRED_INTERFACE krb5_cred_interface = {

@@ -223,7 +223,7 @@ webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
 }
 
 static int
-read_fully(int fd, char *buff, int n)
+read_fully(int fd, unsigned char *buff, int n)
 {
     int tot=0, num_read;
     
@@ -529,7 +529,7 @@ webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
 {
     int fd, n, len, s;
     struct stat sbuf;
-    char *buff;
+    unsigned char *buff;
 
     *ring = NULL;
     buff = NULL;

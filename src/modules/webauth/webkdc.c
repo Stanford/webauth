@@ -22,11 +22,13 @@ copy_service_token(apr_pool_t *pool,
     copy->pool = pool;
     copy->expires = orig->expires;
     copy->created = orig->created;
-    copy->token = apr_pstrdup(pool, orig->token);
+    copy->token = (unsigned char *) apr_pstrdup(pool, (char *) orig->token);
     copy->next_renewal_attempt = orig->next_renewal_attempt;
     copy->last_renewal_attempt = orig->last_renewal_attempt;
     copy->key.type = orig->key.type;
-    copy->key.data = apr_pstrmemdup(pool, orig->key.data, orig->key.length);
+    copy->key.data =
+        (unsigned char *) apr_pstrmemdup(pool, (char *) orig->key.data,
+                                         orig->key.length);
     copy->key.length = orig->key.length;
     copy->app_state = apr_pstrmemdup(pool, orig->app_state,
                                      orig->app_state_len);
@@ -53,13 +55,15 @@ new_service_token(apr_pool_t *pool,
     token->expires = expires;
     token->created = created;
 
-    token->token = apr_pstrmemdup(pool, tdata, td_len);
+    token->token = (unsigned char *) apr_pstrmemdup(pool, (char *) tdata,
+                                                    td_len);
 
     token->next_renewal_attempt = next_renewal_attempt;
     token->last_renewal_attempt = last_renewal_attempt;
     token->key.type = key_type;
 
-    token->key.data = apr_pstrmemdup(pool, kdata, kd_len);
+    token->key.data = (unsigned char *) apr_pstrmemdup(pool, (char *) kdata,
+                                                       kd_len);
     token->key.length = kd_len;
     return token;
 }
@@ -74,11 +78,12 @@ read_service_token_cache(server_rec *server,
     apr_finfo_t finfo;
     unsigned char *buffer;
     apr_status_t astatus;
-    int status, num_read, tlen, klen;
+    int status, tlen, klen;
+    size_t num_read;
     int s_expires, s_token, s_lra, s_kt, s_key, s_nra, s_created;
     time_t expires, lra, nra, created;
     uint32_t key_type;
-    char *tok, *key;
+    unsigned char *tok, *key;
 
     WEBAUTH_ATTR_LIST *alist;
     static char *mwa_func = "mwa_read_service_token_cache";
@@ -138,7 +143,7 @@ read_service_token_cache(server_rec *server,
     s_created = webauth_attr_list_get_time(alist, "created", &created,
                                            WA_F_FMT_STR);
 
-    s_token = webauth_attr_list_get_str(alist, "token", &tok, &tlen,
+    s_token = webauth_attr_list_get_str(alist, "token", (char **) &tok, &tlen,
                                         WA_F_NONE);
     s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt", 
                                        &lra, WA_F_FMT_STR);
@@ -180,7 +185,8 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     apr_file_t *cache;
     unsigned char *buffer;
     apr_status_t astatus;
-    int status, buff_len, ebuff_len, bytes_written, ok;
+    int status, buff_len, ebuff_len, ok;
+    size_t bytes_written;
     char *templ;
     WEBAUTH_ATTR_LIST *alist;
     static const char *mwa_func = "write_service_token_cache";
@@ -204,7 +210,8 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
 
     alist = webauth_attr_list_new(10);
 
-    webauth_attr_list_add_str(alist, "token", token->token, 0, WA_F_NONE);
+    webauth_attr_list_add_str(alist, "token", (char *) token->token, 0,
+                              WA_F_NONE);
 
     webauth_attr_list_add_uint32(alist, "key_type", 
                                  token->key.type, WA_F_FMT_STR);
@@ -489,7 +496,7 @@ parse_service_token_response(apr_xml_doc *xd,
     MWA_SERVICE_TOKEN *st;
     apr_xml_elem *e, *sib;
     int bskey_len;
-    char *bskey;
+    unsigned char *bskey;
     time_t first_renewal_attempt, expiration;
     static const char *mwa_func = "parse_service_token_response";
     const char *expires, *session_key, *token_data;
@@ -551,8 +558,8 @@ parse_service_token_response(apr_xml_doc *xd,
         return NULL;
     }
 
-    bskey = (char*)apr_palloc(pool, apr_base64_decode_len(session_key));
-    bskey_len = apr_base64_decode(bskey, session_key);
+    bskey = apr_palloc(pool, apr_base64_decode_len(session_key));
+    bskey_len = apr_base64_decode((char *) bskey, session_key);
 
     /* 
      * FIXME: initial next_renewal_attempt time is hardcoded to when the token
@@ -570,7 +577,7 @@ parse_service_token_response(apr_xml_doc *xd,
                            WA_AES_KEY, /* FIXME: hardcoded for now */
                            bskey,
                            bskey_len,
-                           token_data,
+                           (unsigned char *) token_data,
                            strlen(token_data),
                            expiration,
                            curr,
@@ -869,7 +876,7 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
     SET_COMMAND(cmd);
 
     tlen = webauth_token_encoded_length(alist);
-    token = (char*)apr_palloc(rc->r->pool, tlen);
+    token = apr_palloc(rc->r->pool, tlen);
 
     status = webauth_token_create_with_key(alist, curr,
                                            token, &olen, tlen, &st->key);
@@ -881,9 +888,9 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
         return NULL;
     }
 
-    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-    apr_base64_encode(btoken, token, olen);
-    return btoken;
+    btoken = apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode((char *) btoken, (char *) token, olen);
+    return (char *) btoken;
 }
 
 

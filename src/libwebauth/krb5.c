@@ -253,7 +253,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     memset(creds, 0, sizeof(krb5_creds));
 
     list = NULL;
-    buff = (char*) malloc(input_length);
+    buff = malloc(input_length);
 
     if (buff == NULL)
         return WA_ERR_NO_MEM;
@@ -323,8 +323,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     if (s != WA_ERR_NONE)
         goto cleanup;
     /* is_skey */
-    s = webauth_attr_list_get_int32(list, CR_ISSKEY, &creds->is_skey,
-                                    WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_ISSKEY,
+                                    (int32_t *) &creds->is_skey, WA_F_NONE);
     if (s != WA_ERR_NONE)
         goto cleanup;
 
@@ -912,7 +912,7 @@ webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
         laddr.length = 4;
         laddr.contents = (void*)&lh;
 
-        indata.data = in_data;
+        indata.data = (char *) in_data;
         indata.length = in_length;
 
         krb5_auth_con_setflags(c->ctx, auth, 0);
@@ -1105,7 +1105,7 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
                     raddr.length = 4;
                     raddr.contents = (void*)&rh;
 
-                    inbuf.data = in_data;
+                    inbuf.data = (char *) in_data;
                     inbuf.length = in_length;
                     krb5_auth_con_setflags(c->ctx, auth, 0);
                     krb5_auth_con_setaddrs(c->ctx, auth, NULL, &raddr);

@@ -267,9 +267,11 @@ mwa_parse_cred_token(char *token,
 
 
     if (key != NULL) {
-        status = webauth_token_parse_with_key(token, blen, 0, key, &alist);
+        status = webauth_token_parse_with_key((unsigned char *) token, blen,
+                                              0, key, &alist);
     } else if (ring != NULL){
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
+        status = webauth_token_parse((unsigned char *) token, blen, 0, ring,
+                                     &alist);
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: callled with NULL key and ring!",

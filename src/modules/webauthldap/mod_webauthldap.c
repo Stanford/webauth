@@ -1460,7 +1460,7 @@ auth_checker_hook(request_rec * r)
         /* Set this to ignore Broken Pipes that always happen when unbinding
            expired ldap connections. */
 #ifdef SIGPIPE
-        old_signal = apr_signal(SIGPIPE, (void*) SIG_IGN);
+        old_signal = apr_signal(SIGPIPE, SIG_IGN);
         if (old_signal == SIG_ERR) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): %s %s (%d)",

@@ -1005,7 +1005,7 @@ make_proxy_cookie(const char *proxy_type,
     if (rc->sconf->ring == NULL)
         return 0;
 
-    status = webauth_token_create(alist, 0, token, 
+    status = webauth_token_create(alist, 0, (unsigned char *) token, 
                                   &olen, tlen, rc->sconf->ring);
     webauth_attr_list_free(alist);
 
@@ -1071,7 +1071,7 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     if (rc->sconf->ring == NULL)
         return 0;
 
-    status = webauth_token_create(alist, 0, token, 
+    status = webauth_token_create(alist, 0, (unsigned char *) token, 
                                   &olen, tlen, rc->sconf->ring);
     webauth_attr_list_free(alist);
 
@@ -1103,7 +1103,7 @@ make_app_cookie(const char *subject,
                MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    char *token, *btoken;
+    unsigned char *token, *btoken;
     int tlen, olen, status;
     const char *mwa_func = "make_app_cookie";
 
@@ -1136,7 +1136,7 @@ make_app_cookie(const char *subject,
     }
 
     tlen = webauth_token_encoded_length(alist);
-    token = (char*)apr_palloc(rc->r->pool, tlen);
+    token = apr_palloc(rc->r->pool, tlen);
 
     if (rc->sconf->ring == NULL)
         return 0;
@@ -1151,10 +1151,10 @@ make_app_cookie(const char *subject,
         return 0;
     }
 
-    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-    apr_base64_encode(btoken, token, olen);
+    btoken = apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode((char *) btoken, (char *) token, olen);
 
-    fixup_setcookie(rc, app_cookie_name(), btoken);
+    fixup_setcookie(rc, app_cookie_name(), (char *) btoken);
 
     rc->at.subject = apr_pstrdup(rc->r->pool, subject);
     rc->at.last_used_time = last_used_time;
@@ -1244,7 +1244,8 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     if (rc->sconf->ring == NULL)
         return 0;
 
-    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
+    status = webauth_token_parse((unsigned char *) token, blen, 0,
+                                 rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
@@ -1348,7 +1349,8 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     if (rc->sconf->ring == NULL)
         return NULL;
 
-    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
+    status = webauth_token_parse((unsigned char *) token, blen, 0,
+                                 rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
@@ -1463,7 +1465,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     if (rc->sconf->ring == NULL)
         return NULL;
 
-    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
+    status = webauth_token_parse((unsigned char *) token, blen, 0,
+                                 rc->sconf->ring, &alist);
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
@@ -1694,7 +1697,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     ap_unescape_url(token);
     blen = apr_base64_decode(token, token);
 
-    status = webauth_token_parse_with_key(token, blen, 
+    status = webauth_token_parse_with_key((unsigned char *) token, blen, 
                                           rc->sconf->token_max_ttl, 
                                           key, &alist);
 
@@ -1933,7 +1936,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
                      "mod_webauth: %s: return_url(%s)", mwa_func, return_url);
 
     tlen = webauth_token_encoded_length(alist);
-    token = (char*)apr_palloc(rc->r->pool, tlen);
+    token = apr_palloc(rc->r->pool, tlen);
 
     status = webauth_token_create_with_key(alist, curr,
                                            token, &olen, tlen, &st->key);
@@ -1946,8 +1949,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         return failure_redirect(rc);
     }
 
-    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-    apr_base64_encode(btoken, token, olen);
+    btoken = apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode((char *) btoken, (char *) token, olen);
 
     redirect_url = apr_pstrcat(rc->r->pool,
                                rc->sconf->login_url,

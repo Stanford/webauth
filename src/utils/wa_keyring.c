@@ -148,14 +148,16 @@ print_time(time_t t)
 void
 get_fingerprint(WEBAUTH_KEY *key, char *hex, int hex_len)
 {
-    char md5[MD5_DIGEST_LENGTH]; 
+    unsigned char md5[MD5_DIGEST_LENGTH]; 
     int len, s;
+
     MD5_CTX c;
     MD5_Init(&c);
     MD5_Update(&c, key->data, key->length);
     MD5_Final(md5, &c);
  
-    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &len, hex_len);
+    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, (unsigned char *) hex,
+                           &len, hex_len);
     hex[len] = '\0';
 }
 

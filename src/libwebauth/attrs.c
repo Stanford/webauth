@@ -68,7 +68,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
                       int flags)
 {
     int i, s;
-    char *buff;
+    unsigned char *buff;
 
     buff = NULL;
 
@@ -515,8 +515,8 @@ webauth_attrs_decode(unsigned char *buffer,
                     in_val = 0;
                     length = d - (unsigned char*)value;
                     *d = '\0';
-                    s = webauth_attr_list_add(*list, name, value, length,
-                                              WA_F_NONE);
+                    s = webauth_attr_list_add(*list, (char *) name, value,
+                                              length, WA_F_NONE);
                     if (s!=WA_ERR_NONE) {
                         webauth_attr_list_free(*list);
                         *list = NULL;
