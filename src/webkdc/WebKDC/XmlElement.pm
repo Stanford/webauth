@@ -44,6 +44,53 @@ sub convert_tree {
     }
 };
 
+# 
+# parses XML into a hash of hashes, where 'name' is the name
+# of the tag, 'attrs' is a hash of the attributes, 'children'
+# is an array of the child elements, and 'content' is all of 
+# the textual content.
+# 
+# for example:
+# 
+# <getTokensRequest>
+#    <requesterCredential type="krb5">
+#               {base64-krb5-mk-req-data}
+#    </requesterCredential>
+#   <tokens>
+#     <token type="service" id="0"/>
+#   </tokens>
+# </getTokensRequest>
+# 
+# will parse into:
+# 
+# $tree = {
+#   'name' => 'getTokensRequest'
+#   'attrs' => {}
+#   'children' => [
+#       {
+#         'name' => 'requesterCredential',
+#         'attrs' => { 'type' => 'krb5' },
+#         'content' => '   {base64-krb5-mk-req-data}  '
+#       }
+#       {
+#          'name' => 'tokens',
+#          'attrs' => {},
+#          'children' => [
+#             {
+#               'name' => 'token',
+#               'attrs' => { 'id' => 0, 'type' => 'service'},
+#               'content' => '     '
+#             }
+#          ]
+#       }
+#   ]
+#   'content' => '      '
+# };
+#
+# note that all the whitespace in the document will get left
+# in. It should be trim'd if needed.
+#
+
 sub new {
     my $type = shift;
     my $self = { 'attrs' => {}, 'children' => []};
