@@ -1,0 +1,118 @@
+                           Maintaining WebAuth
+
+  This file contains procedures and information for WebAuth maintainers
+  and for anyone else who is interested in modifying the WebAuth source.
+
+Building Module Documentation
+
+  The files doc/mod_*.xml have the module documentation for the Apache
+  modules that come with WebAuth, in the XML format that is used for the
+  Apache reference manual.  Pre-built copies of the HTML files suitable
+  for dropping into a built Apache 2.x manual directory are also provided
+  for convenience.
+
+  Whenever the module documentation is changed in the XML files, the HTML
+  files need to be rebuilt.  Basic instructions for doing so are at:
+
+      <http://httpd.apache.org/docs-project/docsformat.html>
+
+  The basic steps are as follows:
+
+      $ CVSROOT=:pserver:anoncvs@cvs.apache.org:/home/cvspublic
+      $ export CVSROOT
+      $ cvs login  (The password is "anoncvs" (without the quotes))
+      $ cvs checkout httpd-2.0
+      $ cd httpd-2.0/docs/manual
+      $ cvs co -d build site-tools/httpd-docs-build/
+      $ cd build
+      $ JAVA_HOME=/usr/java/j2sdk1.4.1_01  (whatever your java home is)
+      $ export JAVA_HOME
+      $ cp {webauth3}/doc/mod_*.xml ../mod/
+      $ ./build.sh
+
+  Following that procedure (assuming Java doesn't "run out of memory",
+  which occasionally happens to me) should generate:
+
+      ../mod/mod_web{auth,kdc}.html.en
+
+  which can then be copied into the WebAuth tree.  Once this
+  infrastructure is set up, regenerating the documentation is only a
+  matter of copying in new *.xml files and ./build.sh will incrementally
+  rebuild only those files.
+
+Making a Release
+
+  Follow the following steps to make a new full release of WebAuth:
+
+   1. Make sure that tools/config.guess and tools/config.sub are the
+      latest available versions from <ftp://ftp.gnu.org/gnu/config/>.  If
+      newer versions are available, download them and check them in; we do
+      not have any local changes to those files.
+
+   2. Check out a copy of the WebAuth tree, run autoconf and autoheader
+      (making sure to get the Autoconf 2.57 or later versions), run
+      ./configure with whatever options are needed to get it to finish,
+      and then run make check-manifest.  Update the MANIFEST file as
+      needed until make check-manifest shows no differences between the
+      two file lists.  Only files listed in MANIFEST will be included in
+      the distribution.
+
+   3. Make sure that CHANGES and NEWS are up-to-date.  Add a line in NEWS
+      for the release, including the current date, if it doesn't already
+      exist.  If there are no major changes, include some short comment
+      about what minor changes are included.
+
+   4. Update the revision number in configure.ac to drop the "pre" from
+      the revision number and change the revision number to whatever is
+      appropriate for the release.  Run autoconf and ./configure again
+      after you do this.
+
+   5. Run make dist.  This will generate a .tar.gz file containing the
+      source distribution and a .tar.gz.md5 file containing the MD5
+      checksum of the distribution.  Keep the source tree that you used to
+      run make dist; you'll use it again later.
+
+   6. Unpack the tar file into a fresh directory and configure and build
+      that copy of the source to make sure that it compiles.  Run make
+      check and make sure that it passes its test suite.
+
+   7. Optionally, install this release on one server and run through the
+      full test suite.  This may have already been done as part of the
+      preparation for the release.  If one needs to wait for a bit before
+      releasing at this point, don't forget to go back and update the date
+      in NEWS and re-run make dist to generate the final tarballs when the
+      release is actually ready.
+
+   8. Sign the .tar.gz file with the WebAuth signing key:
+
+        $ gnupg --detach-sign --armor -u webauth-team@lists <dist>.tar.gz
+
+      where <dist>.tar.gz is the distribution tarball.  Contact Russ about
+      the signing key if you need to do this part and don't already have
+      it.
+
+   9. Copy the resulting .tar.gz and .tar.gz.asc files into the dist
+      subdirectory of the WebAuth web site.
+
+  10. Based on the NEWS file, write up a release announcement.  Convert
+      that announcement to HTML and put it in the news subdirectory of the
+      WebAuth web site.  The naming convention for release announcements
+      is <version>-announce.html where <version> is the version of the
+      release without any periods.
+
+  11. Update the MD5 checksum and the links in download.html to correspond
+      to the current release.
+
+  12. Post the release announcement to the appropriate newsgroups and
+      mailing lists.
+
+  13. Going back to the checked-out tree that you used to generate the
+      release, tag the release point with a command like:
+
+        $ cvs tag WEBAUTH-<version> .
+
+      where <version> is the version of the release with all periods
+      changed to underscores.
+
+  14. Increase the revision number in configure.ac and add "pre" to the
+      end of it again.

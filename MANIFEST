@@ -2,6 +2,7 @@ File Name                               Description
 -------------------------------------------------------------------------------
 CHANGES                                 Comprehensive change log
 INSTALL                                 Installation guide
+HACKING                                 Instructions for WebAuth developers
 MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
 NEWS                                    Release history for WebAuth
