@@ -263,7 +263,7 @@ PPCODE:
 
     while((sv_val = hv_iternextsv(h, &key, &klen))) {
         val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, key, val, vlen, WA_COPY_NONE);
+        webauth_attr_list_add(list, key, val, vlen, WA_F_NONE);
     }
 
     out_max = webauth_attrs_encoded_length(list);
@@ -465,7 +465,7 @@ PPCODE:
 
     while((sv_val = hv_iternextsv(h, &akey, &klen))) {
         val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, akey, val, vlen, WA_COPY_NONE);
+        webauth_attr_list_add(list, akey, val, vlen, WA_F_NONE);
     }
 
     out_max = webauth_token_encoded_length(list);

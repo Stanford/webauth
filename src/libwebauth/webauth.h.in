@@ -115,9 +115,13 @@ typedef enum {
 #define WA_AES_256 32
 
 /* flags to attr_list_add functions */
-#define WA_COPY_NONE 0x00
-#define WA_COPY_NAME 0x01
-#define WA_COPY_VALUE 0x02
+#define WA_F_NONE 0x00
+#define WA_F_COPY_VALUE 0x01
+#define WA_F_COPY_NAME 0x02
+#define WA_F_FMT_STR   0x04
+#define WA_F_FMT_B64   0x08
+#define WA_F_FMT_HEX   0x10
+#define WA_F_COPY_BOTH (WA_F_COPY_NAME|WA_F_COPY_VALUE)
 
 /******************** types ********************/
 
@@ -132,7 +136,7 @@ typedef struct {
     int flags;                  /**< flags passed in during add */
     void *value;                /**< Value of attribute (binary data). */
     int length;                 /**< Length of attribute value in bytes. */
-    char val_buff[16];          /**< Temp buffer to avoid malloc
+    char val_buff[32];          /**< Temp buffer to avoid malloc
                                    during encoding. */
 } WEBAUTH_ATTR;
 
@@ -354,31 +358,32 @@ int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list,
                                const char *name,
                                time_t value, int flags);
 
-
-int webauth_attr_list_get_void(WEBAUTH_ATTR_LIST *list,
-                               const char *name,
-                               void **value,
-                               int *value_len,
-                               int copy);
-
+int webauth_attr_list_get(WEBAUTH_ATTR_LIST *list,
+                          const char *name,
+                          void **value,
+                          int *value_len,
+                          int flags);
 
 int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list,
                               const char *name,
-                               char **value,
-                               int *value_len,
-                               int copy);
+                              char **value,
+                              int *value_len,
+                              int flags);
 
 int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
                                  const char *name,
-                                 uint32_t *value);
+                                 uint32_t *value,
+                                 int flags);
 
 int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
                                  const char *name,
-                                 int32_t *value);
+                                 int32_t *value,
+                                 int flags);
 
 int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, 
                                const char *name,
-                               time_t *value);
+                               time_t *value,
+                               int flags);
 
 /** searches for the name attribute in the list and returns the
  * index in i and WA_ERR_NONE or sets i to -1 and returns WA_ERR_NOT_FOUND.

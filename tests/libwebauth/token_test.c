@@ -23,10 +23,10 @@ int main(int argc, char *argv[])
 
     time(&curr);
     ain = webauth_attr_list_new(32);
-    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, 0);
-    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600, 0);
+    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, WA_F_NONE);
+    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600, WA_F_NONE);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
@@ -107,10 +107,10 @@ int main(int argc, char *argv[])
     /* now lets try the {create,parse}_with_key versions */
 
     ain = webauth_attr_list_new(32);
-    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, 0);
-    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600, 0);
+    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, WA_F_NONE);
+    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600, WA_F_NONE);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
@@ -148,10 +148,10 @@ int main(int argc, char *argv[])
     /* lets try to parse expired token */
 
     ain = webauth_attr_list_new(32);
-    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, 0);
-    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr-3600, 0);
+    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, WA_F_NONE);
+    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr-3600, WA_F_NONE);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);
@@ -188,10 +188,10 @@ int main(int argc, char *argv[])
     /* lets try to parse a stale token */
 
     ain = webauth_attr_list_new(32);
-    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, 0);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, 0);
-    webauth_attr_list_add_time(ain, WA_TK_CREATION_TIME, curr-3600, 0);
+    webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, WA_F_NONE);
+    webauth_attr_list_add_time(ain, WA_TK_CREATION_TIME, curr-3600, WA_F_NONE);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);

@@ -13,13 +13,13 @@ int main(int argc, char *argv[])
     WEBAUTH_KEYRING *ring;
     WEBAUTH_KEYRING *ring2;
 
-    int s, len;
+    int s, len, i;
     unsigned char key_material[WA_AES_128];
     unsigned char hex[2048];
     time_t curr;
     TEST_VARS;
 
-    START_TESTS(10);
+    START_TESTS(13);
 
 
     ring = webauth_keyring_new(32);
@@ -63,11 +63,25 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
 
     /* FIXME: compare ring2 to ring */
+    TEST_OK2(ring->num_entries, ring2->num_entries);
+    if (ring->num_entries == ring2->num_entries) {
+        for (i=0; i < ring->num_entries; i++) {
+            WEBAUTH_KEYRING_ENTRY *e1, *e2;
+            int ok;
+            e1 = &ring->entries[i];
+            e2 = &ring2->entries[i];
+            ok = (e1->creation_time == e2->creation_time) &&
+                (e1->valid_from == e2->valid_from) &&
+                (e1->valid_till == e2->valid_till) &&
+                (e1->key->type == e2->key->type) &&
+                (e1->key->length == e2->key->length) &&
+                (memcmp(e1->key->data, e2->key->data, e1->key->length) == 0);
+            TEST_OK(ok);
+        }
+    }
 
     s = webauth_keyring_write_file(ring2,"webauth_keyring2");
     TEST_OK2(WA_ERR_NONE, s);
-
-    /* FIXME: compare two test key ring files */
 
     webauth_keyring_free(ring);
     webauth_keyring_free(ring2);

@@ -256,7 +256,7 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
     time_t curr = 0, t;
 
     /* see if token has explicit expiration */
-    s = webauth_attr_list_get_time(list, WA_TK_EXPIRATION_TIME, &t);
+    s = webauth_attr_list_get_time(list, WA_TK_EXPIRATION_TIME, &t, WA_F_NONE);
     if (s == WA_ERR_NONE) {
         time(&curr);
         if (t < curr) {
@@ -271,7 +271,7 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
         return WA_ERR_NONE;
 
     /* see if token has creation time */
-    s = webauth_attr_list_get_time(list, WA_TK_CREATION_TIME, &t);
+    s = webauth_attr_list_get_time(list, WA_TK_CREATION_TIME, &t, WA_F_NONE);
     if (s == WA_ERR_NONE) {
         if (curr == 0)
             time(&curr);
