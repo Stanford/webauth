@@ -40,7 +40,6 @@ typedef enum {
     WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
     WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
-    WA_ERR_GETHOSTNAME,      /**< Couldn't get local hostname. */
     WA_ERR_LOGIN_FAILED,     /**< Bad username/password. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
