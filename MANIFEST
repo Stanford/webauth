@@ -1,5 +1,6 @@
 File Name                               Description
 -------------------------------------------------------------------------------
+CHANGES                                 Comprehensive change log
 INSTALL                                 Installation guide
 MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
