@@ -9,7 +9,8 @@ VPATH		= @srcdir@
 APXS		= @APXS@
 
 APXS_CFLAGS	= @APXS_CFLAGS@
-CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
+CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) \
+		  -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@ \
 		  @SIDENT_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
