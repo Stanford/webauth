@@ -111,6 +111,9 @@
 #define N_WEBAUTHR "mod_webauth_WEBAUTHR"
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
+#define N_EXPIRATION "mod_webauth_EXPIRAION"
+#define N_CREATION   "mod_webauth_CREATION"
+#define N_LASTUSED   "mod_webauth_LASTUSED"
 #define N_APP_COOKIE  "mod_webauth_APP_COOKIE"
 
 /* enums for config directives */
