@@ -73,6 +73,7 @@ dist:
 	find $(TARDIR_FULL) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
 	tar cf $(TAR_FULL) $(TARDIR_FULL)
 	gzip -9 $(TAR_FULL)
+	md5sum $(TAR_FULL) > $(TAR_FULL).md5
 	mkdir $(TARDIR_BASE)
 	for d in `grep -v 'WebKDC -- ' MANIFEST | sed $(DISTDIRS)` ; do \
 	    mkdir -p $(TARDIR_BASE)/$$d || exit 1 ; \
@@ -83,6 +84,7 @@ dist:
 	find $(TARDIR_BASE) -type f -print | xargs touch -t `date +%m%d%H%M.%S`
 	tar cf $(TAR_BASE) $(TARDIR_BASE)
 	gzip -9 $(TAR_BASE)
+	md5sum $(TAR_BASE) > $(TAR_BASE).md5
 
 # Check the MANIFEST against the files present in the current tree, building a
 # list with tools/mkmanifest and running diff between the lists.
