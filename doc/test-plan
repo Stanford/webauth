@@ -1,0 +1,287 @@
+Test Plan Draft
+02/06/2003
+
+Browser Base
+---------------
+
+While it is expected that the web authentication system should work for any 
+web browser that supports HTTP/1.1, 128-bit SSL, and cookie management, the 
+team will explicitly test the following browsers:
+
+·	Microsoft Explorer versions 5.x and 6.x
+·	Netscape 4.7, 6.x, 7.x
+·	Mozilla 1.1 and up
+·	Opera
+·	Lynx
+        Safari on Max OS X?
+
+Browser will be tested on Macintosh OS X, Windows 2000 and XP, and 
+Unices (Linux and Solaris) wherever possible.
+
+Server Base
+-------------
+Web authentication servers will be available and tested for the 
+following operating systems:
+
+Solaris 2.8, 2.9
+Linux (versions?)
+
+Source tree builds will be available and contributions for other platforms 
+will be accepted but testing and support will be left up to the contributors.
+
+Server Tests
+-------------
+·	Does the installer do permissions checking correctly?
+·	Does the installer do manifest checking correctly?
+·	Test suite complete?
+·	Load testing?  Number of concurrent authentication events? 
+        Multiple virtualhosts?
+·	Performance testing?
+·	Give server incomplete data requests - properly handled?
+
+System Tests
+--------------
+·	Sniffing of traffic for exposed elements
+·	Put client behind a NAT bridge - still functional?
+
+
+Browser Tests
+---------------
+·	General authentication works as designed and is repeatable.
+·	Clock issues?
+·	Permission issues that might affect webauth?
+·	Caching issues that might affect webauth?
+
+Specific tests to perform
+-------------------------
+
+[these assumes that the tests have been installed 
+     as /tests/ on the  test webauth server]
+
+
+------------------------------------------------------------
+TEST 1 - basic auth tests
+------------------------------------------------------------
+
+1. start a new browser
+
+2. goto https://{testserver}/tests/ on the test webauth server
+
+3. click on "basic auth test", you should get redirected to login page
+
+4. type in the wrong username/password when sent to the login screen,
+   verify that you get an invalid-login message.
+
+5. type in the correct username/password. you should end up at a 
+   confirmation page. Clicking on the confirmation page should take
+   you back to test1, which should successfully identify you.
+
+6. click on "Click here to return without logging out" to get sent
+   back the main tests screen.
+
+7. click on "basic auth test" again, you should immediately end up
+   at test1 without needing to login.
+
+8. click on "Click here to logout and return". That should send you
+   to a page that says you are logged out. Click on "Click here to return"
+   to return the tests.
+
+9. click on "basic auth test", you should get redirected back to a 
+   confirmation page on the webkdc and not need to enter a password.
+   Clicking on the confirmation page will take you back to test1.
+
+10. exit the browser (all browser windows), and return test1
+    (step 2/3). You should get re-prompted for a username/password.
+
+    Don't login, go back the tests menu and proceed to TEST 2.
+
+
+------------------------------------------------------------
+TEST 2 - test extra redirect
+------------------------------------------------------------
+
+1. make sure you aren't logged in to any tests (single-sign-on login
+   is ok).
+
+2. click on "test extra redirect" and give your username/password and
+   or click on the confirmation page at the WebKDC.
+
+3. You should successfully return to /tests/auth/test2return, and 
+   the URL in the browsers address window should not have any extra
+   stuff at the end of the URL (i.e., it should end with /test2return).
+
+4. click on "Click here to return without logging out" to get sent
+   back the main tests screen.
+
+------------------------------------------------------------
+TEST 3 - test environment variable prefix
+------------------------------------------------------------
+
+1. you can still be logged to the tests when running this test
+   (you should be if you came from step 4 above)
+
+2. click on "test environment variable prefix"
+
+3. The page should show that the TEST_* environment variables got
+   set in addition to the norma WEBAUTH_* environment variables.
+
+4. click on "Click here to logout and return". That should send you
+   to a page that says you are logged out. Click on "Click here to return"
+   to return the tests.
+
+------------------------------------------------------------
+TEST 4 - test cancel login
+------------------------------------------------------------
+
+1. make sure you are logged out of the tests before running this test
+   (you should be if you came from step 4 above)
+
+2. click on "test cancel login"
+
+3. this will take you to the webkdc, which should have an option
+   on the page to "cancel" out of logging in. Click this link.
+
+4. You should end up at a page (/tests/unauth/test4) which confirms
+   that you canceled out of logging in.
+
+5. click on "Click here to return tests".
+
+------------------------------------------------------------
+TEST 5 - test return URL
+------------------------------------------------------------
+
+1. make sure you are logged out of the tests before running this test
+   (you should be if you came from step 5 above)
+
+2. click on "test return url". This will run /tests/auth/test5
+
+3. this will take you to the webkdc to login. Click on the confirmation
+   page.
+
+4. you should end up back at "/tests/auth/test5return", which shows
+   that you came back to a different URL then you were originally at.
+
+5. click on "Click here to logout and return". That should send you
+   to a page that says you are logged out. Click on "Click here to return"
+   to return the tests.
+
+------------------------------------------------------------
+TEST 6 - test query params on initial redirect
+------------------------------------------------------------
+
+1. make sure you are logged out of the tests before running this test
+   (you should be if you came from step 5 above)
+
+2. click on "test query params on initial redirect". 
+
+3. this will take you to the webkdc to login. Click on the confirmation
+   page.
+
+4. this will take you back to the test, which will verify that the
+   query params that were on the original request before the rediect
+   are still valid and parsed by the CGI script, even though there
+   are webauth-related tokens at the end of the URL.
+
+5. click on "Click here to logout and return". That should send you
+   to a page that says you are logged out. Click on "Click here to return"
+   to return the tests.
+
+------------------------------------------------------------
+TEST 7 - test 5 second app-token-lifetime
+------------------------------------------------------------
+
+1. make sure you are logged out of the tests before running this test
+   (you should be if you came from step 5 above)
+
+2. click on "test 5 second app-token lifetime
+
+3. this will take you to the webkdc to login. Click on the confirmation
+   page.
+
+4. this will take you back to the test. Wait 10 seconds and click 
+   then click on the "Click here to re-run the test..." link.
+
+5. If you waited long enough, you'll be taken back to the webkdc
+   (but not prompted for a username/password) to re-login. Clicking on the
+   confirmation page will take you back to the test page again.
+
+6. wait another 10 seconds and you cookie will expire. The click on
+   the "click here to return to the tests" link.
+
+------------------------------------------------------------
+TEST 8 - test 5 second app-token lifetime and force login
+------------------------------------------------------------
+
+1. make sure you are logged out of the tests before running this test
+   (you should be if you came from step 6 above)
+
+2. click on "test 5 second app-token lifetime and force login"
+
+3. this will take you to the webkdc to login. The webkdc will always
+   prompt for a username password. Click on the confirmation to get
+   sent back to the test.
+
+4. this will take you back to the test. Wait 10 seconds and click 
+   then click on the "Click here to re-run the test..." link.
+
+5. If you waited long enough, you'll be taken back to the webkdc
+   and prompted for username/password again.
+
+------------------------------------------------------------
+TEST 9 - test last-used update
+------------------------------------------------------------
+
+1. get back to the tests menu 
+
+2. click on "test last-used update", click on confirm at webkdc to get back
+
+3. the test page should display the current value of WEBAUTH_TOKEN_LASTUSED.
+
+4.  Click on the "click here to re-run the test..." link. That should
+    cause the test page to get related, and show that WEBAUTH_TOKEN_LASTUSED
+    was updated.
+
+5. click on "Click here to return without logging out" to get sent
+   back the main tests screen.
+
+------------------------------------------------------------
+TEST 10 - test inactive-expire
+------------------------------------------------------------
+
+1. this assumes you are coming from step 5 of TEST 9.
+
+2. click on "test inactive-expire"
+
+3. the test page should display the current value of WEBAUTH_TOKEN_LASTUSED.
+
+4.  Click on the "click here to re-run the test..." link. That should
+    cause the test page to get related, and show that WEBAUTH_TOKEN_LASTUSED
+    was updated. 
+
+5. wait at least 20 seconds, then click on "click here to re-run the test.."
+   again. This time, you should be considered idle and sent back to the
+   webkdc and prompted for a username/password.
+
+------------------------------------------------------------
+
+other tests:
+
+- Attempt to go to a WebAuth-protected page via http instead of https.
+  i.e., http://{testserver}/tests/auth/test1
+
+  should get an error from webauth server, not redirected to webkdc
+
+- SSO. Need two different webauth test servers. Goto test1 on webauth1,
+  then go to test1 on webauth2 (you shouldn't be prompted for username/password
+  when going to test1 on webauth2).
+
+- Disable cookies in browser
+
+    webkdc should test and alert people that cookies are disabled
+
+- logout page on webkdc server
+
+    do test1 and logout
+    go to webkdc logout page (URL?) and logout of SSO
+    go back to test1, and you should have to login again (username/password)
+
