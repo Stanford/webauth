@@ -85,12 +85,9 @@ CancelURL              : CancelURL
             </div>
             <div class="loginlinks">
               <a href="/help.html">help</a>
-              <TMPL_IF NAME=login_cancel>
-                <!--Figure out where to get the cancel url -->
-                <TMPL_IF NAME=cancel_url>
-                  <!-- The Webauth Server has a cancel url.-->
-                  <a href="<TMPL_VAR NAME=cancel_url>">cancel</a>
-                </TMPL_IF>
+              <TMPL_IF NAME=wa_cancel_url>
+                <!-- The Webauth Server has a cancel url.-->
+                <a href="<TMPL_VAR NAME=cancel_url>">cancel</a>
               </TMPL_IF>
             </div>
           </td>
