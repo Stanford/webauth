@@ -12,7 +12,9 @@ General Guidelines
   POSIX code.  Code should be written so that it works as expected on a
   modern platform and is fixed up with portability tricks for older
   platforms, not the other way around.  You may assume an ANSI C compiler
-  and reasonable headers.
+  and reasonable headers.  Use memset instead of bzero, memcpy or memmove
+  instead of bcopy, strchr instead of index, and in general always prefer
+  the ANSI and POSIX C function names to any alternatives.
 
   Try to use const wherever appropriate.  Don't use register; modern
   compilers will do as good of a job as you will in choosing what to put
@@ -37,11 +39,17 @@ General Guidelines
   used if one branch may call functions unavailable on a particular
   platform.)
 
-  Plain structs make perfectly reasonable abstract data types; it's not
-  necessary to typedef the struct to something else.  Structs are actually
-  very useful for opaque data structures, since you can predeclare them
-  and then manipulate pointers to them without ever having to know what
-  the contents look like.  Please try to avoid typedefs except for
+  Exported functions in libraries must always begin with a prefix that's
+  a minimum of three characters followed by an underscore.  The same is
+  true of data types made visible in headers (except possibly for a data
+  type with the same name as the prefix used for everything else),
+  constants, and so forth.  This is to prevent accidentally stepping on
+  the namespace of another library.
+
+  Plain structs used as abstract data types and passed to functions should
+  be give typedefs in all caps.  However, such typedefs should only be
+  used for plain structs, not for integral types, unions, pointers to
+  structs, or the like.  Please try to avoid typedefs otherwise except for
   function pointers or other extremely confusing data types, or for data
   types where we really gain some significant data abstraction from hiding
   the underlying data type.  Also avoid using the _t suffix for any type;
@@ -113,6 +121,18 @@ Syntax and Indentation
   explaining its return value and side effects.  In general, put the
   RCS/CVS Id tag is on the first line of each source file since it's
   useful to know when a file was last modified.
+
+  A function definition should always have the return type of the function
+  on the first line and then the function name starting in column one on
+  the next line, and use an ANSI style definition.  The opening brace of
+  the function should then be on a line by itself.  For example:
+
+      int
+      function(char *arg1, float arg2)
+      {
+
+  The function name is in column one so that one can easily locate the
+  definition of a particular function with grep ^function *.c.
 
   When noting something that should be improved later, add a comment
   containing "FIXME:" so that one can easily grep for such comments.
