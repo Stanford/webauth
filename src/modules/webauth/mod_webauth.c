@@ -676,7 +676,7 @@ cred_cookie_name(const char *cred_type,
             p=ap_strchr(cred_server, '=');
         }
     }
-    return apr_pstrcat(rc->r->pool, "webauth_ct_", cred_type, 
+    return apr_pstrcat(rc->r->pool, "webauth_ct_", cred_type, "_",
                        cred_server, NULL);
 }
 
