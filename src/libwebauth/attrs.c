@@ -326,7 +326,7 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
 
     if (s == WA_ERR_NONE) {
         if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
-            *value = (uint32_t)atoi((char*)v);
+            *value = (uint32_t)atol((char*)v);
         } else {
             if (vlen != sizeof(uint32_t)) {
                 s = WA_ERR_CORRUPT;
