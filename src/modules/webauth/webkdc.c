@@ -118,7 +118,7 @@ read_service_token_cache(server_rec *server,
 
     if (finfo.size == 0) {
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
-                     "mod_webauth: %s: service token cache is zero length: ",
+                     "mod_webauth: %s: service token cache is zero length: %s",
                      mwa_func, sconf->st_cache_path);
         return NULL;
     }
