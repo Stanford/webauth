@@ -3,6 +3,9 @@ modules.  They are suitable for being copied into the conf subdirectory of
 your Apache installation root, edited for your local purposes, and then
 included via the Include command from httpd.conf.
 
+The files in the debian subdirectory are the configuration files used by
+the Debian packages and installed into /etc/apache2.
+
 The files beginning with sample-* are the same as the minimal
 configuration information given in INSTALL, but with comments explaining
 each step.
