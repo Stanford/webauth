@@ -1,8 +1,6 @@
                           WebAuth release 3.1.2
                   (site-wide web authentication system)
 
-                        Written by Roland Schemers
-
   Copyright 2002, 2003 Board of Trustees, Leland Stanford Jr. University.
   This software is distributed under an MIT-style license.  Please see the
   section LICENSE below for terms of use and redistribution.
@@ -160,3 +158,19 @@ LICENSE
   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+CREDITS
+
+  The WebAuth v3 protocol and core implementation was written by Roland
+  Schemers, based on design documents by the entire Stanford WebAuth team
+  (with considerable work by Tim Torgenrud and Booker Bense) and based in
+  part on the functionality of WebAuth v2.5, written and maintained by a
+  cast of dozens over the years but most notably Jeff Lewis, Anton
+  Ushakov, and Jeanmarie Lucker.
+
+  The mod_webauthldap module was written by Anton Ushakov.
+
+  The configuration and build system and WebAuth packaging was put
+  together by Russ Allbery.  Huaqing Zheng provided builds of supporting
+  packages and Jonathan Pilat helped greatly with testing.
