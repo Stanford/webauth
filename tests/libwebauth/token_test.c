@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     WA_ATTR_STR(attrs[num_attrs++], WA_TK_CREATION_TIME, "1");
     WA_ATTR_STR(attrs[num_attrs++], WA_TK_EXPIRATION_TIME, "2");
 
-    key = webauth_key_create(material, 16);
+    key = webauth_key_create_aes(material, 16);
 
     len = webauth_token_encoded_length(attrs, num_attrs);
     printf("len = %d\n", len);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
                               
     printf("%d\n", dnum_attrs);
 
-    webauth_key_destroy(key);
+    webauth_key_destroy_aes(key);
 
     return 0;
 }

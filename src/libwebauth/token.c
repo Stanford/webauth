@@ -25,7 +25,7 @@
  */
 
 WEBAUTH_AES_KEY *
-webauth_key_create(const unsigned char *key, int key_len) 
+webauth_key_create_aes(const unsigned char *key, int key_len) 
 {
     WEBAUTH_AES_KEYP *k;
     int bits;
@@ -47,14 +47,14 @@ webauth_key_create(const unsigned char *key, int key_len)
 
     if (AES_set_encrypt_key(key, bits, &k->encryption) ||
         AES_set_decrypt_key(key, bits, &k->decryption)) {
-        webauth_key_destroy((WEBAUTH_AES_KEY*)k);
+        webauth_key_destroy_aes((WEBAUTH_AES_KEY*)k);
         return NULL;
     }
     return (WEBAUTH_AES_KEY*)k;
 }
 
 void
-webauth_key_destroy(WEBAUTH_AES_KEY *key) 
+webauth_key_destroy_aes(WEBAUTH_AES_KEY *key) 
 {
     assert(key != NULL);
     memset(key, 0, sizeof(WEBAUTH_AES_KEYP));

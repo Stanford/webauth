@@ -294,14 +294,14 @@ int webauth_random_key(unsigned char *key, int key_len);
  *
  */
 
-WEBAUTH_AES_KEY *webauth_key_create(const unsigned char *key,
+WEBAUTH_AES_KEY *webauth_key_create_aes(const unsigned char *key,
                                     int key_len);
 
 /*
  * zeros out key memory and then frees it
  */
 
-void webauth_key_destroy(WEBAUTH_AES_KEY *key);
+void webauth_key_destroy_aes(WEBAUTH_AES_KEY *key);
 
 /******************** tokens ********************/
    
