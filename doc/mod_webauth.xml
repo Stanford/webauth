@@ -40,7 +40,8 @@
 variables to the SSI and CGI namespace. The generated variables are listed in
 the table below. For CGI apps that have expectations about and/or restrictions
 on the names of environment variables they can handle, you can use the
-FIXME:VARPREFIX directive to have additional environment variables set.</p>
+FIXME:ref WebAuthVarPrefix directive to have additional environment 
+variables set.</p>
 
 <table border="1">
 <tr>
@@ -427,6 +428,11 @@ expiration time in the id-token returned from the WebKDC is used, which
 is the recommended configuration.
 </p>
 
+<p> To be effective, this directive should be used with the 
+<code>WebAuthForceLogin</code> directive, otherwise single-sign-on 
+will automatically log the user back in when the token expires.
+</p>
+
 <p>The units for the time are specified by appending a single letter,
 which can either be s, m, h, d, or w, which correspond to seconds, minutes,
 hours, days, and weeks respectively.</p>
@@ -463,5 +469,160 @@ WebAuthReturnURL /myapp/
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthRequireSSL</name>
+<description>Whether or not to require SSL (i.e., https) acccess
+to webauth-protected pages.
+</description>
+<syntax>WebAuthRequireSSL on|off</syntax>
+<default>WebAuthRequireSSL on</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+Whehter or not we require webauth-protected pages to be accessed only
+via SSL.
+</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet. Its listed here
+    to get feedback on whether or not people think its important.</p>
+</note>
+
+<example><title>Example</title>
+WebAuthRequireSSL off<br />
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthVarPrefix</name>
+<description>Additional webauth-related environment variables to set
+</description>
+<syntax>WebAuthVarPrefix <em>string</em></syntax>
+<default>WebAuthVarPrefix ""</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+The webauth module sets various environment variables that are made 
+available at the time of document or application serving. They are 
+all prefixed by "WEBAUTH" (for instance WEBAUTH_USER), but some CGI apps 
+(specifically the Oracle WRB) have expectations about and/or restrictions 
+on the names of environment variables they can handle. Set this to a string
+ you want prepended instead of "WEBAUTH" to the environment variables this 
+module defines, and they will be set in addition to the standard "WEBAUTH" 
+ones.</p>
+
+<example><title>Example</title>
+# this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br/>
+# environment variables to get set.<br/>
+WebAuthVarPrefix HTTP
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthDoLogout</name>
+<description>Destroy all WebAuth-related cookies
+</description>
+<syntax>WebAuthDoLogout on|off</syntax>
+<default>WebAuthDoLogout off</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls whether or not all WebAuth-related cookies
+are removed if the user accesses the URL that has this directive set.
+</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet.</p>
+</note>
+
+<example><title>Example</title>
+  &lt;Location /myapp/logout&gt;<br />
+  WebAuthDoLogout on<br />
+  &lt;/Location&gt;
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebAuthInactiveExpire</name>
+<description>Expires app-tokens that haven't been used recently
+</description>
+<syntax>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></syntax>
+<default>(disabled)</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+    Duration of inactivity allowed before an app-token (webauth_at cookie)
+    is considered expired and re-auth occurs. Setting this requires 
+    mod_webauth to periodically update the webauth_at cookie.
+</p>
+<p> The time specified should be a multiple of 5 minutes, as the cookie
+will be updated every 5 minutes as it is actively used.
+</p>
+
+<p> To be effective, this directive should be used with the <code>WebAuthForceLogin</code> directive, otherwise single-sign-on will automatically log the
+user back in when the token expires due to inactivity.
+</p>
+
+<p>The units for the time are specified by appending a single letter,
+which can either be s, m, h, d, or w, which correspond to seconds, minutes,
+hours, days, and weeks respectively.</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet. Also need to 
+determine the frequency with which we'll update the cookie</p>
+</note>
+
+<example><title>Example</title>
+# timeout an app-token if it isn't used for more then 20 minutes<br/>
+WebAuthInactiveExpire 20m
+</example>
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebAuthForceLogin</name>
+<description>Forces username/password prompt when user is not authenticated
+</description>
+<syntax>WebAuthForceLogin on|off</syntax>
+<default>WebAuthForceLogin off</default>
+<contextlist><context>.htaccess</context>
+<context>directory</context></contextlist>
+
+<usage>
+<p>
+This directive controls whether or not a user will be prompted for a
+username/password if they need to be redirected to the WebKDC for
+authentication.
+</p>
+
+<note><title>Note (NIY)</title> 
+    <p>This directive is <b>NOT</b> implemented yet.</p>
+</note>
+
+<example><title>Example</title>
+  # force the user to login, and create an app-token<br/>
+  # that only lasts for 20 minutes<br/>
+  &lt;Location /myapp/&gt;<br/>
+  AuthType WebAuth<br/>
+  Require valid-user<br/>
+  WebAuthForceLogin on<br/>
+  WebAuthAppTokenLifetime 20m<br/>
+  &lt;/Location&gt;
+</example>
+</usage>
+</directivesynopsis>
 
 </modulesynopsis>
