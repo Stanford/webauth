@@ -9,6 +9,8 @@ WebAuth 3.2.0 (in progress)
  *) Added package-webauth and package-webkdc targets for maintainers to
     generate WebAuth module packages.
 
+ *) DESTDIR support fixed for WebKDC installations.
+
 WebAuth 3.1.2 (2003-05-29)
 
  *) mod_webauthldap: Added mutexes around the entire ldap operation to 
