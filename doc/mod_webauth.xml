@@ -249,7 +249,7 @@ WebAuthTokenMaxTTL 10m
 <description>Whether or not to do an extra redirect upon return from the WebKDC
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
-<default>WebAuthExtraRedirect on</default>
+<default>WebAuthExtraRedirect off</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
