@@ -158,7 +158,7 @@ print_time(time_t t)
     struct tm *tm;
     char buff[128];
     tm = localtime(&t);
-    strftime(buff, sizeof(buff), "%D %T", tm);
+    strftime(buff, sizeof(buff), "%m/%d/%Y %T", tm);
     printf("%s", buff);
 }
 
@@ -266,7 +266,7 @@ void list_keyring()
     } else {
         printf("Path: %s\n", keyring_path);
         printf("\n");
-        printf("id  Created            Valid after        Fingerprint\n");
+        printf("id  Created              Valid after          Fingerprint\n");
     }
 
     for (i=0; i < ring->num_entries; i++) {
