@@ -108,9 +108,25 @@ AC_CONFIG_FILES([
     src/libwebauth/webauth.h
     src/modules/Makefile
     src/modules/webauth/Makefile
-    src/modules/webkdc/Makefile
     src/utils/Makefile
     tests/Makefile
     tests/libwebauth/Makefile
 ])
+
+dnl Only create the WebKDC makefile if the directory exists, since the base
+dnl distribution doesn't include the WebKDC.
+if test -d "$srcdir/src/modules/webkdc" ; then
+    AC_CONFIG_FILES([src/modules/webkdc/Makefile])
+fi
+
+dnl Link all of the Perl binding files into the build tree, since Perl doesn't
+dnl support the VPATH thing.
+AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth3/WebAuth3.xs],
+[if test x"$ac_srcdir" != x. && test x"$ac_srcdir" != x ; then
+    for f in WebAuth3.pm WebAuth3.xs test.pl typemap ; do
+        $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth3/$f"
+    done
+fi], [LN_S="$LN_S"])
+
+dnl Generate config.h.
 AC_OUTPUT
