@@ -724,8 +724,10 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc)
                                       LDAP_SASL_QUIET, sasl_interact_stub,
                                       defaults);
 
-    if (defaults->authcid != NULL)
+    if (defaults->authcid != NULL) {
         ldap_memfree (defaults->authcid);
+        defaults->authcid = NULL;
+    }
 
     // this likely means the ticket is missing or expired
     if (rc == LDAP_LOCAL_ERROR) {
