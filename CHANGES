@@ -4,7 +4,7 @@ WebAuth 3.1.2 (in progress)
 
  *) Expanded the libgcc linking hack to apply to all of the module builds
     rather than just the cURL link flags, since it showed up on Solaris 7
-    affecting mod_webauthldap as well.
+    affecting mod_webauthldap as well.  This fix is specific to Solaris.
 
  *) Fixed the installation rule for the test suite to properly honor
     DESTDIR.
