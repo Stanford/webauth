@@ -35,6 +35,7 @@ doc/old/userPasswordAuth.xsd            Obsolete documentation
 doc/old/webkdc-implementation           Obsolete documentation
 doc/old/webkdc-protocol                 Obsolete documentation
 doc/test-plan                           How to test a WebAuth server
+doc/userauth                            Basic user authentication with WebAuth
 doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
@@ -88,7 +89,8 @@ src/utils                               WebAuth utility programs (Directory)
 src/utils/Makefile.in                   Makefile for utility programs
 src/utils/wa_keyring.c                  Manipulate the server keyring
 src/utils/wa_keyring.pod                Documentation for wa_keyring
-src/webkdc                              WebKDC -- Perl WebKDC (Directory)
+src/webkdc                              WebKDC -- Perl login server (Directory)
+src/webkdc/Makefile.in                  WebKDC -- Makefile for login server
 src/webkdc/WebKDC                       WebKDC -- Perl modules (Directory)
 src/webkdc/WebKDC.pm                    WebKDC -- Base module
 src/webkdc/WebKDC/Token.pm              WebKDC -- Token handling
