@@ -20,6 +20,10 @@ AC_CHECK_LIB([k5crypto], [krb5_string_to_key],
     [KRB5_LIBS="-lk5crypto $KRB5_LIBS"])
 AC_CHECK_LIB([krb5], [krb5_init_context],
     [KRB5_LIBS="-lkrb5 $KRB5_LIBS"])
+AC_CHECK_LIB([krb4], [krb_rd_req],
+    [KRB5_LIBS="-lkrb4 $KRB5_LIBS"])
+AC_CHECK_LIB([gssapi_krb5], [gss_init_sec_context],
+    [KRB5_LIBS="-lgssapi_krb5 $KRB5_LIBS"])
 LDFLAGS="$LDFLAGS $KRB5_LIBS"
 AC_CHECK_FUNCS(krb5_free_keytab_entry_contents)
 LDFLAGS=$WEBAUTH_LDFLAGS_save

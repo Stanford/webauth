@@ -12,6 +12,7 @@ m4_include([m4/libgcc.m4])
 m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
+m4_include([m4/sident.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.57)
@@ -128,6 +129,7 @@ WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 WEBAUTH_LIB_LDAP
 WEBAUTH_LIB_LIBGCC
+WEBAUTH_LIB_SIDENT
 
 dnl Checks for header files.
 AC_HEADER_STDC
