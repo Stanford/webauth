@@ -42,15 +42,12 @@
 #define WEBAUTHS_MAGIC ";WEBAUTHS="
 #define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC)-1)
 
-/* name of our main app-token cookie */
-#define AT_COOKIE_NAME "webauth_at"
-
 /* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
-#define ENV_WEBAUTH_KRB5CCNAME "KRB5CCNAME"
+#define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* defines for config directives */
 #define CD_WebKdcURL "WebAuthWebKdcURL"
@@ -142,14 +139,6 @@
 #define N_WEBAUTHR "mod_webauth_WEBAUTHR"
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
-#define N_EXPIRATION "mod_webauth_EXPIRAION"
-#define N_CREATION   "mod_webauth_CREATION"
-#define N_LASTUSED   "mod_webauth_LASTUSED"
-#define N_KRB5CCNAME "mod_webauth_KRB5CCNAME"
-
-/* cookie note names must start with "mod_webauth_COOKIE_" in
-   order to get set by fixups */
-#define N_APP_COOKIE  "mod_webauth_COOKIE_webauth_at"
 
 /* attr list macros to make code easier to read and audit 
  * we don't need to check error codes since we are using

@@ -109,7 +109,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: nuking cookie(%s): (%s)\n", 
-                     AT_COOKIE_NAME, cookie);
+                     name, cookie);
     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
 }
 
@@ -120,14 +120,18 @@ static int
 set_pending_cookie_cb(void *rec, const char *key, const char *value)
 {
     MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
-    if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0)
+    if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0) {
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                         "mod_webauth: set_pending_cookie_cb: %s\n", value);
+    }
+
     return 1;
 }
 
-/* see if we have to update our cookie and save it in err_headers_out
- * so it always gets sent. check_cookie and check_url both will
- * set the N_APP_COOKIE note if they need a new cooke 
+/* see if we have to update our cookies and save them in err_headers_out
+ * so the always gets sent.
  */
 static void
 set_pending_cookies(MWA_REQ_CTXT *rc) 
@@ -138,6 +142,73 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
     else 
         t = rc->r->notes;
     apr_table_do(set_pending_cookie_cb, rc, t, NULL);
+}
+
+/*
+ * stores a cookie that will get set in fixups
+ */
+static void
+fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
+{
+    char *cookie = apr_psprintf(rc->r->pool,
+                                "%s=%s; path=/;%s",
+                                name,
+                                value,
+                                is_https(rc->r) ? "secure" : "");
+    mwa_setn_note(rc->r, 
+                  apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_", name, NULL),
+                  cookie);
+}
+
+/*
+ * set environment variables in the subprocess_env table
+ */
+static int
+set_pending_env_var_cb(void *rec, const char *key, const char *value)
+{
+    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
+    if (strncmp(key, "mod_webauth_ENV_", 16) == 0) {
+        const char *name = key+16;
+
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+                         "mod_webauth: set_pending_env_cb: (%s) (%s)\n",
+                         name, value);
+        apr_table_setn(rc->r->subprocess_env, name, value);
+        if (rc->sconf->var_prefix != NULL) {
+            key = apr_pstrcat(rc->r->pool, 
+                              rc->sconf->var_prefix, name, NULL);
+            apr_table_setn(rc->r->subprocess_env, key, value);
+        }
+    }
+    return 1;
+}
+
+/* 
+ * go through and find mod_webauth_ENV_ keys in the notes table,
+ * and set environment variables for those we find.
+ */
+static void
+set_pending_env_vars(MWA_REQ_CTXT *rc) 
+{
+    apr_table_t *t;
+    if (rc->r->main != NULL)
+        t = rc->r->main->notes;
+    else 
+        t = rc->r->notes;
+    apr_table_do(set_pending_env_var_cb, rc, t, NULL);
+}
+
+/*
+ * stores an env variable that will get set in fixups
+ */
+static void
+fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
+{
+    char *key;
+
+    key = apr_pstrcat(rc->r->pool, "mod_webauth_ENV_", name, NULL);
+    mwa_setn_note(rc->r, key, value);
 }
 
 /*
@@ -168,24 +239,6 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
                 nuke_cookie(rc, p[i], 1);
             }
         }
-    }
-}
-
-/*
- * set an environment variable (two if WebAuthVarPrefix is set).
- * do nothing if value is NULL.
- */
-static void
-mwa_set_env(MWA_REQ_CTXT *rc, const char *name, const char *value)
-{
-    if (value == NULL)
-        return;
-
-    apr_table_setn(rc->r->subprocess_env, name, value);
-
-    if (rc->sconf->var_prefix != NULL) {
-        name = apr_pstrcat(rc->r->pool, rc->sconf->var_prefix, name, NULL);
-        apr_table_setn(rc->r->subprocess_env, name, value);
     }
 }
 
@@ -582,8 +635,18 @@ handler_hook(request_rec *r)
     return OK;
 }
 
+
 /*
- * given the proxy_type (krb5, etc) return the cookie name to use 
+ * return the name of the app cookie
+ */
+static const char *
+app_cookie_name()
+{
+    return "webauth_at";
+}
+
+/*
+ * given the proxy_type return the cookie name to use 
  */
 static char *
 proxy_cookie_name(const char *proxy_type, MWA_REQ_CTXT *rc) 
@@ -592,20 +655,7 @@ proxy_cookie_name(const char *proxy_type, MWA_REQ_CTXT *rc)
 }
 
 /*
- * given the proxy_type (krb5, etc) return the cookie note name to use 
- */
-static char *
-proxy_cookie_note_name(const char *proxy_type, MWA_REQ_CTXT *rc) 
-{
-    /* must start with mod_webauth_COOKIE_ to end up getting set 
-       in fixups */
-    return apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_webauth_pt_",
-                       proxy_type, NULL);
-}
-
-
-/*
- * given the proxy_type (krb5, etc) return the cookie name to use 
+ * given the proxy_type return the cookie name to use 
  */
 static char *
 cred_cookie_name(const char *cred_type, 
@@ -631,19 +681,6 @@ cred_cookie_name(const char *cred_type,
 }
 
 /*
- * given the cred type/server (krb5, etc) return the cookie note name to use 
- */
-static char *
-cred_cookie_note_name(const char *cred_type, 
-                      const char *cred_server, MWA_REQ_CTXT *rc) 
-{
-    /* must start with mod_webauth_COOKIE_ to end up getting set 
-       in fixups */
-    return apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_webauth_ct_",
-                       cred_type,  cred_server, NULL);
-}
-
-/*
  * create a proxy-token cookie.
  */
 static int
@@ -655,11 +692,10 @@ make_proxy_cookie(const char *proxy_type,
                   MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    char *token, *btoken, *cookie;
+    char *token, *btoken;
     int tlen, olen, status;
     const char *mwa_func="make_proxy_cookie";
     time_t creation_time;
-    char *cookie_name;
 
     status = WA_ERR_NONE;
 
@@ -699,18 +735,7 @@ make_proxy_cookie(const char *proxy_type,
     btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
     apr_base64_encode(btoken, token, olen);
 
-    cookie_name = proxy_cookie_name(proxy_type, rc);
-    cookie = apr_psprintf(rc->r->pool,
-                          "%s=%s; path=/;%s",
-                          cookie_name,
-                          btoken,
-                          is_https(rc->r) ? "secure" : "");
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: setting cookie(%s): (%s)\n", 
-                     mwa_func, cookie_name, cookie);
-
-    mwa_setn_note(rc->r, proxy_cookie_note_name(proxy_type, rc), cookie);
+    fixup_setcookie(rc, proxy_cookie_name(proxy_type, rc), btoken);
     
     rc->pt = 
         (MWA_PROXY_TOKEN*)apr_pcalloc(rc->r->pool, sizeof(MWA_PROXY_TOKEN));
@@ -732,11 +757,10 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
                   MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    char *token, *btoken, *cookie;
+    char *token, *btoken;
     int tlen, olen, status;
     const char *mwa_func="make_cred_cookie";
     time_t creation_time;
-    char *cookie_name;
 
     status = WA_ERR_NONE;
 
@@ -777,19 +801,9 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
     apr_base64_encode(btoken, token, olen);
 
-    cookie_name = cred_cookie_name(ct->cred_type, ct->cred_server, rc);
-    cookie = apr_psprintf(rc->r->pool,
-                          "%s=%s; path=/;%s",
-                          cookie_name,
-                          btoken,
-                          is_https(rc->r) ? "secure" : "");
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: setting cookie(%s): (%s)\n", 
-                     mwa_func, cookie_name, cookie);
-
-    mwa_setn_note(rc->r, cred_cookie_note_name(ct->cred_type, ct->cred_server,
-                                               rc), cookie);
+    fixup_setcookie(rc,
+                    cred_cookie_name(ct->cred_type, ct->cred_server, rc),
+                    btoken);
     return 1;
 }
 
@@ -806,7 +820,7 @@ make_app_cookie(const char *subject,
                MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    char *token, *btoken, *cookie;
+    char *token, *btoken;
     int tlen, olen, status;
     const char *mwa_func = "make_app_cookie";
 
@@ -857,16 +871,7 @@ make_app_cookie(const char *subject,
     btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
     apr_base64_encode(btoken, token, olen);
 
-    cookie = apr_psprintf(rc->r->pool,
-                          "%s=%s; path=/;%s",
-                          AT_COOKIE_NAME,
-                          btoken,
-                          is_https(rc->r) ? "secure" : "");
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: setting cookie(%s): (%s)\n",
-                     mwa_func, AT_COOKIE_NAME, cookie);
-    mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
+    fixup_setcookie(rc, app_cookie_name(), btoken);
 
     rc->at.subject = apr_pstrdup(rc->r->pool, subject);
     rc->at.last_used_time = last_used_time;
@@ -1011,30 +1016,21 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
 {
     char *cval;
     const char *mwa_func = "parse_app_token_cookie";
+    const char *cname = app_cookie_name();
 
-    cval = find_cookie(rc, AT_COOKIE_NAME);
+    cval = find_cookie(rc, cname);
     if (cval == NULL)
         return 0;
 
     if (!parse_app_token(cval, rc)) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        char *cookie = apr_psprintf(rc->r->pool,
-                                    "%s=; path=/; expires=%s;%s",
-                                    AT_COOKIE_NAME,
-                                    "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    is_https(rc->r) ? "secure" : "");
-        if (rc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: %s: nuking cookie(%s): (%s)\n", 
-                         mwa_func, AT_COOKIE_NAME, cookie);
-        mwa_setn_note(rc->r, N_APP_COOKIE, cookie);
+        fixup_setcookie(rc, cname, "");
         return 0;
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: %s: found valid %s cookie for (%s)", 
-                         mwa_func, AT_COOKIE_NAME,
-                         rc->at.subject);
+                         mwa_func, cname, rc->at.subject);
         return 1;
     }
 }
@@ -1139,6 +1135,7 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
     char *cval;
     char *cname = proxy_cookie_name(proxy_type, rc);
     MWA_PROXY_TOKEN *pt;
+    const char *mwa_func = "parse_proxy_token_cookie";
 
     cval = find_cookie(rc, cname);
     if (cval == NULL)
@@ -1148,21 +1145,12 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
 
     if (pt == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        char *cookie = apr_psprintf(rc->r->pool,
-                                    "%s=; path=/; expires=%s;%s",
-                                    cname,
-                                    "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    is_https(rc->r) ? "secure" : "");
-        if (rc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: nuking cookie(%s): (%s)\n", 
-                         cname, cookie);
-        mwa_setn_note(rc->r, proxy_cookie_note_name(proxy_type, rc), cookie);
+        fixup_setcookie(rc, cname, "");
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: found valid %s cookie for (%s)", 
-                         cname, rc->at.subject);
+                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+                         mwa_func, cname, rc->at.subject);
     }
     return pt;
 }
@@ -1174,6 +1162,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     WEBAUTH_KEY *key;
     const char *tt;
     int status, i , klen, blen;
+    const char *mwa_func = "get_session_key";
 
     ap_unescape_url(token);
     blen = apr_base64_decode(token, token);
@@ -1191,7 +1180,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,
-                              "get_session_key", "webauth_token_parse", NULL);
+                              mwa_func, "webauth_token_parse", NULL);
         return NULL;
     }
 
@@ -1200,8 +1189,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
                           "check_cookie", NULL);
     if (tt == NULL || strcmp(tt, WA_TT_APP) != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: check_cookie: token type(%s) not (%s)",
-                     tt ? tt : "(null)", WA_TT_APP);
+                     "mod_webauth: %s: token type(%s) not (%s)",
+                     mwa_func, tt ? tt : "(null)", WA_TT_APP);
         goto cleanup;
     }
 
@@ -1209,7 +1198,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     status = webauth_attr_list_find(alist, WA_TK_SESSION_KEY, &i);
     if (i == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                    "mod_webauth: check_url: can't find session key in token");
+                    "mod_webauth: %s: can't find session key in token",
+                     mwa_func);
         goto cleanup;
     }
 
@@ -1235,6 +1225,9 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     return key;
 }
 
+/*
+ * FIXME: This would be part of a "pluggable" proxy/cred interface.
+ */
 static char *
 validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 
@@ -1242,16 +1235,17 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
     WEBAUTH_KRB5_CTXT *ctxt;
     int status, i;
     char *principal, *subject;
+    const char *mwa_func = "validate_krb5_sad";
 
     status = webauth_attr_list_find(alist, WA_TK_SUBJECT_AUTH_DATA, &i);
     if (i == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: validate_krb5_sad: "
-                     "can't find subject auth data");
+                     "mod_webauth: %s: can't find subject auth data", 
+                     mwa_func);
         return NULL;
     }
 
-    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, "validate_krb5_sad");
+    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, mwa_func);
     if (ctxt == NULL)
         return NULL;
 
@@ -1264,7 +1258,7 @@ validate_krb5_sad(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
     webauth_krb5_free(ctxt);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, ctxt, "validate_krb5_sad",
+        mwa_log_webauth_error(rc->r->server, status, ctxt, mwa_func,
                               "webauth_krb5_rd_req", NULL);
         return NULL;
     }
@@ -1713,6 +1707,7 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
     char *cval;
     char *cname = cred_cookie_name(cred->type, cred->service, rc);
     MWA_CRED_TOKEN *ct;
+    const char *mwa_func = "parse_cred_token_cookie";
 
     if (rc->sconf->ring == NULL)
         return NULL;
@@ -1725,23 +1720,12 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 
     if (ct == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        char *cookie = apr_psprintf(rc->r->pool,
-                                    "%s=; path=/; expires=%s;%s",
-                                    cname,
-                                    "Thu, 26-Mar-1998 00:00:01 GMT",
-                                    is_https(rc->r) ? "secure" : "");
-        if (rc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: nuking cookie(%s): (%s)\n", 
-                         cname, cookie);
-        mwa_setn_note(rc->r, 
-                      cred_cookie_note_name(cred->type, cred->service, rc),
-                      cookie);
+        fixup_setcookie(rc, cname, "");
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: found valid %s cookie for (%s)", 
-                         cname, rc->at.subject);
+                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+                         mwa_func, cname, rc->at.subject);
     }
     return ct;
 }
@@ -1771,15 +1755,22 @@ static apr_status_t
 cred_cache_destroy(void *data)
 {
     char *path = (char*)data;
+    /* 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
                  "mod_webauth: cleanup cred: %s", path);
+    */
     /* FIXME: logging */
-    unlink(path);
+    if (unlink(path) == -1) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)", 
+                     path, errno);
+    }
     return APR_SUCCESS;
 }
 
 /*
  * prepare any krb5 creds
+ * FIXME: This would be part of a "pluggable" proxy/cred interface.
  */
 static int 
 prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
@@ -1838,9 +1829,11 @@ prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
 
     for (i=0; i < num_creds; i++) {
         if (strcmp(creds[i]->cred_type, "krb5") == 0) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webauth: %s: prepare (%s) for (%s)",
-                         mwa_func, creds[i]->cred_server, creds[i]->subject);
+            if (rc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                             "mod_webauth: %s: prepare (%s) for (%s)",
+                             mwa_func, creds[i]->cred_server, 
+                             creds[i]->subject);
             if (i == 0) {
                 status = webauth_krb5_init_via_cred(ctxt,
                                                     creds[i]->cred_data,
@@ -1860,9 +1853,8 @@ prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
     }
     webauth_krb5_free(ctxt);
 
-    /* stash a note for fixups */
-    mwa_setn_note(rc->r, N_KRB5CCNAME, temp_cred_file);
-
+    /* stash an env for fixups */
+    fixup_setenv(rc, ENV_KRB5CCNAME, temp_cred_file);
     return 1;
 }
 
@@ -1919,10 +1911,6 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
         return redirect_request_token(rc);
     }
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                 "mod_webauth: %s: suhweet! we have this proxy type: (%s)",
-                 mwa_func, proxy_type);
-
     if (!mwa_get_creds_from_webkdc(rc, pt, creds, num_creds, acquired_creds)) {
 
         /* FIXME: what do we want to do here? mwa_get_creds_from_webkdc
@@ -1967,10 +1955,6 @@ gather_creds(MWA_REQ_CTXT *rc)
     MWA_WACRED *ncred, *cred;
     MWA_CRED_TOKEN *ct, **nct;
  
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: gather_creds!");
-
     cred = (MWA_WACRED*) rc->dconf->creds->elts;
     
     for (i=0; i < rc->dconf->creds->nelts; i++) {
@@ -2162,21 +2146,23 @@ check_user_id_hook(request_rec *r)
     r->user = (char*)rc.at.subject;
     r->ap_auth_type = (char*)at;
 
-    /* stash some notes for fixups */
+    /* stash some envs for fixups */
+    fixup_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
+
     if (rc.at.expiration_time)
-        mwa_setn_note(r, N_EXPIRATION, 
-                      apr_psprintf(rc.r->pool, "%d", 
-                                   (int)rc.at.expiration_time));
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION,
+                     apr_psprintf(rc.r->pool, "%d", 
+                                  (int)rc.at.expiration_time));
     
     if (rc.at.creation_time)
-        mwa_setn_note(r, N_CREATION, 
-                      apr_psprintf(rc.r->pool, "%d", 
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, 
+                     apr_psprintf(rc.r->pool, "%d", 
                                    (int)rc.at.creation_time));
 
     if (rc.at.last_used_time) 
-        mwa_setn_note(r, N_LASTUSED,
-                      apr_psprintf(rc.r->pool, "%d",
-                                   (int)rc.at.last_used_time));
+        fixup_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED,
+                     apr_psprintf(rc.r->pool, "%d",
+                                  (int)rc.at.last_used_time));
     return OK;
 }
 
@@ -2315,35 +2301,8 @@ fixups_hook(request_rec *r)
     }
 
     /* set environment variables */
-    mwa_set_env(&rc, ENV_WEBAUTH_USER, mwa_get_note(r, N_SUBJECT));
-    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, 
-                mwa_get_note(r, N_EXPIRATION));
-    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_CREATION, mwa_get_note(r, N_CREATION));
-    mwa_set_env(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, mwa_get_note(r, N_LASTUSED));
-    mwa_set_env(&rc, ENV_WEBAUTH_KRB5CCNAME, mwa_get_note(r, N_KRB5CCNAME));
+    set_pending_env_vars(&rc);
 
-#if 0
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
-               "mod_webauth: cache dir: (%s)\n", 
-               rc.sconf->cred_cache_dir ? rc.sconf->cred_cache_dir : "(NULL)");
-
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
-                 "mod_webauth: save creds: (%d)\n", 
-                 rc.dconf->save_creds);
-
-    if (rc.dconf->creds) {
-        int i;
-        MWA_WACRED *cred = (MWA_WACRED*)rc.dconf->creds->elts;
-        for (i=0; i < rc.dconf->creds->nelts; i++) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
-                         "mod_webauth: creds(%s, %s)\n",
-                         cred[i].type, cred[i].service);
-        }
-    } else {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc.r->server,
-                     "mod_webauth: no creds\n");
-    }
-#endif
     return DECLINED;
 }
 
