@@ -182,13 +182,13 @@ typedef struct {
     MWA_DCONF *dconf;
 } MWA_REQ_CTXT;
 
-/* used to suck back XML data from the webkdc */
+/* used to append a bunch of data together */
 typedef struct {
     char *data;
     int size;
     int capacity;
-    request_rec *r;
-} MWA_CURL_POST_GATHER_CTXT;
+    apr_pool_t *pool;
+} MWA_STRING;
 
 
 /* globals */

@@ -125,8 +125,13 @@ typedef struct {
     const char *expires; /* might be NULL */
 } MWK_RETURNED_TOKEN;
 
-/* globals */
-WEBAUTH_KEYRING *mwk_g_ring;
+/* used to append a bunch of data together */
+typedef struct {
+    char *data;
+    int size;
+    int capacity;
+    apr_pool_t *pool;
+} MWK_STRING;
 
 /* util.c */
 
@@ -154,5 +159,23 @@ mwk_log_webauth_error(request_rec *r,
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
                       const char *func);
+
+/*
+ * initialize a string for use with mwk_append_string
+ */
+void 
+mwk_init_string(MWK_STRING *string, apr_pool_t *pool);
+
+/*
+ * given an MWK_STRING, append some new data to it.
+ */
+void 
+mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
+
+/*
+ * concat all the text pieces together and return data
+ */
+const char *
+mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *def);
 
 #endif

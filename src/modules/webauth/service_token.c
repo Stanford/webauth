@@ -212,33 +212,55 @@ write_service_token_cache(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token)
     return;
 }
 
-
 #define CHUNK_SIZE 4096
+
+/*
+ *
+ */
+static void init_string(MWA_STRING *string, apr_pool_t *pool)
+{
+    memset(string, 0, sizeof(MWA_STRING));
+    string->pool = pool;
+}
+
+/*
+ * given an MWA_STRING, append some new data to it.
+ */
+static void append_string(MWA_STRING *string, const char *in_data, int in_size)
+{
+    int needed_size;
+
+    if (in_size == 0)
+        in_size = strlen(in_data);
+
+    needed_size = string->size+in_size;
+
+    if (string->data == NULL || needed_size > string->capacity) {
+        char *new_data;
+        while (string->capacity < needed_size+1)
+            string->capacity += CHUNK_SIZE;
+
+        new_data = apr_palloc(string->pool, string->capacity);
+
+        if (string->data != NULL) {
+            memcpy(new_data, string->data, string->size);
+        } 
+        /* don't have to free existing data since it from a pool */
+        string->data = new_data;
+    }
+    memcpy(string->data+string->size, in_data, in_size);
+    string->size = needed_size;
+}
+
 /*
  * gather up the POST data as it comes back from webkdc
  */
 static size_t
 post_gather(void *in_data, size_t size, size_t nmemb,
-            MWA_CURL_POST_GATHER_CTXT *ctxt)
+            MWA_STRING *string)
 {
     size_t real_size = size*nmemb;
-    size_t needed_size = ctxt->size+real_size;
-
-    if (ctxt->data == NULL || needed_size > ctxt->capacity) {
-        char *new_data;
-        while (ctxt->capacity < needed_size)
-            ctxt->capacity += CHUNK_SIZE;
-
-        new_data = apr_palloc(ctxt->r->pool, ctxt->capacity);
-
-        if (ctxt->data != NULL) {
-            memcpy(new_data, ctxt->data, ctxt->size);
-        } 
-        /* don't have to free existing data since it from a pool */
-        ctxt->data = new_data;
-    }
-    memcpy(ctxt->data+ctxt->size, in_data, real_size);
-    ctxt->size += real_size;
+    append_string(string, (char*)in_data, (int)real_size);
     return real_size;
 }
 
@@ -254,7 +276,7 @@ post_to_webkdc(char *post_data, int post_data_len, MWA_REQ_CTXT *rc)
     CURLcode code;
     char curl_error_buff[CURL_ERROR_SIZE+1];
     struct curl_slist *headers=NULL;
-    MWA_CURL_POST_GATHER_CTXT pgc;
+    MWA_STRING string;
 
     if (post_data_len == 0)
         post_data_len = strlen(post_data);
@@ -280,11 +302,8 @@ post_to_webkdc(char *post_data, int post_data_len, MWA_REQ_CTXT *rc)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_gather);
 
     /* don't pre-allocate in case our write function never gets called */
-    pgc.data = 0;
-    pgc.size = 0;
-    pgc.capacity = 0;
-    pgc.r = rc->r;
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &pgc);
+    init_string(&string, rc->r->pool);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &string);
     headers = curl_slist_append(headers, "Content-Type: text/xml");
  
     /* data to post */
@@ -308,22 +327,28 @@ post_to_webkdc(char *post_data, int post_data_len, MWA_REQ_CTXT *rc)
         return NULL;
     }
     /* null-terminate return data */
-    if (pgc.data) {
-        pgc.data[pgc.size] = '\0';
+    if (string.data) {
+        string.data[string.size] = '\0';
     }
     curl_easy_cleanup(curl);
-    return pgc.data;
+    return string.data;
 }
 
 /*
- * FIXME: all the data might not be in first_cdata.first, need to investigate
+ * concat all the text pieces together and return data
  */
 static const char *
-get_elem_text(apr_xml_elem *e, const char *def)
+get_elem_text(MWA_REQ_CTXT *rc, apr_xml_elem *e, const char *def)
 {
     if (e->first_cdata.first &&
         e->first_cdata.first->text) {
-        return e->first_cdata.first->text;
+        apr_text *t;
+        MWA_STRING string;
+        init_string(&string, rc->r->pool);
+        for (t = e->first_cdata.first; t != NULL; t = t->next) {
+            append_string(&string, t->text, 0);
+        }
+        return string.data;
     } else {
         return def;
     }
@@ -335,7 +360,7 @@ get_elem_text(apr_xml_elem *e, const char *def)
 static void
 log_error_response(apr_xml_elem *e,
                    const char *mwa_func,
-                   request_rec *r)
+                   MWA_REQ_CTXT *rc)
 {
     apr_xml_elem *sib;
     const char *error_code = "(no error_code)";
@@ -343,17 +368,17 @@ log_error_response(apr_xml_elem *e,
 
     for (sib = e->first_child; sib; sib = sib->next) {
         if (strcmp(sib->name, "errorCode") == 0) {
-            error_code = get_elem_text(sib, error_code);
+            error_code = get_elem_text(rc, sib, error_code);
         } else if (strcmp(sib->name, "errorMessage") == 0) {
-            error_message = get_elem_text(sib, error_message);
+            error_message = get_elem_text(rc, sib, error_message);
         } else {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                          "mod_webauth: log_error_response: "
                          "ignoring unknown element in <errorResponse>: <%s>",
                          sib->name);
         }
     }
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                  "mod_webauth: %s: errorResponse from webkdc: errorCode(%s) "
                  "errorMessage(%s)",
                  mwa_func, error_code, error_message);
@@ -377,7 +402,7 @@ parse_service_token_response(apr_xml_doc *xd,
     e = xd->root;
 
     if (strcmp(e->name, "errorResponse") == 0) {
-        log_error_response(e, mwa_func, rc->r);
+        log_error_response(e, mwa_func, rc);
         return NULL;
     } else if (strcmp(e->name, "getTokensResponse") != 0) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
@@ -407,11 +432,11 @@ parse_service_token_response(apr_xml_doc *xd,
 
     for (sib = e->first_child; sib; sib = sib->next) {
         if (strcmp(sib->name, "sessionKey") == 0) {
-            session_key = get_elem_text(sib, NULL);
+            session_key = get_elem_text(rc, sib, NULL);
         } else if (strcmp(sib->name, "expires") == 0) {
-            expires = get_elem_text(sib, NULL);
+            expires = get_elem_text(rc, sib, NULL);
         } else if (strcmp(sib->name, "tokenData") == 0) {
-            token_data = get_elem_text(sib, NULL);
+            token_data = get_elem_text(rc, sib, NULL);
         } else {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                          "mod_webauth: %s: "

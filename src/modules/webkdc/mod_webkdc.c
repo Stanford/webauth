@@ -47,20 +47,6 @@ unknown_element_er(MWK_REQ_CTXT *rc,
 }
 
 /*
- * FIXME: all the data might not be in first_cdata.first, need to investigate
- */
-static const char *
-get_elem_text(apr_xml_elem *e, const char *def)
-{
-    if (e->first_cdata.first &&
-        e->first_cdata.first->text) {
-        return e->first_cdata.first->text;
-    } else {
-        return def;
-    }
-}
-
-/*
  * get an attr from an element. if required and not found, we
  * log an error and generate an errorResponse.
  */
@@ -468,7 +454,7 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         for (sib = e->first_child; sib; sib = sib->next) {
 	    if (strcmp(sib->name, "serviceToken") == 0) {
-                const char *token = get_elem_text(e, "");
+                const char *token = mwk_get_elem_text(rc, e, "");
                 st_p = 1;
                 if (!parse_service_token_er(rc, (char*)token, 
                                             &req_cred->u.service.st)) {
@@ -477,7 +463,7 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 /* pull out subject */
                 req_cred->subject = req_cred->u.service.st.subject;
 	    } else if (strcmp(sib->name, "requestToken") == 0) {
-                const char *token = get_elem_text(e, "");
+                const char *token = mwk_get_elem_text(rc, e, "");
                 rt_p = 1;
                 if (!parse_xml_request_token_er(rc, (char*)token, req_cred))
                     return 0;
@@ -508,7 +494,7 @@ parse_requesterCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return 0;
         }
 
-        req = get_elem_text(e, "");
+        req = mwk_get_elem_text(rc, e, "");
         bin_req = (char*)apr_palloc(rc->r->pool, 
                                     apr_base64_decode_len(req));
         blen = apr_base64_decode(bin_req, req);
@@ -573,7 +559,7 @@ parse_subjectCredential_er(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     sub_cred->type = apr_pstrdup(rc->r->pool, at);
 
     if (strcmp(at, "proxy") == 0) {
-        const char *token = get_elem_text(e, "");
+        const char *token = mwk_get_elem_text(rc, e, "");
         if (!parse_proxy_token_er(rc, (char*)token, &sub_cred->u.pt))
             return 0;
         return 1;
@@ -629,6 +615,123 @@ create_service_token_from_req_er(MWK_REQ_CTXT *rc,
 
     time(&creation);
     expiration = creation + rc->sconf->service_token_lifetime;
+
+
+    alist = webauth_attr_list_new(5);
+    if (alist == NULL) {
+        char *msg = "no memory for attr list";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
+        return 0;
+    }
+
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE,
+                              WA_TT_WEBKDC_SERVICE, 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT, 
+                              req_cred->subject, 0, WA_F_NONE);
+
+    webauth_attr_list_add(alist, WA_TK_SESSION_KEY, 
+                          session_key, sizeof(session_key), WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME,
+                               creation, WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
+                               expiration, WA_F_NONE);
+
+
+    tlen = webauth_token_encoded_length(alist);
+    token = (char*)apr_palloc(rc->r->pool, tlen);
+
+    keyring_mutex(rc, 1); /********************* LOCKING! ************/
+
+    ring = get_keyring(rc);
+    if (ring != NULL) {
+        status = webauth_token_create(alist, creation,
+                                      token, &olen, tlen, ring);
+    }
+    keyring_mutex(rc, 0); /********************* UNLOCKING! ************/
+
+    if (ring == NULL) {
+        char *msg = "no keyring";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg);
+        return 0;
+    } else {
+        ring = NULL;
+    }
+
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
+                              "webauth_token_create");
+        generate_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                               "token create failed");
+        return 0;
+    }
+    webauth_attr_list_free(alist);
+
+    rtoken->token_data = (char*) 
+        apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(rtoken->token_data, token, olen);
+
+    rtoken->expires = apr_psprintf(rc->r->pool, "%d", expiration);
+
+    olen = sizeof(session_key);
+    rtoken->session_key = (char*) 
+        apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(rtoken->session_key, session_key, olen);
+
+    return 1;
+}
+
+
+/*
+ * returns 1 on success, 0 on failure
+ */
+static int
+create_id_token_from_req_er(MWK_REQ_CTXT *rc, 
+                            MWK_REQUESTER_CREDENTIAL *req_cred,
+                            MWK_SUBJECT_CREDENTIAL *sub_cred,
+                            MWK_RETURNED_TOKEN *rtoken)
+{
+    static const char *mwk_func="create_id_token_from_req_er";
+    unsigned char session_key[WA_AES_128];
+    int status, tlen, olen, blen;
+    time_t creation, expiration;
+    WEBAUTH_ATTR_LIST *alist;
+    unsigned char *token;
+    WEBAUTH_KEYRING *ring;
+    
+    /* only create id tokens from service creds */
+    if (strcmp(req_cred->type, "service") != 0) {
+        char *msg = "can only create id-tokens with <requesterCredential>"
+            " of type service";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+        return 0;
+    }
+
+    /* make sure we have a subject cred with a type='proxy' */
+    if (strcmp(sub_cred->type, "proxy") != 0) {
+        char *msg = "can only create id-tokens with <subjectCredential>"
+            " of type proxy";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                     "mod_webkdc: %s: %s", mwk_func, msg);
+        generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+        return 0;
+    }
+
+    /* FIXME: ACL CHECK: requester allowed to get an id token
+     *        using subject cred?
+     */
+
+
+    time(&creation);
+    expiration = sub_cred->u.pt.expiration;
 
 
     alist = webauth_attr_list_new(4);
@@ -726,7 +829,7 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                 return OK; /* already logged err and generated errorResponse */
             sub_cred_parsed = 1;
         } else if (strcmp(sib->name, "messageId") == 0) {
-            mid = get_elem_text(sib, NULL);
+            mid = mwk_get_elem_text(rc, sib, NULL);
         } else if (strcmp(sib->name, "tokens") == 0) {
             tokens = sib;
         } else {
@@ -745,7 +848,7 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     }
 
     /* make sure we found requesterCredential */
-    if (tokens == NULL) {
+    if (!req_cred_parsed) {
         char *msg = "missing <requesterCredential> in getTokensRequest";
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                      "mod_webkdc: %s: %s", mwk_func, msg);
@@ -792,8 +895,24 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
         if (tt == NULL)
             return OK;
 
+        /* make sure we found subjectCredential if requesting
+         * a token type other then "sevice".
+         */
+        if (strcmp(tt, "service") !=0 && !sub_cred_parsed) {
+            char *msg = "missing <subjectCredential> in getTokensRequest";
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                         "mod_webkdc: %s: %s", mwk_func, msg);
+            generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg);
+            return OK;
+        }
+
         if (strcmp(tt, "service") == 0) {
             if (!create_service_token_from_req_er(rc, &req_cred,
+                                               &rtokens[num_tokens])) {
+                return OK;
+            }
+        } else if (strcmp(tt, "id") == 0) {
+            if (!create_id_token_from_req_er(rc, &req_cred, &sub_cred,
                                                &rtokens[num_tokens])) {
                 return OK;
             }
@@ -830,9 +949,9 @@ handle_getTokensRequest_er(MWK_REQ_CTXT *rc, apr_xml_elem *e)
             ap_rvputs(rc->r,"<expires>", rtokens[i].expires,
                       "</expires>", NULL);
         }
-        ap_rvputs(rc->r, "</tokens>", NULL);
+        ap_rvputs(rc->r, "</token>", NULL);
     }
-    ap_rvputs(rc->r, "</token></getTokensResponse>", NULL);
+    ap_rvputs(rc->r, "</tokens></getTokensResponse>", NULL);
     ap_rflush(rc->r);
 
     return OK;
@@ -892,6 +1011,8 @@ parse_request(MWK_REQ_CTXT *rc)
     } else {
         char *m = apr_psprintf(rc->r->pool, "invalid command: %s", 
                                xd->root->name);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webkdc: parse_request: %s", m);
         return generate_errorResponse(rc, WA_PEC_INVALID_REQUEST, m);
     }
 }

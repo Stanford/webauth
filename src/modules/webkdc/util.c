@@ -5,6 +5,70 @@
 
 #include "mod_webkdc.h"
 
+
+#define CHUNK_SIZE 4096
+
+/*
+ *
+ */
+void 
+mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
+{
+    memset(string, 0, sizeof(MWK_STRING));
+    string->pool = pool;
+}
+
+/*
+ * given an MWA_STRING, append some new data to it.
+ */
+void 
+mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
+{
+    int needed_size;
+
+    if (in_size == 0)
+        in_size = strlen(in_data);
+
+    needed_size = string->size+in_size;
+
+    if (string->data == NULL || needed_size > string->capacity) {
+        char *new_data;
+        while (string->capacity < needed_size+1)
+            string->capacity += CHUNK_SIZE;
+
+        new_data = apr_palloc(string->pool, string->capacity);
+
+        if (string->data != NULL) {
+            memcpy(new_data, string->data, string->size);
+        } 
+        /* don't have to free existing data since it from a pool */
+        string->data = new_data;
+    }
+    memcpy(string->data+string->size, in_data, in_size);
+    string->size = needed_size;
+}
+
+
+/*
+ * concat all the text pieces together and return data 
+ */
+const char *
+mwk_get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *def)
+{
+    if (e->first_cdata.first &&
+        e->first_cdata.first->text) {
+        apr_text *t;
+        MWK_STRING string;
+        mwk_init_string(&string, rc->r->pool);
+        for (t = e->first_cdata.first; t != NULL; t = t->next) {
+            mwk_append_string(&string, t->text, 0);
+        }
+        return string.data;
+    } else {
+        return def;
+    }
+}
+
 /*
  * get a required char* attr from a token, with logging if not present.
  * returns value or NULL on error,
