@@ -6,7 +6,7 @@
 # change 'tests => 1' to 'tests => last_test_to_print';
 
 use Test;
-BEGIN { plan tests => 34 };
+BEGIN { plan tests => 37 };
 use WebAuth;
 ok(1); # If we made it this far, we're ok.
 
@@ -68,6 +68,15 @@ ok("\000\001\002\003\004\005", WebAuth::hex_decode('000102030405'));
 
 ok('68656c6c6f', WebAuth::hex_encode('hello'));
 ok('hello', WebAuth::hex_decode('68656c6c6f'));
+
+# test some failures
+
+ok(WebAuth::WA_ERR_CORRUPT, WebAuth::hex_decoded_length(3));
+
+$status = undef;
+ok(undef, WebAuth::hex_decode('FOOBAR', $status));
+ok(WebAuth::WA_ERR_CORRUPT, $status);
+
 
 #  $output = webauth_attrs_encode(%attrs, [, $status]);
 #  %attrs = webauth_attrs_decode($data [, $status]);

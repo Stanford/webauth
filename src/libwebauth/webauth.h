@@ -144,6 +144,9 @@ int webauth_hex_encoded_length(int length);
  * returns the amount of space required to decode the hex encoded data
  * of the given length. Returned length does *NOT* include room for a
  * null-termination. 
+ *
+ * errors:
+ *   WA_ERR_CORRUPT (if length is not greater then 0 and a multiple of 2)
  */
 int webauth_hex_decoded_length(int length);
 

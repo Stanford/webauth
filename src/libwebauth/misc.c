@@ -14,6 +14,9 @@ webauth_hex_encoded_length(int length)
 int
 webauth_hex_decoded_length(int length)
 {
+    if (length==0 || length%2) {
+        return WA_ERR_CORRUPT;
+    }
     return length/2;
 }
 
