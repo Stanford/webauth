@@ -1,44 +1,78 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- $Id:
+This is the template for StanfordWebAuth v3 logout. It is displayed
+whenever the logout.fcgi script is executed. The logout.fcgi deletes
+the single sign on cookie
+variables:
+cookies_flag : found cookies
+
+-->
 <HTML>
   <HEAD>
+    <TITLE>Stanford University - WebLogin Logout</TITLE>
     <HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
-    <TITLE>Weblogin Canceled</TITLE>
+    <META HTTP-EQUIV="Content-Type" CONTENT=
+    "text/html; charset=iso-8859-1">
   </HEAD>
 
-  <BODY bgcolor="#FFFFFF">
-    <HR>
-    <TABLE border="0">
-      <TR>
-        <TD rowspan="5">
-          <IMG src="/images/quad.gif" alt="[Stanford Quad]">
-        </TD>
-        <TH colspan="3" align="center">
-	<!--The logout found cookies -->
-	 <TMPL_IF NAME=cookies_flag>
-	<H2>   weblogin cookies are deleted</h2>
-	<TMPL_ELSE>
-          <H2>  No  weblogin cookies found</h2>
-	</TMPL_IF>
+  <BODY BGCOLOR="#FFFFCC">
+    <FORM ACTION="" METHOD="get">
+      <TABLE WIDTH="60%" BORDER="1" ALIGN="center" BGCOLOR="#FFFFFF">
+        <TR>
+          <TD>
+            <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
+              <TR>
+                <TD WIDTH="170"><IMG SRC="/images/gateway1.gif" WIDTH="160"
+                HEIGHT="160"></TD>
 
+                <TD VALIGN="top">
+                  <TABLE WIDTH="100%" ALIGN="center" BORDER="0">
+                    <TR>
+                      <TD>
+                        <TABLE WIDTH="100%">
+                          <TR>
+                            <TD BGCOLOR="#990000" NOWRAP>
+                              <DIV ALIGN="right">
+                                <FONT COLOR="#FFFFFF" SIZE="3" FACE=
+                                "Verdana, Arial, Helvetica, sans-serif">
+                                <STRONG>WebLogin</STRONG></FONT>
+                              </DIV>
+                            </TD>
+                          </TR>
+                        </TABLE>
+                      </TD>
+                    </TR>
+                  </TABLE>
 
-        </TH>
-      </TR>
-    </TABLE>
-    
-    <HR size="2">
-    
-    <H4 align="center">
-    </H4>
-    <P>
+                  <P><STRONG><FONT SIZE="2" FACE=
+                  "Arial, Helvetica, sans-serif">
+		  You have choosen to remove your single sign on cookie.
+		</FONT></STRONG></P>
+		<!--The logout found cookies -->
+		<TMPL_IF NAME=cookies_flag>
+		    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
+		    Results: Single sign on cookie is deleted.
+		    </FONT></STRONG></P>
+		<TMPL_ELSE> 
+		    <FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
+                    Results: No single sign on cookies found.
+		    </FONT></STRONG></P>
+		</TMPL_IF>
+		    <P><FONT SIZE="2" FACE="Arial, Helvetica, sans-serif">
+                  <A HREF ="http://www.stanford.edu">Stanford Home Page</A>.</FONT></P>
+                </TD>
+              </TR>
+            </TABLE>
+          </TD>
+        </TR>
+      </TABLE>
+    </FORM>
 
-    </P>
-
-    <P>
-
-    </P>
+    <DIV ALIGN="center">
+      <P><FONT SIZE="1" FACE="Arial, Helvetica, sans-serif">Copyright
+      2003 Stanford University. All Rights Reserved. Last modified
+      2/11/03 by ITSS/jnk.</FONT></P>
+    </DIV>
   </BODY>
-
-  <HEAD>
-    <HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
-  </HEAD>
 </HTML>
+
