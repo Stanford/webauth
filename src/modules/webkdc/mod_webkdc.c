@@ -93,32 +93,6 @@ set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
     return MWK_ERROR;
 }
 
-/* 
- * should only be called (and result used) while you have
- * the MWK_MUTEX_KEYRING mutex.
- */
-
-static WEBAUTH_KEYRING *
-get_keyring(MWK_REQ_CTXT *rc) {
-    int status;
-    static WEBAUTH_KEYRING *ring = NULL;
-
-    if (ring != NULL) {
-        return ring;
-    }
-
-    /* attempt to open up keyring */
-    status = webauth_keyring_read_file(rc->sconf->keyring_path, &ring);
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL,
-                              "get_keyring", "webauth_keyring_read_file");
-    } else {
-        /* FIXME: should probably make sure we have at least one
-           valid (not expired/postdated) key in the ring */
-    }
-    return ring;
-}
-
 /*
  * returns new attr list, or NULL if there was an error
  */
@@ -140,7 +114,6 @@ make_token(MWK_REQ_CTXT *rc, WEBAUTH_ATTR_LIST *alist, time_t hint,
            int base64_encode,
            const char *mwk_func)
 {
-    WEBAUTH_KEYRING *ring;
     char *buffer;
     int status, elen, olen;
 
@@ -148,23 +121,17 @@ make_token(MWK_REQ_CTXT *rc, WEBAUTH_ATTR_LIST *alist, time_t hint,
     buffer = (char*)apr_palloc(rc->r->pool, elen);
     status = WA_ERR_NONE;
 
-    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = get_keyring(rc);
-    if (ring != NULL) {
-        status = webauth_token_create(alist, hint, buffer, &olen, elen, ring);
-    }
-
-    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL) {
+    if (rc->sconf->ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "no keyring", mwk_func, 1);
     }
 
+    status = webauth_token_create(alist, hint, buffer, &olen, elen, 
+                                  rc->sconf->ring);
+
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_token_create");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "token create failed", mwk_func, 0);
     }
@@ -199,8 +166,8 @@ make_token_with_key(MWK_REQ_CTXT *rc,
                                            &olen, elen, key);
 
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_token_create_with_key");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_create_with_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "token create failed", mwk_func, 0);
     }
@@ -339,7 +306,6 @@ static enum mwk_status
 parse_service_token(MWK_REQ_CTXT *rc, char *token, MWK_SERVICE_TOKEN *st)
 {
     WEBAUTH_ATTR_LIST *alist;
-    WEBAUTH_KEYRING *ring;
     int blen, status, i;
     const char *tt;
     static const char *mwk_func = "parse_service_token";
@@ -359,23 +325,16 @@ parse_service_token(MWK_REQ_CTXT *rc, char *token, MWK_SERVICE_TOKEN *st)
      * just expiration
      */
 
-    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = get_keyring(rc);
-    if (ring != NULL) {
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
-    }
-
-    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL) {
+    if (rc->sconf->ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, 1);
     }
 
+    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
+
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_token_parse");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_parse", NULL);
         if (status == WA_ERR_TOKEN_EXPIRED) {
             return set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
                                    "service token was expired", mwk_func, 0);
@@ -431,7 +390,6 @@ static enum mwk_status
 parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
 {
     WEBAUTH_ATTR_LIST *alist;
-    WEBAUTH_KEYRING *ring;
     int blen, status, i;
     enum mwk_status ms;
     const char *tt;
@@ -450,23 +408,16 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
      * just expiration
      */
 
-    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
-
-    ring = get_keyring(rc);
-    if (ring != NULL) {
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
-    }
-
-    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL) {
+    if (rc->sconf->ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, 1);
     }
 
+    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
+
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_token_parse");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_parse", NULL);
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_PROXY_TOKEN_EXPIRED,
                               "proxy token was expired", mwk_func, 0);
@@ -553,7 +504,6 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
                      MWK_LOGIN_TOKEN *lt)
 {
     WEBAUTH_ATTR_LIST *alist;
-    WEBAUTH_KEYRING *ring;
     int blen, status, i;
     enum mwk_status ms;
     const char *tt;
@@ -570,25 +520,19 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
 
     /* parse the token, with a TTL */
 
-    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING); /****** LOCKING! ************/
 
-    ring = get_keyring(rc);
-    if (ring != NULL) {
-        status = webauth_token_parse(token, blen,
-                                     rc->sconf->token_max_ttl,
-                                     ring, &alist);
-    }
-
-    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING); /****** UNLOCKING! ************/
-
-    if (ring == NULL) {
+    if (rc->sconf->ring == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, 1);
     }
 
+    status = webauth_token_parse(token, blen,
+                                 rc->sconf->token_max_ttl,
+                                 rc->sconf->ring, &alist);
+
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_token_parse");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_parse", NULL);
         if (status == WA_ERR_TOKEN_STALE) {
             set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_STALE,
                               "login token was stale", mwk_func, 0);
@@ -666,8 +610,9 @@ parse_request_token(MWK_REQ_CTXT *rc,
                                           rc->sconf->token_max_ttl,
                                           &st->key, &alist);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, "parse_xml_request_token", 
-                              "webauth_token_parse");
+        mwk_log_webauth_error(rc->r->server, status, NULL,
+                              "parse_xml_request_token", 
+                              "webauth_token_parse", NULL);
         if (status == WA_ERR_TOKEN_STALE) {
             set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
                               "request token was stale", mwk_func, 0);
@@ -836,7 +781,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         if (status != WA_ERR_NONE) {
             char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                                  "webauth_krb5_rd_req");
+                                                  "webauth_krb5_rd_req", NULL);
             set_errorResponse(rc, WA_PEC_REQUESTER_KRB5_CRED_INVALID, msg,
                               mwk_func, 1);
             webauth_krb5_free(ctxt);
@@ -949,8 +894,8 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     status = webauth_random_key(session_key, sizeof(session_key));
 
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r, status, NULL, mwk_func,
-                              "webauth_random_key");
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_random_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, 
                                  "can't generate session key", mwk_func, 0);
     }
@@ -1019,7 +964,8 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
                                               status, ctxt,
-                                              "webauth_krb5_export_ticket");
+                                              "webauth_krb5_export_ticket",
+                                              NULL);
         webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
@@ -1038,7 +984,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
 
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "webauth_krb5_mk_req");
+                                              "webauth_krb5_mk_req", NULL);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
@@ -1402,7 +1348,8 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
                                               status, ctxt,
-                                              "webauth_krb5_init_via_tgt");
+                                              "webauth_krb5_init_via_tgt",
+                                              NULL);
         webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
@@ -1422,7 +1369,8 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
                                               status, ctxt,
-                                              "webauth_krb5_export_ticket");
+                                              "webauth_krb5_export_ticket",
+                                              NULL);
         webauth_krb5_free(ctxt);
         return set_errorResponse(rc, WA_PEC_GET_CRED_FAILURE, 
                                  msg, mwk_func, 1);
@@ -1713,12 +1661,13 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "login failed");
+                                             "login failed", NULL);
         set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
     } else if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth_krb5_init_via_password");
+                                             "webauth_krb5_init_via_password",
+                                              NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
@@ -1733,7 +1682,8 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     status = webauth_krb5_get_principal(ctxt, &subject, 1);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth_krb5_get_principal");
+                                             "webauth_krb5_get_principal",
+                                              NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
@@ -1747,7 +1697,8 @@ mwk_do_login(MWK_REQ_CTXT *rc,
                                      &tgt_len, &tgt_expiration);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "webauth_krb5_export_tgt");
+                                              "webauth_krb5_export_tgt",
+                                              NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
@@ -2157,6 +2108,95 @@ die(const char *message, server_rec *s)
     exit(1);
 }
 
+
+/*
+ * called on restarts
+ */
+static apr_status_t
+mod_webkdc_cleanup(void *data)
+{
+    server_rec *s = (server_rec*) data;
+    server_rec *t;
+    MWK_SCONF *sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
+                                                        &webkdc_module);
+
+    if (sconf->debug) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: cleanup");
+    }
+
+    /* walk through list of services and clean up */
+    for (t=s; t; t=t->next) {
+        MWK_SCONF *tconf = (MWK_SCONF*)ap_get_module_config(t->module_config,
+                                                            &webkdc_module);
+
+        if (tconf->ring && tconf->free_ring) {
+            if (sconf->debug) {
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, 
+                             "mod_webkdc: cleanup ring: %s",
+                             tconf->keyring_path);
+            }
+            webauth_keyring_free(tconf->ring);
+            tconf->ring = NULL;
+            tconf->free_ring = 0;
+        }
+    }
+    return APR_SUCCESS;
+}
+
+static void 
+die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
+{
+    char *msg;
+
+    if (s->is_virtual) {
+        msg = apr_psprintf(ptemp, 
+                          "directive %s must be set for virtual host %s:%d", 
+                          dir, s->defn_name, s->defn_line_number);
+    } else {
+        msg = apr_psprintf(ptemp, 
+                          "directive %s must be set in main config", 
+                          dir);
+    }
+    die(msg, s);
+}
+
+/*
+ * check server conf directives for server,
+ * also cache keyring
+ */
+static void
+init_sconf(server_rec *s, MWK_SCONF *bconf, apr_pool_t *ptemp)
+{
+    MWK_SCONF *sconf;
+
+    sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
+                                             &webkdc_module);
+
+#define CHECK_DIR(field,dir,val) \
+            if (sconf->field == val) die_directive(s, dir, ptemp);
+
+    CHECK_DIR(keyring_path, CD_Keyring, NULL);
+    CHECK_DIR(keytab_path, CD_Keytab, NULL);
+    CHECK_DIR(token_acl_path, CD_TokenAcl, NULL);
+    CHECK_DIR(service_token_lifetime, CD_ServiceTokenLifetime, 0);
+
+#undef CHECK_DIR
+
+    /* load up the keyring */
+    
+    if (sconf->ring == NULL) {
+        if ((bconf->ring != NULL) &&
+            (strcmp(sconf->keyring_path, bconf->keyring_path) == 0)) {
+            sconf->ring = bconf->ring;
+            sconf->free_ring = 0;
+        } else {
+            mwk_cache_keyring(s, sconf);
+            if (sconf->ring)
+                sconf->free_ring = 1;
+        }
+    }
+}
+
 /*
  * called after config has been loaded in parent process
  */
@@ -2166,7 +2206,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
 {
     MWK_SCONF *sconf;
     int status;
-    WEBAUTH_KEYRING *ring;
+    server_rec *scheck;
     char *version;
 
     sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
@@ -2175,26 +2215,12 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webkdc: initializing");
 
-#define CHECK_DIR(field,dir,v) if (sconf->field == v) \
-             die(apr_psprintf(ptemp, "directive %s must be set", dir), s)
+    apr_pool_cleanup_register(pconf, s, 
+                              mod_webkdc_cleanup,
+                              apr_pool_cleanup_null);
 
-    CHECK_DIR(keyring_path, CD_Keyring, NULL);
-    CHECK_DIR(keytab_path, CD_Keytab, NULL);
-    CHECK_DIR(token_acl_path, CD_TokenAcl, NULL);
-    CHECK_DIR(service_token_lifetime, CD_ServiceTokenLifetime, 0);
-
-#undef CHECK_DIR
-
-    /* attempt to open keyring */
-    status = webauth_keyring_read_file(sconf->keyring_path, &ring);
-    if (status != WA_ERR_NONE) {
-        die(apr_psprintf(ptemp, 
-                 "mod_webkdc: webauth_keyring_read_file(%s) failed: %s (%d)",
-                         sconf->keyring_path, webauth_error_message(status), 
-                         status), s);
-    } else {
-        /* close it, and open it in child */
-        webauth_keyring_free(ring);
+    for (scheck=s; scheck; scheck=scheck->next) {
+        init_sconf(scheck, sconf, ptemp);
     }
 
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
@@ -2235,6 +2261,8 @@ config_server_create(apr_pool_t *p, server_rec *s)
     /* init defaults */
     sconf->token_max_ttl = DF_TokenMaxTTL;
     sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
+    sconf->keyring_auto_update = DF_KeyringAutoUpdate;
+    sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
     return (void *)sconf;
 }
 
@@ -2260,6 +2288,12 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         oconf->proxy_token_lifetime : bconf->proxy_token_lifetime;
 
     conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
+
+    conf->keyring_auto_update = oconf->keyring_auto_update_ex ? 
+        oconf->keyring_auto_update : bconf->keyring_auto_update;
+
+    conf->keyring_key_lifetime = oconf->keyring_key_lifetime_ex ? 
+        oconf->keyring_key_lifetime : bconf->keyring_key_lifetime;
 
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
@@ -2339,6 +2373,10 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             sconf->token_max_ttl = seconds(arg, &error_str);
             sconf->token_max_ttl_ex = 1;
             break;
+        case E_KeyringKeyLifetime:
+            sconf->keyring_key_lifetime = seconds(arg, &error_str);
+            sconf->keyring_key_lifetime_ex = 1;
+            break;
         case E_ServiceTokenLifetime:
             sconf->service_token_lifetime = seconds(arg, &error_str);
             break;
@@ -2368,6 +2406,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->debug = flag;
             sconf->debug_ex = 1;
             break;
+        case E_KeyringAutoUpdate:
+            sconf->keyring_auto_update = flag;
+            sconf->keyring_auto_update_ex = 1;
+            break;
         default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -2393,11 +2435,13 @@ static const command_rec cmds[] = {
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
+    SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime, 
          CM_ProxyTokenLifetime),
     SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
          CM_ServiceTokenLifetime),
+    SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
     { NULL }
 };
 

@@ -27,6 +27,14 @@
 #define CD_Keyring "WebKdcKeyring"
 #define CM_Keyring "path to the keyring file"
 
+#define CD_KeyringKeyLifetime "WebKdcKeyringKeyLifetime"
+#define CM_KeyringKeyLifetime "lifetime of keys we create"
+#define DF_KeyringKeyLifetime (60*60*24*30) /* 30 days */
+
+#define CD_KeyringAutoUpdate "WebKdcKeyringAutoUpdate"
+#define CM_KeyringAutoUpdate "whether or not to automatically update keyring"
+#define DF_KeyringAutoUpdate 1
+
 #define CD_TokenAcl "WebKdcTokenAcl"
 #define CM_TokenAcl "path to the token acl file"
 
@@ -57,7 +65,6 @@
 
 /* enum for mutexes */
 enum mwk_mutex_type {
-    MWK_MUTEX_KEYRING,
     MWK_MUTEX_TOKENACL,
     MWK_MUTEX_MAX /* MUST BE LAST! */
 };
@@ -74,6 +81,8 @@ enum {
     E_TokenAcl,
     E_Debug,
     E_Keyring,
+    E_KeyringAutoUpdate,
+    E_KeyringKeyLifetime,
     E_Keytab,
     E_ProxyTokenLifetime,
     E_ServiceTokenLifetime,
@@ -94,6 +103,13 @@ typedef struct {
     int service_token_lifetime;
     int token_max_ttl; 
     int token_max_ttl_ex;
+    int keyring_auto_update;
+    int keyring_auto_update_ex;
+    int keyring_key_lifetime;
+    int keyring_key_lifetime_ex;
+    /* stuff we need to clean up on restarts and what not */
+    WEBAUTH_KEYRING *ring; /* our keyring */
+    int free_ring;         /* set if we should free ring */
 } MWK_SCONF;
 
 /* handy bunch of bits to pass around during a request */
@@ -260,17 +276,19 @@ char *
 mwk_webauth_error_message(request_rec *r, 
                           int status, 
                           WEBAUTH_KRB5_CTXT *ctxt,
-                          const char *webauth_func);
+                          const char *webauth_func,
+                          const char *extra);
 
 /*
  * log a webauth-related error. ctxt can be NULL.
  */
 void
-mwk_log_webauth_error(request_rec *r, 
+mwk_log_webauth_error(server_rec *serv,
                       int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
-                      const char *func);
+                      const char *func,
+                      const char *extra);
 
 /*
  * initialize a string for use with mwk_append_string

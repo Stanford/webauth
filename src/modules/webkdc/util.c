@@ -163,7 +163,8 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
 
     status = webauth_krb5_new(&ctxt);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(r, status, ctxt, mwk_func, "webauth_krb5_new");
+        mwk_log_webauth_error(r->server, status, ctxt, mwk_func,
+                              "webauth_krb5_new", NULL);
         if (status == WA_ERR_KRB5)
             webauth_krb5_free(ctxt);
         return NULL;
@@ -176,32 +177,106 @@ char *
 mwk_webauth_error_message(request_rec *r, 
                           int status, 
                           WEBAUTH_KRB5_CTXT *ctxt,
-                          const char *webauth_func)
+                          const char *webauth_func,
+                          const char *extra)
 {
     if (status == WA_ERR_KRB5 && ctxt != NULL) {
         return apr_psprintf(r->pool,
-                            "%s failed: %s (%d): %s %d",
+                            "%s%s%s failed: %s (%d): %s %d",
                             webauth_func,
+                            extra == NULL ? "" : " ",
+                            extra == NULL ? "" : extra,
                             webauth_error_message(status), status,
                             webauth_krb5_error_message(ctxt), 
                             webauth_krb5_error_code(ctxt));
     } else {
         return apr_psprintf(r->pool,
-                            "%s failed: %s (%d)",
+                            "%s%s%s failed: %s (%d)",
                             webauth_func,
+                            extra == NULL ? "" : " ",
+                            extra == NULL ? "" : extra,
                             webauth_error_message(status), status);
     }
 }
 
 void
-mwk_log_webauth_error(request_rec *r, 
+mwk_log_webauth_error(server_rec *serv,
                       int status, 
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
-                      const char *func)
+                      const char *func,
+                      const char *extra)
 {
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                 "mod_webkdc: %s: %s",
-                 mwk_func, 
-                 mwk_webauth_error_message(r, status, ctxt, func));
+
+    if (status == WA_ERR_KRB5 && ctxt != NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                 "mod_webkdc: %s:%s%s%s failed: %s (%d): %s %d",
+                     mwk_func,
+                     func,
+                     extra == NULL ? "" : " ",
+                     extra == NULL ? "" : extra,
+                     webauth_error_message(status), status,
+                     webauth_krb5_error_message(ctxt), 
+                     webauth_krb5_error_code(ctxt));
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webkdc: %s:%s%s%s failed: %s (%d)",
+                     mwk_func,
+                     func,
+                     extra == NULL ? "" : " ",
+                     extra == NULL ? "" : extra,
+                     webauth_error_message(status), status);
+    }
+}
+
+
+int
+mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
+{
+    int status;
+    WEBAUTH_KAU_STATUS kau_status;
+    WEBAUTH_ERR update_status;
+
+    static const char *mwk_func = "mwk_init_keyring";
+
+    status = webauth_keyring_auto_update(sconf->keyring_path, 
+                                         sconf->keyring_auto_update,
+                                         sconf->keyring_key_lifetime,
+                                         &sconf->ring,
+                                         &kau_status,
+                                         &update_status);
+
+    if (status != WA_ERR_NONE) {
+            mwk_log_webauth_error(serv, status, NULL,
+                                  mwk_func, 
+                                  "webauth_keyring_auto_update",
+                                  sconf->keyring_path);
+    }
+
+    if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
+            mwk_log_webauth_error(serv, status, NULL,
+                                  mwk_func, 
+                                  "webauth_keyring_auto_update",
+                                  sconf->keyring_path);
+            /* complain even more */
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
+                         "mod_webkdc: %s: couldn't update ring: %s",
+                         mwk_func, sconf->keyring_path);
+    }
+
+    if (sconf->debug) {
+        char *msg;
+        if (kau_status == WA_KAU_NONE) 
+            msg = "opened";
+        else if (kau_status == WA_KAU_CREATE)
+            msg = "create";
+        else if (kau_status == WA_KAU_UPDATE)
+            msg = "updated";
+        else
+            msg = "<unknown>";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webkdc: %s key ring: %s", msg, sconf->keyring_path);
+    }
+
+    return status;
 }
