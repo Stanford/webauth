@@ -1,0 +1,408 @@
+** WARNING: THIS IS NOT PRETTY **
+
+Building WebAuth (with LDAP and mod_ssl support) requires building the
+following packages:
+
+Apache (2.0.47)
+cURL (7.10.6)
+Cyrus SASL (2.1.15)
+OpenLDAP (2.1.22)
+OpenSSL (0.9.7b)
+MIT Kerberos5 (1.2.8)
+
+The version numbers in parens are the versions that were last
+used to build WebAuth 3.2.0 with.
+
+I also build most stuff under cygwin, though cygwin is not
+required to run Apache with WebAuth after everything is built. 
+
+[FIXME: building something required having awk available to a windows
+bat file, so I needed to remove the "symlink" awk under cygwin (/bin/awk) and
+replace it with awk.exe (copied from gawk.exe if I recall correctly]
+
+I used VC6 as the compiler because Visual Studio .NET added some
+dependency on a new C runtime that I didn't want to drag in. Using
+VC6 also allowed us to use our modules with the Apache Group binaries.
+
+------------------------------------------------------------
+
+1. download and extract sources:
+
+   {BUILD} is the root of whever you are going to be building 
+   everything, for example, c:\cygwin\home\schemers\build.
+
+   Apache      
+      version: httpd-2.0.47-win32-src.zip
+          url: http://httpd.apache.org/
+         dest: {BUILD}/httpd-2.0.47
+  
+   OpenSSL
+      version: openssl-0.9.7b
+          url: http://www.openssl.org/
+         dest: {BUILD}/httpd-2.0.47/srclib/openssl
+
+   Kerberos
+      version: krb5 1.2.8
+          url: http://web.mit.edu/kerberos/www/
+         dest: {BUILD}/krb5-1.2.8
+
+   cURL
+      version: 7.10.6 
+          url: http://curl.haxx.se/
+         dest: {BUILD}/curl-7.10.6
+
+   CyrusSASL
+      version: 2.1.15
+          url: http://asg.web.cmu.edu/sasl/sasl-library.html
+         dest: {BUILD}/cyrus-sasl-2.1.15
+
+   OpenLDAP
+      version: 2.1.22
+          url: http://www.openldap.org/
+         dest: {BUILD}/openldap-2.1.22
+         note: open-ldap.2.1.22.tgz must be extracted with zip, not tar,
+               otherwise windows project files get corrupted
+
+   WebAuth
+      version: 3.2.0
+          url: (from CVS)
+         dest: {BUILD}/webauth3
+
+
+2. build openssl within the Apache tree first (so when you build Apache
+   it builds mod_ssl)
+
+   Instructions are in:
+
+         {BUILD}/httpd-2.0.47/openssl/INSTALL.W32
+
+   I did the following from with cygwin:
+
+     cd {BUILD}/httpd-2.0.47/srclib/openssl
+     perl Configure VC-WIN32
+     ms/do_ms.bat
+     nmake /f ms/ntddl.mak
+
+   NOTE: 
+
+         Multithreaded DLL         /MD        -  OpenSSL defaults to this.
+         Debug Multithreaded DLL   /MDd
+
+3. build Apache
+
+   Instructions at:   
+
+       http://httpd.apache.org/docs-2.0/platform/win_compiling.html
+
+   I did the following from with cygwin:
+
+   cd {BUILD}/httpd-2.0.47/
+   nmake /f Makefile.win _apacher
+
+
+   NOTE: more Windows Apache info:
+
+        http://httpd.apache.org/docs-2.0/platform/windows.html
+        http://httpd.apache.org/docs-2.0/mod/mod_so.html#creating
+
+4. build Kerberos
+
+   Instructions at:
+
+      {BUILD}/krb5-1.2.8/src/windows/README
+
+   I did the following from within cygwin:
+
+     cd {BUILD}/krb5-1.2.8/src
+     nmake -f Makefile.in prep-windows
+     nmake NODEBUG=1
+
+   NOTE: the build initially failed with an error compiling
+         src/windows/ms2mit/ms2mit.c. Since that we uneeded,
+         I edited src/windows/Makefile and commented out
+         the section in the "all-windows::"  target that
+         attempts to build ms2mit (the last 4 lines).
+
+5. build cURL
+
+   Instructions at:
+
+       {BUILD}/curl-7.10.6/docs/INSTALL
+
+   I did the following from a DOS shell:
+
+    cd {BUILD}\curl-7.10.6
+    set OPENSSL_PATH={BUILD}/httpd-2.0.47/srclib/openssl
+    nmake vc-ssl-dll
+
+   NOTE: the build initially failed with errors. I had to
+         copy curl-7.10.6\lib\getdate.c to curl-7.10.6\lib\getdate.c.cvs,
+         and I also had to edit curl-7.10.6\lib\Makefile.vc6 and
+         add $(DIROBJ)\http_ntlm.obj to the X_OBJS variables to
+         get rid of undefined references when making the dll.
+
+6. build Cyrus SASL
+
+   Some instructions at:
+
+      {BUILD}/cyrus-sasl-2.1.15/doc/windows.html
+
+   You first need to apply the patch at the end of this message.
+
+   Make sure that CPPFLAGS in cyrus-sasl-2.1.15/plugins/NTMakefile 
+   includes your kerberos directory. For example:
+  
+   /I "..\..\krb5-1.2.8\src\include"
+
+   Also, the saslGSSPI.dll link line should point at your kerberos build:
+ 
+   /LIBPATH:..\..\krb5-1.2.8\src\lib\obj\i386\rel gssapi32.lib krb5_32.lib
+
+   I think the patch upates LINK32_FLAGS, either should work.
+
+   Also, since we only need the saslGSSPI.dll plugin, I changed
+   cyrus-sasl-2.1.15/plugins/NTMakefile so PLUGINS was
+   set to "PLUGINS=saslGSSAPI.dll". This ends up building only
+   the GSSAPI plugin.
+
+   I did the following from within cygwin:
+
+     cd {BUILD}/cyrus-sasl-2.1.15/lib
+     nmake /f NTMakefile
+     cd ../plugins
+     nmake /f NTMakefile
+
+
+7. build OpenLDAP
+
+  First, make sure you extracted the sources with zip/winzip and not
+  tar. When extracting with tar from cygwin the project files (*.dsp)
+  become unusable.
+
+  Second, copy all the {BUILD}/openldap-2.1.22/include/*.nt files to
+  *.h files. For example:
+
+   cd {BUILD}/openldap-2.1.22/include
+   cp lber_types.nt lber_types.h
+   cp ldap_config.nt ldap_config.h
+   cp ldap_features.nt ldap_features.h
+   cp portable.nt portable.h
+
+  Now, use VC6 to build liblber and libldap:
+
+  Open this project in visual C++ 6.0:
+
+  {BUILD}/openldap-2.1.22/libraries/liblber/liblber.dsp
+
+  select the menu "Build/Set Active Configuration..." and then 
+  select "Win32 Release"
+  
+  select the menu "Project/Settings", and then the C/C++ tab, and
+  make sure the "Project Options" window uses "/MD" for linking.
+
+  then build the library by pushing "F7"
+
+  Repeat this with:
+
+  {BUILD}/openldap-2.1.22/libraries/libldap/libldap.dsp
+   
+8. You are now ready to attempt to build webauth3!
+
+  From a DOS prompt:
+
+  > cd {BUILD}\webauth3
+  > windows\setup.bat
+
+  edit {BUILD}\webauth3\buildenv.bat to point at all your build locations,
+  for example:
+
+  set BUILD=c:\cygwin\home\schemers\build
+  set APACHE=c:\Program Files\Apache Group\Apache2
+  set APACHE_PATH=%BUILD%\httpd-2.0.47
+  set OPENSSL_PATH=%BUILD%\httpd-2.0.47\srclib\openssl
+  set OPENLDAP_PATH=%BUILD%\openldap-2.1.22
+  set SASL_PATH=%BUILD%\cyrus-sasl-2.1.15
+  set KRB5_PATH=%BUILD%\krb5-1.2.8
+  set CURL_PATH=%BUILD%\curl-7.10.6
+  set WEBAUTH_PATH=%BUILD%\webauth3
+
+  run buildenv.bat to set those variables:
+
+  > buildenv.bat
+
+  build libwebauth.dll:
+
+  > cd src\libwebauth
+  > nmake /f Makefile.vc CFG=release-dll
+
+  build mod_webauth:
+
+  > cd. ..\modules\webauth
+  > nmake /f Makefile.vc CFG=release-dll
+
+  build mod_webauthldap:
+
+  > cd. ..\modules\webauthldap
+  > nmake /f Makefile.vc CFG=release-dll
+
+9. all the binaries/config files needed for installation:
+
+{SASL_PATH}/plugins/saslGSSAPI.dll {APACHE}/bin/
+{SASL_PATH}/cyrus-sasl-2.1.15/lib/libsasl.dll {APACHE}/bin/
+{KRB5_PATH}/src/lib/obj/i386/rel/gssapi32.dll {APACHE}/bin/
+{KRB5_PATH}/src/lib/obj/i386/rel/comerr32.dll {APACHE}/bin/
+{KRB5_PATH}/src/lib/obj/i386/rel/krb5_32.dll  {APACHE}/bin/
+{CURL_PATH}/lib/libcurl.dll {APACHE}/bin/
+{CURL_PATH}/lib/ca-bundle.crt {APACHE}/conf/webauth/
+{OPENSSL_PATH}/out32dll/libeay32.dll {APACHE}/bin/
+{OPENSSL_PATH}/out32dll/ssleay32.dll {APACHE}/bin/
+{WEBAUTH_PATH/src/libwebauth/release-dll/libwebauth.dll {APACHE}/bin/
+{WEBAUTH_PATH}/src/modules/webauth/release-dll/mod_webauth.dll \
+       {APACHE}/modules/mod_webauth.so
+{WEBAUTH_PATH}/src/modules/webauthldap/release-dll/mod_webauthldap.dll \
+       {APACHE}/modules/mod_webauthldap.so
+{WEBAUTH_PATH}/windows/sasl.reg {APACHE}/bin/
+{WEBAUTH_PATH}/webauth3/windows/krb5.ini {APACHE}/bin/
+{WEBAUTH_PATH}/windows/stanford-webauth.conf {APACHE}/conf/
+{WEBAUTH_PATH}/conf/stanford-ldap.conf {APACHE}/conf/
+
+
+----------------------------------------------------------------------
+CYRUS SASL PATCH TO BUILD saslGSSAPI.dll plugin
+----------------------------------------------------------------------
+
+
+Msg #	3491	Previous in Sequence
+<message.php?mailbox=archive.cyrus-sasl&msg=3490> 	Next in Sequence
+<message.php?mailbox=archive.cyrus-sasl&msg=3492>
+Date	Wed, 19 Mar 2003 18:06:30 -0500
+To	cyrus-sasl <cyrus-sasl@lists.andrew.cmu.edu>
+From	Ken Hornstein <kenh@cmf.nrl.navy.mil>
+Reply-To:	Ken Hornstein <kenh@cmf.nrl.navy.mil>
+Subject	Re: GSSAPI plugin on Win32
+
+>--On Wednesday, March 19, 2003 4:13 PM -0500 Ken Hornstein 
+><kenh@cmf.nrl.navy.mil> wrote:
+>
+>> A co-worker got it going; I seem to recall there were a few issues, but
+>> I don't recall what they were (build issues and some GSSAPI differences
+>> on Windows, from my memory, but don't ask me what they were).  But once
+>> we fixed those minor things, it worked just fine.
+>
+>Send patches!
+
+Oh, okay.  Ah, I remember the problem now.  The Windows GSSAPI
+implementation we were using (MIT) never defined nt_service_name, and I
+wasn't sure this was the "right" solution, but it seemed to work.  The
+other is obvious changes to NTMakefile, as you indicated.  We tested
+this with a little SASL-aware poprelay program (speaks vanilla POP
+locally, SASL-POP out the other side).  Yes, we will be releasing that
+reasonably soon :-)  Patches below.
+
+--Ken
+
+--- /afs/cmf/system/src/local/cyrussasl/003/plugins/gssapi.c	Thu Sep 19 14:37:10 2002
++++ gssapi.c	Fri Feb 28 17:38:54 2003
+@@ -82,9 +82,16 @@
+ 
+ #ifdef WIN32
+ /* This must be after sasl.h */
+-# include "saslgssapi.h"
++/*  include "saslgssapi.h" */
+ #endif /* WIN32 */
+ 
++#ifdef WIN32
++static const gss_OID_desc oids[] = {
++   {10, "\052\206\110\206\367\022\001\002\001\004"},
++};
++const gss_OID_desc * nt_service_name = oids+0;
++#endif
++
+ /*****************************  Common Section  *****************************/
+ 
+ static const char plugin_id[] = "$Id$";
+@@ -629,7 +636,8 @@
+ 	    
+ 	    maj_stat = gss_import_name (&min_stat,
+ 					&name_token,
+-					GSS_C_NT_HOSTBASED_SERVICE,
++					/* GSS_C_NT_HOSTBASED_SERVICE, */
++					(gss_OID) nt_service_name,
+ 					&text->server_name);
+ 	    
+ 	    params->utils->free(name_token.value);
+@@ -1210,7 +1218,8 @@
+ 	    
+ 	    maj_stat = gss_import_name (&min_stat,
+ 					&name_token,
+-					GSS_C_NT_HOSTBASED_SERVICE,
++					/* GSS_C_NT_HOSTBASED_SERVICE, */
++					(gss_OID) nt_service_name,
+ 					&text->server_name);
+ 	    
+ 	    params->utils->free(name_token.value);
+--- /afs/cmf/system/src/local/cyrussasl/003/plugins/NTMakefile	Mon Dec  9 01:08:50 2002
++++ NTMakefile	Fri Feb 28 17:26:03 2003
+@@ -7,7 +7,8 @@
+ 	saslPLAIN.dll \
+ 	saslCRAMMD5.dll \
+ 	saslDIGESTMD5.dll \
+-	saslLOGIN.dll
++	saslLOGIN.dll \
++	saslGSSAPI.dll
+ 
+ compat_sources = getaddrinfo.c
+ compat_objs = getaddrinfo.obj
+@@ -35,10 +36,14 @@
+ saslLOGIN_objs = login.obj login_init.obj $(common_objs)
+ saslLOGIN_out = saslLOGIN.dll saslLOGIN.exp saslLOGIN.lib
+ 
+-CPPFLAGS = /I "..\win32\include" /I "." /I "..\include" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL"
++saslGSSAPI_sources = gssapi.c gssapiv2_init.c $(common_sources)
++saslGSSAPI_objs = gssapi.obj gssapiv2_init.obj $(common_objs)
++saslGSSAPI_out = saslGSSAPI.dll saslGSSAPI.exp saslGSSAPI.lib
+ 
+-all_objs = $(saslANONYMOUS_objs) $(saslPLAIN_objs) $(saslCRAMMD5_objs) $(saslDIGESTMD5_objs) $(saslLOGIN_objs)
+-all_out = $(saslANONYMOUS_out) $(saslPLAIN_out) $(saslCRAMMD5_out) $(saslDIGESTMD5_out) $(saslLOGIN_out)
++CPPFLAGS = /I "..\win32\include" /I "." /I "..\include" /I "d:\kit\include" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "HAVE_GSS_C_NT_HOSTBASED_SERVICE"
++
++all_objs = $(saslANONYMOUS_objs) $(saslPLAIN_objs) $(saslCRAMMD5_objs) $(saslDIGESTMD5_objs) $(saslLOGIN_objs) $(saslGSSAPI_objs)
++all_out = $(saslANONYMOUS_out) $(saslPLAIN_out) $(saslCRAMMD5_out) $(saslDIGESTMD5_out) $(saslLOGIN_out) $(saslGSSAPI_out)
+ 
+ !IF "$(OS)" == "Windows_NT"
+ NULL=
+@@ -52,7 +57,7 @@
+ CPP_PROJ=/nologo /MT /W3 /GX /O2  /D "NDEBUG" $(CPPFLAGS) /FD /c 
+ 
+ LINK32=link.exe
+-LINK32_FLAGS=ws2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /machine:I386
++LINK32_FLAGS=/LIBPATH:"d:\kit\lib" krb5_32.lib gssapi32.lib ws2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /machine:I386
+ 
+ !ELSEIF  "$(CFG)" == "Debug"
+ 
+@@ -89,6 +94,10 @@
+ 	$(LINK32) @<< $(LINK32_FLAGS) /out:"saslLOGIN.dll" /implib:"saslLOGIN.lib" $(saslLOGIN_objs)
+ <<
+ 
++saslGSSAPI.dll: $(saslGSSAPI_objs)
++	$(LINK32) @<< $(LINK32_FLAGS) /out:"saslGSSAPI.dll" /implib:"saslGSSAPI.lib" $(saslGSSAPI_objs)
++<<
++
+ CLEAN :
+ 	-@erase $(all_objs)
+ 	-@erase "vc60.idb"
+
+	
+
+------------------------------------------------------------------------
+[ Next in Sequence <message.php?mailbox=archive.cyrus-sasl&msg=3492> |
+Previous in Sequence <message.php?mailbox=archive.cyrus-sasl&msg=3490> |
+Threaded Index
+<mailbox.php?mailbox=archive.cyrus-sasl&startThread=1130> | List Index
+<search.php?mailbox=archive.cyrus-sasl&startThread=3488> | Top of Thread
+Index <mailbox.php?mailbox=archive.cyrus-sasl> | Top of List Index
+<search.php?mailbox=archive.cyrus-sasl> ]
+
+    * Parent Message <message.php?mailbox=archive.cyrus-sasl&msg=3490>:
+      Lawrence Greenfield : Re: GSSAPI plugin on Win32 
+
