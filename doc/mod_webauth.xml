@@ -41,9 +41,9 @@
 <example><title>Example</title>
   LoadModule webauth_module modules/mod_webauth.so<br/>
 <br/>
-  WebAuthKeyring conf/webauth_keyring<br/>
-  WebAuthKeytab conf/webauth_keytab<br/>
-  WebAuthServiceTokenCache conf/service_token_cache<br/>
+  WebAuthKeyring conf/webauth/keyring<br/>
+  WebAuthKeytab conf/webauth/keytab<br/>
+  WebAuthServiceTokenCache conf/webauth/service_token_cache<br/>
   WebAuthLoginURL https://webkdc/login/<br/>
   WebAuthWebKdcURL https://webkdc/webkdc-service/<br/>
   WebAuthWebKdcPrincipal   service/webkdc<br/>
@@ -355,7 +355,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebAuthKeyRing conf/webauth_keyring
+WebAuthKeyRing conf/webauth/keyring
 </example>
 </usage>
 </directivesynopsis>
@@ -384,7 +384,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebAuthKeytab conf/webauth_keytab
+WebAuthKeytab conf/webauth/keytab
 </example>
 </usage>
 </directivesynopsis>
@@ -415,7 +415,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 
 
 <example><title>Example</title>
-WebAuthServiceTokenCache conf/service_token_cache
+WebAuthServiceTokenCache conf/webauth/service_token_cache
 </example>
 </usage>
 </directivesynopsis>

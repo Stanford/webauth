@@ -35,8 +35,9 @@ FIXME: BLAH BLAH BLAH.</p>
 LoadModule webkdc_module modules/mod_webkdc.so<br/>
 <br/>
   WebKdcServiceTokenLifetime 30d<br/>
-  WebKdcKeyring conf/webkdc_keyring<br/>
-  WebKdcKeytab conf/webkdc_keytab<br/>
+  WebKdcKeyring conf/webkdc/keyring<br/>
+  WebKdcKeytab conf/webkdc/keytab<br/>
+  WebKdcTokenAcl conf/webkdc/token.acl<br/>
 <br/>
   &lt;VirtualHost _default_:443><br/>
     &lt;Location /webkdc-service><br/>
@@ -101,7 +102,70 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebKdcKeyRing conf/webkdc_keyring
+WebKdcKeyRing conf/webkdc/keyring
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
+<name>WebKdcTokenAcl</name>
+<description>Name of the file containing the token acl
+</description>
+<syntax>WebKdcTokenAcl <em>path</em></syntax>
+<default>(none)</default>
+<contextlist><context>server config</context>
+<context>virtual host</context></contextlist>
+
+<usage>
+<p>
+This is the name of the file containing the ACL that
+controls access to who can request tokens.
+</p>
+
+<p>
+The format of this file is as follows:
+</p>
+
+<code>
+<pre>
+# comments start with a "#"
+# subjects can have wildcards (*) in them
+# each line is either an "id" line, which allows
+# subject to request id tokens, or a "cred" line,
+# which allows the subject to request cred tokens of
+# the specified type, for the specified service.
+{subject} id
+{subject} cred {cred-type} {service}
+</pre>
+</code>
+<p>
+For example:
+</p>
+
+<code>
+<pre>
+
+# allow anyone with a webauth keytab to
+# request id tokens
+krb5:webauth/*@stanford.edu id
+# allow shred to request a service/foobar credential
+# (this is a single line)
+krb5:webauth/shred.stanford.edu@stanford.edu
+    cred krb5 service/foobar@stanford.edu
+
+</pre>
+</code>
+
+<p>If the path
+is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+
+<note><title>Note</title> 
+    <p>This directive must be set.</p>
+</note>
+
+<example><title>Example</title>
+WebKdcTokenAcl conf/webkdc/token.acl
 </example>
 </usage>
 </directivesynopsis>
@@ -130,7 +194,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebKdcKeytab conf/webkdc_keytab
+WebKdcKeytab conf/webkdc/keytab
 </example>
 </usage>
 </directivesynopsis>
