@@ -327,7 +327,7 @@ while (my $q = CGI::Fast->new) {
              || $status == WK_ERR_LOGIN_FAILED
              || !$has_cookies) {
         set_page_error ($q, $status);
-        print_login_page ($q, \%varhash, $req->request_token,
+        print_login_page ($q, \%varhash, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
                       . " displaying login page\n") if $DEBUG;
