@@ -1458,7 +1458,7 @@ auth_checker_hook(request_rec * r)
             lc->ld = NULL;
             signal(SIGPIPE, (void*) old_signal);
         } else {
-            ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, lc->r->server,
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): %s %s (%d)",
                          "can't set SIGPIPE signals to SIG_IGN: ",
                          lc->r->user, strerror(errno), errno);
