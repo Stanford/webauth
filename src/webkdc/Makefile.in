@@ -27,11 +27,11 @@ install:
 	$(INSTALL_SCRIPT) logout.fcgi $$D$(APACHE_ROOT)/webkdc/logout.fcgi
 	$(INSTALL_DATA) WebKDC.pm $$D$(APACHE_ROOT)/webkdc/WebKDC.pm
 	for f in images/*.gif ; do \
-	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/images/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/$$f; \
 	done
 	for f in WebKDC/*.pm ; do \
-	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/WebKDC/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/$$f; \
 	done
 	for f in templates/*.html templates/*.tmpl ; do \
-	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/templates/$$f; \
+	    $(INSTALL_DATA) $$f $$D$(APACHE_ROOT)/webkdc/$$f; \
 	done

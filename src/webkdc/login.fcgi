@@ -265,7 +265,7 @@ while (my $q = new CGI::Fast) {
 		    "administrator";
 	    }
 
-            print STDERR "WebKDC::make_request_token_request failed with $errmsg\n";
+            print STDERR "WebKDC::make_request_token_request failed with $errmsg: $exception\n";
 	    $PAGES{error}->param ('err_webkdc' => 1);
 	    $PAGES{error}->param ('err_msg'=> $errmsg);
 	    print_error_page ($q);
