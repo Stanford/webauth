@@ -2,6 +2,7 @@ File Name                               Description
 -------------------------------------------------------------------------------
 MANIFEST                                This shipping list
 Makefile.in                             The top-level Makefile
+VERSION                                 Version number of Webauth
 configure                               Script to configure Webauth
 configure.ac                            Source file for configure
 doc                                     Webauth documentation (Directory)
