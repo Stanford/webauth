@@ -1,0 +1,47 @@
+#!/usr/pubsw/bin/perl
+
+use strict;
+use warnings;
+
+use lib '../bindings/perl/WebAuth/blib/lib';
+use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
+
+use WebAuth qw(:base64 :const :krb5 :key);
+
+use Dumpvalue;
+
+use WebKDC;
+use WebKDC::XmlUtil;
+use WebKDC::Token;
+use WebKDC::WebRequest;
+use WebKDC::WebResponse;
+
+use Carp;
+use UNIVERSAL qw(isa);
+
+use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
+
+my $xml = <<'XML';
+<getTokensRequest>
+   <requesterCredential type="krb5">
+              {base64-krb5-mk-req-data}
+   </requesterCredential>
+  <tokens>
+    <token type="service" id="0"/>
+  </tokens>
+</getTokensRequest>
+XML
+
+my $doc = WebKDC::XmlUtil::parse_input($xml, 1);
+
+my $dumper = new Dumpvalue;
+$dumper->dumpValue($doc);
+
+print $doc->{'name'}, "\n";
+
+my $child;
+
+foreach $child (@{$doc->{'children'}}) {
+    print "$child\n";
+    print $child->{'name'}, "\n";
+}
