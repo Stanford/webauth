@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use lib '../bindings/perl/WebAuth/blib/lib';
-use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
+use lib '../bindings/perl/WebAuth3/blib/lib';
+use lib '../bindings/perl/WebAuth3/blib/arch/auto/WebAuth3';
 
-use WebAuth qw(:base64 :const :krb5 :key);
+use WebAuth3 qw(:base64 :const :krb5 :key);
 
 use WebKDC;
 use WebKDC::Token;
@@ -26,7 +26,7 @@ our $our_keyring = undef;
 
 sub get_was_keyring {
     if (!defined($our_keyring)) {
-	$our_keyring = WebAuth::keyring_read_file($CONFIG_WAS_KEYRING_PATH);
+	$our_keyring = WebAuth3::keyring_read_file($CONFIG_WAS_KEYRING_PATH);
     }
     return $our_keyring;
 }

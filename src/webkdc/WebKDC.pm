@@ -4,11 +4,11 @@ use strict;
 use warnings;
 use UNIVERSAL qw(isa);
 
-#use blib '../bindings/perl/WebAuth';
+#use blib '../bindings/perl/WebAuth3';
 
 use LWP::UserAgent;
 
-use WebAuth qw(:base64 :krb5 :const);
+use WebAuth3 qw(:base64 :krb5 :const);
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
 use WebKDC::WebKDCException;
@@ -69,7 +69,7 @@ our %pec_mapping = (
 
 sub get_keyring {
     if (!defined($our_keyring)) {
-	$our_keyring = WebAuth::keyring_read_file($C_WEBKDC_KEYRING_PATH);
+	$our_keyring = WebAuth3::keyring_read_file($C_WEBKDC_KEYRING_PATH);
     }
     return $our_keyring;
 }
@@ -160,7 +160,8 @@ sub request_token_request($$) {
     if (!$http_res->is_success) {
 	# FIXME: get more details out of $http_res
 	print STDERR "post failed\n";
-	print STDERR $http_res->content;
+	print STDERR $http_res->as_string."\n";
+	print STDERR $http_res->content."\n";
 	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
 					"post to webkdc failed");
     }
@@ -247,7 +248,7 @@ WebKDC - functions to support the WebKDC
 
 =head1 SYNOPSIS
 
-  use WebAuth;
+  use WebAuth3;
   use WebKDC;
   use WebKDC::WebRequest;
   use WebKDC::WebResponse;
@@ -260,19 +261,19 @@ WebKDC - functions to support the WebKDC
 
   if (WebKDC::WebKDCException:match($@)) {
      # handle WebKDC exceptions
-  } elseif (WebAuth::Exception:match($@)) {
-     # handle WebAuth exceptions
+  } elseif (WebAuth3::Exception:match($@)) {
+     # handle WebAuth3 exceptions
   } elsif ($@) {
      # handle other exceptions
   }
 
 =head1 DESCRIPTION
 
-WebKDC is a set of convenience functions built on top of mod WebAuth
+WebKDC is a set of convenience functions built on top of mod WebAuth3
 to implement the WebKDC.
 
 All functions have the potential to throw either a WebKDC::WebKDCException
-or WebAuth::Exception.
+or WebAuth3::Exception.
 
 =head1 EXPORT
 
@@ -359,6 +360,6 @@ L<WebKDC::WebKDCException>
 L<WebKDC::Token>
 L<WebKDC::WebRequest>
 L<WebKDC::WebRespsonse>
-L<WebAuth>.
+L<WebAuth3>.
 
 =cut

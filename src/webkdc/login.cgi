@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use WebAuth qw(:base64 :const :krb5 :key);
+use WebAuth3 qw(:base64 :const :krb5 :key);
 use WebKDC;
 use WebKDC::WebKDCException;
 

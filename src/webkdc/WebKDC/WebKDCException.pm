@@ -3,7 +3,7 @@ package WebKDC::WebKDCException;
 use strict;
 use warnings;
 
-use WebAuth;
+use WebAuth3;
 
 use UNIVERSAL qw(isa);
 

@@ -3,7 +3,7 @@ package WebKDC::Token;
 use strict;
 use warnings;
 
-use WebAuth qw(:const :hex :token);
+use WebAuth3 qw(:const :hex :token);
 use WebKDC::WebKDCException;
 
 use UNIVERSAL qw(isa);
@@ -155,7 +155,7 @@ package WebKDC::AppToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -249,7 +249,7 @@ package WebKDC::IdToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -337,7 +337,7 @@ package WebKDC::LoginToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -402,7 +402,7 @@ package WebKDC::ProxyToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -487,7 +487,7 @@ package WebKDC::CredToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -572,7 +572,7 @@ package WebKDC::WebKDCProxyToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -663,7 +663,7 @@ package WebKDC::RequestToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -770,7 +770,7 @@ package WebKDC::ErrorToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 use Carp;
 
@@ -837,7 +837,7 @@ package WebKDC::WebKDCServiceToken;
 use strict;
 use warnings;
 
-use WebAuth qw(:const);
+use WebAuth3 qw(:const);
 use WebKDC::Token;
 
 use Carp;
@@ -965,7 +965,7 @@ None
 $binary_token = $token->to_token($key_or_keyring);
 
 Takes a token object and encrypts/encodes it into a binary string.
-WebAuth::base64_encode should be used if the token needs to base64 encoded.
+WebAuth3::base64_encode should be used if the token needs to base64 encoded.
 
 =item to_string()
 
@@ -1141,6 +1141,6 @@ Roland Schemers (schemers@stanford.edu)
 
 =head1 SEE ALSO
 
-L<WebAuth>.
+L<WebAuth3>.
 
 =cut
