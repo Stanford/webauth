@@ -2,14 +2,19 @@
 
 WebAuth 3.1.0 (in progress)
 
- *) Added mod_webauthldap for LDAP directory information lookups via
-    Kerberos v5 GSS-API binds.
+ *) Added a new Apache module mod_webauthldap for LDAP directory
+    information lookups via Kerberos v5 GSS-API binds.  This module
+    provides directory lookup capability like older versions of WebAuth,
+    but against OpenLDAP servers, with Kerberos v5 authentication, and
+    with considerably more flexible support for what attributes to query.
+    See the mod_webauthldap manual for more details.
 
  *) Added WebAuthAuthType directive to help people transistion to
-    mod_webauth.  This directive allows you to specify an additional
-    AuthType name that will be treated the same as WebAuth.  If
-    this directive is set to StanfordAuth, it will also set two
-    extra environment variables: SU_AUTH_USER and SU_AUTH_AGE.
+    mod_webauth from older versions.  This directive allows you to specify
+    an additional AuthType name that will be treated the same as WebAuth.
+    If this directive is set to StanfordAuth, it will also set two extra
+    environment variables:  SU_AUTH_USER and SU_AUTH_AGE (these were set
+    by WebAuth 2.5).
 
  *) Add more backward compatibility support for WebAuth 2.5 by allowing
     the following directives to appear in .htaccess files:
@@ -33,38 +38,40 @@ WebAuth 3.1.0 (in progress)
  *) Allow these directives to present in .htaccess files (they were
     previously only allowed in <Directory>/<Location> directives):
   
-    WebAuthExtraRedirect
-    WebAuthReturnURL
-    WebAuthLoginCanceledURL
-    WebAuthVarPrefix
+        WebAuthExtraRedirect
+        WebAuthReturnURL
+        WebAuthLoginCanceledURL
+        WebAuthVarPrefix
+
+    This is in partial support of backward compatibility.
 
  *) Added WebAuthProxyHeaders directive to pass WebAuth information to
     a proxied server.  See the WebAuth module documentation for more
     information.
 
  *) Add WebAuthWebKdcSSLCertCheck directive to enable/disable checking
-    of the WebKDC SSL certificate. Defaults to "on" and should only
+    of the WebKDC SSL certificate.  Defaults to "on" and should only
     be turned off for debugging/testing purposes.
 
- *) Add new WebAuthDontCache directive which sets r->no_cache. Defaults
-    to 0 (allow documents to be cached).
+ *) Add new WebAuthDontCache directive, which signals a browser not to
+    cache those web pages.  Defaults to 0 (allow documents to be cached).
 
  *) Modify WebAuthKeytab and WebKdcKeytab directives so you can
     optionally specify which principal to use with the specified keytab,
-    instead of using the first principal found.
+    instead of using the first principal found.  This is useful if the
+    keytab contains multiple keys.
 
- *) Remove the service token cache on restarts
+ *) Remove the service token cache on restarts so that a restart will
+    clear up any inconsistencies between the server and the WebKDC.
 
  *) Have the WebKDC re-read the token ACL file if its mtime changes.
 
  *) Added --with-apxs configure option to set the path to apxs
-    independently from the path to the Apache installation.
+    independently from the path to the Apache installation.  This was
+    needed in order to easily build WebAuth on Linux distributions that
+    install Apache following the Linux Filesystem Standard.
 
- *) When scrubbing tokens from r->args and r->parsed_uri.query, look
-    for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
-    query args, the tokens could get parsed as query args.  This
-    caused tokens to show up as query args when we changed from
-    ";WEBAUTHR=" to "?WEBAUTHR=".
+ *) Bug fixed in scrubbing WebAuth tokens from the URL.
 
 WebAuth 3.0.0 (2003-02-18)
 
