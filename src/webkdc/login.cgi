@@ -209,66 +209,10 @@ $req->service_token($service_token_str);
 
 # make the request in an eval to catch errors
 
-eval {
-    WebKDC::request_token_request($req, $resp);
-};
+my($status, $exception) = WebKDC::make_request_token_request($req, $resp);
 
-my $e = $@;
-print STDERR "login.cgi exception ".$@."\n";
-
-if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
-
-    # need to prompt again, also need to limit number of times
-    # we'll prompt
-    # make sure to pass the request/service tokens in hidden fields
-
-    my $lc = $resp->login_canceled_token;
-    my $can_url;
-    if ($lc) {
-	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
-	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
-	    unless !$resp->app_state();
-    }
-
-    login_form($q, $resp, $request_token_str, 
-	       $service_token_str, $can_url,
-	       "<b>login failed! Try again...</b>");
-
-} elsif (WebKDC::WebKDCException::match($e, WK_ERR_USER_AND_PASS_REQUIRED)) {
-
-    # this exception indicates someone requested an id-token
-    # and either didn't have a proxy-token, or it woas expired.
-    # prompt the user for their username/password, making sure
-    # to pass the request/service tokens in hidden fields
-    
-    # also need to check $resp->proxy_cookies() to see if we have
-    # to update any proxy cookies
-
-    my $lc = $resp->login_canceled_token;
-    my $can_url;
-    if ($lc) {
-	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
-	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
-	    unless !$resp->app_state();
-    }
-
-    login_form($q, $resp, $request_token_str, 
-	       $service_token_str, $can_url, '');
-
-} elsif ($e) {
-
-    # something nasty happened
-    # log $@, and display an error to the user that a system problem
-    # has occurred and tell them to try again later
-
-    # also need to check $resp->proxy_cookies() to see if we have
-    # to update any proxy cookies
-    print $q->header(-type => 'text/html');
-    print STDERR "FOOBAR ".$e."\n";
-    print $e."\n";
-    print "oops, login failed, come back later, blah blah blah\n";
-
-} else {
+if ($status == WK_SUCCESS) {
+    # ok, request succesful
 
     # everything went ok
     # $resp->return_url  will have the return_url for a redirect
@@ -291,7 +235,81 @@ if (WebKDC::WebKDCException::match($e, WK_ERR_LOGIN_FAILED)) {
 	print "Click <a href=\"$can_url\">here</a> to return to the ".
 	    "application you came from without logging in.<br>";
     }
+
+} elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED) {
+    # prompt for user/pass
+
+    # this exception indicates someone requested an id-token
+    # and either didn't have a proxy-token, or it woas expired.
+    # prompt the user for their username/password, making sure
+    # to pass the request/service tokens in hidden fields
+    
+    # also need to check $resp->proxy_cookies() to see if we have
+    # to update any proxy cookies
+
+    my $lc = $resp->login_canceled_token;
+    my $can_url;
+    if ($lc) {
+	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
+	    unless !$resp->app_state();
+    }
+
+    login_form($q, $resp, $request_token_str, 
+	       $service_token_str, $can_url, '');
+
+} elsif ($status == WK_ERR_LOGIN_FAILED) {
+    # supplied user/pass was invalid, try again
+    # make sure to pass the request/service tokens in hidden fields
+
+    my $lc = $resp->login_canceled_token;
+    my $can_url;
+    if ($lc) {
+	$can_url = $resp->return_url() . ";WEBAUTHR=$lc;";
+	$can_url .= ";WEBAUTHS=".$resp->app_state().";" 
+	    unless !$resp->app_state();
+    }
+
+    login_form($q, $resp, $request_token_str, 
+	       $service_token_str, $can_url,
+	       "<b>login failed! Try again...</b>");
+
+} else {
+    my $errmsg;
+
+    if ($status == WK_ERR_UNRECOVERABLE_ERROR) {
+	# something nasty happened. display error message and don't
+	# prompt anymore
+	$errmsg = "unrecoverable error occured. try again later.";
+    } elsif ($status == WK_ERR_REQUEST_TOKEN_STALE) {
+	# user took too long to login, original request token is stale
+	$errmsg = "you took too long to login";
+    } elsif ($status == WK_ERR_WEBAUTH_SERVER_ERROR) {
+	# like WK_ERR_UNRECOVERABLE_ERROR, but indicates the error
+	# most likely is due to the webauth server making the request,
+	# so stop, but display a different error messaage.
+	$errmsg = "there is most likely a configuration problem with the ".
+                  "server that redirected you. please contact its ".
+                  "administrator";
+    } else {
+	# treat like WK_ERROR_UNRECOVERABLE ERROR
+	# something nasty happened. display error message and don't
+	# prompt anymore.
+	$errmsg = "unrecoverable error occured. try again later.";
+    }
+
+    # something nasty happened
+    # log $@, and display an error to the user that a system problem
+    # has occurred and tell them to try again later
+
+    # also need to check $resp->proxy_cookies() to see if we have
+    # to update any proxy cookies
+    print $q->header(-type => 'text/html');
+    print STDERR "FOOBAR ".$exception."\n";
+    print $exception."\n";
+    print "oops: $errmsg\n";
 }
+
 
 exit(0);
 

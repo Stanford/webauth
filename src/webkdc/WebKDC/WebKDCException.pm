@@ -16,22 +16,31 @@ BEGIN {
     # set the version for version checking
     $VERSION     = 1.00;
     @ISA         = qw(Exporter);
-    @EXPORT      = qw(WK_ERR_USER_AND_PASS_REQUIRED
+    @EXPORT      = qw(WK_SUCCESS
+		      WK_ERR_USER_AND_PASS_REQUIRED
 		      WK_ERR_LOGIN_FAILED
 		      WK_ERR_UNRECOVERABLE_ERROR
+		      WK_ERR_REQUEST_TOKEN_STALE
+		      WK_ERR_WEBAUTH_SERVER_ERROR
 		      );
     @EXPORT_OK   = ();
 }
 
 our @EXPORT_OK;
 
+sub WK_SUCCESS                         () {0;}
 sub WK_ERR_USER_AND_PASS_REQUIRED      () {1;}
 sub WK_ERR_LOGIN_FAILED                () {2;}
 sub WK_ERR_UNRECOVERABLE_ERROR	       () {3;}
+sub WK_ERR_REQUEST_TOKEN_STALE         () {4;}
+sub WK_ERR_WEBAUTH_SERVER_ERROR        () {5;}
 
-our @ErrorNames = qw(UNUSED USER_AND_PASS_REQUIRED
+our @ErrorNames = qw(SUCCESS
+		     UNUSED USER_AND_PASS_REQUIRED
 		     LOGIN_FAILED
-		     UNRECOVERABLE_ERROR);
+		     UNRECOVERABLE_ERROR
+		     REQUEST_TOKEN_STALE
+		     WEBAUTH_SERVER_ERROR);
 
 sub new {
     my ($type, $status, $mesg, $pec) = @_;
@@ -116,11 +125,20 @@ wrong happens.
 
 The following constants are exported:
 
+  WK_SUCCESS
   WK_ERR_USER_AND_PASS_REQUIRED
   WK_ERR_LOGIN_FAILED
   WK_ERR_UNRECOVERABLE_ERROR
+  WK_ERR_REQUEST_TOKEN_STATLE
+  WK_ERR_WEBAUTH_SERVER_ERROR
 
 =over 4
+
+=item WK_SUCCESS
+
+ This status code never comes back as part of an exception, though
+ it might be returned by a function that uses these status codes
+ as return values.
 
 =item WK_ERR_USER_AND_PASS_REQUIRED
 
@@ -144,6 +162,19 @@ The following constants are exported:
  you are in the process of attempting to log a user in,
  you have no choice but to display an error message to
  the user and not prompt again.
+
+=item WK_ERR_REQUEST_TOKEN_STALE
+
+ This status code indicates the user took too long to login, and the
+ the request token is too old to be used.
+
+=item WK_ERR_WEBAUTH_SERVER_ERROR
+
+ This status code indicates something happened that most likely indicates
+ the webauth server that made the request is mis-configured and/or
+ unauthorized to make the request. It is similar to WK_ERR_UNRECOVERABLE_ERROR
+ except that the error message to the user should indicate that the
+ problem is most likely with the server that redirected them.
 
 =back
 

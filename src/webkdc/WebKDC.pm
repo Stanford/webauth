@@ -46,15 +46,15 @@ our $DEBUG = 1;
 our $our_keyring = undef;
 
 our %pec_mapping = (
-	     &WA_PEC_SERVICE_TOKEN_EXPIRED => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_SERVICE_TOKEN_INVALID => WK_ERR_UNRECOVERABLE_ERROR,
+	     &WA_PEC_SERVICE_TOKEN_EXPIRED => WK_ERR_WEBAUTH_SERVER_ERROR,
+	     &WA_PEC_SERVICE_TOKEN_INVALID => WK_ERR_WEBAUTH_SERVER_ERROR,
 	     &WA_PEC_PROXY_TOKEN_EXPIRED => WK_ERR_USER_AND_PASS_REQUIRED,
 	     &WA_PEC_PROXY_TOKEN_INVALID => WK_ERR_USER_AND_PASS_REQUIRED,
 	     &WA_PEC_INVALID_REQUEST => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_UNAUTHORIZED => WK_ERR_UNRECOVERABLE_ERROR,
+	     &WA_PEC_UNAUTHORIZED => WK_ERR_WEBAUTH_SERVER_ERROR,
 	     &WA_PEC_SERVER_FAILURE => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_REQUEST_TOKEN_STALE => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_REQUEST_TOKEN_INVALID => WK_ERR_UNRECOVERABLE_ERROR,
+	     &WA_PEC_REQUEST_TOKEN_STALE => WK_ERR_REQUEST_TOKEN_STALE,
+	     &WA_PEC_REQUEST_TOKEN_INVALID => WK_ERR_WEBAUTH_SERVER_ERROR,
 	     &WA_PEC_GET_CRED_FAILURE => WK_ERR_UNRECOVERABLE_ERROR,
 	     &WA_PEC_REQUESTER_KRB5_CRED_INVALID => WK_ERR_UNRECOVERABLE_ERROR,
 	     &WA_PEC_LOGIN_TOKEN_STALE  => WK_ERR_USER_AND_PASS_REQUIRED,
@@ -88,7 +88,25 @@ sub get_child_value {
 }
 
 # takes a WebKDC::WebRequest and WebKDC::WebResponse
+sub make_request_token_request($$) {
+    my ($req, $resp) = @_;
+    
+    eval {
+	WebKDC::request_token_request($req, $resp);
+      };
 
+    my $e = $@;
+
+    if (isa($e, "WebKDC::WebKDCException")) {
+	return ($e->status(), $e);
+    } elsif ($e) {
+	return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    } else {
+	return (WebKDC::WK_SUCCESS, undef);
+    }
+}
+
+# takes a WebKDC::WebRequest and WebKDC::WebResponse
 sub request_token_request($$) {
     my ($wreq, $wresp) = @_;
 
@@ -233,7 +251,7 @@ sub request_token_request($$) {
 	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
 					"unknown response from WebKDC: ".
 					$root->name());
-    }    
+    }
 }
 
 END { }       # module clean-up code here (global destructor)
@@ -250,22 +268,12 @@ WebKDC - functions to support the WebKDC
 
   use WebAuth3;
   use WebKDC;
+  use WebKDC::Exception;
   use WebKDC::WebRequest;
   use WebKDC::WebResponse;
 
-  eval {
-    ...
-    WebKDC::request_token_request($req, $resp);
-    ...
-  };
-
-  if (WebKDC::WebKDCException:match($@)) {
-     # handle WebKDC exceptions
-  } elseif (WebAuth3::Exception:match($@)) {
-     # handle WebAuth3 exceptions
-  } elsif ($@) {
-     # handle other exceptions
-  }
+  my ($status, $exception) = 
+         WebKDC::make_request_token_request($req, $resp);
 
 =head1 DESCRIPTION
 
@@ -283,9 +291,9 @@ None
 
 =over 4
 
-=request_token_request(req,resp)
+=make_request_token_request(req,resp)
 
-  WebKDC::request_token_request($req, $resp);
+  ($status, $e) = WebKDC::make_request_token_request($req, $resp);
 
 Used to handle an incoming request token. It should be used in the
 following fashion:
@@ -312,42 +320,31 @@ following fashion:
   $req->request_token($req_token_str);
   $req->service_token($service_token_str);
 
-  eval {
-    WebKDC::request_token_request($req, $resp);
-  };
+  my ($status, $e) = WebKDC::make_request_token_request($req, $resp);
 
-  if (WebKDC::WebKDCException::match($@, WK_ERR_LOGIN_FAILED)) {
-   # need to prompt again, also need to limit number of times
-    # we'll prompt
-    # make sure to pass the request/service tokens in hidden fields
+  # for all these cases, check if $resp->proxy_cookies() has any
+  # proxy cookies we need to update when sending back a page to
+  # the browser
 
-  } elsif (WebKDC::WebKDCException::match($@, WK_ERR_USER_AND_PASS_REQUIRED)) {
-
-    # this exception indicates someone requested an id-token
-    # and either didn't have a proxy-token, or it was expired.
-    # prompt the user for their username/password, making sure
-    # to pass the request/service tokens in hidden fields
-    
-    # also need to check $resp->proxy_cookies() to see if we have
-    # to update any proxy cookies
-
-  } elsif ($@) {
-    
-    # something nasty happened
-    # log $@, and display an error to the user that a system problem
-    # has occurred and tell them to try again later
-
-    # also need to check $resp->proxy_cookies() to see if we have
-    # to update any proxy cookies
-
+  if ($status == WK_SUCCESS) {
+     # ok, request succesful
+  } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED) {
+     # prompt for user/pass
+  } elsif ($status == WK_ERR_LOGIN_FAILED) {
+     # supplied user/pass was invalid, try again
   } else {
-
-    # everything went ok
-    # $resp->return_url  will have the return_url for a redirect/confirm
-
-    # also need to check $resp->proxy_cookies() to see if we have
-    # to update any proxy cookies
-
+    # use this if/elsif/else to pick the error message
+    if ($status == WK_ERR_UNRECOVERABLE_ERROR) {
+       # something nasty happened.
+    } elsif ($status == WK_ERR_REQUEST_TOKEN_STATLE) {
+       # user took too long to login, original request token is stale
+    } elsif ($status == WK_ERR_WEBAUTH_SERVER_ERROR) {
+       # like WK_ERR_UNRECOVERABLE_ERROR, but indicates the error
+       # most likely is due to the webauth server making the request,
+    } else {
+       # treat like WK_ERROR_UNRECOVERABLE ERROR
+    }
+    # display the error message and don't prompt anymore
   }
 
 =head1 AUTHOR
