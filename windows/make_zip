@@ -9,7 +9,6 @@
  rm webauth-3.2.0.zip
 
  zip webauth-3.2.0.zip \
-	bin/sasl.reg \
 	bin/gssapi32.dll \
 	bin/saslGSSAPI.dll \
 	bin/libsasl.dll \
@@ -25,3 +24,6 @@
 	conf/stanford-webauth.conf \
 	conf/stanford-ldap.conf \
 	conf/webauth/ca-bundle.crt
+	conf/webauth/sasl.reg \
+	conf/webauth/INSTALL.txt
+

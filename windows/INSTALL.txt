@@ -31,7 +31,6 @@ NOTE: There is currently an Apache bug under Windows where
 
         file                             origin of file
         ------------------               ------------------
- 	bin/sasl.reg                     WebAuth
 	bin/saslGSSAPI.dll               Cyrus SASL
 	bin/libsasl.dll                  Cyrus SASL
 	bin/krb5.ini                     MIT K5 (Stanford krb5.conf)
@@ -47,7 +46,8 @@ NOTE: There is currently an Apache bug under Windows where
 	conf/stanford-webauth.conf       WebAuth
 	conf/stanford-ldap.conf          WebAuth
 	conf/webauth/ca-bundle.crt       cURL
-
+ 	conf/webauth/sasl.reg            WebAuth
+ 	conf/webauth/INSTALL.txt         WebAuth
 
     Note that stanford-webauth.conf is the standard stanford-webauth.conf
     file distributed with WebAuth with the following extra line added
@@ -83,13 +83,13 @@ NOTE: There is currently an Apache bug under Windows where
 
     b. from the command line:
 
-      cd "C:\Program Files\Apache Group\Apache2\bin"
+      cd "C:\Program Files\Apache Group\Apache2\conf\webauth"
       regedit /s sasl.reg
 
 
     c. from a file explorer window:
 
-       navigate to "C:\Program Files\Apache Group\Apache2\bin"
+       navigate to "C:\Program Files\Apache Group\Apache2\conf\webauth"
        double-click on sasl.reg
 
  3. edit/update Apache conf files

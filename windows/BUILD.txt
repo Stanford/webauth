@@ -261,11 +261,11 @@ VC6 also allowed us to use our modules with the Apache Group binaries.
        {APACHE}/modules/mod_webauth.so
 {WEBAUTH_PATH}/src/modules/webauthldap/release-dll/mod_webauthldap.dll \
        {APACHE}/modules/mod_webauthldap.so
-{WEBAUTH_PATH}/windows/sasl.reg {APACHE}/bin/
 {WEBAUTH_PATH}/webauth3/windows/krb5.ini {APACHE}/bin/
 {WEBAUTH_PATH}/windows/stanford-webauth.conf {APACHE}/conf/
 {WEBAUTH_PATH}/conf/stanford-ldap.conf {APACHE}/conf/
-
+{WEBAUTH_PATH}/windows/sasl.reg {APACHE}/conf/webauth/
+{WEBAUTH_PATH}/windows/INSTALL.txt {APACHE}/conf/webauth/
 
 ----------------------------------------------------------------------
 CYRUS SASL PATCH TO BUILD saslGSSAPI.dll plugin
