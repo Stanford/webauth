@@ -147,7 +147,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
 
     currt = htonl((uint32_t)time(NULL));
 
-    /* XXX: hint might need to optionally be passed in
+    /* FIXME: hint might need to optionally be passed in
        if we need to propagate it */
 
     /* copy in current time */
@@ -175,7 +175,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
     n += plen;
 
     /* calculate hmac over data+padding, using nonce as key
-       XXX: change hmac key to something better. might want
+       FIXME: change hmac key to something better. might want
        to always carry around a an AES_KEY and an HMAC key, */
 
     /* HMAC doesn't return an errors */
@@ -209,7 +209,7 @@ int webauth_token_create(const WEBAUTH_ATTR *attrs,
  * returns number of attrs in the resulting token
  * or an error
  *
- * XXX: need to deal with key versions. We'll probably
+ * FIXME: need to deal with key versions. We'll probably
  * want to change WEBUTH_AES_KEY to WEBAUTH_KEY_RING,
  * and let webauth_toke_parse pick the best key from the key ring
  */
@@ -232,7 +232,7 @@ int webauth_token_parse(unsigned char *input,
     assert (key != NULL);
 
     /*
-     * XXX: should put an ASSERT here to check input_len is
+     * FIXME: should put an ASSERT here to check input_len is
      * at least as big as the smallest possible packet 
      */
 
@@ -259,7 +259,7 @@ int webauth_token_parse(unsigned char *input,
     /* we now need to compute HMAC to see if decryption succeeded */
 
     /* calculate hmac over data+padding, using nonce as key */
-    /* XXX: change hmac key to something better */
+    /* FIXME: change hmac key to something better */
     /* hamc doesn't return anything */
     HMAC(EVP_sha1(),
          (void*)input+T_NONCE_O, T_NONCE_S,  /* key, len */

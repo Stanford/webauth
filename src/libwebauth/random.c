@@ -5,7 +5,7 @@
 int webauth_random_bytes(unsigned char *output, int num_bytes)
 {
     int s;
-    /* XXX: leave as assert for now, later, need to handle
+    /* FIXME: leave as assert for now, later, need to handle
        case where rand initialization fails. Also have abort
        in case assert is not compiled in */
     s = RAND_status();
@@ -20,7 +20,7 @@ int webauth_random_bytes(unsigned char *output, int num_bytes)
 int webauth_random_key(unsigned char *key, int key_len)
 {
     int s;
-    /* XXX: leave as assert for now, later, need to handle
+    /* FIXME: leave as assert for now, later, need to handle
        case where rand initialization fails. Also have abort
        in case assert is not compiled in */
     s = RAND_status();

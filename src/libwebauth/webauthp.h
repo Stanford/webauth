@@ -22,7 +22,6 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
-/* XXX: autoconf */
 #include <assert.h>
 
 #include "webauth.h"

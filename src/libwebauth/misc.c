@@ -1,6 +1,5 @@
 #include "webauthp.h"
 
-/* XXX: autoconf */
 #include <ctype.h>
 
 static char hex[] = "0123456789abcdef";
