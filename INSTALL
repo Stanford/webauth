@@ -13,6 +13,9 @@ site, see doc/install-webkdc.
      also requires MIT Kerberos v5, cURL, and OpenSSL 0.9.7 or later (for
      AES support).  See README for more version dependencies.
 
+     In order to build the LDAP module, Cyrus SASL 2.x and OpenLDAP are
+     also required.
+
      Note that all of these packages should be installed on local disk.
      We do not recommend using libraries installed on shared file systems
      such as AFS, since the reliability of your web server will then be
@@ -47,13 +50,14 @@ site, see doc/install-webkdc.
 
          ./configure --with-apache=/usr/local/apache2 \
              --with-krb5=/usr/local --with-openssl=/usr/local \
-             --with-curl=/usr/local
+             --with-curl=/usr/local --with-ldap=/usr/local
 
      Adjust the paths to match where you have installed those packages.
-     You can omit --with-krb5, --with-openssl, and --with-curl if the
-     packages are installed in locations automatically searched by your
-     compiler (which will be the case if you're using Linux and the
-     packages that come with your Linux distribution).
+     You can omit --with-krb5, --with-openssl, --with-curl, and
+     --with-ldap if the packages are installed in locations automatically
+     searched by your compiler and linker (which will be the case if
+     you're using Linux and the packages that come with your Linux
+     distribution).
 
      You can omit --with-apache if the right version of apxs is in your
      path; otherwise, apxs should be in a bin subdirectory of the path
@@ -203,8 +207,8 @@ site, see doc/install-webkdc.
          require valid-user
 
      to the <Directory> block for the portion of your web site that you
-     wish to protect.  In a future WebAuth release, you will be able to
-     additionally restrict access by privilege group.
+     wish to protect.  (To restrict access by privilege group, see the
+     instructions below on setting up the LDAP module.)
 
 10.  You can now test WebAuth if you wish (and if this is the first time
      that you've set up WebAuth, it's recommended).  WebAuth comes with a
@@ -257,9 +261,63 @@ site, see doc/install-webkdc.
      Documentation on how to walk through all of the tests can be found
      in doc/test-plan.
 
-14.  Congratulations!  You have a working WebAuth server.  You can now add
+14.  If you want to have your WebAuth server do LDAP directory queries,
+     either to put directory information into environment variables or to
+     use LDAP-based privilege groups for access control, you need to
+     configure the mod_webauthldap module.  Stanford users should simply
+     copy conf/stanford-ldap.conf to their Apache 2.0 conf directory and
+     then add the line:
+
+         Include conf/stanford-ldap.conf
+
+     to their httpd.conf file.  Stanford users will also need to submit a
+     HelpSU ticket to be added to the ACLs on the directory servers.
+
+     For users at other sites, the basic set of directives are:
+
+         LoadModule webauthldap_module modules/mod_webauthldap.so
+
+         WebAuthLdapHost ldap.example.com
+         WebAuthLdapBase dc=example,dc=com
+         WebAuthLdapAuthorizationAttribute privilegegroup
+
+         WebAuthLdapKeytab conf/webauth/keytab
+         WebAuthLdapTktCache conf/webauth/krb5cc_ldap
+
+     The first three settings will vary considerably given the name and
+     configuration of your local LDAP server.  For more information on
+     what these attributes do, see the mod_webauthldap manual.  Please
+     note that the WebAuth LDAP module only supports Kerberos v5 GSS-API
+     binds at this time.
+
+15.  At this point, LDAP lookups are available to your web server.  This
+     can now be configured.  To restrict access to a given set of pages by
+     membership in a privilege group, add the lines:
+
+         AuthType WebAuth
+         require privgroup example:staff
+
+     to the <Directory> or <Location> block for the portion of your web
+     site that you wish to protect.  example:staff is whatever privilege
+     group you want to use.
+
+     To put various directory attributes related to the current
+     authenticated user into the environment, additionally add lines like:
+
+         WebAuthLdapAttribute displayName
+         WebAuthLdapAttribute mail
+
+     to the <Directory> or <Location> block.  The attributes can be any
+     attributes your server has access to read, and the corresponding
+     values from your LDAP server will be put into environment variables
+     of the form WEBAUTH_LDAP_<attribute>, or in this case into the
+     variables WEBAUTH_LDAP_DISPLAYNAME and WEBAUTH_LDAP_MAIL.
+
+16.  Congratulations!  You have a working WebAuth server.  You can now add
      AuthType WebAuth and require valid-user (or require lines for
      particular users, or for groups containing user identities as
      returned by WebAuth) to protect the content served by your web
      server, and make use of the REMOTE_USER or WEBAUTH_USER environment
-     variables in your CGI scripts.
+     variables in your CGI scripts.  You can also use require privgroup
+     directives and request directory attributes if you have configured
+     the LDAP module as well.
