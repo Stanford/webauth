@@ -75,10 +75,6 @@
 #define CD_InactiveExpire "WebAuthInactiveExpire"
 #define CM_InactiveExpire "duration of inactivity before an app-token expires"
 
-#define CD_HardExpire "WebAuthHardExpire"
-#define CM_HardExpire "tokens older then this (or their expiration time) "\
-                      "will be treated as expired"
-
 #define CD_ForceLogin "WebAuthForceLogin"
 #define CM_ForceLogin "having no valid app-token forces a "\
                       "username/password prompt"
@@ -111,7 +107,6 @@ enum {
     E_TokenMaxTTL,
     E_SubjectAuthType,
     E_InactiveExpire,
-    E_HardExpire,
     E_ForceLogin,
     E_ReturnURL
 };
@@ -146,7 +141,6 @@ typedef struct {
     int app_token_lifetime;
     char *subject_auth_type;
     int inactive_expire;
-    int hard_expire;
     int force_login;
     char *return_url;
 } MWA_DCONF;

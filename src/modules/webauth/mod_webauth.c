@@ -320,7 +320,6 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_INT(app_token_lifetime);
     MERGE_PTR(subject_auth_type);
     MERGE_INT(inactive_expire);
-    MERGE_INT(hard_expire);
     MERGE_INT(force_login);
     MERGE_PTR(return_url);
     return (void *)conf;
@@ -562,6 +561,10 @@ make_app_token(char *subject,
         return;
     }
 
+    if (dconf->app_token_lifetime) {
+        expiration_time = curr+dconf->app_token_lifetime;
+    }
+
     webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0);
     webauth_attr_list_add_str(alist, WA_TK_SUBJECT, subject, 0);
     webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
@@ -569,7 +572,7 @@ make_app_token(char *subject,
 
     webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr);
     
-    /* FIXME: handle it/lt app_token_lifetime, inactive/hard_expire/etc */
+    /* FIXME: handle it/lt app_token_lifetime, inactive/etc */
 
     tlen = webauth_token_encoded_length(alist);
     token = (char*)apr_palloc(r->pool, tlen);
@@ -1099,9 +1102,6 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
             case E_InactiveExpire:
                 dconf->inactive_expire = val*60; /* convert from minutes */
                 break;
-            case E_HardExpire:
-                dconf->hard_expire = val*60; /* convert from minutes */
-                break;
             default:
                 error_str = 
                     apr_psprintf(cmd->pool,
@@ -1150,7 +1150,6 @@ static const command_rec cmds[] = {
     DINT(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
     DSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
     DINT(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
-    DINT(CD_HardExpire, E_HardExpire, CM_HardExpire),
     DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
 
