@@ -3,7 +3,6 @@
 #Global Variables
 $DEBUG = 0;
 $LOGGING = 1;
-$ENV{HTML_TEMPLATE_ROOT} = 'templates';
 %PAGES = ('login'    => 'login.tmpl',
           'confirm'   => 'confirm.tmpl',
           'error'    => 'error.tmpl');
@@ -13,6 +12,7 @@ use warnings;
 use vars qw(%PAGES  $DEBUG $LOGGING  $TEST_COOKIE);
 use WebAuth3 qw(:base64 :const :krb5 :key);
 use WebKDC;
+use WebKDC::Config;
 use WebKDC::WebKDCException;
 use CGI qw/:standard/;
 use Dumpvalue;
@@ -192,7 +192,10 @@ sub get_login_cancel_url {
 ## Main
 #################################################################################
 
-%PAGES = map { $_ => HTML::Template->new (filename => $PAGES{$_},cache => 1) } (keys %PAGES) ;
+%PAGES = map {
+    $_ => HTML::Template->new (filename => $PAGES{$_}, cache => 1,
+                               path => $WebKDC::Config::TEMPLATE_PATH)
+} (keys %PAGES) ;
 
 while (my $q = new CGI::Fast) {
     my %varhash = map { $_ => $q->param ($_) } $q->param;
