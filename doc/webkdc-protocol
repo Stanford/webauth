@@ -1,0 +1,52 @@
+Overview 
+
+	This document discusses the protocol used by the webkdc 
+link of the Stanford webauthv3 authentication system. The purpose
+of this part of the webauthv3 system is to obtain long lived
+user credentials that can be used by the rest of the system 
+to obtain short term credentials for a specific service. 
+
+	The protocol consists of an exchange of xml formatted 
+messages over a secure tcp based connection. The format of the xml
+messages is independent of the underlying transport. The transport
+should only provide data-integrity and privacy. The xml messages
+must contain all the needed authentication data. 
+
+	A protocol interaction consists of a single xml message
+from the client and a single xml message response from the server.
+It should be possible for multiple messages to be processed over
+a single underlying transport connection. 
+
+	The message formats will be defined using the W3C Xschema
+definition language, but the exact methods of parsing of the xml 
+is left to the implementation.  
+
+Message Types: 
+
+Initial Client messages: 
+
+	Type 1 Username/Password
+
+	Type 2 Proxy tgt service request
+
+Server Responses: 
+
+	Error message
+
+	Type1 response
+
+	Type2 response
+
+WebKDC Internal messages: 
+
+	Add this key to keyring
+
+	Give me your current working set of keys
+
+	Added key ring response
+
+	Working set of keys response
+
+
+
+
