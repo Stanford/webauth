@@ -80,6 +80,7 @@
 
 #define CD_SubjectAuthType "WebAuthSubectAuthType"
 #define CM_SubjectAuthType "type of subject authenticator returned in id-token"
+#define DF_SubjectAuthType "krb5"
 
 #define CD_InactiveExpire "WebAuthInactiveExpire"
 #define CM_InactiveExpire "duration of inactivity before an app-token expires"
@@ -129,6 +130,8 @@ typedef struct {
     time_t expires;
     unsigned char *token;
     time_t last_renewal_attempt; /* timed we last tried to renew */
+    void *app_state; /* used as "as" attribute in request tokens */
+    int app_state_len;
 } MWA_SERVICE_TOKEN;
 
 
@@ -143,6 +146,8 @@ typedef struct {
     char *st_cache_path;
     char *var_prefix;
     int  debug;
+    char *subject_auth_type;
+    int subject_auth_type_ex; /* if it was explicitly specified in conf file */
     int secure_cookie;
     int secure_cookie_ex; /* if it was explicitly specified in conf file */
     int token_max_ttl; 
@@ -152,7 +157,6 @@ typedef struct {
 /* directory conf stuff */
 typedef struct {
     int app_token_lifetime;
-    char *subject_auth_type;
     int inactive_expire;
     int force_login;
     char *return_url;

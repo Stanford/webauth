@@ -16,7 +16,7 @@ new_service_token(apr_pool_t *pool,
 {
     MWA_SERVICE_TOKEN *token;
 
-    token = (MWA_SERVICE_TOKEN*) apr_palloc(pool, sizeof(MWA_SERVICE_TOKEN));
+    token = (MWA_SERVICE_TOKEN*) apr_pcalloc(pool, sizeof(MWA_SERVICE_TOKEN));
     token->expires = expires;
 
     token->token = apr_pstrmemdup(pool, tdata, td_len);
@@ -24,16 +24,16 @@ new_service_token(apr_pool_t *pool,
     token->last_renewal_attempt = last_renewal_attempt;
     token->key.type = key_type;
 
-    token->key.data = (unsigned char *) 
-        apr_palloc(pool, apr_base64_decode_len(kdata));
-    token->key.length = apr_base64_decode(token->key.data, kdata);
+    token->key.data = apr_pstrmemdup(pool, kdata, kd_len);
+    token->key.length = kd_len;
+
     /* FIXME: should validate key.length */
     return token;
 }
 
 
 static MWA_SERVICE_TOKEN *
-read_service_token_cache(apr_pool_t *st_pool, MWA_REQ_CTXT *rc)
+read_service_token_cache(MWA_REQ_CTXT *rc)
 {
     MWA_SERVICE_TOKEN *token;
     apr_file_t *cache;
@@ -129,8 +129,9 @@ read_service_token_cache(apr_pool_t *st_pool, MWA_REQ_CTXT *rc)
         return NULL;
     }
 
-    /* be careful to alloc all memory for token from "st_pool" */
-    token = new_service_token(st_pool, key_type, key, klen, tok, tlen, expires,
+    /* be careful to alloc all memory for token from process pool */
+    token = new_service_token(rc->r->server->process->pool,
+                              key_type, key, klen, tok, tlen, expires,
                               lra);
     webauth_attr_list_free(alist);
     return token;
@@ -363,11 +364,12 @@ log_error_response(apr_xml_elem *e,
  */
 static MWA_SERVICE_TOKEN *
 parse_service_token_response(apr_xml_doc *xd,
-                             apr_pool_t *st_pool,
                              MWA_REQ_CTXT *rc)
 {
     MWA_SERVICE_TOKEN *st;
     apr_xml_elem *e, *sib;
+    int bskey_len;
+    char *bskey;
     static const char *mwa_func = "parse_service_token_response";
     const char *expires, *session_key, *token_data;
     
@@ -428,10 +430,13 @@ parse_service_token_response(apr_xml_doc *xd,
         return NULL;
     }
 
-    st = new_service_token(st_pool, 
+    bskey = (char*)apr_palloc(rc->r->pool, apr_base64_decode_len(session_key));
+    bskey_len = apr_base64_decode(bskey, session_key);
+
+    st = new_service_token(rc->r->server->process->pool,
                            WA_AES_KEY, /* FIXME: hardcoded for now */
-                           session_key,
-                           strlen(session_key),
+                           bskey,
+                           bskey_len,
                            token_data,
                            strlen(token_data),
                            atoi(expires),
@@ -443,7 +448,7 @@ parse_service_token_response(apr_xml_doc *xd,
  * request a service token from the WebKDC
  */
 static MWA_SERVICE_TOKEN *
-request_service_token(apr_pool_t *st_pool, MWA_REQ_CTXT *rc)
+request_service_token(MWA_REQ_CTXT *rc)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     apr_xml_parser *xp;
@@ -530,9 +535,54 @@ request_service_token(apr_pool_t *st_pool, MWA_REQ_CTXT *rc)
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                  "mod_webauth: xml doc root(%s)", xd->root->name);
 
-    return parse_service_token_response(xd, st_pool, rc);
+    return parse_service_token_response(xd, rc);
 }
 
+/*
+ * generate our app-state blob once and re-use it
+ */
+static void
+get_app_state(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *token, time_t curr)
+{
+   WEBAUTH_ATTR_LIST *alist;
+   int tlen, olen, status;
+   void *as;
+
+   token->app_state = NULL;
+   token->app_state_len = 0;   
+
+   alist = webauth_attr_list_new(10);
+   if (alist == NULL) {
+       ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                    "mod_webauth: get_app_state: "
+                    "webauth_attr_list_new failed");
+       return;
+   }
+   webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
+                             WA_F_NONE);
+   webauth_attr_list_add(alist, WA_TK_SESSION_KEY, 
+                         token->key.data, token->key.length, WA_F_NONE);
+   webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
+                              token->expires, WA_F_NONE);
+
+   tlen = webauth_token_encoded_length(alist);
+
+   as = (char*)apr_palloc(rc->r->server->process->pool, tlen);
+
+   status = webauth_token_create(alist, curr,
+                                 (unsigned char*)as, &olen, tlen, mwa_g_ring);
+    webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE) {
+        mwa_log_webauth_error(rc->r, status, NULL,
+                              "get_app_state",
+                              "webauth_token_create");
+    } else {
+        token->app_state = as;
+        token->app_state_len = tlen;
+    }
+    return;
+}
 
 /*
  * this function returns a service-token to ues.
@@ -550,28 +600,33 @@ mwa_get_service_token(MWA_REQ_CTXT *rc)
 {
     apr_status_t astatus;
     MWA_SERVICE_TOKEN *token;
-
+    time_t curr = time(NULL); /* rc->r->request_time didn't seem reliable */
     /* FIXME: LOCKING OF GLOBAL VARIABLE */
 
     /* FIXME: 3600 MAGIC! */
     if (mwa_g_service_token != NULL && 
-        (mwa_g_service_token->expires-3600 > rc->r->request_time)) {
+        (mwa_g_service_token->expires-3600 > curr)) {
         return mwa_g_service_token;
     }
 
     /* check file to see if there is a newer token */
-    token = read_service_token_cache(rc->r->server->process->pool, rc);
+    token = read_service_token_cache(rc);
 
     if (token != NULL) {
         mwa_g_service_token = token;
-        return mwa_g_service_token;
+        get_app_state(rc, token, curr);
+        return token;
     }
 
-    token = request_service_token(rc->r->server->process->pool, rc);
+    token = request_service_token(rc);
 
     if (token != NULL) {
         write_service_token_cache(rc, token);
+        get_app_state(rc, token, curr);
         mwa_g_service_token = token;
+    } else {
+       ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                    "mod_webauth: mwa_get_service_token failed!");
     }
     return token;
 }

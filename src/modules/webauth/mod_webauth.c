@@ -46,6 +46,20 @@ WEBAUTH_KEYRING *mwa_g_ring;
 MWA_SERVICE_TOKEN *mwa_g_service_token;
 
 
+/*
+ * remove a string from the end of another string
+ */
+static void
+strip_end(char *c, char *t)
+{
+    char *p;
+    if (c != NULL) {
+        p = ap_strstr(c, t);
+        if (p != NULL)
+            *p = '\0';
+    }
+}
+
 static int 
 die(const char *message, server_rec *s)
 {
@@ -136,7 +150,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     /* init defaults */
     sconf->secure_cookie = DF_SecureCookie;
     sconf->token_max_ttl = DF_TokenMaxTTL;
-
+    sconf->subject_auth_type = DF_SubjectAuthType;
     return (void *)sconf;
 }
 
@@ -145,7 +159,8 @@ config_dir_create(apr_pool_t *p, char *path)
 {
     MWA_DCONF *dconf;
     dconf = (MWA_DCONF*)apr_pcalloc(p, sizeof(MWA_DCONF));
-    /* no defaults */
+    /* init defaults */
+
     return (void *)dconf;
 }
 
@@ -174,6 +189,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     conf->token_max_ttl = oconf->token_max_ttl_ex ?
         oconf->token_max_ttl : bconf->token_max_ttl;
 
+    conf->subject_auth_type = oconf->subject_auth_type_ex ?
+        oconf->subject_auth_type : bconf->subject_auth_type;
+
     MERGE_PTR(webkdc_url);
     MERGE_PTR(webkdc_principal);
     MERGE_PTR(login_url);
@@ -196,7 +214,6 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     oconf = (MWA_DCONF*) overv;
 
     MERGE_INT(app_token_lifetime);
-    MERGE_PTR(subject_auth_type);
     MERGE_INT(inactive_expire);
     MERGE_INT(force_login);
     MERGE_PTR(return_url);
@@ -614,6 +631,134 @@ check_url(MWA_REQ_CTXT *rc)
     return subject;
 }
 
+static char *
+make_return_url(MWA_REQ_CTXT *rc)
+{
+    char port[32];
+    const char *scheme;
+    const char *uri = rc->r->unparsed_uri;
+
+    /* use explicit return_url if there is one */
+    if (rc->dconf->return_url) {
+        if (rc->dconf->return_url[0] != '/')
+            return rc->dconf->return_url;
+        else 
+            uri = rc->dconf->return_url;
+    }
+
+    scheme = ap_run_http_method(rc->r);
+
+    if (ap_is_default_port(rc->r->server->port, rc->r)) {
+        port[0] = '\0';
+    } else {
+        sprintf(port, ":%d", rc->r->server->port);
+    }
+
+    return apr_pstrcat(rc->r->pool,
+                       scheme, "://",
+                       rc->r->server->server_hostname, 
+                       port, 
+                       uri,
+                       NULL);
+}
+
+static int
+redirect_request_token(MWA_REQ_CTXT *rc)
+{
+    MWA_SERVICE_TOKEN *st;
+    WEBAUTH_ATTR_LIST *alist;
+    char *redirect_url, *return_url;
+    unsigned char *token, *btoken;
+    int tlen, olen, status;
+    time_t curr = time(NULL);
+
+    st = mwa_get_service_token(rc);
+    if (st == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: redirect_request_token: "
+                     "no service token, denying request");
+        return HTTP_UNAUTHORIZED;
+    }
+
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: redirect_request_token: "
+                     "webauth_attr_list_new failed");
+        return HTTP_UNAUTHORIZED;
+    }
+
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_REQUEST, 0, 
+                              WA_F_NONE);
+
+    webauth_attr_list_add_time(alist, WA_TK_CREATION_TIME, curr, WA_F_NONE);
+
+    if (st->app_state != NULL) {
+        webauth_attr_list_add(alist, WA_TK_APP_STATE, 
+                              st->app_state, st->app_state_len,
+                              WA_F_NONE);
+    }
+
+    /* FIXME: hardcoded for now */
+    webauth_attr_list_add_str(alist, WA_TK_REQUEST_REASON,
+                              "na", 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_REQUESTED_TOKEN_TYPE, 
+                              WA_TT_ID, 0, WA_F_NONE);
+
+    webauth_attr_list_add_str(alist, WA_TK_SUBJECT_AUTH,
+                              rc->sconf->subject_auth_type, 0, WA_F_NONE);
+
+    return_url = make_return_url(rc);
+
+    /* never let return URL have  ;WEBAUTHR=...;;WEBUTHS=...; on the
+       end of it, that could get ugly... */
+    strip_end(return_url, WEBAUTHR_MAGIC);
+
+    webauth_attr_list_add_str(alist, WA_TK_RETURN_URL, return_url,
+                              0, WA_F_NONE);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: redirect_requst_token: return_url(%s)",
+                 return_url);
+
+    tlen = webauth_token_encoded_length(alist);
+    token = (char*)apr_palloc(rc->r->pool, tlen);
+
+    status = webauth_token_create_with_key(alist, curr,
+                                           token, &olen, tlen, &st->key);
+
+    webauth_attr_list_free(alist);
+
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: redirect_request_token: "
+                     "type(%d) length(%d)", st->key.type, st->key.length);
+
+
+        mwa_log_webauth_error(rc->r, status, NULL, "redirect_request_token",
+                              "webauth_token_create_with_key");
+        return HTTP_UNAUTHORIZED;
+    }
+
+    btoken = (char*) apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
+    apr_base64_encode(btoken, token, olen);
+
+    redirect_url = apr_pstrcat(rc->r->pool,
+                               rc->sconf->login_url,
+                               "?RT=", btoken,
+                               ";ST=", st->token,
+                               NULL);
+    
+    apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                               
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: redirect_requst_token: redirect(%s)",
+                 redirect_url);
+
+    return HTTP_MOVED_TEMPORARILY;
+}
+
 static int 
 check_user_id_hook(request_rec *r)
 {
@@ -668,39 +813,16 @@ check_user_id_hook(request_rec *r)
         r->ap_auth_type = (char*)at;
         return OK;
     } else {
-        /* we would normally redirect at this point */
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webauth: check_user_id_hook: no valid user found");
-        return HTTP_UNAUTHORIZED;
+        /* FIXME: don't redirect for anything but a GET request */
+        return redirect_request_token(&rc);
     }
 
-    /* FIXME: would normally return DECLINED at this point */
-    /* FIXME: hack test for redirect handling */
-    if ((r->args != NULL) && (*(r->args) == 'Z')) {
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                 "mod_webauth: set Location, returning redirect...");
-    apr_table_setn(r->err_headers_out, "Location", rc.sconf->login_url);
-        return HTTP_MOVED_TEMPORARILY;
-    } else {
-        return OK;
-    }
 }
 
 static int 
 auth_checker_hook(request_rec *r)
 {
     return DECLINED;
-}
-
-static void
-strip_end(char *c, char *t)
-{
-    char *p;
-    if (c != NULL) {
-        p = ap_strstr(c, t);
-        if (p != NULL)
-            *p = '\0';
-    }
 }
 
 /*
@@ -842,6 +964,7 @@ fixups_hook(request_rec *r)
             name = ENV_WEBAUTH_USER;
         }
         apr_table_setn(r->subprocess_env, name, subject);
+        /*
         {
             MWA_SERVICE_TOKEN *st = mwa_get_service_token(&rc);
             if (st != NULL) {
@@ -849,6 +972,7 @@ fixups_hook(request_rec *r)
                              "mod_webauth: st->expires(%d)", st->expires);
             }
         }
+        */
     }
     return DECLINED;
 }
@@ -890,9 +1014,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_VarPrefix:
             sconf->var_prefix = apr_pstrdup(cmd->pool, arg);
             break;
-            /* start of dconfigs */
         case E_SubjectAuthType:
-            dconf->subject_auth_type = apr_pstrdup(cmd->pool, arg);
+            sconf->subject_auth_type = apr_pstrdup(cmd->pool, arg);
+            sconf->subject_auth_type_ex = 1;
             break;
         case E_ReturnURL:
             dconf->return_url = apr_pstrdup(cmd->pool, arg);
@@ -1014,13 +1138,12 @@ static const command_rec cmds[] = {
     SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
     SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
+    SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_SecureCookie, E_SecureCookie, CM_SecureCookie),
     SINT(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
-
     /* directory */
     DINT(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
-    DSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
     DINT(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
     DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
