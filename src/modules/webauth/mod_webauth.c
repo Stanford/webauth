@@ -37,38 +37,78 @@
 **    The sample page from mod_webauth.c
 */ 
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_log.h"
-#include "http_protocol.h"
-#include "ap_config.h"
-#include "apr.h"
-#include "apr_lib.h"
-#include "apr_strings.h"
+#include "mod_webauth.h"
 
-module webauth_module;
+/*
+ *
+ */
+static void log_request(request_rec *r, const char *msg)
+{
 
-typedef struct {
-    char *webkdc_url;
-    char *login_url;
-    char *failure_url;
-    char *keyring_path;
-    char *keytab_path;
-    char *st_cache_path;
-    char *var_prefix;
-    int  debug;
-} WEBAUTH_SCONF;
+#define LOG_S(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
+              "mod_webauth: %s(%s)", a, (b != NULL)? b:"(null)");
+#define LOG_D(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
+              "mod_webauth: %s(%d)", a, b);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: -------------- %s ------------------", msg);
+
+    LOG_S("ap_auth_type", ap_auth_type(r));
+    LOG_S("the_request", r->the_request);
+    LOG_S("unparsed_uri", r->unparsed_uri);
+    LOG_S("uri", r->uri);
+    LOG_S("filename", r->filename);
+    LOG_S("canonical_filename", r->canonical_filename);
+    LOG_S("path_info", r->path_info);
+    LOG_S("args", r->args);
+    LOG_D("rpu->is_initialized", r->parsed_uri.is_initialized);
+    LOG_S("rpu->query", r->parsed_uri.query);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: -------------- %s ------------------", msg);
+
+#undef LOG_S
+#undef LOG_D
+}
+
+static int 
+webauth_die(const char *message)
+{
+    fprintf(stderr, "mod_webauth: fatal error: %s", message);
+    exit(1);
+}
+
+/*
+ * called after config has been loaded in parent process
+ */
+static int
+post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
+                 apr_pool_t *ptemp, server_rec *s)
+{
+    WEBAUTH_SCONF *sconf;
+
+    sconf = (WEBAUTH_SCONF*)ap_get_module_config(s->module_config,
+                                                 &webauth_module);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: post_config_hook");
 
 
-typedef struct {
-    int app_token_lifetime;
-    int token_max_ttl;
-    char *subject_auth_type;
-    int inactive_expire;
-    int hard_expire;
-    int force_login;
-    char *return_url;
-} WEBAUTH_DCONF;
+    return OK;
+}
+
+/*
+ * called once per-child
+ */
+static void
+child_init_hook(apr_pool_t *p, server_rec *s)
+{
+    WEBAUTH_SCONF *sconf;
+
+    sconf = (WEBAUTH_SCONF*)ap_get_module_config(s->module_config,
+                                                 &webauth_module);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s, "mod_webauth: child_init_hook");
+}
 
 /*
 **
@@ -76,7 +116,8 @@ typedef struct {
 **
 */
 
-static void *config_server_create(apr_pool_t *p, server_rec *s)
+static void *
+config_server_create(apr_pool_t *p, server_rec *s)
 {
     WEBAUTH_SCONF *sconf;
 
@@ -85,7 +126,8 @@ static void *config_server_create(apr_pool_t *p, server_rec *s)
     return (void *)sconf;
 }
 
-static void *config_dir_create(apr_pool_t *p, char *path)
+static void *
+config_dir_create(apr_pool_t *p, char *path)
 {
     WEBAUTH_DCONF *dconf;
     dconf = (WEBAUTH_DCONF*)apr_pcalloc(p, sizeof(WEBAUTH_DCONF));
@@ -100,7 +142,8 @@ static void *config_dir_create(apr_pool_t *p, char *path)
 #define SET_INT(field) \
     conf->field = oconf->field ? oconf->field : bconf->field
 
-static void *config_server_merge(apr_pool_t *p, void *basev, void *overv)
+static void *
+config_server_merge(apr_pool_t *p, void *basev, void *overv)
 {
     WEBAUTH_SCONF *conf, *bconf, *oconf;
 
@@ -119,7 +162,8 @@ static void *config_server_merge(apr_pool_t *p, void *basev, void *overv)
     return (void *)conf;
 }
 
-static void *config_dir_merge(apr_pool_t *p, void *basev, void *overv)
+static void *
+config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 {
     WEBAUTH_DCONF *conf, *bconf, *oconf;
 
@@ -142,7 +186,7 @@ static void *config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 
 /* The sample content handler */
 static int 
-webauth_handler(request_rec *r)
+handler_hook(request_rec *r)
 {
     if (strcmp(r->handler, "webauth")) {
         return DECLINED;
@@ -155,22 +199,56 @@ webauth_handler(request_rec *r)
 }
 
 static int 
-webauth_check_user_id(request_rec *r)
+check_user_id_hook(request_rec *r)
 {
-    return DECLINED;
+    const char *at = ap_auth_type(r);
+
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: in check_user_id hook");
+
+
+    if ((at == NULL) || (strcmp(at, "WebAuth") != 0)) {
+        return DECLINED;
+    }
+
+    if ((r->args != NULL) && (*(r->args) == 'Z')) {
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: set Location, returning redirect...");
+        apr_table_setn(r->headers_out, "Location", "/realapp/hello.html");
+        return HTTP_MOVED_TEMPORARILY;
+    } else {
+        return OK;
+    }
 }
 
 static int 
-webauth_auth_checker(request_rec *r)
+auth_checker_hook(request_rec *r)
 {
     return DECLINED;
 }
 
+static void
+strip_end(char *c)
+{
+    char *p;
+    char *t = ";;GOO=";
+    if (c != NULL) {
+        p = ap_strstr(c, t);
+        if (p != NULL)
+            *p = '\0';
+    }
+}
+
 /*
- *  need to munge the following and remove passed token:
+ *  need to check the following to see if we got passed back any tokens
  *    r->the_request
  *    r->unparsed_uri
+ *    r->uri
+ *    r->filename
+ *    r->canonical_filename
+ *    r->path_info
  *    r->args
+ *    r->parsed_uri.path
  *    r->parsed_uri.query
  *
  *  we'll stick the token in the notes table for the initial
@@ -178,7 +256,7 @@ webauth_auth_checker(request_rec *r)
  *  
  */
 static int 
-webauth_translate_name(request_rec *r)
+translate_name_hook(request_rec *r)
 {
     char *p;
     char *t = ";;GOO=";
@@ -187,6 +265,8 @@ webauth_translate_name(request_rec *r)
     if (!ap_is_initial_req(r)) {
         return DECLINED;
     }
+
+    log_request(r, "before xlate");
 
     if (r->the_request != NULL) {
         p = ap_strstr(r->the_request, t);
@@ -208,109 +288,55 @@ webauth_translate_name(request_rec *r)
         }
     }
 
-    if (r->unparsed_uri != NULL) {
-        p = ap_strstr(r->unparsed_uri, t);
-        if (p != NULL)
-            *p = '\0';
-    }
+    strip_end(r->unparsed_uri);
+    strip_end(r->uri);
+    strip_end(r->filename);
+    strip_end(r->canonical_filename);
+    strip_end(r->path_info);
+    strip_end(r->args);
+    strip_end(r->parsed_uri.path);
+    strip_end(r->parsed_uri.query);
 
-    if (r->args != NULL) {
-        p = ap_strstr(r->args, t);
-        if (p != NULL)
-            *p = '\0';
-    }
+    log_request(r, "after xlate");
 
-    if (r->parsed_uri.query != NULL) {
-        p = ap_strstr(r->parsed_uri.query, t);
-        if (p != NULL)
-            *p = '\0';
-    }
+    return DECLINED;
 }
 
 static int 
-webauth_fixups(request_rec *r)
+fixups_hook(request_rec *r)
 {
+    WEBAUTH_DCONF *dconf;
+    WEBAUTH_SCONF *sconf;
+
+    dconf = (WEBAUTH_DCONF*)ap_get_module_config(r->per_dir_config,
+                                                 &webauth_module);
+
+    sconf = (WEBAUTH_SCONF*)ap_get_module_config(r->server->module_config,
+                                                 &webauth_module);
+
+
     if (ap_is_initial_req(r)) {
         char *new_cookie;
-
+        const char *at;
         /*new_cookie = apr_psprintf(r->pool, "MOD_WEBAUTH=%d; path=/",
                                   apr_time_now());
         apr_table_setn(r->headers_out, "Set-Cookie", new_cookie);
         */
-#define DOIT(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
-              "mod_webauth got invoked! %s(%s)", a, (b != NULL)? b:"(null)");
-#define DOITD(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
-              "mod_webauth got invoked! %s(%d)", a, b);
 
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "-------------- raw ------------------");
-
-        DOIT("the_request", r->the_request);
-        DOIT("unparsed_uri", r->unparsed_uri);
-        DOIT("uri", r->uri);
-        DOIT("filename", r->filename);
-        DOIT("canonical_filename", r->canonical_filename);
-        DOIT("path_info", r->path_info);
-        DOIT("args", r->args);
-        DOITD("rpu->is_initialized", r->parsed_uri.is_initialized);
-        DOIT("rpu->query", r->parsed_uri.query);
-
-        //strip_tokens(r);
-
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "-------------- stripped ------------------");
-
-        DOIT("unparsed_uri", r->unparsed_uri);
-        DOIT("uri", r->uri);
-        DOIT("filename", r->filename);
-        DOIT("canonical_filename", r->canonical_filename);
-        DOIT("path_info", r->path_info);
-        DOIT("args", r->args);
-        DOITD("rpu->is_initialized", r->parsed_uri.is_initialized);
-        DOIT("rpu->query", r->parsed_uri.query);
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "--------------------------------");
+        at = ap_auth_type(r);
+        if (at == NULL) at = "(null)";
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: fixups auth_type(%s)", at);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
+                     "mod_webauth: main fixups url(%s)", r->unparsed_uri);
 
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                     "mod_webauth subreq got invoked! url(%s)", r->unparsed_uri);
+                     "mod_webauth: subreq fixups url(%s)", r->unparsed_uri);
     }
     return DECLINED;
 }
 
-static void 
-webauth_register_hooks(apr_pool_t *p)
-{
-  /* our module needs to be called before the basic authentication stuff */
-  static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
-
-    /* unclear if we have to use APR_HOOK_FIRST or not for translate_name */
-    ap_hook_translate_name(webauth_translate_name, NULL, NULL, APR_HOOK_FIRST);
-
-    ap_hook_check_user_id(webauth_check_user_id, NULL, mods, APR_HOOK_MIDDLE);
-    ap_hook_auth_checker(webauth_auth_checker, NULL, mods, APR_HOOK_MIDDLE);
-
-    ap_hook_handler(webauth_handler, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_hook_fixups(webauth_fixups,NULL,NULL,APR_HOOK_MIDDLE);
-}
-
-enum {
-    E_WebKDCURL,
-    E_LoginURL,
-    E_FailureURL,
-    E_Keyring,
-    E_Keytab,
-    E_ServiceTokenCache,
-    E_VarPrefix,
-    E_Debug,
-    E_AppTokenLifetime,
-    E_TokenMaxTTL,
-    E_SubjectAuthType,
-    E_InactiveExpire,
-    E_HardExpire,
-    E_ForceLogin,
-    E_ReturnURL
-};
 
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
@@ -441,50 +467,42 @@ cfg_int(cmd_parms *cmd, void *mconf, const char *arg)
 
 
 #define SSTR(dir,mconfig,help) \
-  {"WebAuth" dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
+  {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
 
 #define SFLAG(dir,mconfig,help) \
-  {"WebAuth" dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
+  {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
 
 #define SINT(dir,mconfig,help) \
-  {"WebAuth" dir, (cmd_func)cfg_int, (void*)mconfig, RSRC_CONF, TAKE1, help}
+  {dir, (cmd_func)cfg_int, (void*)mconfig, RSRC_CONF, TAKE1, help}
 
 #define DSTR(dir,mconfig,help) \
-{"WebAuth" dir, (cmd_func)cfg_str,(void*)mconfig, OR_AUTHCFG, TAKE1, help}
+  {dir, (cmd_func)cfg_str,(void*)mconfig, OR_AUTHCFG, TAKE1, help}
 
 #define DFLAG(dir,mconfig,help) \
-  {"WebAuth" dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
+  {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
 
 #define DINT(dir,mconfig,help) \
-  {"WebAuth" dir, (cmd_func)cfg_int, (void*)mconfig, OR_AUTHCFG, TAKE1, help}
+  {dir, (cmd_func)cfg_int, (void*)mconfig, OR_AUTHCFG, TAKE1, help}
 
-static const command_rec webauth_cmds[] = {
+static const command_rec cmds[] = {
     /* server/vhost */
-    SSTR("WebKDCURL", E_WebKDCURL, "URL for the WebKDC XML service"),
-    SSTR("LoginURL", E_LoginURL, "URL for the login page"),
-    SSTR("LoginURL", E_LoginURL, "URL for the login page"),
-    SSTR("FailureURL", E_FailureURL, "URL for serious webauth failures"),
-    SSTR("Keyring", E_Keyring, "path to the keyring file"),
-    SSTR("Keytab", E_Keytab,  "path to the K5 keytab file"),
-    SSTR("ServiceTokenCache", E_ServiceTokenCache, 
-         "path to the service token cache file"),
-    SSTR("VarPrefix", E_VarPrefix, "prefix to prepend to env variables"),
-    SFLAG("Debug", E_Debug, "turn debugging on or off"),
+    SSTR(CD_WebKDCURL, E_WebKDCURL, CM_WebKDCURL),
+    SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
+    SSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
+    SSTR(CD_Keyring, E_Keyring, CM_Keyring),
+    SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
+    SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
+    SSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
+    SFLAG(CD_Debug, E_Debug, CM_Debug),
 
     /* directory */
-
-    DINT("AppTokenLifetime", E_AppTokenLifetime, "lifetime of app-tokens"),
-    DINT("TokenMaxTTL", E_TokenMaxTTL, 
-         "max ttl of tokens that are supposed to be \"recent\""),
-    DSTR("SubectAuthType", E_SubjectAuthType, 
-         "type of subject authenticator returned in id-token"),
-    DINT("InactiveExpire", E_InactiveExpire,
-         "duration of inactivity before an app-token expires"),
-    DINT("HardExpire", E_HardExpire, 
-         "tokens older then this (or their expiration time) will be treated as expired"),
-    DFLAG("ForceLogin", E_ForceLogin, 
-         "having no valid app-token forces a username/password prompt"),
-    DSTR("ReturnURL", E_ReturnURL, "url to return to after logging in"),
+    DINT(CD_AppTokenLifetime, E_AppTokenLifetime, CM_AppTokenLifetime),
+    DINT(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
+    DSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
+    DINT(CD_InactiveExpire, E_InactiveExpire, CM_InactiveExpire),
+    DINT(CD_HardExpire, E_HardExpire, CM_HardExpire),
+    DFLAG(CD_ForceLogin, E_ForceLogin, CM_ForceLogin),
+    DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL)
 };
 
 #undef SSTR
@@ -494,6 +512,24 @@ static const command_rec webauth_cmds[] = {
 #undef DFLAG
 #undef DINT
 
+static void 
+register_hooks(apr_pool_t *p)
+{
+    /* get our module called before the basic authentication stuff */
+    static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
+
+    ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_child_init(child_init_hook, NULL, NULL, APR_HOOK_MIDDLE);
+
+    /* unclear if we have to use APR_HOOK_FIRST or not for translate_name */
+    ap_hook_translate_name(translate_name_hook, NULL, NULL, APR_HOOK_FIRST);
+
+    ap_hook_check_user_id(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE);
+    //ap_hook_auth_checker(webauth_auth_checker, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_handler(handler_hook, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_fixups(fixups_hook, NULL,NULL,APR_HOOK_MIDDLE);
+}
+
 /* Dispatch list for API hooks */
 module AP_MODULE_DECLARE_DATA webauth_module = {
     STANDARD20_MODULE_STUFF, 
@@ -501,7 +537,7 @@ module AP_MODULE_DECLARE_DATA webauth_module = {
     config_dir_merge,      /* merge  per-dir    config structures */
     config_server_create,  /* create per-server config structures */
     config_server_merge,   /* merge  per-server config structures */
-    webauth_cmds,          /* table of config file commands       */
-    webauth_register_hooks /* register hooks                      */
+    cmds,                  /* table of config file commands       */
+    register_hooks         /* register hooks                      */
 };
 
