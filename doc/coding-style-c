@@ -11,7 +11,7 @@ General coding guidelines:
    POSIX code.  Code should be written so that it works as expected on a
    modern platform and is fixed up with portability tricks for older
    platforms, not the other way around.  You may assume an ANSI C
-   compiler.
+   compiler and reasonable headers.
 
    Try to use const wherever appropriate.  Don't use register; modern
    compilers will do as good of a job as you will in choosing what to put
