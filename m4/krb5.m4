@@ -6,10 +6,21 @@ dnl libraries and defines the output variable KRB5_LIBS to the appropriate
 dnl linker commands.
 
 AC_DEFUN([WEBAUTH_LIB_KRB5],
-[KRB5_LIBS=
+[AC_ARG_WITH([krb5],
+             AC_HELP_STRING([--with-krb5=PATH], [Path to Kerberos v5 install]),
+             [if test x"$withval" != xno ; then
+                 KRB5_LDFLAGS=-L$withval/lib
+                 KRB5_CPPFLAGS=-I$withval/include
+              fi])
+WEBAUTH_LDFLAGS_save=$LDFLAGS
+LDFLAGS="$LDFLAGS $KRB5_LDFLAGS"
+KRB5_LIBS=
 AC_CHECK_LIB([com_err], [error_message], [KRB5_LIBS=-lcom_err])
 AC_CHECK_LIB([k5crypto], [krb5_string_to_key],
     [KRB5_LIBS="-lk5crypto $KRB5_LIBS"])
 AC_CHECK_LIB([krb5], [krb5_init_context],
     [KRB5_LIBS="-lkrb5 $KRB5_LIBS"])
-AC_SUBST(KRB5_LIBS)])
+LDFLAGS=$WEBAUTH_LDFLAGS_save
+KRB5_LIBS=`echo "$KRB5_LDFLAGS $KRB5_LIBS" | sed 's/^  *//'`
+AC_SUBST(KRB5_LIBS)
+AC_SUBST(KRB5_CPPFLAGS)])

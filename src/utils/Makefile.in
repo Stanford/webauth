@@ -7,23 +7,27 @@ VPATH		= @srcdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
+LIBTOOL		= @top_builddir@/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
 
 CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include \
-                   -I$(top_srcdir)/src/libwebauth @CPPFLAGS@
+		  -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
+		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 
-LDLIBS		= -L$(top_srcdir)/src/libwebauth -lwebauth @OPENSSL_CRYPTO_LIB@ @LIBS@
+LDFLAGS		= -L$(top_srcdir)/src/libwebauth
+LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 PROGS		= wa_keyring
 
 all: $(PROGS)
 
 wa_keyring: wa_keyring.o
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ wa_keyring.o $(LDLIBS)
 
 clean:
-	rm -f $(PROGS) *.o *~ core \#*
+	rm -rf $(PROGS) *.o .libs *~ core \#*
 
 depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c

@@ -4,7 +4,9 @@ dnl $Id$
 dnl Put more complex macros into separate files to make them easier to
 dnl maintain.  (Also good for macros that should be used in other projects as
 dnl well.)
+m4_include([m4/crypto.m4])
 m4_include([m4/int32.m4])
+m4_include([m4/libtool.m4])
 m4_include([m4/krb5.m4])
 
 AC_REVISION($Revision$)
@@ -17,6 +19,7 @@ test x"$prefix" = xNONE && prefix="$ac_default_prefix"
 
 dnl Checks for programs.
 AC_PROG_CC
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -33,22 +36,19 @@ AC_SEARCH_LIBS(gethostbyname, nsl)
 AC_SEARCH_LIBS(socket, socket, ,
     [AC_CHECK_LIB(nsl, socket, LIBS="$LIBS -lsocket -lnsl", , -lsocket)])
 
-dnl FIXME: These probably need to be cleaned up.
+WEBAUTH_LIB_KRB5
+WEBAUTH_LIB_CRYPTO
 
-dnl OpenSSL
-
-AC_CHECK_LIB(crypto, HMAC_Init, [AC_SUBST(OPENSSL_CRYPTO_LIB, [-lcrypto])])
-AC_CHECK_LIB(ssl, SSL_Library_init, [AC_SUBST(OPENSSL_SSL_LIB, [-lssl])])
-
+dnl Check for an implementation of AES, and if not found in the OpenSSL
+dnl libraries, set WEBAUTH_AES_OBJS to the *.o files required for it.
+aes="aes_cbc.o aes_cfb.o aes_core.o aes_ctr.o aes_ecb.o aes_misc.o aes_ofb.o"
 AC_CHECK_LIB(crypto, AES_cbc_encrypt, 
     [AC_MSG_NOTICE([using AES support in -lcrypto])],
-    [ AC_MSG_NOTICE([building AES support in -lwebauth])
-      AC_SUBST(WEBAUTH_AES_OBJS, ["aes_cbc.o  aes_cfb.o  aes_core.o  aes_ctr.o  aes_ecb.o aes_misc.o  aes_ofb.o"])])
+    [AC_MSG_NOTICE([building AES support in -lwebauth])
+     WEBAUTH_AES_OBJS=$aes
+     AC_SUBST(WEBAUTH_AES_OBJS)])
 
-dnl Kerberos v5
-WEBAUTH_LIB_KRB5
-
-# Checks for header files.
+dnl Checks for header files.
 AC_HEADER_STDC
 
 dnl Checks for types.

@@ -1,6 +1,11 @@
 # Makefile.PL for WebAuth Perl bindings.  -*- perl -*-
 # $Id$
 
+# Currently, the .libs directory where libwebauth is built is coded into
+# the rpath of the Perl module.  This is less than ideal, and arguably
+# poses a minor security risk.  However, at present, the alternative seems
+# to be requiring libwebauth be installed before building the Perl module.
+
 use ExtUtils::MakeMaker;
 WriteMakefile (
     NAME                => 'WebAuth',
@@ -9,6 +14,7 @@ WriteMakefile (
       (ABSTRACT_FROM    => 'WebAuth.pm',
        AUTHOR           => 'Roland Schemers (schemers@stanford.edu)') : ()),
     INC                 => '-I@top_srcdir@/src/libwebauth',
-    LIBS                => '-L@abs_top_builddir@/src/libwebauth -lwebauth'
-                           . ' @OPENSSL_CRYPTO_LIB@ @KRB5_LIBS@ @LIBS@',
+    LIBS                => '-L@abs_top_builddir@/src/libwebauth/.libs'
+                           . ' -R@abs_top_builddir@/src/libwebauth/.libs'
+                           . ' -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@'
 );

@@ -1,2 +1,5 @@
+.libs
 Makefile
 webauth.h
+*.la
+*.lo

@@ -4,3 +4,4 @@ autom4te25.cache
 config.log
 config.status
 configure
+libtool

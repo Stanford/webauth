@@ -5,29 +5,38 @@ srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
+libdir		= @libdir@
+
 CC		= @CC@
 INSTALL		= @INSTALL@
+LIBTOOL		= @top_builddir@/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
-CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include @CPPFLAGS@
+CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include @CPPFLAGS@ \
+		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
-LIBS		= @LIBS@
+LDLIBS		= @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 LIBNAME		= libwebauth
 
 OBJS		= attrs.o base64.o key.o krb5.o misc.o random.o \
                   token.o @WEBAUTH_AES_OBJS@
+LOBJS		= $(OBJS:.o=.lo)
 
-all: $(LIBNAME).a
+.SUFFIXES: .lo
 
-$(LIBNAME).a: $(OBJS)
-	rm -f $@
-	ar cq $@ $(OBJS)
-	$(RANLIB) $@
+all: $(LIBNAME).la
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $*.c
+
+$(LIBNAME).la: $(LOBJS)
+	$(LIBTOOL) --mode=link $(CC) -o $@ $(LOBJS) $(LDFLAGS) $(LDLIBS) \
+	    -rpath $(libdir) -version-info 0:0:0
 
 clean:
-	rm -f $(LIBNAME).a $(OBJS) *~ core \#*
+	rm -rf $(LIBNAME).la *.lo .libs *~ core \#*
 
 depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
