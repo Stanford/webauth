@@ -1,0 +1,34 @@
+#! /bin/sh
+# $Id$
+#
+# makedepend -- Generate dependencies for makefiles.
+#
+# This shell script automates the process of updating the dependencies in
+# Makefile.in.  It uses gcc -MM to do this, since only the maintainers should
+# normally have to do this and using a compiler to parse include directives is
+# more reliable than more ad hoc methods.  It takes compiler flags as its
+# first argument and then a list of all source files to process.
+#
+# The Makefile is updated in place, and everything after "DO NOT DELETE THIS
+# LINE" is removed and replaced by the dependencies.
+
+flags="$1"
+shift
+sed '1,/DO NOT DELETE THIS LINE/!d' < Makefile > .makefile.tmp
+for source in "$@" ; do
+    case $source in
+    */*)
+        base=`echo "$source" | sed 's/\..*//'`
+        gcc -MM $flags "$source" | sed "s%^[^.: ][^.: ]*%$base%" \
+            >> .makefile.tmp
+        ;;
+    *)
+        gcc -MM $flags "$source" >> .makefile.tmp
+        ;;
+    esac
+    if [ $? != 0 ] ; then
+        rm .makefile.tmp
+        exit
+    fi
+done
+mv -f .makefile.tmp Makefile
