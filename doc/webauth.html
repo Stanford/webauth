@@ -3,7 +3,7 @@
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" VLINK="#990066" ALINK="#FF0000">
 
 <H1><B>WebAuth V3 Technical Specification</B></H1>
-<H4><b>DRAFT Version  0.5, Modified 10/30/02</b></H4>
+<H4><b>DRAFT Version  0.6, Modified 11/01/02</b></H4>
 <H2><B>Contents</B></H2>
 
 <UL>
@@ -141,97 +141,102 @@ POST data, cookies, and within XML documents. They are AES-encrypted using
 either a private key, or a shared session key. They also include
 a SHA1 HMAC used to detect data modification/tampering.
 
-<p>There are currently seven different type of tokens:
+<p>There are currently eight different type of tokens:
 
 <OL>
-  <LI>service-token</LI>
-  <LI>proxy-token</LI>
-  <LI>id-token</LI>
-  <LI>credential-token</LI>
+  <LI>webkdc-service-token</LI>
+  <LI>webkdc-proxy-token</LI>
   <LI>request-token</LI>
-  <LI>response-token</LI>
+  <LI>error-token</LI>
+  <LI>id-token</LI>
+  <LI>proxy-token</LI>
+  <LI>credential-token</LI>
   <LI>app-token</LI>
-
 </OL>
 
 <p>Their exact formats are discussed in detail at the end of this document
 (<b>XXX:</b> insert ref), for now, we will discuss their usage.
 
-<H4>1.2.1 service-token</H4>
+<H4>1.2.1 webkdc-service-token</H4>
 
-The service-token is used to communicate with the WebKDC.
+The webkdc-service-token is used to communicate with the WebKDC.
 
-<p>service-tokens are AES-encrypted in the WebKDC's private key, and
+<p>webkdc-service-tokens are AES-encrypted in the WebKDC's private key, and
   also contain a session-key known to both parties.
 
-<p>service-tokens are created only by the WebKDC, and are used only
+<p>webkdc-service-tokens are created only by the WebKDC, and are used only
 by a WAS.
 
-<H4>1.2.2 proxy-token</H4>
+<H4>1.2.2 webkdc-proxy-token</H4>
 
-The proxy-token contains a user's proxied credentials (K5/K4 tgt).
-The WebKDC will only allow a proxy-token to be used by the server it was 
-originally generated for. The main use of a proxy-token is by the WebKDC
-itself to implement single sign-on. Its secondary use is to allow WAS 
-servers to request credential-tokens.
+The webkdc-proxy-token contains a user's proxied credentials (K5/K4 tgt).
+The WebKDC will only allow a webkdc-proxy-token to be used by the server 
+it was originally generated for. The main use of a webkdc-proxy-token is 
+by the WebKDC itself to implement single sign-on. Its secondary use is to 
+allow WAS servers to request credential-tokens.
 
-<p>proxy-tokens are AES-encrypted in the WebKDC's private key.
+<p>webkdc-proxy-tokens are AES-encrypted in the WebKDC's private key.
 
-<p>proxy-tokens are created only by the WebKDC, and usable only by
+<p>webkc-proxy-tokens are created only by the WebKDC, and usable only by
 the WebKDC.
 
-<H4>1.2.3 id-token</H4>
+<H4>1.2.3 request-token</H4>
+
+The request-token contains the request from a WAS for a token 
+(usually an id-token) from the WebKDC. It is AES-encrypted in a 
+session-key from a webkdc-service-token, and contains information like 
+the return URL, type of token requested, etc. A webkdc-service-token
+is always included along with a request-token.
+
+<p>request-tokens are AES-encrypted in a session-key from a webkdc-service-token.
+
+<p>request-tokens are created only by WAS servers, and used only
+   by the WebKDC.
+
+<H4>1.2.4 error-token</h4>
+
+The error-token is returned in the event of an unrecoverable error
+that occured while asking for a token with a request-token.
+
+<p>error-tokens are AES-encrypted in a session-key from a webkdc-service-token.
+
+<p>error-tokens are created only by the WebKDC, and used only by 
+   WAS servers.
+
+<H4>1.2.5 id-token</H4>
 
 The id-token contains the identity of the user trying to access a resource.
 The WAS will verify the id-token, then construct an app-token for future use.
 
-<p> id-tokens are AES-encrypted in a session-key from a service-token.
+<p> id-tokens are AES-encrypted in a session-key from a webkdc-service-token.
 
 <p>id-tokens are created only by the WebKDC, and used only by WAS servers,
    who will most likely rewrite them into an app-token after verifying
    the data contained within them.
 
-<H4>1.2.4 credential-token</H4>
+<H4>1.2.6 proxy-token</H4>
+
+The proxy-token is used to return a webkdc-proxy-token to a WAS.
+It includes information about the webkdc-proxy-token, such as
+its expiration, its type, etc.
+
+<p> proxy-tokens are AES-encrypted in a session-key from a webkdc-service-token.
+<p>proxy-tokens are created only by the WebKDC, and used only by WAS servers,
+   who will most likely rewrite them into an app-token after verifying
+   the data contained within them.
+
+
+<H4>1.2.7 credential-token</H4>
 
 The credential-token contains a user's credential (K5/K4 service ticket).
 
-<p>credential-tokens are AES-encrypted in a session-key from a service-token.
+<p>credential-tokens are AES-encrypted in a session-key from a webkdc-service-token.
 
 <p>credential-tokens are created only by the WebKDC, and are used only 
    by WAS servers.
 
-<H4>1.2.5 request-token</H4>
 
-The request-token contains the request from a WAS for a token 
-(usually an id-token) from the WebKDC. It is AES-encrypted in a 
-session-key from a service-token, and contains information like 
-the return URL, type of token requested, etc. A service-token
-is always included along with a request-token.
-
-<p>request-tokens are AES-encrypted in a session-key from a service-token.
-
-<p>request-tokens are created only by WAS servers, and used only
-   by the WebKDC.
-
-<H4>1.2.6 response-token</h4>
-
-The response-token contains status information about the result of
-a request-token request, and also includes the requested token inside 
-of it.
-
-<p>The response-token will either contain error information, or
-   will contain meta-information about the returned token, such
-   as its expiration date, and the requested token itself.
-
-   The WAS will verify the response-token, then construct 
-   an app-token from it and the requested token for future use. 
-
-<p>response-tokens are AES-encrypted in a session-key from a service-token.
-
-<p>response-tokens are created only by the WebKDC, and used only by 
-   WAS servers.
-
-<H4>1.2.7 app-token</H4>
+<H4>1.2.8 app-token</H4>
 
 app-tokens are used by WAS servers to store data, such as the identity
 of a user after it has been verified from an id-token, a proxy-token, 
@@ -306,7 +311,7 @@ We will now go over each step in detail.
    contains information
    such as the return URL, requested type of token, etc. The
    request-token is encrypted using an AES session key shared between the WAS
-   and the WebKDC obtained from a service-token.
+   and the WebKDC obtained from a webkdc-service-token.
    <p>mod_webauth then generates a redirect to the WebKDC 
      (including the request-token in the URL query parameters).
    <p>
@@ -334,8 +339,8 @@ We will now go over each step in detail.
 
    <p>Assuming the username/password is valid, the WebKDC will then construct
    the return URL, as well as a cookie for itself, which contains the
-   proxy-token. It will then create a response-token,
-   which will get passed back in the return url along with the requested-token.
+   proxy-token. It will then create an id-token,
+   which will get passed back in the return url.
 
    <p><b>NOTE:</b> This might need to be a POST instead of a redirect, in which
       case the user will have to click on a "confirmation" button
@@ -344,13 +349,13 @@ We will now go over each step in detail.
 </LI>
 
 <LI> The user's browser will now re-request the original resource, passing
-     along the response-token, and the requested token.
+     along the id-token.
      <p>
 </LI>
 
-<LI> mod_webauth will see the response-token in the request, and will
-   check to make sure the response is fresh. It will then look at the subject
-   authenticator-type in the id-token, to see if it needs to verify
+<LI> mod_webauth will see the id-token in the request, and will
+   check to make sure that it is fresh. It will then look at the subject
+   authenticator-type in the token to see if it needs to verify
    the subject. If the authenticator-type is krb5, then it needs
    to use its webauth/hostname srvtab to verify the identity of the
    subject, as the subject in the id-token will be the result of a
@@ -455,7 +460,7 @@ We will now go over each step in detail.
    contains information
    such as the return URL, requested type of token, etc. The
    request-token is encrypted using an AES session key shared between the 
-   WebKDC and the WAS obtained from a service-token.
+   WebKDC and the WAS obtained from a webkdc-service-token.
    <p>mod_webauth then generates a redirect to the WebKDC (including the request-token
   in the URL query parameters).
    <p>
@@ -474,17 +479,17 @@ We will now go over each step in detail.
 </LI>
 
 <LI> The user's browser will now re-request the original resource, passing
-     along the response-token.
+     along the id-token.
      <p>
 </LI>
 
-<LI> mod_webauth will see the response-token in the request, 
+<LI> mod_webauth will see the id-token in the request, 
    and check to 
    make sure the request is fresh. It will then look at the subject
-   authenticator-type in the id-token, to see if it needs to verify
+   authenticator-type in the token to see if it needs to verify
    the subject. If the authenticator-type is krb5, then it needs
    to use its webauth/hostname srvtab to verify the identity of the
-   subject, as the subject in the id-token will be the result of a
+   subject, as the subject auth data in the id-token will be the result of a
    krb5-mk-req API call.
 
    <p>After verifying the subject, mod_webauth will then rewrite the 
@@ -523,7 +528,7 @@ for itself.
       request-token for proxy-token
   3.  ------------------------------------> WebKDC
 
-      redirect with returned tokens
+      redirect with returned token
   4.  <------------------------------------ WebKDC
 
       re-request resource
@@ -555,7 +560,7 @@ We will now go over each step in detail.
    contains information
    such as the return URL, requested type of token, etc. The
    request-token is encrypted using an AES session key shared between the 
-   WebKDC and the WAS obtained from a service-token.
+   WebKDC and the WAS obtained from a webkdc-service-token.
    <p>mod_webauth then generates a redirect to the WebKDC (including the request-token
   in the URL query parameters).
    <p>
@@ -568,8 +573,7 @@ We will now go over each step in detail.
 
 <LI> The WebKDC detects the user has a valid proxy-token, and uses
    it to construct a new proxy-token. The WebKDC will then construct
-   the return URL, which will contain the response-token, and
-   the requested-token (inside the response-token).
+   the return URL, which will contain the proxy-token.
 <p>
 </LI>
 
@@ -578,14 +582,14 @@ We will now go over each step in detail.
      <p>
 </LI>
 
-<LI> mod_webauth will see the response-token in the request, 
+<LI> mod_webauth will see the proxy-token in the request, 
    and check to make sure the request is fresh. It will then
-   use the proxy-token to make an XML request to the WebKDC for
-   an identity token, and for whatever credential-tokens it
+   use the webkdc-proxy-token to make an XML request to the WebKDC for
+   an id-token, and for whatever credential-tokens it
    needs.
 
-<LI> The WebKDC will receive the proxy-token, and compare its owner
-     against the service-token's subject. If everything is ok, it
+<LI> The WebKDC will receive the webkdc-proxy-token, and compare its owner
+     against the webkdc-service-token's subject. If everything is ok, it
      will return the requested id and credential tokens. 
 <LI>
    <p>After verifying the id-token, mod_webauth will then rewrite the 
@@ -746,27 +750,27 @@ The request message is:
 
     &lt;requesterCredential type="service|krb5">
        <i>&lt;!-- for type="service" --></i>
-       &lt;serviceToken>{base64-service-token}&lt;/serviceToken>
+       {base64-webkdc-service-token}
        <i>&lt;!-- for type="krb5" --></i>
-       &lt;krb5AppReq>{base64-krb5-mk-req-data}&lt;/krb5AppReq>
+       {base64-krb5-mk-req-data}
     &lt;/requesterCredential>
 
     &lt;subjectCredential type="proxy">
-       <i>&lt;!-- for type="proxy" --></i>
-       &lt;proxyToken>{base64-proxy-token}&lt;/proxyToken>
+       {base64-webkdc-proxy-token}
     &lt;/subjectCredential>
 
-    &lt;token type="id|proxy|service|cred" id="{id-to-use-in-response}">
-      <i>&lt;!-- for type="id" --></i>
-       &lt;serviceToken>{service-token}&lt;/serviceToken>
-       &lt;authenticator type="krb5|webkdc"/> <i>&lt;!-- optional, default is krb5 --></i>
-      <i>&lt;!-- for type="proxy" --></i>
-       &lt;proxyType>krb5|krb4&lt;/proxyType>
-      <i>&lt;!-- for type="cred" --></i>
-       &lt;credentialType>krb5|krb4&lt;/credentialType>
-       &lt;serverPrincipal>{krb4/krb5-service}&lt;/serverPrincipal>
-    &lt;/token>
-    <i>&lt;!-- additional &lt;token>...&lt;/token> requests go here --></i>
+    &lt;tokens>
+      &lt;token type="id|proxy|service|cred" id="{id-to-use-in-response}">
+        <i>&lt;!-- for type="id" --></i>
+         &lt;authenticator type="krb5|webkdc"/> <i>&lt;!-- optional, default is krb5 --></i>
+        <i>&lt;!-- for type="proxy" --></i>
+         &lt;proxyType>krb5|krb4&lt;/proxyType>
+        <i>&lt;!-- for type="cred" --></i>
+         &lt;credentialType>krb5|krb4&lt;/credentialType>
+         &lt;serverPrincipal>{krb4/krb5-service}&lt;/serverPrincipal>
+      &lt;/token>
+      <i>&lt;!-- additional &lt;token>...&lt;/token> requests go here --></i>
+    &lt;/tokens>
   &lt;/getTokensRequest>
 </code></pre>
 
@@ -774,15 +778,15 @@ The response message is:
 
 <pre><code>
   &lt;getTokensResponse>
-    &lt;token id="{id-from-request}">
-      &lt;tokenData>{base64}&lt;/tokenData>
-      <i>&lt;!-- for type="service" --></i>
-      &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-      &lt;expires>{expiration-time}&lt;/expires>
-      <i>&lt;!-- for type="proxy" --></i>
-      &lt;expires>{expiration-time}&lt;/expires>
-    &lt;/token>
-    <i>&lt;!-- additional &lt;token>...&lt;/token> responses go here --></i>
+    &lt;tokens>
+      &lt;token id="{id-from-request}">
+        &lt;tokenData>{base64}&lt;/tokenData>
+        <i>&lt;!-- for type="service" --></i>
+        &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
+        &lt;expires>{expiration-time}&lt;/expires>
+      &lt;/token>
+      <i>&lt;!-- additional &lt;token>...&lt;/token> responses go here --></i>
+    &lt;/tokens>
   &lt;/getTokensResponse>
 </code></pre>
 
@@ -804,61 +808,67 @@ content will need to be encrypted using krb5 or AES.
 
 <H3>4.5 Examples</H3>
 
-<H3>4.5.1 WAS asking for a service-token</H4>
+<H3>4.5.1 WAS asking for a webkdc-service-token</H4>
 
-In this example, the WAS requests a service-token for itself. This 
-happens when the WAS needs to acquire a service-token to talk to the WebKDC. It
+In this example, the WAS requests a webkdc-service-token for itself. This 
+happens when the WAS needs to acquire a webkdc-service-token to talk to the WebKDC. It
 will cache the token until it nears expiration time, at which
 point it will request a new one.
 
 <pre><code>
 &lt;getTokensRequest>
    &lt;requesterCredential type="krb5">
-       &lt;krb5AppReq>{base64-krb5-mk-req-data}&lt;/krb5AppReq>
+       {base64-krb5-mk-req-data}
    &lt;/requesterCredential>
-
-  &lt;token type="service" id="0"/>
+   &lt;tokens>
+     &lt;token type="service" id="0"/>
+   &lt;/tokens>
 &lt;/getTokensRequest>
 
 &lt;getTokensResponse>
-  &lt;token id="0">
-    &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-    &lt;expires>{expiration-time}&lt;/expires>
-    &lt;tokenData>{base64}&lt;/tokenData>
-  &lt;/token>
+  &lt;tokens>
+    &lt;token id="0">
+      &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
+      &lt;expires>{expiration-time}&lt;/expires>
+      &lt;tokenData>{base64}&lt;/tokenData>
+    &lt;/token>
+  &lt;/tokens>
 &lt;/getTokensResponse>
 </code></pre>
 
 <H3>4.5.2 WAS asking for a credential-token</H4>
 
-In this example, the WAS requests an K5 ticket using its proxy-token.
-The proxy-token's type must match the requested credential's type.
+In this example, the WAS requests an K5 ticket using its webkdc-proxy-token.
+The webkdc-proxy-token's type must match the requested credential's type.
 
 <pre><code>
  &lt;getTokensRequest>
    &lt;requesterCredential type="service">
-       &lt;serviceToken>{base64-service-token}&lt;/serviceToken>
+       {base64-webkdc-service-token}
    &lt;/requesterCredential>
 
    &lt;subjectCredential type="proxy">
-      &lt;proxyToken>{proxy-token}&lt;/proxyToken>
+     {webkdc-proxy-token}
    &lt;/subjectCredential>
-
-  &lt;token type="credential" id="0"/>
-    &lt;credentialType>krb5&lt;/credentialType>
-    &lt;serverPrincipal>service/ldap&lt;/serverPrincipal>
-  &lt;/token>
+  &lt;tokens>
+    &lt;token type="credential" id="0"/>
+      &lt;credentialType>krb5&lt;/credentialType>
+      &lt;serverPrincipal>service/ldap&lt;/serverPrincipal>
+    &lt;/token>
+  &lt;/tokens>
 &lt;/getTokensRequest>
 
 &lt;getTokensResponse>
-  &lt;token id="0">
-    &lt;tokenData>{base64}&lt;/tokenData>
-  &lt;/token>
+  &lt;tokens>
+    &lt;token id="0">
+      &lt;tokenData>{base64}&lt;/tokenData>
+    &lt;/token>
+  &lt;/tokens>
 &lt;/getTokensResponse>
 </code></pre>
 
-<p>The WebKDC will verify that the proxy-token was granted to the
-same server specified inside of the service-token.
+<p>The WebKDC will verify that the webkdc-proxy-token was granted to the
+same server specified inside of the webkdc-service-token.
 
 <H2><B>5. Tokens</B></H2>
 
@@ -923,41 +933,40 @@ name     description
 ----     -----------
 crd      credential data (i.e., a krb5 ticket)
 crt      credential type (krb4, krb5)
-ct       creation time
+ct       creation time of the token
 ec       error code from WebKDC
 em       error message from WebKDC
-et       expiration time
+et       expiration time of the token
 it       inactivity timeout, 
 k        session key, AES session key
 lt       last-used time
-prt      proxy type (krb4/krb5)
 prd      proxy data (i.e., a krb5 tgt)
 pro      proxy owner (name of user allowed to use proxy token)
+prt      proxy type (krb4/krb5)
 pu       post URL
 rr       reason for request
-rt       requested token 
-rt-et    expiration-time of the requested token
-rt-t     requested token type
+rtt      requested token type
 ru       return URL
 s        subject of authentication
 sa       subject authenticator type (krb5, webkdc)
 sad      subject authenticator data
-se       subject expiration
-t        token type ("service", "id", "app", "proxy", "cred", "req", "resp")
+t        token type (i.e., "service", "id", etc)
+wt       webkdc-{proxy,service}-token (the webkdc tokens inside another token)
 x-nnn    application-specific attribute
 
 </pre>
 
 <H3>5.3 Specific Token Encodings</H3>
 
-<H4>5.3.1 service-token encoding</H4>
+<H4>5.3.1 webkdc-service-token encoding</H4>
 
-A service-token gets returned from WebKDC after an entity authenticates
+A webkdc-service-token gets returned from WebKDC after an entity authenticates
 with the WebKDC, using krb5 wire protocol, SSL cert, etc.
-They are used by WAS servers to communicate with the WebKDC.
+They are used by WAS servers to communicate with the WebKDC. They
+are initially returned inside a service-token.
 
 <pre><code>
-  t=service
+  t=webkdc-service
   k={session-key}
   s=krb5:{requesting-servers-k5-principal}
   ct={creation-time}
@@ -971,10 +980,36 @@ They are used by WAS servers to communicate with the WebKDC.
   received {session-key} and {expiration-time} out-of-band from
   the token itself.
 
-<H4>5.3.2 request-token encoding</H4>
+<H4>5.3.2 webkdc-proxy-token encoding</H4>
+
+A webkdc-proxy-token is k4/k5 TGT maintained by the WebKDC. It gets bound to
+the requesting server. For example, only the WebKDC can use the WebKDC's
+webkdc-proxy-token.
+
+<pre><code>
+  t=webkdc-proxy
+  pro={subject-from-webkdc-token-used-to-get-proxy-ticket}
+  prt=krb5|krb4|...
+  s=krb5:{users-k5-principal} #XXX: is this needed?
+  prd={proxy-data}
+  ct={creation-date}
+  et={expiration-date}
+</code></pre>
+
+<p>notes:
+
+<p> All attributes are AES-encrypted in the WebKDC's private key.
+
+<p>  WebKDC checks "pro" when the token is used and compares it to the authenticated
+  subject making the request to ensure they are the same. For example, if
+  "pro" is set to krb5:webauth/was.stanford.edu, then the server making the
+  request also needs to be using a WebKDC webkdc-service-token for
+  krb5:webauth/was.stanford.edu.
+
+<H4>5.3.3 request-token encoding</H4>
 
 A request-token gets sent to the WebKDC server by WAS, along with the WAS's
-service-token. They are used to request tokens via the HTML interface.
+webkdc-service-token. They are used to request tokens via the HTML interface.
 
 <pre><code>
   t=req
@@ -982,16 +1017,16 @@ service-token. They are used to request tokens via the HTML interface.
   ru={return-as-url}
   [pu={return-post-url}]
   rr=na|ea|st|fa
-  rt-t=id|proxy
-  # for rt-t=id
+  rtt=id|proxy
+  # for rt=id
   sa=krb5|webkdc
-  # for rt-t=proxy
+  # for rt=proxy
   prt=krb5|krb4
 </code></pre>
 
 <p>notes:
 
-<p>  All attributes are AES-encrypted in the service-token session-key
+<p>  All attributes are AES-encrypted in the webkdc-service-token session-key
 
 <p>  The value of <code>ct</code> is used to prevent replay attacks. Values older then 
   a certain time (probably 5 minutes by default) should be rejected as
@@ -1007,37 +1042,27 @@ service-token. They are used to request tokens via the HTML interface.
        fa = forced authentication (app is requesting "live" authentication)
 </pre>
 
-<H4>5.3.3 response-token encoding</H4>
+<H4>5.3.4 error-token encoding</H4>
 
-A response-token gets sent from the WebKDC as a response to a request-token.
+An error-token gets sent from the WebKDC as a response to a request-token
+when an error has occured.
 
 <pre><code>
-  t=resp
+  t=error
   ct={creation-time}
-  [ec={error-code}]
-  [em={error-message}]
-  [rt={the-requseted-token-in-binary-form}]
-  [rt-et={expiration-time-of-requested-token}]
-  [rt-t=id|proxy]
+  ec={error-code}]
+  em={error-message}]
 </code></pre>
 
 <p>notes:
 
-<p>  All attributes are AES-encrypted in the service-token session-key
-
-<p>  <code>ec</code> and <code>em</code> are only present if there was
-  an error during the request.
+<p>  All attributes are AES-encrypted in the webkdc-service-token session-key
 
 <p>  The value of <code>ct</code> is used to prevent replay attacks. Values older then 
   a certain time (probably 5 minutes by default) should be rejected as
   a replay.
 
-<p>  <code>rt</code> is the token (in binary form) that was returned as
-the result of the request, and is present if there were no errors.
-<p>  <code>rt-et</code> is the expiration-time of the requested token, if
-     the requested token was a proxy-token.
-
-<H4>5.3.4 id-token encoding</H4>
+<H4>5.3.5 id-token encoding</H4>
 
 The id-token gets returned from WebKDC, and is bound to an WAS. They
 are used to express the identity of user. 
@@ -1050,12 +1075,12 @@ are used to express the identity of user.
   # for sa=krb5
   sad={result-of-krb5-mk-req-for-webauth/hostname}
   ct={creation-time}
-  se={expiration-time}
+  et={expiration-time}
 </code></pre>
 
 <p>notes:
 
-<p>All attributes are AES-encrypted in the service-token session-key
+<p>All attributes are AES-encrypted in the webkdc-service-token session-key
 
 <p>If "at" is krb5, then "s" (subject) is the result of a call
   to krb5_mk_req for the webauth/WAS service using the user's tgt.
@@ -1067,12 +1092,55 @@ are used to express the identity of user.
   a certain time (probably 5 minutes by default) should be rejected as
   a replay, as id-tokens are only used once and re-written into an app-token.
 
-<p>The value of "se" is used to let the application know how long the
+<p>The value of "et" is used to let the application know how long the
    subject of the id-token should be considered valid for. The
-   value for "se" is the expiration time of the proxy-token used to create
+   value for "et" is the expiration time of the proxy-token used to create
    it.
 
-<H4>5.3.5 app-token encoding</H4>
+<H4>5.3.6 proxy-token encoding</H4>
+
+An proxy-token gets returned when a WAS requests a proxy-token
+from the WebKDC.
+
+<pre><code>
+  t=proxy
+  prt=krb5|krb4|...
+  s=krb5:{users-k5-principal} #XXX: is this needed?
+  wt={webkdc-proxy-token}
+  ct={creation-time}
+  et={expiration-time}
+</code></pre>
+
+<p>notes:
+
+<p>All attributes are AES-encrypted in the webkdc-service-token session-key
+
+<p>The value of "ct" is used to prevent replay attacks. Values older then 
+  a certain time (probably 5 minutes by default) should be rejected as
+  a replay, as proxy-tokens are only used once and re-written into an 
+  app-token.
+
+<p> <code>wt</code> is the webkdc-proxy-token (in binary form) that 
+was returned as the result of the request.
+
+<H4>5.3.7 credential-token encoding</H4>
+
+A credential-token is k4/k5 service ticket returned by the WebKDC for a WAS.
+
+<pre><code>
+  t=cred
+  ct=krb5|krb4|...
+  s=krb5:{users-k5-principal}
+  cd={credential-data}
+  ct={creation-date}
+  et={expiration-date}
+</code></pre>
+
+<p>notes:
+
+<p> All attributes are AES-encrypted in the in a webkdc-service-token session-key
+
+<H4>5.3.8 app-token encoding</H4>
 
 An app-token controlled/maintained by a WAS. The main use of an app-token
 is to cache the idenity within an id-token after it has been verified.
@@ -1101,49 +1169,6 @@ is to cache the idenity within an id-token after it has been verified.
 <p>  inactivity-timeout is used to compare the last-use-time against the
   current time to see if an app-token has become inactive due to not being
   used.
-
-<H4>5.3.6 proxy-token encoding</H4>
-
-A proxy-token is k4/k5 TGT maintained by the WebKDC. It gets bound to
-the requesting server. For example, only the WebKDC can use the WebKDC's
-proxy-token.
-
-<pre><code>
-  t=proxy
-  pro={subject-from-webkdc-token-used-to-get-proxy-ticket}
-  prt=krb5|krb4|...
-  s=krb5:{users-k5-principal} #XXX: is this needed?
-  prd={proxy-data}
-  ct={creation-date}
-  et={expiration-date}
-</code></pre>
-
-<p>notes:
-
-<p> All attributes are AES-encrypted in the WebKDC's private key.
-
-<p>  WebKDC checks "pro" when the token is used and compares it to the authenticated
-  subject making the request to ensure they are the same. For example, if
-  "pro" is set to krb5:webauth/was.stanford.edu, then the server making the
-  request also needs to be using a WebKDC service-token for
-  krb5:webauth/was.stanford.edu.
-
-<H4>5.3.7 credential-token encoding</H4>
-
-A credential-token is k4/k5 service ticket returned by the WebKDC for a WAS.
-
-<pre><code>
-  t=cred
-  ct=krb5|krb4|...
-  s=krb5:{users-k5-principal}
-  cd={credential-data}
-  ct={creation-date}
-  et={expiration-date}
-</code></pre>
-
-<p>notes:
-
-<p> All attributes are AES-encrypted in the in a service-token session-key
 
 <H2><B>6. Cookie conventions</B></H2>
 
@@ -1261,6 +1286,29 @@ WebAuthEndSession redirect|clearLogin|on|off
              requirements are more clear
          <li>change "et" in id-token to "se", to indicate when
             the subject expires.
+       </ul>
+   </td>
+</tr>
+
+<tr>
+  <td>11/01/2002</td>
+  <td>0.6</td>
+  <td>schemers</td>
+   <td><ul>
+         <li>rename service-token and proxy-token to webkdc-service-token
+             and webkdc-proxy-token, to signify they are only used
+             by the webkdc
+         <li> remove response-token, add error-token and new proxy-token.
+              The response from a request-token is either an
+              error-token, id-token, or proxy-token
+         <li>change "se" back to "et". Expiration times in tokens
+             indicate when the token expires and when any data within
+             the token (subject info, proxy data, etc) expires
+         <li>simplify XML messages by placing base64-encoded data
+             directly in &lt;requestCredential> and &lt;subjectCredential>
+             instead of having them in another tag
+         <li>wrap tokens in &lt;tokens> element to make it easier
+             to iterate through all the tokens in a &lt;getTokensRequest>
        </ul>
    </td>
 </tr>

@@ -29,7 +29,6 @@ our @EXPORT_OK;
 
 our %ta_desc = 
     (
-     &WA_TK_APP_NAME => 'app-name',
      &WA_TK_CRED_DATA => 'cred-data',
      &WA_TK_CRED_TYPE => 'cred-type',
      &WA_TK_CREATION_TIME => 'creation-time',
@@ -44,15 +43,13 @@ our %ta_desc =
      &WA_TK_PROXY_OWNER => 'proxy-owner',
      &WA_TK_POST_URL => 'post-url',
      &WA_TK_REQUEST_REASON => 'request-reason',
-     &WA_TK_REQ_TOKEN => 'requested-token',
-     &WA_TK_REQ_TOKEN_EXPIRATION => 'req-token-exp',
-     &WA_TK_REQ_TOKEN_TYPE => 'req-token-type',
+     &WA_TK_REQUESTED_TOKEN_TYPE => 'req-token-type',
      &WA_TK_RETURN_URL => 'return-url',
      &WA_TK_SUBJECT => 'subject',
      &WA_TK_SUBJECT_AUTH => 'subject-auth',
      &WA_TK_SUBJECT_AUTH_DATA => 'subject-auth-data',
-     &WA_TK_SUBJECT_EXPIRATION_TIME => 'subject-exp-time',
      &WA_TK_TOKEN_TYPE => 'token-type',
+     &WA_TK_WEBKDC_TOKEN => 'webkdc-token',
      );	       
 
 sub get_ta_desc($) {
@@ -72,15 +69,13 @@ sub to_string {
     while (($key,$val) = each %$attrs) {
 	if ($key eq WA_TK_CREATION_TIME ||
 	    $key eq WA_TK_LASTUSED_TIME ||
-	    $key eq WA_TK_REQ_TOKEN_EXPIRATION ||
-	    $key eq WA_TK_SUBJECT_EXPIRATION_TIME ||
 	    $key eq WA_TK_EXPIRATION_TIME) {
 	    $val = localtime(unpack("N", $val));
 	} elsif ($key eq WA_TK_SESSION_KEY ||
 		 $key eq WA_TK_CRED_DATA ||
 		 $key eq WA_TK_PROXY_DATA ||
 		 $key eq WA_TK_SUBJECT_AUTH_DATA ||
-		 $key eq WA_TK_REQ_TOKEN) {
+		 $key eq WA_TK_WEBKDC_TOKEN) {
 	    $val = hex_encode($val);
 	} 
 	$out .= sprintf($fmt, get_ta_desc($key), $val);
@@ -285,11 +280,11 @@ sub creation_time {
     }
 }
 
-sub subject_expiration_time {
+sub expiration_time {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_SUBJECT_EXPIRATION_TIME} = 
+    $self->{'attrs'}{&WA_TK_EXPIRATION_TIME} = 
 	pack("N", shift) if @_;
-    my $time = $self->{'attrs'}{&WA_TK_SUBJECT_EXPIRATION_TIME};
+    my $time = $self->{'attrs'}{&WA_TK_EXPIRATION_TIME};
     if (defined($time)) {
 	return unpack('N', $time);
     } else {
@@ -306,7 +301,7 @@ sub validate_token {
 	($self->subject_auth() eq 'krb5') && 
 	defined($self->subject_auth_data()) &&
 	defined($self->creation_time()) &&
-	defined($self->subject_expiration_time());
+	defined($self->expiration_time());
 }
 
 ############################################################
@@ -340,6 +335,91 @@ our @EXPORT_OK;
 sub init {
     my $self = shift;
     $self->token_type('proxy');
+}
+
+sub proxy_type {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_PROXY_TYPE} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_PROXY_TYPE};
+}
+
+sub webkdc_token {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_WEBKDC_TOKEN} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_WEBKDC_TOKEN};
+}
+
+sub subject {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SUBJECT} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_SUBJECT};
+}
+
+sub creation_time {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_CREATION_TIME} = pack("N", shift) if @_;
+    my $time = $self->{'attrs'}{&WA_TK_CREATION_TIME};
+    if (defined($time)) {
+	return unpack('N', $time);
+    } else {
+	return $time;
+    }
+}
+
+sub expiration_time {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_EXPIRATION_TIME} = pack("N", shift) if @_;
+    my $time = $self->{'attrs'}{&WA_TK_EXPIRATION_TIME};
+    if (defined($time)) {
+	return unpack('N', $time);
+    } else {
+	return $time;
+    }
+}
+
+sub validate_token {
+    my $self = shift;
+
+    croak "validate_token failed" unless
+	($self->token_type() eq 'proxy') && 
+	($self->proxy_type() eq 'krb5') && 
+	defined($self->webkdc_token()) &&
+	defined($self->creation_time());
+	defined($self->expiration_time());
+}
+
+############################################################
+
+
+package WebKDC::WebKDCProxyToken;
+
+use strict;
+use warnings;
+
+use WebAuth qw(:const);
+use WebKDC::Token;
+use Carp;
+
+BEGIN {
+    use Exporter   ();
+    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
+
+    # set the version for version checking
+    $VERSION     = 1.00;
+    @ISA         = qw(Exporter WebKDC::Token);
+    @EXPORT      = qw();
+    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
+
+    # your exported package globals go here,
+    # as well as any optionally exported functions
+    @EXPORT_OK   = qw();
+}
+
+our @EXPORT_OK;
+
+sub init {
+    my $self = shift;
+    $self->token_type('webkdc-proxy');
 }
 
 sub proxy_owner {
@@ -392,7 +472,7 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'proxy') && 
+	($self->token_type() eq 'webkdc-proxy') && 
 	($self->proxy_type() eq 'krb5') && 
 	defined($self->proxy_owner()) &&
 	defined($self->proxy_data()) &&
@@ -456,10 +536,10 @@ sub request_reason {
     return $self->{'attrs'}{&WA_TK_REQUEST_REASON};
 }
 
-sub req_token_type {
+sub requested_token_type {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_REQ_TOKEN_TYPE} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_REQ_TOKEN_TYPE};
+    $self->{'attrs'}{&WA_TK_REQUESTED_TOKEN_TYPE} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_REQUESTED_TOKEN_TYPE};
 }
 
 sub proxy_type {
@@ -489,13 +569,13 @@ sub validate_token {
 	defined($self->creation_time()) &&
 	defined($self->return_url()) &&
 	($self->request_reason() eq 'na') && 
-	($self->req_token_type() eq 'id') && 
+	($self->requested_token_type() eq 'id') && 
 	($self->subject_auth() eq 'krb5');
 }
 
 ############################################################
 
-package WebKDC::ResponseToken;
+package WebKDC::ErrorToken;
 
 use strict;
 use warnings;
@@ -523,14 +603,7 @@ our @EXPORT_OK;
 
 sub init {
     my $self = shift;
-    $self->token_type('resp');
-}
-
-sub is_ok {
-    my($self) = @_;
-
-    my $ec = $self->error_code();
-    return !defined($ec) || ($ec == 0);
+    $self->token_type('error');
 }
 
 sub creation_time {
@@ -556,47 +629,19 @@ sub error_message {
     return $self->{'attrs'}{&WA_TK_ERROR_MESSAGE};
 }
 
-sub req_token {
-    my $self = shift;
-    $self->{'attrs'}{&WA_TK_REQ_TOKEN} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_REQ_TOKEN};
-}
-
-sub req_token_type {
-    my $self = shift;
-    $self->{'attrs'}{&WA_TK_REQ_TOKEN_TYPE} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_REQ_TOKEN_TYPE};
-}
-
-sub req_token_exp_time {
-    my $self = shift;
-    $self->{'attrs'}{&WA_TK_REQ_TOKEN_EXPIRATION_TIME} = 
-	pack("N", shift) if @_;
-    my $time = $self->{'attrs'}{&WA_TK_REQ_TOKEN_EXPIRATION};
-    if (defined($time)) {
-	return unpack('N', $time);
-    } else {
-	return $time;
-    }
-}
-
 sub validate_token {
     my $self = shift;
 
-    # FIXME: more checks rt-et/rt-t
     croak "validate_token failed" unless
-	($self->token_type() eq 'resp') && 
+	($self->token_type() eq 'error') && 
 	defined($self->creation_time()) &&
-	(
-	 (defined($self->req_token()) &&
-	  $self->req_token_type() eq 'id') ||
-	 defined($self->error_code())
-	 );
+	defined($self->error_code());
+
 }
 
 ############################################################
 
-package WebKDC::ServiceToken;
+package WebKDC::WebKDCServiceToken;
 
 use strict;
 use warnings;
@@ -625,7 +670,7 @@ our @EXPORT_OK;
 
 sub init {
     my $self = shift;
-    $self->token_type('service');
+    $self->token_type('webkdc-service');
 }
 
 sub session_key {
@@ -666,7 +711,7 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'service') && 
+	($self->token_type() eq 'webkdc-service') && 
 	defined($self->session_key()) &&
 	defined($self->subject()) &&
 	defined($self->creation_time()) &&
@@ -706,8 +751,9 @@ available upon using WebKDC::Token:
  WebKDC::IdToken
  WebKDC::ProxyToken
  WebKDC::RequestToken
- WebKDC::ResponseToken
- WebKDC::ServiceToken
+ WebKDC::ErrorToken
+ WebKDC::WebKDCProxyToken
+ WebKDC::WebKDCServiceToken
 
 It contains the functions that are common across all the token objects,
 as well as some functions that must be overridden in the subclasses.
@@ -772,8 +818,8 @@ is used to get the token type.
 
 The WebKDC::AppToken object is used to represent WebAuth app-tokens.
 
-The following methods are all available for use on AppTokens,
-and correspond to the token attributes defined by WebAuth.
+  $token = new WebKDC::AppToken;
+  $token = new WebKDC::AppToken($binary_token, $key_or_ring, $ttl);
 
   $token->app_data($name[, $new_value])
   $token->creation_time([$new_value])
@@ -782,16 +828,12 @@ and correspond to the token attributes defined by WebAuth.
   $token->lastused_time([$lastused_time])
   $token->subject([$new_value])
 
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
-
 =head1 WebKDC::IdToken
 
 The WebKDC::IdToken object is used to represent WebAuth id-tokens.
 
-The following methods are all available for use on IdTokens,
-and correspond to the token attributes defined by WebAuth.
+  $token = new WebKDC::IDToken;
+  $token = new WebKDC::IdToken($binary_token, $key_or_ring, $ttl);
 
   $token->creation_time([$new_value])
   $token->subject([$new_value])
@@ -799,16 +841,52 @@ and correspond to the token attributes defined by WebAuth.
   $token->subject_auth_data([$new_value])
   $token->subject_expiration_time([$new_value])
 
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
-
 =head1 WebKDC::ProxyToken
 
 The WebKDC::ProxyToken object is used to represent WebAuth proxy-tokens.
 
-The following methods are all available for use on IdTokens,
-and correspond to the token attributes defined by WebAuth.
+  $token = new WebKDC::ProxyToken;
+  $token = new WebKDC::ProxyToken($binary_token, $key_or_ring, $ttl);
+
+  $token->creation_time([$new_value])
+  $token->expiration_time([$new_value])
+  $token->proxy_type([$new_value])
+  $token->subject([$new_value])
+  $token->webkdc_token([$new_value])
+
+=head1 WebKDC::RequestToken
+
+The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
+
+  $token = new WebKDC::RequestToken;
+  $token = new WebKDC::RequestToken($binary_token, $key_or_ring, $ttl);
+
+  $token->creation_time([$new_value])
+  $token->proxy_type([$new_value])
+  $token->post_url([$new_value])
+  $token->request_reason([$new_value])
+  $token->requested_token_type([$new_value])
+  $token->return_url([$new_value])
+  $token->subject_auth([$new_value])
+
+=head1 WebKDC::ErrorToken
+
+The WebKDC::ErrorToken object is used to represent WebAuth error-tokens.
+
+  $token = new WebKDC::ErrorToken;
+  $token = new WebKDC::ErrorToken($binary_token, $key_or_ring, $ttl);
+
+  $token->creation_time([$new_value])
+  $token->error_code([$new_value])
+  $token->error_message([$new_value])
+
+=head1 WebKDC::WebKDCProxyToken
+
+The WebKDC::WebKDCProxyToken object is used to represent WebAuth 
+webkdc-proxy-tokens.
+
+  $token = new WebKDC::WebKDCProxyToken;
+  $token = new WebKDC::WebKDCProxyToken($binary_token, $key_or_ring, $ttl);
 
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
@@ -817,62 +895,18 @@ and correspond to the token attributes defined by WebAuth.
   $token->proxy_type([$new_value])
   $token->subject([$new_value])
 
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
+=head1 WebKDC::WebKDCServiceToken
 
-=head1 WebKDC::RequestToken
+The WebKDC::WebKDCServiceToken object is used to represent WebAuth 
+webkdc-service-tokens.
 
-The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
-
-The following methods are all available for use on RequestTokens,
-and correspond to the token attributes defined by WebAuth.
-
-  $token->creation_time([$new_value])
-  $token->proxy_type([$new_value])
-  $token->post_url([$new_value])
-  $token->request_reason([$new_value])
-  $token->req_token_type([$new_value])
-  $token->return_url([$new_value])
-  $token->subject_auth([$new_value])
-
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
-
-=head1 WebKDC::ResponseToken
-
-The WebKDC::ResponseToken object is used to represent WebAuth response-tokens.
-
-The following methods are all available for use on ResponseTokens,
-and correspond to the token attributes defined by WebAuth.
-
-  $token->creation_time([$new_value])
-  $token->error_code([$new_value])
-  $token->error_message([$new_value])
-  $token->req_token([$new_value])
-  $token->req_token_type([$new_value])
-  $token->req_token_exp_time([$new_value])
-
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
-
-=head1 WebKDC::ServiceToken
-
-The WebKDC::ServiceToken object is used to represent WebAuth service-tokens.
-
-The following methods are all available for use on ServiceTokens,
-and correspond to the token attributes defined by WebAuth.
+  $token = new WebKDC::WebKDCServiceToken;
+  $token = new WebKDC::WebKDCServiceToken($binary_token, $key_or_ring, $ttl);
 
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
   $token->subject([$new_value])
   $token->session_key([$new_value])
-
-Specifying a new value will cause the attribute to be set, and the
-new value will be returned. If a new value is not specified, the
-current value is returend.
 
 =head1 AUTHOR
 

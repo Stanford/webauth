@@ -52,7 +52,6 @@ typedef enum {
 
 /******************** constants for token attributes **********/
 
-#define WA_TK_APP_NAME "an"
 #define WA_TK_CRED_DATA "crd"
 #define WA_TK_CRED_TYPE "crt"
 #define WA_TK_CREATION_TIME "ct"
@@ -67,16 +66,13 @@ typedef enum {
 #define WA_TK_PROXY_OWNER "pro"
 #define WA_TK_POST_URL "pu"
 #define WA_TK_REQUEST_REASON "rr"
-#define WA_TK_REQ_TOKEN "rt"
-#define WA_TK_REQ_TOKEN_EXPIRATION "rt-et"
-#define WA_TK_REQ_TOKEN_TYPE "rt-t"
+#define WA_TK_REQUESTED_TOKEN_TYPE "rtt"
 #define WA_TK_RETURN_URL "ru"
 #define WA_TK_SUBJECT "s"
 #define WA_TK_SUBJECT_AUTH "sa"
 #define WA_TK_SUBJECT_AUTH_DATA "sad"
-#define WA_TK_SUBJECT_EXPIRATION_TIME "se"
 #define WA_TK_TOKEN_TYPE "t"
-
+#define WA_TK_WEBKDC_TOKEN "wt"
 
 /******************** other constants *****************/
 

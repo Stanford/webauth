@@ -60,7 +60,7 @@ my ($len, $output);
 ok(WebAuth::WA_AES_128, 16);
 ok(WebAuth::WA_AES_192, 24);
 ok(WebAuth::WA_AES_256, 32);
-ok("an" eq WebAuth::WA_TK_APP_NAME);
+ok("t" eq WebAuth::WA_TK_TOKEN_TYPE);
 
 ########################################  base64
 

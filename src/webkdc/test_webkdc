@@ -16,6 +16,42 @@ use vars qw($CONFIG_WAS_KEYTAB $CONFIG_WAS_KEYRING_PATH);
 $CONFIG_WAS_KEYTAB = "shred_webauth.keytab";
 $CONFIG_WAS_KEYRING_PATH = "was.keyring";
 
+
+sub handle_response($$) {
+    my ($resp, $key) = @_;
+    my $resp_token_str = $resp->response_token();
+
+    print "response_token b64'd length(".length($resp_token_str).")\n";
+
+    #FIXME: we don't know this is an id-token (may be an error), need to
+    # call generic token parse method and then look at type
+    my $id_token = new WebKDC::IdToken(base64_decode($resp_token_str),
+				       $key, $WebKDC::C_TOKEN_TTL);
+
+    print $id_token;
+
+    my $sad = $id_token->subject_auth_data();
+
+    my $id_princ = krb5_rd_req(krb5_new(), $sad, $CONFIG_WAS_KEYTAB);
+
+    print "id = $id_princ\n";
+
+    my $app_token = new WebKDC::AppToken;
+
+    $app_token->subject("krb5:$id_princ");
+    $app_token->creation_time(time());
+    $app_token->expiration_time($id_token->expiration_time());
+
+    print $app_token;
+
+    my $ring = keyring_read_file($CONFIG_WAS_KEYRING_PATH);
+
+    my $app_token_str = base64_encode($app_token->to_token($ring));
+
+    print "app_token b64'd length(".length($app_token_str).")\n";
+
+}
+
 eval {
 
     my $c = krb5_new();
@@ -37,7 +73,7 @@ eval {
     $req_token->return_url("http://foo.bar.com/");
     $req_token->creation_time(time());
     $req_token->request_reason('na');
-    $req_token->req_token_type('id');
+    $req_token->requested_token_type('id');
     $req_token->subject_auth('krb5');
 
     print $req_token;
@@ -55,42 +91,24 @@ eval {
 
     my $resp = WebKDC::process_login_request($req);
 
-    my $resp_token_str = $resp->response_token();
+    handle_response($resp, $key);
 
-    print "response_token b64'd length(".length($resp_token_str).")\n";
+    print "----------------------\n";
+    print "----------------------\n";
+    print "----------------------\n";
 
-    my $resp_token = new WebKDC::ResponseToken(base64_decode($resp_token_str),
-					       $key, $WebKDC::C_TOKEN_TTL);
+    # try again using proxy-token from response instead of
+    # user/pass
 
-    print $resp_token;
+    $req = new WebKDC::LoginRequest;
 
-    if (!$resp_token->is_ok()) {
-	die "resp_token not ok";
-    }
+    $req->proxy_cookie('krb5', $resp->proxy_cookie('krb5'));
+    $req->request_token($req_token_str);
+    $req->service_token($service_token_str);
 
-    my $id_token = new WebKDC::IdToken($resp_token->req_token(),
-				       $key, $WebKDC::C_TOKEN_TTL);
-    print $id_token;
+    $resp = WebKDC::process_login_request($req);
 
-    my $sad = $id_token->subject_auth_data();
-
-    my $id_princ = krb5_rd_req(krb5_new(), $sad, $CONFIG_WAS_KEYTAB);
-
-    print "id = $id_princ\n";
-
-    my $app_token = new WebKDC::AppToken;
-
-    $app_token->subject("krb5:$id_princ");
-    $app_token->creation_time(time());
-    $app_token->expiration_time($id_token->subject_expiration_time());
-
-    print $app_token;
-
-    my $ring = keyring_read_file($CONFIG_WAS_KEYRING_PATH);
-
-    my $app_token_str = base64_encode($app_token->to_token($ring));
-
-    print "app_token b64'd length(".length($app_token_str).")\n";
+    handle_response($resp, $key);
 
 };
 

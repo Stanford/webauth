@@ -67,7 +67,7 @@ sub make_service_token_from_krb5_cred($) {
     my $creation_time = time;
     my $expiration_time = $creation_time+$C_SERVICE_TOKEN_LIFETIME;
 
-    my $service_token = new WebKDC::ServiceToken;
+    my $service_token = new WebKDC::WebKDCServiceToken;
 
     $service_token->session_key($session_key);
     $service_token->subject("krb5:$clientprinc");
@@ -87,6 +87,7 @@ sub handle_id_request {
     my $server_principal = $service_token->subject();
 
     my ($user,$pass) = ($lreq->user(), $lreq->pass());
+    my $proxy_token_str;
 
     my ($et, $sad);
 
@@ -112,7 +113,7 @@ sub handle_id_request {
 	    krb5_service_principal(krb5_new(),
 				   $WebKDC::C_WEBKDC_K5SERVICE,
 				   $WebKDC::C_WEBKDC_HOST);
-	my $proxy_token = new WebKDC::ProxyToken;
+	my $proxy_token = new WebKDC::WebKDCProxyToken;
 	$proxy_token->proxy_owner("krb5:$webkdc_princ");
 	$proxy_token->proxy_type('krb5');
 	$proxy_token->proxy_data($prd);
@@ -123,26 +124,40 @@ sub handle_id_request {
 	my $proxy_token_str = 
 	    base64_encode($proxy_token->to_token(get_keyring()));
 	$lresp->proxy_cookie('krb5', $proxy_token_str);
+
+    } elsif ($proxy_token_str = $lreq->proxy_cookie('krb5')) {
+	my $proxy_token = 
+	    new WebKDC::WebKDCProxyToken(base64_decode($proxy_token_str),
+					 get_keyring(), 0);
+	
+	if ($proxy_token->proxy_type() ne 'krb5') {
+	    die "need username/password";
+	}
+
+	$et =$proxy_token->expiration_time();
+
+	my $c = krb5_new();
+
+	krb5_init_via_tgt($c, $proxy_token->proxy_data());
+
+	# now get subject authenticator
+	$server_principal =~ s/^krb5://;
+	$sad = krb5_mk_req($c, $server_principal);
+
     } else {
-	# init ctxt from tgt
+	# PLACE HOLDER
+	die "need username/password";
     }
 
     my $id_token = new WebKDC::IdToken;
     $id_token->subject_auth('krb5');
     $id_token->subject_auth_data($sad);
     $id_token->creation_time(time());
-    $id_token->subject_expiration_time($et);
-
-
-    my $resp_token = new WebKDC::ResponseToken;
-
-    $resp_token->req_token($id_token->to_token($key));
-    $resp_token->req_token_type('id');
-    $resp_token->creation_time(time());
+    $id_token->expiration_time($et);
 
     $lresp->return_url($req_token->return_url());
     $lresp->post_url($req_token->post_url());
-    $lresp->response_token(base64_encode($resp_token->to_token($key)));
+    $lresp->response_token(base64_encode($id_token->to_token($key)));
     return $lresp;
 }
 
@@ -157,8 +172,8 @@ sub process_login_request($) {
     # first parse service-token to get session key
 
     my $service_token = 
-	new WebKDC::ServiceToken(base64_decode($lreq->service_token()), 
-				 get_keyring(), 0);
+	new WebKDC::WebKDCServiceToken(base64_decode($lreq->service_token()), 
+				       get_keyring(), 0);
 
     my $server_principal = $service_token->subject();
 

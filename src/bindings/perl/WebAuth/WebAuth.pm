@@ -41,7 +41,6 @@ our %EXPORT_TAGS = (
 				    WA_AES_128
 				    WA_AES_192
 				    WA_AES_256
-				    WA_TK_APP_NAME
 				    WA_TK_CRED_DATA
 				    WA_TK_CRED_TYPE
 				    WA_TK_CREATION_TIME
@@ -56,15 +55,13 @@ our %EXPORT_TAGS = (
 				    WA_TK_PROXY_OWNER
 				    WA_TK_POST_URL
 				    WA_TK_REQUEST_REASON
-				    WA_TK_REQ_TOKEN
-				    WA_TK_REQ_TOKEN_EXPIRATION
-				    WA_TK_REQ_TOKEN_TYPE
+				    WA_TK_REQUESTED_TOKEN_TYPE
 				    WA_TK_RETURN_URL
 				    WA_TK_SUBJECT
 				    WA_TK_SUBJECT_AUTH
 				    WA_TK_SUBJECT_AUTH_DATA
-				    WA_TK_SUBJECT_EXPIRATION_TIME
 				    WA_TK_TOKEN_TYPE
+				    WA_TK_WEBKDC_TOKEN
 				    )],
 		    'hex' => [ qw(hex_encode hex_decode) ],
 		    'key' => [ qw(key_create keyring_read_file
@@ -556,7 +553,6 @@ The following constants from webauth.h are available:
   WA_AES_192
   WA_AES_256
 
-  WA_TK_APP_NAME
   WA_TK_CRED_DATA
   WA_TK_CRED_TYPE
   WA_TK_CREATION_TIME
@@ -571,15 +567,13 @@ The following constants from webauth.h are available:
   WA_TK_PROXY_OWNER
   WA_TK_POST_URL
   WA_TK_REQUEST_REASON
-  WA_TK_REQ_TOKEN
-  WA_TK_REQ_TOKEN_EXPIRAITON
-  WA_TK_REQ_TOKEN_TYPE
+  WA_TK_REQUESTED_TOKEN_TYPE
   WA_TK_RETURN_URL
   WA_TK_SUBJECT
   WA_TK_SUBJECT_AUTH
   WA_TK_SUBJECT_AUTH_DATA
-  WA_TK_SUBJECT_EXPIRATION_TIME
   WA_TK_TOKEN_TYPE
+  WA_TK_WEBKDC_TOKEN
 
 =head1 AUTHOR
 
