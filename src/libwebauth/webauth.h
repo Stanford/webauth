@@ -38,6 +38,7 @@ typedef enum {
     WA_ERR_KEYRING_VERSION,  /**< Bad keyring version. */
     WA_ERR_NOT_FOUND,        /**< Item not found while searching. */
     WA_ERR_KRB5,             /**< A Kerberos5 error occured. */
+    WA_ERR_GETHOSTNAME,      /**< Couldn't get local hostname. */
     /* must be last */
     WA_ERR_NONE = 0          /**< No error occured. */
     /* must be last */
@@ -497,7 +498,15 @@ int webauth_token_parse(unsigned char *input,
 
 /******************** krb5 ********************/
 int webauth_krb5_init(WEBAUTH_KRB5_CTXT **context);
+
 int webauth_krb5_free(WEBAUTH_KRB5_CTXT *context);
+
+int webauth_krb5_init_creds_password(WEBAUTH_KRB5_CTXT *context,
+                                     const char *username,
+                                     const char *password,
+                                     const char *service,
+                                     const char *keytab);
+
 
 
 
