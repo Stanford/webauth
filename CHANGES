@@ -2,21 +2,21 @@
 
 WebAuth 3.1.2 (in progress)
 
- *) mod_webauth: correctly construct the return url for reverse proxies 
+ *) mod_webauth: Correctly construct the return url for reverse proxies 
    (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
    for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
 
- *) mod_webauth: don't try to attr decode a zero length service token 
-    cache file. log a warning and return NULL like there was no file.
+ *) mod_webauth: Don't try to attr decode a zero length service token 
+    cache file.  Log a warning and return NULL like there was no file.
 
- *) update configure.ac to check for netinet/in.h for windows build
+ *) Update configure.ac to check for netinet/in.h for windows build.
 
- *) modify wa_keyring to not use getopt (not available on windows),
+ *) Modify wa_keyring to not use getopt (not available on windows),
     and change strftime format from %T to %H:%M:%S (%T also not available
-    on windows strftime)
+    on windows strftime).
 
- *) fix bug in libwebauth/krb5.c where we would try to call krb5_free_context
-    on a NULL context
+ *) Fix a bug in libwebauth/krb5.c where we would try to call
+    krb5_free_context on a NULL context.
 
  *) Expanded the libgcc linking hack to apply to all of the module builds
     rather than just the cURL link flags, since it showed up on Solaris 7
@@ -24,6 +24,9 @@ WebAuth 3.1.2 (in progress)
 
  *) Fixed the installation rule for the test suite to properly honor
     DESTDIR.
+
+ *) Cleaned up the sample configuration files somewhat and made them more
+    consistent with each other.
 
 WebAuth 3.1.1 (2003-05-08)
 
