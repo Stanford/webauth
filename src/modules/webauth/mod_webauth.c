@@ -2171,14 +2171,6 @@ check_user_id_hook(request_rec *r)
     return OK;
 }
 
-#if 0 
-static int 
-auth_checker_hook(request_rec *r)
-{
-    return DECLINED;
-}
-#endif
-
 /*
  * this hook will attempt to find the returned-token and the
  * state-token in the URL (r->the_request). If we find them and stash them in 
@@ -2587,6 +2579,23 @@ static const command_rec cmds[] = {
 #undef ADFLAG
 #undef ADTAKE12
 
+#if 0
+static int webauth_auth_checker(request_rec *r)
+{
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: in auth_checker hook");
+    return DECLINED;
+}
+
+
+static int webauth_access_checker(request_rec *r)
+{
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                 "mod_webauth: in accesss_checker hook");
+    return DECLINED;
+}
+#endif 
+
 static void 
 register_hooks(apr_pool_t *p)
 {
@@ -2602,7 +2611,10 @@ register_hooks(apr_pool_t *p)
                            APR_HOOK_REALLY_FIRST);
 
     ap_hook_check_user_id(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE);
-    //ap_hook_auth_checker(webauth_auth_checker, NULL, NULL, APR_HOOK_MIDDLE);
+#if 0
+    ap_hook_access_checker(webauth_access_checker, NULL,NULL,APR_HOOK_FIRST);
+    ap_hook_auth_checker(webauth_auth_checker, NULL, NULL, APR_HOOK_FIRST);
+#endif
     ap_hook_handler(handler_hook, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_fixups(fixups_hook, NULL,NULL,APR_HOOK_MIDDLE);
 }
