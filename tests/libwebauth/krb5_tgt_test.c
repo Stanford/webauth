@@ -57,7 +57,7 @@ void do_export(char *principal, char *cache)
     unsigned char *tgt, *req, *etgt;
     int tgt_len, req_len, etgt_len;
     time_t expiration;
-    char b64[4192];
+    unsigned char b64[4192];
     int b64_len;
 
     s = webauth_krb5_new(&c);
@@ -100,26 +100,26 @@ void do_import(char *keytab, char *cache, char *req, char *tgt)
     char *cprinc;
     char *sprinc;
 
-    s = webauth_base64_decode(req, strlen(req),
-                              req, &req_len,
+    s = webauth_base64_decode((unsigned char *) req, strlen(req),
+                              (unsigned char *) req, &req_len,
                               strlen(req));
     CHECK(s, NULL);
 
-    s = webauth_base64_decode(tgt, strlen(tgt),
-                              tgt, &tgt_len,
+    s = webauth_base64_decode((unsigned char *) tgt, strlen(tgt),
+                              (unsigned char *) tgt, &tgt_len,
                               strlen(tgt));
     CHECK(s, NULL);
 
     s = webauth_krb5_new(&c);
     CHECK(s,c);
     s = webauth_krb5_rd_req_with_data(c,
-                                      req, req_len,
+                                      (unsigned char *) req, req_len,
                                       keytab,
                                       NULL,
                                       &sprinc,
                                       &cprinc,
                                       1,
-                                      tgt, tgt_len,
+                                      (unsigned char *) tgt, tgt_len,
                                       &dec_tgt, &dec_tgt_len);
     CHECK(s,c);
     printf("cprinc = %s\n", cprinc);
