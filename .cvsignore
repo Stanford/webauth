@@ -1,6 +1,8 @@
 LIST.*
 Makefile
 autom4te25.cache
+config.h
+config.h.in
 config.log
 config.status
 configure

@@ -38,10 +38,9 @@ doc docs:
 	doxygen doc/doxygen.cfg
 
 distclean: clean
-	rm -rf config.status config.cache config.log libtool \
-	       src/common/include/conf.h Makefile src/Makefile \
-	       src/libwebauth/Makefile src/utils/Makefile tests/Makefile \
-	       tests/libwebauth/Makefile \
+	rm -rf config.status config.cache config.log config.h libtool \
+	       Makefile src/Makefile src/libwebauth/Makefile \
+	       src/utils/Makefile tests/Makefile tests/libwebauth/Makefile \
 	       src/bindings/perl/WebAuth/Makefile.PL \
 	       *~ core \#* autom4te*.cache
 

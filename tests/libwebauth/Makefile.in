@@ -3,20 +3,20 @@
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
+top_builddir	= @top_builddir@
 VPATH		= @srcdir@
 
 CC		= @CC@
 INSTALL		= @INSTALL@
-LIBTOOL		= @top_builddir@/libtool
+LIBTOOL		= $(top_builddir)/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
 
-CPPFLAGS	= -I. -I$(top_srcdir)/src/common/include \
-		  -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
-		  @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
+CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
+		  @CPPFLAGS@ @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
 
-LDFLAGS		= -L@top_builddir@/src/libwebauth
+LDFLAGS		= -L$(top_builddir)/src/libwebauth
 LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
 
 TESTS		= attrs_test base64_test key_test krb5_test token_test \
@@ -62,5 +62,4 @@ krb5_test.o: krb5_test.c $(top_srcdir)/src/libwebauth/webauth.h webauthtest.h
 random_test.o: random_test.c $(top_srcdir)/src/libwebauth/webauth.h \
  webauthtest.h
 token_test.o: token_test.c $(top_srcdir)/src/libwebauth/webauth.h \
- $(top_srcdir)/src/libwebauth/webauthp.h $(top_srcdir)/src/common/include/conf.h \
- webauthtest.h
+ $(top_srcdir)/src/libwebauth/webauthp.h $(top_builddir)/config.h webauthtest.h
