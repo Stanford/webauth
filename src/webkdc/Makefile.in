@@ -21,8 +21,8 @@ all clean depend:
 install:
 	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc
 	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc/WebKDC
-	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc/images
-	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc/templates
+	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc/generic/images
+	$(INSTALL) -d $D$(APACHE_ROOT)/webkdc/generic/templates
 	$(INSTALL_SCRIPT) login.fcgi $D$(APACHE_ROOT)/webkdc/login.fcgi
 	$(INSTALL_SCRIPT) logout.fcgi $D$(APACHE_ROOT)/webkdc/logout.fcgi
 	$(INSTALL_DATA) WebKDC.pm $D$(APACHE_ROOT)/webkdc/WebKDC.pm
@@ -35,4 +35,5 @@ install:
 	for f in templates/*.tmpl ; do \
 	    $(INSTALL_DATA) $$f $D$(APACHE_ROOT)/webkdc/generic/$$f; \
 	done
-	$(INSTALL_DATA) templates/help.html $D$(APACHE_ROOT)/webkdc/help.html
+	$(INSTALL_DATA) templates/help.html \
+	    $D$(APACHE_ROOT)/webkdc/generic/help.html
