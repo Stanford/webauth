@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+my $AUTHRULE = $ENV{'WEBAUTH_LDAPAUTHRULE'};
+
+require 'util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title(5, "attribute retrieval, no group authorization");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This test will restrict to valid-user, no group restrictions - and retrieve three attributes: displayName, mail, and suAffiliation. If your directory entry contains these attributes, you should see them below as WEBAUTH_LDAP_DISPLAYNAME, WEBAUTH_LDAP_MAIL, and WEBAUTH_LDAP_SUAFFILIATION 
+<br>You have been authorized by the authorization rule "$AUTHRULE" as you can see by
+ the environment variable WEBAUTH_LDAPAUTHRULE below.
+<br>
+EOS
+
+&unauth_return_links;
+
+&dump_stuff;
+
+print "</html>";
+

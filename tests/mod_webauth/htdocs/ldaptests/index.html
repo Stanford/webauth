@@ -1,0 +1,30 @@
+<html>
+<title>WebAuth V3 LDAP Tests</title>
+<h1>WebAuth V3 LDAP Tests</h1>
+<OL>
+<LI><b>Viewing this test requires membership in group stanford:stanford <br><a href="test1/test">basic ldap authorization test</a></b>
+
+<P><LI><b>Viewing this requires membership in one of:<ul>
+       <li>stanford:student
+       <li>stanford:staff
+       <li>stanford:faculty
+    </ul><a href="test2/test">test multiple groups</a></b>
+
+<P><LI><b>This one is restricted to a nonexistent group, so the expected result is the Authorization Required error page. <br><a href="test3/test">test negative result</a></b>
+
+<P><LI><b>This tests the Webauth 2.x compatibility directives:<ul>
+       <li>AuthType StanfordAuth
+       <li>require group stanford:stanford
+    </ul><a href="test4/test">test legacy directives</a></b>
+
+<P><LI><b>This test will restrict to valid-user and retrieve three attributes:<ul>
+       <li>displayName
+       <li>mail
+       <li>suAffiliation
+     </ul><a href="test5/test">test attribute retrieval</a></b>
+
+<P><LI><b>This test will restrict to privgroup stanford:stanford and retrieve the same three attributes. <br><a href="test6/test">test attribute retrieval and group restriction</a></b>
+
+</OL>
+</html>
+

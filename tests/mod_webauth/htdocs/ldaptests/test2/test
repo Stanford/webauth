@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+my $AUTHRULE = $ENV{'WEBAUTH_LDAPAUTHRULE'};
+
+require 'util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title(2, "multiple groups authorization");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This tests authorization for groups, stanford:student, stanford:staff, stanford:faculty. Membership in one or more of them is the condition of authorization, in other words it's an OR not an AND. 
+<br>
+In this case, you have been authorized by the privgroup "$AUTHRULE" as you can see
+ by the environment variable WEBAUTH_LDAPAUTHRULE below.
+<br>
+EOS
+
+&unauth_return_links;
+
+&dump_stuff;
+
+print "</html>";
+
