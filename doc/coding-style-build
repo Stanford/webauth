@@ -1,0 +1,130 @@
+                Configuration and Build Coding Guidelines
+              $Revision$ $Date$
+
+  The following guidelines should be followed when maintaining the build
+  system for any ITSS Infrastructure Services project that requires
+  compilation.
+
+Configure Guidelines
+
+  Software configuration and portability should be done using GNU
+  Autoconf, preferrably the latest available version in pubsw.  For
+  details on writing good configure scripts, review the Autoconf manual
+  (available via info autoconf).  Reading the manual through once is
+  highly recommended, to get an idea fo the tests that are already
+  available.
+
+  Always indicate the required version of Autoconf in the configure.in or
+  configure.ac file by using AC_PREREQ.
+
+  Do not probe for portability issues in configure unless the source code
+  is prepared to deal with the results.  In other words, it's pointless to
+  check for the existence of, say, unistd.h if the source code isn't
+  prepared to do something differently if unistd.h isn't available.
+  Unless you are very familiar with the reasons for such tests, don't use
+  them unless you're able to test the failing case on some platform.  As a
+  quick rule of thumb, unless the HAVE_ macro defined by Autoconf is used
+  somewhere in the source code, the Autoconf test should probably be
+  omitted.
+
+  Assume ANSI C and a reasonably modern C library.  In particular, we do
+  not support SunOS and it's not necessary to check for problems (like
+  broken memcmp or a missing string.h header) that only occur on SunOS.
+
+  Use AC_REPLACE_FUNC where possible to handle portability issues where a
+  standard system function is missing or broken on some platforms.  This
+  allows one to code to the standard and then conditionally compile
+  replacements of those functions only on those platforms that need them.
+  Russ has a large library of such replacement functions available if you
+  need them.
+
+  Remember what each of the basic Autoconf variables are for and use them
+  appropriately:  -I flags to specify include paths go in CPPFLAGS, other
+  compiler flags for other purposes (such as warnings) go in CFLAGS, -L
+  flags to specify library locations go into LDFLAGS, and the actual
+  libraries to into LIBS.
+
+  Always use a configuration header (AC_CONFIG_HEADERS) rather than using
+  DEFS and passing all of the Autoconf-defined symbols to the compiler on
+  the command line.  It makes the build look a lot cleaner.
+
+  Everything which can be set in the configuration header rather than
+  stuck into the Makefile should be.  In particular, try not to ever add
+  -D flags to CFLAGS and instead put the appropriate define into a
+  configuration header.
+
+  Build-time options should ideally be avoided (can it be made a
+  command-line switch or run-time configuration option instead?), but if
+  necessary, should be controlled with an --enable switch to configure
+  (AC_ARG_ENABLE).  Don't use C header files that the user has to edit.
+
+Makefile Guidelines
+
+  The minimal Makefile.in for compiling source code should start with
+  variable settings like:
+
+      CC              = @CC@
+      CFLAGS          = @CFLAGS@
+      CPPFLAGS        = @CPPFLAGS@
+      LDFLAGS         = @LDFLAGS@
+      LIBS            = @LIBS@
+
+  to pick up the variables set by Autoconf.  The first line of the file
+  should also be a comment containing the CVS Id string.
+
+  Write a Makefile.in file and then have the Makefile be created by
+  Autoconf.  Normally you want to put a Makefile.in file in every
+  directory, since this will help Autoconf's support for building in a
+  separate tree from the source tree work properly.  If the project has
+  multiple subdirectories, make sure that the top-level Makefile recurses
+  properly into the subdirectories for various common targets using rules
+  like:
+
+      clean install:
+              @for subdir in $(SUBDIRS); do \
+                  echo "making $@ in $$subdir"; \
+                  ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
+              done
+
+  It's not necessary to write a rule for building .o files from .c files.
+  make already knows how to do this and will use CFLAGS and CPPFLAGS
+  correctly as part of that rule.  Just make sure that those make
+  variables have the appropriate values.
+
+  If any per-project include directories need to be added, add them to
+  CPPFLAGS, not CFLAGS.  The user may want to override CFLAGS from the
+  command line to change the warning options or to compile with debugging
+  instead of optimization, and they must be able to do that without
+  destroying necessary -I flags.
+
+  If writing installation rules, always use the Autoconf variables to
+  determine where to install files.  This means that you'll need a
+  variable block that looks something like:
+
+      INSTALL         = @INSTALL@
+
+      prefix          = @prefix@
+      exec_prefix     = @exec_prefix@
+      bindir          = @bindir@
+      mandir          = @mandir@
+
+  including whatever other paths that you need to install all of the parts
+  of the package.  Use Autoconf-derived paths whenever possible so that
+  the user can change them at configure-time with standard options.  Use
+  AC_PROG_INSTALL in the configure script and then use $(INSTALL) as the
+  installation program to install files.  (This means that you'll need to
+  include a copy of install-sh in your package.)
+
+  The Makefile must have a clean and distclean target.  make clean should
+  remove all generated files from the build, but not the results of
+  running configure.  distclean should additionally remove all the results
+  of running configure.  Normally one should also have a maintclean target
+  that removes all generated files in the tree, including ones like
+  configure that may require special tools to regenerate.
+
+  The top-level Makefile should have a make dist target that creates a
+  distribution tarball of the package that expands out into a directory
+  named <package>-<version> where <package> is the short name of the
+  package and <version> is the current package version.  The package
+  version should be stored in a file named VERSION at the top level for
+  use by the make dist rules.
