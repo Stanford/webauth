@@ -613,6 +613,20 @@ cred_cookie_name(const char *cred_type,
                  const char *cred_server,
                  MWA_REQ_CTXT *rc) 
 {
+    char *p;
+    /* if cred_server has an '=' in it we need to change it to '-'
+       instead, since cookie names can't have an '=' in it. The
+       risk of a potential collision with another valid cred name
+       that has a '-' in it already is small enough not to worry.
+       It might turn out we need to do more extensive encoding/decoding
+       later anyways... */
+    if ((p=ap_strchr(cred_server, '='))) {
+        cred_server = apr_pstrdup(rc->r->pool, cred_server);
+        while(p) {
+            *p = '-';
+            p=ap_strchr(cred_server, '=');
+        }
+    }
     return apr_pstrcat(rc->r->pool, "webauth_ct_", cred_type, 
                        cred_server, NULL);
 }
@@ -627,7 +641,7 @@ cred_cookie_note_name(const char *cred_type,
     /* must start with mod_webauth_COOKIE_ to end up getting set 
        in fixups */
     return apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_webauth_ct_",
-                       cred_type, cred_server, NULL);
+                       cred_type,  cred_server, NULL);
 }
 
 /*
@@ -1693,7 +1707,40 @@ extra_redirect(MWA_REQ_CTXT *rc)
 MWA_CRED_TOKEN *
 parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 {
-    return 0;
+    char *cval;
+    char *cname = cred_cookie_name(cred->type, cred->service, rc);
+    MWA_CRED_TOKEN *ct;
+
+    if (rc->sconf->ring == NULL)
+        return NULL;
+
+    cval = find_cookie(rc, cname);
+    if (cval == NULL)
+        return 0;
+
+    ct =  mwa_parse_cred_token(cval, rc->sconf->ring, NULL, rc);
+
+    if (ct == NULL) {
+        /* we coudn't use the cookie, lets set it up to be nuked */
+        char *cookie = apr_psprintf(rc->r->pool,
+                                    "%s=; path=/; expires=%s;%s",
+                                    cname,
+                                    "Thu, 26-Mar-1998 00:00:01 GMT",
+                                    is_https(rc->r) ? "secure" : "");
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webauth: nuking cookie(%s): (%s)\n", 
+                         cname, cookie);
+        mwa_setn_note(rc->r, 
+                      cred_cookie_note_name(cred->type, cred->service, rc),
+                      cookie);
+    }  else {
+        if (rc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webauth: found valid %s cookie for (%s)", 
+                         cname, rc->at.subject);
+    }
+    return ct;
 }
 
 /*
@@ -1715,6 +1762,79 @@ add_proxy_type(apr_array_header_t *a, char *type)
 }
 
 /*
+ * prepare any krb5 creds
+ */
+static int 
+prepare_krb5_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
+{
+    const char *mwa_func="prepare_krb5_creds";
+    WEBAUTH_KRB5_CTXT *ctxt;
+    int i, status;
+
+#if 1
+    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+    return 1;
+    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+    /*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+
+#endif
+
+    ctxt = mwa_get_webauth_krb5_ctxt(rc->r->server, mwa_func);
+    if (ctxt == NULL)
+        return 0;
+
+    webauth_krb5_keep_cred_cache(ctxt);
+
+
+    for (i=0; i < num_creds; i++) {
+        if (strcmp(creds[i]->cred_type, "krb5") == 0) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                         "mod_webauth: %s: prepare (%s) for (%s)",
+                         mwa_func, creds[i]->cred_server, creds[i]->subject);
+            if (i == 0) {
+                status = webauth_krb5_init_via_cred(ctxt,
+                                                    creds[i]->cred_data,
+                                                    creds[i]->cred_data_len,
+                                                    "/tmp/suhweet");
+            } else {
+                status = webauth_krb5_import_cred(ctxt,
+                                                  creds[i]->cred_data,
+                                                  creds[i]->cred_data_len);
+            }
+            if (status != WA_ERR_NONE)
+                mwa_log_webauth_error(rc->r->server, 
+                                      status, ctxt, mwa_func,
+                                      i == 0 ? "webauth_krb5_init_via_cred" :
+                                      "webauth_krb5_import_cred", NULL);
+        }
+    }
+    webauth_krb5_free(ctxt);
+    return 1;
+}
+
+/*
+ * take all the creds for the given proxy_type and
+ * prepare them. i.e., for krb5 this means creating
+ * a credential cache file and setting KRB5CCNAME.
+ */
+static int 
+prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
+              MWA_CRED_TOKEN **creds, int num_creds)
+{
+    const char *mwa_func="prepare_creds";
+
+    if (strcmp(proxy_type, "krb5") == 0) {
+        return prepare_krb5_creds(rc, creds, num_creds);
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: unhandled proxy type: (%s)",
+                     mwa_func, proxy_type);
+        return 0;
+    }
+}
+
+/*
  * acquire all the creds of the specified proxy_type. this
  * means making requests to the webkdc. If we don't have
  * the specified proxy_type, we'll need to do a redirect to
@@ -1725,7 +1845,6 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
               MWA_WACRED *creds, int num_creds,
               apr_array_header_t **acquired_creds)
 {
-    int i;
     const char *mwa_func="acquire_creds";
     MWA_PROXY_TOKEN *pt = NULL;
 
@@ -1750,18 +1869,6 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: %s: suhweet! we have this proxy type: (%s)",
                  mwa_func, proxy_type);
-
-#if 1
-    for (i=0; i < num_creds; i++) {
-        if (strcmp(proxy_type, creds[i].type) == 0) {
-            if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                             "mod_webauth: %s: need this cred: (%s) (%s)",
-                             mwa_func, creds[i].type, creds[i].service);
-            }
-        }
-    }
-#endif 
 
     if (!mwa_get_creds_from_webkdc(rc, pt, creds, num_creds, acquired_creds)) {
 
@@ -1822,7 +1929,7 @@ gather_creds(MWA_REQ_CTXT *rc)
             add_proxy_type(all_proxy_types, cred[i].type);
 
             /* check the cookie first */
-            ct = parse_cred_token_cookie(rc, cred);
+            ct = parse_cred_token_cookie(rc, &cred[i]);
 
             if (ct != NULL) {
                 /* save in gathered creds */
@@ -1877,6 +1984,19 @@ gather_creds(MWA_REQ_CTXT *rc)
        dump in all the creds, and point KRB%CCNAME at it for 
        cgi programs.
     */
+
+    if (all_proxy_types != NULL && gathered_creds != NULL) {
+        char **proxy = (char**)all_proxy_types->elts;
+        MWA_CRED_TOKEN **cred = (MWA_CRED_TOKEN**) gathered_creds->elts;
+
+        /* foreach proxy type, process the creds */
+        for (i=0; i < all_proxy_types->nelts; i++) {
+            if (!prepare_creds(rc, proxy[i], cred, gathered_creds->nelts)) {
+                /* FIXME: what do we do? */
+            }
+        }
+    }
+
 
     return OK;
 }

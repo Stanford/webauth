@@ -431,9 +431,13 @@ apr_array_header_t *
 mwa_get_webauth_cookies(request_rec *r);
 
 /*
- * parse a cred token
+ * parse a cred token. If key is non-null use it, otherwise
+ * if ring is non-null use it, otherwise log an error and return NULL.
  */
 MWA_CRED_TOKEN *
-mwa_parse_cred_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc);
+mwa_parse_cred_token(char *token, 
+                     WEBAUTH_KEYRING *ring,
+                     WEBAUTH_KEY *key, 
+                     MWA_REQ_CTXT *rc);
 
 #endif

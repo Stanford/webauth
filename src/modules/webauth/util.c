@@ -252,7 +252,10 @@ mwa_get_webauth_cookies(request_rec *r)
  */
 
 MWA_CRED_TOKEN *
-mwa_parse_cred_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
+mwa_parse_cred_token(char *token, 
+                     WEBAUTH_KEYRING *ring,
+                     WEBAUTH_KEY *key, 
+                     MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     int blen, status;
@@ -269,10 +272,18 @@ mwa_parse_cred_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
      * just expiration
      */
 
-    if (rc->sconf->ring == NULL)
-        return NULL;
 
-    status = webauth_token_parse_with_key(token, blen, 0, key, &alist);
+    if (key != NULL) {
+        status = webauth_token_parse_with_key(token, blen, 0, key, &alist);
+    } else if (ring != NULL){
+        status = webauth_token_parse(token, blen, 0, ring, &alist);
+    } else {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: callled with NULL key and ring!",
+                     mwa_func);
+        return NULL;
+    } 
+        
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, NULL,

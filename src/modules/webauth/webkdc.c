@@ -983,7 +983,7 @@ parse_get_creds_response(apr_xml_doc *xd,
         }
 
         /* take token_data, parse it, expecting a cred-token */
-        ct = mwa_parse_cred_token(token_data, &st->key, rc);
+        ct = mwa_parse_cred_token(token_data, NULL, &st->key, rc);
         if (ct != NULL) {
             MWA_CRED_TOKEN **nct;
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
@@ -1014,7 +1014,7 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     apr_xml_parser *xp;
     apr_xml_doc *xd;
     char *xml_request, *xml_response, *b64_pt;
-    int status, i;
+    int i;
     static const char *mwa_func = "mwa_get_creds_from_webkdc";
     apr_status_t astatus;
     MWA_SERVICE_TOKEN *st;
