@@ -1,20 +1,23 @@
 #include <stdio.h>
 
 #include "webauth.h"
+#include "webauthtest.h"
 
 #define BUFSIZE 2048
 
 int main(int argc, char *argv[])
 {
     unsigned char orig_buffer[BUFSIZE];
-    unsigned char encoded_buffer[BUFSIZE];
     int s;
-    int elen,errors;
+    TEST_VARS;
 
-    errors = 0;
+    START_TESTS(2);
 
     s = webauth_random_key(orig_buffer, WA_AES_128);
 
+    TEST_OK2(WA_ERR_NONE, s);
+
+    /*
     printf("status = [%d]\n", s);
 
     elen = webauth_hex_encode(orig_buffer, WA_AES_128, 
@@ -23,9 +26,13 @@ int main(int argc, char *argv[])
     encoded_buffer[elen] = '\0';
 
     printf("buffer = [%s]\n", encoded_buffer);
+    */
 
-    s = webauth_random_bytes(orig_buffer, WA_AES_128);
+    s = webauth_random_bytes(orig_buffer, 32);
 
+    TEST_OK2(WA_ERR_NONE, s);
+
+    /*
     printf("status = [%d]\n", s);
 
     elen = webauth_hex_encode(orig_buffer, WA_AES_128, 
@@ -34,6 +41,8 @@ int main(int argc, char *argv[])
     encoded_buffer[elen] = '\0';
 
     printf("buffer = [%s]\n", encoded_buffer);
+    */
 
-    exit(errors > 0 ? 1 : 0);
+    END_TESTS;
+    exit(NUM_FAILED_TESTS ? 1 : 0);
 }

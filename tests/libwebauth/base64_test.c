@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "webauth.h"
+#include "webauthtest.h"
 
 #define BUFSIZE 1024
 
@@ -10,39 +11,37 @@ int main(int argc, char *argv[])
     unsigned char encoded_buffer[BUFSIZE];
     unsigned char decoded_buffer[BUFSIZE];
     int i,j;
-    int elen, rlen, rdlen, dlen, errors;
+    int elen, rlen, rdlen, dlen;
+    int equal;
+    TEST_VARS;
 
-    errors = 0;
+    START_TESTS(2044);
+
     for (i=1; i < 512; i++) {
         for (j=0; j < i; j++) {
             orig_buffer[j] = j % 256;
         }
         elen = webauth_base64_encode(orig_buffer, i, encoded_buffer, BUFSIZE);
         rlen = webauth_base64_encoded_length(i);
-        if (elen != rlen) {
-            fprintf(stderr, "ERROR: elen(%d) != rlen(%d)\n", elen, rlen);
-            errors++;
-        }
+        TEST_OK(elen == rlen);
+
         rdlen = webauth_base64_decoded_length(encoded_buffer, elen);
         dlen = webauth_base64_decode(encoded_buffer, elen, 
                                      decoded_buffer, BUFSIZE);
 
-        if (dlen != rdlen) {
-            fprintf(stderr, "ERROR: dlen(%d) != rdlen(%d)\n", dlen, rdlen);
-            errors++;
-        }
+        TEST_OK(dlen == rdlen);
+        TEST_OK(dlen == i);
 
-        if (dlen != i) {
-            fprintf(stderr, "ERROR: dlen(%d) != i(%d)\n", dlen, i);
-            errors++;
-        }
+        equal = 1;
         for (j=0; j < i; j++) {
             if (decoded_buffer[j] != orig_buffer[j]) {
-                fprintf(stderr, "ERROR: decoded buffer compare: i(%d) j(%d)\n",
-                        i, j);
-                errors++;
+                equal=0;
+                break;
             }
         }
+        TEST_OK(equal);
     }
-    exit(errors > 0 ? 1 : 0);
+
+    END_TESTS;
+    exit(NUM_FAILED_TESTS ? 1 : 0);
 }

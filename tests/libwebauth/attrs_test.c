@@ -1,9 +1,10 @@
 
-#include "webauth.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "webauth.h"
+#include "webauthtest.h"
 
 #define BUFSIZE 2048
 #define MAX_ATTRS 100
@@ -16,6 +17,9 @@ int main(int argc, char *argv[])
     int len, i, rlen;
     int num_in, num_out1, num_out2;
     unsigned char binary_data[BUFSIZE];
+    TEST_VARS;
+
+    START_TESTS(52);
 
     for (i=0; i < sizeof(binary_data); i++) {
         binary_data[i] = i % 256;
@@ -41,40 +45,36 @@ int main(int argc, char *argv[])
 
     rlen = webauth_attrs_encoded_length(attrs, num_in);
 
-    printf ("%d\n", rlen);
+    TEST_OK(rlen == 2184);
 
     buff = malloc(rlen+1);
 
     len = webauth_attrs_encode(attrs, num_in, buff, rlen);
 
-    buff[len] = '\0';
+    TEST_OK(len == rlen);
 
-    printf ("%d = webauth_attrs_encode\n", len);
+    buff[len] = '\0';
 
     num_out1 = webauth_attrs_decode(buff, len, NULL, 0);
 
-
-    printf ("%d = webauth_attrs_decode (NULL attrs)\n", num_out1);
+    TEST_OK(num_out1 == num_in);
 
     num_out2 = webauth_attrs_decode(buff, len, decoded_attrs, MAX_ATTRS);
 
-
-    printf ("%d = webauth_attrs_decode\n", num_out2);
+    TEST_OK(num_out2 == num_in);
 
     for (i=0; i < num_out2; i++) {
         /*printf("decoded (%s) = (%s)\n", decoded_attrs[i].name,
           (char*)decoded_attrs[i].value);*/
-        if (strcmp(attrs[i].name, decoded_attrs[i].name) != 0) {
-            fprintf(stderr, "decoded attr %d name not equal\n", i);
-        }
-        if (attrs[i].length != decoded_attrs[i].length) {
-            fprintf(stderr, "decoded attr %d length not equal\n", i);
-        }
-        if (memcmp(attrs[i].value, decoded_attrs[i].value, 
-                   attrs[i].length) != 0) {
-            fprintf(stderr, "decoded attr %d value not equal\n", i);
-        }
+        TEST_OK(strcmp(attrs[i].name, decoded_attrs[i].name) == 0);
+        /*fprintf(stderr, "decoded attr %d name not equal\n", i);*/
+        TEST_OK(attrs[i].length == decoded_attrs[i].length);
+        /*fprintf(stderr, "decoded attr %d length not equal\n", i);*/
+        TEST_OK(memcmp(attrs[i].value, decoded_attrs[i].value, 
+                       attrs[i].length) == 0);
+        /*fprintf(stderr, "decoded attr %d value not equal\n", i);*/
     }
+    END_TESTS;
 
-    return 0;
+    exit(NUM_FAILED_TESTS ? 1 : 0);
 }
