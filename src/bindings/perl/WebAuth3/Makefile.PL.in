@@ -17,5 +17,5 @@ WriteMakefile (
     LIBS              => '-L@abs_top_builddir@/src/libwebauth/.libs'
                          . ' -R@abs_top_builddir@/src/libwebauth/.libs'
                          . ' -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@',
-    clean             => { FILES => [ qw/webauth_keyring webauth_keyring2/ ] }
+    clean             => { FILES => 'webauth_keyring webauth_keyring2' }
 );
