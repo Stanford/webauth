@@ -25,6 +25,8 @@ my $REMOTE_USER = $ENV{'REMOTE_USER'};
 my $WTL = $ENV{'WEBAUTH_TOKEN_LASTUSED'};
 my ($prev) = $ENV{'QUERY_STRING'} =~ /prev=(\d+)/;
 
+my $cs = scalar(localtime($WTL));
+
 require 'util.pl';
 
 print "Content-type: text/html\n\n";
@@ -40,6 +42,8 @@ You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
 This test is to make sure WEBAUTH_TOKEN_LASTUSED is getting updated.
 <br>
 <br>
+The current value of WEBAUTH_TOKEN_LASTUSED is $cs ($WTL).
+<br>
 EOS
 
 if ($prev) {
@@ -53,7 +57,9 @@ EOS
 }
 
 
+
 print<<EOS;
+<br>
 Click <a href="/tests/auth/test9?prev=$WTL">here</a> to re-run the test when you
 have waited 10 seconds.
 <br>
