@@ -26,7 +26,7 @@ ALLDIRS = src tests
 .PHONY: all check check-manifest clean dist distclean doc docs install
 .PHONY: test tests
 
-all: Makefile 
+all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
@@ -35,7 +35,7 @@ all: Makefile
 check test tests:
 	cd tests && $(MAKE) all
 
-clean depend install:
+clean depend:
 	@for subdir in $(ALLDIRS); do \
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
