@@ -111,7 +111,7 @@ monitored for security.
          /usr/pubsw/sbin/leland_srvtab \
              -f <apache-root>/conf/webkdc/srvtab \
              -k <apache-root>/conf/webkdc/keytab \
-             service/webkdc
+             service.webkdc
 
      and then deleting the srvtab file (since it's not needed).
 
