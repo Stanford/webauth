@@ -406,24 +406,31 @@ cache (created via one of the calls to krb5_init_via*) from being
 destroyed. This should only be used you need to keep a file-based
 credential cache from being removed.
 
-=item krb5_init_via_password(context, user, password, keytab[, cache])
+=item krb5_init_via_password(context, user, password, keytab, server_principal[, cache])
 
-   $server_principal = krb5_init_via_password($context, $user, 
-                                         $password, $keytab[, $cache]);
+   ($principal) = krb5_init_via_password($context, $user, $password, 
+                                         $keytab, $server_principal[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
 doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
-cache will be used and destroyed when the context is destroyed. Returns
-the server principal in the keytab used to verify the TGT.
+cache will be used and destroyed when the context is destroyed. 
 
-=item krb5_init_via_keytab(context, keytab[, cache])
+If $server_princpal is undef or "", then the first princpal found in the
+keytab will be used.
 
-   krb5_init_via_keytab($context, $keytab[, $cache]);
+Returns the server principal used to verify the TGT.
+
+=item krb5_init_via_keytab(context, keytab, server_princpal, [, cache])
+
+   krb5_init_via_keytab($context, $keytab, $server_princpal[, $cache]);
 
 Initializes a context using the principal in the specified keytab
 by getting a TGT. If $cache is not specified, a memory
 cache will be used and destroyed when the context is destroyed.
+
+If $server_princpal is undef or "", then the first princpal found in the
+keytab will be used.
 
 =item krb5_init_via_cred(context, cred[, cache])
 
@@ -480,14 +487,17 @@ returns an error then the fully-qualified principal name is returned.
 Used to construct a kerberos V5 request for the specified principal. $request
 will be set on success, and will contain the result of the krb5_mk_req call.
 
-=item krb5_rd_req(context, request, keytab, local)
+=item krb5_rd_req(context, request, keytab, server_principal, local)
 
-    $principal = krb5_rd_req($context, $request, $keytab, 1);
+    $principal = krb5_rd_req($context, $request, $keytab, $server_princpal, 1);
 
 Used to read a request created with krb5_mk_req. On success $principal
 will be set to the client principal in the request. If local is 1, then 
 krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
 returns an error then the fully-qualified principal name is returned.
+
+If $server_princpal is undef or "", then the first princpal found in the
+keytab will be used.
 
 =back
 

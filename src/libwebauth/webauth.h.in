@@ -811,23 +811,31 @@ const char *webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *content);
  * The TGT will be placed in the specified cache, or a memory cache 
  * if cache_name is NULL.
  * 
- * server_principal will be set to the server_principal used in
- * keytab to verify the tgt, and should be freed if WA_ERR_NONE
- * is returned.
+ * If server_princpal is NULL, the first principal in the keytab
+ * will be used, otherwise the specifed server principal will be used.
+ * 
+ * server_principal_out will be set to the fully qualified server
+ * principal used and should be freed if WA_ERR_NONE is returned.
  */
 int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                    const char *username,
                                    const char *password,
                                    const char *keytab,
+                                   const char *server_principal,
                                    const char *cache_name,
-                                   char **server_principal);
+                                   char **server_principal_out);
 /*
  * initialize a context with a keytab. Credentials
  * will be placed in the specified cache, or a memory cache if cache_name
  * is NULL.
+ *
+ * If server_princpal is NULL, the first principal in the keytab
+ * will be used, otherwise the specifed server principal will be used.
+ *
  */
 int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, 
                                  const char *path,
+                                 const char *server_principal,
                                  const char *cache_name);
 
 /*
@@ -916,6 +924,9 @@ int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
  * client_principal should be freed when it is no longer
  * needed.
  *
+ * If server_princpal is NULL, the first principal in the keytab
+ * will be used, otherwise the specifed server principal will be used.
+ *
  * If local is 1, then krb5_aname_to_localname is called on the
  * principal. If krb5_aname_to_localname returns an error then
  * the fully-qualified principal name is returned.
@@ -927,6 +938,7 @@ int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                         const unsigned char *req,
                         int length,
                         const char *keytab,
+                        const char *server_principal,
                         char **client_principal,
                         int local);
 

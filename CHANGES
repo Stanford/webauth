@@ -2,6 +2,11 @@
 
 WebAuth 3.0.1 (in progress)
 
+ *) Modify WebAuthKeytab and WebKdcKeytab directives so 
+    you can optionally specify which principal to use with
+    the specified keytab, instead of using the first principal found.
+    This required modifying webauth_krb5_* APIs.
+ 
  *) implement WebAuthProxyHeaders directive. See WebAuth module
     documentation for more information.
 

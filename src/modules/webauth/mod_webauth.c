@@ -643,6 +643,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE_PTR(login_url);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
+    MERGE_PTR(keytab_principal);
     MERGE_PTR(cred_cache_dir);
     MERGE_PTR(st_cache_path);
     return (void *)conf;
@@ -2321,9 +2322,6 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_Keyring:
             sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
             break;
-        case E_Keytab:
-            sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-            break;
         case E_CredCacheDir:
             sconf->cred_cache_dir = ap_server_root_relative(cmd->pool, arg);
             break;
@@ -2446,9 +2444,18 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
     MWA_WACRED *cred;
+
+    MWA_SCONF *sconf = (MWA_SCONF *)
+        ap_get_module_config(cmd->server->module_config, &webauth_module);
     
     switch (e) {
-            /* start of dconfigs */
+        /* server configs */
+        case E_Keytab:
+            sconf->keytab_path = ap_server_root_relative(cmd->pool, w1);
+            sconf->keytab_principal = 
+                (w2 != NULL) ? apr_pstrdup(cmd->pool, w2) : NULL;
+            break;
+        /* start of dconfigs */
         case E_Cred:
             if (dconf->creds == NULL) {
                 dconf->creds = 
@@ -2471,6 +2478,9 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
+
+#define SSTR12(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_take12,(void*)mconfig, RSRC_CONF, TAKE12, help}
 
 #define SFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
@@ -2500,10 +2510,10 @@ static const command_rec cmds[] = {
     SSTR(CD_WebKdcSSLCertFile, E_WebKdcSSLCertFile, CM_WebKdcSSLCertFile),
     SSTR(CD_LoginURL, E_LoginURL, CM_LoginURL),
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
-    SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_CredCacheDir, E_CredCacheDir,  CM_CredCacheDir),
     SSTR(CD_ServiceTokenCache, E_ServiceTokenCache, CM_ServiceTokenCache),
     SSTR(CD_SubjectAuthType, E_SubjectAuthType, CM_SubjectAuthType),
+    SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
     SFLAG(CD_StripURL, E_StripURL, CM_StripURL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_ProxyHeaders, E_ProxyHeaders, CM_ProxyHeaders),

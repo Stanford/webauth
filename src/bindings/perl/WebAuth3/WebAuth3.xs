@@ -612,49 +612,60 @@ OUTPUT:
     RETVAL
 
 void
-webauth_krb5_init_via_password(c,name,password,keytab,...)
+webauth_krb5_init_via_password(c,name,password,keytab,server_principal,...)
 WEBAUTH_KRB5_CTXT *c
 char *name
 char *password
 char *keytab
-PROTOTYPE: $$$$;$
+char *server_principal
+PROTOTYPE: $$$$$;$
 PPCODE:
 {
-    char *cred, *server_principal;
+    char *cred, *server_princ_out;
     int s;
-    if (items==5) {
+    if (items==6) {
         cred = (char *)SvPV(ST(4),PL_na);
     } else {
         cred = NULL;
     }
-    s = webauth_krb5_init_via_password(c, name, password, keytab, 
-                                       cred, &server_principal);
+
+    if (server_principal && *server_principal == '\0')
+       server_principal = NULL;
+
+    s = webauth_krb5_init_via_password(c, name, password, 
+                                       keytab, server_principal,
+                                       cred, &server_princ_out);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_password", s, c);
     } else {
         SV *out = sv_newmortal();
-        sv_setpv(out, server_principal);
+        sv_setpv(out, server_princ_out);
         EXTEND(SP,1);
         PUSHs(out);
-        free(server_principal);
+        free(server_princ_out);
     }
 }
 
 void
-webauth_krb5_init_via_keytab(c,keytab,...)
+webauth_krb5_init_via_keytab(c,keytab,server_principal,...)
 WEBAUTH_KRB5_CTXT *c
 char *keytab
-PROTOTYPE: $$;$
+char *server_principal
+PROTOTYPE: $$$;$
 PPCODE:
 {
     int s;
     char *cred;
-    if (items==3) {
+    if (items==4) {
         cred = (char *)SvPV(ST(2),PL_na);
     } else {
         cred = NULL;
     }
-    s = webauth_krb5_init_via_keytab(c, keytab, cred);
+
+    if (server_principal && *server_principal == '\0')
+       server_principal = NULL;
+
+    s = webauth_krb5_init_via_keytab(c, keytab, server_principal, cred);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_keytab", s, c);
     }
@@ -823,19 +834,25 @@ PPCODE:
 }
 
 void
-webauth_krb5_rd_req(c,request,keytab,local)
+webauth_krb5_rd_req(c,request,keytab,server_principal,local)
 WEBAUTH_KRB5_CTXT *c
 SV *request
 char *keytab
+char *server_principal
 int local
-PROTOTYPE: $$$$
+PROTOTYPE: $$$$$
 PPCODE:
 {       
     unsigned char *req;
     char *client_princ;
     int req_len, s;
     req = SvPV(request, req_len);
-    s = webauth_krb5_rd_req(c, req, req_len, keytab, &client_princ, local);
+
+    if (server_principal && *server_principal == '\0')
+       server_principal = NULL;
+
+    s = webauth_krb5_rd_req(c, req, req_len, keytab, server_principal,
+                            &client_princ, local);
 
     if (s == WA_ERR_NONE){
         SV *out = sv_newmortal();

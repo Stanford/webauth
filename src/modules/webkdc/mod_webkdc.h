@@ -105,6 +105,7 @@ extern module webkdc_module;
 typedef struct {
     char *keyring_path;
     char *keytab_path;
+    char *keytab_principal;
     char *token_acl_path;
     int  debug;
     int debug_ex;

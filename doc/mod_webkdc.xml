@@ -172,17 +172,15 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <name><a name="WebKdcKeytab">WebKdcKeytab</a></name>
 <description>Name of the Kerberos V5 keytab file
 </description>
-<syntax>WebKdcKeytab <em>path</em></syntax>
+<syntax>WebKdcKeytab <em>path</em> [<em>princpal</em>]</syntax>
 <default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
 <usage>
 <p>
-This is the name of the Kerberos V5 keytab file. The keytab must only contain
-the principal used for the WebKDC operations, such as service/webkdc@realm.
-This is because the principal is determined by reading the keytab file and 
-using the first principal found.</p>
+This is the name of the Kerberos V5 keytab file. If principal is not
+specified, then the first princpal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -192,7 +190,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebKdcKeytab conf/webkdc/keytab
+WebKdcKeytab conf/webkdc/keytab service/webkdc
 </example>
 </usage>
 </directivesynopsis>

@@ -246,6 +246,7 @@ typedef struct {
     char *login_url;
     char *keyring_path;
     char *keytab_path;
+    char *keytab_principal;
     char *cred_cache_dir;
     char *st_cache_path;
     int  debug;

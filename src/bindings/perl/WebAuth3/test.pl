@@ -217,7 +217,8 @@ if ($run_kerb) {
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 	#FIXME my $ctx_princ = WebAuth3::krb5_get_principal($c);
 
-	my $sp = WebAuth3::krb5_init_via_password($c, $kuser, $kpass, $kkeytab);
+	my $sp = WebAuth3::krb5_init_via_password($c, $kuser, $kpass, 
+						  $kkeytab, undef);
 
 	my $ctx_princ = WebAuth3::krb5_get_principal($c, 1);
 	my ($tgt, $expiration) = WebAuth3::krb5_export_tgt($c);
@@ -232,7 +233,8 @@ if ($run_kerb) {
 
 	my $request = WebAuth3::krb5_mk_req($c, $rprinc);
 
-	my $client_princ = WebAuth3::krb5_rd_req($c, $request, $kkeytab, 1);
+	my $client_princ = WebAuth3::krb5_rd_req($c, $request, $kkeytab, 
+						 undef, 1);
 	#print "client = ($client_princ)\n";
 
 	# nuke current context and import from tgt we created
@@ -247,7 +249,7 @@ if ($run_kerb) {
 	$c = WebAuth3::krb5_new();
 	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
 
-	WebAuth3::krb5_init_via_keytab($c, $kkeytab);
+	WebAuth3::krb5_init_via_keytab($c, $kkeytab, undef);
     };
     ok (!isa($@, "WebAuth3::Exception"));
     if (isa($@, "WebAuth3::Exception")) {

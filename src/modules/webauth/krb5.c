@@ -72,6 +72,7 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
         return NULL;
 
     status = webauth_krb5_rd_req(ctxt, sad, sad_len, rc->sconf->keytab_path,
+                                 rc->sconf->keytab_principal,
                                  &principal, 1);
     webauth_krb5_free(ctxt);
 
@@ -208,7 +209,8 @@ krb5_webkdc_credential(server_rec *server,
     if (ctxt == NULL)
         return 0;
 
-    status = webauth_krb5_init_via_keytab(ctxt, sconf->keytab_path, NULL);
+    status = webauth_krb5_init_via_keytab(ctxt, sconf->keytab_path, 
+                                          sconf->keytab_principal, NULL);
     if (status != WA_ERR_NONE) {
         log_webauth_error(server, status, ctxt, mwa_func,
                           "webauth_krb5_init_via_keytab", 

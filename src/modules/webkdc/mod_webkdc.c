@@ -821,7 +821,8 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         blen = apr_base64_decode(bin_req, req);
 
         status = webauth_krb5_rd_req(ctxt, bin_req, blen,
-                                     rc->sconf->keytab_path,
+                                     rc->sconf->keytab_path, 
+                                     rc->sconf->keytab_principal,
                                      &client_principal, 0);
 
         if (status != WA_ERR_NONE) {
@@ -1745,6 +1746,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
                                             lt->username,
                                             lt->password,
                                             rc->sconf->keytab_path,
+                                            rc->sconf->keytab_principal,
                                             NULL,
                                             &server_principal);
 
@@ -2467,6 +2469,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
+    MERGE_PTR(keytab_principal);
     MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
     return (void *)conf;
@@ -2562,6 +2565,33 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 }
 
 static const char *
+cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
+{
+    int e = (int)cmd->info;
+    char *error_str = NULL;
+
+    MWK_SCONF *sconf = (MWK_SCONF *)
+        ap_get_module_config(cmd->server->module_config, &webkdc_module);
+    
+    switch (e) {
+        /* server configs */
+         case E_Keytab:
+            sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
+            sconf->keytab_principal = 
+                (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
+            break;
+         default:
+            error_str = 
+                apr_psprintf(cmd->pool,
+                             "Invalid value cmd->info(%d) for directive %s",
+                             e,
+                             cmd->directive->directive);
+            break;
+    }
+    return error_str;
+}
+
+static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
     int e = (int)cmd->info;
@@ -2596,13 +2626,16 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
 
+#define SSTR12(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_str12,(void*)mconfig, RSRC_CONF, TAKE12, help}
+
 #define SFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
 
 static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
-    SSTR(CD_Keytab, E_Keytab,  CM_Keytab),
+    SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
     SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),

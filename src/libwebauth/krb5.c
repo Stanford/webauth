@@ -483,14 +483,16 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 }
 
 /* 
- * get the principal from a keytab. this assumes only one principal
- * per keytab, which is normally the case.
+ * open up a keytab and return a krb5_principal to use with that
+ * keytab. If in _principal is NULL, returned out_principal is first
+ * principal found in keytab.
  */
 static int
-get_principal_from_keytab(WEBAUTH_KRB5_CTXTP *c,
-                          const char *keytab_path,
-                          krb5_principal *princ,
-                          krb5_keytab *id_out)
+open_keytab(WEBAUTH_KRB5_CTXTP *c,
+            const char *keytab_path,
+            const char *in_principal,
+            krb5_principal *out_principal,
+            krb5_keytab *id_out)
 {
     krb5_keytab id;
     krb5_kt_cursor cursor;
@@ -499,29 +501,36 @@ get_principal_from_keytab(WEBAUTH_KRB5_CTXTP *c,
 
     assert(c != NULL);
     assert(keytab_path != NULL);
-    assert(princ != NULL);
+    assert(out_principal != NULL);
     assert(id_out != NULL);
 
     c->code = krb5_kt_resolve(c->ctx, keytab_path, &id);
     if (c->code != 0)
         return WA_ERR_KRB5;
 
-    c->code = krb5_kt_start_seq_get(c->ctx, id, &cursor);
-    if (c->code != 0) {
-        /* FIXME: when logging is in, log if error if tcode != 0*/
-        tcode = krb5_kt_close(c->ctx, id);
-        return WA_ERR_KRB5;
-    }
 
-    c->code = krb5_kt_next_entry(c->ctx, id, &entry, &cursor);
-    if (c->code == 0) {
-        c->code = krb5_copy_principal(c->ctx, entry.principal, princ);
-        /* use tcode fromt this point so we don't lose value of c->code */
+    if (in_principal != NULL) {
+        c->code = krb5_parse_name(c->ctx, (char *)in_principal, 
+                                  out_principal);
+    } else {
+        c->code = krb5_kt_start_seq_get(c->ctx, id, &cursor);
+        if (c->code != 0) {
+            /* FIXME: when logging is in, log if error if tcode != 0*/
+            tcode = krb5_kt_close(c->ctx, id);
+            return WA_ERR_KRB5;
+        }
+
+        c->code = krb5_kt_next_entry(c->ctx, id, &entry, &cursor);
+        if (c->code == 0) {
+            c->code = krb5_copy_principal(c->ctx, entry.principal, 
+                                          out_principal);
+            /* use tcode fromt this point so we don't lose value of c->code */
+            /* FIXME: when logging is in, log if error if tcode != 0 */
+            tcode = krb5_kt_free_entry(c->ctx, &entry);
+        }
         /* FIXME: when logging is in, log if error if tcode != 0 */
-        tcode = krb5_kt_free_entry(c->ctx, &entry);
+        tcode = krb5_kt_end_seq_get(c->ctx, id, &cursor);
     }
-    /* FIXME: when logging is in, log if error if tcode != 0 */
-    tcode = krb5_kt_end_seq_get(c->ctx, id, &cursor);
 
     if (c->code == 0) {
         *id_out = id;
@@ -572,7 +581,8 @@ mk_req_with_principal(krb5_context context,
 
 static int
 verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
-           char **server_principal)
+           const char *server_principal,
+           char **server_principal_out)
 {
     krb5_principal server;
     krb5_keytab keytab;
@@ -582,11 +592,11 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
 
     assert(c != NULL);
     assert(keytab_path != NULL);
-    assert(server_principal != NULL);
+    assert(server_principal_out != NULL);
 
-    *server_principal = NULL;
+    *server_principal_out = NULL;
 
-    s = get_principal_from_keytab(c, keytab_path, &server, &keytab);
+    s = open_keytab(c, keytab_path, server_principal, &server, &keytab);
     if (s != WA_ERR_NONE)
         return s;
 
@@ -612,7 +622,7 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
     krb5_kt_close(c->ctx, keytab);
 
     if (c->code == 0) {
-        c->code = krb5_unparse_name(c->ctx, server, server_principal);
+        c->code = krb5_unparse_name(c->ctx, server, server_principal_out);
     }
 
     krb5_free_principal(c->ctx, server);
@@ -666,8 +676,9 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username,
                                const char *password,
                                const char *keytab,
+                               const char *server_principal,
                                const char *cache_name,
-                               char **server_principal)
+                               char **server_principal_out)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
     char ccname[128];
@@ -679,7 +690,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     assert(username != NULL);
     assert(password != NULL);
     assert(keytab != NULL);
-    assert(server_principal != NULL);
+    assert(server_principal_out != NULL);
 
     c->code = krb5_parse_name(c->ctx, username, &c->princ);
 
@@ -745,7 +756,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
     } else {
         /* lets see if the credentials are valid */
-        return verify_tgt(c, keytab, server_principal);
+        return verify_tgt(c, keytab, server_principal, server_principal_out);
     }
 }
 
@@ -828,6 +839,7 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
                     const unsigned char *req,
                     int length,
                     const char *keytab_path,
+                    const char *server_principal,
                     char **client_principal,
                     int local)
 {
@@ -843,7 +855,7 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
     assert(req != NULL);
     assert(client_principal);
 
-    s = get_principal_from_keytab(c, keytab_path, &server, &keytab);
+    s = open_keytab(c, keytab_path, server_principal, &server, &keytab);
     if (s != WA_ERR_NONE)
         return s;
 
@@ -894,6 +906,7 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
 int
 webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, 
                              const char *keytab_path,
+                             const char *server_principal,
                              const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
@@ -910,7 +923,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     if (c->princ != NULL)
         krb5_free_principal(c->ctx, c->princ);
 
-    s = get_principal_from_keytab(c, keytab_path, &c->princ, &keytab);
+    s = open_keytab(c, keytab_path, server_principal, &c->princ, &keytab);
     if (s != WA_ERR_NONE) 
         return WA_ERR_KRB5;
 

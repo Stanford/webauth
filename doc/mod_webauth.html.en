@@ -748,17 +748,15 @@ WebAuthKeyringKeyLifetime 60d<br />
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
 </td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
-This is the name of the Kerberos V5 keytab file. The keytab must only contain
-the principal used for webauth operations, such as webauth/hostname@realm.
-This is because the principal is determined by reading the keytab file and 
-using the first principal found.</p>
+This is the name of the Kerberos V5 keytab file. If principal is not
+specified, then the first princpal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -768,7 +766,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebAuthKeytab conf/webauth/keytab
+WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
 </code></p></div>
 
 </div>

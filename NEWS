@@ -2,18 +2,22 @@
 
 WebAuth 3.0.1pre (2003-02-20)
 
-    Added WebAuthProxyHeaders directive to pass WebAuth information to
+ *) Modify WebAuthKeytab and WebKdcKeytab directives so 
+    you can optionally specify which principal to use with
+    the specified keytab, instead of using the first principal found.
+
+ *) Added WebAuthProxyHeaders directive to pass WebAuth information to
     a proxied server. See the WebAuth module documentation for more
     information.
 
-    Remove the service token cache on restarts
+ *) Remove the service token cache on restarts
 
 WebAuth 3.0.0 (2003-02-18)
 
-    Initial public release of WebAuth v3.  This is a complete rewrite of
+ *) Initial public release of WebAuth v3.  This is a complete rewrite of
     the WebAuth system, sharing no common code with the previous release.
     It is now based on Apache 2.0, Kerberos v5, and a new infrastructure
     for managing authentication tokens.
 
-    This is the initial release with basic authentication support and Perl
+ *) This is the initial release with basic authentication support and Perl
     bindings only.

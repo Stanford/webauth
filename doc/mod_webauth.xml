@@ -562,17 +562,15 @@ WebAuthKeyRing conf/webauth/keyring
 <name><a name="WebAuthKeytab">WebAuthKeytab</a></name>
 <description>Name of the Kerberos V5 keytab file
 </description>
-<syntax>WebAuthKeytab <em>path</em></syntax>
+<syntax>WebAuthKeytab <em>path</em> [<em>principal</em>]</syntax>
 <default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
 <usage>
 <p>
-This is the name of the Kerberos V5 keytab file. The keytab must only contain
-the principal used for webauth operations, such as webauth/hostname@realm.
-This is because the principal is determined by reading the keytab file and 
-using the first principal found.</p>
+This is the name of the Kerberos V5 keytab file. If principal is not
+specified, then the first princpal in the keytab file be used.</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -582,7 +580,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebAuthKeytab conf/webauth/keytab
+WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
 </example>
 </usage>
 </directivesynopsis>

@@ -64,7 +64,8 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
 
     s = webauth_krb5_init_via_password(c, username, password, 
-                                       keytab_path, NULL, &server_principal);
+                                       keytab_path, NULL,
+                                       NULL, &server_principal);
 
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(server_principal != NULL);
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 
     TEST_OK2(WA_ERR_NONE, s);
 
-    s = webauth_krb5_rd_req(c, sa, salen, keytab_path, &cp, 1);
+    s = webauth_krb5_rd_req(c, sa, salen, keytab_path, NULL, &cp, 1);
     /*printf("cp = %s\n", cp);*/
     TEST_OK2(WA_ERR_NONE, s);
     if (cp) {
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(c != NULL);
             
-    s = webauth_krb5_init_via_keytab(c, keytab_path, NULL);
+    s = webauth_krb5_init_via_keytab(c, keytab_path, NULL, NULL);
     TEST_OK2(WA_ERR_NONE, s);
 
     s = webauth_krb5_free(c);
