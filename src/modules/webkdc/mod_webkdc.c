@@ -1790,7 +1790,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
     MWK_REQUEST_TOKEN req_token;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
-    int num_tokens, i;
+    int num_tokens, i, did_login;
 
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
@@ -1865,9 +1865,23 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e)
                       &login_sub_cred, rptokens, &num_tokens))
             return MWK_ERROR;
         sub_cred = &login_sub_cred;
+        did_login = 1;
     } else {
         sub_cred = &parsed_sub_cred;
+        did_login = 0;
     }
+
+    /* lets see if they requested forced-authentication, if so 
+       and we didn't just login, then we need
+       to return an error that will cause the web front-end to 
+       prompt for a username/password */
+    if ((strcmp(req_token.request_reason, "fa") == 0) &&
+        !did_login) {
+        const char *msg = "forced authentication, need to login";
+        return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, 
+                                 msg, mwk_func, 1);
+    }
+
 
     /* now examine req_token to see what they asked for */
     

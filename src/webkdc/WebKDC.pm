@@ -180,8 +180,8 @@ sub request_token_request($$) {
 	if ($wk_err == WK_ERR_USER_AND_PASS_REQUIRED) {
 	    my $proxy_cookies = $wreq->proxy_cookies();
 	    if (defined($proxy_cookies)) {
-		while (my($type,$token) = each(%{$proxy_cookies})) {
-		    $wresp->proxy_cookie($type, '');
+		while (my($name,$token) = each(%{$proxy_cookies})) {
+		    $wresp->proxy_cookie($name, '');
 		}
 	    }
 	}
@@ -198,7 +198,8 @@ sub request_token_request($$) {
 	my $proxy_tokens = $root->find_child('proxyTokens');
 	if (defined($proxy_tokens)) {
 	    foreach my $token (@{$proxy_tokens->children}) {
-		$wresp->proxy_cookie($token->attr('type'), $token->content);
+		my $type = $token->attr('type');
+		$wresp->proxy_cookie("webauth_wpt_$type", $token->content);
 	    }
 	}
 	$wresp->return_url($return_url);

@@ -186,7 +186,7 @@ if ($username && $password && $submit eq 'Continue') {
 # $req->proxy_cookies($cookies);
 
 my $pt_krb5 = $q->cookie('webauth_wpt_krb5');
-$req->proxy_cookie('krb5', $pt_krb5) unless !$pt_krb5;
+$req->proxy_cookie('webauth_wpt_krb5', $pt_krb5) unless !$pt_krb5;
 
 $req->request_token($request_token_str);
 $req->service_token($service_token_str);

@@ -23,13 +23,35 @@
     up authentication normally, using "AuthType WebAuth"
     instead of the normal "AuthType Basic", plus a "require valid-user"
     directive.
-
-    Example:</p>
-<example>
+    </p>
+<example><title>Example</title>
   &lt;Location /private/&gt;<br />
   AuthType WebAuth<br />
   Require valid-user<br />
   &lt;/Location&gt;
+</example>
+
+</section>
+
+<section><title>Minimal Config File</title>
+
+    <p>The following example shows the minimum config file required
+    to configure and use mod_webauth.</p>
+
+<example><title>Example</title>
+  LoadModule webauth_module modules/mod_webauth.so<br/>
+<br/>
+  WebAuthKeyring           conf/webauth_keyring<br/>
+  WebAuthKeytab            conf/webauth_keytab<br/>
+  WebAuthServiceTokenCache conf/service_token_cache<br/>
+  WebAuthLoginURL          https://webkdc.stanford.edu/login/<br/>
+  WebAuthWebKDCURL         https://webkdc.stanford.edu/webkdc-service/<br/>
+  WebAuthWebKDCPrincipal   service/webkdc@stanford.edu<br/>
+<br/>
+  &lt;Location /private/&gt;<br />
+  AuthType WebAuth<br />
+  Require valid-user<br />
+  &lt;/Location&gt;<br/>
 </example>
 
 </section>
@@ -40,8 +62,9 @@
 variables to the SSI and CGI namespace. The generated variables are listed in
 the table below. For CGI apps that have expectations about and/or restrictions
 on the names of environment variables they can handle, you can use the
-FIXME:ref WebAuthVarPrefix directive to have additional environment 
-variables set.</p>
+<a href="#WebAuthVarPrefix">WebAuthVarPrefix</a> directive to have 
+additional environment  variables set.
+</p>
 
 <table border="1">
 <tr>
@@ -88,7 +111,8 @@ by <em>type</em>:</p>
     <p>The downside to using this option is that returned id-token will
     be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
     <p>
-    Specifying this also requires that FIXME:ref WebAuthKeytab be set.
+    Specifying this also requires that 
+    <a href="#WebAuthKeytab">WebAuthKeytab</a> be set.
     (FIXME: it is already always required for obtaining a service-token, though
      it will probably become optional at some point).</p>
 </li>
@@ -103,9 +127,7 @@ by <em>type</em>:</p>
     username.</p>
  </li>
 </ul>
-<p>
-Example:</p>
-<example>
+<example><title>Example</title>
 WebAuthSubjectAuthType krb5
 </example>
 </usage>
@@ -113,7 +135,7 @@ WebAuthSubjectAuthType krb5
 
 
 <directivesynopsis>
-<name>WebAuthTokenMaxTTL</name>
+<name><a name="WebauthTokenMaxTTL">WebAuthTokenMaxTTL</a></name>
 <description>How old a token that was should be recently created is valid for.
 </description>
 <syntax>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></syntax>
@@ -160,7 +182,8 @@ URL after the tokens have been processed. Stripping them off will prevent
 them from showing up in the <code>access_log</code> and is generally a
 good idea.</p>
 <p>This directive should only be turned off if used in conjunction
-with the FIXME:ref WebAuthExtraRedirect directive enabled. Even then,
+with the <a href="#WebAuthExtraRedirect">WebAuthExtraRedirect</a> 
+directive enabled. Even then,
 turning it off may cause problems with log parsers, etc. Turning
 it off is probably only useful for debugging.</p>
 
@@ -168,6 +191,11 @@ it off is probably only useful for debugging.</p>
 it off without the extra redirect will most certainly break things,
 as Apache (and CGI apps, etc) will treat it as being part of the
 requested URL. </p>
+
+<note><title>Note</title> 
+    <p>Giving all the caveats, should this directive even documented?
+    </p>
+</note>
 
 <example><title>Example</title>
 &lt;VirtualHost _default_:443&gt;<br />
@@ -180,7 +208,7 @@ WebAuthExtraRedirect on<br />
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthExtraRedirect</name>
+<name><a name="WebAuthExtraRedirect">WebAuthExtraRedirect</a></name>
 <description>Whether or not to do an extra redirect upon return from the WebKDC
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
@@ -201,8 +229,9 @@ is the user's won't see the extra WebAuth information in the URL, and
 won't be able to bookmark it, etc. Note that bookmarking a URL
 with the extra information shouldn't really cause any problems, as
 the tokens in the extra information will only be valid for a limited
-amount of time (FIXME:ref see WebAuthTokenMaxTTL), after which they
-will be ignored.</p>
+amount of time (see <a href="#WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a>, 
+after which they will be ignored.
+</p>
 
 <p>The downside to enabling this directive is the extra redirect will
 require another round-trip from the server to the user's browser, and
@@ -223,7 +252,7 @@ WebAuthExtraRedirect on<br />
 <description>The URL used to contact the WebKDC when posting XML.
 </description>
 <syntax>WebAuthWebKDCURL <em>url</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -247,7 +276,7 @@ WebAuthWebKDCURL https://webkdc.stanford.edu/webkdc-service/
 <description>The Kerberos V5 principal name of the WebKDC
 </description>
 <syntax>WebAuthWebKDCPrincipal <em>principal</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -274,7 +303,7 @@ WebAuthWebKDCPrincipal service/webkdc@stanford.edu
 unauthenticated
 </description>
 <syntax>WebAuthLoginURL <em>url</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -302,7 +331,7 @@ WebAuthLoginURL https://webkdc.stanford.edu/login/
 error occurs
 </description>
 <syntax>WebAuthFaliureURL <em>url</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -329,7 +358,7 @@ WebAuthFailureURL /app/failure
 <description>Name of the file containing the webauth keyring
 </description>
 <syntax>WebAuthKeyring <em>path</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -337,6 +366,10 @@ WebAuthFailureURL /app/failure
 <p>
 This is the name of the file containing the webauth keyring, which is
 a file that contains the server's private AES key(s). </p>
+
+<p>The keyring file gets read once per child and cached for the duration
+of a child.
+</p>
 
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
@@ -352,11 +385,11 @@ WebAuthKeyRing conf/webauth_keyring
 </directivesynopsis>
 
 <directivesynopsis>
-<name>WebAuthKeytab</name>
+<name><a name="WebAuthKeytab">WebAuthKeytab</a></name>
 <description>Name of the Kerberos V5 keytab file
 </description>
 <syntax>WebAuthKeytab <em>path</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -385,7 +418,7 @@ WebAuthKeytab conf/webauth_keytab
 <description>Name of the service-token cache file.
 </description>
 <syntax>WebAuthServiceTokenCache <em>path</em></syntax>
-<default>None</default>
+<default>(none)</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
 
@@ -406,7 +439,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 
 
 <example><title>Example</title>
-WebAuthKeytab conf/webauth_keytab
+WebAuthServiceTokenCache conf/service_token_cache
 </example>
 </usage>
 </directivesynopsis>
@@ -498,7 +531,7 @@ WebAuthRequireSSL off<br />
 
 
 <directivesynopsis>
-<name>WebAuthVarPrefix</name>
+<name><a name="WebAuthVarPrefix">WebAuthVarPrefix</a></name>
 <description>Additional webauth-related environment variables to set
 </description>
 <syntax>WebAuthVarPrefix <em>string</em></syntax>
@@ -537,7 +570,7 @@ WebAuthVarPrefix HTTP_
 <usage>
 <p>
 This directive controls whether or not all WebAuth-related cookies
-are removed if the user accesses the URL that has this directive set.
+are removed if the user accesses this URL.
 </p>
 
 <note><title>Note (NIY)</title> 
@@ -607,10 +640,6 @@ This directive controls whether or not a user will be prompted for a
 username/password if they need to be redirected to the WebKDC for
 authentication.
 </p>
-
-<note><title>Note (NIY)</title> 
-    <p>This directive is <b>NOT</b> implemented yet.</p>
-</note>
 
 <example><title>Example</title>
   # force the user to login, and create an app-token<br/>

@@ -711,9 +711,9 @@ redirect_request_token(MWA_REQ_CTXT *rc)
                               WA_F_NONE);
     }
 
-    /* FIXME: hardcoded for now */
     webauth_attr_list_add_str(alist, WA_TK_REQUEST_REASON,
-                              "na", 0, WA_F_NONE);
+                              rc->dconf->force_login ? "fa" : "na",
+                              0, WA_F_NONE);
 
     webauth_attr_list_add_str(alist, WA_TK_REQUESTED_TOKEN_TYPE, 
                               WA_TT_ID, 0, WA_F_NONE);
