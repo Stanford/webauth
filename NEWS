@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.1.1 (2003-05-08)
+
+ *) Fixed HTML_TEMPLATE_ROOT in src/webkdc/logout.fcgi script by
+    changing the path to relative instead of absolute.
+
 WebAuth 3.1.0 (2003-05-01)
 
  *) Added a new Apache module, mod_webauthldap, for LDAP directory
