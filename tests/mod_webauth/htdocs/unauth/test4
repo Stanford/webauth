@@ -1,0 +1,28 @@
+#!/usr/pubsw/bin/perl5 -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require '../auth/util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title(4, "test WebAuthLoginCancelURL");
+
+print<<EOS;
+
+<br>
+You have successfully canceled out of logging in and have been sent
+back to the correct page.
+<br>
+EOS
+
+&unauth_return_links;
+
+#&dump_stuff;
+
+print "</html>";
+

@@ -1,0 +1,56 @@
+#!/usr/pubsw/bin/perl5 -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require 'util.pl';
+
+sub app_lifetime_test {
+
+    my $WEBAUTH_TOKEN_EXPIRATION = $ENV{'WEBAUTH_TOKEN_EXPIRATION'};
+
+    print "<hr>\n";
+
+    &begin_tests("Performing Query String test");
+
+    &do_test("WEBAUTH_TOKEN_EXPIRATION",
+	     $WEBAUTH_TOKEN_EXPIRATION < time()+10,
+	     "expires in less then 10 seconds",
+	     "does not expire in less then 10 seconds");
+    &end_tests;
+    print "<hr>\n";
+}
+
+print "Content-type: text/html\n\n";
+
+print "<html>\n";
+
+test_title(8, "testing 5 second app-token lifetime and force login");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This test sets the app-token lifetime to 5 seconds. To complete the
+test, you should run it again after waiting about 10-15 seconds.
+You should get sent back to the webkdc <b>and</b> prompted for your
+username/password, then sent back here again.
+<br>
+<br>
+Click <a href="/tests/auth/test8">here</a> to re-run the test when you
+have waited 10 seconds.
+<br>
+<br>
+Click <a href="/tests/index.html">here</a> to return to the tests<br>
+
+EOS
+
+#&return_links;
+
+&app_lifetime_test;
+
+&dump_stuff;
+
+print "</html>";
+

@@ -1,0 +1,69 @@
+#!/usr/pubsw/bin/perl5 -w
+
+use strict;
+
+sub last_used_test {
+
+    my $WEBAUTH_TOKEN_LASTUSED = $ENV{'WEBAUTH_TOKEN_LASTUSED'};
+    my $time = time();
+    my $low = $time-10;
+    my $high = $time+10;
+    print "<hr>\n";
+
+    &begin_tests("Performing LASTUSED test");
+
+    &do_test("WEBAUTH_TOKEN_LASTUSED",
+	     ($WEBAUTH_TOKEN_LASTUSED > $low && 
+	     $WEBAUTH_TOKEN_LASTUSED < $high),
+	     "set  to <b>".scalar(localtime($WEBAUTH_TOKEN_LASTUSED))."</b>",
+	     "not within the acceptable time window!");
+    &end_tests;
+    print "<hr>\n";
+}
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+my $WTL = $ENV{'WEBAUTH_TOKEN_LASTUSED'};
+my ($prev) = $ENV{'QUERY_STRING'} =~ /prev=(\d+)/;
+
+require 'util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>\n";
+
+test_title(9, "testing last-used-update");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This test is to make sure WEBAUTH_TOKEN_LASTUSED is getting updated.
+<br>
+<br>
+EOS
+
+if ($prev) {
+    my $ps = scalar(localtime($prev));
+
+print<<EOS;
+The previous value of WEBAUTH_TOKEN_LASTUSED was $ps ($prev).
+<br>
+<br>
+EOS
+}
+
+
+print<<EOS;
+Click <a href="/tests/auth/test9?prev=$WTL">here</a> to re-run the test when you
+have waited 10 seconds.
+<br>
+EOS
+
+&return_links;
+
+&last_used_test;
+
+&dump_stuff;
+
+print "</html>";
+
