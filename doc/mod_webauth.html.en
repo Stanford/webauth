@@ -98,7 +98,7 @@ WebAuthUseCreds
  for a particular request (or group of requests). </p>
 
 <p>Depending on the credential type, temporary files containing credentials
-  may need to be created. These crdentials will be stored in the directory
+  may need to be created. These credentials will be stored in the directory
   specified by the <a href="#WebAuthCredCacheDir">WebAuthCredCacheDir</a> directive.</p>
 
 <p>The <a href="#WebAuthCred">WebAuthCred</a> directive is use to request which credentials a
@@ -177,8 +177,8 @@ additional environment variables set.
 </p>
 
 <p>Additionally, requesting credentials for a particular request may
-cause envrionment variables to get set. For example, request Kerberos V5
-credentials will result in the KRB5CCNAME envionment variable being
+cause environment variables to get set. For example, request Kerberos V5
+credentials will result in the KRB5CCNAME environment variable being
 set.
 </p>
 <table class="bordered">
@@ -729,7 +729,7 @@ WebAuthLoginURL https://webkdc.stanford.edu/login/
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
-This directive controls which URL the user is returned to after authenicating
+This directive controls which URL the user is returned to after authenticating
 with the WebKDC. By default, they will return the URL they originally
 requested.
 </p>
@@ -785,7 +785,7 @@ id-token</td></tr>
 </table>
 <p>
 When mod_webauth needs to make a request for an id-token, it needs to
-specify what type of subect authenticator that it expects returned. This
+specify what type of subject authenticator that it expects returned. This
 directive configures which type of subject authenticator is requested
 by <em>type</em>:</p>
 <ul>

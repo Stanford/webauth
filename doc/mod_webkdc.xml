@@ -102,7 +102,7 @@ is not absolute, then it will be treated as being relative to <code>ServerRoot</
 </note>
 
 <example><title>Example</title>
-WebKdcKeyRing conf/webkdc/keyring
+WebKdcKeyring conf/webkdc/keyring
 </example>
 </usage>
 </directivesynopsis>
@@ -211,7 +211,7 @@ WebKdcKeytab conf/webkdc/keytab
 <usage>
 <p>
 This directive controls the lifetime of the webkdc-proxy token (the 
-main single-sign-oncookie containing the user's proxied credentials).
+main single-sign-on cookie containing the user's proxied credentials).
 If not specified, the lifetime time used is the expiration time of the 
 underlying credential (i.e., the lifetime of the Kerberos TGT for example).
 </p>
@@ -333,7 +333,7 @@ WebKdcKeyringAutoUdpate off<br />
 <name>WebKdcKeyringKeyLifetime</name>
 <description>Lifetime of keys in the keyring if we auto-update
 </description>
-<syntax>WebKdcAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
+<syntax>WebKdcKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></syntax>
 <default>WebKdcKeyringKeyLifetime 30d</default>
 <contextlist><context>server config</context>
 <context>virtual host</context></contextlist>
