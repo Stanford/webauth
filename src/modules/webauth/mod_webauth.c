@@ -80,6 +80,9 @@ static void
 log_request(request_rec *r, const char *msg)
 {
 
+    /* FIXME: disabling for now */
+    return;
+
 #define LOG_S(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
               "mod_webauth: %s(%s)", a, (b != NULL)? b:"(null)");
 #define LOG_D(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
@@ -399,6 +402,9 @@ check_user_id_hook(request_rec *r)
             /* if no valid app token, look for WEBAUTHR in url */
             subject = check_url(r);
         }
+
+        /* stick it in note for future reference */
+        addn_note(r, N_SUBJECT, subject);
     }
 
     if (subject != NULL) {
@@ -470,6 +476,7 @@ translate_name_hook(request_rec *r)
     static char *rmagic = WEBAUTHR_MAGIC;
     static char *smagic = WEBAUTHS_MAGIC;
 
+    error_log(r, "translate_name_hook disabled for now");
     return DECLINED;
 
     if (!ap_is_initial_req(r)) {
@@ -539,6 +546,7 @@ fixups_hook(request_rec *r)
 {
     MWA_DCONF *dconf;
     MWA_SCONF *sconf;
+    const char *subject;
 
     dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
                                                  &webauth_module);
@@ -555,16 +563,23 @@ fixups_hook(request_rec *r)
         */
 
         log_request(r, "in fixups");
-        at = ap_auth_type(r);
-        if (at == NULL) at = "(null)";
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                     "mod_webauth: fixups auth_type(%s)", at);
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
-                     "mod_webauth: main fixups url(%s)", r->unparsed_uri);
-
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
                      "mod_webauth: subreq fixups url(%s)", r->unparsed_uri);
+    }
+
+    /* set environment variable */
+    subject = get_note(r, N_SUBJECT);
+    if (subject) {
+        char *name;
+        if (sconf->var_prefix) {
+            name = apr_pstrcat(r->pool, sconf->var_prefix, 
+                               ENV_WEBAUTH_USER, NULL);
+        } else {
+            name = ENV_WEBAUTH_USER;
+        }
+        apr_table_setn(r->subprocess_env, name, subject);
+
     }
     return DECLINED;
 }

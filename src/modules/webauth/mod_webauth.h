@@ -24,6 +24,9 @@
 /* name of our main app-token cookie */
 #define AT_COOKIE_NAME "webauth_at"
 
+/* environment variable to set */
+#define ENV_WEBAUTH_USER "WEBAUTH_USER"
+
 /* for searching Cookie: header */
 #define AT_COOKIE_NAME_EQ "webauth_at="
 
