@@ -115,11 +115,10 @@ sub get_post_url {
 
 sub from_token {
     my ($self, $token, $key, $ttl, $b64) = @_;
-    my $s = $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if (($s == WebAuth::WA_ERR_NONE) && ($self->get_token_type() ne 'req')) {
-	die "token_type not 'req'";
+    $self->SUPER::from_token($token, $key, $ttl, $b64); 
+    if ($self->get_token_type() ne 'req') {
+	die "from_token: token_type not 'req'";
     }
-    return $s;
 }
 
 1;

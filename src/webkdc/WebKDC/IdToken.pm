@@ -98,11 +98,10 @@ sub get_expiration_time {
 
 sub from_token {
     my ($self, $token, $key, $ttl, $b64) = @_;
-    my $s = $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if (($s == WebAuth::WA_ERR_NONE) && ($self->get_token_type() ne 'id')) {
+    $self->SUPER::from_token($token, $key, $ttl, $b64); 
+    if ($self->get_token_type() ne 'id') {
 	die "token_type not 'id'";
     }
-    return $s;
 }
 
 1;

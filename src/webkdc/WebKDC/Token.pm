@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use WebAuth;
+use WebKDC::Status;
 use UNIVERSAL qw(isa);
+use Carp;
 
 BEGIN {
     use Exporter   ();
@@ -96,35 +98,29 @@ sub to_token {
     my ($s, $token) = 
 	WebAuth::token_create($self->{'attrs'}, $ct, $key);
 
-    if ($s == WebAuth::WA_ERR_NONE) {
-	return ($s, $token);
-    } else {
-	return ($s, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	carp "",new WebKDC::Status("token_create", $s);
     }
+    return $token;
 }
 
 sub to_b64token {
     my ($self, $key) = @_;
-    
-    my ($s, $token) = $self->to_token($key);
-
-    if ($s == WebAuth::WA_ERR_NONE) {
-	return ($s, WebAuth::base64_encode($token));
-    } else {
-	return ($s, undef);
-    }
+    return WebAuth::base64_encode($self->to_token($key));
 }
 
 sub from_token {
     my ($self, $token, $key, $ttl) = @_;
     my $s;
     ($s, $self->{'attrs'}) = WebAuth::token_parse($token, $ttl, $key);
-    return $s;
+    if ($s != WebAuth::WA_ERR_NONE) {
+	carp "",new WebKDC::Status("token_parse", $s);
+    }
 }
 
 sub from_b64token {
     my ($self, $token, $key, $ttl) = @_;
-    return $self->from_token(WebAuth::base64_decode($token), $key, $ttl);
+    $self->from_token(WebAuth::base64_decode($token), $key, $ttl);
 }
 
 sub set_token_type {

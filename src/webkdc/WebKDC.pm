@@ -6,7 +6,9 @@ use warnings;
 use lib '../bindings/perl/WebAuth/blib/lib';
 use lib '../bindings/perl/WebAuth/blib/arch/auto/WebAuth';
 
+use Carp;
 use WebAuth;
+use WebKDC::Status;
 use WebKDC::LoginRequest;
 use WebKDC::LoginResponse;
 use WebKDC::IdToken;
@@ -40,35 +42,6 @@ our $C_TOKEN_TTL = 300; # 5 minutes
 our $C_WEBKDC_KEYRING_PATH = "webkdc.keyring";
 our $C_WEBKDC_KEYTAB = "lichen_webauth.keytab";
 
-# initialize package globals, first exported ones
-#$Var1   = '';
-
-# then the others (which are still accessible as $Some::Module::stuff)
-#@more   = ();
-
-# all file-scoped lexicals must be created before
-# the functions below that use them.
-
-# file-private lexicals go here
-#my $priv_var    = '';
-
-# functions
-
-sub check_error($$;$) {
-    my ($s, $m, $c) = @_;
-    if ($s == WebAuth::WA_ERR_NONE) {
-	return 0;
-    } elsif ($s != WebAuth::WA_ERR_KRB5 || $c == undef) {
-	print "ERROR: $m webauth error($s)\n";
-	return 1;
-    } else {
-	my $kc = WebAuth::krb5_error_code($c);
-	my $km = WebAuth::krb5_error_message($c);
-	print "ERROR: $m krb5 error code($kc) message($km)\n";
-	return 1;
-    }
-}
-
 # verify an entered username/password using krb5
 # get a subject authenticator for server that requested id token
 # get proxy data for proxy-token
@@ -90,8 +63,8 @@ sub verify_pass_krb5($$$) {
 
     ($s, $c) = WebAuth::krb5_new();
 
-    if (check_error($s, "krb5_new", $c)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("krb5_new", $s, $c);
     }
 
     $s = WebAuth::krb5_init_via_password($c, 
@@ -99,24 +72,24 @@ sub verify_pass_krb5($$$) {
 					 $password, 
 					 $C_WEBKDC_KEYTAB);
 
-    if (check_error($s, "krb5_init_via_password", $c)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "", new WebKDC::Status("krb5_init_via_password", $s, $c);
     }
-    
     # now get subject authenticator
     ($s, $sad) = WebAuth::krb5_mk_req($c, $server_principal);
 
-    if (check_error($s, "krb5_init_via_password", $c)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("krb5_mk_req", $s, $c);
     }
 
     # now get proxy data
     ($s, $prd, $et) = WebAuth::krb5_export_tgt($c);
-    if (check_error($s, "krb5_init_via_password", $c)) {
-	return ($s, undef, undef, undef);
+
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("krb5_export_tgt", $s, $c);
     }
 
-    return ($s, $sad, $prd, $et);
+    return ($sad, $prd, $et);
 }
 
 # construct a service token given:
@@ -134,22 +107,21 @@ sub make_service_token_from_krb5_cred($) {
     my ($s, $clientprinc, $c, $ring);
 
     ($s, $ring) = WebAuth::keyring_read_file($C_WEBKDC_KEYRING_PATH);
-    if (check_error($s, "keyring_read_file ", undef)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("keyring_read_file", $s);
     }
 
     # verify request first
 
     ($s, $c) = WebAuth::krb5_new();
 
-    if (check_error($s, "krb5_new", $c)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("krb5_new", $s, $c);
     }
 
     ($s, $clientprinc) = WebAuth::krb5_rd_req($c, $request, $C_WEBKDC_KEYTAB);
-
-    if (check_error($s, "krb5_rd_req", $c)) {
-	return ($s, undef, undef, undef);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("keyring_read_file", $s);
     }
 
     my $session_key = WebAuth::random_key(WebAuth::WA_AES_128);
@@ -165,13 +137,8 @@ sub make_service_token_from_krb5_cred($) {
 
     my $token;
 
-    ($s, $token) = $sto->to_b64token($ring);
-
-    if ($s != WebAuth::WA_ERR_NONE) {
-	return ($s, undef, undef, undef);
-    } else  {
-	return ($s, $token, $session_key, $expiration_time);
-    }
+    $token = $sto->to_b64token($ring);
+    return ($token, $session_key, $expiration_time);
 }
 
 # takes a WebKDC::LoginRequest and returns a WebKDC::LoginResponse
@@ -186,23 +153,18 @@ sub process_login_request($) {
     my ($s, $ring, $key);
 
     ($s, $ring) = WebAuth::keyring_read_file($C_WEBKDC_KEYRING_PATH);
-    if (check_error($s, "keyring_read_file", undef)) {
-	return $resp->set_status($s);
+    if ($s != WebAuth::WA_ERR_NONE) {
+	croak "",new WebKDC::Status("keyring_read_file", $s);
     }
 
     my $sto = new WebKDC::ServiceToken;
 
-    $s = $sto->from_b64token($req->get_service_token(), $ring, $C_TOKEN_TTL);
-
-    if (check_error($s, "sto from_b64token", undef)) {
-	return $resp->set_status($s);
-    }
+    $sto->from_b64token($req->get_service_token(), $ring, $C_TOKEN_TTL);
 
     my $server_principal = $sto->get_subject();
 
     if ($server_principal !~ /^krb5:/) {
-	#FIXME: need better error code
-	return $resp->set_status(WebAuth::WA_ERR_CORRUPT);
+	die "ERROR: only krb5 principals supported in service tokens";
     }
 
     # save in response before taking off krb5: prefix
@@ -213,31 +175,22 @@ sub process_login_request($) {
     # use session key to parse request token
     $key = WebAuth::key_create(WebAuth::WA_AES_KEY, $sto->get_session_key());
     if (!defined($key)) {
-	print "ERROR: can't create AES key from session key\n";
-	return $resp->set_status(WebAuth::WA_ERR_BAD_KEY);
+	die "ERROR: can't create AES key from session key\n";
     }
 
     my $reqo = new WebKDC::RequestToken;
 
-    $s = $reqo->from_b64token($req->get_request_token(), $key, $C_TOKEN_TTL);
-    if (check_error($s, "rto from_b64token", undef)) {
-	return $resp->set_status($s);
-    }
+    $reqo->from_b64token($req->get_request_token(), $key, $C_TOKEN_TTL);
 
     # FIXME: would normally poke through request to determine what to do next
-
     $resp->set_return_url($reqo->get_return_url());
     $resp->set_post_url($reqo->get_post_url());
 
     my ($sad, $prd, $et);
 
-    ($s, $sad, $prd, $et) = verify_pass_krb5($req->get_user(),
-					     $req->get_pass(),
-					     $server_principal);
-    if (check_error($s, "verify_pass_krb5", undef)) {
-	return $resp->set_status($s);
-    }
-
+    ($sad, $prd, $et) = verify_pass_krb5($req->get_user(),
+					 $req->get_pass(),
+					 $server_principal);
     my ($id_token);
 
     my $ito = new WebKDC::IdToken;
@@ -246,22 +199,14 @@ sub process_login_request($) {
     $ito->set_creation_time(time());
     $ito->set_expiration_time($et);
 
-    ($s, $id_token) = $ito->to_token($key);
+    $id_token = $ito->to_token($key);
 				      
-    if (check_error($s, "create_id_token", undef)) {
-	return $resp->set_status($s);
-    }
-
     my ($response_token);
     my $respo = new WebKDC::ResponseToken;
 
     $respo->set_req_token($id_token);
-    ($s, $response_token) = $respo->to_b64token($key);
-    if (check_error($s, "create_id_token", undef)) {
-	return $resp->set_status($s);
-    }
+    $response_token = $respo->to_b64token($key);
     $resp->set_response_token($response_token);
-    $resp->set_status(WebAuth::WA_ERR_NONE);
     return $resp;
 }
 

@@ -117,11 +117,10 @@ sub get_req_token_exp_time {
 
 sub from_token {
     my ($self, $token, $key, $ttl, $b64) = @_;
-    my $s = $self->SUPER::from_token($token, $key, $ttl, $b64); 
-    if (($s == WebAuth::WA_ERR_NONE) && ($self->get_token_type() ne 'resp')) {
+    $self->SUPER::from_token($token, $key, $ttl, $b64); 
+    if ($self->get_token_type() ne 'resp') {
 	die "token_type not 'resp'";
     }
-    return $s;
 }
 
 1;

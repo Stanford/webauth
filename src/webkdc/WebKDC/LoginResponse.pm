@@ -87,16 +87,5 @@ sub get_response_token {
     return $self->{'response_token'};
 }
 
-sub set_status {
-    my ($self, $status) = @_;
-    $self->{'status'} = $status;
-    return $self;
-}
-
-sub get_status {
-    my ($self) = @_;
-    return $self->{'status'};
-}
-
 1;
 
