@@ -1,4 +1,4 @@
-# Makefile for Webauth modules
+# Makefile for WebAuth modules
 # $Id$
 
 srcdir = @srcdir@
@@ -16,6 +16,3 @@ all clean depend install: Makefile
 	    echo "making $@ in $$subdir"; \
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
-
-install-webkdc:
-	cd webkdc && $(MAKE) install-webkdc
