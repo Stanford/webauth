@@ -124,7 +124,7 @@ WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
 
 =item key_create(type, key_material)
 
- $key = key_create_key($type, $key_material);
+ $key = key_create($type, $key_material);
 
 Creates a reference to a WEBAUTH_KEYPtr object, or undef
 on error. $type must be WA_AES_KEY, and $key_material must 
@@ -159,42 +159,23 @@ Writes a key ring to a file. Returns WA_ERR_NONE on success.
 
 Reads a key ring from a file and returns it in $ring on success.
 
-=item token_create(attrs, hint, ring)
+=item token_create(attrs, hint, key_or_ring)
 
-  ($status, $token) = token_create($attrs, $hint, $ring);
+  ($status, $token) = token_create($attrs, $hint, $key_or_ring);
 
-Takes as input $attrs (which must be a reference to a hash) and a $ring
-(created with keyring_new) and returns the encrypted token.
-If hint is 0, the current time will be used.
+Takes as input $attrs (which must be a reference to a hash) and 
+$key_or_ring (created with keyring_new or key_create) and returns 
+the encrypted token. If hint is 0, the current time will be used.
 
 The values in the $attrs hash table get converted to strings if they 
 aren't already.
 
-=item token_parse(token, ttl, ring)
+=item token_parse(token, ttl, key_or_ring)
 
-  ($status, $attrs) = token_parse($token, $ttl, $ring);
+  ($status, $attrs) = token_parse($token, $ttl, $key_or_ring);
 
-Takes as input an encrypted token and a ring (created with 
-keyring_new) and returns the attributes.
-
-=item token_create_with_key(attrs, hint, key)
-
-  ($status, $token) = token_create_with_key($attrs, $hint, $key);
-
-Takes as input $attrs (which must be a reference to a hash) and a $key
-(created with key_new) and returns the basse64 encrypted token.
-If hint is 0, the current time will be used.
-
-The values in the $attrs hash table get converted to strings if they 
-aren't already. $status is optional, and if present will get set to the
-result of the webauth_token_create C function.
-
-=item token_parse_with_key(token, ttl, key)
-
-  ($status, $attrs) = token_parse_with_key($token, $ttl, $key);
-
-Takes as input an encrypted token and a key (created with 
-key_new) and returns the attributes.
+Takes as input an encrypted token and a key_or_ring (created with 
+keyring_new or key_create) and returns the attributes.
 
 =item krb5_new()
 

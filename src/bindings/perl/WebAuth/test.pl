@@ -182,13 +182,13 @@ $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			   WebAuth::random_key(WebAuth::WA_AES_128));
 $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
-($s, $token) = WebAuth::token_create_with_key($attrs, 0, $key);
+($s, $token) = WebAuth::token_create($attrs, 0, $key);
 
 ok(length($token));
 ok($s, WebAuth::WA_ERR_NONE);
 
 $attrs2 = undef;
-($s, $attrs2) = WebAuth::token_parse_with_key($token, 0, $key);
+($s, $attrs2) = WebAuth::token_parse($token, 0, $key);
 
 ok($s, WebAuth::WA_ERR_NONE);
 ok(compareHashes($attrs, $attrs2), 1);
