@@ -1,0 +1,27 @@
+                            WebAuth To-Do List
+
+ *) Currently, there is no good logout strategy other than closing the
+    browser, since the user remains logged in to each web site they've
+    visited even if they go to the logout page on the weblogin server and
+    destroy their global credentials.  The best solution to this proposed
+    so far is to maintain global state on the WebKDC servers (shared
+    between them somehow) and to have the WebAuth servers query the WebKDC
+    to see whether the credentials are still valid.  This is a lot of work
+    and raises some basic questions (such as, is HTTPS too slow for that
+    query from the WebAuth server).
+
+    In the meantime, having the WebAuth logout handler automatically
+    redirect to the weblogin logout page might ameliorate some of the
+    problems.
+
+ *) User request: mod_webauthldap currently can only deal with multivalued
+    attributes by putting each value into a separate environment variable.
+    It would be nice if the user could specify a separator that, if given,
+    would cause multivalued attributes to be given in one environment
+    variable with the values separated by that separator.
+
+ *) The mod_webkdc manual needs a lot of work.  The mod_webauthldap manual
+    doesn't need as much work, but it could use a little help.
+
+ *) The mod_webauthldap module needs a lot of formatting and coding style
+    cleanup.
