@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.2.5 (in progress)
+WebAuth 3.2.5 (2005-04-14)
 
  *) Downgrade most of the messages from mod_webauthldap to info from
     notice, including the messages about authorization.  Downgrade the

@@ -1,11 +1,17 @@
                           WebAuth Change History
 
-WebAuth 3.2.5 (in progress)
+WebAuth 3.2.5 (2005-04-14)
 
  *) Downgrade most of the messages from mod_webauthldap to info from
     notice, including the messages about authorization.  Downgrade the
     message about failed authorization from warning to notice.  This seems
     more consistent with the Apache documentation of log levels.
+
+ *) Update tools/config.guess and tools/config.sub to the latest Debian
+    versions.
+
+ *) Drop the debian directory from the source distribution, following the
+    Debian packaging best practices.
 
 WebAuth 3.2.4 (2004-08-25)
 
