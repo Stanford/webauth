@@ -14,7 +14,6 @@ APACHE_ROOT	= @APACHE_ROOT@
 PACKAGE		= @PACKAGE_TARNAME@
 VERSION		= @PACKAGE_VERSION@
 TARDIR		= $(PACKAGE)-$(VERSION)
-DEBNAME		= $(PACKAGE)_$(VERSION)
 TARNAME		= $(TARDIR).tar
 
 # The tarball names to use for the WebAuth and WebKDC module packages.
@@ -31,9 +30,9 @@ DISTFILES	= -e 1,2d -e '/(Directory)/d' -e 's/ .*//'
 SUBDIRS		= src
 ALLDIRS		= src tests
 
-.PHONY: all check check-manifest clean deb-prep dist dist-prep distclean doc
-.PHONY: docs install install-tests install-webkdc package-webauth
-.PHONY: package-webkdc test tests
+.PHONY: all check check-manifest clean deb-prep dist distclean doc docs
+.PHONY: install install-tests install-webkdc package-webauth package-webkdc
+.PHONY: test tests
 
 all install: Makefile 
 	@for subdir in $(SUBDIRS); do \
@@ -72,7 +71,7 @@ distclean: clean
 
 maintclean: distclean
 	rm -f configure config.h.in $(TARNAME).gz $(TARNAME).gz.md5
-	rm -f *.orig.tar.gz $(DEBNAME)* *_$(VERSION)-*.deb
+	rm -f *.orig.tar.gz
 	rm -rf $(TARDIR)
 
 # Make the release tarballs.  We recreate the directory structure and then
@@ -93,14 +92,6 @@ dist:
 	tar cf $(TARNAME) $(TARDIR)
 	gzip -9 $(TARNAME)
 	md5sum $(TARNAME).gz > $(TARNAME).gz.md5
-
-# Prepare to make a Debian package.  This doesn't do the actual work of
-# creating the package; there are too many different flags we might want to
-# use.  It just copies things around so that the Debian packaging will work
-# properly.
-deb-prep: dist
-	rm -f *.orig.tar.gz $(DEBNAME)* *_$(VERSION)-*.deb
-	cp $(TARNAME).gz $(PACKAGE)_$(VERSION).orig.tar.gz
 
 # Check the MANIFEST against the files present in the current tree, building a
 # list with tools/mkmanifest and running diff between the lists.
