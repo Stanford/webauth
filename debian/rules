@@ -41,9 +41,9 @@ build-stamp: config.status
 	dh_testdir
 	$(MAKE)
 	cd src/bindings/perl/WebAuth3 && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/bindings/perl/WebAuth3 && $(MAKE) OPTIMIZE="-O2 -g -Wall"
+	cd src/bindings/perl/WebAuth3 && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/webkdc && $(MAKE) OPTIMIZE="-O2 -g -Wall"
+	cd src/webkdc && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	touch build-stamp
 
 clean:
