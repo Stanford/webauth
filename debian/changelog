@@ -1,3 +1,17 @@
+webauth (3.2.5-1) unstable; urgency=low
+
+  * Uploaded to Debian.  (Closes: #304728)
+  * New upstream release.
+    - Removed debian directory from upstream tarball.
+    - Report information from mod_webauthldap at saner message levels.
+  * Fix package sections and formatting of the homepage link.
+  * Use CFLAGS for the Perl module builds rather than hard-coding flags.
+  * Change the README.Debian files to follow the Apache 2.x package
+    recommendations for where to put local configuration.
+  * Add upstream TODO to libapache2-webauth and libapache2-webkdc.
+
+ -- Russ Allbery <rra@stanford.edu>  Thu, 14 Apr 2005 21:51:28 -0700
+
 webauth (3.2.4-2) unstable; urgency=low
 
   * No source changes.
