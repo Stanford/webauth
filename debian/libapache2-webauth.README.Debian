@@ -63,8 +63,8 @@ installing this package.  You must also do the following:
     Apache server.  Don't restart the server yet; you still need to
     configure the module.
 
- 4. Add the following configuration to /etc/apache2/httpd.conf or wherever
-    you put local Apache configuration:
+ 4. Add the following configuration to /etc/apache2/conf.d/webauth or
+    wherever you prefer to put local Apache configuration:
 
         WebAuthLoginURL <weblogin-url>
         WebAuthWebKdcURL <webkdc-url>
@@ -94,8 +94,8 @@ authorization through directory entries and obtaining directory
 information for authenticated users, you need to additionally do the
 following:
 
- 1. Add the following configuration to /etc/apache2/httpd.conf or wherever
-    you put local Apache configuration:
+ 1. Add the following configuration to /etc/apache2/conf.d/webauth or
+    wherever you prefer to put local Apache configuration:
 
         WebAuthLdapHost <ldap-server>
         WebAuthLdapBase <ldap-base>
@@ -129,4 +129,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:17:25 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:38:07 2005

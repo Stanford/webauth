@@ -1,8 +1,11 @@
 WebAuth Tests for Debian
 ------------------------
 
-To enable these tests, add the following to /etc/apache2/httpd.conf or
-wherever you put local configuration:
+To enable these tests, add the following to:
+
+    /etc/apache2/conf.d/webauth-tests
+
+or wherever you prefer to put local Apache configuration:
 
     Include /usr/share/webauth/conf/webauth-tests.conf
     Include /usr/share/webauth/conf/ldaptests.conf
@@ -16,13 +19,14 @@ and make sure that CGI scripts are enabled with:
 
 Then reload the configuration with /etc/init.d/apache2 reload.  You can
 then go to /tests/ and /ldaptests/ on your site to see the test suite.
+You will also need to install and enable PHP to do the PHP test.
 
 The LDAP tests are fairly Stanford-specific in that they use attributes
 peculiar to Stanford's directory servers and privgroups specific to
-Stanford, so you may need to modify ldaptests.conf to make it a better
-test for your site.
+Stanford, so you may need to copy ldaptests.conf to another file and
+modify it to make it a better test for your site.
 
 If you are not using the WebAuth LDAP module, you can just omit the two
 lines referring to ldaptests.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 18:15:24 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:45:16 2005

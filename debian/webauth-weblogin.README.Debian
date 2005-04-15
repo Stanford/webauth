@@ -3,7 +3,7 @@ WebAuth Weblogin Server for Debian
 
 This package contains the central Weblogin server for a WebAuth
 installation.  Only one server (or one pool of load-balanced servers) at a
-given site need to run this module.  libapache2-webkdc should also be
+given site need to run this package.  libapache2-webkdc should also be
 installed on the same server as this package is running on.
 
 This package comes with a very generic set of page templates, suitable for
@@ -35,8 +35,11 @@ finish the installation, you need to add Apache configuration directives
 to send the login and logout URLs to these CGI scripts and to allow the
 images and help page they refer to to be found.
 
-Add the following configuration to /etc/apache2/httpd.conf or wherever you
-put local Apache configuration:
+Add the following configuration to a virtual host in:
+
+    /etc/apache2/sites-available/weblogin
+
+or wherever you put local Apache configuration:
 
     <Directory "/usr/share/weblogin">
         AllowOverride None
@@ -50,6 +53,9 @@ put local Apache configuration:
 
     Alias /help.html "/usr/share/weblogin/generic/help.html"
     Alias /images/ "/usr/share/weblogin/generic/images/"
+
+(If you put this in sites-available, you then need to enable the site with
+a2ensite.)
 
 The ScriptAlias and Alias directives can, of course, be changed if you
 want the Weblogin server to live at a different URL (although note that
@@ -131,4 +137,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:18:20 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:49:19 2005

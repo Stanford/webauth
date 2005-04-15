@@ -110,12 +110,12 @@ mechanism is used to get keytabs at your site and put it in
     chgrp www-data /etc/webkdc/keytab.ident
     chmod 640 /etc/webkdc/keytab.ident
 
-Now, add the following line to your /etc/apache2/httpd.conf file or
-wherever else you store local configuration:
+Now, put the following line to your /etc/apache2/conf.d/webkdc or wherever
+you prefer to put local Apache configuration:
 
     WebKdcSIdentAuthType "GSSAPI" "/etc/webkdc/keytab.ident"
 
 Restart Apache with apache2ctl graceful and S/Ident authentication should
 now be enabled.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Jun 24 19:17:45 2004
+ -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:41:45 2005
