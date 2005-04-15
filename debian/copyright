@@ -17,6 +17,10 @@ it easier to package for a Linux distribution, for the initial Debian
 package build rules, and for generic WebKDC templates suitable for a new
 installation and for use as examples.
 
+The current upstream maintainers can be reached at:
+
+    webauth-info@lists.stanford.edu
+
 The original source of this package may be downloaded from:
 
     <http://webauthv3.stanford.edu/>
