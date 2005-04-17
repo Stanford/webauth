@@ -1,0 +1,9 @@
+# watch -- Rules for uscan to find new upstream versions.
+# $Id$
+#
+# I don't use this personally since I'm also one of the upstream
+# maintainers, but it's included for the benefit of automated package
+# analysis systems.
+
+version=3
+http://webauthv3.stanford.edu/download.html ^dist/webauth-([^-]+)\.tar\.gz

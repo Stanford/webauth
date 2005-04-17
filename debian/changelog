@@ -1,3 +1,9 @@
+webauth (3.2.5-2) unstable; urgency=low
+
+  * Add watch file.
+
+ --
+
 webauth (3.2.5-1) unstable; urgency=low
 
   * Uploaded to Debian.  (Closes: #304728)
