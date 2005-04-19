@@ -1,5 +1,5 @@
-Stanford/WebAuth version 0.01
-=============================
+WebAuth version 1.00
+====================
 
 This is the WebAuth Perl module, which is a low-level interface into
 the C libwebauth APIs.

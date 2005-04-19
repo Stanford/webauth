@@ -1,8 +1,8 @@
 \bCVS\b
 ^MANIFEST\.
 ^Makefile$
-^WebAuth3\.o$
-^WebAuth3\.bs$
+^WebAuth\.o$
+^WebAuth\.bs$
 ^webauth-perl-.*\.tar\.gz$
 ^blib/
 ^pm_to_blib$

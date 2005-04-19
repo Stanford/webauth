@@ -1,4 +1,4 @@
-package WebKDC; 
+package WebKDC;
 
 use strict;
 use warnings;
@@ -6,7 +6,7 @@ use UNIVERSAL qw(isa);
 
 use LWP::UserAgent;
 
-use WebAuth3 qw(:base64 :krb5 :const);
+use WebAuth qw(:base64 :krb5 :const);
 use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
@@ -61,7 +61,7 @@ our %pec_mapping = (
 sub get_keyring {
     if (!defined($our_keyring)) {
 	$our_keyring =
-            WebAuth3::keyring_read_file($WebKDC::Config::KEYRING_PATH);
+            WebAuth::keyring_read_file($WebKDC::Config::KEYRING_PATH);
     }
     return $our_keyring;
 }
@@ -270,7 +270,7 @@ WebKDC - functions to support the WebKDC
 
 =head1 SYNOPSIS
 
-  use WebAuth3;
+  use WebAuth;
   use WebKDC;
   use WebKDC::Exception;
   use WebKDC::WebRequest;
@@ -281,11 +281,11 @@ WebKDC - functions to support the WebKDC
 
 =head1 DESCRIPTION
 
-WebKDC is a set of convenience functions built on top of mod WebAuth3
+WebKDC is a set of convenience functions built on top of mod WebAuth
 to implement the WebKDC.
 
 All functions have the potential to throw either a WebKDC::WebKDCException
-or WebAuth3::Exception.
+or WebAuth::Exception.
 
 =head1 EXPORT
 
@@ -361,6 +361,6 @@ L<WebKDC::WebKDCException>
 L<WebKDC::Token>
 L<WebKDC::WebRequest>
 L<WebKDC::WebRespsonse>
-L<WebAuth3>.
+L<WebAuth>.
 
 =cut

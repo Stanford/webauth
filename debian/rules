@@ -40,8 +40,8 @@ build: build-stamp
 build-stamp: config.status
 	dh_testdir
 	$(MAKE)
-	cd src/bindings/perl/WebAuth3 && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/bindings/perl/WebAuth3 && $(MAKE) OPTIMIZE="$(CFLAGS)"
+	cd src/bindings/perl/WebAuth && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	cd src/bindings/perl/WebAuth && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
 	cd src/webkdc && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	touch build-stamp
@@ -85,7 +85,7 @@ install: build
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f \
 	            || exit 1 ; \
 	done
-	cd src/bindings/perl/WebAuth3 \
+	cd src/bindings/perl/WebAuth \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic

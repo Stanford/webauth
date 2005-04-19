@@ -16,7 +16,7 @@ m4_include([m4/sident.m4])
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.57)
-AC_INIT([Webauth], [3.2.5], [webauth-team@lists.stanford.edu])
+AC_INIT([Webauth], [3.2.6], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
 
 dnl Store information about the time the package was configured and the person
@@ -171,7 +171,7 @@ AC_CONFIG_FILES([
 if test x"$build_perl" = xyes ; then
     AC_CONFIG_FILES([
         src/bindings/perl/Makefile
-        src/bindings/perl/WebAuth3/Makefile.PL
+        src/bindings/perl/WebAuth/Makefile.PL
     ])
 fi
 
@@ -190,10 +190,10 @@ AC_CONFIG_COMMANDS([src/libwebauth/webauth.h],
 dnl Link all of the Perl binding files into the build tree, since Perl doesn't
 dnl support the VPATH thing.
 if test x"$build_perl" = xyes ; then
-    AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth3/WebAuth3.xs],
+    AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth/WebAuth.xs],
     [if test x"$ac_srcdir" != x. && test x"$ac_srcdir" != x ; then
-        for f in WebAuth3.pm WebAuth3.xs test.pl typemap ; do
-            $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth3/$f"
+        for f in WebAuth.pm WebAuth.xs test.pl typemap ; do
+            $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth/$f"
         done
     fi], [LN_S="$LN_S"])
 fi

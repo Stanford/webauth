@@ -53,15 +53,15 @@ src/bindings                            WebAuth language bindings (Directory)
 src/bindings/Makefile.in                Makefile for language bindings
 src/bindings/perl                       WebAuth Perl bindings (Directory)
 src/bindings/perl/Makefile.in           Makefile for Perl bindings
-src/bindings/perl/WebAuth3              Perl WebAuth module (Directory)
-src/bindings/perl/WebAuth3/MANIFEST       Perl module manifest
-src/bindings/perl/WebAuth3/MANIFEST.SKIP  Perl module manifest exclusions
-src/bindings/perl/WebAuth3/Makefile.PL.in Perl module build instructions
-src/bindings/perl/WebAuth3/README         Perl module documentation
-src/bindings/perl/WebAuth3/WebAuth3.pm    Base Perl interface
-src/bindings/perl/WebAuth3/WebAuth3.xs    Perl to libwebauth bindings
-src/bindings/perl/WebAuth3/test.pl        Tests for Perl module
-src/bindings/perl/WebAuth3/typemap        Type mapping for Perl bindings
+src/bindings/perl/WebAuth               Perl WebAuth module (Directory)
+src/bindings/perl/WebAuth/MANIFEST      Perl module manifest
+src/bindings/perl/WebAuth/MANIFEST.SKIP Perl module manifest exclusions
+src/bindings/perl/WebAuth/Makefile.PL.in Perl module build instructions
+src/bindings/perl/WebAuth/README        Perl module documentation
+src/bindings/perl/WebAuth/WebAuth.pm    Base Perl interface
+src/bindings/perl/WebAuth/WebAuth.xs    Perl to libwebauth bindings
+src/bindings/perl/WebAuth/test.pl       Tests for Perl module
+src/bindings/perl/WebAuth/typemap       Type mapping for Perl bindings
 src/libwebauth                          The WebAuth library (Directory)
 src/libwebauth/Makefile.in              Makefile for WebAuth library
 src/libwebauth/Makefile.vc              Windows Makefile for WebAuth library

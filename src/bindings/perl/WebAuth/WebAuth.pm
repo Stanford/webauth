@@ -1,4 +1,4 @@
-package WebAuth3;
+package WebAuth;
 
 use 5.006;
 use strict;
@@ -13,7 +13,7 @@ our @ISA = qw(Exporter DynaLoader);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use WebAuth3 ':all';
+# This allows declaration	use WebAuth ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = (
@@ -114,18 +114,18 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
 		   );
 
 our @EXPORT = qw ();
-our $VERSION = '0.01';
+our $VERSION = '1.00';
 
-bootstrap WebAuth3 $VERSION;
+bootstrap WebAuth $VERSION;
 
 # Preloaded methods go here.
 
-package WebAuth3::Exception;
+package WebAuth::Exception;
 
 use strict;
 use warnings;
 
-use WebAuth3;
+use WebAuth;
 
 use overload '""' => \&to_string;
 use UNIVERSAL qw(isa);
@@ -153,9 +153,9 @@ our @EXPORT_OK;
 #    bless $self, $type;
 #    $self->{'status'} = $s;
 #    $self->{'detail'} = $detail;
-#    if (defined($kc) && $s == WebAuth3::WA_ERR_KRB5) {
-#	$self->{'krb5_ec'} = WebAuth3::krb5_error_message($kc);
-#	$self->{'krb5_em'} = WebAuth3::krb5_error_code($kc);
+#    if (defined($kc) && $s == WebAuth::WA_ERR_KRB5) {
+#	$self->{'krb5_ec'} = WebAuth::krb5_error_message($kc);
+#	$self->{'krb5_em'} = WebAuth::krb5_error_code($kc);
 #    }
 #    return $self;
 #}
@@ -178,7 +178,7 @@ sub krb5_error_message {
 sub error_message {
     my ($self) = @_;
     my $s = $self->{'status'};
-    return WebAuth3::error_message($s);
+    return WebAuth::error_message($s);
 }
 
 sub detail_message {
@@ -191,12 +191,12 @@ sub verbose_message {
     my $s = $self->{'status'};
     my $line = $self->{'line'};
     my $file = $self->{'file'};
-    my $msg = WebAuth3::error_message($s);
+    my $msg = WebAuth::error_message($s);
     my $detail = $self->{'detail'};
     if (defined($detail)) {
-	$msg = "WebAuth3::Exception $detail: $msg";
+	$msg = "WebAuth::Exception $detail: $msg";
     }
-    if ($s == &WebAuth3::WA_ERR_KRB5) {
+    if ($s == &WebAuth::WA_ERR_KRB5) {
 	my $kec = $self->{'krb5_ec'};
 	my $kem = $self->{'krb5_em'};
 	$msg .= ": $kem ($kec)";
@@ -214,7 +214,7 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebAuth3::Exception");
+    return 0 if !isa($e, "WebAuth::Exception");
     return @_ ? $e->status() == shift : 1;
 }
 
@@ -224,29 +224,29 @@ __END__
 
 =head1 NAME
 
-WebAuth3 - Perl extension for WebAuth (version 3)
+WebAuth - Perl extension for WebAuth (version 3)
 
 =head1 SYNOPSIS
 
-  use WebAuth3;
+  use WebAuth;
 
   eval {  
-    $key = WebAuth3::random_key(WebAuth3::WA_AES_128);
+    $key = WebAuth::random_key(WebAuth::WA_AES_128);
     ...
   };
-  if (WebAuth3::Exception::match($@)) {
+  if (WebAuth::Exception::match($@)) {
     # handle exception 
   }
 
 =head1 DESCRIPTION
 
-WebAuth3 is a low-level Perl interface into the WebAuth C API. 
+WebAuth is a low-level Perl interface into the WebAuth C API. 
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
 
-All functions have the potential to croak with a WebAuth3::Exception object,
+All functions have the potential to croak with a WebAuth::Exception object,
 so an eval block should be placed around calls to WebAuth functions
-if you intend to recover from errors. See the WebAuth3::Exception section
+if you intend to recover from errors. See the WebAuth::Exception section
 for more information.
 
 =head1 EXPORT
@@ -265,7 +265,7 @@ available:
 
 For example:
 
-  use WebAuth3 qw(:krb5 :const);
+  use WebAuth qw(:krb5 :const);
 
 =head1 FUNCTIONS
 
@@ -515,18 +515,18 @@ If $edata is passed in, it is decrypted with krb5_rd_priv.
 
 =back
 
-=head1 WebAuth3::Exception
+=head1 WebAuth::Exception
 
-The various WebAuth3 functions can all throw exceptions if something
-wrong happens. These exceptions will be of type WebAuth3::Exception.
+The various WebAuth functions can all throw exceptions if something
+wrong happens. These exceptions will be of type WebAuth::Exception.
 
 For example:
 
   eval {  
-    $data = WebAuth3::base64_decode($buffer);
+    $data = WebAuth::base64_decode($buffer);
     ...
   };
-  if (WebAuth3::Exception::match($@)) {
+  if (WebAuth::Exception::match($@)) {
     my $e = $@;
     # you can call the following methods on an Exception object:
     # $e->status()
@@ -542,7 +542,7 @@ For example:
 =item match($exception[, $status])
 
   This class function (not a method) returns true if the given
-  $exception is a WebAuth3::Exception. If $status is specified, then
+  $exception is a WebAuth::Exception. If $status is specified, then
   $exception->status() will also be compared to $status.
 
 =item status()
@@ -553,7 +553,7 @@ For example:
 =item error_message()
 
   This method returns the WebAuth error message for the status code,
-  using the WebAuth3::error_message function.
+  using the WebAuth::error_message function.
 
 =item detail_message()
 

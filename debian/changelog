@@ -1,12 +1,17 @@
-webauth (3.2.5-2) unstable; urgency=low
+webauth (3.2.6-1) unstable; urgency=low
 
+  * Uploaded to Debian.  (Closes: #304728)
+  * New upstream release.
+    - Renamed the WebAuth3 Perl bindings to WebAuth.
+    - Renamed the libwebauth3-perl package to libwebauth-perl accordingly.
+  * Add dependency on libwebauth-perl to webauth-weblogin.  libwebkdc-perl
+    will also pull it in, but this is more completely correct.
   * Add watch file.
 
- --
+ -- Russ Allbery <rra@stanford.edu>  Mon, 18 Apr 2005 23:06:23 -0700
 
 webauth (3.2.5-1) unstable; urgency=low
 
-  * Uploaded to Debian.  (Closes: #304728)
   * New upstream release.
     - Removed debian directory from upstream tarball.
     - Report information from mod_webauthldap at saner message levels.

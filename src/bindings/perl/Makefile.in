@@ -11,10 +11,10 @@ PERL = @PERL@
 
 .PHONY: all clean depend install
 
-all clean install: WebAuth3/Makefile
-	cd WebAuth3 && $(MAKE) $@
+all clean install: WebAuth/Makefile
+	cd WebAuth && $(MAKE) $@
 
 depend:
 
-WebAuth3/Makefile: WebAuth3/Makefile.PL
-	cd WebAuth3 && $(PERL) Makefile.PL
+WebAuth/Makefile: WebAuth/Makefile.PL
+	cd WebAuth && $(PERL) Makefile.PL

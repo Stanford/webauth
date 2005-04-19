@@ -1,4 +1,4 @@
-# Makefile.PL for WebAuth3 Perl bindings.  -*- perl -*-
+# Makefile.PL for WebAuth Perl bindings.  -*- perl -*-
 # $Id$
 
 # It's practically impossible to change the library link order with the Perl
@@ -41,10 +41,10 @@ package main;
 # Okay, we can finally generate the Makefile.
 use ExtUtils::MakeMaker;
 WriteMakefile (
-    NAME              => 'WebAuth3',
-    VERSION_FROM      => 'WebAuth3.pm',
+    NAME              => 'WebAuth',
+    VERSION_FROM      => 'WebAuth.pm',
     ($] >= 5.005 ?
-      (ABSTRACT_FROM  => 'WebAuth3.pm',
+      (ABSTRACT_FROM  => 'WebAuth.pm',
        AUTHOR         => 'Roland Schemers (schemers@stanford.edu)') : ()),
     INC               => '-I@top_srcdir@/src/libwebauth',
     LDDLFLAGS         => $lddlflags,

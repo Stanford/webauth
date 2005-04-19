@@ -1,7 +1,7 @@
 Makefile
 Makefile.PL
-WebAuth3.bs
-WebAuth3.c
+WebAuth.bs
+WebAuth.c
 blib
 pm_to_blib
 webauth_keyring

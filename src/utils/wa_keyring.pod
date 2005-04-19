@@ -1,6 +1,6 @@
 =head1 NAME
 
-wa_keyring - WebAuth3 keyring manipulation tool
+wa_keyring - WebAuth keyring manipulation tool
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,7 @@ B<wa_keyring> B<-f> I<keyring> remove I<id>
 
 =head1 DESCRIPTION
 
-B<wa_keyring> is a command line tool to manage WebAuth3 key ring files,
+B<wa_keyring> is a command line tool to manage WebAuth key ring files,
 which contain the private AES keys used by mod_webauth and mod_webkdc.  It
 supports the following individual commands:
 

@@ -26,12 +26,12 @@ webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
         hv_store(hv, "file", 4, newSVpv(CopFILE(PL_curcop), 0), 0);
     }
     rv = newRV_noinc((SV*)hv);
-    sv_bless(rv, gv_stashpv("WebAuth3::Exception", TRUE));
+    sv_bless(rv, gv_stashpv("WebAuth::Exception", TRUE));
     sv_setsv(get_sv("@", TRUE), sv_2mortal(rv));
     croak(Nullch);
 }
 
-MODULE = WebAuth3        PACKAGE = WebAuth3    PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WebAuth    PREFIX = webauth_
 
 PROTOTYPES: ENABLE
 
@@ -42,7 +42,7 @@ BOOT:
 
     HV *stash;
     /* constant subs for WebAuth */
-    stash = gv_stashpv("WebAuth3", TRUE);
+    stash = gv_stashpv("WebAuth", TRUE);
 
     IV_CONST(WA_ERR_NONE);
     IV_CONST(WA_ERR_NO_ROOM);
@@ -927,7 +927,7 @@ PPCODE:
         webauth_croak("webauth_krb5_rd_req", s, c);
 }
 
-MODULE = WebAuth3        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
 
 void
 webauth_DESTROY(key)
@@ -935,7 +935,7 @@ webauth_DESTROY(key)
 CODE:
     webauth_key_free(key);
 
-MODULE = WebAuth3        PACKAGE = WEBAUTH_KEYRINGPtr  PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WEBAUTH_KEYRINGPtr  PREFIX = webauth_
 
 void
 webauth_DESTROY(ring)
@@ -943,7 +943,7 @@ webauth_DESTROY(ring)
 CODE:
     webauth_keyring_free(ring);
 
-MODULE = WebAuth3        PACKAGE = WEBAUTH_KRB5_CTXTPtr  PREFIX = webauth_
+MODULE = WebAuth        PACKAGE = WEBAUTH_KRB5_CTXTPtr  PREFIX = webauth_
 
 void
 webauth_DESTROY(ctxt)
