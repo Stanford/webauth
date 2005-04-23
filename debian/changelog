@@ -1,3 +1,12 @@
+webauth (3.2.7-1) unstable; urgency=low
+
+  * New upstream release.
+    - Update libtool to 1.5.6 for better shared library support on MIPS.
+      Thanks, Ryan Murray.  (Closes: #306027)
+    - Better diagnose a missing service token on a weblogin request.
+
+ -- Russ Allbery <rra@stanford.edu>  Sat, 23 Apr 2005 14:33:20 -0700
+
 webauth (3.2.6-1) unstable; urgency=low
 
   * Uploaded to Debian.  (Closes: #304728)
