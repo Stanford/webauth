@@ -254,9 +254,9 @@ while (my $q = CGI::Fast->new) {
 
     # If there isn't a request token, display an error message and then skip
     # to the next request.
-    unless (defined $q->param ('RT')) {
+    unless (defined $q->param ('RT') && defined $q->param ('ST')) {
         $PAGES{error}->param (err_no_request_token => 1);
-        print STDERR ("there was no request token\n") if $LOGGING;
+        print STDERR ("there was no request or service token\n") if $LOGGING;
         print_error_page ($q);
         next;
     }
