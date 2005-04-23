@@ -1,5 +1,14 @@
                           WebAuth Change History
 
+WebAuth 3.2.7 (2005-04-23)
+
+ *) Update libtool to 1.5.6 (the Debian version) to support proper shared
+    library builds on Linux MIPS.
+
+ *) In the weblogin login script, check to be sure the service token is
+    set as well as the request token to avoid weird error messages from
+    the WebKDC module later on.
+
 WebAuth 3.2.6 (2005-04-19)
 
  *) Rename the Perl bindings from WebAuth3 to WebAuth to match the name of

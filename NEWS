@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.2.7 (2005-04-23)
+
+ *) Update libtool to 1.5.6 (the Debian version) to support proper shared
+    library builds on Linux MIPS.
+
 WebAuth 3.2.6 (2005-04-19)
 
  *) Rename the Perl bindings from WebAuth3 to WebAuth to match the name of
