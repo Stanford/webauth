@@ -1,14 +1,13 @@
-                          WebAuth release 3.2.3
+                          WebAuth release 3.2.7
                   (site-wide web authentication system)
 
-  Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr.
+  Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford Jr.
   University.  This software is distributed under an MIT-style license.
   Please see the section LICENSE below for terms of use and
   redistribution.
 
   For release history and user-visible changes, see the file NEWS.  For a
   comprehensive change history, see the file CHANGES.
-
 
 DESCRIPTION
 
@@ -50,10 +49,10 @@ DESCRIPTION
   web clients by privilege groups or provide directory information to web
   applications in environment variables.
 
-  Future releases of this software will also support obtaining of
-  credentials on behalf of the user by trusted application servers,
-  allowing cleaner implementation of portal-style applications.
-
+  WebAuth also supports obtaining of credentials on behalf of the user by
+  trusted application servers, allowing cleaner implementation of
+  portal-style applications, although this support has not been as fully
+  tested as other portions of WebAuth.
 
 REQUIREMENTS
 
@@ -62,19 +61,18 @@ REQUIREMENTS
       Apache 2.0.43 or later (2.0.46 or later recommended)
       OpenSSL 0.9.7 or later
       MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
-      cURL (tested with 7.10.2)
+      cURL 7.10.2 or later
 
   LDAP support also requires:
 
-      Cyrus SASL 2.x (tested with 2.1.13)
+      Cyrus SASL 2.x (tested with 2.1.13 and later)
       OpenLDAP 2.x (tested with 2.1.17 and later)
 
   Apache 2.0 must be built with --enable-ssl and --enable-so.  WebAuth
   uses apxs to build its Apache modules.
 
-  The WebAuth Perl bindings, which at present are always built, have only
-  been tested with Perl 5.6.1, although they may work with earlier
-  versions of Perl.
+  The WebAuth Perl bindings have been tested with Perl 5.6.1 and Perl
+  5.8.x.
 
   For the end user, WebAuth requires that the user's browser be able to
   handle cookies of moderate length (up to 1KB) and URLs of a similar
@@ -85,13 +83,14 @@ REQUIREMENTS
 
   WebAuth is written in C and requires a C compiler and a standard make
   program to build.  It does not (at least intentionally) use any special
-  make features.
+  make features.  WebAuth also requires Perl 5.6.1 or later for the
+  weblogin server; Perl is not required for the basic WebAuth module.
 
   WebAuth is primarily tested with GCC on Solaris 8 and Linux (glibc 2.2).
-  Other Unix platforms that support Apache 2.0 should also work, but have
-  not been tested.  Some amount of porting may be required.  WebAuth does
-  use libtool to try to build shared libraries portably.
-
+  It has been lightly tested on AIX 4.3.  Other Unix platforms that
+  support Apache 2.0 should also work, but have not been tested.  Some
+  amount of porting may be required.  WebAuth does use libtool to try to
+  build shared libraries portably.
 
 SUPPORT
 
@@ -136,10 +135,9 @@ SUPPORT
   and problems that don't affect Stanford's use of WebAuth will generally
   not be prioritized.
 
-
 LICENSE
 
-  Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr.
+  Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford Jr.
   University.
 
   Permission is hereby granted, free of charge, to any person obtaining a
@@ -160,7 +158,6 @@ LICENSE
   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 
 CREDITS
 
