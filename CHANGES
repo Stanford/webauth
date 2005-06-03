@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.2.8 (2005-06-02)
+WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot
     be read, which will force the creation of a new keyring if auto-update
@@ -13,6 +13,9 @@ WebAuth 3.2.8 (2005-06-02)
  *) The .html files for the module manuals have been rebuilt using the
     current Apache 2.0 documentation tools after fixing various validation
     errors.
+
+ *) Updated tools/config.guess and tools/config.sub to the latest Debian
+    versions.
 
 WebAuth 3.2.7 (2005-04-23)
 

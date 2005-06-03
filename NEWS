@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.2.8 (2005-06-02)
+WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot
     be read, which will force the creation of a new keyring if auto-update
