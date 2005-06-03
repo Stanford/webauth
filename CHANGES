@@ -1,5 +1,19 @@
                           WebAuth Change History
 
+WebAuth 3.2.8 (2005-06-02)
+
+ *) mod_webauth now treats empty keyrings the same as keyrings that cannot
+    be read, which will force the creation of a new keyring if auto-update
+    is turned on.
+
+ *) The mod_webkdc manual has been expanded and improved, fixing several
+    documentation bugs (including a badly incorrect wa_keyring gc
+    example).
+
+ *) The .html files for the module manuals have been rebuilt using the
+    current Apache 2.0 documentation tools after fixing various validation
+    errors.
+
 WebAuth 3.2.7 (2005-04-23)
 
  *) Update libtool to 1.5.6 (the Debian version) to support proper shared

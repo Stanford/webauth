@@ -1,4 +1,4 @@
-                          WebAuth release 3.2.7
+                          WebAuth release 3.2.8
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford Jr.
@@ -86,7 +86,7 @@ REQUIREMENTS
   make features.  WebAuth also requires Perl 5.6.1 or later for the
   weblogin server; Perl is not required for the basic WebAuth module.
 
-  WebAuth is primarily tested with GCC on Solaris 8 and Linux (glibc 2.2).
+  WebAuth is primarily tested with GCC on Solaris 8 and Linux (glibc 2.3).
   It has been lightly tested on AIX 4.3.  Other Unix platforms that
   support Apache 2.0 should also work, but have not been tested.  Some
   amount of porting may be required.  WebAuth does use libtool to try to

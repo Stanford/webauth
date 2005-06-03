@@ -20,8 +20,5 @@
     would cause multivalued attributes to be given in one environment
     variable with the values separated by that separator.
 
- *) The mod_webkdc manual needs a lot of work.  The mod_webauthldap manual
-    doesn't need as much work, but it could use a little help.
-
  *) The mod_webauthldap module needs a lot of formatting and coding style
     cleanup.
