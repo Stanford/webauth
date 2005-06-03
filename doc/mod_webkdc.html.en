@@ -6,22 +6,22 @@
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       -->
 <title>mod_webkdc - Apache HTTP Server</title>
-<link href="/style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
-<link href="/style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
-<link href="/style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
-<link href="/images/favicon.ico" rel="shortcut icon" /></head>
+<link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
+<link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
+<link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
+<link href="../images/favicon.ico" rel="shortcut icon" /></head>
 <body>
 <div id="page-header">
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.1</p>
-<img alt="" src="/images/feather.gif" /></div>
-<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="/images/left.gif" /></a></div>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
+<p class="apache">Apache HTTP Server Version 2.0</p>
+<img alt="" src="../images/feather.gif" /></div>
+<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="/">Version 2.1</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webkdc</h1>
 <div class="toplang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>WebAuth V3 WebKDC module</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
@@ -29,7 +29,17 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module implements the server-side of the WebAuth V3 protocol.</p>
+
+<p>This module implements the central authentication server for the
+WebAuth V3 protocol, also known as the WebKDC.</p>
+
+<p>The WebKDC authenticates the user based on information passed by the
+weblogin service (which should generally run on the same system) and
+generates authentication tokens both for the user's cookie cache to
+support single sign-on and to send to application servers to authenticate
+the user.  It is designed to store as little state as possible, using the
+browser cookie cache as the repository for (encrypted) authentication
+tokens and ticket caches.</p>
 
 <p>Further details are provided in the 
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -37,37 +47,62 @@
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdcdebug">WebKdcDebug</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyring">WebKdcKeyring</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeyringkeylifetime">WebKdcKeyringKeyLifetime</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcdebug">WebKdcDebug</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyring">WebKdcKeyring</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringkeylifetime">WebKdcKeyringKeyLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="/images/down.gif" /> Setting up the WebKDC</li>
-<li><img alt="" src="/images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="/images/down.gif" /> Setting up multiple WebKDCs</li>
+<li><img alt="" src="../images/down.gif" /> Setting up the WebKDC</li>
+<li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
+<li><img alt="" src="../images/down.gif" /> Setting up multiple WebKDCs</li>
 </ul></div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up the WebKDC</h2>
 
-    <p>describe how to configure keyrings, acls, handler, etc.
-    </p>
+<p>The minimal configuration for the WebKDC requires two things: a keytab
+for the Kerberos principal used by the WebKDC to authenticate requests
+from application servers, and the <code>token.acl</code> file that
+specifies what tokens application servers are permitted to request.</p>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<p>The keytab must be a Kerberos V5 keytab for the principal referenced in
+the
+<a href="#webauthwebkdcprincipal"><code class="directive">WebAuthWebKdcPrincipal</code></a>
+configuration directive on the application servers.  How to obtain a
+keytab will depend on one's local Kerberos infrastructure; it may be via
+<code>kadmin</code> or via some other local interface.</p>
+
+<p>For information about the <code>token.acl</code> file, see the
+<a href="#webkdctokenacl"><code class="directive">WebKdcTokenAcl</code></a>
+documentation below.</p>
+
+<p>Finally, the one piece of state that the WebKDC must maintain is its
+local keyring, which holds the AES keys that it uses to encrypt and
+decrypt tokens.  This keyring can either be generated and updated
+automatically (the default) or managed externally using
+<code>wa_keyring</code>.  See
+<a href="#webkdckeyringautoupdate"><code class="directive">WebKdcKeyringAutoUpdate</code></a>
+for more information.</p>
+
+<p>The WebKDC must get a URL to itself on the host where it is running.
+By convention, <code>/webkdc-service</code> is used.  This URL must be
+only accessible via SSL, for security reasons.</p>
+
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Minimal Config File</h2>
 
-    <p>The following example shows the minimum config file required
-    to configure and use mod_webkdc.</p>
+<p>The following example shows the minimum config file required to
+configure and use <code class="module"><a href="../mod/mod_webkdc.html">mod_webkdc</a></code>.</p>
 
 <div class="example"><h3>Example</h3><pre>
 LoadModule webkdc_module modules/mod_webkdc.so
@@ -84,14 +119,14 @@ WebKdcTokenAcl conf/webkdc/token.acl
 &lt;/VirtualHost&gt;
 </pre></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up multiple WebKDCs</h2>
-<p>WebAuth V3 was designed so that it would be fairly easy
-to setup multiple WebKDCs for load balancing and redundancy. There
-are three pieces of information that need to be shared between
-WebKDC servers in order to achieve this:
-    </p>
+
+<p>WebAuth V3 was designed so that it would be fairly easy to setup
+multiple WebKDCs for load balancing and redundancy. There are three pieces
+of information that need to be shared between WebKDC servers in order to
+achieve this:</p>
 
 <ol>
   <li>Token ACL file</li>
@@ -100,88 +135,76 @@ WebKDC servers in order to achieve this:
 </ol>
 
 <div class="note"><h3>Note</h3> 
-    <p>All the files should be securely transferred from the master
- to the slave(s) using a program like <code>scp</code>.</p>
+  <p>All the files should be securely transferred from the master to the
+  slave or slaves using a program like <code>scp</code> that encrypts the
+  file contents during the transfer.</p>
 </div>
 
-<p>
-By convention, one of the WebKDC's should be designated as the "master"
-and other WebKDC's should be designated as "slaves". These files should
-only be updated on the "master" and pushed manually to the "slaves".
-</p>
+<p>By convention, one of the WebKDC's should be designated as the "master"
+and other WebKDC's should be designated as "slaves."  These files should
+only be updated on the master and pushed manually or automatically to the
+slaves.</p>
 
-<p>
-The token ACL file is specified using the 
-<a href="#webkdctokenacl">WebKdcTokenAcl</a> directive. This file
-should be maintained on the "master" WebKDC, and copied to
-other WebKDC's 
-</p>
+<p>The token ACL file is specified using the
+<a href="#webkdctokenacl"><code class="directive">WebKdcTokenAcl</code></a>
+directive. This file should be maintained on the "master" WebKDC, and
+copied to other WebKDCs.</p>
 
-<p>The Kerberos keytab file is specified using the 
-<a href="#webkdckeytab">WebKdcKeyTab</a> directive. This is a standard
-Kerberos V5 keytab file containing the principal used by WebAuth servers
-to initially communicate with the WebKDC. This is a binary file that
-should be kept consistent across all the WebKDC servers.
-</p>
+<p>The Kerberos keytab file is specified using the
+<a href="$kwebkdckeytab"><code class="directive">WebKdcKeytab</code></a>
+directive.  This is a standard Kerberos V5 keytab file containing the
+principal used by WebAuth servers to initially communicate with the
+WebKDC.  This is a binary file that should be kept consistent across all
+the WebKDC servers.  Normally this means that you will need to download it
+once and then copy it between systems, since Kerberos V5 generally changes
+the key of a principal when downloading a new keytab for it.</p>
 
-<p>The WebKDC keyring file is specified using the 
-<a href="#webkdckeyring">WebKdcKeyring</a> directive. This file
-contains the WebKDC's private AES key(s). If you are running
-multiple WebKDC's, you must turn off automatic updating of
-the WebKDC's keyring file on restarts. This is done using
-the <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a>
-directive:
+<p>The WebKDC keyring file is specified using the
+<a href="#webkdckeyring"><code class="directive">WebKdcKeyring</code></a>
+directive.  This file contains the WebKDCs private AES keys.  If you are
+running multiple WebKDCs, you must turn off automatic updating of the
+WebKDCs keyring file on restarts. This is done using the
+<a href="#webkdckeyringautoupdate"><code class="directive">WebKdcKeyringAutoUpdate</code></a>
+directive:</p>
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
-  WebKdcKeyringAutoUpdate off<br />
+WebKdcKeyringAutoUpdate off<br />
 </code></p></div>
 
-</p>
-
-<p>Once auto update is turned off, the keyring file will not get
-automatically updated and can manually be copied across all the servers.
-The keys in the keyring file still need to be changed periodically though,
-and the <code>wa_keyring</code> command can be used to do this. This
-command would be run on the keyring file on the master, at which point
-it would be copied to the slaves. For example, to generate a new 
-post-dated key in the file called "keyring" you should do the following:
-</p>
+<p>Once auto update is turned off, the keyring file will not be
+automatically updated, and can be manually updated and then copied between
+the servers.  The keys in the keyring file still need to be changed
+periodically using the <code>wa_keyring</code> command.  This command
+would be run on the keyring file on the master, and then the new keyring
+should be copied to the slaves.  For example, to generate a new post-dated
+key in the file called "keyring" you should do the following:</p>
 
 <div class="example"><h3>Generating a post-dated key</h3><p><code>
-  wa_keyring -f ./keyring add 7d
+wa_keyring -f ./keyring add 2d
 </code></p></div>
 
-<p>
-That example generates a new key that will be valid in seven days. Any
+<p>That example generates a new key that will be valid in seven days.  Any
 existing keys in the keyring file are left as-is so outstanding tokens
-continue to work. The new keyring file can then safely be distributed
-to the "slave" WebKDCs. Old keys in the keyring file should also periodically
-be removed. This can manually be done with <code>wa_keyring</code> using the 
-<code>list</code> and <code>remove</code> commands. For example:
-</p>
+continue to work.  The new keyring file can then safely be distributed to
+the slave WebKDCs.   Then, the WebKDC must be restarted to pick up the new
+key.</p>
 
-<div class="example"><h3>Manually remove old keys</h3><pre>
-$ wa_keyring -f ./keyring list
-Path: /usr/local/apache2/conf/webkdc/keyring
-id  Created            Valid after        Fingerprint
- 0  02/13/03 12:43:25  02/13/03 12:43:25  664b48642f741ae343ef5ea46a8768e8
- 1  03/12/03 16:21:57  03/12/03 16:21:57  7c4971e760f75525bba277a308c092c0
-
-$ wa_keyring -f ./keyring remove 0
-</pre></div>
-
-<p>Or it can be done automatically, using the <code>gc</code> command:
-</p>
-
+<p>Old keys in the keyring file should also periodically be removed.  This
+should be done using <code>wa_keyring</code> and the <code>gc</code>
+command:</p>
 
 <div class="example"><h3>Automatically removing old keys</h3><pre>
-# remove any keys with a valid after date older then 90 days
-$ wa_keyring -f ./keyring gc 90d
+wa_keyring -f ./keyring gc -60d
 </pre></div>
 
-<p>To summarize, for each WebKDC (master and slaves), you'd want the 
-following directives:
-</p>
+<p>This command would remove any key older than 90 days.  The time
+interval that you pass to the <code>gc</code> command must be older than
+the service token lifetime as specified with
+<a href="#webkdcservicetokenlifetime"><code class="directive">WebKdcServiceTokenLifetime</code></a>.
+The recommendation is to make it about twice as long.</p>
+
+<p>To summarize, for each WebKDC (master and slaves), you'd want the
+following directives:</p>
 
 <div class="example"><h3>Example</h3><pre>
 LoadModule webkdc_module modules/mod_webkdc.so
@@ -199,197 +222,201 @@ WebKdcKeyringAutoUpdate off
 &lt;/VirtualHost&gt;
 </pre></div>
 
-<p>
-Periodically (once a month should be reasonable), you'd want
-to generate a new key, remove old keys, and then update
-the keyring file on the slaves. For example:
-</p>
+<p>Periodically (once a month should be reasonable), you'd want to
+generate a new key, remove old keys, and then update the keyring file on
+the slaves using a script like this:</p>
 
 <div class="example"><h3>Monthly Key maintenance</h3><pre>
-# generate a new key that will be valid in 2 day
-$ wa_keyring -f conf/webkdc/keyring add 2d
-# remove keys that have been around for more then 60 days
-$ wa_keyring -f conf/webkdc/keyring gc 60d
-# foreach slave...
-$ scp conf/webkdc/keyring webkdc-slave:{path-on-slave}
-# restart the master and all the slaves at any point before
-# the new key is valid.
+wa_keyring -f conf/webkdc/keyring add 2d
+wa_keyring -f conf/webkdc/keyring gc -60d
+apache2ctl graceful
+for host in slave1 slave2 ; do
+    scp conf/webkdc/keyring $host:/path/to/conf/webkdc/keyring
+    ssh $host apache2ctl graceful
+done
 </pre></div>
 
+<p>If the servers are restarted regularly (such as for nightly log
+rotation), you can omit the <code>apache2ctl graceful</code> restart and
+just let that restart pick up the new keys.  The reason for post-dating
+the key is to make sure that all of the servers pick it up before it
+becomes valid and is used in service tokens.</p>
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcDebug" id="WebKdcDebug">WebKdcDebug</a> <a name="webkdcdebug" id="webkdcdebug">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in Apache error_log
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in the Apache error log</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-Whether or not we do extra debugging in error_log.
-</p>
+
+<p>Whether or not to log additional debugging messages to the Apache
+server log.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcDebug on<br />
+WebKdcDebug on
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyring" id="WebKdcKeyring">WebKdcKeyring</a> <a name="webkdckeyring" id="webkdckeyring">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the WebKDC's keyring
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the WebKDC's keyring</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This is the name of the file containing the WebKDC's keyring, which is
-a file that contains the server's private AES key(s). </p>
 
-<p>The keyring file gets read once per child and cached for the duration
-of a child.
-</p>
+<p>This is the name of the file containing the WebKDC's keyring, which
+stores the server's private AES keys.  The keyring file is read on startup
+and cached for the duration of an Apache child process, so if it is
+changed by an external process (<code>wa_keyring</code>, for instance),
+Apache must be told to reload configuration files in order to pick up the
+change.</p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+<p>If the path is not absolute, it will considered relative to
+<code class="directive">ServerRoot</code>.</p>
 
 <div class="note"><h3>Note</h3> 
-    <p>This directive must be set.</p>
+  <p>This directive must be set.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
 WebKdcKeyring conf/webkdc/keyring
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyringAutoUpdate" id="WebKdcKeyringAutoUpdate">WebKdcKeyringAutoUpdate</a> <a name="webkdckeyringautoupdate" id="webkdckeyringautoupdate">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not we auto-update the keyring file 
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to auto-update the keyring file</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive controls whether or not we auto-update the keyring file.
-This includes creating it if it doesn't exist, and generating a new
-key before the old key expires, and periodically garbage collecting
-old keys. Note that auto updating only occurs on server startup and restarts.
-</p>
+
+<p>This directive controls whether or not we auto-update the keyring file.
+This includes creating it if it doesn't exist, generating a new key before
+the old key expires, and periodically garbage collecting old keys.  Note
+that auto updating only occurs on server startup and restarts.</p>
 
 <div class="note"><h3>Note</h3> 
-    <p>This directive should be turned off if multiple servers are
-sharing the same keyring file so the keyring file can be manually updated.
-That too will eventually be automated.</p>
+  <p>This directive should be turned off if multiple servers are
+  sharing the same keyring file, so that the keyring file can be manually
+  updated.  That too may eventually be automated.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcKeyringAutoUpdate off<br />
+WebKdcKeyringAutoUpdate off
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeyringKeyLifetime" id="WebKdcKeyringKeyLifetime">WebKdcKeyringKeyLifetime</a> <a name="webkdckeyringkeylifetime" id="webkdckeyringkeylifetime">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive controls how long keys we automatically create for
-the keyring are valid. Keys will be valid from the time they are
-created until the lifetime is reached. Note that key lifetime is only
-checked on server startup and restarts.
-</p>
 
-<p>This
-directive is only consulted if WebKdcKeyringAutoUpdate is enabled.
-</p>
+<p>This directive controls how long keys we automatically create for the
+keyring are valid.  Keys will be valid from the time they are created
+until the lifetime is reached.  It is equivalent to the time specified to
+<code>wa_keyring gc</code>, except that the latter expects a negative
+time.  Note that key lifetime is only checked on server startup and
+restarts.</p>
 
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
+<p>This directive is only consulted if
+<a href="#webkdckeyringautoupdate"><code class="directive">WebKdcKeyringAutoUpdate</code></a>
+is enabled.</p>
+
+<p>The units for the time are specified by appending a single letter.
+This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
+<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
+hours, days, and weeks, respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebKdcKeyringKeyLifetime 60d<br />
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcKeytab" id="WebKdcKeytab">WebKdcKeytab</a> <a name="webkdckeytab" id="webkdckeytab">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This is the name of the Kerberos V5 keytab file. If principal is not
-specified, then the first principal in the keytab file be used.</p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+<p>This is the name of the Kerberos V5 keytab file, used by the WebKDC to
+authenticate initial requests from application servers.  The principal is
+optional and can be used to specify a particular principal in a keytab
+file that contains several.  If it is not specified, then the first
+principal in the keytab file be used.</p>
+
+<p>If the path is not absolute, it will considered relative to
+<code class="directive">ServerRoot</code>.</p>
 
 <div class="note"><h3>Note</h3> 
-    <p>This directive must be set.</p>
+  <p>This directive must be set.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
 WebKdcKeytab conf/webkdc/keytab service/webkdc
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcProxyTokenLifetime" id="WebKdcProxyTokenLifetime">WebKdcProxyTokenLifetime</a> <a name="webkdcproxytokenlifetime" id="webkdcproxytokenlifetime">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>lifetime of webkdc-proxy tokens we create.
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of webkdc-proxy tokens we create</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcProxyTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of underlying proxied-credential)</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive controls the lifetime of the webkdc-proxy token (the 
-main single-sign-on cookie containing the user's proxied credentials).
-If not specified, the lifetime time used is the expiration time of the 
-underlying credential (i.e., the lifetime of the Kerberos TGT for example).
-</p>
 
-<p>Tokens created with a webkdc-proxy token (id, proxy, cred) will 
-have the same expiration time as the webkdc-proxy token, so this directive
-also controls the lifetime of those tokens as well.
-</p>
+<p>This directive controls the lifetime of the webkdc-proxy token (the
+main single-sign-on cookie containing the user's proxied credentials).  If
+not specified, the lifetime time used is the expiration time of the
+underlying credential (i.e., the lifetime of the Kerberos TGT for
+example).</p>
 
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
+<p>Tokens created with a webkdc-proxy token (id, proxy, cred) will have
+the same expiration time as the webkdc-proxy token, so this directive also
+controls the lifetime of those tokens as well.</p>
 
-<div class="note"><h3>Note</h3> 
-<p>
-The upper bound of the webkdc-proxy token is always bounded
-by the expiration time of the underlying proxied credential. For 
-example, if the Kerberos V5 TGT expires in 25 hours, then the WebKDC
-will not create a webkdc-proxy token with a lifetime greater then 25 hours,
-even if this directive is set higher then 25 hours.
-</p>
+<p>The units for the time are specified by appending a single letter.
+This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
+<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
+hours, days, and weeks, respectively.</p>
+
+<div class="note"><h3>Note</h3>
+  <p>The upper bound of the webkdc-proxy token is always bounded by the
+  expiration time of the underlying proxied credential.  For example, if
+  the Kerberos V5 TGT expires in 25 hours, then the WebKDC will not create
+  a webkdc-proxy token with a lifetime greater then 25 hours, even if this
+  directive is set higher then 25 hours.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
@@ -397,36 +424,37 @@ even if this directive is set higher then 25 hours.
 WebKdcProxyTokenLifetime 2h
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcServiceTokenLifetime" id="WebKdcServiceTokenLifetime">WebKdcServiceTokenLifetime</a> <a name="webkdcservicetokenlifetime" id="webkdcservicetokenlifetime">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>lifetime of webkdc-service tokens we create.
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of webkdc-service tokens we create</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcServiceTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive controls the lifetime of the webkdc-service token
-we create. This controls how often a webauth server needs to re-authenticate
-with the WebKDC to get a new service token. The lifetime of the service
-token (and the webkdc-proxy-token) control how often the WebKDC can change
-its private key, and how long it should retain the previous key for.
-</p>
-<p>A reasonable setting for this directive is 30 days, with the
-private key of the WebKDC being changed every 60 days or so, keeping
-the previous WebKDC private key around for 30 days after it expires.
-</p>
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
 
+<p>This directive controls the lifetime of the webkdc-service token we
+create.  This controls how often a WebAuth application server needs to
+re-authenticate with the WebKDC to get a new service token.  The lifetime
+of the service token (and the webkdc-proxy-token) control how often the
+WebKDC can change its private key, and how long it should retain the
+previous key for.</p>
+
+<p>A reasonable setting for this directive is 30 days, with the private
+key of the WebKDC being changed every 60 days or so, keeping the previous
+WebKDC private key around for 30 days after it expires.</p>
+
+<p>The units for the time are specified by appending a single letter.
+This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
+<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
+hours, days, and weeks, respectively.</p>
 
 <div class="note"><h3>Note</h3> 
-    <p>This directive must be set.</p>
+  <p>This directive must be set.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
@@ -434,24 +462,25 @@ hours, days, and weeks respectively.</p>
 WebKdcServiceTokenLifetime 30d
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcSIdentAuthType" id="WebKdcSIdentAuthType">WebKdcSIdentAuthType</a> <a name="webkdcsidentauthtype" id="webkdcsidentauthtype">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable S/Ident checks
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable and configure S/Ident checks</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentAuthType <em>type</em> <em>data</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none configured)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive enables S/Ident checking for the specified auth type and
-corresponding data. If multiple types are specified, then they are
-checked in the order specified until a successful S/Ident query
-is performed.
-</p>
+
+<p>This directive enables S/Ident checking using the specified S/Ident
+auth type and corresponding data.  If multiple types are specified, they
+are checked in the order specified until one of them returns success.</p>
+
+<p>Below are the permissable values for <em>type</em> and the
+corresponding interpretation of <em>data</em>:</p>
 
 <table class="bordered">
 <tr>
@@ -459,116 +488,117 @@ is performed.
  <th>Auth Data:</th>
 </tr>
 <tr><td><code>KERBEROS_V4</code></td>            
-    <td>The ident.* srvtab file to use. The srvtab must be specified.</td></tr>
-
+  <td>The ident.* srvtab file to use.  The srvtab must be specified.</td>
+</tr>
 <tr><td><code>GSSAPI</code></td>            
-    <td>The ident/* keytab file to use. If not specified, then the default Kerberos V5 keytab file will be used.</td></tr>
-
+  <td>The ident/* keytab file to use.  If not specified, then the default
+  Kerberos V5 keytab file will be used.</td>
+</tr>
 </table>
 
 <div class="note"><h3>Note</h3> 
-    <p>Specifying a keytab location with the <code>GSSAPI</code> auth type
-    will cause the <code>KRB5_KTNAME</code> environment variable to get set
-    to the specified location.
-   </p>
+  <p>Specifying a keytab location with the <code>GSSAPI</code> auth type
+  will cause the <code>KRB5_KTNAME</code> environment variable to get set
+  to the specified location.  This setting may be visible to other Apache
+  processes or programs spawned by Apache.  This is unfortunately a
+  limitation of the current S/Ident library implementation.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"<br />
+WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcSIdentTimeout" id="WebKdcSIdentTimeout">WebKdcSIdentTimeout</a> <a name="webkdcsidenttimeout" id="webkdcsidenttimeout">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Timeout value used with ident_query call
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Timeout value used for S/Ident callback</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcSIdentTimeout 10s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive controls the value of the timeout used with the ident_query
-call when attempting to authenticate someone with S/Ident.
-</p>
 
-<p>S/Ident is only used if one or more 
-<a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a> directives
-are configured.
-</p>
+<p>This directive controls the value of the timeout used with the
+ident_query call when attempting to authenticate someone with S/Ident.</p>
 
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
+<p>S/Ident is only used if one or more
+<a href="#webkdcsidentauthtype"><code class="directive">WebKdcSIdentAuthType</code></a>
+directives are configured.</p>
+
+<p>The units for the time are specified by appending a single letter.
+This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
+<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
+hours, days, and weeks, respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentTimeout 5s<br />
+WebKdcSIdentTimeout 5s
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcTokenAcl" id="WebKdcTokenAcl">WebKdcTokenAcl</a> <a name="webkdctokenacl" id="webkdctokenacl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the token acl
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the token ACL</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenAcl <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This is the name of the file containing the ACL that
-controls access to who can request tokens.
-</p>
 
-<p>
-The format of this file is as follows:
-</p>
+<p>This is the name of the file containing the ACL that controls access to
+who can request tokens.  Each line that isn't blank or starting with
+<code>#</code> specifies a type of token that the given Kerberos principal
+may request.</p>
 
-<code>
-<pre>
-# comments start with a "#"
-# subjects can have wildcards (*) in them
-# each line is either an "id" line, which allows
-# subject to request id tokens, or a "cred" line,
-# which allows the subject to request cred tokens of
-# the specified type, for the specified service.
-{subject} id
-{subject} cred {cred-type} {service}
-</pre>
-</code>
-<p>For example:</p>
-<pre><code>
-# allow anyone with a webauth keytab to
-# request id tokens
+<p>The first space-separated field of each line is an identifier (at
+present, always a Kerberos principal) which may contain <code>*</code> as
+a wildcard.  The second field is either <code>id</code>, saying that this
+Kerberos principal may request id tokens (giving the authenticated
+identity of the user), or <code>cred</code>, saying that this principal
+may request credentials allowing it to act as the user.  For type
+<code>cred</code>, there are two more fields, one giving the type (always
+<code>krb5</code> for now) and the other giving the Kerberos service
+ticket that may be requested.</p>
+
+<div class="example"><h3>Example ACL File</h3><pre>
+# allow anyone with a webauth keytab to request id tokens
 krb5:webauth/*@stanford.edu id
 # allow shred to request a service/foobar credential
 krb5:webauth/shred.stanford.edu@stanford.edu cred krb5 service/foobar@stanford.edu
-</code></pre>
+</pre></div>
 
-<p>The <code>krb5:</code> prefix on the subject is used to signify that the named principal was authenticated using Kerberos. Currently, krb5 is the only supported mechanism for WebAuth server's to initially authenticate with the WebKDC. Other types of authentication maybe supported in the future</p>
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+<p>The <code>krb5:</code> prefix on the subject is used to signify that
+the named principal was authenticated using Kerberos.  Currently, krb5 is
+the only supported mechanism for WebAuth servers to initially authenticate
+with the WebKDC.  Other types of authentication maybe supported in the
+future.</p>
+
+<p>If the path is not absolute, it will be considered relative to
+<code class="directive">ServerRoot</code>.</p>
 
 <div class="note"><h3>Note</h3> 
-    <p>This directive must be set.</p>
+  <p>This directive must be set.</p>
 
-    <p>The ACL file is cached in memory and will be re-read automatically if 
-       the mtime on the file changes.</p>
+  <p>The ACL file is cached in memory, but will be re-read automatically if 
+     the modification timestamp on the file changes.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
 WebKdcTokenAcl conf/webkdc/token.acl
 </code></p></div>
 
+
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebkdcTokenMaxTTL" id="WebkdcTokenMaxTTL">WebkdcTokenMaxTTL</a> <a name="webkdctokenmaxttl" id="webkdctokenmaxttl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How old a token that was should be recently created is valid for.
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+  How old tokens may be before they're considered stale
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcTokenMaxTTL 300s</code></td></tr>
@@ -576,27 +606,34 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
-<p>
-This directive sets how old tokens that must be considered recent can be 
-before they are considered stale. It is used to help prevent tokens from 
-being replayed, and to ignore those token if they occur in cookies, URLs, 
-etc. This requires clocks between the web server and the WebKDC to be 
-synchronized. </p>
 
-<p>The units for the TTL are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
+<p>This directive sets how old tokens may be before they're considered
+stale. It is used to help prevent tokens from being replayed and to ignore
+old tokens in cookies, URLs, etc.  It is important to keep the clocks of
+the web application servers and the WebKDC synchronized; if they aren't,
+all tokens from that application server may be considered stale.</p>
+
+<p>In practice, this setting will also double as a limit on how long a
+user may take while logging in via weblogin.  If they take longer than
+this TTL, the request token will have timed out by the time they
+authenticate.</p>
+
+<p>The units for the TTL are specified by appending a single letter.  This
+letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
+<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
+hours, days, and weeks, respectively.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 # ten minute TTL<br />
 WebKdcTokenMaxTTL 10m
 </code></p></div>
 
+
 </div>
 </div>
 <div class="bottomlang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1999-2004 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p></div>
+<p class="apache">Copyright 1995-2005 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

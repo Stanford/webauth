@@ -6,22 +6,22 @@
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       -->
 <title>mod_webauthldap - Apache HTTP Server</title>
-<link href="/style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
-<link href="/style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
-<link href="/style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
-<link href="/images/favicon.ico" rel="shortcut icon" /></head>
+<link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
+<link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
+<link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
+<link href="../images/favicon.ico" rel="shortcut icon" /></head>
 <body>
 <div id="page-header">
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.1</p>
-<img alt="" src="/images/feather.gif" /></div>
-<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="/images/left.gif" /></a></div>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
+<p class="apache">Apache HTTP Server Version 2.0</p>
+<img alt="" src="../images/feather.gif" /></div>
+<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="/">Version 2.1</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauthldap</h1>
 <div class="toplang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>LDAP Authorization and attribute lookup for WebAuth V3</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
@@ -40,27 +40,27 @@
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapauthrule">WebAuthLdapAuthrule</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapattribute">WebAuthLdapAttribute</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthorizationattribute">WebAuthLdapAuthorizationAttribute</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapauthrule">WebAuthLdapAuthrule</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbase">WebAuthLdapBase</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapbinddn">WebAuthLdapBindDN</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapdebug">WebAuthLdapDebug</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapssl">WebAuthLdapSSL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldaptktcache">WebAuthLdapTktCache</a></li>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="/images/down.gif" /> Using WebAuthLdap Authorization</li>
-<li><img alt="" src="/images/down.gif" /> Adhoc attributes lookup</li>
-<li><img alt="" src="/images/down.gif" /> Generic Minimal Config File</li>
-<li><img alt="" src="/images/down.gif" /> Webauth 2.x backward compatibility</li>
+<li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
+<li><img alt="" src="../images/down.gif" /> Adhoc attributes lookup</li>
+<li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li>
+<li><img alt="" src="../images/down.gif" /> Webauth 2.x backward compatibility</li>
 </ul></div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuthLdap Authorization</h2>
 
@@ -92,7 +92,7 @@
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Adhoc attributes lookup</h2>
 
@@ -120,7 +120,7 @@
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Generic Minimal Config File</h2>
 
@@ -144,7 +144,7 @@
   &lt;/Location&gt;<br />
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Webauth 2.x backward compatibility</h2>
 
@@ -178,7 +178,7 @@
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Specifies an LDAP attribute to place into environment variables</td></tr>
@@ -211,7 +211,7 @@ WebAuthLdapAttribute suUnivid<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapAuthorizationAttribute" id="WebAuthLdapAuthorizationAttribute">WebAuthLdapAuthorizationAttribute</a> <a name="webauthldapauthorizationattribute" id="webauthldapauthorizationattribute">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The LDAP attribute that is checked against to determine authorization of a user</td></tr>
@@ -228,7 +228,7 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapAuthrule" id="WebAuthLdapAuthrule">WebAuthLdapAuthrule</a> <a name="webauthldapauthrule" id="webauthldapauthrule">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>This is a flag that controls whether the environment variable WEBAUTH_LDAPAUTHRULE is set to indicate how a user was authorized. Its values can be: "valid-user", "user suchnsuch", or "groupname".</td></tr>
@@ -239,7 +239,7 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapBase" id="WebAuthLdapBase">WebAuthLdapBase</a> <a name="webauthldapbase" id="webauthldapbase">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The base for the LDAP lookup</td></tr>
@@ -256,7 +256,7 @@ WebAuthLdapBase cn=people,dc=acme,dc=com
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapBindDN" id="WebAuthLdapBindDN">WebAuthLdapBindDN</a> <a name="webauthldapbinddn" id="webauthldapbinddn">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The bind DN for the LDAP lookup</td></tr>
@@ -273,7 +273,7 @@ WebAuthLdapBindDN cn=myDN,dc=acme,dc=com
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapDebug" id="WebAuthLdapDebug">WebAuthLdapDebug</a> <a name="webauthldapdebug" id="webauthldapdebug">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on|off the debugging level of logging</td></tr>
@@ -291,7 +291,7 @@ WebAuthLdapDebug on
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapFilter" id="WebAuthLdapFilter">WebAuthLdapFilter</a> <a name="webauthldapfilter" id="webauthldapfilter">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The LDAP filter to use in searching for the user's entry</td></tr>
@@ -308,7 +308,7 @@ WebAuthLdapFilter (&amp;(objectClass=superson)(uid=USER))
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapHost" id="WebAuthLdapHost">WebAuthLdapHost</a> <a name="webauthldaphost" id="webauthldaphost">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The hostname for the LDAP server</td></tr>
@@ -325,7 +325,7 @@ WebAuthLdapHost ldap.acme.com
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapKeytab" id="WebAuthLdapKeytab">WebAuthLdapKeytab</a> <a name="webauthldapkeytab" id="webauthldapkeytab">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Keytab containing the principal used for binding to the LDAP server.</td></tr>
@@ -344,7 +344,7 @@ WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapPort" id="WebAuthLdapPort">WebAuthLdapPort</a> <a name="webauthldapport" id="webauthldapport">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The port on which to connect to the LDAP server.</td></tr>
@@ -361,7 +361,7 @@ WebAuthLdapPort 389
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapSSL" id="WebAuthLdapSSL">WebAuthLdapSSL</a> <a name="webauthldapssl" id="webauthldapssl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>This flag is used to toggle the connection to the LDAP server to be SSL or plain.</td></tr>
@@ -372,7 +372,7 @@ WebAuthLdapPort 389
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapTktCache" id="WebAuthLdapTktCache">WebAuthLdapTktCache</a> <a name="webauthldaptktcache" id="webauthldaptktcache">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The path to the Kerberos V credentials cache file</td></tr>
@@ -391,8 +391,8 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 </div>
 </div>
 <div class="bottomlang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1999-2004 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p></div>
+<p class="apache">Copyright 1995-2005 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

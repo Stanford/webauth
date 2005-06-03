@@ -6,22 +6,22 @@
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       -->
 <title>mod_webauth - Apache HTTP Server</title>
-<link href="/style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
-<link href="/style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
-<link href="/style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
-<link href="/images/favicon.ico" rel="shortcut icon" /></head>
+<link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
+<link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
+<link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" />
+<link href="../images/favicon.ico" rel="shortcut icon" /></head>
 <body>
 <div id="page-header">
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.1</p>
-<img alt="" src="/images/feather.gif" /></div>
-<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="/images/left.gif" /></a></div>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
+<p class="apache">Apache HTTP Server Version 2.0</p>
+<img alt="" src="../images/feather.gif" /></div>
+<div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="/">Version 2.1</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauth</h1>
 <div class="toplang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth V3 protocol</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
@@ -37,53 +37,53 @@
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthapptokenlifetime">WebAuthAppTokenLifetime</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthauthtype">WebAuthAuthType</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthcred">WebAuthCred</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthcredcachedir">WebAuthCredCacheDir</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthdebug">WebAuthDebug</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthdologout">WebAuthDoLogout</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthdontcache">WebAuthDontCache</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthextraredirect">WebAuthExtraRedirect</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthfailureurl">WebAuthFailureURL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthforcelogin">WebAuthForceLogin</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthkeyring">WebAuthKeyring</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthkeyringkeylifetime">WebAuthKeyringKeyLifetime</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthkeytab">WebAuthKeytab</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthlogincanceledurl">WebAuthLoginCanceledURL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthpostreturnurl">WebAuthPostReturnURL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthsslreturn">WebAuthSSLReturn</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthwebkdcsslcertcheck">WebAuthWebKdcSSLCertCheck</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthwebkdcsslcertfile">WebAuthWebKdcSSLCertFile</a></li>
-<li><img alt="" src="/images/down.gif" /> <a href="#webauthwebkdcurl">WebAuthWebKdcURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthapptokenlifetime">WebAuthAppTokenLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthauthtype">WebAuthAuthType</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthcred">WebAuthCred</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthcredcachedir">WebAuthCredCacheDir</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthdebug">WebAuthDebug</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthdologout">WebAuthDoLogout</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthdontcache">WebAuthDontCache</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthextraredirect">WebAuthExtraRedirect</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthfailureurl">WebAuthFailureURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthforcelogin">WebAuthForceLogin</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthkeyring">WebAuthKeyring</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthkeyringkeylifetime">WebAuthKeyringKeyLifetime</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthkeytab">WebAuthKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthlogincanceledurl">WebAuthLoginCanceledURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthpostreturnurl">WebAuthPostReturnURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsslreturn">WebAuthSSLReturn</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcsslcertcheck">WebAuthWebKdcSSLCertCheck</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcsslcertfile">WebAuthWebKdcSSLCertFile</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcurl">WebAuthWebKdcURL</a></li>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="/images/down.gif" /> Using WebAuth Authentication</li>
-<li><img alt="" src="/images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="/images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
-<li><img alt="" src="/images/down.gif" /> Using WebAuth with Proxy Servers</li>
-<li><img alt="" src="/images/down.gif" /> Perl Integration</li>
-<li><img alt="" src="/images/down.gif" /> PHP 4.x Integration</li>
-<li><img alt="" src="/images/down.gif" /> Java/Tomcat/mod_jk Integration</li>
-<li><img alt="" src="/images/down.gif" /> Requesting Credentials</li>
-<li><img alt="" src="/images/down.gif" /> Debugging mod_webauth</li>
-<li><img alt="" src="/images/down.gif" /> Setting up load-balanced WebAuth servers</li>
+<li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
+<li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
+<li><img alt="" src="../images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> Using WebAuth with Proxy Servers</li>
+<li><img alt="" src="../images/down.gif" /> Perl Integration</li>
+<li><img alt="" src="../images/down.gif" /> PHP 4.x Integration</li>
+<li><img alt="" src="../images/down.gif" /> Java/Tomcat/mod_jk Integration</li>
+<li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
+<li><img alt="" src="../images/down.gif" /> Debugging mod_webauth</li>
+<li><img alt="" src="../images/down.gif" /> Setting up load-balanced WebAuth servers</li>
 </ul></div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuth Authentication</h2>
 
@@ -99,7 +99,7 @@
   &lt;/Location&gt;
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Minimal Config File</h2>
 
@@ -122,7 +122,7 @@
   &lt;/Location&gt;<br />
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2><a name="sectionenv">Environment Variables</a></h2>
 
@@ -184,7 +184,7 @@ get set by another Apache module, depending on how Apache server has
 been configured. To safely use REMOTE_USER, you should also check AUTH_TYPE
 to make sure that it is set to WebAuth. 
 </p>
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuth with Proxy Servers</h2>
 
@@ -232,7 +232,7 @@ that script on the target server, and have it remove any cookie that
 starts with <code>webauth_</code>.
 </div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Perl Integration</h2>
 
@@ -251,22 +251,17 @@ assume that all pages under http://yourserver/private/ are to be protected:</p>
 the Perl script, it is simply a matter of accessing the environment
 variables set by mod_webauth within your Perl script:</p>
 
-<div class="example"><h3>Perl Example</h3><p><code>
-<code>
-<pre>
-
+<div class="example"><h3>Perl Example</h3><pre>
 my $WEBAUTH_USER = $ENV{'WEBAUTH_USER'};
 print "The authenticated user is $WEBAUTH_USER\n";
-</pre>
-</code>
-</code></p></div>
+</pre></div>
 
 <p>
 Any of the environment variables described in the 
 <a href="#sectionenv">environment variables</a> section may be accessed this way.
 
 </p>
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>PHP 4.x Integration</h2>
 
@@ -285,20 +280,14 @@ For example:</p>
 the PHP script, you can either use the PHP getenv function, or access
 the special <code>$_SERVER</code> array variable. For example:</p>
 
-<div class="example"><h3>PHP Example</h3><p><code>
-<code>
-<pre>
-
+<div class="example"><h3>PHP Example</h3><pre>
 $WEBAUTH_USER = getenv('WEBAUTH_USER');
 
 # alternative, using the $_SERVER 'superglobal' array:
 # $WEBAUTH_USER = $_SERVER['WEBAUTH_USER'];
 
 print "The authenticated user is $WEBAUTH_USER\n";
-
-</pre>
-</code>
-</code></p></div>
+</pre></div>
 
 <p>
 In looking at the source for PHP 4.3, it appears that the <code>getenv</code>
@@ -310,7 +299,7 @@ on <a href="http://www.php.net/manual/en/reserved.variables.php">predefined vari
 Any of the environment variables described in the 
 <a href="#sectionenv">environment variables</a> section may be accessed this way.
 </p>
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Java/Tomcat/mod_jk Integration</h2>
 
@@ -344,14 +333,10 @@ don't need to pass the other variables as well. </p>
 the servlet, you need to use the <code>getAttribute</code> method
 on the <code>request</code> object.</p>
 
-<div class="example"><h3>JSP Example</h3><p><code>
-<code>
-<pre>
+<div class="example"><h3>JSP Example</h3><pre>
 WEBAUTH_USER is set to:
 &lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
-</pre>
-</code>
-</code></p></div>
+</pre></div>
 
 <p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code> will
 end up as a request attribute as opposed to being accessible by
@@ -371,17 +356,13 @@ will never be used.
 <code>&lt;Connector&gt;</code> definition in the Tomcat
 <code>server.xml</code> file.  For example:</p>
 
-<div class="example"><h3>Connector Example</h3><p><code>
-<code>
-<pre>
+<div class="example"><h3>Connector Example</h3><pre>
 &lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
     port="8009" minProcessors="5" maxProcessors="75"
     tomcatAuthentication="false"
     acceptCount="10" debug="0"/&gt;
-</pre>
-</code>
-</code></p></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</pre></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Requesting Credentials</h2>
 
@@ -433,7 +414,7 @@ requires the use of two Kerberos V5 credentials.
   <br />
 </code></p></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Debugging mod_webauth</h2>
 <p>If you are having trouble getting <code>mod_webauth</code>
@@ -456,7 +437,7 @@ handler after you have <code>mod_webauth</code> configured correctly.
   &lt;/Location&gt; <br />
 </pre></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up load-balanced WebAuth servers</h2>
 <p>WebAuth V3 was designed so that it would be fairly easy
@@ -494,13 +475,11 @@ contains the WebAuth server's private AES key(s). If you are running
 multiple WebAuth servers, you must turn off automatic updating of
 the keyring file on restarts. This is done using
 the <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
-directive:
+directive:</p>
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
   WebAuthKeyringAutoUpdate off<br />
 </code></p></div>
-
-</p>
 
 <p>Once auto update is turned off, the keyring file will not get
 automatically updated and can manually be copied across all the servers.
@@ -570,7 +549,7 @@ $ scp conf/weauth/keyring webauth-slave:{path-on-slave}
 </pre></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAppTokenLifetime" id="WebAuthAppTokenLifetime">WebAuthAppTokenLifetime</a> <a name="webauthapptokenlifetime" id="webauthapptokenlifetime">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of app-tokens we create.
@@ -604,7 +583,7 @@ WebAuthAppTokenLifetime 2h
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAuthType" id="WebAuthAuthType">WebAuthAuthType</a> <a name="webauthauthtype" id="webauthauthtype">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional AuthType name to support</td></tr>
@@ -636,7 +615,7 @@ WebAuthAuthType StanfordAuth
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthCred" id="WebAuthCred">WebAuthCred</a> <a name="webauthcred" id="webauthcred">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Which credentials to acquire
@@ -674,7 +653,7 @@ specify that multiple credentials are required.</p>
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthCredCacheDir" id="WebAuthCredCacheDir">WebAuthCredCacheDir</a> <a name="webauthcredcachedir" id="webauthcredcachedir">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the directory containing cached credentials
@@ -702,7 +681,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDebug" id="WebAuthDebug">WebAuthDebug</a> <a name="webauthdebug" id="webauthdebug">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in Apache error_log
@@ -725,7 +704,7 @@ LogLevel debug<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDoLogout" id="WebAuthDoLogout">WebAuthDoLogout</a> <a name="webauthdologout" id="webauthdologout">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Destroy all WebAuth-related cookies
@@ -755,7 +734,7 @@ the prefix "webauth_".
 
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDontCache" id="WebAuthDontCache">WebAuthDontCache</a> <a name="webauthdontcache" id="webauthdontcache">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on expire header
@@ -800,7 +779,7 @@ WebAuthDontCache on<br />
 <li><a href="mod_expires.html.en">mod_expires</a></li>
 </ul>
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthExtraRedirect" id="WebAuthExtraRedirect">WebAuthExtraRedirect</a> <a name="webauthextraredirect" id="webauthextraredirect">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to do an extra redirect upon return from the WebKDC
@@ -840,7 +819,7 @@ WebAuthExtraRedirect on<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthFailureURL" id="WebAuthFailureURL">WebAuthFailureURL</a> <a name="webauthfailureurl" id="webauthfailureurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL browsers get redirected to when a fatal mod_webauth
@@ -863,7 +842,7 @@ WebAuthFailureURL /app/sorry.html
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthForceLogin" id="WebAuthForceLogin">WebAuthForceLogin</a> <a name="webauthforcelogin" id="webauthforcelogin">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Forces username/password prompt when user is not authenticated
@@ -892,7 +871,7 @@ authentication.
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthInactiveExpire" id="WebAuthInactiveExpire">WebAuthInactiveExpire</a> <a name="webauthinactiveexpire" id="webauthinactiveexpire">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Expires app-tokens that haven't been used recently
@@ -935,7 +914,7 @@ WebAuthLastUseUpdateInterval 10m
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyring" id="WebAuthKeyring">WebAuthKeyring</a> <a name="webauthkeyring" id="webauthkeyring">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the webauth keyring
@@ -966,7 +945,7 @@ WebAuthKeyRing conf/webauth/keyring
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyringAutoUpdate" id="WebAuthKeyringAutoUpdate">WebAuthKeyringAutoUpdate</a> <a name="webauthkeyringautoupdate" id="webauthkeyringautoupdate">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not we auto-update the keyring file 
@@ -995,7 +974,7 @@ WebAuthKeyringAutoUdpate off<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyringKeyLifetime" id="WebAuthKeyringKeyLifetime">WebAuthKeyringKeyLifetime</a> <a name="webauthkeyringkeylifetime" id="webauthkeyringkeylifetime">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update
@@ -1026,7 +1005,7 @@ WebAuthKeyringKeyLifetime 60d<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeytab" id="WebAuthKeytab">WebAuthKeytab</a> <a name="webauthkeytab" id="webauthkeytab">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
@@ -1053,7 +1032,7 @@ WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLastUseUpdateInterval" id="WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a> <a name="webauthlastuseupdateinterval" id="webauthlastuseupdateinterval">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How often to update the main webauth cookie
@@ -1091,7 +1070,7 @@ WebAuthLastUseUpdateInterval 10m
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLoginCanceledURL" id="WebAuthLoginCanceledURL">WebAuthLoginCanceledURL</a> <a name="webauthlogincanceledurl" id="webauthlogincanceledurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to if user cancels out of login
@@ -1115,7 +1094,7 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLoginURL" id="WebAuthLoginURL">WebAuthLoginURL</a> <a name="webauthloginurl" id="webauthloginurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL browsers get redirected to when the user is 
@@ -1141,7 +1120,7 @@ WebAuthLoginURL https://webkdc.stanford.edu/login/
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthPostReturnURL" id="WebAuthPostReturnURL">WebAuthPostReturnURL</a> <a name="webauthpostreturnurl" id="webauthpostreturnurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating during a POST
@@ -1165,7 +1144,7 @@ WebAuthPostReturnURL /myapp/
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthReturnURL" id="WebAuthReturnURL">WebAuthReturnURL</a> <a name="webauthreturnurl" id="webauthreturnurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating
@@ -1189,7 +1168,7 @@ WebAuthReturnURL /myapp/
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthServiceTokenCache" id="WebAuthServiceTokenCache">WebAuthServiceTokenCache</a> <a name="webauthservicetokencache" id="webauthservicetokencache">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the service-token cache file.
@@ -1220,7 +1199,7 @@ WebAuthServiceTokenCache conf/webauth/service_token_cache
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLRedirect" id="WebAuthSSLRedirect">WebAuthSSLRedirect</a> <a name="webauthsslredirect" id="webauthsslredirect">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Redirect to https when accessing a WebAuth-protected page via http
@@ -1253,7 +1232,7 @@ WebAuthSSLRedirect on<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLRedirectPort" id="WebAuthSSLRedirectPort">WebAuthSSLRedirectPort</a> <a name="webauthsslredirectport" id="webauthsslredirectport">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>port to use when redirecting the user to https
@@ -1278,7 +1257,7 @@ WebAuthSSLRedirectPort 8443<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLReturn" id="WebAuthSSLReturn">WebAuthSSLReturn</a> <a name="webauthsslreturn" id="webauthsslreturn">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Sets the return URL to be https
@@ -1304,7 +1283,7 @@ to https.
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSubjectAuthType" id="WebAuthSubjectAuthType">WebAuthSubjectAuthType</a> <a name="webauthsubjectauthtype" id="webauthsubjectauthtype">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Type of subject authenticator the WebKDC will use in the returned
@@ -1355,7 +1334,7 @@ WebAuthSubjectAuthType krb5
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthTokenMaxTTL" id="WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a> <a name="webauthtokenmaxttl" id="webauthtokenmaxttl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How old a token that was should be recently created is valid for.
@@ -1383,7 +1362,7 @@ WebAuthTokenMaxTTL 10m
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthUseCreds" id="WebAuthUseCreds">WebAuthUseCreds</a> <a name="webauthusecreds" id="webauthusecreds">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not save credentials to the cache
@@ -1408,7 +1387,7 @@ the <a href="#webauthcred">WebAuthCred</a> directive.
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthVarPrefix" id="WebAuthVarPrefix">WebAuthVarPrefix</a> <a name="webauthvarprefix" id="webauthvarprefix">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional webauth-related environment variables to set
@@ -1438,7 +1417,7 @@ WebAuthVarPrefix HTTP_<br />
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcPrincipal" id="WebAuthWebKdcPrincipal">WebAuthWebKdcPrincipal</a> <a name="webauthwebkdcprincipal" id="webauthwebkdcprincipal">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The Kerberos V5 principal name of the WebKDC
@@ -1463,7 +1442,7 @@ WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertCheck" id="WebAuthWebKdcSSLCertCheck">WebAuthWebKdcSSLCertCheck</a> <a name="webauthwebkdcsslcertcheck" id="webauthwebkdcsslcertcheck">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to perform SSL certificate checking on the WebKDC's
@@ -1494,7 +1473,7 @@ WebAuthWebKdcSSLCertCheck off
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertFile" id="WebAuthWebKdcSSLCertFile">WebAuthWebKdcSSLCertFile</a> <a name="webauthwebkdcsslcertfile" id="webauthwebkdcsslcertfile">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the WebKDC's certificate file.
@@ -1528,7 +1507,7 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 </code></p></div>
 
 </div>
-<div class="top"><a href="#page-header"><img alt="top" src="/images/up.gif" /></a></div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcURL" id="WebAuthWebKdcURL">WebAuthWebKdcURL</a> <a name="webauthwebkdcurl" id="webauthwebkdcurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL used to contact the WebKDC when posting XML.
@@ -1554,8 +1533,8 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 </div>
 </div>
 <div class="bottomlang">
-<p><span>Available Languages: </span></p>
+<p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1999-2004 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
-<p class="menu"><a href="/mod/">Modules</a> | <a href="/mod/directives.html">Directives</a> | <a href="/faq/">FAQ</a> | <a href="/glossary.html">Glossary</a> | <a href="/sitemap.html">Sitemap</a></p></div>
+<p class="apache">Copyright 1995-2005 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>
