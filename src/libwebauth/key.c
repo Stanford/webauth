@@ -554,6 +554,11 @@ webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
     }
 
     len = sbuf.st_size;
+    if (len == 0) {
+        close(fd);
+        s = WA_ERR_KEYRING_READ;
+        goto cleanup;
+    }
 
     buff = malloc(len);
     if (buff == NULL) {

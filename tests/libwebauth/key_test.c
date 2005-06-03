@@ -2,6 +2,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <fcntl.h>
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -23,14 +24,13 @@ int main(int argc, char *argv[])
     WEBAUTH_KEYRING *ring;
     WEBAUTH_KEYRING *ring2;
 
-    int s, len, i;
+    int s, len, i, fd;
     unsigned char key_material[WA_AES_128];
     unsigned char hex[2048];
     time_t curr;
     TEST_VARS;
 
-    START_TESTS(13);
-
+    START_TESTS(14);
 
     ring = webauth_keyring_new(32);
     TEST_OK(ring != NULL);
@@ -94,6 +94,14 @@ int main(int argc, char *argv[])
 
     webauth_keyring_free(ring);
     webauth_keyring_free(ring2);
+
+    /* Truncate a keyring and test empty keyrings. */
+    fd = open("webauth_keyring", O_WRONLY | O_TRUNC, 0644);
+    if (fd >= 0) {
+        close(fd);
+        s = webauth_keyring_read_file("webauth_keyring", &ring);
+        TEST_OK2(WA_ERR_KEYRING_READ, s);
+    }
 
     END_TESTS;
     exit(NUM_FAILED_TESTS ? 1 : 0);
