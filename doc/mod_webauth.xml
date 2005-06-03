@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE modulesynopsis SYSTEM "../style/modulesynopsis.dtd">
 <?xml-stylesheet type="text/xsl" href="../style/manual.en.xsl"?>
-<modulesynopsis>
+<modulesynopsis metafile="mod_webauth.xml.meta">
 
 <name>mod_webauth</name>
 <description>Support for the WebAuth V3 protocol</description>
@@ -184,13 +184,10 @@ the Perl script, it is simply a matter of accessing the environment
 variables set by mod_webauth within your Perl script:</p>
 
 <example><title>Perl Example</title>
-<code>
 <pre>
-
 my $WEBAUTH_USER = $ENV{'WEBAUTH_USER'};
 print "The authenticated user is $WEBAUTH_USER\n";
 </pre>
-</code>
 </example>
 
 <p>
@@ -218,18 +215,14 @@ the PHP script, you can either use the PHP getenv function, or access
 the special <code>$_SERVER</code> array variable. For example:</p>
 
 <example><title>PHP Example</title>
-<code>
 <pre>
-
 $WEBAUTH_USER = getenv('WEBAUTH_USER');
 
 # alternative, using the $_SERVER 'superglobal' array:
 # $WEBAUTH_USER = $_SERVER['WEBAUTH_USER'];
 
 print "The authenticated user is $WEBAUTH_USER\n";
-
 </pre>
-</code>
 </example>
 
 <p>
@@ -278,12 +271,10 @@ the servlet, you need to use the <code>getAttribute</code> method
 on the <code>request</code> object.</p>
 
 <example><title>JSP Example</title>
-<code>
 <pre>
 WEBAUTH_USER is set to:
 &lt;% out.print (request.getAttribute("WEBAUTH_USER")); %>
 </pre>
-</code>
 </example>
 
 <p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code> will
@@ -305,14 +296,12 @@ will never be used.
 <code>server.xml</code> file.  For example:</p>
 
 <example><title>Connector Example</title>
-<code>
 <pre>
 &lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
     port="8009" minProcessors="5" maxProcessors="75"
     tomcatAuthentication="false"
     acceptCount="10" debug="0"/&gt;
 </pre>
-</code>
 </example>
 </section>
 
@@ -429,13 +418,11 @@ contains the WebAuth server's private AES key(s). If you are running
 multiple WebAuth servers, you must turn off automatic updating of
 the keyring file on restarts. This is done using
 the <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
-directive:
+directive:</p>
 
 <example><title>Turning off auto update</title>
   WebAuthKeyringAutoUpdate off<br/>
 </example>
-
-</p>
 
 <p>Once auto update is turned off, the keyring file will not get
 automatically updated and can manually be copied across all the servers.
