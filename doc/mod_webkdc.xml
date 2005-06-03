@@ -35,10 +35,11 @@ from application servers, and the <code>token.acl</code> file that
 specifies what tokens application servers are permitted to request.</p>
 
 <p>The keytab must be a Kerberos V5 keytab for the principal referenced in
-the <directive>WebAuthWebKdcPrincipal</directive> configuration directive
-on the application servers.  How to obtain a keytab will depend on one's
-local Kerberos infrastructure; it may be via <code>kadmin</code> or
-via some other local interface.</p>
+the
+<a href="#webauthwebkdcprincipal"><directive>WebAuthWebKdcPrincipal</directive></a>
+configuration directive on the application servers.  How to obtain a
+keytab will depend on one's local Kerberos infrastructure; it may be via
+<code>kadmin</code> or via some other local interface.</p>
 
 <p>For information about the <code>token.acl</code> file, see the
 <a href="#webkdctokenacl"><directive>WebKdcTokenAcl</directive></a>
@@ -49,7 +50,8 @@ local keyring, which holds the AES keys that it uses to encrypt and
 decrypt tokens.  This keyring can either be generated and updated
 automatically (the default) or managed externally using
 <code>wa_keyring</code>.  See
-<directive>WebKdcKeyringAutoUpdate</directive> for more information.</p>
+<a href="#webkdckeyringautoupdate"><directive>WebKdcKeyringAutoUpdate</directive></a>
+for more information.</p>
 
 <p>The WebKDC must get a URL to itself on the host where it is running.
 By convention, <code>/webkdc-service</code> is used.  This URL must be
@@ -106,23 +108,25 @@ only be updated on the master and pushed manually or automatically to the
 slaves.</p>
 
 <p>The token ACL file is specified using the
-<directive>WebKdcTokenAcl</directive> directive. This file should be
-maintained on the "master" WebKDC, and copied to other WebKDCs.</p>
+<a href="#webkdctokenacl"><directive>WebKdcTokenAcl</directive></a>
+directive. This file should be maintained on the "master" WebKDC, and
+copied to other WebKDCs.</p>
 
 <p>The Kerberos keytab file is specified using the
-<directive>WebKdcKeyTab</directive> directive.  This is a standard
-Kerberos V5 keytab file containing the principal used by WebAuth servers
-to initially communicate with the WebKDC.  This is a binary file that
-should be kept consistent across all the WebKDC servers.  Normally this
-means that you will need to download it once and then copy it between
-systems, since Kerberos V5 generally changes the key of a principal when
-downloading a new keytab for it.</p>
+<a href="$kwebkdckeytab"><directive>WebKdcKeytab</directive></a>
+directive.  This is a standard Kerberos V5 keytab file containing the
+principal used by WebAuth servers to initially communicate with the
+WebKDC.  This is a binary file that should be kept consistent across all
+the WebKDC servers.  Normally this means that you will need to download it
+once and then copy it between systems, since Kerberos V5 generally changes
+the key of a principal when downloading a new keytab for it.</p>
 
 <p>The WebKDC keyring file is specified using the
-<directive>WebKdcKeyring</directive> directive.  This file contains the
-WebKDCs private AES keys.  If you are running multiple WebKDCs, you must
-turn off automatic updating of the WebKDCs keyring file on restarts. This
-is done using the <directive>WebKdcKeyringAutoUpdate</directive>
+<a href="#webkdckeyring"><directive>WebKdcKeyring</directive></a>
+directive.  This file contains the WebKDCs private AES keys.  If you are
+running multiple WebKDCs, you must turn off automatic updating of the
+WebKDCs keyring file on restarts. This is done using the
+<a href="#webkdckeyringautoupdate"><directive>WebKdcKeyringAutoUpdate</directive></a>
 directive:</p>
 
 <example><title>Turning off auto update</title>
@@ -160,8 +164,8 @@ wa_keyring -f ./keyring gc -60d
 <p>This command would remove any key older than 90 days.  The time
 interval that you pass to the <code>gc</code> command must be older than
 the service token lifetime as specified with
-<directive>WebKdcServiceTokenLifetime</directive>.  The recommendation is
-to make it about twice as long.</p>
+<a href="#webkdcservicetokenlifetime"><directive>WebKdcServiceTokenLifetime</directive></a>.
+The recommendation is to make it about twice as long.</p>
 
 <p>To summarize, for each WebKDC (master and slaves), you'd want the
 following directives:</p>
@@ -525,7 +529,8 @@ time.  Note that key lifetime is only checked on server startup and
 restarts.</p>
 
 <p>This directive is only consulted if
-<directive>WebKdcKeyringAutoUpdate</directive> is enabled.</p>
+<a href="#webkdckeyringautoupdate"><directive>WebKdcKeyringAutoUpdate</directive></a>
+is enabled.</p>
 
 <p>The units for the time are specified by appending a single letter.
 This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
@@ -555,8 +560,8 @@ WebKdcKeyringKeyLifetime 60d<br/>
 ident_query call when attempting to authenticate someone with S/Ident.</p>
 
 <p>S/Ident is only used if one or more
-<directive>WebKdcSIdentAuthType</directive> directives are
-configured.</p>
+<a href="#webkdcsidentauthtype"><directive>WebKdcSIdentAuthType</directive></a>
+directives are configured.</p>
 
 <p>The units for the time are specified by appending a single letter.
 This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
