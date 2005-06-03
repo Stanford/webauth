@@ -1,3 +1,11 @@
+webauth (3.2.8-1) unstable; urgency=low
+
+  * New upstream release.
+    - mod_webauth now handles empty keyring files appropriately.
+    - Significant improvements to the mod_webkdc manual.
+
+ -- Russ Allbery <rra@stanford.edu>  Thu,  2 Jun 2005 23:21:02 -0700
+
 webauth (3.2.7-1) unstable; urgency=low
 
   * New upstream release.
