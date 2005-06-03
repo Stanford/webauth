@@ -35,11 +35,10 @@ from application servers, and the <code>token.acl</code> file that
 specifies what tokens application servers are permitted to request.</p>
 
 <p>The keytab must be a Kerberos V5 keytab for the principal referenced in
-the
-<a href="#webauthwebkdcprincipal"><directive>WebAuthWebKdcPrincipal</directive></a>
-configuration directive on the application servers.  How to obtain a
-keytab will depend on one's local Kerberos infrastructure; it may be via
-<code>kadmin</code> or via some other local interface.</p>
+the <directive>WebAuthWebKdcPrincipal</directive> configuration directive
+on the application servers.  How to obtain a keytab will depend on one's
+local Kerberos infrastructure; it may be via <code>kadmin</code> or via
+some other local interface.</p>
 
 <p>For information about the <code>token.acl</code> file, see the
 <a href="#webkdctokenacl"><directive>WebKdcTokenAcl</directive></a>
