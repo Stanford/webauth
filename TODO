@@ -20,5 +20,14 @@
     would cause multivalued attributes to be given in one environment
     variable with the values separated by that separator.
 
+ *) A better error message when one talks to the WebKDC directly with a
+    browser would be nice.  The current message is rather baffling, and
+    it would be good to tell the naive user to set up an application server
+    or weblogin server.
+
+ *) Document the protocol vulnerabilities in S/Ident and add some advise
+    on choosing when it might be appropriate to enable it (for low value
+    data, basically).
+
  *) The mod_webauthldap module needs a lot of formatting and coding style
     cleanup.
