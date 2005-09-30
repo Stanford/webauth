@@ -20,6 +20,11 @@
     would cause multivalued attributes to be given in one environment
     variable with the values separated by that separator.
 
+ *) User request: It would be nice to have a per-directory option to
+    recognize a login if the WebAuth cookie is available, but not force it
+    if the user isn't logged in.  This might address the HelpSU dependence
+    on S/Ident as well.
+
  *) A better error message when one talks to the WebKDC directly with a
     browser would be nice.  The current message is rather baffling, and
     it would be good to tell the naive user to set up an application server
