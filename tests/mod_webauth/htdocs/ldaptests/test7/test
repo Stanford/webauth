@@ -10,7 +10,7 @@ print "Content-type: text/html\n\n";
 
 print "<html>";
 
-test_title(6, "attribute retrieval with group authorization");
+test_title(7, "multi-value separator");
 
 print<<EOS;
 
