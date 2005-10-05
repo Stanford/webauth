@@ -60,6 +60,9 @@
 #define CD_Keytab "WebAuthLdapKeytab"
 #define CM_Keytab "keytab and the principal to bind as"
 
+#define CD_Separator "WebAuthLdapSeparator"
+#define CM_Separator "separator for multivalued attributes"
+
 #define CD_Tktcache "WebAuthLdapTktCache"
 #define CM_Tktcache "K5 ticket cache for ldap"
 
@@ -86,9 +89,9 @@ enum {
     E_Keytab,
     E_Port,
     E_Privgroupattr,
+    E_Separator,
     E_SSL,
     E_Tktcache
-
 };
 
 /* defaults struct passed to SASL */
@@ -113,6 +116,7 @@ typedef struct {
     char* port;
     char* principal;
     char* privgroupattr;
+    char* separator;
     int   set_authrule;
     int   ssl;
     char* tktcache;

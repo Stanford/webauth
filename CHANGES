@@ -10,6 +10,15 @@ WebAuth 3.3.0 (unreleased)
     single sign-on cookie and then impersonate the user to all WebAuth
     sites in that domain.
 
+ *) Added WebAuthLdapSeparator to specify the separator for multivalued
+    attributes.  When set in the server configuration, all values of a
+    multivalued attribute are concatenated together, separated by that
+    separator, and put into the base WEBAUTH_LDAP_* environment variable
+    (rather than only the first one).
+
+ *) Cleaned up, expanded, and improved the module documentation for
+    mod_webauthldap.
+
 WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot

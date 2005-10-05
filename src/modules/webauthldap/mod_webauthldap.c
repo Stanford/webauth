@@ -103,6 +103,9 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
     case E_Privgroupattr:
         sconf->privgroupattr = apr_pstrdup(cmd->pool, arg);
         break;
+    case E_Separator:
+        sconf->separator = apr_pstrdup(cmd->pool, arg);
+        break;
     case E_Tktcache:
         sconf->tktcache = ap_server_root_relative(cmd->pool, arg);
         break;
@@ -242,6 +245,7 @@ static const command_rec cmds[] = {
     SSTR(CD_Tktcache, E_Tktcache, CM_Tktcache),
     SSTR(CD_Port, E_Port, CM_Port),
     SSTR(CD_Privgroupattr, E_Privgroupattr, CM_Privgroupattr),
+    SSTR(CD_Separator, E_Separator, CM_Separator),
 
     SFLAG(CD_SSL, E_SSL, CM_SSL),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
@@ -320,6 +324,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE(privgroupattr);
     MERGE(tktcache);
     MERGE(ssl);
+    MERGE(separator);
 
     return (void *)conf;
 }
@@ -1126,7 +1131,7 @@ int
 webauthldap_setenv(void* lcp, const char *key, const char *val)
 {
     int i;
-    char* newkey, *numbered_key, *p, *existing_val;
+    char *newkey, *numbered_key, *p, *existing_val, *newval;
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
 
     if ((key == NULL) || (val == NULL))
@@ -1163,7 +1168,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
 
     existing_val = (char*) apr_table_get(lc->r->subprocess_env, newkey);
 
-    /* normal case of single-valued attribute */
+    /* Normal case of single-valued attribute. */
     if (existing_val == NULL) {
         if (lc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
@@ -1171,16 +1176,26 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                          lc->r->user, newkey);
         apr_table_set(lc->r->subprocess_env, newkey, val);
     } else {
-        /* set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH */
-        numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
-        if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
-            if (lc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                             "webauthldap(%s): setting %s", lc->r->user, 
-                             numbered_key);
-            apr_table_set(lc->r->subprocess_env, numbered_key, existing_val);
-        }
+        /* If separator is not set, set WEBAUTH_LDAP_BLAH1 to be the same as
+           WEBAUTH_LDAP_BLAH. */
+        if (lc->sconf->separator == NULL) {
+            numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
+            if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
+                if (lc->sconf->debug)
+                    ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                                 "webauthldap(%s): setting %s", lc->r->user, 
+                                 numbered_key);
+                apr_table_set(lc->r->subprocess_env, numbered_key,
+                              existing_val);
+            }
 
+        /* Otherwise, append the value to WEBAUTH_LDAP_BLAH. */
+        } else {
+            newval = apr_psprintf(lc->r->pool, "%s%s%s", existing_val,
+                                  lc->sconf->separator, val);
+            apr_table_set(lc->r->subprocess_env, newkey, newval);
+        }
+            
         /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
         for (i=2; i<MAX_ENV_VALUES; i++) {
             numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, i);
@@ -1189,7 +1204,6 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                     ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                                  "webauthldap(%s): setting %s", lc->r->user,
                                  numbered_key);
-
                 apr_table_set(lc->r->subprocess_env, numbered_key, val);
                 break;
             }

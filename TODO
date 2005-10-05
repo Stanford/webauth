@@ -14,12 +14,6 @@
     redirect to the weblogin logout page might ameliorate some of the
     problems.
 
- *) User request: mod_webauthldap currently can only deal with multivalued
-    attributes by putting each value into a separate environment variable.
-    It would be nice if the user could specify a separator that, if given,
-    would cause multivalued attributes to be given in one environment
-    variable with the values separated by that separator.
-
  *) User request: It would be nice to have a per-directory option to
     recognize a login if the WebAuth cookie is available, but not force it
     if the user isn't logged in.  This might address the HelpSU dependence
