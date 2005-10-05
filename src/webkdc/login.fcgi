@@ -282,7 +282,9 @@ while (my $q = CGI::Fast->new) {
         }
     }
 
-    # Pass in the network connection information for an S/Ident callback.
+    # Pass in the network connection information.  This used to be used for an
+    # S/Ident callback and now is no longer used, but maybe someday it will be
+    # used for something else.
     $req->local_ip_addr ($ENV{SERVER_ADDR});
     $req->local_ip_port ($ENV{SERVER_PORT});
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
@@ -311,19 +313,14 @@ while (my $q = CGI::Fast->new) {
     }
 
     # Now, display the appropriate page.  If $status is WK_SUCCESS, we have a
-    # successful authentication (by way of proxy token, username/password
-    # login, or S/Ident).  Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates
-    # the first visit to the login page without S/Ident, or where S/Ident
-    # isn't allowed, and WK_ERR_LOGIN_FAILED indicates the user needs to try
-    # logging in again.
+    # successful authentication (by way of proxy token or username/password
+    # login).  Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates the first
+    # visit to the login page and WK_ERR_LOGIN_FAILED indicates the user needs
+    # to try logging in again.
     if ($status == WK_SUCCESS && $has_cookies) {
         print_confirm_page ($q, \%varhash, $resp);
         print STDERR ("WebKDC::make_request_token_request sucess\n")
             if $DEBUG;
-
-    # Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates the first visit to
-    # the login page without S/Ident, or where S/Ident isn't allowed, and
-    # WK_ERR_LOGIN_FAILED indicates the user needs to try logging in again.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FAILED
              || !$has_cookies) {
@@ -332,9 +329,6 @@ while (my $q = CGI::Fast->new) {
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
                       . " displaying login page\n") if $DEBUG;
-
-    # Finally, some sort of error could have occurred.  Figure out what error
-    # and display an appropriate error page.
     } else {
         my $errmsg;
 
