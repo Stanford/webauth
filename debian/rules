@@ -6,26 +6,20 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-
 # These are used for cross-compiling and for saving the configure script
 # from having to guess our platform (since we know it already)
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
+ifndef PERL
+    PERL = /usr/bin/perl
+endif
 
 CFLAGS = -Wall -g
-
-ifndef PERL
-PERL = /usr/bin/perl
-endif
-
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-        CFLAGS += -O0
+    CFLAGS += -O0
 else
-        CFLAGS += -O2
-endif
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-        INSTALL_PROGRAM += -s
+    CFLAGS += -O2
 endif
 
 config.status: configure
@@ -36,7 +30,6 @@ config.status: configure
 	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2
 
 build: build-stamp
-
 build-stamp: config.status
 	dh_testdir
 	$(MAKE)
@@ -51,17 +44,11 @@ clean:
 	dh_testroot
 	rm -f build-stamp
 	-$(MAKE) distclean
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub tools/config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess tools/config.guess
-endif
 	dh_clean
 
 # Unfortunately, we have to run make install in the various directories
-# separately because apxs with the current Makefiles doesn't correctly handle
-# DESTDIR.
+# separately and install Apache modules manually because apxs with the current
+# Makefiles doesn't correctly handle DESTDIR.
 install: build
 	dh_testdir
 	dh_testroot
@@ -80,32 +67,28 @@ install: build
 	cp src/modules/webkdc/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
 	cp debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
 	mkdir -p $(CURDIR)/debian/tmp/etc/apache2/mods-available
-	cd conf/debian && for f in *.conf *.load ; do \
+	set -e; cd conf/debian && for f in *.conf *.load ; do \
 	    install -m 644 $$f \
-	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f \
-	            || exit 1 ; \
+	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
 	done
 	cd src/bindings/perl/WebAuth \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic
-	cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
-	    install -m 755 $$f \
-	        $(CURDIR)/debian/tmp/usr/share/weblogin/$$f || exit 1 ; \
+	set -e; cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
+	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
 	done
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
-	cd src/webkdc && for f in templates/*.tmpl ; do \
+	set -e; cd src/webkdc && for f in templates/*.tmpl ; do \
 	    install -m 644 $$f \
-	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
-	            || exit 1 ; \
+	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
 	install -m 644 src/webkdc/templates/help.html \
 	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
-	cd src/webkdc && for f in images/*.png ; do \
-	    install -m 644 $$f \
-	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f \
-	            || exit 1 ; \
+	set -e; cd src/webkdc && for f in images/*.png ; do \
+	    install -m 644 $$f
+	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/conf
 	cp tests/mod_webauth/conf/*.conf \
