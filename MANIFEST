@@ -69,6 +69,7 @@ src/libwebauth/base64.c                 Base64 encoding and decoding
 src/libwebauth/key.c                    Key handling
 src/libwebauth/krb5.c                   Kerberos v5 interface
 src/libwebauth/libwebauth.def           Symbol list for Windows DLL
+src/libwebauth/mapfile                  Version map for Linux
 src/libwebauth/misc.c                   Utility functions
 src/libwebauth/random.c                 Random number handling
 src/libwebauth/token.c                  WebAuth token handling

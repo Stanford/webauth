@@ -148,6 +148,20 @@ dnl Generate special flags for apxs, which doesn't understand compiler flags.
 APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 AC_SUBST([APXS_CFLAGS])
 
+dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
+dnl make sure that all symbols in the library are resolved.  We'd like to do
+dnl this on all platforms, but the syntax is different everywhere and I don't
+dnl feel like dealing with the differences.
+case "$host" in
+*-linux*)
+    VERSION_LDFLAGS="-Wl,--version-script=mapfile -Wl,-z,defs"
+    ;;
+*)
+    VERSION_LDFLAGS=""
+    ;;
+esac
+AC_SUBST([VERSION_LDFLAGS])
+
 dnl Checks for library functions.
 dnl Checks for system services.
 

@@ -19,6 +19,9 @@ WebAuth 3.3.0 (unreleased)
  *) Cleaned up, expanded, and improved the module documentation for
     mod_webauthldap.
 
+ *) Added symbol versioning for libwebauth on Linux.  Symbol versioning
+    is not supported on other platforms (at least yet).
+
  *) Updated tools/config.guess and tools/config.sub to the latest Debian
     versions.
 
