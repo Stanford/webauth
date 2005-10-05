@@ -87,7 +87,7 @@ install: build
 	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
 	set -e; cd src/webkdc && for f in images/*.png ; do \
-	    install -m 644 $$f
+	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/conf
