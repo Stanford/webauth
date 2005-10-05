@@ -28,6 +28,9 @@ WebAuth 3.3.0 (2005-10-04)
  *) Update HACKING for the new Subversion repository and to reflect our
     change in practice regarding pre-release versions.
 
+ *) Consolidate all the duplicate copies of util.pl in the mod_webauthldap
+    test suite.
+
 WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot

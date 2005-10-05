@@ -157,20 +157,15 @@ tests/mod_webauth/htdocs/ldaptests               Module tests (Directory)
 tests/mod_webauth/htdocs/ldaptests/index.html    WebAuthLdap tests top file
 tests/mod_webauth/htdocs/ldaptests/test1         WebAuthLdap tests (Directory)
 tests/mod_webauth/htdocs/ldaptests/test1/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test1/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test2         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test2/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test2/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test3         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test4         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test4/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test4/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test5         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test5/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test5/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/test6         WebAuthLdap tests (Directory) 
 tests/mod_webauth/htdocs/ldaptests/test6/test    WebAuthLdap tests
-tests/mod_webauth/htdocs/ldaptests/test6/util.pl WebAuthLdap tests
 tests/mod_webauth/htdocs/ldaptests/util.pl       WebAuthLdap module tests
 tests/mod_webauth/htdocs/tests                   Module tests (Directory)
 tests/mod_webauth/htdocs/tests/auth              Module tests (Directory)

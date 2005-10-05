@@ -5,7 +5,7 @@ use strict;
 my $REMOTE_USER = $ENV{'REMOTE_USER'};
 my $AUTHRULE = $ENV{'WEBAUTH_LDAPAUTHRULE'};
 
-require 'util.pl';
+require '../util.pl';
 
 print "Content-type: text/html\n\n";
 
