@@ -6,6 +6,7 @@ webauth (3.3.0-1) unstable; urgency=low
       attribute handling.
     - libwebauth now uses symbol versioning.
   * Indent the homepage in package descriptions to avoid wrapping.
+  * Update standards version to 3.6.2 (no changes required).
 
  --
 
