@@ -1176,21 +1176,19 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
                          lc->r->user, newkey);
         apr_table_set(lc->r->subprocess_env, newkey, val);
     } else {
-        /* If separator is not set, set WEBAUTH_LDAP_BLAH1 to be the same as
-           WEBAUTH_LDAP_BLAH. */
-        if (lc->sconf->separator == NULL) {
-            numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
-            if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
-                if (lc->sconf->debug)
-                    ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                                 "webauthldap(%s): setting %s", lc->r->user, 
-                                 numbered_key);
-                apr_table_set(lc->r->subprocess_env, numbered_key,
-                              existing_val);
-            }
+        /* Set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH. */
+        numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
+        if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                             "webauthldap(%s): setting %s", lc->r->user, 
+                             numbered_key);
+            apr_table_set(lc->r->subprocess_env, numbered_key,
+                          existing_val);
+        }
 
-        /* Otherwise, append the value to WEBAUTH_LDAP_BLAH. */
-        } else {
+        /* Update WEBAUTH_LDAP_BLAH if separator isn't NULL. */
+        if (lc->sconf->separator != NULL) {
             newval = apr_psprintf(lc->r->pool, "%s%s%s", existing_val,
                                   lc->sconf->separator, val);
             apr_table_set(lc->r->subprocess_env, newkey, newval);
