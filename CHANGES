@@ -240,15 +240,15 @@ WebAuth 3.2.0 (2003-08-07)
 WebAuth 3.1.2 (2003-05-29)
 
  *) mod_webauthldap: Added mutexes around the entire ldap operation to 
-    avoid GSSAPI thread safety issues.  All server_rec structures are now 
-    initialized, correctly supporting multiple virtual host 
-    configurations.  Refactored ldap binds for better failback support,
-    fixing a double free memory error.  Additional memory cleanup for 
-    krb5 TGT operations. Fixed memory leak related to unbind after 
-    connection expiry, via ignoring SIGPIPE.
+    avoid GSSAPI thread safety issues.  All server_rec structures are now
+    initialized, correctly supporting multiple virtual host
+    configurations.  Refactored LDAP binds for better failback support,
+    fixing a double free memory error.  Additional memory cleanup for krb5
+    TGT operations. Fixed memory leak related to unbind after connection
+    expiry, via ignoring SIGPIPE.
 
  *) mod_webauth: Correctly construct the return url for reverse proxies 
-    (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing 
+    (explicitly compare r->proxyreq to PROXYREQ_PROXY instead of testing
     for != PROXYREQ_NONE, which also matched PROXYREQ_REVERSE.
 
  *) mod_webauth: Don't try to attr decode a zero length service token 
@@ -285,12 +285,12 @@ WebAuth 3.1.1 (2003-05-08)
 WebAuth 3.1.0 (2003-05-01)
 
  *) Add WebAuthSSLRedirect and WebAuthSSLRedirectPort directives to
-    enable redirecting of users from http to https when accessing
-    a WebAuth-protected resource.
+    enable redirecting of users from http to https when accessing a
+    WebAuth-protected resource.
 
  *) Add WebAuthWebKdcSSLCertCheck directive to enable/disable checking
-    of the WebKDC SSL certificate. Defaults to "on" and should only
-    be turned off for debugging/testing purposes.
+    of the WebKDC SSL certificate. Defaults to "on" and should only be
+    turned off for debugging/testing purposes.
 
  *) Added mod_webauthldap for LDAP directory information lookups via
     Kerberos v5 GSS-API binds.
@@ -329,32 +329,31 @@ WebAuth 3.1.0 (2003-05-01)
 
  *) Added WebAuthAuthType directive to help people transistion to
     mod_webauth.  This directive allows you to specify an additional
-    AuthType name that will be treated the same as WebAuth.  If
-    this directive is set to StanfordAuth, it will also set two
-    extra environment variables: SU_AUTH_USER and SU_AUTH_AGE.
+    AuthType name that will be treated the same as WebAuth.  If this
+    directive is set to StanfordAuth, it will also set two extra
+    environment variables: SU_AUTH_USER and SU_AUTH_AGE.
 
- *) Cleanup environment variable setting. Set environment variables
-    (r->subprocess_env) in check_user_id hook instead of waiting
-    until fixups hook to make them more accessible to other hooks/modules.
+ *) Clean up environment variable setting.  Set environment variables
+    (r->subprocess_env) in check_user_id hook instead of waiting until
+    fixups hook to make them more accessible to other hooks/modules.
 
  *) When scrubbing tokens from r->args and r->parsed_uri.query, look
-    for "?WEBAUTHR=" first then "WEBAUTHR=", since if there were no
-    query args, the tokens could get parsed as query args. This
-    caused tokens to show up as query args when we changed from
-    ";WEBAUTHR=" to "?WEBAUTHR=".
+    for "?WEBAUTHR=" first, then "WEBAUTHR=".  If there were no query
+    args, the tokens could get parsed as query args.  This caused tokens
+    to show up as query args when we changed from ";WEBAUTHR=" to
+    "?WEBAUTHR=".
 
  *) If we are proxying a request, strip out all webauth_* cookies and
-    and webauth tokens from Referer header.  Also, if we are proxying
-    or the URI passed to the server in the HTTP request has a scheme,
-    use it as the return URL instead of constructing one relative to the
-    server.
+    and webauth tokens from Referer header.  Also, if we are proxying or
+    the URI passed to the server in the HTTP request has a scheme, use it
+    as the return URL instead of constructing one relative to the server.
 
- *) Modify WebAuthKeytab and WebKdcKeytab directives so 
-    you can optionally specify which principal to use with
-    the specified keytab, instead of using the first principal found.
-    This required modifying webauth_krb5_* APIs.
+ *) Modify WebAuthKeytab and WebKdcKeytab directives so you can optionally
+    specify which principal to use with the specified keytab, instead of
+    using the first principal found.  This required modifying the
+    webauth_krb5_* APIs.
  
- *) Implement WebAuthProxyHeaders directive.  See WebAuth module
+ *) Implement WebAuthProxyHeaders directive.  See the WebAuth module
     documentation for more information.
 
  *) Clean up header includes in tests and wa_keyring.
