@@ -11,7 +11,7 @@ webauth (3.3.0-1) unstable; urgency=low
   * Indent the homepage in package descriptions to avoid wrapping.
   * Update standards version to 3.6.2 (no changes required).
 
- --
+ -- Russ Allbery <rra@stanford.edu>  Tue,  4 Oct 2005 21:40:28 -0700
 
 webauth (3.2.8-1) unstable; urgency=low
 
