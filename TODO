@@ -30,9 +30,5 @@
     it would be good to tell the naive user to set up an application server
     or weblogin server.
 
- *) Document the protocol vulnerabilities in S/Ident and add some advise
-    on choosing when it might be appropriate to enable it (for low value
-    data, basically).
-
  *) The mod_webauthldap module needs a lot of formatting and coding style
     cleanup.
