@@ -54,8 +54,6 @@ tokens and ticket caches.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidentauthtype">WebKdcSIdentAuthType</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#webkdcsidenttimeout">WebKdcSIdentTimeout</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
 </ul>
@@ -459,81 +457,6 @@ hours, days, and weeks, respectively.</p>
 <div class="example"><h3>Example</h3><p><code>
 # create a webkdc-service token valid for 30 days<br />
 WebKdcServiceTokenLifetime 30d
-</code></p></div>
-
-
-</div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
-<div class="directive-section"><h2><a name="WebKdcSIdentAuthType" id="WebKdcSIdentAuthType">WebKdcSIdentAuthType</a> <a name="webkdcsidentauthtype" id="webkdcsidentauthtype">Directive</a></h2>
-<table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable and configure S/Ident checks</td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentAuthType <em>type</em> <em>data</em></code></td></tr>
-<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none configured)</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
-<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
-</table>
-
-<p>This directive enables S/Ident checking using the specified S/Ident
-auth type and corresponding data.  If multiple types are specified, they
-are checked in the order specified until one of them returns success.</p>
-
-<p>Below are the permissable values for <em>type</em> and the
-corresponding interpretation of <em>data</em>:</p>
-
-<table class="bordered">
-<tr>
- <th>Auth Type:</th>
- <th>Auth Data:</th>
-</tr>
-<tr><td><code>KERBEROS_V4</code></td>            
-  <td>The ident.* srvtab file to use.  The srvtab must be specified.</td>
-</tr>
-<tr><td><code>GSSAPI</code></td>            
-  <td>The ident/* keytab file to use.  If not specified, then the default
-  Kerberos V5 keytab file will be used.</td>
-</tr>
-</table>
-
-<div class="note"><h3>Note</h3> 
-  <p>Specifying a keytab location with the <code>GSSAPI</code> auth type
-  will cause the <code>KRB5_KTNAME</code> environment variable to get set
-  to the specified location.  This setting may be visible to other Apache
-  processes or programs spawned by Apache.  This is unfortunately a
-  limitation of the current S/Ident library implementation.</p>
-</div>
-
-<div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentAuthType "KERBEROS_V4" "conf/webkdc/ident.srvtab"
-</code></p></div>
-
-
-</div>
-<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
-<div class="directive-section"><h2><a name="WebKdcSIdentTimeout" id="WebKdcSIdentTimeout">WebKdcSIdentTimeout</a> <a name="webkdcsidenttimeout" id="webkdcsidenttimeout">Directive</a></h2>
-<table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Timeout value used for S/Ident callback</td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcSIdentTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
-<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcSIdentTimeout 10s</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
-<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
-</table>
-
-<p>This directive controls the value of the timeout used with the
-ident_query call when attempting to authenticate someone with S/Ident.</p>
-
-<p>S/Ident is only used if one or more
-<a href="#webkdcsidentauthtype"><code class="directive">WebKdcSIdentAuthType</code></a>
-directives are configured.</p>
-
-<p>The units for the time are specified by appending a single letter.
-This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
-<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
-hours, days, and weeks, respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-WebKdcSIdentTimeout 5s
 </code></p></div>
 
 

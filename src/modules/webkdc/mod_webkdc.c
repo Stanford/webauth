@@ -4,14 +4,6 @@
 
 #include "mod_webkdc.h"
 
-#if HAVE_SIDENT
-#include <errno.h>
-#include <sident.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#endif 
-
 /* attr list macros to make code easier to read and audit 
  * we don't need to check error codes since we are using
  * WA_F_NONE, which doesn't allocate any memory.
@@ -323,196 +315,6 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     }
     return NULL;
 }
-
-#if HAVE_SIDENT
-static MWK_PROXY_TOKEN *
-attempt_sident(MWK_REQ_CTXT *rc,
-               MWK_REQUEST_INFO *req_info,
-               int *num_proxy_tokens,
-               MWK_RETURNED_PROXY_TOKEN *rptokens)
-{
-    static const char *mwk_func="attempt_sident";
-    MWK_IDENT_AUTH_TYPE *iat;
-    IDENT *ident;
-    int i,s, resp_port, req_port, token_len, ms;
-    struct in_addr resp, req;
-    MWK_PROXY_TOKEN *pt;
-    WEBAUTH_ATTR_LIST *alist;
-    char *token_data;
-
-    if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
-                     "mod_webkdc: %s: identInfo(req %s:%s, resp %s:%s)",
-                     mwk_func, 
-                     req_info->local_addr,
-                     req_info->local_port,
-                     req_info->remote_addr,
-                     req_info->remote_port);
-    }
-
-    resp.s_addr = inet_addr(req_info->remote_addr);
-    resp_port = atoi(req_info->remote_port);
-
-    req.s_addr = inet_addr(req_info->local_addr);
-    req_port = atoi(req_info->local_port);
-
-    ident = NULL;
-
-    iat = (MWK_IDENT_AUTH_TYPE*) rc->sconf->sident_auth_types->elts;
-
-    for (i = 0; i < rc->sconf->sident_auth_types->nelts; i++) {
-        s  = ident_set_authtype(iat[i].type, iat[i].data);
-        if (s != IDENT_AUTH_OKAY) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                         "mod_webkdc: %s: ident_set_authtype failed: %s (%d)",
-                         mwk_func,
-                         (s >= 0  && s < IDENT_MAX_ERROR) ?
-                         ident_err_txt[s] : "unknown-error-code",
-                         s
-                         );
-        } else {
-            ident_set_authflag("USER-INTERACTION", "YES");
-            if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
-                             "mod_webkdc: %s: ident_set_authtype(%s,%s, %d)",
-                             mwk_func,
-                             iat[i].type, 
-                             iat[i].data != NULL ? iat[i].data : "(null)",
-                             rc->sconf->sident_timeout);
-            }
-            ident = ident_query(&req, &resp,
-                                resp_port, req_port,
-                                rc->sconf->sident_timeout);
-            if (ident != NULL && ident->result_code == IDENT_AUTH_OKAY)
-                break;
-
-            if (ident == NULL) {
-                if (rc->sconf->debug) {
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                                 "mod_webkdc: %s: ident_query: errno: %d",
-                                 mwk_func, errno);
-                }
-            } else {
-                if (rc->sconf->debug) {
-                    s = ident->result_code;
-                    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                                 "mod_webkdc: %s: ident_query failed: %s (%d)",
-                                 mwk_func,
-                                 (s >= 0  && s < IDENT_MAX_ERROR) ?
-                                 ident_err_txt[s] : "unknown-error-code",
-                                 s);
-                }
-                ident_free(ident);
-                ident = NULL;
-            }
-        }
-    }
-
-    if (ident == NULL)
-        return NULL;
-
-    if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
-                     "mod_webkdc: %s: ident success: %s, %s, expires %d",
-                     mwk_func,
-                     ident->identifier,
-                     ident->principal,
-                     (int)ident->expires);
-    }
-
-    pt = (MWK_PROXY_TOKEN*)apr_pcalloc(rc->r->pool, sizeof(MWK_PROXY_TOKEN));
-
-    if (pt == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webkdc: %s: pcalloc of MWK_PROXY_TOKEN failed",
-                     mwk_func);
-        goto finish;
-    }
-
-    pt->proxy_type = "sident";
-    pt->proxy_subject = "WEBKDC:sident";
-
-    if (ident->principal != NULL) {
-        pt->subject = apr_pstrdup(rc->r->pool, ident->principal);
-    } else {
-        char *c;
-        pt->subject = apr_pstrdup(rc->r->pool, ident->identifier);
-        c = ap_strchr(pt->subject, ':');
-        if (c != NULL)
-            *c = '\0';
-        
-    }
-    pt->proxy_data = apr_pstrdup(rc->r->pool, ident->identifier);
-    pt->proxy_data_len = strlen(pt->proxy_data);
-    time(&pt->creation);
-
-    /* if ProxyTokenLifetime is non-zero, use the min of it 
-       and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_lifetime) {
-        time_t pmax = pt->creation + rc->sconf->proxy_token_lifetime;
-        pt->expiration = (ident->expires < pmax) ? ident->expires : pmax;
-    } else {
-        pt->expiration = ident->expires;
-    }
-
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        goto finish;
-
-    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
-    SET_PROXY_SUBJECT(pt->proxy_subject);
-    SET_PROXY_TYPE(pt->proxy_type);
-    SET_SUBJECT(pt->subject);
-    SET_PROXY_DATA(pt->proxy_data, pt->proxy_data_len);
-    SET_CREATION_TIME(pt->creation);
-    SET_EXPIRATION_TIME(pt->expiration);
-    /*SET_EXPIRATION_TIME(pt->creation); FOR TESTING */
-
-    ms = make_token(rc, alist, pt->creation, &token_data, &token_len, 
-                    1, mwk_func);
-    webauth_attr_list_free(alist);
-
-    if (ms == MWK_OK) {
-        int j, found;
-        /* if there already is an outgoing "sident" token, then
-           replace it */
-        for (j=0, found=0; j < *num_proxy_tokens; j++) {
-            if (strcmp(rptokens[j].type, "sident") == 0) {
-                found = 1;
-                rptokens[j].token_data = token_data;
-                if (rc->sconf->debug) {
-                    ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
-                                 "mod_webkdc: %s: ident "
-                                 "replaced expired sident token",
-                                 mwk_func);
-                }
-                break;
-            }
-        }
-        if (!found) {
-            rptokens[*num_proxy_tokens].token_data = token_data;
-            rptokens[*num_proxy_tokens].type = "sident";
-            *num_proxy_tokens = *num_proxy_tokens + 1;
-        }
-
-        /*
-        if (rc->sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
-                         "mod_webkdc: %s: ident "
-                         "created webkdc-proxy-token: %d",
-                         mwk_func,
-                         *num_proxy_tokens);
-        }
-        */
-    }
-
- finish:
-    ident_free(ident);
-
-    return pt;
-}
-
-#endif
 
 /*
  * search through subject credentials for a proxy-token of the requested
@@ -1380,16 +1182,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     if (strcmp(auth_type, "webkdc") == 0) {
         /* check krb5 or sident */
         sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func, 0);
-#if HAVE_SIDENT
-        if (sub_pt == NULL)
-            sub_pt = find_proxy_token(rc, sub_cred, "sident", mwk_func, 0);
-        if (sub_pt == NULL && 
-            (req_info != NULL && req_info->local_addr != NULL) &&
-            rc->sconf->sident_auth_types != NULL) {
-            sub_pt = attempt_sident(rc, req_info,
-                                    num_proxy_tokens, rptokens);
-        }
-#endif
         if (sub_pt == NULL) {
             set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, 
                               "need a proxy-token", mwk_func, 1);
@@ -3187,9 +2979,6 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 {
     int e = (int)cmd->info;
     char *error_str = NULL;
-#if HAVE_SIDENT
-    MWK_IDENT_AUTH_TYPE *iat;
-#endif 
     MWK_SCONF *sconf = (MWK_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webkdc_module);
     
@@ -3200,31 +2989,6 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
             sconf->keytab_principal = 
                 (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
             break;
-#if HAVE_SIDENT
-        case E_SIdentAuthType:
-            if (sconf->sident_auth_types == NULL) {
-                sconf->sident_auth_types = 
-                    apr_array_make(cmd->pool, 5, sizeof(MWK_IDENT_AUTH_TYPE));
-            }
-            iat = apr_array_push(sconf->sident_auth_types);
-            iat->type = apr_pstrdup(cmd->pool, arg);
-            if (strcmp(arg, "KERBEROS_V4") == 0) {
-                iat->data = (arg2 == NULL) ? NULL : 
-                    ap_server_root_relative(cmd->pool, arg2);
-            } else if (strcmp(arg, "GSSAPI") == 0) {
-                char *ktenv;
-                iat->data = (arg2 == NULL) ? NULL : 
-                    ap_server_root_relative(cmd->pool, arg2);
-                ktenv = apr_psprintf(cmd->pool, 
-                                     "%s=FILE:%s", "KRB5_KTNAME",
-                                     iat->data);
-                putenv(ktenv);
-            } else {
-                iat->data = (arg2 == NULL) ? NULL : 
-                    apr_pstrdup(cmd->pool, arg2);
-            }
-            break;
-#endif
          default:
             error_str = 
                 apr_psprintf(cmd->pool,
@@ -3281,9 +3045,6 @@ static const command_rec cmds[] = {
     /* server/vhost */
     SSTR(CD_Keyring, E_Keyring, CM_Keyring),
     SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
-#if HAVE_SIDENT
-    SSTR12(CD_SIdentAuthType, E_SIdentAuthType,  CM_SIdentAuthType),
-#endif
     SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
     SFLAG(CD_Debug, E_Debug, CM_Debug),
     SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),

@@ -9,6 +9,3 @@
 
 /* Define to 1 if you have the `krb5_free_keytab_entry_contents' function. */
 #undef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
-
-/* Define to 1 to include S/Ident support. */
-#undef HAVE_SIDENT

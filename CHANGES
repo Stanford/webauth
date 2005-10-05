@@ -1,5 +1,15 @@
                           WebAuth Change History
 
+WebAuth 3.3.0 (unreleased)
+
+ *) All WebKDC support for S/Ident removed.  The S/Ident protocol is
+    inherently vulnerable to an active man-in-the-middle attack that is
+    particularly severe for WebAuth, since S/Ident authentication is done
+    by a single server and WebAuth users regularly visit that server.
+    Exploiting this protocol flaw would allow an attacker to capture a
+    single sign-on cookie and then impersonate the user to all WebAuth
+    sites in that domain.
+
 WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot
