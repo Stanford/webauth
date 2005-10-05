@@ -19,6 +19,9 @@ WebAuth 3.3.0 (unreleased)
  *) Cleaned up, expanded, and improved the module documentation for
     mod_webauthldap.
 
+ *) Updated tools/config.guess and tools/config.sub to the latest Debian
+    versions.
+
 WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot
