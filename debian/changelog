@@ -5,6 +5,8 @@ webauth (3.3.0-1) unstable; urgency=low
     - New WebAuthLdapSeparator configuration setting for multi-valued
       attribute handling.
     - libwebauth now uses symbol versioning.
+  * Update copyright to my current format and add an explicit packaging
+    copyright and license statement.
   * Indent the homepage in package descriptions to avoid wrapping.
   * Update standards version to 3.6.2 (no changes required).
 
