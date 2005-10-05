@@ -5,6 +5,7 @@ webauth (3.3.0-1) unstable; urgency=low
     - New WebAuthLdapSeparator configuration setting for multi-valued
       attribute handling.
     - libwebauth now uses symbol versioning.
+  * Indent the homepage in package descriptions to avoid wrapping.
 
  --
 
