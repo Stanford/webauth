@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require '../util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title(6, "attribute retrieval with group authorization");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This test will display all of your suAffiliation entries separated by a
+vertical bar.  If you have multiple affiliations, you can verify that the
+WebAuthLdapSeparator support is working properly.
+<br>
+EOS
+
+&unauth_return_links;
+
+&dump_stuff;
+
+print "</html>";
+
