@@ -20,8 +20,8 @@ use File::Find qw(find);
 # or files that are present in the tree and in CVS but which are not included
 # in releases.
 @IGNORE = (qr%(\A|/)\.cvsignore\Z%, qr/\.[ao]\Z/, qr%(\A|/)CVS(/|\Z)%,
-           qr%(\A|/)\.?\#%, qr/\.(old|bak|orig|rej)$/, qr%(\A|/)core\Z%,
-           qr/~\Z/, qr%\Adebian(/|\Z)%);
+           qr%(\A|/)\.svn(/|\Z)%, qr%(\A|/)\.?\#%, qr/\.(old|bak|orig|rej)$/,
+           qr%(\A|/)core\Z%, qr/~\Z/, qr%\Adebian(/|\Z)%);
 
 # A list of generated files that should be included in the manifest and
 # therefore included in releases, but which are listed in .cvsignore.

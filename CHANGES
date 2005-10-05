@@ -31,6 +31,8 @@ WebAuth 3.3.0 (2005-10-04)
  *) Consolidate all the duplicate copies of util.pl in the mod_webauthldap
     test suite.
 
+ *) Updated tools/mkmanifest to ignore Subversion files.
+
 WebAuth 3.2.8 (2005-06-03)
 
  *) mod_webauth now treats empty keyrings the same as keyrings that cannot
