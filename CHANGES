@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.3.0 (unreleased)
+WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is
     inherently vulnerable to an active man-in-the-middle attack that is
@@ -24,6 +24,9 @@ WebAuth 3.3.0 (unreleased)
 
  *) Updated tools/config.guess and tools/config.sub to the latest Debian
     versions.
+
+ *) Update HACKING for the new Subversion repository and to reflect our
+    change in practice regarding pre-release versions.
 
 WebAuth 3.2.8 (2005-06-03)
 

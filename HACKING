@@ -46,11 +46,11 @@ Making a Release
   Follow the following steps to make a new full release of WebAuth:
 
    1. Make sure that tools/config.guess and tools/config.sub are the
-      latest available versions from <ftp://ftp.gnu.org/gnu/config/>.  If
-      newer versions are available, download them and check them in; we do
-      not have any local changes to those files.  (Note that currently
-      these files are not available from ftp.gnu.org; one can use the
-      versions shipped with Debian instead.)
+      latest available versions from /usr/share/misc in Debian.  If newer
+      versions are available, copy them over and check them in; we do not
+      have any local changes to those files.  Similarly, make sure that
+      tools/ltmain.sh and m4/libtool.m4 match the latest available
+      versions from /usr/share/libtool in Debian.
 
    2. Check out a copy of the WebAuth tree, run autoconf and autoheader
       (making sure to get the Autoconf 2.57 or later versions), run
@@ -65,10 +65,8 @@ Making a Release
       exist.  If there are no major changes, include some short comment
       about what minor changes are included.
 
-   4. Update the revision number in configure.ac to drop the "pre" from
-      the revision number and change the revision number to whatever is
-      appropriate for the release.  Run autoconf and ./configure again
-      after you do this.  Also update the version number in README.
+   4. Update the revision number in configure.ac and in README to the new
+      release.  Run autoconf and ./configure again after you do this.
 
    5. Run make dist.  This will generate a .tar.gz file containing the
       source distribution and a .tar.gz.md5 file containing the MD5
@@ -114,12 +112,5 @@ Making a Release
       mailing lists.
 
   13. Going back to the checked-out tree that you used to generate the
-      release, tag the release point with a command like:
-
-        $ cvs tag WEBAUTH-<version> .
-
-      where <version> is the version of the release with all periods
-      changed to underscores.
-
-  14. Increase the revision number in configure.ac and add "pre" to the
-      end of it again.
+      release, tag the release point by copying webauth/trunk to
+      webauth/tags/<version> in Subversion.
