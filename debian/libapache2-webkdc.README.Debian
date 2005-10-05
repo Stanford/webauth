@@ -89,33 +89,4 @@ WebKDC available:
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
 
-
-Using S/Ident
--------------
-
-By default, the WebAuth weblogin server will obtain the user's username
-and password and have the WebKDC authenticate against Kerberos using them.
-If you wish, however, you can use S/Ident to authenticate users.  If this
-is enabled, the user's system is running an S/Ident responder, and they
-already have valid Kerberos tickets, they will not be prompted for any
-username and password unless the site to which they're going is configured
-to obtain additional Kerberos tickets.
-
-To use S/Ident, the system running the WebKDC needs to have an ident/*
-keytab for the system name that it's primary IP address resolves to (due
-to the way that S/Ident works).  Obtain that keytab using whatever
-mechanism is used to get keytabs at your site and put it in
-/etc/webkdc/keytab.ident.  Make sure it is readable by the web server:
-
-    chgrp www-data /etc/webkdc/keytab.ident
-    chmod 640 /etc/webkdc/keytab.ident
-
-Now, put the following line to your /etc/apache2/conf.d/webkdc or wherever
-you prefer to put local Apache configuration:
-
-    WebKdcSIdentAuthType "GSSAPI" "/etc/webkdc/keytab.ident"
-
-Restart Apache with apache2ctl graceful and S/Ident authentication should
-now be enabled.
-
- -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:41:45 2005
+ -- Russ Allbery <rra@stanford.edu>, Tue Oct  4 21:24:07 2005

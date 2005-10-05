@@ -1,3 +1,13 @@
+webauth (3.3.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - S/Ident support removed.
+    - New WebAuthLdapSeparator configuration setting for multi-valued
+      attribute handling.
+    - libwebauth now uses symbol versioning.
+
+ --
+
 webauth (3.2.8-1) unstable; urgency=low
 
   * New upstream release.
