@@ -29,4 +29,4 @@ modify it to make it a better test for your site.
 If you are not using the WebAuth LDAP module, you can just omit the two
 lines referring to ldaptests.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:45:16 2005
+ -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:40:55 2005

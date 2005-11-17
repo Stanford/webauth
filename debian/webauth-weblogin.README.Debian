@@ -137,4 +137,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:49:19 2005
+ -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:41:03 2005

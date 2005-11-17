@@ -1,8 +1,9 @@
 webauth (3.3.0-2) unstable; urgency=low
 
   * Build-depend on libcurl3-openssl-dev, not libcurl3-dev.
+  * Update maintainer address.
 
- -- Russ Allbery <rra@stanford.edu>  Mon,  7 Nov 2005 11:30:15 -0800
+ -- Russ Allbery <rra@debian.org>  Wed, 16 Nov 2005 16:39:21 -0800
 
 webauth (3.3.0-1) unstable; urgency=low
 

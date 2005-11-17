@@ -129,4 +129,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@stanford.edu>, Thu Apr 14 21:38:07 2005
+ -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:40:34 2005

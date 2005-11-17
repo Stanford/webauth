@@ -89,4 +89,4 @@ WebKDC available:
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
 
- -- Russ Allbery <rra@stanford.edu>, Tue Oct  4 21:24:07 2005
+ -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:40:48 2005
