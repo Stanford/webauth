@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.4.0 (unreleased)
+
+ *) Added support to the weblogin server and WebKDC module to trust an
+    authentication identity asserted by Apache.  This allows use of any
+    authentication type that Apache supports as WebAuth authentication, in
+    particular SPNEGO/GSSAPI.
+
 WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is

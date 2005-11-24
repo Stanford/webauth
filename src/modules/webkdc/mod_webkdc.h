@@ -142,6 +142,7 @@ typedef struct {
     char *local_port;
     char *remote_addr;
     char *remote_port;
+    char *remote_user;
 } MWK_REQUEST_INFO;
 
 /* configured sident auth type */

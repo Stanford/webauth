@@ -290,6 +290,11 @@ while (my $q = CGI::Fast->new) {
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
     $req->remote_ip_port ($ENV{REMOTE_PORT});
 
+    # Pass in REMOTE_USER if Apache set it.  This allows the WebKDC to trust
+    # Apache authentication mechanisms like SPNEGO or client-side certificates
+    # if so configured.
+    $req->remote_user ($ENV{REMOTE_USER});
+
     # Pass the information along to the WebKDC and get the repsonse.
     ($status, $exception) = WebKDC::make_request_token_request ($req, $resp);
 

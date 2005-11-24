@@ -89,4 +89,10 @@ sub remote_ip_port {
     return $self->{'remote_ip_port'};
 }
 
+sub remote_user {
+    my $self = shift;
+    $self->{'remote_user'} = shift if @_;
+    return $self->{'remote_user'};
+}
+
 1;

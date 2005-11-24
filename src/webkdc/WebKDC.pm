@@ -151,12 +151,17 @@ sub request_token_request($$) {
     }
     $webkdc_doc->end('subjectCredential');
     $webkdc_doc->start('requestToken',  undef, $request_token)->end;
-    if ($wreq->local_ip_addr()) {
+    if ($wreq->local_ip_addr() || $wreq->remote_user()) {
 	$webkdc_doc->start('requestInfo');
-	$webkdc_doc->add('localIpAddr', undef, $wreq->local_ip_addr());
-	$webkdc_doc->add('localIpPort', undef, $wreq->local_ip_port());
-	$webkdc_doc->add('remoteIpAddr', undef, $wreq->remote_ip_addr());
-	$webkdc_doc->add('remoteIpPort', undef, $wreq->remote_ip_port());
+        if ($wreq->local_ip_addr()) {
+            $webkdc_doc->add('localIpAddr', undef, $wreq->local_ip_addr());
+            $webkdc_doc->add('localIpPort', undef, $wreq->local_ip_port());
+            $webkdc_doc->add('remoteIpAddr', undef, $wreq->remote_ip_addr());
+            $webkdc_doc->add('remoteIpPort', undef, $wreq->remote_ip_port());
+        }
+        if ($wreq->remote_user()) {
+            $webkdc_doc->add('remoteUser', undef, $wreq->remote_user());
+        }
 	$webkdc_doc->end('requestInfo');
     }
     $webkdc_doc->end('requestTokenRequest');
