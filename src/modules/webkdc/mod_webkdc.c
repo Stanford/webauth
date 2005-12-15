@@ -1180,29 +1180,10 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
 
     sad = NULL;
     if (strcmp(auth_type, "webkdc") == 0) {
-        /* check krb5 or remote user */
+        /* check krb5 or remuser */
         sub_pt = find_proxy_token(rc, sub_cred, "krb5", mwk_func, 0);
-        if (sub_pt == NULL && req_info->remote_user != NULL) {
-            char *p;
-
-            sub_pt = apr_pcalloc(rc->r->pool, sizeof(MWK_PROXY_TOKEN));
-            if (sub_pt == NULL) {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                             "mod_webkdc: %s: pcalloc of MWK_PROXY_TOKEN"
-                             " failed", mwk_func);
-            } else {
-                sub_pt->proxy_type = "remuser";
-                sub_pt->proxy_subject = "WEBKDC:remuser";
-                sub_pt->subject = apr_pstrdup(rc->r->pool,
-                                              req_info->remote_user);
-                p = ap_strchr(sub_pt->subject, '@');
-                if (p != NULL)
-                    *p = '\0';
-                time(&sub_pt->creation);
-                sub_pt->expiration =
-                    sub_pt->creation + rc->sconf->proxy_token_lifetime;
-            }
-        }
+        if (sub_pt == NULL)
+            sub_pt = find_proxy_token(rc, sub_cred, "remuser", mwk_func, 0);
         if (sub_pt == NULL) {
             set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, 
                               "need a proxy-token", mwk_func, 1);

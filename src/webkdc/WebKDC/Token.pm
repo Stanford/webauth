@@ -651,7 +651,7 @@ sub validate_token {
 
     croak "validate_token failed" unless
 	($self->token_type() eq 'webkdc-proxy') && 
-	($self->proxy_type() eq 'krb5') && 
+	($self->proxy_type() =~ /^(?:krb5|remuser)$/) && 
 	defined($self->proxy_subject()) &&
 	defined($self->proxy_data()) &&
 	defined($self->creation_time());

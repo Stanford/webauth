@@ -34,7 +34,7 @@ use URI ();
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
-our $DEBUG = 0;
+our $DEBUG = 1;
 
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;
@@ -74,7 +74,9 @@ sub dump_stuff {
 ##############################################################################
 
 # Print the headers for a page.  Takes the user's query and any additional
-# cookies to set as parameters, and always adds the test cookie.
+# cookies to set as parameters, and always adds the test cookie.  Skip any
+# remuser proxy tokens, since those are internal and we want to reauthenticate
+# the user every time.
 sub print_headers {
     my ($q, $cookies) = @_;
     my $ca;
@@ -83,6 +85,7 @@ sub print_headers {
     if ($cookies) {
         my ($name, $value);
         while (($name, $value) = each %$cookies) {
+            next if $name eq 'webauth_wpt_remuser';
             my $cookie = $q->cookie(-name => $name, -value => $value,
                                     -secure => $secure);
             push (@$ca, $cookie);
@@ -232,6 +235,55 @@ sub get_login_cancel_url {
 }
 
 ##############################################################################
+# REMOTE_USER support
+##############################################################################
+
+# Generate a proxy token containing the REMOTE_USER identity and pass it into
+# the WebKDC along with the other proxy tokens.  Takes the request to the
+# WebKDC that we're putting together.  If the REMOTE_USER isn't valid for some
+# reason, log an error and don't do anything else.
+sub add_remuser_token {
+    my ($req) = @_;
+    print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
+        if $DEBUG;
+    my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+    unless ($keyring) {
+        warn "weblogin: unable to initialize a keyring from"
+            . " $WebKDC::Config::KEYRING_PATH\n";
+        return;
+    }
+
+    # Make sure that any realm in REMOTE_USER matches the realm specified in
+    # our configuration file.  Note that if a realm is specified in the
+    # configuration file, it must be present in REMOTE_USER.
+    my ($user, $realm) = split ('@', $ENV{REMOTE_USER}, 2);
+    if ($WebKDC::Config::REALM) {
+        if (!$realm || $realm ne $WebKDC::Config::REALM) {
+            warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
+                . " saw " . ($realm ? $realm : '""') . " expected "
+                . $WebKDC::Config::REALM . "\n";
+            return;
+        }
+    } elsif ($realm) {
+        warn "weblogin: found realm in REMOTE_USER but no realm configured\n";
+        return;
+    }
+
+    # Create a proxy token that expires in five seconds.
+    my $token = new WebKDC::WebKDCProxyToken;
+    $token->creation_time (time);
+    $token->expiration_time (time + 5);
+    $token->proxy_data ($user);
+    $token->proxy_subject ('WEBKDC:remuser');
+    $token->proxy_type ('remuser');
+    $token->subject ($user);
+
+    # Add the token to the WebKDC request.
+    my $token_string = base64_encode ($token->to_token ($keyring));
+    $req->proxy_cookie ('remuser', $token_string);
+}
+
+##############################################################################
 # Main routine
 ##############################################################################
 
@@ -290,9 +342,14 @@ while (my $q = CGI::Fast->new) {
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
     $req->remote_ip_port ($ENV{REMOTE_PORT});
 
-    # Pass in REMOTE_USER if Apache set it.  This allows the WebKDC to trust
-    # Apache authentication mechanisms like SPNEGO or client-side certificates
-    # if so configured.
+    # If WebKDC::Config::HONOR_REMOTE_USER is set to a true value, cobble up a
+    # proxy token using the value of REMOTE_USER and add it to the request.
+    # This allows the WebKDC to trust Apache authentication mechanisms like
+    # SPNEGO or client-side certificates if so configured.  Either way, pass
+    # the REMOTE_USER into the WebKDC for logging purposes.
+    if ($ENV{REMOTE_USER} && $WebKDC::Config::HONOR_REMOTE_USER) {
+        add_remuser_token ($req);
+    }
     $req->remote_user ($ENV{REMOTE_USER});
 
     # Pass the information along to the WebKDC and get the repsonse.
