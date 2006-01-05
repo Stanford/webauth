@@ -55,9 +55,6 @@ clean depend:
 	    ( cd $$subdir && $(MAKE) $@ ) || exit 1; \
 	done
 
-doc docs:
-	doxygen doc/doxygen.cfg
-
 distclean: clean
 	rm -rf config.status config.cache config.log config.h libtool \
 	       mod-config.h Makefile src/Makefile src/bindings/Makefile \
