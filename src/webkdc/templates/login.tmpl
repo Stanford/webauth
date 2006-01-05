@@ -59,7 +59,8 @@ CancelURL              : CancelURL
                    width="160" height="160"/></td>
           <td>
             <div class="loginform">
-              <form method="post" autocomplete="OFF"
+              <form action="<TMPL_VAR NAME=script_name>"
+                    method="post" autocomplete="OFF"
                     enctype="application/x-www-form-urlencoded">
                 <input type="hidden" name="RT" value="<TMPL_VAR NAME=RT>">
                 <input type="hidden" name="ST" value="<TMPL_VAR NAME=ST>">

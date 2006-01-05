@@ -129,6 +129,7 @@ sub parse_uri {
 # appropriate in the login page.
 sub print_login_page {
     my ($q, $lvars, $resp, $RT, $ST) = @_;
+    $PAGES{login}->param ('script_name' => $q->script_name);
     $PAGES{login}->param ('username' => $lvars->{username});
     $PAGES{login}->param ('RT' => $RT);
     $PAGES{login}->param ('ST' => $ST);
@@ -299,11 +300,16 @@ sub add_remuser_token {
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
-    my %varhash = map { $_ => $q->param ($_) } $q->param;
-
     my $req = new WebKDC::WebRequest;
     my $resp = new WebKDC::WebResponse;
     my ($status, $exception);
+
+    # Allow login to run as an error handler.  That may sound weird, but it's
+    # useful if you want the default to be to try SPNEGO and only fall back on
+    # normal handling if that fails.
+    if (not $q->param and defined $ENV{REDIRECT_QUERY_STRING}) {
+        $q = CGI::new ($ENV{REDIRECT_QUERY_STRING});
+    }
 
     # If there isn't a request token, display an error message and then skip
     # to the next request.
@@ -358,6 +364,7 @@ while (my $q = CGI::Fast->new) {
     # Parse the result from the WebKDC and get the login cancel information if
     # any.  (The login cancel stuff is oddly placed here, like it was added as
     # an afterthought, and should probably be handled in a cleaner fashion.)
+    my %varhash = map { $_ => $q->param ($_) } $q->param;
     get_login_cancel_url (\%varhash, $resp);
     if ($status == WK_SUCCESS && parse_uri (\%varhash, $resp)) {
         $status = WK_ERR_WEBAUTH_SERVER_ERROR;

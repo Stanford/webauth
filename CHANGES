@@ -7,6 +7,11 @@ WebAuth 3.4.0 (unreleased)
     authentication type that Apache supports as WebAuth authentication, in
     particular SPNEGO/GSSAPI.
 
+ *) Allow login.fcgi to be used as the target of an ErrorDocument Apache
+    directive and read the query parameters from the redirect environment
+    variable.  This lets one use SPNEGO as the default and fall back on
+    password authentication if it fails.
+
  *) Rewrote the WebAuth protocol documentation in RFC 2629 XML.  In the
     process, edited it extensively for consistency of terminology, updated
     it in a few places, and clarified the wording.
