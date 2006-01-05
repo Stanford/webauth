@@ -7,6 +7,10 @@ WebAuth 3.4.0 (unreleased)
     authentication type that Apache supports as WebAuth authentication, in
     particular SPNEGO/GSSAPI.
 
+ *) Rewrote the WebAuth protocol documentation in RFC 2629 XML.  In the
+    process, edited it extensively for consistency of terminology, updated
+    it in a few places, and clarified the wording.
+
 WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is
