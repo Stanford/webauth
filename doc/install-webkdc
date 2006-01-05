@@ -114,24 +114,17 @@ monitored for security.
      configure all of your systems using the WebAuth module to use
      whatever other identity you chose.)
 
-     At Stanford, this can be done with:
-
-         /usr/pubsw/sbin/leland_srvtab \
-             -f <apache-root>/conf/webkdc/srvtab \
-             -k <apache-root>/conf/webkdc/keytab \
-             service.webkdc
-
-     and then deleting the srvtab file (since it's not needed).
-
 10.  Create a file named token.acl in <apache-root>/conf/webkdc.  This
      file specifies which tokens various server identities are allowed to
      create.  There is an example file in src/modules/webkdc/token.acl, so
-     for an initial configuration at Stanford, just do:
+     for an initial configuration, do:
 
          cp src/modules/webkdc/token.acl <apache-root>/conf/webkdc/
 
-     At other sites, you'll need to at least change the ACL pattern to not
-     use @stanford.edu.
+     uncomment the first line, and change the ACL pattern to match your
+     realm.  This will allow any server with a webauth/* keytab to get an
+     id token (which identifies a user but conveys no other privileges).
+     This is a good place to start.  See the mod_webkdc manual for more.
 
 11.  Restart the Apache web server.  You should now have a working WebKDC
      and login server, which you can point a WebAuth server at.  You will
