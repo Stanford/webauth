@@ -15,7 +15,7 @@ AC_DEFUN([WEBAUTH_LIB_LDAP],
 WEBAUTH_LDFLAGS_save=$LDFLAGS
 LDFLAGS="$LDFLAGS $LDAP_LDFLAGS"
 LDAP_LIBS=
-if text x"$reduced_depends" != xtrue ; then
+if test x"$reduced_depends" != xtrue ; then
     AC_CHECK_LIB([lber], [ber_dump], [LDAP_LIBS=-llber])
 fi
 AC_CHECK_LIB([ldap], [ldap_open], [LDAP_LIBS="-lldap $LDAP_LIBS"], , -llber)
