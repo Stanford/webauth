@@ -18,6 +18,17 @@ WebAuth 3.4.0 (unreleased)
     process, edited it extensively for consistency of terminology, updated
     it in a few places, and clarified the wording.
 
+ *) Updated the Kerberos library probes in configure to use krb5-config
+    where appropriate and to check for krb5support (MIT Kerberos 1.4) if
+    krb5-config isn't available.
+
+ *) Added --enable-reduced-depends to configure to request the minimal
+    possible shared library dependencies be encoded at run-time.  This is
+    for systems that properly implement transitive shared library
+    dependencies, in order to minimize shared library conflicts introduced
+    by SONAME changes and upgrades (mainly for Linux distribution
+    packagers).
+
  *) Removed some Stanford-specific parts of doc/install-webkdc since we
     don't need instructions for what to do at Stanford any more.
     Clarified the documentation slightly.

@@ -30,6 +30,16 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
 dnl Make sure $prefix is set so that we can use it internally.
 test x"$prefix" = xNONE && prefix="$ac_default_prefix"
 
+dnl If the user requests reduced library dependencies, set a flag that is used
+dnl in all of our library checks.
+reduced_depends=false
+AC_ARG_ENABLE([reduced-depends],
+    AC_HELP_STRING([--enable-reduced-depends],
+        [Try to minimize shared library dependencies]),
+    [if test x"$enableval" = xyes ; then
+         reduce_depends=true
+     fi])
+
 dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
 MODULES=
 AC_ARG_ENABLE([mod_webkdc],
@@ -112,17 +122,13 @@ if test x"$build_perl" = xyes ; then
     AC_PATH_PROG([PERL], [perl])
 fi
 
-dnl Checks for libraries
-
-dnl The rat's nest of networking libraries.  The common cases are not to
-dnl need any extra libraries, or to need -lsocket -lnsl.  We need to avoid
-dnl linking with libnsl unless we need it, though, since on some OSes where
-dnl it isn't necessary it will totally break networking.  Unisys also
-dnl includes gethostbyname in libsocket but needs libnsl for socket().
-AC_SEARCH_LIBS(gethostbyname, nsl)
-AC_SEARCH_LIBS(socket, socket, ,
-    [AC_CHECK_LIB(nsl, socket, LIBS="$LIBS -lsocket -lnsl", , -lsocket)])
-
+dnl Checks for libraries.
+if test x"$reduced_depends" != xtrue ; then
+    AC_SEARCH_LIBS([gethostbyname], [nsl])
+    AC_SEARCH_LIBS([socket], [socket], ,
+        [AC_CHECK_LIB([nsl], [socket],
+            [LIBS="-lnsl -lsocket $LIBS"], , [-lsocket])])
+fi
 WEBAUTH_LIB_KRB5
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
@@ -135,9 +141,6 @@ AC_CHECK_HEADERS([netinet/in.h])
 
 dnl Checks for types.
 WEBAUTH_TYPE_INT32_T
-
-dnl Checks for structures.
-dnl Checks for compiler characteristics.
 
 dnl Crank up warnings if using GCC
 if test "$GCC" = "yes" ; then
@@ -161,9 +164,6 @@ case "$host" in
     ;;
 esac
 AC_SUBST([VERSION_LDFLAGS])
-
-dnl Checks for library functions.
-dnl Checks for system services.
 
 dnl Output files.
 AC_CONFIG_HEADERS([config.h mod-config.h])

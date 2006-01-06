@@ -18,6 +18,16 @@ WebAuth 3.4.0 (unreleased)
     process, edited it extensively for consistency of terminology, updated
     it in a few places, and clarified the wording.
 
+ *) Better Kerberos library checks, including support for MIT Kerberos 1.4
+    and use of krb5-config where appropriate.
+
+ *) Added --enable-reduced-depends to configure to request the minimal
+    possible shared library dependencies be encoded at run-time.  This is
+    for systems that properly implement transitive shared library
+    dependencies, in order to minimize shared library conflicts introduced
+    by SONAME changes and upgrades (mainly for Linux distribution
+    packagers).
+
 WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is
