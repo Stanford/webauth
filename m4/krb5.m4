@@ -86,11 +86,11 @@ if test x"$reduce_depends" != xtrue ; then
     fi
 
     if test x"$KRB5_CONFIG" != x ; then
-        AC_MSG_CHECKING([for $1 support in krb5-config])
-        if "$KRB5_CONFIG" | grep '$1' > /dev/null 2>&1 ; then
+        AC_MSG_CHECKING([for krb5 support in krb5-config])
+        if "$KRB5_CONFIG" | grep krb5 > /dev/null 2>&1 ; then
             AC_MSG_RESULT([yes])
-            KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags '$1'`
-            KRB5_LIBS=`"$KRB5_CONFIG" --libs '$1'`
+            KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags krb5`
+            KRB5_LIBS=`"$KRB5_CONFIG" --libs krb5`
         else
             AC_MSG_RESULT([no])
             KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags`
