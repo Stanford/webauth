@@ -8,7 +8,6 @@ m4_include([m4/apache.m4])
 m4_include([m4/curl.m4])
 m4_include([m4/int32.m4])
 m4_include([m4/krb5.m4])
-m4_include([m4/libgcc.m4])
 m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
@@ -37,7 +36,7 @@ AC_ARG_ENABLE([reduced-depends],
     AC_HELP_STRING([--enable-reduced-depends],
         [Try to minimize shared library dependencies]),
     [if test x"$enableval" = xyes ; then
-         reduce_depends=true
+         reduced_depends=true
      fi])
 
 dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
@@ -133,7 +132,15 @@ WEBAUTH_LIB_KRB5
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 WEBAUTH_LIB_LDAP
-WEBAUTH_LIB_LIBGCC
+
+dnl Add in the various dependent libraries if needed.
+DEPEND_LIBS=
+if test x"$reduced_depends" != xtrue ; then
+    DEPEND_LIBS="$CRYPTO_LIBS $KRB5_LIBS"
+    CURL_LIBS="$CURL_LIBS $SSL_LIBS"
+    LDAP_LIBS="$LDAP_LIBS $SSL_LIBS"
+fi
+AC_SUBST([DEPEND_LIBS])
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -152,12 +159,13 @@ APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 AC_SUBST([APXS_CFLAGS])
 
 dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
-dnl make sure that all symbols in the library are resolved.  We'd like to do
-dnl this on all platforms, but the syntax is different everywhere and I don't
-dnl feel like dealing with the differences.
+dnl make sure that all symbols in the library and modules are resolved.  We'd
+dnl like to do this on all platforms, but the syntax is different everywhere
+dnl and I don't feel like dealing with the differences.
 case "$host" in
 *-linux*)
     VERSION_LDFLAGS="-Wl,--version-script=mapfile -Wl,-z,defs"
+    APXS_CFLAGS="$APXS_CFLAGS -Wl,-z,defs"
     ;;
 *)
     VERSION_LDFLAGS=""

@@ -29,6 +29,15 @@ WebAuth 3.4.0 (unreleased)
     by SONAME changes and upgrades (mainly for Linux distribution
     packagers).
 
+ *) Ask the linker to be sure that all external references are defined
+    when linking the Apache modules on Linux.
+
+ *) Removed the old workaround for libgcc dependencies in libraries when
+    building with a non-gcc compiler.  gcc has used a shared libgcc for a
+    long time and this was always an edge case.
+
+ *) mod_webkdc doesn't need to include cURL headers; it never uses cURL.
+
  *) Removed some Stanford-specific parts of doc/install-webkdc since we
     don't need instructions for what to do at Stanford any more.
     Clarified the documentation slightly.

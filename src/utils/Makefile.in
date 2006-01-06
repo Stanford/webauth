@@ -26,10 +26,10 @@ RANLIB		= @RANLIB@
 CFLAGS		= @CFLAGS@
 
 CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
-		  @CPPFLAGS@ @CRYPTO_CPPFLAGS@ @KRB5_CPPFLAGS@
+		  @CPPFLAGS@
 
 LDFLAGS		= -L$(top_builddir)src/libwebauth
-LDLIBS		= -lwebauth @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@
+LDLIBS		= -lwebauth @DEPEND_LIBS@ @LIBS@
 
 PROGS		= wa_keyring
 MAN		= wa_keyring.1

@@ -42,7 +42,6 @@ m4/curl.m4                              Probes for cURL
 m4/int32.m4                             Probes for int32_t and uint32_t
 m4/krb5.m4                              Probes for Kerberos v5
 m4/ldap.m4                              Probes for OpenLDAP
-m4/libgcc.m4                            Probes for libgcc link options
 m4/libtool.m4                           Probes for library build support
 m4/ssl.m4                               Probes for OpenSSL characteristics
 mod-config.h.in                         Template for configure information

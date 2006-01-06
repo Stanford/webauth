@@ -9,11 +9,11 @@ VPATH		= @srcdir@
 APXS		= @APXS@
 
 APXS_CFLAGS	= @APXS_CFLAGS@
-CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) @SSL_CPPFLAGS@ \
-		  @KRB5_CPPFLAGS@ @LDAP_CPPFLAGS@ @LDFLAGS@
+CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) @KRB5_CPPFLAGS@ \
+		  @LDAP_CPPFLAGS@
 
 LDFLAGS		= @LDFLAGS@
-LDLIBS		= @SSL_LIBS@ @KRB5_LIBS@ @LDAP_LIBS@ @LIBS@ @LIBGCC_LIBS@
+LDLIBS		= @KRB5_LIBS@ @LDAP_LIBS@ @LIBS@
 
 SOURCES		= mod_webauthldap.c
 

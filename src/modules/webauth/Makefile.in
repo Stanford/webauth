@@ -10,10 +10,10 @@ APXS		= @APXS@
 
 APXS_CFLAGS	= @APXS_CFLAGS@
 CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
-		  @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @KRB5_CPPFLAGS@
+		  @CURL_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
 LDLIBS		= -L$(top_builddir)src/libwebauth/.libs -lwebauth \
-		  @CURL_LIBS@ @SSL_LIBS@ @KRB5_LIBS@ @LIBS@ @LIBGCC_LIBS@
+		  @CURL_LIBS@ @DEPEND_LIBS@ @LIBS@
 
 SOURCES		= mod_webauth.c util.c webkdc.c krb5.c
 

@@ -60,7 +60,7 @@ AC_ARG_WITH([kerberos],
      fi])
 
 dnl Handle the reduced depends case, which is much simpler.
-if test x"$reduced_depends" = true ; then
+if test x"$reduced_depends" = xtrue ; then
     if test x"$KRBROOT" != x ; then
         if test x"$KRBROOT" != x/usr ; then
             KRB5_CPPFLAGS="-I$KRBROOT/include"
@@ -75,7 +75,7 @@ dnl krb5-config case, but apparently it is at least for MIT Kerberos 1.2.
 dnl This will unfortunately mean multiple -lsocket -lnsl references when
 dnl building with current versions of Kerberos, but this shouldn't cause
 dnl any practical problems.
-if test x"$reduce_depends" != xtrue ; then
+if test x"$reduced_depends" != xtrue ; then
     AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
     if test x"$KRBROOT" != x ; then
         if test -x "$KRBROOT/bin/krb5-config" ; then

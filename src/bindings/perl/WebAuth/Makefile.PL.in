@@ -49,6 +49,6 @@ WriteMakefile (
     INC               => '-I@top_srcdir@/src/libwebauth',
     LDDLFLAGS         => $lddlflags,
     LIBS              => "$additions -lwebauth"
-                         . ' @CRYPTO_LIBS@ @KRB5_LIBS@ @LIBS@',
+                         . ' @DEPEND_LIBS@ @LIBS@',
     clean             => { FILES => 'webauth_keyring webauth_keyring2' }
 );

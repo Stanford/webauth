@@ -30,8 +30,6 @@
 #include <unistd.h> 
 #endif
 
-#include <curl/curl.h>
-
 #include "webauth.h"
 
 /* defines for config directives */
