@@ -88,7 +88,8 @@ read_service_token_cache(server_rec *server,
     int s_expires, s_token, s_lra, s_kt, s_key, s_nra, s_created;
     time_t expires, lra, nra, created;
     uint32_t key_type;
-    unsigned char *tok, *key;
+    char *tok;
+    unsigned char *key;
 
     WEBAUTH_ATTR_LIST *alist;
     static char *mwa_func = "mwa_read_service_token_cache";
@@ -148,7 +149,7 @@ read_service_token_cache(server_rec *server,
     s_created = webauth_attr_list_get_time(alist, "created", &created,
                                            WA_F_FMT_STR);
 
-    s_token = webauth_attr_list_get_str(alist, "token", (char **) &tok, &tlen,
+    s_token = webauth_attr_list_get_str(alist, "token", &tok, &tlen,
                                         WA_F_NONE);
     s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt", 
                                        &lra, WA_F_FMT_STR);
@@ -176,8 +177,8 @@ read_service_token_cache(server_rec *server,
         return NULL;
     }
 
-    token = new_service_token(pool,
-                              key_type, key, klen, tok, tlen, expires, created,
+    token = new_service_token(pool, key_type, key, klen,
+                              (unsigned char *) tok, tlen, expires, created,
                               lra, nra);
     webauth_attr_list_free(alist);
     return token;

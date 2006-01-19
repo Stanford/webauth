@@ -38,6 +38,8 @@ WebAuth 3.4.0 (unreleased)
 
  *) mod_webkdc doesn't need to include cURL headers; it never uses cURL.
 
+ *) Cleaned up lots of compiler warnings.
+
  *) Removed some Stanford-specific parts of doc/install-webkdc since we
     don't need instructions for what to do at Stanford any more.
     Clarified the documentation slightly.
