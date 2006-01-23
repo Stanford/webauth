@@ -47,7 +47,7 @@ typedef struct {
 static int
 cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, 
                       krb5_creds *creds, 
-                      unsigned char **output, 
+                      char **output, 
                       int *length,
                       time_t *expiration)
 {
@@ -141,6 +141,7 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
         int num = 0, i;
         char name[32];
         krb5_address **temp = creds->addresses;
+
         while (*temp++)
             num++;
         s = webauth_attr_list_add_int32(list, CR_NUMADDRS, num, WA_F_NONE);
@@ -161,7 +162,6 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
             if (s != WA_ERR_NONE)
                 goto cleanup;
         }
-        
     }
 
     /* ticket */
@@ -237,14 +237,14 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 
 static int
 cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, 
-                        unsigned char *input,
+                        char *input,
                         int input_length,
                         krb5_creds *creds)
 
 {
     WEBAUTH_ATTR_LIST *list;
     int s, f;
-    unsigned char *buff;
+    char *buff;
 
     assert(c != NULL);
     assert(creds != NULL);
@@ -269,7 +269,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     webauth_attr_list_find(list, CR_CLIENT, &f);
     if (f != -1) {
         c->code = krb5_parse_name(c->ctx,
-                                  (char *)list->attrs[f].value,
+                                  list->attrs[f].value,
                                   &creds->client);
         if (c->code != 0) {
             s = WA_ERR_KRB5;
@@ -281,7 +281,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
     webauth_attr_list_find(list, CR_SERVER, &f);
     if (f != -1) {
         c->code = krb5_parse_name(c->ctx,
-                                  (char *)list->attrs[f].value,
+                                  list->attrs[f].value,
                                   &creds->server);
         if (c->code != 0) {
             s = WA_ERR_KRB5;
@@ -349,16 +349,14 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c,
 
         /* don't forget to add 1 to num for the null address at the
            end of the list */
-        creds->addresses = 
-            (krb5_address **)calloc(num+1, sizeof(krb5_address *));
+        creds->addresses = calloc(num + 1, sizeof(krb5_address *));
         if (creds->addresses == NULL) {
             s = WA_ERR_NO_MEM;
             goto cleanup;
         }
 
         for (i=0; i < num; i++) {
-            creds->addresses[i] = 
-                (krb5_address *) malloc(sizeof(krb5_address));
+            creds->addresses[i] = malloc(sizeof(krb5_address));
             if (creds->addresses[i] == NULL) {
                 goto cleanup;
             }
@@ -806,7 +804,7 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
 int
 webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
                     const char *server_principal,
-                    unsigned char **output,
+                    char **output,
                     int *length)
 {
     return webauth_krb5_mk_req_with_data(context, 
@@ -856,14 +854,14 @@ webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
 int
 webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
                               const char *server_principal,
-                              unsigned char **output,
+                              char **output,
                               int *length,
-                              unsigned char *in_data,
+                              char *in_data,
                               int in_length,
-                              unsigned char **out_data,
+                              char **out_data,
                               int *out_length)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_auth_context auth;
     krb5_data outbuf;
     krb5_principal princ;
@@ -912,9 +910,9 @@ webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
         laddr.magic = KV5M_ADDRESS;
         laddr.addrtype = ADDRTYPE_INET;
         laddr.length = 4;
-        laddr.contents = (void*)&lh;
+        laddr.contents = (void *) &lh;
 
-        indata.data = (char *) in_data;
+        indata.data = in_data;
         indata.length = in_length;
 
         krb5_auth_con_setflags(c->ctx, auth, 0);
@@ -956,7 +954,7 @@ webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
-                    const unsigned char *req,
+                    const char *req,
                     int length,
                     const char *keytab_path,
                     const char *server_principal,
@@ -1034,20 +1032,20 @@ webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
-                              const unsigned char *req,
+                              const char *req,
                               int length,
                               const char *keytab_path,
                               const char *server_principal,
                               char **out_server_principal,
                               char **client_principal,
                               int local,
-                              unsigned char *in_data,
+                              char *in_data,
                               int in_length,
-                              unsigned char **out_data,
+                              char **out_data,
                               int *out_length)
 
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal server;
     krb5_keytab keytab;
     krb5_auth_context auth;
@@ -1068,7 +1066,7 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
     if (out_server_principal)
         *out_server_principal = NULL;
 
-    buf.data = (char*) req;
+    buf.data = (char *) req;
     buf.length = length;
     c->code = krb5_rd_req(c->ctx, &auth, &buf, server, keytab, NULL, NULL);
     if (c->code == 0) {
@@ -1076,6 +1074,7 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
             krb5_unparse_name(c->ctx, server, out_server_principal);
         if (auth != NULL) {
             krb5_authenticator *ka;
+
             c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
             if (c->code == 0) {
                 int local_ok = 0;
@@ -1085,7 +1084,8 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
                     char lname[256];
 
                     tcode = krb5_aname_to_localname(c->ctx, ka->client,
-                                                    sizeof(lname)-1, lname);
+                                                    sizeof(lname) - 1,
+                                                    lname);
                     if (tcode == 0) {
                         *client_principal = malloc(strlen(lname)+1);
                         strcpy(*client_principal, lname);
@@ -1105,9 +1105,9 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
                     raddr.magic = KV5M_ADDRESS;
                     raddr.addrtype = ADDRTYPE_INET;
                     raddr.length = 4;
-                    raddr.contents = (void*)&rh;
+                    raddr.contents = (void *) &rh;
 
-                    inbuf.data = (char *) in_data;
+                    inbuf.data = in_data;
                     inbuf.length = in_length;
                     krb5_auth_con_setflags(c->ctx, auth, 0);
                     krb5_auth_con_setaddrs(c->ctx, auth, NULL, &raddr);
@@ -1155,7 +1155,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
                              const char *server_principal,
                              const char *cache_name)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     char ccname[128];
     krb5_creds creds;
     krb5_get_init_creds_opt opts;
@@ -1230,11 +1230,11 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
-                           unsigned char *cred,
+                           char *cred,
                            int cred_len,
                            const char *cache_name)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
     char ccname[128];
     int s;
@@ -1281,11 +1281,11 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
-                        unsigned char **tgt,
+                        char **tgt,
                         int *tgt_len,
                         time_t *expiration)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal tgtprinc, client;
     krb5_data *client_realm;
     krb5_creds creds, tgtq;
@@ -1345,10 +1345,10 @@ webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
 
 int
 webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
-                         unsigned char *cred,
+                         char *cred,
                          int cred_len)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
     int s;
 
@@ -1372,7 +1372,7 @@ webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
 int
 webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
                            char *server_principal,
-                           unsigned char **ticket,
+                           char **ticket,
                            int *ticket_len,
                            time_t *expiration)
 {
@@ -1381,7 +1381,7 @@ webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
     int s;
 
     s = WA_ERR_KRB5;
-    memset((char *)&creds, 0, sizeof(creds));
+    memset(&creds, 0, sizeof(creds));
 
     c->code = krb5_parse_name(c->ctx, server_principal, &creds.server);
     if (c->code != 0)

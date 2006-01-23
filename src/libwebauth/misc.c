@@ -53,27 +53,27 @@ webauth_info_version(void)
 int
 webauth_hex_encoded_length(int length)
 {
-    return length*2;
+    return length * 2;
 }
 
 
 int
 webauth_hex_decoded_length(int length, int *out_length)
 {
-    if (length%2) {
+    if (length % 2) {
         *out_length = 0;
         return WA_ERR_CORRUPT;
     } else {
-        *out_length = length/2;
+        *out_length = length / 2;
         return WA_ERR_NONE;
     }
 }
 
 
 int
-webauth_hex_encode(unsigned char *input, 
+webauth_hex_encode(char *input, 
                    int input_len,
-                   unsigned char *output,
+                   char *output,
                    int *output_len,
                    int max_output_len)
 {
@@ -82,9 +82,9 @@ webauth_hex_encode(unsigned char *input,
     unsigned char *d;
 
     *output_len = 0;
-    out_len = 2*input_len;
-    s = input+input_len-1;
-    d = output+out_len-1;
+    out_len = 2 * input_len;
+    s = (unsigned char *) input + input_len - 1;
+    d = (unsigned char *) output + out_len - 1;
 
     if (max_output_len < out_len) {
 	return WA_ERR_NO_ROOM;
@@ -104,14 +104,14 @@ webauth_hex_encode(unsigned char *input,
 (isdigit(c) ? (c- '0') : ((c >= 'A' && c <= 'F') ? (c-'A'+10) : (c-'a'+10)))
 
 int
-webauth_hex_decode(unsigned char *input,
+webauth_hex_decode(char *input,
                    int input_len,
-                   unsigned char *output, 
+                   char *output, 
                    int *output_len,
                    int max_output_len)
 {
-    unsigned char *s = input;
-    unsigned char *d = output;
+    unsigned char *s = (unsigned char *) input;
+    unsigned char *d = (unsigned char *) output;
     int n;
 
     assert(input != NULL);
@@ -128,25 +128,25 @@ webauth_hex_decode(unsigned char *input,
 	}
     }
 
-    if (input_len %2 != 0) {
+    if (input_len % 2 != 0) {
 	return WA_ERR_CORRUPT;
     }
 
-    if (max_output_len < (input_len/2)) {
+    if (max_output_len < (input_len / 2)) {
 	return WA_ERR_NO_ROOM;
     }
 
     n = input_len;
     while (n) {
-	if (isxdigit(*s) && isxdigit(*(s+1))) {
-	    *d++ = (unsigned char)((hex2int(*s) << 4) + hex2int(*(s+1)));
+	if (isxdigit(*s) && isxdigit(*(s + 1))) {
+	    *d++ = (unsigned char) ((hex2int(*s) << 4) + hex2int(*(s + 1)));
 	    s += 2;
             n -= 2;
 	} else {
 	    return WA_ERR_CORRUPT;
 	}
     }
-    *output_len = input_len/2;
+    *output_len = input_len / 2;
 
     return WA_ERR_NONE;
 }

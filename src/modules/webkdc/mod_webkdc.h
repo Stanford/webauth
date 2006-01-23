@@ -213,8 +213,8 @@ typedef struct {
 /* used to represent returned tokens */
 typedef struct {
     const char *id;
-    const char *token_data;
-    const char *session_key; /* might be NULL */
+    char *token_data;
+    char *session_key; /* might be NULL */
     const char *expires; /* might be NULL */
     const char *subject; /* used only for logging */
     const char *info; /* used only for logging */

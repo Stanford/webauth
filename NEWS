@@ -28,6 +28,10 @@ WebAuth 3.4.0 (unreleased)
     by SONAME changes and upgrades (mainly for Linux distribution
     packagers).
 
+ *) The public interface for the libwebauth library now uses char *
+    uniformly instead of unsigned char *, since using the latter is too
+    annoying and causes too many compiler warnings.
+
 WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is

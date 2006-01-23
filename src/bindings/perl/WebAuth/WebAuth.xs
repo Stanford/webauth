@@ -1,3 +1,5 @@
+/* WebAuth.xs -- XS bindings for libwebauth.  -*- c -*- */
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -131,7 +133,7 @@ CODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
-    unsigned char *p_input;
+    char *p_input;
 
     p_input = SvPV(input, n_input);
     out_max = webauth_base64_encoded_length(n_input);
@@ -156,8 +158,8 @@ PPCODE:
 {
     STRLEN n_input;
     int out_len, s;
-    unsigned char *p_input;
-    unsigned char *buff;
+    char *p_input;
+    char *buff;
     SV *output;
 
     p_input = SvPV(input, n_input);
@@ -192,7 +194,7 @@ CODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
-    unsigned char *p_input;
+    char *p_input;
 
     p_input = SvPV(input, n_input);
     out_max = webauth_hex_encoded_length(n_input);
@@ -213,7 +215,7 @@ PPCODE:
 {
     STRLEN n_input;
     int out_len, out_max, s;
-    unsigned char *p_input, *buff;
+    char *p_input, *buff;
     SV *output;
     buff = NULL;
 
@@ -303,7 +305,7 @@ PROTOTYPE: $
 PPCODE:
 {
     STRLEN n_input;
-    unsigned char *p_input;
+    char *p_input;
     WEBAUTH_ATTR_LIST *list;
     int i, s;
     HV *hv;
@@ -370,7 +372,7 @@ PROTOTYPE: $$
 CODE:
 {
     STRLEN n_input;
-    unsigned char *p_input;
+    char *p_input;
     p_input = SvPV(key_material, n_input);
     RETVAL = webauth_key_create(type, p_input, n_input);
     if (RETVAL == NULL) {
@@ -527,7 +529,7 @@ PROTOTYPE: $$$
 PPCODE:
 {
     STRLEN n_input;
-    unsigned char *p_input;
+    char *p_input;
     WEBAUTH_ATTR_LIST *list;
     int i, s, iskey;
     HV *hv;
@@ -679,8 +681,9 @@ PROTOTYPE: $$;$
 PPCODE:
 {
     char *cc;
-    unsigned char *pcred;
-    int cred_len, s;
+    char *pcred;
+    size_t cred_len;
+    int s;
 
     pcred = SvPV(cred, cred_len);
 
@@ -723,8 +726,9 @@ SV *cred
 PROTOTYPE: $$
 PPCODE:
 {
-    unsigned char *pticket;
-    int ticket_len, s;
+    char *pticket;
+    size_t ticket_len;
+    int s;
 
     pticket = SvPV(cred, ticket_len);
     s = webauth_krb5_import_cred(c, pticket, ticket_len);
@@ -740,7 +744,7 @@ PROTOTYPE: $
 PPCODE:
 { 
     int s;      
-    unsigned char *tgt;
+    char *tgt;
     int tgt_len;
     time_t expiration;
 
@@ -812,7 +816,7 @@ char *princ
 PROTOTYPE: $$
 PPCODE:
 {       
-    unsigned char *ticket;
+    char *ticket;
     int ticket_len, s;
     time_t expiration;
 
@@ -838,8 +842,9 @@ char *princ
 PROTOTYPE: $$;$
 PPCODE:
 {       
-    unsigned char *req, *in_data, *out_data;
-    int req_len, in_len, out_len, s;
+    char *req, *in_data, *out_data;
+    size_t in_len;
+    int req_len, out_len, s;
 
     if (items == 3) {
         in_data = SvPV(ST(2), in_len);
@@ -850,7 +855,7 @@ PPCODE:
     s = webauth_krb5_mk_req_with_data(c, princ, &req, &req_len,
                                       in_data, in_len, &out_data, &out_len);
 
-    if (s == WA_ERR_NONE){
+    if (s == WA_ERR_NONE) {
         SV *req_out, *data_out;
         req_out = sv_newmortal();
         sv_setpvn(req_out, req, req_len);
@@ -878,9 +883,11 @@ int local
 PROTOTYPE: $$$$$;$
 PPCODE:
 {       
-    unsigned char *req, *in_data, *out_data;
+    char *req, *in_data, *out_data;
     char *client_princ;
-    int req_len, in_len, out_len, s;
+    size_t req_len, in_len;
+    int out_len, s;
+
     req = SvPV(request, req_len);
 
     if (items == 6) {

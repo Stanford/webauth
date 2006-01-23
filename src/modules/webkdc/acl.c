@@ -333,8 +333,11 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     /* enumerate through all the wild entries */
     for (hi = apr_hash_first(rc->r->pool, acl->wild_entries); hi;
          hi = apr_hash_next(hi)) {
-        char *hkey;
-        apr_hash_this(hi, (const void**)&hkey, NULL, &p);
+        const void *vhkey;
+        const char *hkey;
+
+        apr_hash_this(hi, &vhkey, NULL, &p);
+        hkey = vhkey;
         if (strncmp(hkey, "id;", 3) == 0) {
             if (ap_strcmp_match(subject, hkey+3) == 0) {
                 access = 1;
@@ -389,8 +392,11 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     /* enumerate through all the wild entries */
     for (hi = apr_hash_first(rc->r->pool, acl->wild_entries); hi;
          hi = apr_hash_next(hi)) {
-        char *hkey;
-        apr_hash_this(hi, (const void**)&hkey, NULL, &p);
+        const void *vhkey;
+        const char *hkey;
+
+        apr_hash_this(hi, &vhkey, NULL, &p);
+        hkey = vhkey;
         if (strncmp(hkey, prefix, plen) == 0) {
             if (ap_strcmp_match(subject, hkey+plen) == 0) {
                 access = 1;
@@ -418,6 +424,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
                     const char *cred)
 {
     apr_hash_index_t *hi;
+    void *va;
     apr_array_header_t *a;
     char *prefix, *key;
     int plen, i, access;
@@ -451,12 +458,16 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     /* enumerate through all the wild entries */
     for (hi = apr_hash_first(rc->r->pool, acl->wild_entries); hi;
          hi = apr_hash_next(hi)) {
-        char *hkey;
-        apr_hash_this(hi, (const void**)&hkey, NULL, (void *)&a);
+        const void *vhkey;
+        const char *hkey;
+
+        apr_hash_this(hi, &vhkey, NULL, &va);
+        hkey = vhkey;
+        a = va;
         if (strncmp(hkey, prefix, plen) == 0) {
-            if (ap_strcmp_match(subject, hkey+plen) == 0) {
-                char **p = (char**)a->elts;
-                for (i=0; i < a->nelts; i++) {
+            if (ap_strcmp_match(subject, hkey + plen) == 0) {
+                char **p = (char **) a->elts;
+                for (i = 0; i < a->nelts; i++) {
                     if (strcmp(p[i], cred) == 0) {
                         access = 1;
                         goto done;

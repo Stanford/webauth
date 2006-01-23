@@ -16,7 +16,7 @@
  */
 
 WEBAUTH_KEY *
-webauth_key_create(int type, const unsigned char *key, int len) 
+webauth_key_create(int type, const char *key, int len) 
 {
     WEBAUTH_KEY *k;
 
@@ -228,12 +228,12 @@ webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
 }
 
 static int
-read_fully(int fd, unsigned char *buff, int n)
+read_fully(int fd, char *buff, int n)
 {
     int tot=0, num_read;
     
     while (tot != n) {
-        num_read = read(fd, buff+tot, n-tot);
+        num_read = read(fd, buff + tot, n - tot);
         if (num_read < 0) {
             if (errno != EINTR) {
                 return tot;
@@ -270,7 +270,7 @@ read_fully(int fd, unsigned char *buff, int n)
 
 int 
 webauth_keyring_encode(WEBAUTH_KEYRING *ring, 
-                       unsigned char **buffer,
+                       char **buffer,
                        int *buffer_len)
 {
     int i, attr_len;
@@ -306,21 +306,21 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring,
         sprintf(name, A_CREATION_TIME, i);
         status = webauth_attr_list_add_time(alist, name, 
                                             ring->entries[i].creation_time,
-                                            WA_F_COPY_NAME|WA_F_FMT_STR);
+                                            WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_VALID_AFTER, i);
         status = webauth_attr_list_add_time(alist, name, 
                                             ring->entries[i].valid_after,
-                                            WA_F_COPY_NAME|WA_F_FMT_STR);
+                                            WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
         sprintf(name, A_KEY_TYPE, i);
         status = webauth_attr_list_add_uint32(alist, name, 
                                               ring->entries[i].key->type,
-                                              WA_F_COPY_NAME|WA_F_FMT_STR);
+                                              WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
@@ -328,7 +328,7 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring,
         status = webauth_attr_list_add(alist, name, 
                                        ring->entries[i].key->data,
                                        ring->entries[i].key->length,
-                                       WA_F_COPY_BOTH|WA_F_FMT_HEX);
+                                       WA_F_COPY_BOTH | WA_F_FMT_HEX);
         if (status != WA_ERR_NONE)
             goto cleanup;
     }
@@ -361,7 +361,7 @@ int
 webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
 {
     int fd, attr_len;
-    unsigned char *attr_buff;
+    char *attr_buff;
     int status, retry;
     char *temp;
 
@@ -371,10 +371,9 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
     temp = NULL;
     fd = -1;
 
-    temp = malloc(strlen(path)+7+1); /* .XXXXXX\0 */
+    temp = malloc(strlen(path) + 7 + 1); /* .XXXXXX\0 */
     if (temp == NULL)
         return WA_ERR_NO_MEM;
-
 
     retry = 0;
     fd = -1;
@@ -382,7 +381,7 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
         sprintf(temp, "%s.XXXXXX", path);
         mktemp(temp);
 
-        fd = open(temp, O_WRONLY|O_TRUNC|O_CREAT|O_EXCL, 0600);
+        fd = open(temp, O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0600);
 
         if ((fd == -1) && (errno != EEXIST)) {
             status = WA_ERR_KEYRING_OPENWRITE;
@@ -432,13 +431,12 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
 }
 
 int
-webauth_keyring_decode(unsigned char *buffer, int buffer_len,
-                       WEBAUTH_KEYRING **ring)
+webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
 {
     int i, s;
     uint32_t version, num_entries;
     WEBAUTH_ATTR_LIST *alist;
-    unsigned char *key_data;
+    char *key_data;
     int key_len;
 
     assert(buffer);
@@ -498,7 +496,7 @@ webauth_keyring_decode(unsigned char *buffer, int buffer_len,
 
         sprintf(name, A_KEY_DATA, i);
         s = webauth_attr_list_get(alist, name,
-                                  (void*)&key_data, &key_len, 
+                                  (void *) &key_data, &key_len, 
                                   WA_F_FMT_HEX);
         if (s != WA_ERR_NONE)
             goto cleanup;
@@ -511,8 +509,8 @@ webauth_keyring_decode(unsigned char *buffer, int buffer_len,
         }
 
         webauth_keyring_add(*ring,
-                             (time_t)creation_time,
-                             (time_t)valid_after, 
+                             (time_t) creation_time,
+                             (time_t) valid_after, 
                              key);
         webauth_key_free(key);
     }
@@ -534,7 +532,7 @@ webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
 {
     int fd, n, len, s;
     struct stat sbuf;
-    unsigned char *buff;
+    char *buff;
 
     *ring = NULL;
     buff = NULL;
@@ -595,7 +593,7 @@ static int
 new_ring(const char *path, WEBAUTH_KEYRING **ring)
 {
     WEBAUTH_KEY *key;
-    unsigned char key_material[WA_AES_128];
+    char key_material[WA_AES_128];
     int s;
     time_t curr = time(NULL);
     key = NULL;
@@ -645,7 +643,7 @@ check_ring(const char *path, int lifetime,
     time_t curr;
     WEBAUTH_KEY *key;
     int s, i;
-    unsigned char key_material[WA_AES_128];
+    char key_material[WA_AES_128];
 
     time(&curr);
 

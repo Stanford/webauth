@@ -18,9 +18,9 @@
 
 int main(int argc, char *argv[])
 {
-    unsigned char orig_buffer[BUFSIZE];
-    unsigned char encoded_buffer[BUFSIZE];
-    unsigned char decoded_buffer[BUFSIZE];
+    char orig_buffer[BUFSIZE];
+    char encoded_buffer[BUFSIZE];
+    char decoded_buffer[BUFSIZE];
     int i,j;
     int elen, rlen, rdlen, dlen;
     int equal;

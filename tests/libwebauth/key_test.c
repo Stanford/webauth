@@ -1,16 +1,10 @@
-
 #include "config.h"
 
-#include <stdio.h>
 #include <fcntl.h>
-
-#ifdef HAVE_STDLIB_H
+#include <stdio.h>
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
+#include <unistd.h>
 
 #include "webauth.h"
 #include "webauthtest.h"
@@ -25,8 +19,8 @@ int main(int argc, char *argv[])
     WEBAUTH_KEYRING *ring2;
 
     int s, len, i, fd;
-    unsigned char key_material[WA_AES_128];
-    unsigned char hex[2048];
+    char key_material[WA_AES_128];
+    char hex[2048];
     time_t curr;
     TEST_VARS;
 

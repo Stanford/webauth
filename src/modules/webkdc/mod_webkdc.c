@@ -952,7 +952,7 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                               MWK_RETURNED_TOKEN *rtoken)
 {
     static const char *mwk_func="create_service_token_from_req";
-    unsigned char session_key[WA_AES_128];
+    char session_key[WA_AES_128];
     int status, len;
     enum mwk_status ms;
     time_t creation, expiration;
@@ -997,20 +997,19 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
 
-    ms = make_token(rc, alist, creation,
-                    (char**)&rtoken->token_data, &len, 1, mwk_func);
+    ms = make_token(rc, alist, creation, &rtoken->token_data, &len, 1,
+                    mwk_func);
 
     webauth_attr_list_free(alist);
 
     if (!ms)
         return MWK_ERROR;
 
-    rtoken->expires = apr_psprintf(rc->r->pool, "%d", (int)expiration);
+    rtoken->expires = apr_psprintf(rc->r->pool, "%d", (int) expiration);
 
     len = sizeof(session_key);
-    rtoken->session_key = (char*) 
-        apr_palloc(rc->r->pool, apr_base64_encode_len(len));
-    apr_base64_encode((char*)rtoken->session_key, session_key, len);
+    rtoken->session_key = apr_palloc(rc->r->pool, apr_base64_encode_len(len));
+    apr_base64_encode(rtoken->session_key, session_key, len);
 
     rtoken->subject = req_cred->subject;
     rtoken->info = " type=service";
@@ -1026,14 +1025,14 @@ static enum mwk_status
 get_krb5_sad(MWK_REQ_CTXT *rc, 
              MWK_REQUESTER_CREDENTIAL *req_cred,
              MWK_PROXY_TOKEN *sub_pt,
-             unsigned char **sad,
+             char **sad,
              int *sad_len,
              const char *mwk_func)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
     char *server_principal;
-    unsigned char *temp_sad;
+    char *temp_sad;
     enum mwk_status ms;
 
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
@@ -1143,7 +1142,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
     MWK_PROXY_TOKEN *sub_pt;
-    unsigned char *sad;
+    char *sad;
 
     ms = MWK_ERROR;
 
@@ -1262,7 +1261,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
     MWK_PROXY_TOKEN *sub_pt;
-    unsigned char *wkdc_token;
+    char *wkdc_token;
 
     ms = MWK_ERROR;
 
@@ -1329,8 +1328,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     SET_SUBJECT(sub_pt->subject);
     SET_PROXY_DATA(sub_pt->proxy_data, sub_pt->proxy_data_len);
 
-    ms = make_token(rc, alist, creation,
-                       (char**)&wkdc_token, &wkdc_len, 0, mwk_func);
+    ms = make_token(rc, alist, creation, &wkdc_token, &wkdc_len, 0, mwk_func);
     webauth_attr_list_free(alist);
 
     if (!ms)
@@ -1374,10 +1372,10 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     time_t creation, expiration, ticket_expiration;
     WEBAUTH_ATTR_LIST *alist;
     apr_xml_elem *credential_type, *server_principal;
-    const char *ct, *sp;
+    char *ct, *sp;
     WEBAUTH_KRB5_CTXT *ctxt;
     MWK_PROXY_TOKEN *sub_pt;
-    unsigned char *ticket;
+    char *ticket;
     enum mwk_status ms;
 
     /* only create cred tokens from service creds */
@@ -1464,7 +1462,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 
     /* now try and export a ticket */
     status = webauth_krb5_export_ticket(ctxt,
-                                        (char*)sp,
+                                        sp,
                                         &ticket,
                                         &ticket_len,
                                         &ticket_expiration);
@@ -1770,10 +1768,9 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     int status, tgt_len, len;
     enum mwk_status ms;
     time_t tgt_expiration, creation;
-    void *tgt;
+    char *tgt;
     MWK_PROXY_TOKEN *pt;
     WEBAUTH_ATTR_LIST *alist;
-
 
     *subject_out = NULL;
 
@@ -1830,8 +1827,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     *subject_out = subject;
 
     /* export TGT for webkdc-proxy-token */
-    status = webauth_krb5_export_tgt(ctxt, (unsigned char**)&tgt, 
-                                     &tgt_len, &tgt_expiration);
+    status = webauth_krb5_export_tgt(ctxt, &tgt, &tgt_len, &tgt_expiration);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_export_tgt",
@@ -1839,7 +1835,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
-        void *new_tgt = apr_palloc(rc->r->pool, tgt_len);
+        char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
         memcpy(new_tgt, tgt, tgt_len);
         free(tgt);
         tgt = new_tgt;
@@ -2241,8 +2237,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
     char *sc_data, *pd_data;
-    unsigned char *dpd_data, *token_data;
-    void *tgt;
+    char *dpd_data, *token_data;
+    char *tgt;
     int sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, status, token_len;
     char *client_principal, *proxy_subject, *server_principal;
     time_t tgt_expiration, creation;
@@ -2368,9 +2364,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* now export the tgt again, for sanity checking and to get
-       expiraiton */
-    status = webauth_krb5_export_tgt(ctxt, (unsigned char**)&tgt, 
-                                     &tgt_len, &tgt_expiration);
+       expiration */
+    status = webauth_krb5_export_tgt(ctxt, &tgt, &tgt_len, &tgt_expiration);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_export_tgt",
@@ -2378,7 +2373,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
     } else {
-        void *new_tgt = apr_palloc(rc->r->pool, tgt_len);
+        char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
         memcpy(new_tgt, tgt, tgt_len);
         free(tgt);
         tgt = new_tgt;

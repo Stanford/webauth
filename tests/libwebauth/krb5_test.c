@@ -1,15 +1,8 @@
-
 #include "config.h"
 
 #include <stdio.h>
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "webauth.h"
 #include "webauthtest.h"
@@ -34,9 +27,9 @@ int main(int argc, char *argv[])
     char *username, *password, *keytab_path, *server, *server_principal;
     char *service, *host;
     char *cp;
-    unsigned char *sa;
+    char *sa;
     int salen;
-    unsigned char *tgt, *ticket;
+    char *tgt, *ticket;
     int tgtlen, ticketlen;
     time_t expiration;
     char *cprinc;

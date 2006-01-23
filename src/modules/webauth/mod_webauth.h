@@ -289,7 +289,7 @@ typedef struct {
     apr_pool_t *pool; /* pool this token belongs to */
     WEBAUTH_KEY key;
     time_t expires;
-    unsigned char *token;
+    char *token;
     time_t created; /* when we first obtained this token */
     time_t next_renewal_attempt; /* next time we try to renew */
     time_t last_renewal_attempt; /* time we last tried to renew */

@@ -1,15 +1,8 @@
-
 #include "config.h"
 
 #include <stdio.h>
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "webauth.h"
 #include "webauthtest.h"
@@ -21,10 +14,10 @@ int main(int argc, char *argv[])
 {
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring, *ring2;
-    unsigned char key_material[WA_AES_128];
+    char key_material[WA_AES_128];
     WEBAUTH_ATTR_LIST *ain, *aout;
     int rlen, len, i, s;
-    unsigned char *token;
+    char *token;
     time_t curr;
     TEST_VARS;
 
@@ -34,8 +27,10 @@ int main(int argc, char *argv[])
     ain = webauth_attr_list_new(32);
     webauth_attr_list_add_str(ain, WA_TK_TOKEN_TYPE, "id", 0, WA_F_NONE);
     webauth_attr_list_add_str(ain, WA_TK_SUBJECT_AUTH, "webkdc", 0, WA_F_NONE);
-    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0, WA_F_NONE);
-    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600, WA_F_NONE);
+    webauth_attr_list_add_str(ain, WA_TK_SUBJECT, "krb5:schemers", 0,
+                              WA_F_NONE);
+    webauth_attr_list_add_time(ain, WA_TK_EXPIRATION_TIME, curr+3600,
+                               WA_F_NONE);
 
     s = webauth_random_key(key_material, WA_AES_128);
     TEST_OK2(WA_ERR_NONE, s);

@@ -19,7 +19,7 @@
 
 int main(int argc, char *argv[])
 {
-    unsigned char *buff;
+    char *buff;
     WEBAUTH_ATTR_LIST *attrs_in, *attrs_out;
     int len, i, rlen, s, f;
     unsigned char binary_data[BUFSIZE];

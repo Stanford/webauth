@@ -156,8 +156,8 @@ get_fingerprint(WEBAUTH_KEY *key, char *hex, int hex_len)
     MD5_Update(&c, key->data, key->length);
     MD5_Final(md5, &c);
  
-    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, (unsigned char *) hex,
-                           &len, hex_len);
+    s = webauth_hex_encode((char *) md5, MD5_DIGEST_LENGTH, hex, &len,
+                           hex_len);
     hex[len] = '\0';
 }
 
@@ -269,7 +269,7 @@ void add_key(char *valid_after)
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring;
     int s;
-    unsigned char key_material[WA_AES_128];
+    char key_material[WA_AES_128];
     time_t curr, vf;
     
     s = webauth_keyring_read_file(keyring_path, &ring);
