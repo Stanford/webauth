@@ -25,6 +25,7 @@ config.h.in                             Template for configure information
 configure                               Script to configure WebAuth
 configure.ac                            Source file for configure
 doc                                     WebAuth documentation (Directory)
+doc/install-spnego                      WebKDC -- installation with SPNEGO
 doc/install-webkdc                      WebKDC -- installation guide
 doc/mod_webauth.html.en                 Prebuilt version of mod_webauth.xml
 doc/mod_webauth.xml                     WebAuth Apache module documentation

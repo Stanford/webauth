@@ -1,0 +1,131 @@
+                   Installation Instructions for SPNEGO
+
+Introduction
+
+  The Weblogin front-end for user authentication can optionally support
+  SPNEGO for browsers that support it, with fallback to the standard
+  username/password authentication.  SPNEGO is the Microsoft protocol for
+  doing GSSAPI authentication (or NTLMv2 authentication, but that's less
+  interesting) over HTTP.  It is supported by, at least, IE on PC, Firefox
+  on all platforms, and Safari on Mac, and probably by other browsers.
+
+  Before trying this configuration, set up a basic WebKDC and Weblogin
+  server as described in install-webkdc and make sure that's working
+  first.
+
+  These instructions assume that you're using mod_auth_kerb to do the
+  SPNEGO negotiation.  Something similar will almost certainly work with
+  mod_gssapi, but I've not tested it myself and the exact name of the
+  configuration options will probably require changes.
+
+Configuration
+
+  To use SPNEGO, you need to have two login URLs on your Weblogin server
+  rather than just one (traditionally /login).  The following instructions
+  assume that you are using /login as the URL to try SPNEGO first and
+  /login-simple for the password fallback.  This also allows clients that
+  don't want to use SPNEGO to point their WebAuthLoginURL directly to the
+  /login-simple version.
+
+  Set up an additional ScriptAlias for /login-simple that points to the
+  login.fcgi script.  So, for instance, if you currently have:
+
+      ScriptAlias /login "webkdc/login.fcgi"
+
+  also add:
+
+      ScriptAlias /login-simple "webkdc/login.fcgi"
+
+  Then, add the following Apache configuration block to protect the
+  regular /login URL with SPNEGO:
+
+      <Location "/login">
+          AuthType Kerberos
+          require valid-user
+          KrbMethodNegotiate on
+          KrbMethodK5Passwd off
+          Krb5Keytab /etc/apache2/keytab
+          ErrorDocument 401 /login-simple
+      </Location>
+
+  Obviously, change the keytab path to something that makes sense on your
+  system.
+
+  Create a principal in Kerberos called HTTP/weblogin.example.com, where
+  weblogin.example.com is the name of the system that will be used in the
+  WebAuthLoginURL directives for your WebAuth application servers.  The
+  principal name *must* match the name used in the URL, *not* the name of
+  the system (if different).  Also, the HTTP must be in all caps.  For
+  information on how to get a Kerberos principal created and how to
+  download a keytab, contact your local Kerberos administrator.
+
+  Finally, edit /etc/webkdc/webkdc.conf (creating it if it doesn't already
+  exist) and put, in it:
+
+      our $HONOR_REMOTE_USER = 1;
+      our $REMUSER_EXPIRES = 60 * 60 * 8;
+      our $REALM = 'EXAMPLE.COM';
+
+  The first line tells the Weblogin script to trust REMOTE_USER as set by
+  Apache if present (so make sure that there isn't a way of accessing the
+  script via an Apache authentication mechanism that you don't trust!).
+  The second line says how good authentication via REMOTE_USER should be
+  valid for (see Notes and Cautions below).  The third line tells it what
+  realm to strip off the REMOTE_USER variable, since mod_auth_kerb sets
+  REMOTE_USER to the full principal name.  It should be your local default
+  realm.
+
+  Now, when the user hits /login with a browser, the server will attempt
+  to do an SPNEGO authentication.  If the browser supports it, that
+  authentication information will be passed on to the Weblogin script in
+  REMOTE_USER and it cobble up a temporary webkdc-proxy token for the
+  WebKDC.  If the remote system did not request a Kerberos authenticator
+  or any additional credentials and only needs simple authentication, this
+  will bypass the login prompt.  If it does need additional information,
+  the user will get the login screen anyway.
+
+  If the SPNEGO authentication fails, /login-simple will be run as the
+  error handler.  It understands how to extract the WebAuth information
+  out of the environment and present the regular login page.  The user's
+  browser will see the login page as the content of a 401 error, but the
+  browser should handle this correctly.  Further interactions will
+  continue on the /login-simple URL, bypassing SPNEGO.
+
+Notes and Cautions
+
+  If the user is successfully authenticated with SPNEGO, the Weblogin
+  server will not set a single sign-on cookie the way that it normally
+  does with password authentication.  Instead, the next time that the user
+  is redirected to the Weblogin server, the SPNEGO authentication will be
+  repeated.  That way, their general WebAuth authentication won't outlast
+  their Kerberos tickets.
+
+  However, there is currently no way of extracting from mod_auth_kerb the
+  expiration date of the ticket used to authenticate, so the
+  authentication tokens created by the WebKDC will be valid for whatever
+  period is defined in $REMUSER_EXPIRES in webkdc.conf even if the user's
+  Kerberos credentials are about to expire.  This may be improved later by
+  adding a way to export the expiration time of the ticket from
+  mod_auth_kerb to somewhere the Weblogin script can see it.
+
+Implementation Details
+
+  Under the hood, if the Weblogin script sees $HONOR_REMOTE_USER is set
+  and finds REMOTE_USER in the environment, what it does is create a
+  webkdc-proxy token using the WebKDC keyring, with a proxy subject of
+  "WEBKDC:remuser".  It then passes that webkdc-proxy token in to the
+  WebKDC in an initial request and sees if it gets back the desired tokens
+  based on the strength of that webkdc-proxy token.  If it does, it
+  proceeds to the confirmation screen; if not, it presents the login form
+  as normal.
+
+  The special prefix "WEBKDC:" in a webkdc-proxy token is used to
+  represent single sign-on tokens, so this is a webkdc-proxy token of type
+  remuser instead of the normal krb5.  Since it does not contain a TGT or
+  any other useful credential, it cannot be used to fulfill requests for
+  credentials or id tokens with krb5 authenticators; servers that request
+  such things will force a username/password authentication if the user
+  doesn't have a single sign-on cookie.
+
+  This webkdc-proxy token is never stored in a cookie, to force
+  reauthentication with SPNEGO on each visit.
