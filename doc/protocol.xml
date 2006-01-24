@@ -1634,10 +1634,16 @@
           <t>All attributes are AES-encrypted in the WebKDC's private
           key.</t>
 
+          <t>As a special case, webkdc-proxy tokens that the WebKDC
+          obtains on behalf of itself (returned as part of a
+          requestTokenRequest, for example) have a ps attribute value of
+          WEBKDC:krb5:{server-principal} where {server-principal} is the
+          Kerberos principal of the WebKDC.</t>
+
           <t>When a webkdc-proxy-token is used, the WebKDC checks that the
           subject in the webkdc-service token accompanying the request is
           authorized to used the webkdc-proxy token granted to the ps
-          subject.</t>
+          subject or that the ps subject starts with "WEBKDC:".</t>
         </section>
 
         <section anchor='tokenrequest' title='request Token Encoding'>
@@ -1889,7 +1895,9 @@
       {service} is the krb5 service name, potentially with special
       characters escaped.</t>
     </section>
+  </middle>
 
+  <back>
     <section anchor='history' title='Document Revision History'>
       <list style='hanging' hangIndent='4'>
         <t hangText='0.1 (2002-10-02, schemers)'>
@@ -2029,7 +2037,11 @@
         S/Ident any more.  Don't assume Kerberos in the first descriptions
         of protocol elements.  Add text explaining why one may not have a
         webkdc-proxy token with other forms of authentication.</t>
+
+        <t hangText='2.01 (2006-01-23, rra)'>
+        <vspace blankLines='0'/>Move the document history into an
+        appendix.  Document the magic WEBKDC prefix to proxy subjects.</t>
       </list>
     </section>
-  </middle>
+  </back>
 </rfc>
