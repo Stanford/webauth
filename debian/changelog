@@ -19,7 +19,7 @@ webauth (3.4.0-1) unstable; urgency=low
   * Use stamp files in a cleaner way.
   * Update copyright dates.
 
- --
+ -- Russ Allbery <rra@debian.org>  Mon, 23 Jan 2006 22:09:35 -0800
 
 webauth (3.3.0-2) unstable; urgency=low
 

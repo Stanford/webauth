@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.4.0 (unreleased)
+WebAuth 3.4.0 (2006-01-24)
 
  *) Added support to the weblogin server and WebKDC module to trust an
     authentication identity asserted by Apache.  This allows use of any
