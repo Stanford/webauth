@@ -270,10 +270,10 @@ sub add_remuser_token {
         return;
     }
 
-    # Create a proxy token that expires in five seconds.
+    # Create a proxy token.
     my $token = new WebKDC::WebKDCProxyToken;
     $token->creation_time (time);
-    $token->expiration_time (time + 5);
+    $token->expiration_time (time + $WebKDC::Config::REMUSER_EXPIRES);
     $token->proxy_data ($user);
     $token->proxy_subject ('WEBKDC:remuser');
     $token->proxy_type ('remuser');
