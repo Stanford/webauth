@@ -33,7 +33,9 @@ config.status: configure
 	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
 	    --enable-reduced-depends
 
-build: build-stamp
+build: build-arch build-indep
+build-arch: build-stamp
+build-indep: build-stamp
 build-stamp: config.status
 	dh_testdir
 	$(MAKE)
@@ -46,14 +48,15 @@ build-stamp: config.status
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp
-	-$(MAKE) distclean
+	rm -f build-stamp install-stamp
+	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
 # Unfortunately, we have to run make install in the various directories
 # separately and install Apache modules manually because apxs with the current
 # Makefiles doesn't correctly handle DESTDIR.
-install: build
+install: install-stamp
+install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean -k
@@ -102,10 +105,11 @@ install: build
 	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
 	cp -r tests/mod_webauth/htdocs/ldaptests \
 	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
+	touch install-stamp
 
 # Build the architecture-independent packages.
 binary-indep: DH_OPTIONS=-i
-binary-indep: build install
+binary-indep: install-stamp
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs CHANGES
@@ -123,7 +127,7 @@ binary-indep: build install
 
 # Build the architecture-dependent packages.
 binary-arch: DH_OPTIONS=-a
-binary-arch: build install
+binary-arch: install-stamp
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs CHANGES
@@ -144,4 +148,5 @@ binary-arch: build install
 	dh_builddeb
 
 binary: binary-arch binary-indep
-.PHONY: build clean binary-indep binary-arch binary install
+.PHONY: binary binary-arch binary-indep build build-arch build-indep clean
+.PHONY: install

@@ -10,6 +10,9 @@ webauth (3.4.0-1) unstable; urgency=low
     - No compiler warnings with -Wall.
   * Don't install HACKING; it's not useful without the source.
   * Use DH_OPTIONS to reduce clutter in debian/rules.
+  * Add build-arch and build-indep targets.
+  * Don't ignore the return status of make distclean.
+  * Use stamp files in a cleaner way.
 
  --
 
