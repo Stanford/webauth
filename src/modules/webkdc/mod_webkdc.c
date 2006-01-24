@@ -2838,7 +2838,6 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
-    sconf->sident_timeout = DF_SIdentTimeout;
     return (void *)sconf;
 }
 
@@ -2879,8 +2878,6 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
-    MERGE_INT(sident_timeout);
-    MERGE_PTR(sident_auth_types);
     return (void *)conf;
 }
 
@@ -2961,9 +2958,6 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_ServiceTokenLifetime:
             sconf->service_token_lifetime = seconds(arg, &error_str);
-            break;
-        case E_SIdentTimeout:
-            sconf->sident_timeout = seconds(arg, &error_str);
             break;
         default:
             error_str = 
@@ -3053,7 +3047,6 @@ static const command_rec cmds[] = {
     SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
     SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime, 
          CM_ProxyTokenLifetime),
-    SSTR(CD_SIdentTimeout, E_SIdentTimeout, CM_SIdentTimeout),
     SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime, 
          CM_ServiceTokenLifetime),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),

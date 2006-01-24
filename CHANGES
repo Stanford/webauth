@@ -39,6 +39,9 @@ WebAuth 3.4.0 (unreleased)
     uniformly instead of unsigned char *, since using the latter is too
     annoying and causes too many compiler warnings.
 
+ *) Remove more vestiges of S/Ident support.  mod_webkdc will no longer
+    recognize the old Apache S/Ident directives.
+
  *) Ask the linker to be sure that all external references are defined
     when linking the Apache modules on Linux.
 
