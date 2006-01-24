@@ -33,9 +33,11 @@ doc/mod_webauthldap.html.en             Prebuilt version of mod_webauthldap.xml
 doc/mod_webauthldap.xml                 WebAuthLdap Apache module documentation
 doc/mod_webkdc.html.en                  Prebuilt version of mod_webkdc.xml
 doc/mod_webkdc.xml                      WebKDC -- Apache module documentation
+doc/protocol.html                       WebAuth protocol specification (HTML)
+doc/protocol.txt                        WebAuth protocol specification (text)
+doc/protocol.xml                        WebAuth protocol specification (source)
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
-doc/webauthv3_spec.html                 WebAuth protocol documentation
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
 m4/curl.m4                              Probes for cURL

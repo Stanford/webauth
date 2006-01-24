@@ -76,6 +76,8 @@ maintclean: distclean
 # doesn't go into the release.
 dist:
 	cd src/utils && make wa_keyring.1
+	xml2rfc doc/protocol.xml doc/protocol.html
+	xml2rfc doc/protocol.xml doc/protocol.txt
 	rm -rf $(TARDIR)
 	mkdir $(TARDIR)
 	for d in `sed $(DISTDIRS) MANIFEST` ; do \
