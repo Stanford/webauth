@@ -31,7 +31,7 @@ Upstream maintainer:
 
 Debian packaging copyright:
 
-    Copyright 2004, 2005 Board of Trustees, Leland Stanford Jr.
+    Copyright 2004, 2005, 2006 Board of Trustees, Leland Stanford Jr.
     University.
 
     All files and modifications related to Debian packaging are covered
@@ -39,8 +39,8 @@ Debian packaging copyright:
 
 Copyright:
 
-    Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford
-    Jr. University.
+    Copyright 2002, 2003, 2004, 2005, 2006 Board of Trustees, Leland
+    Stanford Jr. University.
 
     Permission is hereby granted, free of charge, to any person obtaining
     a copy of this software and associated documentation files (the

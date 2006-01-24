@@ -1,10 +1,10 @@
                           WebAuth release 3.3.0
                   (site-wide web authentication system)
 
-  Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford Jr.
-  University.  This software is distributed under an MIT-style license.
-  Please see the section LICENSE below for terms of use and
-  redistribution.
+  Copyright 2002, 2003, 2004, 2005, 2006 Board of Trustees, Leland
+  Stanford Jr.  University.  This software is distributed under an
+  MIT-style license.  Please see the section LICENSE below for terms of
+  use and redistribution.
 
   For release history and user-visible changes, see the file NEWS.  For a
   comprehensive change history, see the file CHANGES.
@@ -137,8 +137,8 @@ SUPPORT
 
 LICENSE
 
-  Copyright 2002, 2003, 2004, 2005 Board of Trustees, Leland Stanford Jr.
-  University.
+  Copyright 2002, 2003, 2004, 2005, 2006 Board of Trustees, Leland
+  Stanford Jr.  University.
 
   Permission is hereby granted, free of charge, to any person obtaining a
   copy of this software and associated documentation files (the

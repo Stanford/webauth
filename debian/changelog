@@ -13,6 +13,7 @@ webauth (3.4.0-1) unstable; urgency=low
   * Add build-arch and build-indep targets.
   * Don't ignore the return status of make distclean.
   * Use stamp files in a cleaner way.
+  * Update copyright dates.
 
  --
 
