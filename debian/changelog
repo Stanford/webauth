@@ -9,6 +9,7 @@ webauth (3.4.0-1) unstable; urgency=low
     - Use --enable-reduced-depends to reduce library dependencies.
     - No compiler warnings with -Wall.
   * Don't install HACKING; it's not useful without the source.
+  * Use DH_OPTIONS to reduce clutter in debian/rules.
 
  --
 

@@ -6,6 +6,9 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# This has to be exported for some magic to work later.
+export DH_OPTIONS
+
 # These are used for cross-compiling and for saving the configure script
 # from having to guess our platform (since we know it already)
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
@@ -101,42 +104,44 @@ install: build
 	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
 
 # Build the architecture-independent packages.
+binary-indep: DH_OPTIONS=-i
 binary-indep: build install
-	dh_testdir -i
-	dh_testroot -i
-	dh_installchangelogs -i CHANGES
-	dh_installdocs -i
-	dh_installexamples -i
-	dh_install -i --sourcedir=debian/tmp
-	dh_link -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_perl -i
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs CHANGES
+	dh_installdocs
+	dh_installexamples
+	dh_install --sourcedir=debian/tmp
+	dh_link
+	dh_compress
+	dh_fixperms
+	dh_perl
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
 
 # Build the architecture-dependent packages.
+binary-arch: DH_OPTIONS=-a
 binary-arch: build install
-	dh_testdir -a
-	dh_testroot -a
-	dh_installchangelogs -a CHANGES
-	dh_installdocs -a
-	dh_installexamples -a
-	dh_install -a --sourcedir=debian/tmp
-	dh_installman -a
-	dh_link -a
-	dh_strip -a
-	dh_compress -a
-	dh_fixperms -a
-	dh_perl -a
-	dh_makeshlibs -a
-	dh_installdeb -a
-	dh_shlibdeps -a -L libwebauth1 -l debian/libwebauth1/usr/lib
-	dh_gencontrol -a
-	dh_md5sums -a
-	dh_builddeb -a
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs CHANGES
+	dh_installdocs
+	dh_installexamples
+	dh_install --sourcedir=debian/tmp
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_perl
+	dh_makeshlibs
+	dh_installdeb
+	dh_shlibdeps -L libwebauth1 -l debian/libwebauth1/usr/lib
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
 
 binary: binary-arch binary-indep
 .PHONY: build clean binary-indep binary-arch binary install
