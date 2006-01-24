@@ -1,4 +1,3 @@
-HACKING
 NEWS
 README
 TODO
@@ -6,6 +5,6 @@ doc/mod_webauth.html.en
 doc/mod_webauth.xml
 doc/mod_webauthldap.html.en
 doc/mod_webauthldap.xml
+doc/protocol.*
 doc/test-plan
 doc/userauth
-doc/webauthv3_spec.html

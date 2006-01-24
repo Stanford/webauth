@@ -115,6 +115,24 @@ mentioned above to include images, pointers, and help appropriate to your
 local site.
 
 
+Using SPNEGO
+------------
+
+The Weblogin scripts optionally support attempting to authenticate with
+SPNEGO first before prompting the user with a username and password.  If
+the user is authenticated to Kerberos and their ticket caches are properly
+accessible to the browser, this should work with Firefox on all platforms
+and Safari on the Mac, at least.  It may also work with IE depending on
+your KDC setup.
+
+To use SPNEGO in Debian, install the libapache2-mod-auth-kerb module (it
+will do the SPNEGO protocol work) and then follow the instructions in
+/usr/share/doc/webauth-weblogin/install-spnego.gz.  The path to the
+login.fcgi script will be different in the example ScriptAlias
+configuration, but otherwise those instructions should work verbatim with
+Debian.
+
+
 Using FastCGI
 -------------
 
@@ -137,4 +155,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:41:03 2005
+ -- Russ Allbery <rra@debian.org>, Mon Jan 23 21:23:57 2006

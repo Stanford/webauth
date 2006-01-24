@@ -1,3 +1,17 @@
+webauth (3.4.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - webauth-weblogin can now optionally try SPNEGO authentication before
+      prompting for a username and password.
+    - mod_webauth doesn't strip WebAuth information from the internal URL
+      for requests not protected by WebAuth.
+    - Much improved protocol specification.
+    - Use --enable-reduced-depends to reduce library dependencies.
+    - No compiler warnings with -Wall.
+  * Don't install HACKING; it's not useful without the source.
+
+ --
+
 webauth (3.3.0-2) unstable; urgency=low
 
   * Build-depend on libcurl3-openssl-dev, not libcurl3-dev.

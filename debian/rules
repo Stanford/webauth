@@ -27,7 +27,8 @@ config.status: configure
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) \
 	    --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr \
 	    --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
-	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2
+	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
+	    --enable-reduced-depends
 
 build: build-stamp
 build-stamp: config.status
