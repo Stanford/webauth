@@ -38,8 +38,7 @@ Building Module Documentation
 
   Once this infrastructure is set up, regenerating the documentation is
   only a matter of copying in new *.xml files and ./build.sh will
-  incrementally rebuild only those files.  Don't forget to run the above
-  Perl command on the generated pages after generating them.
+  incrementally rebuild only those files.
 
 Making a Release
 
