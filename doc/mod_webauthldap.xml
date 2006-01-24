@@ -10,45 +10,67 @@
 <identifier>webauthldap_module</identifier>
 
 <summary>
-<p>This module provides authorization based on configurable LDAP
-priviledge groups.  It also allows retrieving adhoc LDAP attributes and
-places them in environment variables.  The module was designed for use
-with an LDAP server that supports LDAP version 3 and allows binds
-authenticated using SASL GSSAPI Kerberos V</p>
+
+<p>This module provides authorization based on configurable LDAP privilege
+groups.  It also allows retrieving adhoc LDAP attributes and places them
+in environment variables.  The module was designed for use with an LDAP
+server that supports LDAP version 3 and allows binds authenticated using
+SASL GSSAPI Kerberos 5.</p>
 
 <p>For other Webauth documentation see the
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
 </summary>
 
-<section><title>Using WebAuthLdap Authorization</title>
+<section><title>Generic Minimal Config File</title>
 
-<p>To restrict access to particular priviledge group(s) place the "require
-privgroup &lt;group name&gt;" directives in a .htaccess file, a Location
-block or a Directory block.  Multiple directives mean "user must belong to
-at least one of these groups".</p>
-
-<p>When combining with other require directives, the order of checking is
-top to bottom, so e.g. by placing "require valid-user" at the top, all
-authenticated users will be authorized no matter what group restrictions
-are below it.  By default, if a user is authorized, the
-WEBAUTH_LDAPAUTHRULE variable will be set to indicate what rule succeded
-in authorizing a user.
-</p>
-
-<p>It is possible to combine "Require privgroup" with basic auth's
-"Require group".  In this case if no LDAP group matches, the basic auth
-groups can be checked by apache in the usual manner, and access granted if
-the user is in them.  However when using WebAuthLdap the AuthAuthoritative
-directive must be set to off, otherwise mod_access will logs messages
-complaining that it doesn't recognize the "Require privgroup"
-directives.</p>
+<p>The following example shows the minimum config file required to
+configure this module.</p>
 
 <example><title>Example</title>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require privgroup stanford:staff<br />
-  Require privgroup stanford:faculty<br />
-  &lt;/Location&gt;
+<pre>
+LoadModule webauthldap_module modules/mod_webauthldap.so
+
+WebAuthLdapHost ldap.acme.com
+WebAuthLdapBase dc=acme,dc=com
+WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
+WebAuthLdapTktCache /tmp/webauthldap.tkt
+</pre>
+</example>
+</section>
+
+<section><title>Using WebAuthLdap Authorization</title>
+
+<p>To restrict access to particular priviledge group(s) place the
+<code>require privgroup &lt;group name&gt;</code> directives in a
+.htaccess file, a Location block or a Directory block where <code>AuthType
+WebAuth</code> has already been applied.  Multiple directives mean "user
+must belong to at least one of these groups."  There is currently no way
+to require that a user be in multiple groups.</p>
+
+<p>When combining with other require directives, the order of checking is
+top to bottom, so e.g. by placing <code>require valid-user</code> at the
+top, all authenticated users will be authorized no matter what group
+restrictions are below it.  By default, if a user is authorized, the
+WEBAUTH_LDAPAUTHRULE variable will be set to indicate what rule succeded
+in authorizing a user.</p>
+
+<p>It is possible to combine <code>Require privgroup</code> with Apache's
+regular <code>Require group</code>.  In this case if no LDAP group
+matches, the regular auth groups can be checked by apache in the usual
+manner, and access granted if the user is in them.  However when using
+WebAuthLdap the AuthAuthoritative directive must be set to off, otherwise
+mod_access will logs messages complaining that it doesn't recognize the
+<code>Require privgroup</code> directives.</p>
+
+<example><title>Example</title>
+<pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require privgroup stanford:staff
+  Require privgroup stanford:faculty
+&lt;/Location&gt;
+</pre>
 </example>
 
 </section>
@@ -58,52 +80,33 @@ directives.</p>
 <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a
 Location block or a Directory block, any attributes available to the
 WebAuth server can be set into environment variables for use in cgi
-scripts. In case the requested attribute is not available from the LDAP
+scripts.  In case the requested attribute is not available from the LDAP
 server, there is no error and the environment variable is simply not set
-for that attribute. </p>
+for that attribute.</p>
 
 <p>The name of the environment variable is formed by prepending
 WEBAUTH_LDAP_ to the uppercased attribute name.  In the case of mulivalued
 attributes, the WEBAUTH_LDAP_ATTRIBUTENAME variable will contain one value
 randomly picked from the set, and all the values of this attribute will
 also be set into WEBAUTH_LDAP_ATTRIBUTENAME1, WEBAUTH_LDAP_ATTRIBUTENAME2,
-and so on, in no particular order.
-The multivalued attribute behavior can be changed by setting the
-<a href="#webauthldapseparator">WebAuthLdapSeparator</a> directive, in
-which case WEBAUTH_LDAP_ATTRIBUTENAME will be set to the concatenation of
-all returned values, separated by that separator.</p>
+and so on, in no particular order.  The multivalued attribute behavior can
+be changed by setting the
+<a href="#webauthldapseparator">WebAuthLdapSeparator</a> directive, in which
+case WEBAUTH_LDAP_ATTRIBUTENAME will be set to the concatenation of all
+returned values, separated by that separator.</p>
 
 <example><title>Example</title>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  WebAuthLdapAttribute displayName<br />
-  WebAuthLdapAttribute description<br />
-  WebAuthLdapAttribute telephoneNumber<br />
-  &lt;/Location&gt;
+<pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+  WebAuthLdapAttribute displayName
+  WebAuthLdapAttribute description
+  WebAuthLdapAttribute telephoneNumber
+&lt;/Location&gt;
+</pre>
 </example>
 
-</section>
-
-<section><title>Generic Minimal Config File</title>
-
-<p>The following example shows the minimum config file required to
-configure and use this module.</p>
-
-<example><title>Example</title>
-  LoadModule webauthldap_module modules/mod_webauthldap.so<br/>
-  <br/>
-  WebAuthLdapHost ldap.acme.com<br />
-  WebAuthLdapBase dc=acme,dc=com<br />
-  WebAuthLdapAuthorizationAttribute priviledgeAttribute<br />
-  WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername<br/>
-  WebAuthLdapTktCache /tmp/webauthldap.tkt<br/>
-  <br/>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require privgroup mygroup<br />
-  &lt;/Location&gt;<br/>
-</example>
 </section>
 
 <section><title>Webauth 2.x backward compatibility</title>
@@ -114,10 +117,12 @@ require group directives are interpreted as checks on LDAP privgroups if
 they contain a colon.</p>
 
 <example><title>StanfordAuth Example</title>
-  &lt;Location /private/&gt;<br />
-  AuthType StanfordAuth<br />
-  require group stanford:stanford<br />
-  &lt;/Location&gt;<br/>
+<pre>
+&lt;Location /private/&gt;
+  AuthType StanfordAuth
+  require group stanford:stanford
+&lt;/Location&gt;
+</pre>
 </example>
 
 <p>If you wish to have the legacy SU_AUTH_DIRNAME and SU_AUTH_DIRMAIL
@@ -127,14 +132,16 @@ files, you can set the WebAuthLdapAttribute directive on some top location
 above all the .htaccess files and they wil be inherited down.</p>
 
 <example><title>With Name and Mail variables:</title>
-  &lt;Location /top/&gt;<br />
-  WebAuthLdapAttribute mail<br />
-  WebAuthLdapAttribute displayName<br />
-  &lt;/Location&gt;<br/>
-<br/>
-  # .htaccess file in /top/mydir can remain like this:<br />
-  AuthType StanfordAuth<br />
-  require group stanford:stanford<br />
+<pre>
+&lt;Location /top/&gt;
+  WebAuthLdapAttribute mail
+  WebAuthLdapAttribute displayName
+&lt;/Location&gt;
+
+# .htaccess file in /top/mydir can remain like this:
+AuthType StanfordAuth
+require group stanford:stanford
+</pre>
 </example>
 
 <p>This backward compatibility support is probably of interest only to

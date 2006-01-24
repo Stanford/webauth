@@ -53,7 +53,8 @@ Configuration
 
   Create a principal in Kerberos called HTTP/weblogin.example.com, where
   weblogin.example.com is the name of the system that will be used in the
-  WebAuthLoginURL directives for your WebAuth application servers.  The
+  WebAuthLoginURL directives for your WebAuth application servers.  Store
+  the key for that principal in the keytab configured above.  The
   principal name *must* match the name used in the URL, *not* the name of
   the system (if different).  Also, the HTTP must be in all caps.  For
   information on how to get a Kerberos principal created and how to

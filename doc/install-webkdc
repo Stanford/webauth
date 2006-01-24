@@ -130,3 +130,7 @@ monitored for security.
      and login server, which you can point a WebAuth server at.  You will
      need to install a regular WebAuth server following the instructions
      in INSTALL to be able to test your WebKDC.
+
+If you want to use let clients use SPNEGO to authenticate to the Weblogin
+front-end with fallback to standard password authentication, see the
+separate install-spengo documentation.

@@ -109,16 +109,16 @@ user to access the content.  This configuration can be used to provide
 light protection for content that should be restricted to only Stanford
 affiliates.
 
-If all of that just confused you, don't worry too much.  It's not
-necessary to understand all the details of how this recipe works in order
-to use it.  For more detailed information and more examples, see the
-Apache manual; all of this works exactly the same way as it does with a
-completely stock Apache server except that the user identity is
-established using WebAuth instead of some other authentication mechanism.
-
 It's important to remember that a wide variety of people may have
 access to systems within a particular domain, and that particularly at
 Stanford, many people have access to stanford.edu systems who are not
 necessarily closely affiliated with the university.  These sorts of access
 restrictions are therefore only suitable for resources that only require
 very light protection.
+
+If all of that just confused you, don't worry too much.  It's not
+necessary to understand all the details of how this recipe works in order
+to use it.  For more detailed information and more examples, see the
+Apache manual; all of this works exactly the same way as it does with a
+completely stock Apache server except that the user identity is
+established using WebAuth instead of some other authentication mechanism.

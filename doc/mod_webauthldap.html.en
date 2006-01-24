@@ -17,7 +17,7 @@
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauthldap</h1>
 <div class="toplang">
@@ -29,11 +29,12 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauthldap.c</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module provides authorization based on configurable LDAP
-priviledge groups.  It also allows retrieving adhoc LDAP attributes and
-places them in environment variables.  The module was designed for use
-with an LDAP server that supports LDAP version 3 and allows binds
-authenticated using SASL GSSAPI Kerberos V</p>
+
+<p>This module provides authorization based on configurable LDAP privilege
+groups.  It also allows retrieving adhoc LDAP attributes and places them
+in environment variables.  The module was designed for use with an LDAP
+server that supports LDAP version 3 and allows binds authenticated using
+SASL GSSAPI Kerberos 5.</p>
 
 <p>For other Webauth documentation see the
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -56,43 +57,60 @@ authenticated using SASL GSSAPI Kerberos V</p>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
+<li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li>
 <li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
 <li><img alt="" src="../images/down.gif" /> Ad hoc attributes lookup</li>
-<li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li>
 <li><img alt="" src="../images/down.gif" /> Webauth 2.x backward compatibility</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
+<h2>Generic Minimal Config File</h2>
+
+<p>The following example shows the minimum config file required to
+configure this module.</p>
+
+<div class="example"><h3>Example</h3><pre>
+LoadModule webauthldap_module modules/mod_webauthldap.so
+
+WebAuthLdapHost ldap.acme.com
+WebAuthLdapBase dc=acme,dc=com
+WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
+WebAuthLdapTktCache /tmp/webauthldap.tkt
+</pre></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
 <h2>Using WebAuthLdap Authorization</h2>
 
-<p>To restrict access to particular priviledge group(s) place the "require
-privgroup &lt;group name&gt;" directives in a .htaccess file, a Location
-block or a Directory block.  Multiple directives mean "user must belong to
-at least one of these groups".</p>
+<p>To restrict access to particular priviledge group(s) place the
+<code>require privgroup &lt;group name&gt;</code> directives in a
+.htaccess file, a Location block or a Directory block where <code>AuthType
+WebAuth</code> has already been applied.  Multiple directives mean "user
+must belong to at least one of these groups."  There is currently no way
+to require that a user be in multiple groups.</p>
 
 <p>When combining with other require directives, the order of checking is
-top to bottom, so e.g. by placing "require valid-user" at the top, all
-authenticated users will be authorized no matter what group restrictions
-are below it.  By default, if a user is authorized, the
+top to bottom, so e.g. by placing <code>require valid-user</code> at the
+top, all authenticated users will be authorized no matter what group
+restrictions are below it.  By default, if a user is authorized, the
 WEBAUTH_LDAPAUTHRULE variable will be set to indicate what rule succeded
-in authorizing a user.
-</p>
+in authorizing a user.</p>
 
-<p>It is possible to combine "Require privgroup" with basic auth's
-"Require group".  In this case if no LDAP group matches, the basic auth
-groups can be checked by apache in the usual manner, and access granted if
-the user is in them.  However when using WebAuthLdap the AuthAuthoritative
-directive must be set to off, otherwise mod_access will logs messages
-complaining that it doesn't recognize the "Require privgroup"
-directives.</p>
+<p>It is possible to combine <code>Require privgroup</code> with Apache's
+regular <code>Require group</code>.  In this case if no LDAP group
+matches, the regular auth groups can be checked by apache in the usual
+manner, and access granted if the user is in them.  However when using
+WebAuthLdap the AuthAuthoritative directive must be set to off, otherwise
+mod_access will logs messages complaining that it doesn't recognize the
+<code>Require privgroup</code> directives.</p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require privgroup stanford:staff<br />
-  Require privgroup stanford:faculty<br />
-  &lt;/Location&gt;
-</code></p></div>
+<div class="example"><h3>Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require privgroup stanford:staff
+  Require privgroup stanford:faculty
+&lt;/Location&gt;
+</pre></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -101,52 +119,31 @@ directives.</p>
 <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a
 Location block or a Directory block, any attributes available to the
 WebAuth server can be set into environment variables for use in cgi
-scripts. In case the requested attribute is not available from the LDAP
+scripts.  In case the requested attribute is not available from the LDAP
 server, there is no error and the environment variable is simply not set
-for that attribute. </p>
+for that attribute.</p>
 
 <p>The name of the environment variable is formed by prepending
 WEBAUTH_LDAP_ to the uppercased attribute name.  In the case of mulivalued
 attributes, the WEBAUTH_LDAP_ATTRIBUTENAME variable will contain one value
 randomly picked from the set, and all the values of this attribute will
 also be set into WEBAUTH_LDAP_ATTRIBUTENAME1, WEBAUTH_LDAP_ATTRIBUTENAME2,
-and so on, in no particular order.
-The multivalued attribute behavior can be changed by setting the
-<a href="#webauthldapseparator">WebAuthLdapSeparator</a> directive, in
-which case WEBAUTH_LDAP_ATTRIBUTENAME will be set to the concatenation of
-all returned values, separated by that separator.</p>
+and so on, in no particular order.  The multivalued attribute behavior can
+be changed by setting the
+<a href="#webauthldapseparator">WebAuthLdapSeparator</a> directive, in which
+case WEBAUTH_LDAP_ATTRIBUTENAME will be set to the concatenation of all
+returned values, separated by that separator.</p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  WebAuthLdapAttribute displayName<br />
-  WebAuthLdapAttribute description<br />
-  WebAuthLdapAttribute telephoneNumber<br />
-  &lt;/Location&gt;
-</code></p></div>
+<div class="example"><h3>Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+  WebAuthLdapAttribute displayName
+  WebAuthLdapAttribute description
+  WebAuthLdapAttribute telephoneNumber
+&lt;/Location&gt;
+</pre></div>
 
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
-<div class="section">
-<h2>Generic Minimal Config File</h2>
-
-<p>The following example shows the minimum config file required to
-configure and use this module.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-  LoadModule webauthldap_module modules/mod_webauthldap.so<br />
-  <br />
-  WebAuthLdapHost ldap.acme.com<br />
-  WebAuthLdapBase dc=acme,dc=com<br />
-  WebAuthLdapAuthorizationAttribute priviledgeAttribute<br />
-  WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername<br />
-  WebAuthLdapTktCache /tmp/webauthldap.tkt<br />
-  <br />
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require privgroup mygroup<br />
-  &lt;/Location&gt;<br />
-</code></p></div>
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Webauth 2.x backward compatibility</h2>
@@ -156,12 +153,12 @@ compatibility, to ease the transition from WebAuth v2.  When it is used,
 require group directives are interpreted as checks on LDAP privgroups if
 they contain a colon.</p>
 
-<div class="example"><h3>StanfordAuth Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType StanfordAuth<br />
-  require group stanford:stanford<br />
-  &lt;/Location&gt;<br />
-</code></p></div>
+<div class="example"><h3>StanfordAuth Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType StanfordAuth
+  require group stanford:stanford
+&lt;/Location&gt;
+</pre></div>
 
 <p>If you wish to have the legacy SU_AUTH_DIRNAME and SU_AUTH_DIRMAIL
 variables set, you need to use the new WebAuthLdapAttribute directives
@@ -169,16 +166,16 @@ explicitly.  If you dont want to go through and change numerous .htaccess
 files, you can set the WebAuthLdapAttribute directive on some top location
 above all the .htaccess files and they wil be inherited down.</p>
 
-<div class="example"><h3>With Name and Mail variables:</h3><p><code>
-  &lt;Location /top/&gt;<br />
-  WebAuthLdapAttribute mail<br />
-  WebAuthLdapAttribute displayName<br />
-  &lt;/Location&gt;<br />
-<br />
-  # .htaccess file in /top/mydir can remain like this:<br />
-  AuthType StanfordAuth<br />
-  require group stanford:stanford<br />
-</code></p></div>
+<div class="example"><h3>With Name and Mail variables:</h3><pre>
+&lt;Location /top/&gt;
+  WebAuthLdapAttribute mail
+  WebAuthLdapAttribute displayName
+&lt;/Location&gt;
+
+# .htaccess file in /top/mydir can remain like this:
+AuthType StanfordAuth
+require group stanford:stanford
+</pre></div>
 
 <p>This backward compatibility support is probably of interest only to
 Stanford users, since WebAuth v2 was never publically released.</p>
@@ -503,6 +500,6 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1995-2005 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 1995-2006 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

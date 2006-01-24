@@ -30,7 +30,7 @@ Source tree builds will be available and contributions for other platforms
 will be accepted but testing and support will be left up to the contributors.
 
 Server Tests
--------------
+------------
 	Does the installer do permissions checking correctly?
 	Does the installer do manifest checking correctly?
 	Test suite complete?
@@ -40,13 +40,13 @@ Server Tests
 	Give server incomplete data requests - properly handled?
 
 System Tests
---------------
+------------
 	Sniffing of traffic for exposed elements
 	Put client behind a NAT bridge - still functional?
 
 
 Browser Tests
----------------
+-------------
 	General authentication works as designed and is repeatable.
 	Clock issues?
 	Permission issues that might affect webauth?

@@ -32,6 +32,8 @@ WebAuth 3.4.0 (unreleased)
     uniformly instead of unsigned char *, since using the latter is too
     annoying and causes too many compiler warnings.
 
+ *) Lots of general documentation updates for clarity and style.
+
 WebAuth 3.3.0 (2005-10-04)
 
  *) All WebKDC support for S/Ident removed.  The S/Ident protocol is

@@ -17,7 +17,7 @@
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs-project/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauth</h1>
 <div class="toplang">
@@ -29,7 +29,9 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module provides WebAuth V3 support.</p>
+<p>This module implements the authentication component of a WebAuth V3
+application server for Apache 2.x.  It should be used on each individual
+Apache server that wants to protect content with WebAuth.</p>
 
 <p>Further details are provided in the 
 <a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
@@ -72,8 +74,8 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
 <li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
+<li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
 <li><img alt="" src="../images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
 <li><img alt="" src="../images/down.gif" /> Using WebAuth with Proxy Servers</li>
 <li><img alt="" src="../images/down.gif" /> Perl Integration</li>
@@ -85,86 +87,94 @@
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Using WebAuth Authentication</h2>
+<h2>Minimal Config File</h2>
 
-    <p>Using WebAuth authentication is very simple. Simply set
-    up authentication normally, using "AuthType WebAuth"
-    instead of the normal "AuthType Basic", plus a "require valid-user"
-    directive.
-    </p>
+<p>The following example shows the minimum config file required to
+configure mod_webauth.</p>
+
 <div class="example"><h3>Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  &lt;/Location&gt;
+LoadModule webauth_module modules/mod_webauth.so<br />
+<br />
+WebAuthKeyring conf/webauth/keyring<br />
+WebAuthKeytab conf/webauth/keytab<br />
+WebAuthServiceTokenCache conf/webauth/service_token_cache<br />
+WebAuthLoginURL https://webkdc/login/<br />
+WebAuthWebKdcURL https://webkdc/webkdc-service/<br />
+WebAuthWebKdcPrincipal service/webkdc<br />
 </code></p></div>
+
+<p>This will enable the module, but not protect any pages.  To do that,
+you will need to add authentication and authorization directives to
+individual &lt;Location&gt;, &lt;Directory&gt;, or &lt;Files&gt;
+containers (or equivalents).</p>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Minimal Config File</h2>
+<h2>Using WebAuth Authentication</h2>
 
-    <p>The following example shows the minimum config file required
-    to configure and use mod_webauth.</p>
+<p>Once configured, basic use of WebAuth is very simple.  Simply set up
+authentication normally, using <code>AuthType WebAuth</code> instead of
+the normal <code>AuthType Basic</code>, plus a <code>require
+valid-user</code> directive.</p>
 
-<div class="example"><h3>Example</h3><p><code>
-  LoadModule webauth_module modules/mod_webauth.so<br />
-<br />
-  WebAuthKeyring conf/webauth/keyring<br />
-  WebAuthKeytab conf/webauth/keytab<br />
-  WebAuthServiceTokenCache conf/webauth/service_token_cache<br />
-  WebAuthLoginURL https://webkdc/login/<br />
-  WebAuthWebKdcURL https://webkdc/webkdc-service/<br />
-  WebAuthWebKdcPrincipal   service/webkdc<br />
-<br />
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  &lt;/Location&gt;<br />
-</code></p></div>
+<div class="example"><h3>Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+&lt;/Location&gt;
+</pre></div>
+
+<p>This will allow anyone who can authenticate using your WebAuth
+installation access to this content.  You can instead require specific
+users or require a group.  All of the standard Apache authorization
+directives are supported as normal.  For more advanced authorization
+decisions based on LDAP directory data, see the
+<a href="mod_webauthldap.html">mod_webauthldap module</a>.</p>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2><a name="sectionenv">Environment Variables</a></h2>
 
 <p>This module provides some information as additional environment
-variables to the SSI and CGI namespace. The generated variables are listed in
-the table below. For CGI apps that have expectations about and/or restrictions
-on the names of environment variables they can handle, you can use the
-<a href="#webauthvarprefix">WebAuthVarPrefix</a> directive to have 
-additional environment variables set.
+variables to the SSI and CGI namespace.  The generated variables are
+listed in the table below.  For CGI apps that have expectations about
+and/or restrictions on the names of environment variables they can handle,
+you can use the <a href="#webauthvarprefix">WebAuthVarPrefix</a> directive
+to have additional environment variables set.
 </p>
-<p>Additionally, requesting credentials for a particular request may
-cause environment variables to get set. For example, request Kerberos V5
+
+<p>Additionally, requesting credentials for a particular request may cause
+environment variables to get set.  For example, request Kerberos V5
 credentials will result in the KRB5CCNAME environment variable being
-set.
-</p>
+set.</p>
+
 <table class="bordered">
 <tr>
  <th>Variable Name:</th>
  <th>Description:</th>
 </tr>
+
 <tr><td><code>WEBAUTH_USER</code></td>            
-    <td>Name of the WebAuth authenticated user</td></tr>
+<td>Name of the WebAuth authenticated user</td></tr>
 
 <tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>     
-     <td>When the token was created</td></tr>
+<td>When the token was created</td></tr>
 
 <tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td> 
 <td>When the token will expire. Note: if
-<a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>
-is set then the token may expire sooner due to inactivity.
-</td></tr>
+    <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>
+    is set then the token may expire sooner due to inactivity.</td></tr>
+
 <tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td> 
 <td>When the token was last used. Only available if 
-<a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
- is non-zero</td></tr>
+    <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
+    is non-zero</td></tr>
 
 <tr><td><code>REMOTE_USER</code></td>
- <td>Name of the WebAuth authenticated user</td></tr>
+<td>Name of the WebAuth authenticated user</td></tr>
 
 <tr><td><code>AUTH_TYPE</code></td>
 <td>Will be set to <code>WebAuth</code></td></tr>
-
 </table>
 
 <div class="example"><h3>Example</h3><p><code>
@@ -176,109 +186,122 @@ WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
 WEBAUTH_TOKEN_LASTUSED=103872393<br />
 </code></p></div>
 
-<p>
-When checking for the authenticated username, using WEBAUTH_USER
-is preferred over REMOTE_USER. This is because WEBAUTH_USER
-will only ever get set by mod_webauth, while REMOTE_USER could potentially
-get set by another Apache module, depending on how Apache server has
-been configured. To safely use REMOTE_USER, you should also check AUTH_TYPE
-to make sure that it is set to WebAuth. 
-</p>
+<p>When checking for the authenticated username, use WEBAUTH_USER if you
+want to be sure that the authentication happened via WebAuth (or check
+AUTH_TYPE to be sure that it is set to WebAuth).  If you want your
+application to be able to support any Apache authentication mechanism, use
+REMOTE_USER, as this is the standard inside Apache.  Most web applications
+should use REMOTE_USER by preference so that they are independent of the
+authentication system used.</p>
+
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuth with Proxy Servers</h2>
 
-<p>Note that this option should only be used as a last resort when the target
-server is unable to directly run <code>mod_webauth</code>. 
-HTTP headers are not secure and can easily be forged. The target server should
-only accept connections from the proxy server running 
-<code>mod_webauth</code>.</p>
+<p>WebAuth authentication and authorization directives can be used in
+&lt;Proxy&gt; blocks just as in any other configuration block, so to
+protect a proxy where the remote proxy doesn't need to know about the
+authenticated user, just protect that resource like any other resource.</p>
 
-<p>In order to use WebAuth V3 with a proxy (ProxyPass in particular), we
-recommend using 
+<p>Sometimes, it's also useful to pass the authentication information to
+the remote site.  This option should only be used as a last resort when
+the target server is unable to directly support WebAuth.  HTTP headers are
+not secure and can easily be forged.  The target server should only accept
+connections from the proxy server running <code>mod_webauth</code>.</p>
+
+<p>To do this with a ProxyPass proxy, it's easiest to use
 <a href="http://httpd.apache.org/docs-2.0/mod/mod_headers.html">mod_headers</a>
-to set extra headers based on the values of <code>WEBAUTH_</code> environment variables.</p>
+to set extra headers based on the values of <code>WEBAUTH_</code>
+environment variables.  The remote web application then should pull its
+authentication information from those headers.</p>
 
-<p>For example, lets say you want to pass <code>WEBAUTH_USER</code> through
-to a proxy server. Assuming you've loaded <code>mod_headers</code> and can therefore use the <code>RequestHeader</code> directive, you could do the following:  </p>
+<p>For example, lets say you want to pass <code>WEBAUTH_USER</code>
+through to a proxy server.  Assuming you've loaded
+<code>mod_headers</code> and can therefore use the
+<code>RequestHeader</code> directive, you could do the following:</p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /someplace&gt;<br />
-    AuthType WebAuth<br />
-    require valid-user<br />
-    ProxyPass http://otherhost.stanford.edu/<br />
-    ProxyPassReverse http://otherhost.stanford.edu/<br />
-    RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
-  &lt;/Location&gt;<br />
-</code></p></div>
+<div class="example"><h3>Example</h3><pre>
+&lt;Location /someplace&gt;
+  AuthType WebAuth
+  require valid-user
+  ProxyPass http://otherhost.stanford.edu/
+  ProxyPassReverse http://otherhost.stanford.edu/
+  RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
+&lt;/Location&gt;<br />
+</pre></div>
 
-<p>The <code>RequestHeader</code> directive causes the <code>X-WEBAUTH-USER</code>
-header to get set with the value of the <code>WEBAUTH_USER</code> environment variable.</p>
+<p>The <code>RequestHeader</code> directive causes the
+<code>X-WEBAUTH-USER</code> header to get set with the value of the
+<code>WEBAUTH_USER</code> environment variable.  The value of this header
+is then often available in the environment for the web application running
+on the remote system.</p>
 
-<div class="note"><h3>Note: WebAuth Cookies and Referer Header</h3> 
-<code>mod_webauth</code> strips out any cookies that start with
-the prefix <code>webauth_</code>, so they do not get forwarded to
-the target server, it also strips out any WebAuth-related information
-in the Referer header.
+<div class="note"><h3>Note: WebAuth Cookies and Referer Header</h3>
+<code>mod_webauth</code> strips out any cookies that start with the prefix
+<code>webauth_</code>, so they do not get forwarded to the target server,
+it also strips out any WebAuth-related information in the Referer header.
 </div>
 
-<div class="note"><h3>Note: WebAuthDoLogout</h3> 
-If you are planning on using WebAuthDoLogout with your proxied server,
-you should be aware that once you tell Apache to proxy a URL namespace
-(like <code>/someplace/</code>), then you can't have local 
-<code>Location</code> directives for URLs within that namespace,
-like <code>/location/logout</code>. Instead, you'll need to create a
-that script on the target server, and have it remove any cookie that
-starts with <code>webauth_</code>.
+<div class="note"><h3>Note: WebAuthDoLogout</h3>
+If you are planning on using WebAuthDoLogout with your proxied server, you
+should be aware that once you tell Apache to proxy a URL namespace (like
+<code>/someplace/</code>), then you can't have local <code>Location</code>
+directives for URLs within that namespace, like
+<code>/location/logout</code>.  Instead, you'll need to create a that
+script on the target server, and have it remove any cookie that starts
+with <code>webauth_</code>.  (Unfortunately, it won't see those cookies
+due to the above cookie stripping behavior, so you'll have to hard-code
+the cookie names that will be used.)
 </div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Perl Integration</h2>
 
-<p>In order to use mod_webauth with Perl, you need to first WebAuth-protect
-the pages that are served by the CGI Perl scripts. For example, lets
-assume that all pages under http://yourserver/private/ are to be protected:</p>
+<p>In order to use mod_webauth with Perl, you need to first
+WebAuth-protect the pages that are served by the CGI Perl scripts.  For
+example, lets assume that all pages under http://yourserver/private/ are
+to be protected:</p>
 
-<div class="example"><h3>Apache Directives Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  &lt;/Location&gt;
-</code></p></div>
-
-<p>Then, in order to determine the user's identity from
-the Perl script, it is simply a matter of accessing the environment
-variables set by mod_webauth within your Perl script:</p>
-
-<div class="example"><h3>Perl Example</h3><pre>
-my $WEBAUTH_USER = $ENV{'WEBAUTH_USER'};
-print "The authenticated user is $WEBAUTH_USER\n";
+<div class="example"><h3>Apache Directives Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+&lt;/Location&gt;
 </pre></div>
 
-<p>
-Any of the environment variables described in the 
-<a href="#sectionenv">environment variables</a> section may be accessed this way.
+<p>Then, in order to determine the user's identity from the Perl script,
+it is simply a matter of accessing the environment variables set by
+mod_webauth within your Perl script:</p>
 
-</p>
+<div class="example"><h3>Perl Example</h3><p><code>
+my $REMOTE_USER = $ENV{'REMOTE_USER'};<br />
+print "Content-Type: text/plain\n\n";<br />
+print "The authenticated user is $REMOTE_USER\n";
+</code></p></div>
+
+<p>Any of the environment variables described in the
+<a href="#sectionenv">environment variables</a> section may be accessed
+this way.</p>
+
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>PHP 4.x Integration</h2>
 
-<p>Using mod_webauth with PHP is very similar to using it from Perl.
-You need to first WebAuth-protect the pages that are served by the PHP scripts.
-For example:</p>
+<p>Using mod_webauth with PHP is very similar to using it from Perl.  You
+need to first WebAuth-protect the pages that are served by the PHP
+scripts.  For example:</p>
 
-<div class="example"><h3>Apache Directives Example</h3><p><code>
-  &lt;Location /private/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  &lt;/Location&gt;
-</code></p></div>
+<div class="example"><h3>Apache Directives Example</h3><pre>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+&lt;/Location&gt;
+</pre></div>
 
-<p>Then, in order to determine the user's identity from
-the PHP script, you can either use the PHP getenv function, or access
-the special <code>$_SERVER</code> array variable. For example:</p>
+<p>Then, in order to determine the user's identity from the PHP script,
+you can either use the PHP getenv function, or access the special
+<code>$_SERVER</code> array variable.  For example:</p>
 
 <div class="example"><h3>PHP Example</h3><pre>
 $WEBAUTH_USER = getenv('WEBAUTH_USER');
@@ -289,67 +312,67 @@ $WEBAUTH_USER = getenv('WEBAUTH_USER');
 print "The authenticated user is $WEBAUTH_USER\n";
 </pre></div>
 
-<p>
-In looking at the source for PHP 4.3, it appears that the <code>getenv</code>
-is looking only in the <code>$_SERVER</code> array, so there is a one-to-one 
-mapping between the two. Oddly enough, getenv isn't looking the 
-<code>$_ENV</code> array. See the PHP documentation for more information
-on <a href="http://www.php.net/manual/en/reserved.variables.php">predefined variables</a> in PHP.</p>
-<p>
-Any of the environment variables described in the 
-<a href="#sectionenv">environment variables</a> section may be accessed this way.
-</p>
+<p>In looking at the source for PHP 4.3, it appears that the
+<code>getenv</code> is looking only in the <code>$_SERVER</code> array, so
+there is a one-to-one mapping between the two.  Oddly enough, getenv isn't
+looking the <code>$_ENV</code> array. See the PHP documentation for more
+information on
+<a href="http://www.php.net/manual/en/reserved.variables.php">predefined
+variables</a> in PHP.</p>
+
+<p>Any of the environment variables described in the
+<a href="#sectionenv">environment variables</a> section may be accessed
+this way.</p>
+
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Java/Tomcat/mod_jk Integration</h2>
 
-<p>Using mod_webauth with mod_jk requires some additional configuration
-of mod_jk in order to pass environment variables to the Java
-servlet. So, in addition to WebAuth-protecting the pages served
-by Tomcat, you also need to specify which environment variables
-you want to pass. For example:</p>
+<p>Using mod_webauth with mod_jk requires some additional configuration of
+mod_jk in order to pass environment variables to the Java servlet.  So, in
+addition to WebAuth-protecting the pages served by Tomcat, you also need
+to specify which environment variables you want to pass.  For example:</p>
 
-<div class="example"><h3>Apache Directives Example</h3><p><code>
+<div class="example"><h3>Apache Directives Example</h3><pre>
 # WebAuth-protect /private/
-&lt;Location /private/&gt;<br />
-AuthType WebAuth<br />
-Require valid-user<br />
-&lt;/Location&gt;<br />
-<br />
-# Send everything for /private/ to worker1<br />
-JkMount /private/* worker1 <br />
-# webauth-related environment variables to pass<br />
-JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"<br />
-JkEnvVar REMOTE_USER "&lt;UNSET&gt;"<br />
-JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"<br />
-JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"<br />
-JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"<br />
-</code></p></div>
+&lt;Location /private/&gt;
+  AuthType WebAuth
+  Require valid-user
+&lt;/Location&gt;
 
-<p>If all you are interested in is WEBAUTH_USER, then you
-don't need to pass the other variables as well. </p>
+# Send everything for /private/ to worker1
+JkMount /private/* worker1
+# WebAuth-related environment variables to pass
+JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"
+JkEnvVar REMOTE_USER "&lt;UNSET&gt;"
+JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"
+JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"
+JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"
+</pre></div>
 
-<p>In order to determine the user's identity from
-the servlet, you need to use the <code>getAttribute</code> method
-on the <code>request</code> object.</p>
+<p>If all you are interested in is REMOTE_USER, then you don't need to
+pass the other variables as well.</p>
+
+<p>In order to determine the user's identity from the servlet, you need to
+use the <code>getAttribute</code> method on the <code>request</code>
+object.</p>
 
 <div class="example"><h3>JSP Example</h3><pre>
 WEBAUTH_USER is set to:
 &lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
 </pre></div>
 
-<p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code> will
-end up as a request attribute as opposed to being accessible by
-<code>java.lang.System.getenv</code>, which is <strong>deprecated</strong>.
-</p>
+<p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code>
+will end up as a request attribute as opposed to being accessible by
+<code>java.lang.System.getenv</code>, which is
+<strong>deprecated</strong>.</p>
 
-<div class="note"><h3>Note</h3> 
-It appears
-that mod_jk requires you specify a default value for the environment
-variables in the event that they are unset. A value of "" was not
-allowed, so I picked the special value "&lt;UNSET&gt;" for this example.
-If all your pages are WebAuth-protected, then this default value
-will never be used.
+<div class="note"><h3>Note</h3>
+It appears that mod_jk requires you specify a default value for the
+environment variables in the event that they are unset. A value of "" was
+not allowed, so I picked the special value "&lt;UNSET&gt;" for this example.
+If all your pages are WebAuth-protected, then this default value will
+never be used.
 </div>
 
 <p>You will also need to explicitly turn off Tomcat authentication in the
@@ -366,61 +389,62 @@ will never be used.
 <div class="section">
 <h2>Requesting Credentials</h2>
 
-<p>One of the features of WebAuth is the ability to request credentials
- for a particular request (or group of requests). </p>
+<p>One of the features of WebAuth is the ability to request credentials on
+behalf of the user for a particular request (or group of requests).  This
+allows authorized application servers to act on behalf of the user.</p>
 
-<p>Depending on the credential type, temporary files containing credentials
-  may need to be created. These credentials will be stored in the directory
-  specified by the <a href="#webauthcredcachedir">WebAuthCredCacheDir</a> directive.</p>
+<p>Depending on the credential type (and always for Kerberos tickets,
+which are currently the only supported credentials), temporary files
+containing credentials may need to be created.  These credentials will be
+stored in the directory specified by the
+<a href="#webauthcredcachedir">WebAuthCredCacheDir</a> directive.</p>
 
-<p>The <a href="#webauthcred">WebAuthCred</a> directive is used to specify 
-which credentials a
-particular request may need. Credentials are not actually requested 
-from the WebKDC until a page with the <a href="#webauthusecreds">WebAuthUseCreds</a> directive set to 
-"on" is served. At that point, they will be cached (encrypted) in cookies 
-and used to satisfy future requests.</p>
+<p>The <a href="#webauthcred">WebAuthCred</a> directive is used to specify
+which credentials a particular request may need.  Credentials are not
+actually requested from the WebKDC until a page with the
+<a href="#webauthusecreds">WebAuthUseCreds</a> directive set to "on" is
+served.  At that point, they will be cached (encrypted) in cookies and
+used to satisfy future requests.</p>
 
-<p>Saving credentials on every single request (for example, an image
-or static page) is expensive, since it may involve decrypting credentials
+<p>Saving credentials on every single request (for example, an image or
+static page) is expensive, since it may involve decrypting credentials
 stored in a cookie, processing them, and storing them in a temporary file.
-The <a href="#webauthusecreds">WebAuthUseCreds</a> directive is used to control which requests will actually
-go through this process.</p>
+The <a href="#webauthusecreds">WebAuthUseCreds</a> directive is used to
+control which requests will actually go through this process.</p>
 
-<p>The following example shows one scenario where every page under
-/myapp/ is WebAuth-protected, and every page under /myapp/commands/
-requires the use of two Kerberos V5 credentials.
-</p>
+<p>The following example shows one scenario where every page under /myapp/
+is WebAuth-protected, and every page under /myapp/commands/ requires the
+use of two Kerberos V5 credentials.</p>
 
-<div class="example"><h3>Example</h3><p><code>
-  # this first WebAuthCred directive will cause us to<br />
-  # acquire a proxy-token on the initial redirect when<br />
-  # determining the user's identity. It saves an extra redirect<br />
-  # later on when we actually use/acquire credentials.<br />
-  <br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  require valid-user<br />
-  WebAuthCred krb5<br />
-  &lt;/Location&gt; <br />
-  <br />
-  # these next WebAuthCred directives will cause us to acquire<br />
-  # two credentials from the WebKDC, since WebAuthUseCreds is on.<br />
-  <br />
-  &lt;Location /myapp/commands/&gt;<br />
-  WebAuthUseCreds on<br />
-  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
-  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu<br />
-  &lt;/Location&gt;
-  <br />
-</code></p></div>
+<div class="example"><h3>Example</h3><pre>
+# This first WebAuthCred directive will cause us to acquire a proxy token
+# on the initial redirect when determining the user's identity.  It saves
+# an extra redirect later on when we actually use/acquire credentials.
+
+&lt;Location /myapp/&gt;
+  AuthType WebAuth
+  require valid-user
+  WebAuthCred krb5
+&lt;/Location&gt;
+
+# These next WebAuthCred directives will cause us to acquire two
+# credentials from the WebKDC, since WebAuthUseCreds is on.
+
+&lt;Location /myapp/commands/&gt;
+  WebAuthUseCreds on
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu
+  WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu
+&lt;/Location&gt;
+</pre></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Debugging mod_webauth</h2>
-<p>If you are having trouble getting <code>mod_webauth</code>
-configured, you can enable the <code>webauth</code> handler and point your browser
-at the configured URL to get some information on whether or not
-mod_webauth is configured correctly. </p>
+
+<p>If you are having trouble getting <code>mod_webauth</code> configured,
+you can enable the <code>webauth</code> handler and point your browser at
+the configured URL to get some information on whether or not mod_webauth
+is configured correctly.</p>
 
 <div class="note"><h3>Note</h3> 
 Just to be safe, you should probably disable the <code>webauth</code> 
@@ -428,80 +452,76 @@ handler after you have <code>mod_webauth</code> configured correctly.
 </div>
 
 <div class="example"><h3>Example</h3><pre>
-  # WebAuthDebug must be on
-  WebAuthDebug on
-  &lt;Location /webauth-status&gt;
+# WebAuthDebug must be on
+WebAuthDebug on
+
+&lt;Location /webauth-status&gt;
   SetHandler webauth
   Order allow,deny
   Allow from all
-  &lt;/Location&gt; <br />
+&lt;/Location&gt; <br />
 </pre></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up load-balanced WebAuth servers</h2>
-<p>WebAuth V3 was designed so that it would be fairly easy
-to setup multiple WebAuth servers for load balancing and redundancy. There
-are two pieces of information that need to be shared between
-WebAuth servers in order to achieve this:
-    </p>
+
+<p>WebAuth V3 was designed so that it would be fairly easy to setup
+multiple WebAuth servers for load balancing and redundancy.  There are two
+pieces of information that need to be shared between WebAuth servers in
+order to achieve this:</p>
 
 <ol>
   <li>Kerberos keytab file</li>
   <li>WebAuth keyring file</li>
 </ol>
 
-<div class="note"><h3>Note</h3> 
-    <p>All the files should be securely transferred from the master
- to the slave(s) using a program like <code>scp</code> or 
-kerberized <code>rcp</code>.</p>
+<div class="note"><h3>Note</h3>
+<p>All the files should be securely transferred from the master to the
+slave(s) using a program like <code>scp</code> or kerberized
+<code>rcp</code>.</p>
 </div>
 
-<p>
-By convention, one of the WebAuth servers should be designated as the master
-and other servers should be designated as slaves. These files should
-only be updated on the master and pushed manually to the slaves.
-</p>
+<p>By convention, one of the WebAuth servers should be designated as the
+master and other servers should be designated as slaves.  These files
+should only be updated on the master and pushed manually to the
+slaves.</p>
 
-<p>The Kerberos keytab file is specified using the 
-<a href="#webauthkeytab">WebAuthKeyTab</a> directive. This is a standard
-Kerberos V5 keytab file containing the principal/key used by WebAuth servers
-to initially communicate with the WebKDC.
-</p>
+<p>The Kerberos keytab file is specified using the
+<a href="#webauthkeytab">WebAuthKeyTab</a> directive.  This is a standard
+Kerberos V5 keytab file containing the principal/key used by WebAuth
+servers to initially communicate with the WebKDC.</p>
 
-<p>The WebAuth keyring file is specified using the 
-<a href="#webauthkeyring">WebAuthKeyring</a> directive. This file
+<p>The WebAuth keyring file is specified using the
+<a href="#webauthkeyring">WebAuthKeyring</a> directive.  This file
 contains the WebAuth server's private AES key(s). If you are running
-multiple WebAuth servers, you must turn off automatic updating of
-the keyring file on restarts. This is done using
-the <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
+multiple WebAuth servers, you must turn off automatic updating of the
+keyring file on restarts. This is done using the
+<a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
 directive:</p>
 
 <div class="example"><h3>Turning off auto update</h3><p><code>
-  WebAuthKeyringAutoUpdate off<br />
+WebAuthKeyringAutoUpdate off
 </code></p></div>
 
 <p>Once auto update is turned off, the keyring file will not get
 automatically updated and can manually be copied across all the servers.
-The keys in the keyring file still need to be changed periodically,
-and the <code>wa_keyring</code> command can be used to do this. This
-command would be run on the keyring file on the master, at which point
-it would be copied to the slaves. For example, to generate a new 
-post-dated key in the file called "keyring" you should do the following:
-</p>
+The keys in the keyring file still need to be changed periodically, and
+the <code>wa_keyring</code> command can be used to do this.  This command
+would be run on the keyring file on the master, at which point it would be
+copied to the slaves.  For example, to generate a new post-dated key in
+the file called <code>keyring</code> you should do the following:</p>
 
 <div class="example"><h3>Generating a post-dated key</h3><p><code>
-  wa_keyring -f ./keyring add 7d
+wa_keyring -f ./keyring add 7d
 </code></p></div>
 
-<p>
-That example generates a new key that will be valid in seven days. Any
+<p>That example generates a new key that will be valid in seven days. Any
 existing keys in the keyring file are left as-is so outstanding tokens
-continue to work. The new keyring file can then safely be distributed
-to the slave servers. Old keys in the keyring file should also periodically
-be removed. This can manually be done with <code>wa_keyring</code> using the 
-<code>list</code> and <code>remove</code> commands. For example:
-</p>
+continue to work. The new keyring file can then safely be distributed to
+the slave servers. Old keys in the keyring file should also periodically
+be removed. This can manually be done with <code>wa_keyring</code> using
+the <code>list</code> and <code>remove</code> commands. For example:</p>
 
 <div class="example"><h3>Manually remove old keys</h3><pre>
 $ wa_keyring -f ./keyring list
@@ -513,17 +533,15 @@ id  Created            Valid after        Fingerprint
 $ wa_keyring -f ./keyring remove 0
 </pre></div>
 
-<p>Or it can be done automatically, using the <code>gc</code> command:
-</p>
+<p>Or it can be done automatically, using the <code>gc</code> command:</p>
 
 <div class="example"><h3>Automatically removing old keys</h3><pre>
-# remove any keys with a valid after date older then 90 days
+# Remove any keys with a valid after date older then 90 days
 $ wa_keyring -f ./keyring gc -90d
 </pre></div>
 
-<p>To summarize, for each WebAuth (master and slaves), you'd want the 
-following directives:
-</p>
+<p>To summarize, for each WebAuth (master and slaves), you'd want the
+following directives:</p>
 
 <div class="example"><h3>Example</h3><pre>
 WebAuthKeyring conf/webauth/keyring
@@ -531,21 +549,24 @@ WebAuthKeytab conf/webauth/keytab
 WebAuthKeyringAutoUpdate off
 </pre></div>
 
-<p>
-Periodically (once a month should be reasonable), you'd want
-to generate a new key, remove old keys, and then update
-the keyring file on the slaves. For example:
-</p>
+<p>Periodically (once a month should be reasonable), you'd want to
+generate a new key, remove old keys, and then update the keyring file on
+the slaves.  For example:</p>
 
 <div class="example"><h3>Monthly Key maintenance</h3><pre>
-# generate a new key that will be valid in 2 day
-$ wa_keyring -f conf/webauth/keyring add 2d
-# remove keys that have been around for more then 60 days
-$ wa_keyring -f conf/webauth/keyring gc 60d
-# foreach slave...
-$ scp conf/weauth/keyring webauth-slave:{path-on-slave}
-# restart the master and all the slaves at any point before
-# the new key is valid.
+# Generate a new key that will be valid in 2 days.
+wa_keyring -f conf/webauth/keyring add 2d
+
+# Remove keys that have been around for more then 60 days.
+wa_keyring -f conf/webauth/keyring gc 60d
+
+# Copy the new keyring to all of the slaves.
+for slave in $slaves ; do
+    scp conf/weauth/keyring $slave:{path-on-slave}
+done
+
+# Restart the master and all the slaves at any point before the new key is
+# valid.
 </pre></div>
 
 </div>
@@ -1535,6 +1556,6 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1995-2005 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 1995-2006 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

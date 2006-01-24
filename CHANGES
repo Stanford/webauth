@@ -45,6 +45,8 @@ WebAuth 3.4.0 (unreleased)
  *) Cleaned up lots of compiler warnings.  All of WebAuth now builds under
     gcc -Wall without warnings.
 
+ *) Lots of general documentation updates for clarity and style.
+
  *) Removed some Stanford-specific parts of doc/install-webkdc since we
     don't need instructions for what to do at Stanford any more.
     Clarified the documentation slightly.
