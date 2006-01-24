@@ -11,6 +11,7 @@ webauth (3.4.0-1) unstable; urgency=low
   * Only install the protocol documentation in libapache2-mod-webauth, not
     in libapache2-mod-webkdc.  If you're using WebAuth at all you'll
     install the former somewhere, and there's no need to duplicate it.
+  * Register the protocol documentation with doc-base.
   * Don't install HACKING; it's not useful without the source.
   * Use DH_OPTIONS to reduce clutter in debian/rules.
   * Add build-arch and build-indep targets.
