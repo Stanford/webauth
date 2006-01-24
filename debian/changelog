@@ -8,6 +8,9 @@ webauth (3.4.0-1) unstable; urgency=low
     - Much improved protocol specification.
     - Use --enable-reduced-depends to reduce library dependencies.
     - No compiler warnings with -Wall.
+  * Only install the protocol documentation in libapache2-mod-webauth, not
+    in libapache2-mod-webkdc.  If you're using WebAuth at all you'll
+    install the former somewhere, and there's no need to duplicate it.
   * Don't install HACKING; it's not useful without the source.
   * Use DH_OPTIONS to reduce clutter in debian/rules.
   * Add build-arch and build-indep targets.
