@@ -14,6 +14,12 @@ WebAuth 3.4.0 (unreleased)
     is an additional template variable for the login template,
     script_name, that should be used as the action of the login form.
 
+ *) The WebAuth module no longer strips WebAuth data (WEBAUTHR and
+    WEBAUTHS) from the internal URL for requests to URLs not protected by
+    WebAuth.  This way, Apache with mod_webauth loaded will not interfere
+    with applications that wish to implement the WebAuth protocol
+    themselves.   Thanks to Mats Henrikson for the report.
+
  *) Rewrote the WebAuth protocol documentation in RFC 2629 XML.  In the
     process, edited it extensively for consistency of terminology, updated
     it in a few places, and clarified the wording.
