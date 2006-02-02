@@ -2493,7 +2493,6 @@ translate_name_hook(request_rec *r)
     MWA_SCONF *sconf;
     static char *rmagic = WEBAUTHR_MAGIC;
     static char *smagic = WEBAUTHS_MAGIC;
-    const char *at = ap_auth_type(r);
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                              &webauth_module);
@@ -2545,14 +2544,8 @@ translate_name_hook(request_rec *r)
         s = p+1;
     }
 
-    /* Only strip the WebAuth information from the internal URL if we're
-       accessing something protected by WebAuth.  Otherwise, we interfere with
-       code that wants to do WebAuth for itself. */
-    if (sconf->strip_url
-        && at != NULL
-        && (strcmp(at, "WebAuth") == 0
-            || (sconf->auth_type != NULL
-                && strcmp(at, sconf->auth_type) == 0))) {
+    /* Strip the WebAuth information from the internal URL unless asked. */
+    if (sconf->strip_url) {
         /* move over remaining */
         strcpy(rp, s);
     

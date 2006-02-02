@@ -1,5 +1,12 @@
                           WebAuth Change History
 
+WebAuth 3.4.1 (unreleased)
+
+ *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
+    for unprotected URLs, since URLs with protection applied via .htaccess
+    files aren't detected early enough in request processing to be
+    recognized in the translation hook and look like they're unprotected.
+
 WebAuth 3.4.0 (2006-01-24)
 
  *) Added support to the weblogin server and WebKDC module to trust an

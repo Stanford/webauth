@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.4.1 (unreleased)
+
+ *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
+    for unprotected URLs since it didn't work with .htaccess files.
+
 WebAuth 3.4.0 (2006-01-24)
 
  *) Added support to the weblogin server and WebKDC module to trust an
