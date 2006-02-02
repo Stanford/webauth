@@ -1525,6 +1525,42 @@ WebAuthWebKdcSSLCertCheck off
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthStripURL</name>
+<description>Whether or not to strip WebAuth information from the internal
+URL
+</description>
+<syntax>WebAuthStripURL on|off</syntax>
+<default>on</default>
+<contextlist>
+  <context>server config</context>
+  <context>virtual host</context>
+</contextlist>
 
+<usage>
+
+<p>This directive controls whether the WebAuth module strips WebAuth
+information from the URL before processing it.  If set to on (the
+default), the WEBAUTHR and WEBAUTHS strings are stripped from Apache's
+internal knowledge of the URL before &lt;Directory&gt; and &lt;File&gt;
+blocks are processed and other modules, CGI scripts, and similar
+applications will not see the WebAuth data.</p>
+
+<p>Normally, you should always leave this directive on.  The only reason
+to turn it off is if you have an application that wants to do its own
+WebAuth handling, running on a server that also has mod_webauth enabled.
+If you do turn this directive, you should also enable
+<a href="#webauthextraredirect"><code>WebAuthExtraRedirect</code></a> or
+your web applications will see unexpected data in their URLs that they
+won't know what to do with.</p>
+
+<p>This unfortunately can only be set usefully at the server or virtual
+host level due to the way that Apache processes requests.</p>
+
+<example><title>Example</title>
+WebAuthStripURL off
+</example>
+</usage>
+</directivesynopsis>
 
 </modulesynopsis>

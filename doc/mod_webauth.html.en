@@ -63,6 +63,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslreturn">WebAuthSSLReturn</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthstripurl">WebAuthStripURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
@@ -100,7 +101,7 @@ WebAuthKeytab conf/webauth/keytab<br />
 WebAuthServiceTokenCache conf/webauth/service_token_cache<br />
 WebAuthLoginURL https://webkdc/login/<br />
 WebAuthWebKdcURL https://webkdc/webkdc-service/<br />
-WebAuthWebKdcPrincipal service/webkdc<br />
+WebAuthWebKdcPrincipal service/webkdc
 </code></p></div>
 
 <p>This will enable the module, but not protect any pages.  To do that,
@@ -183,7 +184,7 @@ AUTH_TYPE=WebAuth<br />
 WEBAUTH_USER=schemers<br />
 WEBAUTH_TOKEN_CREATION=103872393<br />
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
-WEBAUTH_TOKEN_LASTUSED=103872393<br />
+WEBAUTH_TOKEN_LASTUSED=103872393
 </code></p></div>
 
 <p>When checking for the authenticated username, use WEBAUTH_USER if you
@@ -227,7 +228,7 @@ through to a proxy server.  Assuming you've loaded
   ProxyPass http://otherhost.stanford.edu/
   ProxyPassReverse http://otherhost.stanford.edu/
   RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
-&lt;/Location&gt;<br />
+&lt;/Location&gt;
 </pre></div>
 
 <p>The <code>RequestHeader</code> directive causes the
@@ -459,7 +460,7 @@ WebAuthDebug on
   SetHandler webauth
   Order allow,deny
   Allow from all
-&lt;/Location&gt; <br />
+&lt;/Location&gt;
 </pre></div>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1301,6 +1302,42 @@ to https.
   Require valid-user<br />
   WebAuthSSLReturn on<br />
   &lt;/Location&gt;
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthStripURL" id="WebAuthStripURL">WebAuthStripURL</a> <a name="webauthstripurl" id="webauthstripurl">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to strip WebAuth information from the internal
+URL
+</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthStripURL on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+
+<p>This directive controls whether the WebAuth module strips WebAuth
+information from the URL before processing it.  If set to on (the
+default), the WEBAUTHR and WEBAUTHS strings are stripped from Apache's
+internal knowledge of the URL before &lt;Directory&gt; and &lt;File&gt;
+blocks are processed and other modules, CGI scripts, and similar
+applications will not see the WebAuth data.</p>
+
+<p>Normally, you should always leave this directive on.  The only reason
+to turn it off is if you have an application that wants to do its own
+WebAuth handling, running on a server that also has mod_webauth enabled.
+If you do turn this directive, you should also enable
+<a href="#webauthextraredirect"><code>WebAuthExtraRedirect</code></a> or
+your web applications will see unexpected data in their URLs that they
+won't know what to do with.</p>
+
+<p>This unfortunately can only be set usefully at the server or virtual
+host level due to the way that Apache processes requests.</p>
+
+<div class="example"><h3>Example</h3><p><code>
+WebAuthStripURL off
 </code></p></div>
 
 </div>

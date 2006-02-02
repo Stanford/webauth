@@ -7,6 +7,11 @@ WebAuth 3.4.1 (unreleased)
     files aren't detected early enough in request processing to be
     recognized in the translation hook and look like they're unprotected.
 
+ *) Documented the WebAuthStripURL directive as a partial replacement for
+    the problem the reverted change was supposed to solve.  This directive
+    has always been supported but it was previously undocumented and not
+    guaranteed to remain.
+
  *) Support et/com_err.h as well as com_err.h for portability to Red Hat
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.

@@ -5,6 +5,11 @@ WebAuth 3.4.1 (unreleased)
  *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
     for unprotected URLs since it didn't work with .htaccess files.
 
+ *) Documented the WebAuthStripURL directive as a partial replacement for
+    the problem the reverted change was supposed to solve.  This directive
+    has always been supported but it was previously undocumented and not
+    guaranteed to remain.
+
  *) Support et/com_err.h as well as com_err.h for portability to Red Hat
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.
