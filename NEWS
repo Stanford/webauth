@@ -5,6 +5,10 @@ WebAuth 3.4.1 (unreleased)
  *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
     for unprotected URLs since it didn't work with .htaccess files.
 
+ *) Support et/com_err.h as well as com_err.h for portability to Red Hat
+    Enterprise Linux 4 and possibly other newer Red Hat-based Linux
+    systems.
+
 WebAuth 3.4.0 (2006-01-24)
 
  *) Added support to the weblogin server and WebKDC module to trust an

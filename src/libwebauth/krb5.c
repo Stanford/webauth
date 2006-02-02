@@ -1,11 +1,14 @@
-
 #include "webauthp.h"
 
 #include <stdio.h>
 #include <krb5.h>
-#include <com_err.h>
+#ifdef HAVE_ET_COM_ERR_H
+# include <et/com_err.h>
+#else
+# include <com_err.h>
+#endif
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 typedef struct {
