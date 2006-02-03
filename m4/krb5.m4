@@ -46,6 +46,12 @@ AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5_EXTRA],
 LIBS_save=$LIBS
 LIBS="$KRB5_LIBS $LIBS"
 AC_CHECK_FUNCS([krb5_free_keytab_entry_contents])
+AC_CHECK_MEMBER([krb5_creds.session],
+    [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
+        [Define if your Kerberos implementation is Heimdal.])],
+    [AC_DEFINE([HAVE_KRB5_MIT], [1],
+        [Define if your Kerberos implementation is MIT.])],
+    [#include <krb5.h>])
 LIBS=$LIBS_save])
 
 dnl The main macro.

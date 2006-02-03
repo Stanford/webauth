@@ -12,9 +12,16 @@ WebAuth 3.4.1 (unreleased)
     has always been supported but it was previously undocumented and not
     guaranteed to remain.
 
+ *) Ported to Heimdal.  The Kerberos implementation dependencies are all
+    inside libwebauth, which can now be built with either MIT Kerberos or
+    Heimdal.  Mixed environments with some Heimdal-based WebAuth modules
+    and some MIT-based modules should work correctly.
+
  *) Support et/com_err.h as well as com_err.h for portability to Red Hat
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.
+
+ *) Updated the software dependencies in README.
 
 WebAuth 3.4.0 (2006-01-24)
 

@@ -24,10 +24,11 @@ DESCRIPTION
   until their credentials expire, even if they visit multiple different
   protected web sites.
 
-  At present, WebAuth relies on Kerberos v5 to establish the user's
-  identity and only that authentication mechanism is implemented by the
-  current release, but the protocol should be sufficiently general to
-  allow for other methods to be added.
+  WebAuth relies on either Kerberos v5 or Apache to establish the user's
+  identity, although some features are only available if Kerberos v5 is
+  used.  Kerberos v5 is the only supported mechanism for WebAuth servers
+  to authenticate to the WebKDC.  The protocol is sufficiently general,
+  however, to allow other methods to be added.
 
   This is a substantial reworking of the previous Stanford WebAuth system,
   which was based primarily around the S/Ident protocol for user
@@ -58,9 +59,10 @@ REQUIREMENTS
 
   WebAuth requires the following additional packages:
 
-      Apache 2.0.43 or later (2.0.46 or later recommended)
+      Apache 2.0 version 2.0.43 or later (2.0.46 or later recommended)
       OpenSSL 0.9.7 or later
       MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
+        -or- Heimdal Kerberos (tested with 0.7 or later)
       cURL 7.10.2 or later
 
   LDAP support also requires:
@@ -91,6 +93,9 @@ REQUIREMENTS
   support Apache 2.0 should also work, but have not been tested.  Some
   amount of porting may be required.  WebAuth does use libtool to try to
   build shared libraries portably.
+
+  Apache 2.2 is not yet supported, but probably will be soon.  The port
+  should not require much work.
 
 SUPPORT
 
@@ -174,6 +179,8 @@ CREDITS
   together by Russ Allbery.  Huaqing Zheng provided builds of supporting
   packages and Jonathan Pilat helped greatly with testing.  Xueshan Feng
   oversaw the project.
+
+  The WebAuth package is currently maintained by Russ Allbery.
 
   Thanks to pod for improvements, particularly to the WebKDC, to make it
   easier to package for a Linux distribution, for the initial Debian
