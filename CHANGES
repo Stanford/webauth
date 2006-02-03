@@ -21,6 +21,8 @@ WebAuth 3.4.1 (unreleased)
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.
 
+ *) Include com_err.h properly in the mod_webauthldap source.
+
  *) Updated the software dependencies in README.
 
 WebAuth 3.4.0 (2006-01-24)

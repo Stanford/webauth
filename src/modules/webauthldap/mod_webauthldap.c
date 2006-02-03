@@ -8,15 +8,20 @@ $Id$
 #include "ap_config.h"
 #include "apr_signal.h"
 
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <errno.h>
-#include <sys/stat.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #include <krb5.h>
+#ifdef HAVE_ET_COM_ERR_H
+# include <et/com_err.h>
+#else
+# include <com_err.h>
+#endif
 #include <ldap.h>
 
 #include "mod_webauthldap.h"
