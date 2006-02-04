@@ -15,6 +15,9 @@ WebAuth 3.4.1 (unreleased)
     Heimdal.  Mixed environments with some Heimdal-based WebAuth modules
     and some MIT-based modules should work correctly.
 
+ *) Avoid deprecated OpenLDAP interfaces whose prototypes are unavailable
+    by default in OpenLDAP 2.3.
+
  *) Support et/com_err.h as well as com_err.h for portability to Red Hat
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.

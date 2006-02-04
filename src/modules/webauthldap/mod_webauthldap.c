@@ -680,16 +680,25 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
 {
     int rc;
     MWAL_SASL_DEFAULTS *defaults;
+    LDAPURLDesc url;
+    char *ldapuri;
 
     /* Initialize the connection */
-    lc->ld = ldap_init(lc->sconf->host, lc->port);
-
-    if (lc->ld == NULL) {
+    memset(&url, 0, sizeof(url));
+    url.lud_scheme = "ldap";
+    url.lud_host = lc->sconf->host;
+    url.lud_port = lc->port;
+    url.lud_scope = LDAP_SCOPE_DEFAULT;
+    ldapuri = ldap_url_desc2str(&url);
+    rc = ldap_initialize(&lc->ld, ldapuri);
+    if (rc != LDAP_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server, 
-                     "webauthldap(%s): ldap_init failure ld is NULL", 
-                     lc->r->user);
+                     "webauthldap(%s): ldap_initialize failed with URL %s", 
+                     lc->r->user, ldapuri);
+        free(ldapuri);
         return -1;
     }
+    free(ldapuri);
 
     /* Set to no referrals */
     if (ldap_set_option(lc->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF)
@@ -936,7 +945,7 @@ webauthldap_returnconn(MWAL_LDAP_CTXT* lc)
     apr_thread_mutex_unlock(lc->sconf->ldmutex); /****** UNLOCKING! ********/
 
     if (newld == NULL) {
-        ldap_unbind(lc->ld); 
+        ldap_unbind_ext(lc->ld, NULL, NULL); 
     }
 
 }
@@ -1494,7 +1503,7 @@ auth_checker_hook(request_rec * r)
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
                          "webauthldap(%s): unbinding the expired connection",
                              lc->r->user);
-        ldap_unbind(lc->ld);
+        ldap_unbind_ext(lc->ld, NULL, NULL);
         lc->ld = NULL;
 #ifdef SIGPIPE
         apr_signal(SIGPIPE, old_signal);
