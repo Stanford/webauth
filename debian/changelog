@@ -1,3 +1,13 @@
+webauth (3.4.1-1) unstable; urgency=low
+
+  * New upstream release.
+    - Reverted the change to not strip WebAuth data from unprotected URLs
+      since it interacted poorly with .htaccess files.
+    - The config option WebAuthStripURL is now documented and supported.
+    - Avoid deprecated OpenLDAP APIs.
+
+ -- Russ Allbery <rra@debian.org>  Mon,  6 Feb 2006 17:38:30 -0800
+
 webauth (3.4.0-1) unstable; urgency=low
 
   * New upstream release.
