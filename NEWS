@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.4.1 (unreleased)
+WebAuth 3.4.1 (2006-02-06)
 
  *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
     for unprotected URLs since it didn't work with .htaccess files.
