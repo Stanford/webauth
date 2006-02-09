@@ -159,13 +159,12 @@ APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 AC_SUBST([APXS_CFLAGS])
 
 dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
-dnl make sure that all symbols in the library and modules are resolved.  We'd
-dnl like to do this on all platforms, but the syntax is different everywhere
-dnl and I don't feel like dealing with the differences.
+dnl make sure that all symbols in the library are resolved.  We'd like to do
+dnl this on all platforms, but the syntax is different everywhere and I don't
+dnl feel like dealing with the differences.
 case "$host" in
 *-linux*)
     VERSION_LDFLAGS="-Wl,--version-script=mapfile -Wl,-z,defs"
-    APXS_CFLAGS="$APXS_CFLAGS -Wl,-z,defs"
     ;;
 *)
     VERSION_LDFLAGS=""

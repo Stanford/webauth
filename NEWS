@@ -2,6 +2,10 @@
 
 WebAuth 3.4.2 (unreleased)
 
+ *) Don't try to build the modules with -z defs.  If it actually works, it
+    breaks the build, since Apache modules refer to symbols that are only
+    in httpd, not in any linked library.
+
  *) Added another fix for finding et/com_err.h on Red Hat, this time for
     mod_webauthldap.
 
