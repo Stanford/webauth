@@ -8,6 +8,8 @@ $Id$
 #include "ap_config.h"
 #include "apr_signal.h"
 
+#include "mod-config.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>

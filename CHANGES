@@ -1,5 +1,10 @@
                           WebAuth Change History
 
+WebAuth 3.4.2 (unreleased)
+
+ *) Added another fix for finding et/com_err.h on Red Hat, this time for
+    mod_webauthldap.
+
 WebAuth 3.4.1 (2006-02-06)
 
  *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
