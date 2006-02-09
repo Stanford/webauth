@@ -13,7 +13,7 @@ CPPFLAGS	= -I. -I$(srcdir) -I$(top_builddir) @KRB5_CPPFLAGS@ \
 		  @LDAP_CPPFLAGS@
 
 LDFLAGS		= @LDFLAGS@
-LDLIBS		= @KRB5_LIBS@ @LDAP_LIBS@ @LIBS@
+LDLIBS		= @APXS_KRB5_LIBS@ @LDAP_LIBS@ @LIBS@
 
 SOURCES		= mod_webauthldap.c
 

@@ -6,6 +6,10 @@ WebAuth 3.4.2 (unreleased)
     breaks the build, since Apache modules refer to symbols that are only
     in httpd, not in any linked library.
 
+ *) Transform -pthread or -pthreads in the Kerberos compiler flags into
+    something that apxs can handle.  This is needed for some builds of
+    Heimdal.
+
  *) Added another fix for finding et/com_err.h on Red Hat, this time for
     mod_webauthldap.
 
