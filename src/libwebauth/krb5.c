@@ -43,33 +43,29 @@ typedef struct {
     int keep_cache;
 } WEBAUTH_KRB5_CTXTP;
 
-/*#define WA_CRED_DEBUG 1 */
-
-/* these names are kept to a minimum since encoded creds end up
-   in cookies,etc */
-
-#define CR_ADDRTYPE "A%d"
-#define CR_ADDRCONT "a%d"
-#define CR_CLIENT "c"
-#define CR_AUTHDATATYPE "D%d"
-#define CR_AUTHDATACONT "d%d"
-#define CR_TICKETFLAGS "f"
-#define CR_ISSKEY "i"
-#define CR_SERVER "s"
-#define CR_KEYBLOCK_CONTENTS "k"
-#define CR_KEYBLOCK_ENCTYPE "K"
-#define CR_NUMADDRS "na"
-#define CR_NUMAUTHDATA "nd"
-#define CR_TICKET "t"
-#define CR_TICKET2 "t2"
-#define CR_AUTHTIME  "ta"
-#define CR_STARTTIME  "ts"
-#define CR_ENDTIME  "te"
-#define CR_RENEWTILL "tr"
+/* Attribute names for the token serialization of Kerberos credentials.  These
+   names are kept to a minimum since encoded creds end up in cookies, etc. */
+#define CR_ADDRTYPE             "A%d"
+#define CR_ADDRCONT             "a%d"
+#define CR_CLIENT               "c"
+#define CR_AUTHDATATYPE         "D%d"
+#define CR_AUTHDATACONT         "d%d"
+#define CR_TICKETFLAGS          "f"
+#define CR_ISSKEY               "i"
+#define CR_SERVER               "s"
+#define CR_KEYBLOCK_CONTENTS    "k"
+#define CR_KEYBLOCK_ENCTYPE     "K"
+#define CR_NUMADDRS             "na"
+#define CR_NUMAUTHDATA          "nd"
+#define CR_TICKET               "t"
+#define CR_TICKET2              "t2"
+#define CR_AUTHTIME             "ta"
+#define CR_STARTTIME            "ts"
+#define CR_ENDTIME              "te"
+#define CR_RENEWTILL            "tr"
 
 /* Forward declarations for the functions that have to be used by the MIT- and
    Heimdal-specific code. */
-
 static int
     open_keytab(WEBAUTH_KRB5_CTXTP *, const char *, const char *,
                 krb5_principal *, krb5_keytab *);
@@ -77,7 +73,6 @@ static krb5_error_code
     mk_req_with_principal(krb5_context, krb5_auth_context *, krb5_flags,
                           krb5_principal, krb5_data *, krb5_ccache,
                           krb5_data *);
-
 
 /* Include the appropriate implementation-specific Kerberos bits. */
 #if HAVE_KRB5_MIT
@@ -88,16 +83,15 @@ static krb5_error_code
 # error "Unknown Kerberos implementation"
 #endif
 
+
 /* 
- * open up a keytab and return a krb5_principal to use with that
- * keytab. If in _principal is NULL, returned out_principal is first
- * principal found in keytab.
- */
+**  Open up a keytab and return a krb5_principal to use with that keytab.  If
+**  in_principal is NULL, returned out_principal is first principal found in
+**  keytab.
+*/
 static int
-open_keytab(WEBAUTH_KRB5_CTXTP *c,
-            const char *keytab_path,
-            const char *in_principal,
-            krb5_principal *out_principal,
+open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
+            const char *in_principal, krb5_principal *out_principal,
             krb5_keytab *id_out)
 {
     krb5_keytab id;
@@ -153,35 +147,31 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c,
 }
 
 
-/* like krb5_mk_req, but takes a principal instead of a service/host */
+/*
+**  Like krb5_mk_req, but takes a principal instead of a service/host.
+*/
 static krb5_error_code
-mk_req_with_principal(krb5_context context, 
-                      krb5_auth_context *auth_context, 
-                      krb5_flags ap_req_options, 
-                      krb5_principal server, 
-                      krb5_data *in_data,
-                      krb5_ccache ccache,
+mk_req_with_principal(krb5_context context, krb5_auth_context *auth_context, 
+                      krb5_flags ap_req_options, krb5_principal server, 
+                      krb5_data *in_data, krb5_ccache ccache,
                       krb5_data *outbuf)
 {
-    krb5_error_code 	  retval;
-    krb5_creds 		* credsp;
-    krb5_creds 		  creds;
+    krb5_error_code retval;
+    krb5_creds *credsp;
+    krb5_creds creds;
 
-    /* obtain ticket & session key */
-    memset((char *)&creds, 0, sizeof(creds));
-    if ((retval = krb5_copy_principal(context, server, &creds.server)))
+    memset(&creds, 0, sizeof(creds));
+    retval = krb5_copy_principal(context, server, &creds.server);
+    if (retval)
         return retval;
-
-    if ((retval = krb5_cc_get_principal(context, ccache, &creds.client)))
+    retval = krb5_cc_get_principal(context, ccache, &creds.client);
+    if (retval)
+        goto cleanup_creds;
+    retval = krb5_get_credentials(context, 0, ccache, &creds, &credsp);
+    if (retval)
 	goto cleanup_creds;
-
-    if ((retval = krb5_get_credentials(context, 0,
-				       ccache, &creds, &credsp)))
-	goto cleanup_creds;
-
     retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				  in_data, credsp, outbuf);
-
     krb5_free_creds(context, credsp);
 
  cleanup_creds:
@@ -189,10 +179,15 @@ mk_req_with_principal(krb5_context context,
     return retval;
 }
 
+
+/*
+**  Verify a Kerberos TGT (stored in the context) by obtaining a service
+**  ticket for the principal stored in our local keytab and then verifying
+**  that service ticket is correct.
+*/
 static int
 verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
-           const char *server_principal,
-           char **server_principal_out)
+           const char *server_principal, char **server_principal_out)
 {
     krb5_principal server;
     krb5_keytab keytab;
@@ -211,35 +206,36 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
         return s;
 
     auth = NULL;
-    c->code = mk_req_with_principal(c->ctx, &auth, 0, server, 
-                                    NULL, c->cc, &outbuf);
+    c->code = mk_req_with_principal(c->ctx, &auth, 0, server, NULL, c->cc,
+                                    &outbuf);
     if (c->code != 0) {
         krb5_free_principal(c->ctx, server);
         return WA_ERR_KRB5;
     }
 
-    if (auth != NULL) {
+    if (auth != NULL)
         krb5_auth_con_free(c->ctx, auth);
-    }
 
     auth = NULL;
     c->code = krb5_rd_req(c->ctx, &auth, &outbuf, server, keytab, NULL, NULL);
-    if (auth != NULL) {
+    if (auth != NULL)
         krb5_auth_con_free(c->ctx, auth);
-    }
                           
     krb5_free_data_contents(c->ctx, &outbuf);
     krb5_kt_close(c->ctx, keytab);
 
-    if (c->code == 0) {
+    if (c->code == 0)
         c->code = krb5_unparse_name(c->ctx, server, server_principal_out);
-    }
 
     krb5_free_principal(c->ctx, server);
 
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
+
+/*
+**  Create a new WEBAUTH_KRB5_CTXT.
+*/
 int
 webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
 {
@@ -257,22 +253,31 @@ webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
     c->keep_cache = 0;
     c->ctx = NULL;
     c->code = krb5_init_context(&c->ctx);
-    *ctxt = (WEBAUTH_KRB5_CTXT*)c;
+    *ctxt = (WEBAUTH_KRB5_CTXT *) c;
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
+
+/*
+**  Return the Kerberos v5 error code from the last operation.
+*/
 int
 webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *context)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     assert(c);
     return c->code;
 }
 
+
+/*
+**  Return the Kerberos v5 error message from the last operation, using
+**  com_err to map the code to a message.
+*/
 const char *
 webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     assert(c);
     if (c->code == 0) {
         return "success";
@@ -282,16 +287,19 @@ webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
 }
 
 
+/*
+**  Obtain a TGT from a user's password, verifying it with the provided
+**  keytab and server principal.
+*/
 int
 webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
-                               const char *username,
-                               const char *password,
+                               const char *username, const char *password,
                                const char *keytab,
                                const char *server_principal,
                                const char *cache_name,
                                char **server_principal_out)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     char ccname[128];
     char *tpassword;
     krb5_creds creds;
@@ -305,9 +313,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
     c->code = krb5_parse_name(c->ctx, username, &c->princ);
 
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    }
 
     if (cache_name == NULL) {
         sprintf(ccname, "MEMORY:%p", c);
@@ -329,14 +336,11 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     /*krb5_get_init_creds_opt_set_tkt_life(&opts, KRB5_DEFAULT_LIFE);*/
 
     tpassword = strdup(password);
-    if (tpassword == NULL) {
+    if (tpassword == NULL)
         return WA_ERR_NO_MEM;
-    }
 
-    c->code = krb5_get_init_creds_password(c->ctx,
-                                           &creds,
-                                           c->princ,
-                                           (char*)tpassword,
+    c->code = krb5_get_init_creds_password(c->ctx, &creds, c->princ,
+                                           tpassword,
                                            NULL, /* prompter */
                                            NULL, /* data */
                                            0, /* start_time */
@@ -347,7 +351,6 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     free(tpassword);
 
     if (c->code != 0) {
-        /*printf("code = %d (%s)\n", c->code, error_message(c->code));*/
         switch (c->code) {
             case KRB5KRB_AP_ERR_BAD_INTEGRITY:
             case KRB5KDC_ERR_PREAUTH_FAILED:
@@ -360,30 +363,33 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
     }
 
-    /* add the creds to the cache */
+    /* Add the creds to the cache. */
     c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
     krb5_free_cred_contents(c->ctx, &creds);
     if (c->code != 0) {
         return WA_ERR_KRB5;
     } else {
-        /* lets see if the credentials are valid */
+        /* Let's see if the credentials are valid. */
         return verify_tgt(c, keytab, server_principal, server_principal_out);
     }
 }
 
+
+/*
+**  Initialize a context from an existing ticket cache.
+*/
 int
 webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *context,
                             const char *cache_name)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
 
     assert(c != NULL);
 
-    if (cache_name != NULL) {
+    if (cache_name != NULL)
         c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
-    } else {
+    else
         c->code = krb5_cc_default(c->ctx, &c->cc);
-    }
 
     if (c->code != 0) 
         return WA_ERR_KRB5;
@@ -393,168 +399,82 @@ webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *context,
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
+
+/*
+**  Set the keep_cache flag on a context.  When this flag is set, the ticket
+**  cache will just be closed, not destroyed, when the context is freed.
+*/
 int
 webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *context) 
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     assert(c != NULL);
     c->keep_cache = 1;
     return WA_ERR_NONE;
 }
 
+
+/*
+**  Free a Kerberos v5 context and the associated data.
+*/
 int
 webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
 {    
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     assert(c != NULL);
 
     if (c->cc) {
-        if (c->keep_cache) {
+        if (c->keep_cache)
             krb5_cc_close(c->ctx, c->cc);
-        } else {
+        else
             krb5_cc_destroy(c->ctx, c->cc);
-        }
     }
-    if (c->princ) {
+    if (c->princ)
         krb5_free_principal(c->ctx, c->princ);
-    }
-    if (c->ctx != NULL) {
+    if (c->ctx != NULL)
         krb5_free_context(c->ctx);
-    }
     free(context);
     return WA_ERR_NONE;
 }
 
+
+/*
+**  Generate a mk_req Kerberos request with no associated data.  This just
+**  calls webauth_krb5_mk_req_with_data, which is separately implemented for
+**  both MIT and Heimdal in krb5-mit.c and krb5-heimdal.c.
+*/
 int
-webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
-                    const char *server_principal,
-                    char **output,
-                    int *length)
+webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context, const char *server_principal,
+                    char **output, int *length)
 {
-    return webauth_krb5_mk_req_with_data(context, 
-                                         server_principal, output, length,
-                                         NULL, 0, NULL, NULL);
-#if 0
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
-    krb5_auth_context auth;
-    krb5_data outbuf;
-    krb5_principal princ;
-    int s;
-
-    assert(c != NULL);
-    assert(server_principal != NULL);
-    assert(output != NULL);
-    assert(length != NULL);
-
-    c->code = krb5_parse_name(c->ctx, server_principal, &princ);
-    if (c->code != 0)
-        return WA_ERR_KRB5;
-
-    auth = NULL;
-    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ,
-                                    NULL, c->cc, &outbuf);
-    krb5_free_principal(c->ctx, princ);
-
-    if (c->code != 0)
-        return WA_ERR_KRB5;
-
-    if (auth != NULL)
-        krb5_auth_con_free(c->ctx, auth);
-
-    *output = malloc(outbuf.length);
-    if (*output == NULL) {
-        s = WA_ERR_NO_MEM;
-    } else {
-        *length = outbuf.length;
-        memcpy(*output, outbuf.data, outbuf.length);
-        s = WA_ERR_NONE;
-    }
-    krb5_free_data_contents(c->ctx, &outbuf);
-    return s;
-#endif 
+    return webauth_krb5_mk_req_with_data(context, server_principal, output,
+                                         length, NULL, 0, NULL, NULL);
 }
 
 
+/*
+**  Read an encrypted Kerberos request generated by webauth_krb5_mk_req that
+**  has no associated data.  This just calls webauth_krb5_rd_req_with_data,
+**  which is separately implemented for both MIT and Heimdal in krb5-mit.c and
+**  krb5-heimdal.c
+*/
 int
-webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
-                    const char *req,
-                    int length,
-                    const char *keytab_path,
-                    const char *server_principal,
-                    char **client_principal,
-                    int local)
+webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context, const char *req, int length,
+                    const char *keytab_path, const char *server_principal,
+                    char **client_principal, int local)
 {
-    return webauth_krb5_rd_req_with_data(context, req, length, 
-                                         keytab_path,
-                                         server_principal, 
-                                         NULL,
-                                         client_principal, local,
-                                         NULL, 0, NULL, NULL);
-#if 0
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
-    krb5_principal server;
-    krb5_keytab keytab;
-    krb5_auth_context auth;
-    krb5_data buf;
-    int s;
-
-    assert(c != NULL);
-    assert(keytab_path != NULL);
-    assert(req != NULL);
-    assert(client_principal);
-
-    s = open_keytab(c, keytab_path, server_principal, &server, &keytab);
-    if (s != WA_ERR_NONE)
-        return s;
-
-    auth = NULL;
-
-    buf.data = (char*) req;
-    buf.length = length;
-    c->code = krb5_rd_req(c->ctx, &auth, &buf, server, keytab, NULL, NULL);
-    if (c->code == 0) {
-        if (auth != NULL) {
-            krb5_authenticator *ka;
-            c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
-            if (c->code == 0) {
-                int local_ok = 0;
-
-                if (local) {
-                    krb5_error_code tcode;
-                    char lname[256];
-
-                    tcode = krb5_aname_to_localname(c->ctx, ka->client,
-                                                    sizeof(lname)-1, lname);
-                    if (tcode == 0) {
-                        *client_principal = malloc(strlen(lname)+1);
-                        strcpy(*client_principal, lname);
-                        local_ok = 1;
-                    } 
-                }
-
-                if (!local_ok)
-                    c->code = krb5_unparse_name(c->ctx, ka->client, 
-                                                client_principal);
-
-                krb5_free_authenticator(c->ctx, ka);
-
-            } else {
-                *client_principal = NULL;
-            }
-            krb5_auth_con_free(c->ctx, auth);
-        }
-    }
-
-    krb5_kt_close(c->ctx, keytab);
-    krb5_free_principal(c->ctx, server);
-
-    return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
-#endif
+    return webauth_krb5_rd_req_with_data(context, req, length, keytab_path,
+                                         server_principal, NULL,
+                                         client_principal, local, NULL, 0,
+                                         NULL, NULL);
 }
 
 
+/*
+**  Initialize a context from a keytab and obtain a TGT.
+*/
 int
-webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context, 
+webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
                              const char *keytab_path,
                              const char *server_principal,
                              const char *cache_name)
@@ -596,10 +516,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
 
     krb5_get_init_creds_opt_init(&opts);
 
-    c->code = krb5_get_init_creds_keytab(c->ctx,
-                                         &creds,
-                                         c->princ,
-                                         keytab,
+    c->code = krb5_get_init_creds_keytab(c->ctx, &creds, c->princ, keytab,
                                          0, /* start_time */
                                          NULL, /* in_tkt_service */
                                          &opts);
@@ -607,9 +524,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     /* FIXME: when logging is in, log if error if tcode != 0*/
     tcode = krb5_kt_close(c->ctx, keytab);
 
-
     if (c->code != 0) {
-        /*printf("code = %d\n", c->code);*/
         switch (c->code) {
             case KRB5KRB_AP_ERR_BAD_INTEGRITY:
             case KRB5KDC_ERR_PREAUTH_FAILED:
@@ -622,21 +537,22 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
 
     }
 
-    /* add the creds to the cache */
+    /* Add the creds to the cache. */
     c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
     krb5_free_cred_contents(c->ctx, &creds);
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    } else {
+    else
         return WA_ERR_NONE;
-    }
 }
 
+
+/*
+**  Initialize a context via a passed, delegated credential.
+*/
 int
-webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
-                           char *cred,
-                           int cred_len,
-                           const char *cache_name)
+webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
+                           int cred_len, const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
@@ -648,45 +564,41 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
 
     s = cred_from_attr_encoding(c, cred, cred_len, &creds);
 
-    if (s!= WA_ERR_NONE) 
+    if (s != WA_ERR_NONE) 
         return s;
 
     if (cache_name == NULL) {
         sprintf(ccname, "MEMORY:%p", c);
         cache_name = ccname;
     }
-    c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
 
-    if (c->code != 0) {
+    c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    }
 
     c->code = krb5_copy_principal(c->ctx, creds.client, &c->princ);
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    }
 
     c->code = krb5_cc_initialize(c->ctx, c->cc, c->princ);
-
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    }
 
-    /* add the creds to the cache */
+    /* Add the creds to the cache. */
     c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
     krb5_free_cred_contents(c->ctx, &creds);
-
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    } else {
+    else
         return WA_ERR_NONE;
-    }
 }
 
+
+/*
+**  Import a credential into an existing ticket cache.
+*/
 int
-webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
-                         char *cred,
-                         int cred_len)
+webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, char *cred, int cred_len)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
@@ -699,24 +611,26 @@ webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
     if (s!= WA_ERR_NONE) 
         return s;
 
-    /* add the creds to the cache */
+    /* Add the creds to the cache. */
     c->code = krb5_cc_store_cred(c->ctx, c->cc, &creds);
     krb5_free_cred_contents(c->ctx, &creds);
-    if (c->code != 0) {
+    if (c->code != 0)
         return WA_ERR_KRB5;
-    } else {
+    else
         return WA_ERR_NONE;
-    }
 }
 
+
+/*
+**  Export a ticket into the encoded form that we put into tokens, used for
+**  delegating credentials or storing credentials in cookies.
+*/
 int
 webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
-                           char *server_principal,
-                           char **ticket,
-                           int *ticket_len,
-                           time_t *expiration)
+                           char *server_principal, char **ticket,
+                           int *ticket_len, time_t *expiration)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds *credsp, creds;
     int s;
 
@@ -743,34 +657,38 @@ webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
     return s;
 }
 
+
+/*
+**  Given the service and the hostname, generate a fully-qualified principal
+**  name in text form and store it in server_principal.
+*/
 int
-webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
-                               const char *service,
-                               const char *hostname,
-                               char **server_principal)
+webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context, const char *service,
+                               const char *hostname, char **server_principal)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal princ;
 
-    c->code = krb5_sname_to_principal(c->ctx,
-                                      hostname,
-                                      service,
-                                      KRB5_NT_SRV_HST,
-                                      &princ);
+    c->code = krb5_sname_to_principal(c->ctx, hostname, service,
+                                      KRB5_NT_SRV_HST, &princ);
     if (c->code != 0)
         return WA_ERR_KRB5;
-
     c->code = krb5_unparse_name(c->ctx, princ, server_principal);
     krb5_free_principal(c->ctx, princ);
-
     return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
+
+/*
+**  Get the principal from a context.  If the local flag is set to true, run
+**  the principal through krb5_aname_to_localname first to try to generate a
+**  local username.  Fall through a fully-qualified name.
+*/
 int
-webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
-                               char **principal, int local)
+webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
+                           int local)
 {
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP*)context;
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
 
     if (c->princ == NULL)
         return WA_ERR_INVALID_CONTEXT;
@@ -779,17 +697,16 @@ webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
         krb5_error_code tcode;
         char lname[256];
 
-        tcode = krb5_aname_to_localname(c->ctx, c->princ,
-                                        sizeof(lname)-1,
+        tcode = krb5_aname_to_localname(c->ctx, c->princ, sizeof(lname) - 1,
                                         lname);
         if (tcode == 0) {
-            *principal = malloc(strlen(lname)+1);
+            *principal = malloc(strlen(lname) + 1);
             strcpy(*principal, lname);
             return WA_ERR_NONE;
         } 
     }
 
-    /* fall through to fully-qualified on krb5_aname_to_localname errors */
+    /* Fall through to fully-qualified on krb5_aname_to_localname errors. */
     c->code = krb5_unparse_name(c->ctx, c->princ, principal);
     return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }
