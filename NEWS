@@ -18,6 +18,9 @@ WebAuth 3.4.2 (unreleased)
     than apxs.  This change allows the WebAuth build to find apxs properly
     on Debian without extra configure flags.
 
+ *) Documented the Kerberos ticket encoding for WebAuth tokens in the
+    protocol specification.
+
 WebAuth 3.4.1 (2006-02-06)
 
  *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs

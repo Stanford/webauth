@@ -1865,6 +1865,109 @@
           WebKDC.</t>
         </section>
       </section>
+
+      <section anchor='krb5token' title='Kerberos v5 Credential Encoding'>
+        <t>Kerberos v5 credentials may be included in several types of
+        WebAuth tokens.  Whenever this is done, the credential data is
+        encoded using the same basic encoding format as a token, and the
+        system receiving the credential must decode it and recreate the
+        Kerberos v5 credential structure to use it.  This allows
+        interoperability between different platforms and different
+        Kerberos implementations.</t>
+
+        <t>The credential encoding uses the following attributes:</t>
+
+        <list style='hanging' hangIndent='4'>
+          <t hangText='c (string)'>
+          <vspace blankLines='0'/>Client principal name.</t>
+
+          <t hangText='s (string)'>
+          <vspace blankLines='0'/>Server principal name.</t>
+
+          <t hangText='K (binary number)'>
+          <vspace blankLines='0'/>Kerberos encryption type for the session
+          key.  This will be whatever numerical constant is used by
+          Kerberos for that encryption type.</t>
+
+          <t hangText='k (binary)'>
+          <vspace blankLines='0'/>Kerberos session key.</t>
+
+          <t hangText='ta (binary time)'>
+          <vspace blankLines='0'/>Authentication time of the
+          credential.</t>
+
+          <t hangText='ts (binary time)'>
+          <vspace blankLines='0'/>Start time of the credential (the time
+          at which the credential becomes valid).</t>
+
+          <t hangText='te (binary time)'>
+          <vspace blankLines='0'/>Expiration time of the credential, after
+          which it is no longer valid.</t>
+
+          <t hangText='tr (binary time)'>
+          <vspace blankLines='0'/>Renewal end time of the credential.  The
+          credential may be renewed up until this time.</t>
+
+          <t hangText='i (binary)'>
+          <vspace blankLines='0'/>Flag set to 0 or 1 indicating whether
+          the credential was obtained via S/Key.  This attribute should
+          probably always be 0 or not provided; it is not supported at all
+          by Heimdal.</t>
+
+          <t hangText='f (binary number)'>
+          <vspace blankLines='0'/>The ticket flags.  This is a 32-bit
+          bitmask of Kerberos ticket flags, as defined by the Kerberos v5
+          protocol specification.</t>
+
+          <t hangText='na (binary number)'>
+          <vspace blankLines='0'/>The number of addresses associated with
+          the credential.  Address checking on credentials is generally
+          not useful for WebAuth, so it might be best to always skip
+          including this in the credential, but space is provided in case
+          it's useful for some reason.  For each address, there is a
+          corresponding "A" attribute holding the address type and an "a"
+          attribute holding the address itself.</t>
+
+          <t hangText='A# (binary number)'>
+          <vspace blankLines='0'/>The type of address for the #th
+          address.  # is replaced by the index number of the address.
+          Addresses are numbered starting with 0, so if na was 2, there
+          will be an A0 attribute and an A1 attribute (but no A2
+          attribute).</t>
+
+          <t hangText='a# (binary)'>
+          <vspace blankLines='0'/>The #th address in the credential.  # is
+          replaced by the index number of the address.  Addresses are
+          numbered starting with 0, so if na was 2, there will be an a0
+          attribute and an a1 attribute (but no a2 attribute).</t>
+
+          <t hangText='t (binary)'>
+          <vspace blankLines='0'/>The Kerberos ticket.</t>
+
+          <t hangText='t2 (binary)'>
+          <vspace blankLines='0'/>The second Kerberos ticket in the
+          credentials, if any.</t>
+
+          <t hangText='nd (binary number)'>
+          <vspace blankLines='0'/>The number of authenticatation data
+          blocks in the credential.  For each data block, there is a
+          corresponding "D" attribute holding the data type and a "d"
+          attribute holding the data block itself.</t>
+
+          <t hangText='D# (binary number)'>
+          <vspace blankLines='0'/>The type of authentication data for the
+          #th data block.  # is replaced by the index number of the data
+          block.  Data blocks are numbered starting with 0, so if nd was
+          2, there will be a D0 attribute and a D1 attribute (but no D2
+          attribute).</t>
+
+          <t hangText='d# (binary number)'>
+          <vspace blankLines='0'/>The #th authentication data block.  # is
+          replaced by the index number of the block.  Data blocks are
+          numbered starting with 0, so if nd was 2, there will be a d0
+          attribute and a d1 attribute (but no d2 attribute).</t>
+        </list>
+      </section>
     </section>
 
     <section anchor='cookies' title='Cookie Formats'>
