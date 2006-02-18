@@ -37,8 +37,10 @@
     user logins and documentation of the logging patterns that are already
     present.
 
- *) The serialization of Kerberos tickets inside WebAuth tokens should be
-    documented in the protocol specification.
+ *) If mod_webauth obtains a proxy token instead of an id token and
+    WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
+    id token from the WebKDC and then verify it rather than simply
+    trusting the identity in the proxy token.
 
  *) The mod_webauthldap module needs a lot of formatting and coding style
     cleanup.  All of WebAuth needs a general dead code removal pass and
