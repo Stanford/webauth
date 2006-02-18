@@ -1452,8 +1452,9 @@
 
       <section anchor='tokenattrs' title='Assigned Token Attributes'>
         <t>The following is an exhaustive list of the attribute names used
-        in tokens.  All time values are stored in network byte order and
-        are the number of seconds since 1970-01-01 00:00:00 UTC.</t>
+        in tokens.  All time values are 32-bit values stored in network
+        byte order and are the number of seconds since 1970-01-01 00:00:00
+        UTC.</t>
 
         <list style='hanging' hangIndent='4'>
           <t hangText='as (binary)'>
@@ -1875,7 +1876,10 @@
         interoperability between different platforms and different
         Kerberos implementations.</t>
 
-        <t>The credential encoding uses the following attributes:</t>
+        <t>The credential encoding uses the following attributes, where
+        binary number is a 32-bit number in network byte order and binary
+        time is a 32-bit time in seconds since 1970-01-01 00:00:00
+        UTC:</t>
 
         <list style='hanging' hangIndent='4'>
           <t hangText='c (string)'>
@@ -2144,6 +2148,11 @@
         <t hangText='2.01 (2006-01-23, rra)'>
         <vspace blankLines='0'/>Move the document history into an
         appendix.  Document the magic WEBKDC prefix to proxy subjects.</t>
+
+        <t hangText='2.10 (2006-12-17, rra)'>
+        <vspace blankLines='0'/>Add a specification for the encoding of
+        Kerberos credentials in tokens.  Specify the size of
+        timestamps.</t>
       </list>
     </section>
   </back>
