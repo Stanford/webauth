@@ -12,6 +12,9 @@ WebAuth 3.4.3 (unreleased)
  *) Document in detail the page flow for the weblogin script and the
     variables it uses when rendering page templates.
 
+ *) Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
+    has not yet been well-tested.
+
 WebAuth 3.4.2 (2006-02-17)
 
  *) Don't try to build the modules with -z defs.  If it actually works, it

@@ -8,6 +8,12 @@
 **  Kerberos.
 */
 
+/* Heimdal 0.6 doesn't have KRB5_TC_MATCH_SRV_NAMEONLY, but the effect of
+   KRB5_TC_DONT_MATCH_REALM appears to be the same. */
+#ifndef KRB5_TC_MATCH_SRV_NAMEONLY
+# define KRB5_TC_MATCH_SRV_NAMEONLY KRB5_TC_DONT_MATCH_REALM
+#endif
+
 /*
 **  Take a single Kerberos v5 credential and serialize it into a buffer, using
 **  the encoding required for putting it into tokens.
