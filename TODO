@@ -49,3 +49,6 @@
 
  *) There are newlines in some of the log messages being logged from
     mod_webauth.
+
+ *) Allow WebAuthExtraRedirect in the server and virtual host
+    configuration.
