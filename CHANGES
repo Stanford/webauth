@@ -1,5 +1,10 @@
                           WebAuth Change History
 
+WebAuth 3.4.3 (unreleased)
+
+ *) Document in detail the page flow for the weblogin script and the
+    variables it uses when rendering page templates.
+
 WebAuth 3.4.2 (2006-02-17)
 
  *) Don't try to build the modules with -z defs.  If it actually works, it
