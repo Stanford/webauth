@@ -55,7 +55,7 @@ our %pec_mapping = (
 	     # LOGIN_CANCELED SHOULD NEVER COME BACK in an errorCode,
              # only inside a token which we can't decrypt
 	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_LOGIN_FORCED  => WK_ERR_USER_AND_PASS_REQUIRED,
+	     &WA_PEC_LOGIN_FORCED  => WK_ERR_LOGIN_FORCED,
 	     );
 
 sub get_keyring {
@@ -337,7 +337,8 @@ following fashion:
 
   if ($status == WK_SUCCESS) {
      # ok, request succesful
-  } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED) {
+  } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
+           || $status == WK_LOGIN_FORCED) {
      # prompt for user/pass
   } elsif ($status == WK_ERR_LOGIN_FAILED) {
      # supplied user/pass was invalid, try again

@@ -41,6 +41,36 @@ This template has the following variables template parmeters
       </table>
     </div>
 
+    <TMPL_IF NAME=show_spnego>
+      <div class="spnegobox" align="center">
+        <form action="<TMPL_VAR NAME=script_name>" method="post"
+              enctype="application/x-www-form-urlencoded">
+          <input type="hidden" name="return_url"
+                 value="<TMPL_VAR NAME=return_url>">
+          <input type="hidden" name="username"
+                 value="<TMPL_VAR NAME=username>">
+          <TMPL_IF NAME=login_cancel>
+            <input type="hidden" name="cancel_url"
+                   value="<TMPL_VAR NAME=cancel_url>">
+          </TMPL_IF>
+          <table border="1" width="70%">
+            <tr>
+              <td>
+                <input type="checkbox" name="spnego" <TMPL_VAR NAME=spnego>>
+              </td>
+              <td>
+                <input type="submit" name="Submit" value="Change Setting">
+              </td>
+              <td>
+                Check this box to always attempt to use your computer
+                login information in the future.
+              </td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </TMPL_IF>
+
     <div class="trailer">
       <h2>Important Security Information</h2>
 

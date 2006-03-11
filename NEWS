@@ -2,6 +2,13 @@
 
 WebAuth 3.4.3 (unreleased)
 
+ *) Sometimes an Apache authentication mechanism should only be attempted
+    if the user explicitly requests it since it may fail in a way that
+    doesn't allow weblogin to proceed.  SPNEGO is an example, since it has
+    bad behavior with some browsers.  Implement weblogin script support
+    for the required more complex page flow and additional template
+    variables.
+
  *) Document in detail the page flow for the weblogin script and the
     variables it uses when rendering page templates.
 

@@ -4,7 +4,7 @@ our $ID = q($Id$ );
 # login.fcgi -- Weblogin login page for WebAuth.
 #
 # Written by Roland Schemers <schemers@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005
+# Copyright 2002, 2003, 2004, 2005, 2006
 #     Board of Trustees, Leland Stanford Jr. University
 #
 # This is the front page for user authentication for weblogin.  It accepts
@@ -86,8 +86,14 @@ sub print_headers {
         my ($name, $value);
         while (($name, $value) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
-            my $cookie = $q->cookie(-name => $name, -value => $value,
-                                    -secure => $secure);
+            my $cookie;
+            if ($name eq 'weblogin_spnego') {
+                $cookie = $q->cookie(-name => $name, -value => $value,
+                                     -secure => $secure, -expires => '+365d');
+            } else {
+                $cookie = $q->cookie(-name => $name, -value => $value,
+                                     -secure => $secure);
+            }
             push (@$ca, $cookie);
         }
     }
@@ -129,11 +135,17 @@ sub parse_uri {
 # appropriate in the login page.
 sub print_login_page {
     my ($q, $lvars, $resp, $RT, $ST) = @_;
-    $PAGES{login}->param ('script_name' => $q->script_name);
-    $PAGES{login}->param ('username' => $lvars->{username});
-    $PAGES{login}->param ('RT' => $RT);
-    $PAGES{login}->param ('ST' => $ST);
-    $PAGES{login}->param ('LC' => $lvars->{LC});
+    $PAGES{login}->param (script_name => $q->script_name);
+    $PAGES{login}->param (username => $lvars->{username});
+    $PAGES{login}->param (RT => $RT);
+    $PAGES{login}->param (ST => $ST);
+    $PAGES{login}->param (LC => $lvars->{LC});
+    if ($lvars->{spnego_uri}) {
+        $PAGES{login}->param (show_spnego => 1);
+        my $uri = $lvars->{spnego_uri};
+        $uri .= '?RT=' . $RT . ';ST=' . $ST;
+        $PAGES{login}->param (spnego_uri => $uri);
+    }
     print_headers ($q, $resp->proxy_cookies);
     print $PAGES{login}->output;
 }
@@ -206,8 +218,55 @@ sub print_confirm_page {
         $page->param (cancel_url => $cancel_url);
     }
 
+    # If SPNEGO was either configured or used, show the checkbox for it.
+    if ($ENV{REMOTE_USER} || $q->cookie ('weblogin_spnego')) {
+        $page->param (show_spnego => 1);
+        my $spnego = $q->cookie ('weblogin_spnego') ? 'checked' : '';
+        $page->param (spnego => $spnego);
+        $page->param (script_name => $q->script_name);
+    }
+
     # Print out the page, including any updated proxy cookies if needed.
     print_headers ($q, $resp->proxy_cookies);
+    print $page->output;
+}
+
+# Given the query, redisplay the confirmation page after a change in the
+# SPNEGO cookie.  Also set the new SPNEGO cookie.
+sub redisplay_confirm_page {
+    my ($q) = @_;
+    my $return_url = $q->param ('return_url');
+    my $username = $q->param ('username');
+    my $cancel_url = $q->param ('cancel_url');
+
+    my $uri = URI->new ($return_url);
+    unless ($username && $uri && $uri->scheme && $uri->host) {
+        $PAGES{error}->param (err_confirm => 1);
+        print STDERR ("missing data when reconstructing confirm page\n")
+            if $LOGGING;
+        print_error_page ($q);
+        next;
+    }
+    my $pretty_return_url = $uri->scheme . "://" . $uri->host;
+
+    # Find our page and set general template parameters.
+    my $page = $PAGES{confirm};
+    $page->param (return_url => $return_url);
+    $page->param (username => $username);
+    $page->param (pretty_return_url => $pretty_return_url);
+    $page->param (script_name => $q->script_name);
+    $page->param (show_spnego => 1);
+    my $spnego = $q->param ('spnego') eq 'on' ? 'checked' : '';
+    $page->param (spnego => $spnego);
+
+    # If there is a login cancel option, handle creating the link for it.
+    if (defined $cancel_url) {
+        $page->param (login_cancel => 1);
+        $page->param (cancel_url => $cancel_url);
+    }
+
+    # Print out the page, including the new SPNEGO cookie.
+    print_headers ($q, { weblogin_spnego => $spnego });
     print $page->output;
 }
 
@@ -238,6 +297,23 @@ sub get_login_cancel_url {
 ##############################################################################
 # REMOTE_USER support
 ##############################################################################
+
+# Redirect the user to the SPNEGO-enabled login URL.
+sub print_spnego_redirect {
+    my ($q) = @_;
+    my $uri = $WebKDC::Config::REMOTE_USER_REDIRECT;
+    unless ($uri) {
+        print STDERR "REMOTE_USER_REDIRECT not configured\n" if $LOGGING;
+        $PAGES{error}->param (err_webkdc => 1);
+        my $errmsg = "unrecoverable error occured. Try again later.";
+        $PAGES{error}->param (err_msg => $errmsg);
+        print_error_page ($q);
+    } else {
+        $uri .= "?RT=" . $q->param ('RT') . ";ST=" . $q->param ('ST');
+        print STDERR "Redirecting to $uri\n" if $DEBUG;
+        print $q->redirect (-uri => $uri);
+    }
+}
 
 # Generate a proxy token containing the REMOTE_USER identity and pass it into
 # the WebKDC along with the other proxy tokens.  Takes the request to the
@@ -304,12 +380,17 @@ while (my $q = CGI::Fast->new) {
     my $resp = new WebKDC::WebResponse;
     my ($status, $exception);
 
-    # Allow login to run as an error handler.  That may sound weird, but it's
-    # useful if you want the default to be to try SPNEGO and only fall back on
-    # normal handling if that fails.
-    if (not $q->param and defined $ENV{REDIRECT_QUERY_STRING}) {
-        $q = CGI::new ($ENV{REDIRECT_QUERY_STRING});
+    # If we already have return_url in the query, we're at the confirmation
+    # page and the user has changed the SPNEGO configuration.  Set or clear
+    # the cookie and then redisplay the confirmation page.
+    if (defined $q->param ('return_url')) {
+        redisplay_confirm_page ($q);
+        next;
     }
+
+    # If we got our parameters via REDIRECT_QUERY_STRING, we're an error
+    # handler and don't want to redirect later.
+    my $is_error = defined $ENV{REDIRECT_QUERY_STRING};
 
     # If there isn't a request token, display an error message and then skip
     # to the next request.
@@ -390,14 +471,32 @@ while (my $q = CGI::Fast->new) {
         print_confirm_page ($q, \%varhash, $resp);
         print STDERR ("WebKDC::make_request_token_request sucess\n")
             if $DEBUG;
+    } elsif ($q->script_name ne $WebKDC::Config::REMOTE_USER_REDIRECT
+             && !$ENV{REMOTE_USER}
+             && $status == WK_ERR_USER_AND_PASS_REQUIRED
+             && $q->cookie ('weblogin_spnego')
+             && !$is_error) {
+        print STDERR ("redirecting to SPNEGO page\n" if $DEBUG;
+        print_spnego_redirect ($q);
+    } elsif (($status == WK_ERR_USER_AND_PASS_REQUIRED
+              || $status == WK_ERR_LOGIN_FAILED)
+             && !$q->cookie ('weblogin_spnego')
+             && !$is_error) {
+        set_page_error ($q, $status);
+        $varhash{spnego_uri} = $WebKDC::Config::REMOTE_USER_REDIRECT;
+        print_login_page ($q, \%varhash, $resp, $req->request_token,
+                          $req->service_token);
+        print STDERR ("WebKDC::make_request_token_request failed,"
+                      . " displaying login page (REMUSER)\n") if $DEBUG;
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
+             || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED
              || !$has_cookies) {
         set_page_error ($q, $status);
         print_login_page ($q, \%varhash, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
-                      . " displaying login page\n") if $DEBUG;
+                      . " displaying login page (no REMUSER)\n") if $DEBUG;
     } else {
         my $errmsg;
 
@@ -419,7 +518,7 @@ while (my $q = CGI::Fast->new) {
         }
 
         print STDERR "WebKDC::make_request_token_request failed with"
-            . " $errmsg: $exception\n";
+            . " $errmsg: $exception\n" if $LOGGING;
         $PAGES{error}->param (err_webkdc => 1);
         $PAGES{error}->param (err_msg => $errmsg);
         print_error_page ($q);

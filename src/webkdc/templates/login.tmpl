@@ -96,6 +96,23 @@ CancelURL              : CancelURL
       </table>
     </div>
 
+    <TMPL_IF NAME=show_spnego>
+      <div class="snpengobox" align="center">
+        <table border="1" width="70%">
+          <tr>
+              <td>
+                Or skip entering your username and password.  Instead,
+                log in using your computer login information via
+                SPNEGO:
+              </td>
+              <td>
+                <a href="<TMPL_VAR NAME=spnego_uri>">Try SPNEGO</a>
+              </td>
+            </tr>
+        </table>
+      </div>
+    </TMPL_IF>
+
     <div class="trailer">
       <h2>Caution:</h2>
 
