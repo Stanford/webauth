@@ -2,6 +2,12 @@
 
 WebAuth 3.5.0 (unreleased)
 
+ *) Rename the template variables used by the weblogin templates to be
+    a bit more consistent and add an error variable to the login template
+    that is set whenever there was any error.  Existing weblogin templates
+    will require modifications.  See doc/weblogin-config for the new
+    configuration and customization documentation.
+
  *) Sometimes an Apache authentication mechanism should only be attempted
     if the user explicitly requests it since it may fail in a way that
     doesn't allow weblogin to proceed.  SPNEGO is an example, since it has
