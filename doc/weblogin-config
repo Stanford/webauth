@@ -26,6 +26,10 @@ Templates
   You can probably figure out the details you need by looking at the
   existing templates, though.  Weblogin doesn't use any advanced features.
 
+  You will almost certainly want to customize these templates for your
+  site to match your local page look and feel.  The provided templates are
+  functional and simple, but not particularly pretty.
+
   There are four templates used by the weblogin scripts.  They must
   support the following HTML::Template variables, which means that all of
   these variables must be mentioned in the templates even if you don't
