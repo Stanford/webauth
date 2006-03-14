@@ -48,7 +48,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
             Error: Enter your password.
           </TMPL_IF>
 
-          <TMPL_IF NAME=login_failed>
+          <TMPL_IF NAME=err_loginfailed>
             <!-- Error: login failed. -->
             Error: You entered an incorrect username or password (or both).
           </TMPL_IF>
