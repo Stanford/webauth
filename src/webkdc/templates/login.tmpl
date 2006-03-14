@@ -96,7 +96,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
             </div>
             <div class="loginlinks">
               <a href="/help.html">help</a>
-              <TMPL_IF NAME=wa_cancel_url>
+              <TMPL_IF NAME=login_cancel>
                 <!-- The Webauth Server has a cancel url.-->
                 <a href="<TMPL_VAR NAME=cancel_url>">cancel</a>
               </TMPL_IF>
