@@ -101,7 +101,9 @@ monitored for security.
 
      changing the values to what is appropriate for your site.  If you
      follow the default recommendations on where to place the keyring
-     and CGI scripts, you shouldn't have to change anything.
+     and CGI scripts, you shouldn't have to change anything.  There are
+     other settings you can change; see doc/weblogin-config for all the
+     details.
 
  9.  Install a keytab for the WebKDC.  This keytab must be for the same
      identity as is mentioned in the WebAuthWebKdcPrincipal configuration
