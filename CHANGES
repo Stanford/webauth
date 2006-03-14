@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.4.3 (unreleased)
+WebAuth 3.5.0 (unreleased)
 
  *) Sometimes an Apache authentication mechanism should only be attempted
     if the user explicitly requests it since it may fail in a way that
@@ -8,6 +8,10 @@ WebAuth 3.4.3 (unreleased)
     bad behavior with some browsers.  Implement weblogin script support
     for the required more complex page flow and additional template
     variables.
+
+ *) Document in detail how to configure the weblogin front-end, including
+    all of the template variables used and the configuration variables
+    that can be set in /etc/webkdc/webkdc.conf.
 
  *) Document in detail the page flow for the weblogin script and the
     variables it uses when rendering page templates.

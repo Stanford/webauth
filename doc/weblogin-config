@@ -1,0 +1,170 @@
+                          Weblogin Configuration
+
+Introduction
+
+  Weblogin is the name for the component of WebAuth that handles user
+  authentication interaction.  It is a CGI service that runs on the WebKDC
+  and presents HTML login forms, status pages, and handles translating
+  browser cookies into XML requests to the WebKDC and vice versa.  It
+  passes its data to the WebKDC via a localhost HTTPS connection, but
+  otherwise uses the same URL as application servers use to talk to the
+  WebKDC.
+
+  For a detailed description of the user interactions and page flow in
+  weblogin, see weblogin-flow.  This document describes the configuration
+  and customization of the weblogin interface.
+
+Templates
+
+  Weblogin uses a set of template HTML pages to display the login, logout,
+  confirmation, and error pages.  Internally, it uses the HTML::Template
+  Perl module to process these templates.  For detailed information about
+  the supported syntax, install that module and then run:
+
+      perldoc HTML::Template
+
+  You can probably figure out the details you need by looking at the
+  existing templates, though.  Weblogin doesn't use any advanced features.
+
+  There are four templates used by the weblogin scripts.  They must
+  support the following HTML::Template variables, which means that all of
+  these variables must be mentioned in the templates even if you don't
+  want to use them (otherwise, HTML::Template will throw errors).
+
+  The primary two templates are:
+
+  login.tmpl
+
+      error             If set, some error happened
+      err_missinginput  If set, user didn't supply username and password
+      err_username      If set, user didn't supply username
+      err_password      If set, user didn't supply password
+      err_loginfailed   If set, login was invalid
+      err_cookies       If set, user doesn't support cookies
+
+      script_name       Relative URL to which form should be posted
+      username          Username, if already known
+
+      login_cancel      If set, application provided a cancel URL
+      cancel_url        The cancel URL (return URL plus cancel token)
+
+      show_remuser      If set, show the option to try REMOTE_USER
+      remuser_uri       URL to which to send the user for REMOTE_USER
+
+  confirm.tmpl
+
+      username          Authenticated username
+      return_url        Return URL, including response tokens
+      pretty_return_url Anchor text for return URL (usually just host)
+
+      login_cancel      If set, application provided a cancel URL
+      cancel_url        The cancel URL (return URL plus cancel token)
+
+      show_remuser      If set, show the REMOTE_USER cookie configuration
+      remuser           "checked" if REMOTE_USER desired, "" otherwise
+
+  A different template is used in the event of some other WebKDC error.
+  It takes the following HTML::Template variables:
+
+  error.tmpl
+
+      err_no_request_token      If set, user had no request token
+      err_webkdc                If set, the WebKDC reported an error
+      err_msg                   WebKDC error message
+
+  Finally, the logout script uses a simple template with only one
+  variable:
+
+  logout.tmpl
+
+      cookies_flag      If set, found a single sign-on cookie to delete
+
+Configuration
+
+  The behavior of the weblogin script is configured using the
+  WebKDC::Config Perl module.  That module sets some defaults and then
+  loads /etc/webkdc/webkdc.conf to override those defaults or set any
+  other configuration.  /etc/webkdc/webkdc.conf must be valid Perl code,
+  but don't let that scare you; you don't need to be a Perl programmer to
+  configure it.
+
+  To change any of the configuration variables, put a line like the
+  following into /etc/webkdc/webkdc.conf:
+
+      $VARIABLE = "value";
+
+  or
+
+      $VARIABLE = 10;
+
+  The former is for variables that take strings, and the latter is for
+  variables that take numbers.  The following variables are recognized:
+
+  $KEYRING_PATH
+
+      The path to the WebKDC keyring.  This is used to encrypt some
+      communications with the WebKDC.  Default: "../conf/webkdc/keyring"
+      (which works for the default installation paths inside the Apache
+      configuration directory).
+
+  $TEMPLATE_PATH
+
+      The path to the directory containing the login.tmpl, confirm.tmpl,
+      error.tmpl, and logout.tmpl templates.  Default:
+      "./generic/templates" (which works for the default installation
+      paths).
+
+  $URL
+
+      URL to use to contact the WebKDC.  This should always point to
+      localhost.  It probably doesn't have to use SSL, given that it's
+      using localhost, but the performance impact isn't high and being
+      paranoid is nice.  Default: "https://localhost/webkdc-service/".
+      You generally only want to change the local part of the URL, and
+      then only if you want to use a non-standard URL for the WebKDC.
+
+  $HONOR_REMOTE_USER
+
+      Whether to honor Apache authentication.  If this variable is set to
+      a true value (1 is a good true value) and REMOTE_USER is set in the
+      environment when the login script runs, it will create temporary
+      credentials for the user given in REMOTE_USER and log the user in
+      with those credentials automatically.  (Those credentials will only
+      work for sites that have not requested forced login and have not
+      requested a Kerberos authenticator.)  Do not set this variable to
+      true unless you really trust your Apache authentication and you know
+      exactly which Apache authentication methods would be used for
+      running the login.fcgi script.  See install-spnego for more details.
+      Default: false.
+
+  $REMUSER_EXPIRES
+
+      Only used when $HONOR_REMOTE_USER is set.  The credentials generated
+      from REMOTE_USER will expire after this many seconds (given as a
+      number).  Default: 28800 (eight hours).
+
+  $REALM
+
+      Only used when $HONOR_REMOTE_USER is set.  If this variable is set,
+      REMOTE_USER is expected to contain an @-sign.  Everything after the
+      @-sign must match the value of this variable, and is stripped before
+      creating the authenticated user identity.  This is primarily useful
+      in conjunction with mod_auth_kerb to strip the local Kerberos realm
+      off of the authenticated identity.  Default: not set.
+
+  $REMOTE_USER_REDIRECT
+
+      The URL to redirect users to when trying to authenticate them with
+      Apache authentication.  Setting this variable enables the optional
+      REMOTE_USER support.  Users who go to the login page will be given
+      an option to try Apache authentication, and if they select that
+      option, they will be sent to this URL instead.  This should be
+      another URL for the same login.fcgi script, but one protected by
+      your Apache authentication mechanism of choice.  Setting this
+      variable also causes login.fcgi to redirect the user automatically
+      if a weblogin_remuser cookie is set to a true value, and to add an
+      option to the confirm page to manage that cookie if the user used
+      Apache authentication or if the cookie is already present.
+
+      If using this option, you must also set $HONOR_REMOTE_USER
+      (otherwise there would be no point).

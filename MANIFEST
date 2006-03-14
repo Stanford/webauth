@@ -38,6 +38,8 @@ doc/protocol.txt                        WebAuth protocol specification (text)
 doc/protocol.xml                        WebAuth protocol specification (source)
 doc/test-plan                           How to test a WebAuth server
 doc/userauth                            Basic user authentication with WebAuth
+doc/weblogin-config                     Weblogin configuration
+doc/weblogin-flow                       Weblogin page flow
 m4                                      Additional Autoconf macros (Directory)
 m4/apache.m4                            Probes for Apache
 m4/curl.m4                              Probes for cURL
