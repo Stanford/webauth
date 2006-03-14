@@ -96,8 +96,8 @@ monitored for security.
      correct for your site, create /etc/webkdc/webkdc.conf and in it put
      lines like:
 
-         our $KEYRING_PATH = "../conf/webkdc/keyring";
-         our $URL = "https://localhost/webkdc-service/";
+         $KEYRING_PATH = "../conf/webkdc/keyring";
+         $URL = "https://localhost/webkdc-service/";
 
      changing the values to what is appropriate for your site.  If you
      follow the default recommendations on where to place the keyring
