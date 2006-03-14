@@ -11,8 +11,8 @@ Introduction
   WebKDC.
 
   For a detailed description of the user interactions and page flow in
-  weblogin, see weblogin-flow.  This document describes the configuration
-  and customization of the weblogin interface.
+  weblogin, see doc/weblogin-flow.  This document describes the
+  configuration and customization of the weblogin interface.
 
 Templates
 
