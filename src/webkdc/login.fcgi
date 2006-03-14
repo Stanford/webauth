@@ -48,6 +48,9 @@ our %PAGES = (login   => 'login.tmpl',
 # The name of the cookie we set to ensure that the browser can handle cookies.
 our $TEST_COOKIE = "WebloginTestCookie";
 
+# The name of the cookie holding REMOTE_USER configuration information.
+our $REMUSER_COOKIE = 'weblogin_remuser';
+
 ##############################################################################
 # Debugging
 ##############################################################################
@@ -81,13 +84,18 @@ sub print_headers {
     my ($q, $cookies) = @_;
     my $ca;
 
+    # $REMUSER_COOKIE is handled as a special case, since it stores user
+    # preferences and should be retained rather than being only a session
+    # cookie.
+    #
+    # FIXME: Currently hard-coded to keep for a year.  Should this be longer?
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
     if ($cookies) {
         my ($name, $value);
         while (($name, $value) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
-            if ($name eq 'weblogin_spnego') {
+            if ($name eq $REMUSER_COOKIE) {
                 $cookie = $q->cookie(-name => $name, -value => $value,
                                      -secure => $secure, -expires => '+365d');
             } else {
@@ -130,24 +138,44 @@ sub parse_uri {
     return 0;
 }
 
-# Print the login page.  Takes the query, the variable hash, the WebKDC
-# response, the request token, and the service token, and encodes them as
-# appropriate in the login page.
+# Print the login page.  Takes the query, the variable hash, the error code if
+# any, the WebKDC response, the request token, and the service token, and
+# encodes them as appropriate in the login page.
 sub print_login_page {
-    my ($q, $lvars, $resp, $RT, $ST) = @_;
-    $PAGES{login}->param (script_name => $q->script_name);
-    $PAGES{login}->param (username => $lvars->{username});
-    $PAGES{login}->param (RT => $RT);
-    $PAGES{login}->param (ST => $ST);
-    $PAGES{login}->param (LC => $lvars->{LC});
-    if ($lvars->{spnego_uri}) {
-        $PAGES{login}->param (show_spnego => 1);
-        my $uri = $lvars->{spnego_uri};
-        $uri .= '?RT=' . $RT . ';ST=' . $ST;
-        $PAGES{login}->param (spnego_uri => $uri);
+    my ($q, $lvars, $err, $resp, $RT, $ST) = @_;
+    my $page = $PAGES{login};
+    $page->param (script_name => $q->script_name);
+    $page->param (username => $lvars->{username});
+    $page->param (RT => $RT);
+    $page->param (ST => $ST);
+    $page->param (LC => $lvars->{LC});
+    if ($lvars->{remuser_url}) {
+        $page->param (show_remuser => 1);
+        $page->param (remuser_url => $lvars->{remuser_url});
+    }
+
+    # If and only if we got here as the target of a form submission (meaning
+    # that they already had one shot at logging in and something didn't work),
+    # set the appropriate error status.
+    if ($q->param ('Submit') && $q->param ('Submit') eq 'Login') {
+        $page->param (err_password => 1) unless $q->param ('password');
+        $page->param (err_username => 1) unless $q->param ('username');
+        $page->param (err_cookies => 1) unless $q->cookie ($TEST_COOKIE);
+        $page->param (err_missinginput => 1) if $page->param ('err_username');
+        $page->param (err_missinginput => 1) if $page->param ('err_password');
+        if ($err == WK_ERR_LOGIN_FAILED) {
+            $page->param (err_loginfailed => 1);
+        }
+
+        # Set a generic error indicator if any of the specific ones were set
+        # to allow easier structuring of the login page template.
+        if ($page->param ('err_missinginput') || $page->param ('err_cookies')
+            || $page->param ('err_loginfailed')) {
+            $page->param (error => 1);
+        }
     }
     print_headers ($q, $resp->proxy_cookies);
-    print $PAGES{login}->output;
+    print $page->output;
 }
 
 # Print an error page, making sure that error pages are never cached.
@@ -162,27 +190,6 @@ sub fix_token {
     my ($token) = @_;
     $token =~ tr/ /+/;
     return $token;
-}
-
-# Set various error parameters for the login page, which will be used to
-# display the appropriate error message when the login page is displayed.
-# Takes the WebKDC status to know whether login failed.  Only do something if
-# we got here as the result of a form submission (meaning this wasn't the
-# initial view of the login page).
-sub set_page_error {
-    my ($q, $err) = @_;
-    my $page = $PAGES{login};
-    if ($q->param ('Submit') && $q->param ('Submit') eq 'Login') {
-        $page->param (err_password => 1) unless $q->param ('password');
-        $page->param (err_username => 1) unless $q->param ('username');
-        $page->param (err_cookies => 1) unless $q->cookie ($TEST_COOKIE);
-        $page->param (err_missinginput => 1) if $page->param ('err_username');
-        $page->param (err_missinginput => 1) if $page->param ('err_password');
-        if ($err == WK_ERR_LOGIN_FAILED) {
-            $page->param (login_failed => 1);
-        }
-    }
-    return 0;
 }
 
 # Given the query, the local variables, and the WebKDC response, print the
@@ -218,12 +225,15 @@ sub print_confirm_page {
         $page->param (cancel_url => $cancel_url);
     }
 
-    # If SPNEGO was either configured or used, show the checkbox for it.
-    if ($ENV{REMOTE_USER} || $q->cookie ('weblogin_spnego')) {
-        $page->param (show_spnego => 1);
-        my $spnego = $q->cookie ('weblogin_spnego') ? 'checked' : '';
-        $page->param (spnego => $spnego);
-        $page->param (script_name => $q->script_name);
+    # If REMOTE_USER is done at a separate URL *and* REMOTE_USER support was
+    # either requested or used, show the checkbox for it.
+    if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
+        if ($ENV{REMOTE_USER} || $q->cookie ($REMUSER_COOKIE)) {
+            $page->param (show_remuser => 1);
+            my $remuser = $q->cookie ($REMUSER_COOKIE) ? 'checked' : '';
+            $page->param (remuser => $remuser);
+            $page->param (script_name => $q->script_name);
+        }
     }
 
     # Print out the page, including any updated proxy cookies if needed.
@@ -232,7 +242,7 @@ sub print_confirm_page {
 }
 
 # Given the query, redisplay the confirmation page after a change in the
-# SPNEGO cookie.  Also set the new SPNEGO cookie.
+# REMOTE_USER cookie.  Also set the new REMOTE_USER cookie.
 sub redisplay_confirm_page {
     my ($q) = @_;
     my $return_url = $q->param ('return_url');
@@ -255,9 +265,9 @@ sub redisplay_confirm_page {
     $page->param (username => $username);
     $page->param (pretty_return_url => $pretty_return_url);
     $page->param (script_name => $q->script_name);
-    $page->param (show_spnego => 1);
-    my $spnego = $q->param ('spnego') eq 'on' ? 'checked' : '';
-    $page->param (spnego => $spnego);
+    $page->param (show_remuser => 1);
+    my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
+    $page->param (remuser => $remuser);
 
     # If there is a login cancel option, handle creating the link for it.
     if (defined $cancel_url) {
@@ -265,8 +275,8 @@ sub redisplay_confirm_page {
         $page->param (cancel_url => $cancel_url);
     }
 
-    # Print out the page, including the new SPNEGO cookie.
-    print_headers ($q, { weblogin_spnego => $spnego });
+    # Print out the page, including the new REMOTE_USER cookie.
+    print_headers ($q, { $REMUSER_COOKIE => ($remuser ? 1 : 0) });
     print $page->output;
 }
 
@@ -287,7 +297,7 @@ sub get_login_cancel_url {
             if $resp->app_state;
     }
     if ($cancel_url) {
-        $PAGES{login}->param (wa_cancel_url => 1);
+        $PAGES{login}->param (login_cancel => 1);
         $PAGES{login}->param (cancel_url => $cancel_url);
     }
     $lvars->{LC} = $cancel_url ? base64_encode ($cancel_url) : '';
@@ -298,8 +308,8 @@ sub get_login_cancel_url {
 # REMOTE_USER support
 ##############################################################################
 
-# Redirect the user to the SPNEGO-enabled login URL.
-sub print_spnego_redirect {
+# Redirect the user to the REMOTE_USER-enabled login URL.
+sub print_remuser_redirect {
     my ($q) = @_;
     my $uri = $WebKDC::Config::REMOTE_USER_REDIRECT;
     unless ($uri) {
@@ -381,8 +391,8 @@ while (my $q = CGI::Fast->new) {
     my ($status, $exception);
 
     # If we already have return_url in the query, we're at the confirmation
-    # page and the user has changed the SPNEGO configuration.  Set or clear
-    # the cookie and then redisplay the confirmation page.
+    # page and the user has changed the REMOTE_USER configuration.  Set or
+    # clear the cookie and then redisplay the confirmation page.
     if (defined $q->param ('return_url')) {
         redisplay_confirm_page ($q);
         next;
@@ -453,8 +463,9 @@ while (my $q = CGI::Fast->new) {
 
     # If this page was the result of a form submission (meaning that the user
     # went through the regular login page and, more importantly, has already
-    # definitely seen a weblogin page), and the test cookie was not set,
-    # bounce them back to the login page with an error message.
+    # definitely seen a weblogin page), and the test cookie was not set, make
+    # sure we bounce them back to the login page since otherwise WebAuth is
+    # going to fail later.
     my $has_cookies = 1;
     if ($q->param ('Submit') && $q->param ('Submit') eq 'Login') {
         unless ($q->cookie ($TEST_COOKIE)) {
@@ -465,38 +476,57 @@ while (my $q = CGI::Fast->new) {
     # Now, display the appropriate page.  If $status is WK_SUCCESS, we have a
     # successful authentication (by way of proxy token or username/password
     # login).  Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates the first
-    # visit to the login page and WK_ERR_LOGIN_FAILED indicates the user needs
-    # to try logging in again.
+    # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
+    # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
+    # requires username/password even if the user has other auth methods.
     if ($status == WK_SUCCESS && $has_cookies) {
         print_confirm_page ($q, \%varhash, $resp);
         print STDERR ("WebKDC::make_request_token_request sucess\n")
             if $DEBUG;
-    } elsif ($q->script_name ne $WebKDC::Config::REMOTE_USER_REDIRECT
+
+    # Other authentication methods can be used, REMOTE_USER support is
+    # requested by cookie, we're not already at the REMOTE_USER-authenticated
+    # URL, and we're not an error handler (meaning that we haven't tried
+    # REMOTE_USER and failed).  Redirect to the REMOTE_USER URL.
+    } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              && !$ENV{REMOTE_USER}
-             && $status == WK_ERR_USER_AND_PASS_REQUIRED
-             && $q->cookie ('weblogin_spnego')
-             && !$is_error) {
-        print STDERR ("redirecting to SPNEGO page\n" if $DEBUG;
-        print_spnego_redirect ($q);
-    } elsif (($status == WK_ERR_USER_AND_PASS_REQUIRED
-              || $status == WK_ERR_LOGIN_FAILED)
-             && !$q->cookie ('weblogin_spnego')
-             && !$is_error) {
-        set_page_error ($q, $status);
-        $varhash{spnego_uri} = $WebKDC::Config::REMOTE_USER_REDIRECT;
-        print_login_page ($q, \%varhash, $resp, $req->request_token,
+             && $q->cookie ($REMUSER_COOKIE)
+             && !$is_error
+             && $WebKDC::Config::REMOTE_USER_REDIRECT) {
+        print STDERR ("redirecting to REMOTE_USER page\n") if $DEBUG;
+        print_remuser_redirect ($q);
+
+    # The user didn't already ask for REMOTE_USER.  However, we just need
+    # authentication (not forced login) and we haven't already tried
+    # REMOTE_USER and failed, so give them the login screen with the choice.
+    } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
+             && !$q->cookie ($REMUSER_COOKIE)
+             && !$is_error
+             && $WebKDC::Config::REMOTE_USER_REDIRECT) {
+        $varhash{remuser_url} = $WebKDC::Config::REMOTE_USER_REDIRECT;
+        print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
-                      . " displaying login page (REMUSER)\n") if $DEBUG;
+                      . " displaying login page (REMOTE_USER allowed)\n")
+            if $DEBUG;
+
+    # We've tried REMOTE_USER and failed, the site has said that the user has
+    # to use username/password no matter what, REMOTE_USER redirects are not
+    # supported, or the user has already tried username/password.  Display the
+    # login screen without the REMOTE_USER choice.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED
              || !$has_cookies) {
-        set_page_error ($q, $status);
-        print_login_page ($q, \%varhash, $resp, $req->request_token,
+        set_login_page_error ($q, $status);
+        print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
-                      . " displaying login page (no REMUSER)\n") if $DEBUG;
+                      . " displaying login page (REMOTE_USER not allowed)\n")
+            if $DEBUG;
+
+    # Something abnormal happened.  Figure out what error message to display
+    # and throw up the error page instead.
     } else {
         my $errmsg;
 
@@ -517,6 +547,7 @@ while (my $q = CGI::Fast->new) {
                 . " administrator";
         }
 
+        # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"
             . " $errmsg: $exception\n" if $LOGGING;
         $PAGES{error}->param (err_webkdc => 1);
