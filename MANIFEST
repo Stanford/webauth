@@ -70,9 +70,9 @@ src/libwebauth/Makefile.vc              Windows Makefile for WebAuth library
 src/libwebauth/attrs.c                  Token attribute handling
 src/libwebauth/base64.c                 Base64 encoding and decoding
 src/libwebauth/key.c                    Key handling
-src/libwebauth/krb5.c                   Kerberos v5 interface
 src/libwebauth/krb5-heimdal.c           Heimdal-specific Kerberos v5 functions
 src/libwebauth/krb5-mit.c               MIT-specific Kerberos v5 functions
+src/libwebauth/krb5.c                   Kerberos v5 interface
 src/libwebauth/libwebauth.def           Symbol list for Windows DLL
 src/libwebauth/mapfile                  Version map for Linux
 src/libwebauth/misc.c                   Utility functions
