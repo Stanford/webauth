@@ -1,0 +1,10 @@
+webauth (3.5.0-1) unstable; urgency=low
+
+  The weblogin template variables have changed significantly with this
+  release, both by renaming existing ones and by adding new ones.  Please
+  read /usr/share/doc/webauth-weblogin/weblogin-config.gz for detailed
+  documentation for both the template variables and the webkdc.conf
+  settings.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 15 Mar 2006 16:55:41 -0800
+

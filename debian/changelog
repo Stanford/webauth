@@ -1,3 +1,14 @@
+webauth (3.5.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - Clean up of weblogin template variables.  Existing templates will
+      have to be updated.
+    - Support for optional Apache authentication in weblogin.
+    - Clean up and better documentation of the weblogin code.
+    - New weblogin configuration documentation.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 15 Mar 2006 16:54:03 -0800
+
 webauth (3.4.2-1) unstable; urgency=low
 
   * New upstream release.
