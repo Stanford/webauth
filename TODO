@@ -52,3 +52,7 @@
 
  *) Allow WebAuthExtraRedirect in the server and virtual host
     configuration.
+
+ *) Allow users to forward tickets into the weblogin script via SPNEGO and
+    use that forwarded ticket to create a first-class single sign-on
+    cookie that can be used by sites requiring proxy credentials.
