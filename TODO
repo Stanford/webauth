@@ -56,3 +56,11 @@
  *) Allow users to forward tickets into the weblogin script via SPNEGO and
     use that forwarded ticket to create a first-class single sign-on
     cookie that can be used by sites requiring proxy credentials.
+
+ *) Evaluate whether multiple realm support is possible.  It might be as
+    easy as letting people enter a full principal name into the login
+    field of weblogin, provided that cross-realm is set up properly, but
+    I'm not sure.
+
+ *) Provide a better way (over protocol, perhaps?) of synchronizing keyrings
+    across machines in a pool.
