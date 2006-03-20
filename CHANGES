@@ -25,6 +25,9 @@ WebAuth 3.5.0 (unreleased)
  *) Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
     has not yet been well-tested.
 
+ *) Use webauth.stanford.edu as the canonical site for WebAuth instead of
+    webauthv3.stanford.edu.
+
  *) Change the link for the first WebAuth test to "basic WebAuth" from
     "basic auth" to avoid confusion.
 

@@ -6,8 +6,9 @@ webauth (3.5.0-1) unstable; urgency=low
     - Support for optional Apache authentication in weblogin.
     - Clean up and better documentation of the weblogin code.
     - New weblogin configuration documentation.
+    - http://webauth.stanford.edu/ is now the canonical upstream URL.
 
- -- Russ Allbery <rra@debian.org>  Wed, 15 Mar 2006 16:54:03 -0800
+ -- Russ Allbery <rra@debian.org>  Thu, 16 Mar 2006 13:34:44 -0800
 
 webauth (3.4.2-1) unstable; urgency=low
 

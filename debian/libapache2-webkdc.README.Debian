@@ -19,7 +19,7 @@ and you will then be able to read it as intended.
 
 See:
 
-    <http://webauthv3.stanford.edu/>
+    <http://webauth.stanford.edu/>
 
 for more information about WebAuth, including copies of the module manuals
 and places to contact to get help with the installation.
@@ -89,4 +89,4 @@ WebKDC available:
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
 
- -- Russ Allbery <rra@debian.org>, Wed Nov 16 16:40:48 2005
+ -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:35 2006

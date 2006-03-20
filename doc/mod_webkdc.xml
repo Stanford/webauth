@@ -23,7 +23,7 @@ browser cookie cache as the repository for (encrypted) authentication
 tokens and ticket caches.</p>
 
 <p>Further details are provided in the 
-<a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
+<a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 
 </summary>
 

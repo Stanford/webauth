@@ -37,7 +37,7 @@ server that supports LDAP version 3 and allows binds authenticated using
 SASL GSSAPI Kerberos 5.</p>
 
 <p>For other Webauth documentation see the
-<a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
+<a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">

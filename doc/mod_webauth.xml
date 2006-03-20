@@ -15,7 +15,7 @@ application server for Apache 2.x.  It should be used on each individual
 Apache server that wants to protect content with WebAuth.</p>
 
 <p>Further details are provided in the 
-<a href="http://webauthv3.stanford.edu/">WebAuthV3 documentation</a>.</p>
+<a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 
 </summary>
 

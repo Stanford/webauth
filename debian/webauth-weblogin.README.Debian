@@ -21,7 +21,7 @@ templates to make them easier to maintain.)
 
 See:
 
-    <http://webauthv3.stanford.edu/>
+    <http://webauth.stanford.edu/>
 
 for more information about WebAuth, including copies of the module manuals
 and places to contact to get help with the installation.
@@ -155,4 +155,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Mon Jan 23 21:23:57 2006
+ -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:18 2006

@@ -4,7 +4,7 @@
 
 LIBRARY		LIBWEBAUTH
 
-;DESCRIPTION	'WebAuth libwebauth - http://webauthv3.stanford.edu'
+;DESCRIPTION	'WebAuth libwebauth - http://webauth.stanford.edu'
 
 EXPORTS
 	webauth_attr_list_new

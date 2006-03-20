@@ -6,4 +6,4 @@
 # analysis systems.
 
 version=3
-http://webauthv3.stanford.edu/download.html ^dist/webauth-([^-]+)\.tar\.gz
+http://webauth.stanford.edu/download.html ^dist/webauth-([^-]+)\.tar\.gz

@@ -144,7 +144,7 @@ NOTE: There is currently an Apache bug under Windows where
   4. See the WebAuth installation guide for further instructions on
      installing a keytab and getting an SSL certificate:
 
-     <http://webauthv3.stanford.edu/install.html>
+     <http://webauth.stanford.edu/install.html>
 
 
      NOTE: leland_srvtab is only available from a UNIX system, so 

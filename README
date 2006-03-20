@@ -43,7 +43,7 @@ DESCRIPTION
 
   For more information on the Stanford WebAuth project, see:
 
-      <http://webauthv3.stanford.edu/>
+      <http://webauth.stanford.edu/>
 
   WebAuth also provides a second module that can do LDAP directory lookups
   using Kerberos v5 GSS-API authentication and use the result to authorize
