@@ -55,6 +55,8 @@ Templates
       show_remuser      If set, show the option to try REMOTE_USER
       remuser_uri       URL to which to send the user for REMOTE_USER
 
+      remuser_failed    If set, REMOTE_USER was tried and failed
+
   confirm.tmpl
 
       username          Authenticated username

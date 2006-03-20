@@ -153,6 +153,9 @@ sub print_login_page {
         $page->param (show_remuser => 1);
         $page->param (remuser_url => $lvars->{remuser_url});
     }
+    if ($lvars->{remuser_failed}) {
+        $page->param (remuser_failed => 1);
+    }
 
     # If and only if we got here as the target of a form submission (meaning
     # that they already had one shot at logging in and something didn't work),
@@ -518,7 +521,9 @@ while (my $q = CGI::Fast->new) {
              || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED
              || !$has_cookies) {
-        set_login_page_error ($q, $status);
+        if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
+            $varhash{remuser_failed} = $is_error;
+        }
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"

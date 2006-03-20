@@ -62,6 +62,13 @@ remuser_url            : where to send the user for REMOTE_USER auth
       </div>
     </TMPL_IF>
 
+    <TMPL_IF NAME=remuser_failed>
+      <div class="error" align="center">
+        <p><strong>Error: Apache authentication was tried and
+        failed.</strong></p>
+      </div>
+    </TMPL_IF>
+
     <div class="loginbox" align="center">
       <table border="1" width="70%">
         <tr>
