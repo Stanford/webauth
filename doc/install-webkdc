@@ -67,18 +67,20 @@ monitored for security.
          Alias /images "webkdc/images/"
          Alias /help.html "webkdc/help.html"
 
- 5.  Set up a <VirtualHost> directive using SSL for the WebKDC service ,
-     running on some port other than the standard port (since the login
-     server will run on the standard port).  Inside that directive, set a
-     handler for the URL /webkdc-service.  In other words, use a
-     configuration block like:
+     You may want to add these only inside a VirtualHost block that
+     requires SSL to ensure that they are only accessible over SSL.
 
-         <VirtualHost _default_:8443>
-         ...
-         <Location /webkdc-service>
-            SetHandler webkdc
-         </Location>
-         ...
+ 5.  Set up a <VirtualHost> directive using SSL for the WebKDC service.
+     Inside that directive, set a handler for the URL /webkdc-service.  In
+     other words, use a configuration block like:
+
+         <VirtualHost _default_:443>
+            SSLEngine on
+            ...
+            <Location /webkdc-service>
+               SetHandler webkdc
+            </Location>
+            ...
          </VirtualHost>
 
  6.  Create the conf/webkdc directory and the webkdc directory:

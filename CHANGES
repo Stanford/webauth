@@ -29,6 +29,11 @@ WebAuth 3.5.0 (unreleased)
  *) WebAuthExtraRedirect is now accepted at the server and virtual host
     level as well as in <Directory> and .htaccess files.
 
+ *) In the WebKDC installation instructions, stop recommending that the
+    WebkDC /webkdc-service URL run on a different port than the regular
+    SSL port.  There's no reason why it and the weblogin service can't
+    both run on the regular SSL port.
+
  *) Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
     has not yet been well-tested.
 
