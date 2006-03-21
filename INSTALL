@@ -135,6 +135,8 @@ site, see doc/install-webkdc.
          WebAuthKeytab conf/webauth/keytab
          WebAuthServiceTokenCache conf/webauth/service_token.cache
 
+         WebAuthSSLRedirect on
+
      In all instances above, replace <your-webkdc> with the hostname of
      the WebKDC server at your site.
 
@@ -196,7 +198,30 @@ site, see doc/install-webkdc.
      user that the web server runs as.  (It may have been created only
      readable by root.)
 
- 9.  At this point, WebAuth is available to your web server and will be
+ 9.  Install an SSL certificate for your system, either a self-signed
+     certificate or one signed by whatever certificate authority you
+     normally use.  All access to WebAuth-protected web pages must be
+     through SSL to preserve the security of the WebAuth authentication
+     tokens.
+
+     If you have not installed an SSL certificate before, there are
+     instructions available as part of the mod_ssl FAQ.  See
+     <http://httpd.apache.org/docs-2.0/ssl/ssl_faq.html#realcert>.  Debian
+     users can quickly install a self-signed certificate with the
+     apache2-ssl-certificate utility that comes with the Apache package.
+
+     Stanford users, for university applications, can obtain one of the
+     SSL certificates the university has licensed from a certificate
+     vendor.  There is a fee to offset the licensing charge.  For more
+     information, see <http://www.stanford.edu/services/ssl/>.  This is
+     only for Stanford users.
+
+10.  Restart the server to pick up the configuration changes, and check
+     your error log for any errors indicating a problem with the WebAuth
+     installation.  If you are using the default Apache 2.0 setup, be
+     sure to start Apache with apachectl startssl to enable SSL.
+
+11.  At this point, WebAuth is available to your web server and will be
      initialized when your server starts, but is not as yet being used to
      protect any web pages.  This can now be configured.  For the most
      basic use of WebAuth, just requiring a valid user login to view a
@@ -209,7 +234,7 @@ site, see doc/install-webkdc.
      wish to protect.  (To restrict access by privilege group, see the
      instructions below on setting up the LDAP module.)
 
-10.  You can now test WebAuth if you wish (and if this is the first time
+12.  You can now test WebAuth if you wish (and if this is the first time
      that you've set up WebAuth, it's recommended).  WebAuth comes with a
      set of test pages that you can use to configure your installation
      with various different configuration options.
@@ -230,35 +255,12 @@ site, see doc/install-webkdc.
      your httpd.conf file as described above, or uncomment them in the
      webauth-tests.conf file.
 
-11.  Install an SSL certificate for your system, either a self-signed
-     certificate or one signed by whatever certificate authority you
-     normally use.  All access to WebAuth-protected web pages must be
-     through SSL to preserve the security of the WebAuth authentication
-     tokens.
+     After restarting Apache, you should now be able to go to the URL
+     https://<your-server>/tests/, where <your-server> is the name of your
+     web server, to see the test suite.  Documentation on how to walk
+     through all of the tests can be found in doc/test-plan.
 
-     If you have not installed an SSL certificate before, there are
-     instructions available as part of the mod_ssl FAQ.  See
-     <http://httpd.apache.org/docs-2.0/ssl/ssl_faq.html#realcert>.
-
-     Stanford users, for university applications, can obtain one of the
-     SSL certificates the university has licensed from a certificate
-     vendor.  There is a fee to offset the licensing charge.  For more
-     information, see <http://www.stanford.edu/services/ssl/>.
-
-     This is only for Stanford users.
-
-12.  Restart the server to pick up the configuration changes, and check
-     your error log for any errors indicating a problem with the WebAuth
-     installation.  If you are using the default Apache 2.0 setup, be
-     sure to start Apache with apachectl startssl to enable SSL.
-
-13.  If you followed the test installation step above (#10), you should
-     now be able to go to the URL https://<your-server>/tests/, where
-     <your-server> is the name of your web server, to see the test suite.
-     Documentation on how to walk through all of the tests can be found
-     in doc/test-plan.
-
-14.  If you want to have your WebAuth server do LDAP directory queries,
+13.  If you want to have your WebAuth server do LDAP directory queries,
      either to put directory information into environment variables or to
      use LDAP-based privilege groups for access control, you need to
      configure the mod_webauthldap module.  Stanford users should simply
@@ -289,7 +291,7 @@ site, see doc/install-webkdc.
      note that the WebAuth LDAP module only supports Kerberos v5 GSS-API
      binds at this time.
 
-15.  At this point, LDAP lookups are available to your web server.  This
+14.  At this point, LDAP lookups are available to your web server.  This
      can now be configured.  To restrict access to a given set of pages by
      membership in a privilege group, add the lines:
 
@@ -312,7 +314,7 @@ site, see doc/install-webkdc.
      of the form WEBAUTH_LDAP_<attribute>, or in this case into the
      variables WEBAUTH_LDAP_DISPLAYNAME and WEBAUTH_LDAP_MAIL.
 
-16.  Congratulations!  You have a working WebAuth server.  You can now add
+15.  Congratulations!  You have a working WebAuth server.  You can now add
      AuthType WebAuth and require valid-user (or require lines for
      particular users, or for groups containing user identities as
      returned by WebAuth) to protect the content served by your web

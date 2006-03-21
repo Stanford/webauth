@@ -40,6 +40,10 @@ WebAuth 3.5.0 (unreleased)
  *) Use webauth.stanford.edu as the canonical site for WebAuth instead of
     webauthv3.stanford.edu.
 
+ *) Recommend installing an SSL certificate before testing in INSTALL,
+    since otherwise WebAuth would be unhappy.  Combine a few steps
+    together and also recommend WebAuthSSLRedirect on.
+
  *) Change WebAuthSSLRedirect to on in the recommended and default
     configuration files, since it works with the standard installation
     instructions.
