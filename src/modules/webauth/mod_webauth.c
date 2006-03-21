@@ -2996,6 +2996,7 @@ static const command_rec cmds[] = {
 #undef DSTR
 #undef DFLAG
 #undef DINT
+#undef AFLAG
 #undef ADSTR
 #undef ADFLAG
 #undef ADTAKE12
