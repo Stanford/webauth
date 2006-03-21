@@ -2315,7 +2315,7 @@ gather_tokens(MWA_REQ_CTXT *rc)
        to do a redirect. redirect now so we don't waste time doing saving
        creds if we are configured to saved creds for this request */
     if (in_url
-        && (rc->dconf->extra_redirect
+        && ((rc->dconf->extra_redirect_ex && rc->dconf->extra_redirect)
             || (!rc->dconf->extra_redirect_ex && rc->sconf->extra_redirect)))
         return extra_redirect(rc);
 
