@@ -1,6 +1,7 @@
 webauth (3.5.0-1) unstable; urgency=low
 
   * New upstream release.
+    - WebAuthExtraRedirect on is now the default.
     - Clean up of weblogin template variables.  Existing templates will
       have to be updated.
     - Support for optional Apache authentication in weblogin.
@@ -8,7 +9,7 @@ webauth (3.5.0-1) unstable; urgency=low
     - New weblogin configuration documentation.
     - http://webauth.stanford.edu/ is now the canonical upstream URL.
 
- -- Russ Allbery <rra@debian.org>  Thu, 16 Mar 2006 13:34:44 -0800
+ -- Russ Allbery <rra@debian.org>  Mon, 20 Mar 2006 17:29:57 -0800
 
 webauth (3.4.2-1) unstable; urgency=low
 

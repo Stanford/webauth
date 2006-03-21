@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.5.0 (unreleased)
+WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be
     a bit more consistent and add an error variable to the login template
