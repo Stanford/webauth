@@ -22,6 +22,13 @@ WebAuth 3.5.0 (unreleased)
  *) Document in detail the page flow for the weblogin script and the
     variables it uses when rendering page templates.
 
+ *) WebAuthExtraRedirect is now the default.  If you don't want this
+    behavior, you now need to turn it off explicitly in the Apache
+    configuration.
+
+ *) WebAuthExtraRedirect is now accepted at the server and virtual host
+    level as well as in <Directory> and .htaccess files.
+
  *) Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
     has not yet been well-tested.
 

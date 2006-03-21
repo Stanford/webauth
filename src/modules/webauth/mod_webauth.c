@@ -567,7 +567,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
 {
     MWA_SCONF *sconf;
 
-    sconf = (MWA_SCONF*)apr_pcalloc(p, sizeof(MWA_SCONF));
+    sconf = apr_pcalloc(p, sizeof(MWA_SCONF));
 
     /* init defaults */
     sconf->token_max_ttl = DF_TokenMaxTTL;
@@ -577,6 +577,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
     sconf->webkdc_cert_check = DF_WebKdcSSLCertCheck;
+    sconf->extra_redirect = DF_ExtraRedirect;
     return (void *)sconf;
 }
 
@@ -584,8 +585,11 @@ static void *
 config_dir_create(apr_pool_t *p, char *path)
 {
     MWA_DCONF *dconf;
-    dconf = (MWA_DCONF*)apr_pcalloc(p, sizeof(MWA_DCONF));
+
+    dconf = apr_pcalloc(p, sizeof(MWA_DCONF));
+
     /* init defaults */
+    dconf->extra_redirect = DF_ExtraRedirect;
 
     return (void *)dconf;
 }
@@ -622,6 +626,11 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 
     conf->ssl_redirect = oconf->ssl_redirect_ex ? 
         oconf->ssl_redirect : bconf->ssl_redirect;
+
+    conf->extra_redirect = oconf->extra_redirect_ex ?
+        oconf->extra_redirect : bconf->extra_redirect;
+    conf->extra_redirect_ex = oconf->extra_redirect_ex || 
+        bconf->extra_redirect_ex;
 
     conf->webkdc_cert_check = oconf->webkdc_cert_check_ex ? 
         oconf->webkdc_cert_check : bconf->webkdc_cert_check;
@@ -2305,7 +2314,9 @@ gather_tokens(MWA_REQ_CTXT *rc)
     /* check if the WEBAUTHR crap was in the URL and we are configured
        to do a redirect. redirect now so we don't waste time doing saving
        creds if we are configured to saved creds for this request */
-    if (in_url && rc->dconf->extra_redirect)
+    if (in_url
+        && (rc->dconf->extra_redirect
+            || (!rc->dconf->extra_redirect_ex && rc->sconf->extra_redirect)))
         return extra_redirect(rc);
 
     /* if use_creds is on, look for creds. If creds aren't found,
@@ -2320,7 +2331,6 @@ gather_tokens(MWA_REQ_CTXT *rc)
     }
 
     return OK;
-
 }
 
 static int
@@ -2791,7 +2801,17 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             sconf->webkdc_cert_check = flag;
             sconf->webkdc_cert_check_ex = 1;
             break;
-            /* start of dconfigs */
+        /* server config or directory config */
+        case E_ExtraRedirect:
+            if (cmd->path == NULL) {
+                sconf->extra_redirect = flag;
+                sconf->extra_redirect_ex = 1;
+            } else {
+                dconf->extra_redirect = flag;
+                dconf->extra_redirect_ex = 1;
+            }
+            break;
+        /* start of dconfigs */
         case E_SSLReturn:
             dconf->ssl_return = flag;
             dconf->ssl_return_ex = 1;
@@ -2811,10 +2831,6 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
         case E_StripURL:
             sconf->strip_url = flag;
             sconf->strip_url_ex = 1;
-            break;
-        case E_ExtraRedirect:
-            dconf->extra_redirect = flag;
-            dconf->extra_redirect_ex = 1;
             break;
         case E_DontCache:
             dconf->dont_cache = flag;
@@ -2903,6 +2919,8 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 #define DFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
 
+#define AFLAG(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG|RSRC_CONF, FLAG, help}
 
 /* these can only be in the server .conf file */
 
@@ -2949,8 +2967,10 @@ static const command_rec cmds[] = {
     ADTAKE12(CD_Cred, E_Cred, CM_Cred),
     ADSTR(CD_FailureURL, E_FailureURL, CM_FailureURL),
 
+    /* server/vhost or directory or .htaccess if override auth config */
+    AFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
+
     /* directory or .htaccess if override auth config */
-    DFLAG(CD_ExtraRedirect, E_ExtraRedirect, CM_ExtraRedirect),
     DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
     DFLAG(CD_SSLReturn, E_SSLReturn, CM_SSLReturn),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),

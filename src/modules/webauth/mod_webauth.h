@@ -140,6 +140,7 @@
 
 #define CD_ExtraRedirect "WebAuthExtraRedirect"
 #define CM_ExtraRedirect "do extra redirect after getting returned from WebKDC"
+#define DF_ExtraRedirect 1
 
 #define CD_InactiveExpire "WebAuthInactiveExpire"
 #define CM_InactiveExpire "duration of inactivity before an app-token expires"
@@ -319,6 +320,8 @@ typedef struct {
     int ssl_redirect_ex;
     int ssl_redirect_port;
     int ssl_redirect_port_ex;
+    int extra_redirect;
+    int extra_redirect_ex; /* if it was explicitly specified in conf file */
     char *subject_auth_type;
     int strip_url;
     int strip_url_ex; 

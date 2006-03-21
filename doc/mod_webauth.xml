@@ -616,37 +616,49 @@ WebAuthTokenMaxTTL 10m
 <description>Whether or not to do an extra redirect upon return from the WebKDC
 </description>
 <syntax>WebAuthExtraRedirect on|off</syntax>
-<default>WebAuthExtraRedirect off</default>
-<contextlist><context>directory</context><context>.htaccess</context></contextlist>
+<default>WebAuthExtraRedirect on</default>
+<contextlist>
+  <context>server config</context>
+  <context>virtual host</context>
+  <context>directory</context>
+  <context>.htaccess</context>
+</contextlist>
 
 <usage>
-<p>
-When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string "<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>"
-to the URL.</p>
+
+<p>When browsers get redirected back from the WebKDC, tokens will be
+returned in the URL, by appending the string
+"<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>" to the URL.</p>
 
 <p>This directive controls whether or not an extra redirect will be sent
-to the browser, with this information removed from the URL after the
-user has been authenticated. The benefit of performing the extra redirect
-is the user's won't see the extra WebAuth information in the URL, and
-won't be able to bookmark it, etc. Note that bookmarking a URL
-with the extra information shouldn't really cause any problems, as
-the tokens in the extra information will only be valid for a limited
-amount of time (see <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a>), 
-after which they will be ignored.
-</p>
+to the browser, with this information removed from the URL after the user
+has been authenticated. The benefit of performing the extra redirect is
+the user's won't see the extra WebAuth information in the URL, and won't
+be able to bookmark it, etc. Note that bookmarking a URL with the extra
+information shouldn't really cause any problems, as the tokens in the
+extra information will only be valid for a limited amount of time (see
+<a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a>), after which they
+will be ignored.</p>
 
 <p>The downside to enabling this directive is the extra redirect will
 require another round-trip from the server to the user's browser, and
-under certain circumstances maybe also trigger a caching bug in the
-user's browser (though hopefully this should never happen).</p>
+under certain circumstances maybe also trigger a caching bug in the user's
+browser (though hopefully this should never happen).</p>
 
 <example><title>Example</title>
 &lt;Location /myapp/&gt;<br />
-WebAuthExtraRedirect on<br />
-...<br />
+  WebAuthExtraRedirect off<br />
+  ...<br />
 &lt;/Location&gt;
 </example>
+
+<note>
+  <title>Compatibility</title> 
+  <p>In versions of WebAuth prior to 3.5.0, the default for
+  WebAuthExtraRedirect was off.  Also, prior to 3.5.0, this directive was
+  only accepted in directory and .htaccess configuration contexts, not in
+  the server configuration or virtual host configurations.</p>
+</note>
 </usage>
 </directivesynopsis>
 
