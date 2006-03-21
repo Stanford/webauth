@@ -54,6 +54,8 @@ WebAuth 3.5.0 (unreleased)
  *) Change the link for the first WebAuth test to "basic WebAuth" from
     "basic auth" to avoid confusion.
 
+ *) Update to the latest config.sub, config.guess, and libtool.
+
 WebAuth 3.4.2 (2006-02-17)
 
  *) Don't try to build the modules with -z defs.  If it actually works, it
