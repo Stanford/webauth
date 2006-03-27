@@ -1,4 +1,4 @@
-webauth (3.5.0-0bpo1) unstable; urgency=low
+webauth (3.5.0-0bpo1) sarge-backports; urgency=low
 
   * Backport to sarge.
     - Depend on libcurl3-dev instead of libcurl3-openssl-dev.
