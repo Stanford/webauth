@@ -1,3 +1,10 @@
+webauth (3.5.0-0bpo1) unstable; urgency=low
+
+  * Backport to sarge.
+    - Depend on libcurl3-dev instead of libcurl3-openssl-dev.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 27 Mar 2006 14:17:29 -0800
+
 webauth (3.5.0-1) unstable; urgency=low
 
   * New upstream release.
