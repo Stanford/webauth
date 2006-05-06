@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.5.1 (unreleased)
+
+ *) Properly check for apxs in configure so that an apxs under the
+    provided Apache root will be found.  Thanks to Marco Wise for the
+    debugging.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

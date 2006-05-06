@@ -23,5 +23,5 @@ AC_ARG_WITH([apxs],
      else
         AC_PATH_PROGS([APXS], [apxs2 apxs], [apxs], [$APACHE_ROOT/bin:$PATH])
      fi],
-    [AC_PATH_PROG([APXS], [apxs2 apxs], [apxs], [$APACHE_ROOT/bin:$PATH])])
+    [AC_PATH_PROGS([APXS], [apxs2 apxs], [apxs], [$APACHE_ROOT/bin:$PATH])])
 AC_SUBST(APACHE_ROOT)])
