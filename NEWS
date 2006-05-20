@@ -6,6 +6,11 @@ WebAuth 3.5.1 (unreleased)
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
 
+ *) Allow the submit button on the login page to return any value that
+    includes "Login" rather than requiring it to be exactly "Login".
+    Document this restriction in weblogin-config and how to change it
+    if necessary.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

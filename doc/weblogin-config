@@ -85,6 +85,12 @@ Templates
 
       cookies_flag      If set, found a single sign-on cookie to delete
 
+  Note that the value of the submit button in login.tmpl must be set to
+  something containing the string "Login", case-sensitive.  (This is not
+  ideal for internationalization and may change in the future; for right
+  now, to change this, also search for and modify the string "Login" in
+  the login.fcgi script.)
+
 Configuration
 
   The behavior of the weblogin script is configured using the
