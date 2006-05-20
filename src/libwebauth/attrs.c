@@ -367,7 +367,13 @@ webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list,
                            time_t *value,
                            int flags)
 {
-    return webauth_attr_list_get_uint32(list, name, (uint32_t *) value, flags);
+    uint32_t value32;
+    int status;
+
+    status = webauth_attr_list_get_uint32(list, name, &value32, flags);
+    if (status == WA_ERR_NONE)
+        *value = value32;
+    return status;
 }
 
 int

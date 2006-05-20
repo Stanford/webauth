@@ -2,6 +2,10 @@
 
 WebAuth 3.5.1 (unreleased)
 
+ *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
+    which usually manifested itself while reading keyrings.  Thanks to pod
+    for the analysis.
+
  *) Properly check for apxs in configure so that an apxs under the
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
