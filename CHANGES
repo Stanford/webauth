@@ -2,6 +2,16 @@
 
 WebAuth 3.5.1 (unreleased)
 
+ *) Allow the submit button on the login page to return any value rather
+    than requiring it have the value "Login" so that the template can be
+    more easily translated.  Instead, the login form must include the tag:
+
+        <input type="hidden" name="login" value="yes">
+
+    The form for attempting Apache remote-user authentication should not
+    contain this tag.  Existing login.tmpl files must be updated
+    accordingly when upgrading to this version of the Weblogin server.
+
  *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
     which usually manifested itself while reading keyrings.  Thanks to pod
     for the analysis.
@@ -10,10 +20,9 @@ WebAuth 3.5.1 (unreleased)
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
 
- *) Allow the submit button on the login page to return any value that
-    includes "Login" rather than requiring it to be exactly "Login".
-    Document this restriction in weblogin-config and how to change it
-    if necessary.
+ *) Modify the default login template to show a single error message if
+    the user provided neither username nor password rather than showing
+    the missing username and missing password errors one after the other.
 
 WebAuth 3.5.0 (2006-03-20)
 

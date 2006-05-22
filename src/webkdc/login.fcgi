@@ -160,7 +160,7 @@ sub print_login_page {
     # If and only if we got here as the target of a form submission (meaning
     # that they already had one shot at logging in and something didn't work),
     # set the appropriate error status.
-    if ($q->param ('Submit') && $q->param ('Submit') =~ /Login/) {
+    if ($q->param ('login')) {
         $page->param (err_password => 1) unless $q->param ('password');
         $page->param (err_username => 1) unless $q->param ('username');
         $page->param (err_cookies => 1) unless $q->cookie ($TEST_COOKIE);
@@ -470,7 +470,7 @@ while (my $q = CGI::Fast->new) {
     # sure we bounce them back to the login page since otherwise WebAuth is
     # going to fail later.
     my $has_cookies = 1;
-    if ($q->param ('Submit') && $q->param ('Submit') =~ /Login/) {
+    if ($q->param ('login')) {
         unless ($q->cookie ($TEST_COOKIE)) {
             $has_cookies = 0;
         }
