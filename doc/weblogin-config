@@ -163,6 +163,24 @@ Configuration
       in conjunction with mod_auth_kerb to strip the local Kerberos realm
       off of the authenticated identity.  Default: not set.
 
+  @REALMS
+
+      Only used when $HONOR_REMOTE_USER is set.  Identical to $REALM but,
+      rather than a single allowed realm, contains a list of acceptable
+      realms, which means it uses a slightly different syntax.  An example
+      setting:
+
+          @REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
+
+      As demonstrated in this example, realms should be listed in
+      parentheses and separated by commas.  "" (the empty realm) is an
+      allowable value and means to allow REMOTE_USER settings that contain
+      no realm information (do not contain a @-sign).  If the realm
+      matches any of the allowable realms, the realm information will be
+      stripped off.  Use this setting instead of $REALM when you have
+      multiple Kerberos realms that you want to treat identically for
+      WebAuth purposes.
+
   $REMOTE_USER_REDIRECT
 
       The URL to redirect users to when trying to authenticate them with

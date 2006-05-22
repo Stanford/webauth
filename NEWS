@@ -12,6 +12,11 @@ WebAuth 3.5.1 (unreleased)
     contain this tag.  Existing login.tmpl files must be updated
     accordingly when upgrading to this version of the Weblogin server.
 
+ *) Add the @REALMS configuration option to the Weblogin configuration
+    file, for use with Apache authentication where the resulting
+    REMOTE_USER value may be in one of several realms and each realm
+    should be treated identically.
+
  *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
     which usually manifested itself while reading keyrings.  Thanks to pod
     for the analysis.

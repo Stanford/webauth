@@ -350,8 +350,23 @@ sub add_remuser_token {
     if ($WebKDC::Config::REALM) {
         if (!$realm || $realm ne $WebKDC::Config::REALM) {
             warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
-                . " saw " . ($realm ? $realm : '""') . " expected "
+                . ' saw ' . ($realm ? $realm : '""') . " expected "
                 . $WebKDC::Config::REALM . "\n";
+            return;
+        }
+    } elsif (@WebKDC::Config::REALMS) {
+        my $found = 0;
+        $realm ||= '';
+        for my $check (@WebKDC::Config::REALMS) {
+            if ($check eq $realm) {
+                $found = 1;
+                last;
+            }
+        }
+        if (!$found) {
+            warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
+                . ' saw ' . ($realm ? $realm : '""') . ' not in allowed list'
+                . "\n";
             return;
         }
     } elsif ($realm) {
