@@ -18,6 +18,7 @@ err_username           : no username error
 err_password           : no password error
 err_loginfailed        : username and password were incorrect
 err_cookie             : browser doesn't support cookies
+err_forced             : web site requires username/password login
 RT                     : Response Token
 ST                     : Service Token
 LC                     : Login Cancel Token
@@ -60,7 +61,13 @@ remuser_url            : where to send the user for REMOTE_USER auth
           <TMPL_IF NAME=err_cookies>
             <!-- Error: cookies not enabled. -->
             Error: You must enable cookies on your web browser.
-          </TMPL_IF> 
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_forced>
+            <!-- Not really an error, forced login. -->
+            This web site requires that you log in with username and
+            password.
+          </TMPL_IF>
         </strong></p>
         <p>Click <a href="/help.html">help</a> for assistance.</p>
       </div>

@@ -12,6 +12,13 @@ WebAuth 3.5.1 (unreleased)
     contain this tag.  Existing login.tmpl files must be updated
     accordingly when upgrading to this version of the Weblogin server.
 
+ *) Add an err_forced template variable for the login.tmpl file that
+    indicates the user had a single sign-on configuration (either an
+    existing cookie or a request to do REMUSER), but the authenticating
+    web site requires username/password authentication.  Existing
+    login.tmpl files must be updated to include a reference to this
+    variable (even if not otherwise used).
+
  *) Add the @REALMS configuration option to the Weblogin configuration
     file, for use with Apache authentication where the resulting
     REMOTE_USER value may be in one of several realms and each realm

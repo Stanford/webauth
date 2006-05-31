@@ -160,6 +160,9 @@ sub print_login_page {
     # If and only if we got here as the target of a form submission (meaning
     # that they already had one shot at logging in and something didn't work),
     # set the appropriate error status.
+    #
+    # If they *haven't* already had one shot and forced login is set, display
+    # the error box telling them they're required to log in.
     if ($q->param ('login')) {
         $page->param (err_password => 1) unless $q->param ('password');
         $page->param (err_username => 1) unless $q->param ('username');
@@ -176,6 +179,9 @@ sub print_login_page {
             || $page->param ('err_loginfailed')) {
             $page->param (error => 1);
         }
+    } elsif ($lvars->{forced_login}) {
+        $page->param (err_forced => 1);
+        $page->param (error => 1);
     }
     print_headers ($q, $resp->proxy_cookies);
     print $page->output;
@@ -436,16 +442,18 @@ while (my $q = CGI::Fast->new) {
     $req->service_token (fix_token ($q->param ('ST')));
     $req->request_token (fix_token ($q->param ('RT')));
 
-    # Also pass to the WebKDC any proxy tokens we hvae from cookies.
+    # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate through all cookies that start with webauth_wpt (Webauth Proxy
     # Token) and stuff them into the WebKDC request.
     my %cart = CGI::Cookie->fetch;
+    my $wpt_cookie;
     for (keys %cart) {
         if (/^webauth_wpt/) {
             my ($name, $val) = split ('=', $cart{$_});
             $name=~ s/^(webauth_wpt_)//;
             $req->proxy_cookie ($name, $q->cookie ($_));
             print STDERR "found a cookie $name\n" if $DEBUG;
+            $wpt_cookie = 1;
         }
     }
 
@@ -539,6 +547,17 @@ while (my $q = CGI::Fast->new) {
         if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
             $varhash{remuser_failed} = $is_error;
         }
+
+        # If logins were forced, we want to tell the user.  However, if this
+        # is the first site they've authenticated to, we only want to tell the
+        # user that if they request REMUSER support.  So, if forced login was
+        # set *and* either the user has single sign-on cookies or wants to do
+        # REMUSER, set the relevant template variable.
+        if ($status == WK_ERR_LOGIN_FORCED
+            && ($wpt_cookie || $q->cookie ($REMUSER_COOKIE))) {
+            $varhash{forced_login} = 1;
+        }
+
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"
