@@ -29,7 +29,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
 		  @CPPFLAGS@
 
-LDFLAGS		= -L$(top_builddir)src/libwebauth
+LDFLAGS		= -L$(top_builddir)/src/libwebauth
 LDLIBS		= -lwebauth @DEPEND_LIBS@ @LIBS@
 
 PROGS		= wa_keyring

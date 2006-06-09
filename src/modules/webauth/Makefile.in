@@ -12,7 +12,7 @@ APXS_CFLAGS	= @APXS_CFLAGS@
 CPPFLAGS	= -I$(top_srcdir)/src/libwebauth @CPPFLAGS@ \
 		  @CURL_CPPFLAGS@
 LDFLAGS		= @LDFLAGS@
-LDLIBS		= -L$(top_builddir)src/libwebauth/.libs -lwebauth \
+LDLIBS		= -L$(top_builddir)/src/libwebauth/.libs -lwebauth \
 		  @CURL_LIBS@ @APXS_DEPEND_LIBS@ @LIBS@
 
 SOURCES		= mod_webauth.c util.c webkdc.c krb5.c

@@ -16,7 +16,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
 		  @CPPFLAGS@
 
-LDFLAGS		= -L$(top_builddir)src/libwebauth
+LDFLAGS		= -L$(top_builddir)/src/libwebauth
 LDLIBS		= -lwebauth @DEPEND_LIBS@ @LIBS@
 
 TESTS		= attrs_test base64_test hex_test key_test krb5_test \
