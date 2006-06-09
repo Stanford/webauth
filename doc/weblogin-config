@@ -68,7 +68,7 @@ Templates
       cancel_url        The cancel URL (return URL plus cancel token)
 
       show_remuser      If set, show the REMOTE_USER cookie configuration
-      remuser           "checked" if REMOTE_USER desired, "" otherwise
+      remuser           If set, the REMOTE_USER cookie is set
       script_name       Relative URL to which cookie change should be posted
 
   A different template is used in the event of some other WebKDC error.

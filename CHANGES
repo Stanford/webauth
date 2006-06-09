@@ -12,6 +12,14 @@ WebAuth 3.5.1 (unreleased)
     contain this tag.  Existing login.tmpl files must be updated
     accordingly when upgrading to this version of the Weblogin server.
 
+ *) In the weblogin confirmation page, the variable remuser is now set to
+    1 if the user has a cookie indicating they want to try REMOTE_USER and
+    is not set otherwise.  This is a change from the previous behavior
+    where it was set to either the string "checked" or the empty string.
+    Templates using this variable will require modification.  This change
+    was made so that the Weblogin scripts don't assume a particular UI
+    presentation.
+
  *) Add an err_forced template variable for the login.tmpl file that
     indicates the user had a single sign-on configuration (either an
     existing cookie or a request to do REMUSER), but the authenticating
@@ -24,6 +32,10 @@ WebAuth 3.5.1 (unreleased)
     REMOTE_USER value may be in one of several realms and each realm
     should be treated identically.
 
+ *) Modify the default login template to show a single error message if
+    the user provided neither username nor password rather than showing
+    the missing username and missing password errors one after the other.
+
  *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
     which usually manifested itself while reading keyrings.  Thanks to pod
     for the analysis.
@@ -31,10 +43,6 @@ WebAuth 3.5.1 (unreleased)
  *) Properly check for apxs in configure so that an apxs under the
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
-
- *) Modify the default login template to show a single error message if
-    the user provided neither username nor password rather than showing
-    the missing username and missing password errors one after the other.
 
 WebAuth 3.5.0 (2006-03-20)
 

@@ -12,6 +12,14 @@ WebAuth 3.5.1 (unreleased)
     contain this tag.  Existing login.tmpl files must be updated
     accordingly when upgrading to this version of the Weblogin server.
 
+ *) In the weblogin confirmation page, the variable remuser is now set to
+    1 if the user has a cookie indicating they want to try REMOTE_USER and
+    is not set otherwise.  This is a change from the previous behavior
+    where it was set to either the string "checked" or the empty string.
+    Templates using this variable will require modification.  This change
+    was made so that the Weblogin scripts don't assume a particular UI
+    presentation.
+
  *) Add an err_forced template variable for the login.tmpl file that
     indicates the user had a single sign-on configuration (either an
     existing cookie or a request to do REMUSER), but the authenticating

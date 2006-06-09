@@ -239,8 +239,9 @@ sub print_confirm_page {
     if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
         if ($ENV{REMOTE_USER} || $q->cookie ($REMUSER_COOKIE)) {
             $page->param (show_remuser => 1);
-            my $remuser = $q->cookie ($REMUSER_COOKIE) ? 'checked' : '';
-            $page->param (remuser => $remuser);
+            if ($q->cookie ($REMUSER_COOKIE)) {
+                $page->param (remuser => 1);
+            }
             $page->param (script_name => $q->script_name);
         }
     }
