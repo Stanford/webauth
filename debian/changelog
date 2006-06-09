@@ -1,5 +1,10 @@
-webauth (3.5.0-2) unstable; urgency=low
+webauth (3.5.1-1) unstable; urgency=low
 
+  * New upstream release.
+    - Multiple changes to the Weblogin scripts and templates that will
+      require updates to existing templates.  See the upstream NEWS file
+      for more details.
+    - Fix decoding of keyring times on 64-bit platforms.
   * Update standards version to 3.7.2 (no changes required).
 
  --
