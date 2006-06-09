@@ -7,7 +7,7 @@ webauth (3.5.1-1) unstable; urgency=low
     - Fix decoding of keyring times on 64-bit platforms.
   * Update standards version to 3.7.2 (no changes required).
 
- --
+ -- Russ Allbery <rra@debian.org>  Fri,  9 Jun 2006 16:08:56 -0700
 
 webauth (3.5.0-1) unstable; urgency=low
 
