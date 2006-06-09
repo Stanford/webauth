@@ -44,6 +44,9 @@ WebAuth 3.5.1 (unreleased)
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
 
+ *) Add datarootdir to src/utils/Makefile.in since Autoconf 2.60 bases
+    mandir on datarootdir.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

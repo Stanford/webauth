@@ -9,6 +9,7 @@ VPATH		= @srcdir@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 bindir		= @bindir@
+datarootdir     = @datarootdir@
 libdir		= @libdir@
 mandir		= @mandir@
 D		= $(DESTDIR)
