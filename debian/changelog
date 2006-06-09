@@ -1,3 +1,9 @@
+webauth (3.5.0-2) unstable; urgency=low
+
+  * Update standards version to 3.7.2 (no changes required).
+
+ --
+
 webauth (3.5.0-1) unstable; urgency=low
 
   * New upstream release.
