@@ -21,7 +21,7 @@ VERSION		= @PACKAGE_VERSION@
 CC		= @CC@
 INSTALL		= @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-LIBTOOL		= $(top_builddir)libtool
+LIBTOOL		= $(top_builddir)/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
