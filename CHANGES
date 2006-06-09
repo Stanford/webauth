@@ -50,6 +50,9 @@ WebAuth 3.5.1 (unreleased)
  *) Add datarootdir to src/utils/Makefile.in since Autoconf 2.60 bases
     mandir on datarootdir.
 
+ *) Initialize a few variables in the Perl bindings to suppress compiler
+    warnings with gcc 4.1.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be
