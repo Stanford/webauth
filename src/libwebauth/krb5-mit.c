@@ -202,6 +202,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
 {
     WEBAUTH_ATTR_LIST *list;
     int s, f, length;
+    void *data;
     char *buff;
 
     assert(c != NULL);
@@ -252,10 +253,10 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     if (s != WA_ERR_NONE)
         goto cleanup;
     s = webauth_attr_list_get(list, CR_KEYBLOCK_CONTENTS,
-                              (void **) &creds->keyblock.contents, &length,
-                              WA_F_COPY_VALUE);
+                              &data, &length, WA_F_COPY_VALUE);
     if (s != WA_ERR_NONE)
         goto cleanup;
+    creds->keyblock.contents = data;
     creds->keyblock.length = length;
 
     /* Times */
@@ -321,11 +322,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
                 goto cleanup;
             sprintf(name, CR_ADDRCONT, i);
 
-            s = webauth_attr_list_get(list, name,
-                                      (void **) &creds->addresses[i]->contents,
-                                      &length, WA_F_COPY_VALUE);
+            s = webauth_attr_list_get(list, name, &data, &length,
+                                      WA_F_COPY_VALUE);
             if (s != WA_ERR_NONE)
                 goto cleanup;
+            creds->addresses[i]->contents = data;
             creds->addresses[i]->length = length;
         }
     }
@@ -335,7 +336,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     if (f != -1) {
         creds->ticket.magic = KV5M_DATA;
         s = webauth_attr_list_get(list, CR_TICKET,
-                                  (void **) &creds->ticket.data, &length,
+                                  &creds->ticket.data, &length,
                                   WA_F_COPY_VALUE);
         if (s != WA_ERR_NONE)
             goto cleanup;
@@ -346,11 +347,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     webauth_attr_list_find(list, CR_TICKET2, &f);
     if (f != -1) {
         creds->ticket.magic = KV5M_DATA;
-        s = webauth_attr_list_get(list, CR_TICKET2,
-                                  (void **) &creds->second_ticket.data,
-                                  &length, WA_F_COPY_VALUE);
+        s = webauth_attr_list_get(list, CR_TICKET2, &data, &length,
+                                  WA_F_COPY_VALUE);
         if (s != WA_ERR_NONE)
             goto cleanup;
+        creds->second_ticket.data = data;
         creds->second_ticket.length = length;
     }
 
@@ -386,11 +387,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
                 goto cleanup;
             sprintf(name, CR_AUTHDATACONT, i);
 
-            s = webauth_attr_list_get(list, name,
-                                      (void **) &creds->authdata[i]->contents,
-                                      &length, WA_F_COPY_VALUE);
+            s = webauth_attr_list_get(list, name, &data, &length,
+                                      WA_F_COPY_VALUE);
             if (s != WA_ERR_NONE)
                 goto cleanup;
+            creds->authdata[i]->contents = data;
             creds->authdata[i]->length = length;
         }
     }
