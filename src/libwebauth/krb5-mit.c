@@ -335,11 +335,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     webauth_attr_list_find(list, CR_TICKET, &f);
     if (f != -1) {
         creds->ticket.magic = KV5M_DATA;
-        s = webauth_attr_list_get(list, CR_TICKET,
-                                  &creds->ticket.data, &length,
+        s = webauth_attr_list_get(list, CR_TICKET, &data, &length,
                                   WA_F_COPY_VALUE);
         if (s != WA_ERR_NONE)
             goto cleanup;
+        creds->ticket.data = data;
         creds->ticket.length = length;
     }
 
