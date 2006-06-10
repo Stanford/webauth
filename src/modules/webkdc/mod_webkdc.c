@@ -2927,7 +2927,7 @@ seconds(const char *value, char **error_str)
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
 
     MWK_SCONF *sconf = (MWK_SCONF *)
@@ -2963,8 +2963,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
-                             cmd->directive->directive);
+                             (int) e, cmd->directive->directive);
             break;
     }
     return error_str;
@@ -2973,7 +2972,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 static const char *
 cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWK_SCONF *sconf = (MWK_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webkdc_module);
@@ -2989,8 +2988,7 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
-                             cmd->directive->directive);
+                             (int) e, cmd->directive->directive);
             break;
     }
     return error_str;
@@ -2999,7 +2997,7 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
 
     MWK_SCONF *sconf = (MWK_SCONF *)
@@ -3019,8 +3017,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
-                             cmd->directive->directive);
+                             (int) e, cmd->directive->directive);
             break;
 
     }

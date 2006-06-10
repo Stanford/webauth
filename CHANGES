@@ -53,6 +53,12 @@ WebAuth 3.5.1 (unreleased)
  *) Initialize a few variables in the Perl bindings to suppress compiler
     warnings with gcc 4.1.
 
+ *) Use a temporary variable rather than passing a pointer to unsigned int
+    to a function that takes a pointer to int, and use intptr_t variables
+    instead of int variables to hold numbers passed through Apache's
+    configuration interface in pointer data types.  These changes fix
+    warnings with gcc 4.1.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

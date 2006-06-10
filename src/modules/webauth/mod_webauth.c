@@ -2658,7 +2658,7 @@ seconds(const char *value, char **error_str)
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF *)mconf;
 
@@ -2761,7 +2761,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
 
@@ -2772,7 +2772,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
 
@@ -2857,7 +2857,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
 
@@ -2868,7 +2868,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 static const char *
 cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
     MWA_WACRED *cred;
@@ -2897,7 +2897,7 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
     }

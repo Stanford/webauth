@@ -23,11 +23,15 @@
 #include "ap_config_auto.h"
 
 #if HAVE_SYS_TYPES_H
-#include <sys/types.h>
+# include <sys/types.h>
 #endif
-
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#elif HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #if HAVE_UNISTD_H
-#include <unistd.h> 
+# include <unistd.h> 
 #endif
 
 #include "webauth.h"
