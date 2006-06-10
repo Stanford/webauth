@@ -59,6 +59,8 @@ WebAuth 3.5.1 (unreleased)
     configuration interface in pointer data types.  These changes fix
     warnings with gcc 4.1.
 
+ *) Encode the right dependencies in the Makefile for libwebauth/krb5.c.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

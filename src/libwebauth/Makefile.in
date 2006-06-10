@@ -58,11 +58,16 @@ clean:
 depend:
 	$(top_srcdir)/tools/makedepend '$(CPPFLAGS)' *.c
 
+# make depend won't pick up one or the other of these dependencies.
+krb5.o: krb5-mit.c krb5-heimdal.c
+
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 attrs.o: attrs.c webauthp.h $(top_builddir)/config.h webauth.h
 base64.o: base64.c webauthp.h $(top_builddir)/config.h webauth.h
 key.o: key.c webauthp.h $(top_builddir)/config.h webauth.h
-krb5.o: krb5.c webauthp.h $(top_builddir)/config.h webauth.h
+krb5-heimdal.o: krb5-heimdal.c
+krb5-mit.o: krb5-mit.c
+krb5.o: krb5.c webauthp.h $(top_builddir)/config.h webauth.h krb5-mit.c
 misc.o: misc.c webauthp.h $(top_builddir)/config.h webauth.h
 random.o: random.c webauthp.h $(top_builddir)/config.h webauth.h
 token.o: token.c webauthp.h $(top_builddir)/config.h webauth.h
