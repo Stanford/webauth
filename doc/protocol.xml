@@ -2149,7 +2149,7 @@
         <vspace blankLines='0'/>Move the document history into an
         appendix.  Document the magic WEBKDC prefix to proxy subjects.</t>
 
-        <t hangText='2.10 (2006-12-17, rra)'>
+        <t hangText='2.10 (2006-02-17, rra)'>
         <vspace blankLines='0'/>Add a specification for the encoding of
         Kerberos credentials in tokens.  Specify the size of
         timestamps.</t>
