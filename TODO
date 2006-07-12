@@ -64,3 +64,10 @@
 
  *) Provide a better way (over protocol, perhaps?) of synchronizing keyrings
     across machines in a pool.
+
+ *) Compile the WebAuth version into the modules rather than getting the
+    version from the webauth library.  In the webauth and webkdc modules,
+    warn if the versions don't match at runtime (but proceed anyway).
+
+ *) Add POD documentation for all Perl modules.  Many of the WebKDC modules
+    currently don't have documentation.
