@@ -111,9 +111,11 @@ sub print_headers {
         push (@$ca, $cookie);
     }
     if ($ca) {
-        print $q->header (-type => 'text/html', -cookie => $ca);
+        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
+                          -Cache_Control => 'no-cache', -cookie => $ca);
     } else {
-        print $q->header (-type => 'text/html');
+        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
+                          -Cache_Control => 'no-cache');
     }
 }
 

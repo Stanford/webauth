@@ -1,5 +1,12 @@
                           WebAuth Change History
 
+WebAuth 3.5.2 (unreleased)
+
+ *) Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
+    of all responses from the Weblogin scripts.  This is particularly
+    important for the logout script, since otherwise browsers may cache
+    the logout page and not actually be logged out.
+
 WebAuth 3.5.1 (2006-06-20)
 
  *) Allow the submit button on the login page to return any value rather
