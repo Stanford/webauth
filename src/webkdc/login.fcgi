@@ -521,6 +521,7 @@ while (my $q = CGI::Fast->new) {
              && !$ENV{REMOTE_USER}
              && $q->cookie ($REMUSER_COOKIE)
              && !$is_error
+             && !$q->param ('login')
              && $WebKDC::Config::REMOTE_USER_REDIRECT) {
         print STDERR ("redirecting to REMOTE_USER page\n") if $DEBUG;
         print_remuser_redirect ($q);

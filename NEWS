@@ -7,6 +7,12 @@ WebAuth 3.5.2 (unreleased)
     important for the logout script, since otherwise browsers may cache
     the logout page and not actually be logged out.
 
+ *) Don't ever redirect the user to the URL that attempts Apache
+    authentication if they've already submitted the login form, even if
+    they didn't supply a username or password.  Once the user reaches the
+    login page, the page flow should keep them there until they log in
+    with username and password.
+
 WebAuth 3.5.1 (2006-06-20)
 
  *) Allow the submit button on the login page to return any value rather
