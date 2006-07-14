@@ -2,6 +2,13 @@
 
 WebAuth 3.5.2 (unreleased)
 
+ *) SECURITY: Modify the default templates to add ESCAPE=HTML when
+    inserting the values of variables.  Without telling HTML::Template to
+    escape values in this fashion, a cross-site scripting attack is
+    possible with at least the username field of the login form.  Any site
+    using customized templates should make the equivalent change to their
+    templates.
+
  *) Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
     of all responses from the Weblogin scripts.  This is particularly
     important for the logout script, since otherwise browsers may cache

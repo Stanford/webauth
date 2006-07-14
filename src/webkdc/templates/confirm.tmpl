@@ -34,16 +34,16 @@ remuser                : set if REMOTE_USER is desired
           <td>
             <div class="logintext">
               <p>You are logged into Webauth as user
-              <strong><TMPL_VAR NAME=username></strong></p>
+              <strong><TMPL_VAR ESCAPE=HTML NAME=username></strong></p>
               <p>Click this link to continue to the website you
               requested:</p>
-              <p><a href="<TMPL_VAR NAME=return_url>">
-                 <TMPL_VAR NAME=pretty_return_url></a></p>
+              <p><a href="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
+                 <TMPL_VAR ESCAPE=HTML NAME=pretty_return_url></a></p>
               <p><strong>Protect your assets:</strong><br/>
                  Quit your web browser when you are finished (see below
                  for more details)</p>
               <TMPL_IF NAME=login_cancel>
-                <p><a href="<TMPL_VAR NAME=cancel_url>">Cancel</a>
+                <p><a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">Cancel</a>
                    logging on to this service</p>
               </TMPL_IF>
             </div>
@@ -54,15 +54,15 @@ remuser                : set if REMOTE_USER is desired
 
     <TMPL_IF NAME=show_remuser>
       <div class="remuserbox" align="center">
-        <form action="<TMPL_VAR NAME=script_name>" method="post"
+        <form action="<TMPL_VAR ESCAPE=HTML NAME=script_name>" method="post"
               enctype="application/x-www-form-urlencoded">
           <input type="hidden" name="return_url"
-                 value="<TMPL_VAR NAME=return_url>">
+                 value="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
           <input type="hidden" name="username"
-                 value="<TMPL_VAR NAME=username>">
+                 value="<TMPL_VAR ESCAPE=HTML NAME=username>">
           <TMPL_IF NAME=login_cancel>
             <input type="hidden" name="cancel_url"
-                   value="<TMPL_VAR NAME=cancel_url>">
+                   value="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">
           </TMPL_IF>
           <table border="1" width="70%">
             <tr>

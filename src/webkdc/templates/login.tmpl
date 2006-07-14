@@ -87,18 +87,21 @@ remuser_url            : where to send the user for REMOTE_USER auth
                    width="160" height="160"/></td>
           <td>
             <div class="loginform">
-              <form action="<TMPL_VAR NAME=script_name>"
+              <form action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
                     method="post" autocomplete="OFF"
                     enctype="application/x-www-form-urlencoded">
-                <input type="hidden" name="RT" value="<TMPL_VAR NAME=RT>">
-                <input type="hidden" name="ST" value="<TMPL_VAR NAME=ST>">
-                <input type="hidden" name="LC" value="<TMPL_VAR NAME=LC>">
+                <input type="hidden" name="RT"
+                       value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                <input type="hidden" name="ST"
+                       value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                <input type="hidden" name="LC"
+                       value="<TMPL_VAR ESCAPE=HTML NAME=LC>">
                 <input type="hidden" name="login" value="yes">
                 <table>
                   <tr>
                     <td><strong>Username:</strong></td>
                     <td><input name="username" type="text"
-                               value="<TMPL_VAR NAME=username>"
+                               value="<TMPL_VAR ESCAPE=HTML NAME=username>"
                                size="10" maxlength="8"><br/></td>
                   </tr>
                   <tr>
@@ -117,7 +120,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
               <a href="/help.html">help</a>
               <TMPL_IF NAME=login_cancel>
                 <!-- The Webauth Server has a cancel url.-->
-                <a href="<TMPL_VAR NAME=cancel_url>">cancel</a>
+                <a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">cancel</a>
               </TMPL_IF>
             </div>
           </td>
@@ -135,9 +138,12 @@ remuser_url            : where to send the user for REMOTE_USER auth
                 Apache authentication:
               </td>
               <td>
-                <form action="<TMPL_VAR NAME=remuser_url>" method="get">
-                  <input type="hidden" name="RT" value="<TMPL_VAR NAME=RT>">
-                  <input type="hidden" name="ST" value="<TMPL_VAR NAME=ST>">
+                <form action="<TMPL_VAR ESCAPE=HTML NAME=remuser_url>"
+                      method="get">
+                  <input type="hidden" name="RT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                  <input type="hidden" name="ST"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
                   <input type="submit" name="Submit" value="remuser">
                 </form>
               </td>

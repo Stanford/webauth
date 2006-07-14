@@ -35,7 +35,7 @@ err_msg                : error message from WebKDC
               </TMPL_IF>
 
               <TMPL_IF NAME=err_webkdc>
-                <p>Error: <TMPL_VAR NAME=err_msg></p>
+                <p>Error: <TMPL_VAR ESCAPE=HTML NAME=err_msg></p>
               </TMPL_IF>
 
               <p>To try again, please return to the preceding web page
