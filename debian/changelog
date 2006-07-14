@@ -1,3 +1,15 @@
+webauth (3.5.2-1) unstable; urgency=low
+
+  * New upstream release.
+    - SECURITY: Fix the default weblogin templates to always escape form
+      variables.  Sites using customized templates should check their
+      templates for the same issue; see NEWS.gz for more information.
+    - When Apache authentication for weblogin fails, don't retry for that
+      user session even on empty form submissions.
+    - Mark weblogin login and logout pages and not cachable by browsers.
+
+ --
+
 webauth (3.5.1-1) unstable; urgency=low
 
   * New upstream release.
