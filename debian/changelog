@@ -7,8 +7,9 @@ webauth (3.5.2-1) unstable; urgency=low
     - When Apache authentication for weblogin fails, don't retry for that
       user session even on empty form submissions.
     - Mark weblogin login and logout pages and not cachable by browsers.
+  * Include NEWS, README, and TODO in the webauth-weblogin doc directory.
 
- --
+ -- Russ Allbery <rra@debian.org>  Thu, 13 Jul 2006 17:56:23 -0700
 
 webauth (3.5.1-1) unstable; urgency=low
 
