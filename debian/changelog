@@ -1,4 +1,4 @@
-webauth (3.5.2-1) unstable; urgency=low
+webauth (3.5.2-1) unstable; urgency=medium
 
   * New upstream release.
     - SECURITY: Fix the default weblogin templates to always escape form
