@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.5.2 (unreleased)
+WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when
     inserting the values of variables.  Without telling HTML::Template to
