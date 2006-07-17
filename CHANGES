@@ -1,5 +1,11 @@
                           WebAuth Change History
 
+WebAuth 3.5.3 (unreleased)
+
+ *) Handle the renaming of ap_run_http_method to ap_run_http_scheme so
+    that WebAuth will compile under Apache 2.2.  Thanks to Jim Rodgers for
+    the patch.
+
 WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when

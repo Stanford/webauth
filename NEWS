@@ -1,5 +1,9 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.5.3 (unreleased)
+
+ *) Initial port to Apache 2.2.  Thanks to Jim Rodgers for the patch.
+
 WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when

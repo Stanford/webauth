@@ -76,7 +76,16 @@ strip_end(char *c, char *t)
 static int
 is_https(request_rec *r)
 {
-    const char *scheme = ap_run_http_method(r);
+    const char *scheme;
+
+    /* Apache 2.2 renamed this function but there doesn't appear to be a good
+       way of detecting Apache 2.2.  It did, however, also rename a macro, so
+       use that as a cheat. */
+#ifdef ap_http_method
+    scheme = ap_run_http_method(r);
+#else
+    scheme = ap_run_http_scheme(r);
+#endif
     return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
