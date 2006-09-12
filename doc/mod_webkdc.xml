@@ -210,6 +210,8 @@ key=value.  The possible keys are:</p>
 </dd>
 </dl>
 
+</section>
+
 <section><title>Setting up Multiple WebKDCs</title>
 
 <p>WebAuth V3 was designed so that it would be fairly easy to setup
