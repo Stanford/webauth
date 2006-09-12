@@ -1,3 +1,12 @@
+webauth (3.5.3-1) unstable; urgency=low
+
+  * New usptream release.
+    - Upstream source now supports Apache 2.2 builds.
+    - Improve and document mod_webkdc logging.
+    - Disable debug logging in the weblogin scripts.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 11 Sep 2006 20:34:07 -0700
+
 webauth (3.5.2-1) unstable; urgency=medium
 
   * New upstream release.
