@@ -33,10 +33,6 @@
     it would be good to tell the naive user to set up an application server
     or weblogin server.
 
- *) The WebKDC needs considerably better logging to do proper auditing of
-    user logins and documentation of the logging patterns that are already
-    present.
-
  *) If mod_webauth obtains a proxy token instead of an id token and
     WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
     id token from the WebKDC and then verify it rather than simply
