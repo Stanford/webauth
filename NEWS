@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.5.3 (unreleased)
+WebAuth 3.5.3 (2006-09-12)
 
  *) Add the connection IP address and, for Weblogin logins, the client IP
     address to the WebKDC to the WebKDC log messages whenever processing
