@@ -34,7 +34,7 @@ use URI ();
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
-our $DEBUG = 1;
+our $DEBUG = 0;
 
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;

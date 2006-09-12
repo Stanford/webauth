@@ -10,6 +10,10 @@ WebAuth 3.5.3 (unreleased)
 
  *) Initial port to Apache 2.2.  Thanks to Jim Rodgers for the patch.
 
+ *) Turn off debug-level logging in the Weblogin login.fcgi script by
+    default.  The REMOTE_USER code now seems to be stable and working
+    correctly and the extra verbose logging is not needed.
+
 WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when
