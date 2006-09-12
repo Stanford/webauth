@@ -22,6 +22,9 @@ WebAuth 3.5.3 (unreleased)
  *) Remove duplicate defininitions from src/modules/webauth/mod_webauth.h.
     Thanks to Robert A. Basch for the patch.
 
+ *) Update libtool, config.guess, and config.sub to the latest Debian
+    versions.
+
 WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when
