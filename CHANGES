@@ -25,6 +25,9 @@ WebAuth 3.5.3 (2006-09-12)
  *) Update libtool, config.guess, and config.sub to the latest Debian
     versions.
 
+ *) Update how xml2rfc is run on make dist, since the latest version can't
+    handle partial paths (at least in Debian).
+
 WebAuth 3.5.2 (2006-07-13)
 
  *) SECURITY: Modify the default templates to add ESCAPE=HTML when
