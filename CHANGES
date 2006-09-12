@@ -12,6 +12,9 @@ WebAuth 3.5.3 (unreleased)
     that WebAuth will compile under Apache 2.2.  Thanks to Jim Rodgers for
     the patch.
 
+ *) Remove extraneous newlines from the messages logged by the mod_webauth
+    module.
+
  *) Remove duplicate defininitions from src/modules/webauth/mod_webauth.h.
     Thanks to Robert A. Basch for the patch.
 

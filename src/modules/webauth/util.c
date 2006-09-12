@@ -378,7 +378,7 @@ mwa_register_cred_interface(server_rec *server,
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
-                     "mod_webauth: registering cred interface: %s\n",
+                     "mod_webauth: registering cred interface: %s",
                      interface->type);
 }
 

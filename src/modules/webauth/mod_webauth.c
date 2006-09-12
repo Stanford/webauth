@@ -206,7 +206,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
                           is_https(rc->r) ? "secure" : "");
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                     "mod_webauth: nuking cookie(%s): (%s)\n", 
+                     "mod_webauth: nuking cookie(%s): (%s)", 
                      name, cookie);
     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
 }
@@ -222,7 +222,7 @@ set_pending_cookie_cb(void *rec, const char *key, const char *value)
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                         "mod_webauth: set_pending_cookie_cb: %s\n", value);
+                         "mod_webauth: set_pending_cookie_cb: %s", value);
     }
 
     return 1;
@@ -267,7 +267,7 @@ mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                     "mod_webauth: mwa_setenv: (%s) (%s)\n",
+                     "mod_webauth: mwa_setenv: (%s) (%s)",
                      name, value);
     apr_table_setn(rc->r->subprocess_env, name, value);
     if (rc->dconf->var_prefix != NULL) {
@@ -383,7 +383,7 @@ die(const char *message, server_rec *s)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: fatal error: %s", message);
     }
-    printf("mod_webauth: fatal error: %s\n", message);
+    printf("mod_webauth: fatal error: %s", message);
     exit(1);
 }
 

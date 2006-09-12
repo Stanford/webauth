@@ -43,9 +43,6 @@
     evaluation of all the places marked FIXME, spawning either entries for
     this list or removal as unimportant.
 
- *) There are newlines in some of the log messages being logged from
-    mod_webauth.
-
  *) Allow WebAuthExtraRedirect in the server and virtual host
     configuration.
 
