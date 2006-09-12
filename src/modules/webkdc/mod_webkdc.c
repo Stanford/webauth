@@ -1731,8 +1731,9 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
 
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
-                     "mod_webkdc: event=getTokens "
+                     "mod_webkdc: event=getTokens from=%s "
                      "server=%s user=%s%s",
+                     rc->r->connection->remote_ip,
                      *req_subject_out,
                      rtokens[i].subject,
                      rtokens[i].info);
@@ -2209,8 +2210,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
-                 "mod_webkdc: event=requestToken "
+                 "mod_webkdc: event=requestToken from=%s clientIp=%s "
                  "server=%s user=%s rtt=%s%s%s%s%s",
+                 rc->r->connection->remote_ip,
+                 (req_info.remote_addr != NULL ? "" : req_info.remote_addr),
                  *req_subject_out,
                  *subject_out,
                  req_token.requested_token_type,
@@ -2425,7 +2428,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
-                 "mod_webkdc: event=webkdcProxyToken user=%s",
+                 "mod_webkdc: event=webkdcProxyToken from=%s user=%s",
+                 rc->r->connection->remote_ip,
                  *subject_out);
     ms = MWK_OK;
 
@@ -2497,7 +2501,8 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
 
     *subject_out = pt.subject;
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server, 
-                 "mod_webkdc: event=webkdcProxyTokenInfo user=%s",
+                 "mod_webkdc: event=webkdcProxyTokenInfo from=%s user=%s",
+                 rc->r->connection->remote_ip,
                  *subject_out);
     ms = MWK_OK;
     return ms;
@@ -2569,8 +2574,9 @@ parse_request(MWK_REQ_CTXT *rc)
         if (!handle_getTokensRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
-                         "mod_webkdc: event=getTokens "
+                         "mod_webkdc: event=getTokens from=%s "
                          "server=%s user=%s%s%s",
+                         rc->r->connection->remote_ip,
                          req,
                          sub,
                          rc->error_code == 0 ? "" : 
@@ -2586,8 +2592,9 @@ parse_request(MWK_REQ_CTXT *rc)
         if (!handle_requestTokenRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
-                         "mod_webkdc: event=requestToken "
+                         "mod_webkdc: event=requestToken from=%s "
                          "server=%s user=%s%s%s",
+                         rc->r->connection->remote_ip,
                          req,
                          sub,
                          rc->error_code == 0 ? "" : 
@@ -2603,8 +2610,9 @@ parse_request(MWK_REQ_CTXT *rc)
         if (!handle_webkdcProxyTokenRequest(rc, xd->root, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
-                         "mod_webkdc: event=webkdcProxyToken "
+                         "mod_webkdc: event=webkdcProxyToken from=%s "
                          "user=%s%s%s",
+                         rc->r->connection->remote_ip,
                          sub,
                          rc->error_code == 0 ? "" : 
                          apr_psprintf(rc->r->pool, 
@@ -2619,7 +2627,9 @@ parse_request(MWK_REQ_CTXT *rc)
         if (!handle_webkdcProxyTokenInfoRequest(rc, xd->root, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
-                         "mod_webkdc: event=webkdcProxyToken user=%s%s%s",
+                         "mod_webkdc: event=webkdcProxyTokenInfo from=%s "
+                         "user=%s%s%s",
+                         rc->r->connection->remote_ip,
                          sub,
                          rc->error_code == 0 ? "" : 
                          apr_psprintf(rc->r->pool, 
@@ -2633,7 +2643,8 @@ parse_request(MWK_REQ_CTXT *rc)
         char *m = apr_psprintf(rc->r->pool, "invalid command: %s", 
                                xd->root->name);
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webkdc: %s: %s", mwk_func, m);
+                     "mod_webkdc: %s: %s (from %s)", mwk_func, m,
+                     rc->r->connection->remote_ip);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, 0);
         generate_errorResponse(rc);
         return OK;        
