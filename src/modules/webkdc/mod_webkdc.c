@@ -2213,7 +2213,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
                  "server=%s user=%s rtt=%s%s%s%s%s",
                  rc->r->connection->remote_ip,
-                 (req_info.remote_addr != NULL ? "" : req_info.remote_addr),
+                 (req_info.remote_addr == NULL ? "" : req_info.remote_addr),
                  *req_subject_out,
                  *subject_out,
                  req_token.requested_token_type,
