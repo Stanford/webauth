@@ -64,3 +64,6 @@
 
  *) Add POD documentation for all Perl modules.  Many of the WebKDC modules
     currently don't have documentation.
+
+ *) Write design notes / internals documentation for how WebAuth is put
+    together.
