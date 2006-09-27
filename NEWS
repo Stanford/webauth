@@ -1,5 +1,79 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.5.3 (2006-09-12)
+
+ *) Add the connection IP address and, for Weblogin logins, the client IP
+    address to the WebKDC to the WebKDC log messages whenever processing
+    XML requests.
+
+ *) Document the log messages from the WebKDC in the mod_webkdc manual.
+
+ *) Initial port to Apache 2.2.  Thanks to Jim Rodgers for the patch.
+
+ *) Turn off debug-level logging in the Weblogin login.fcgi script by
+    default.  The REMOTE_USER code now seems to be stable and working
+    correctly and the extra verbose logging is not needed.
+
+WebAuth 3.5.2 (2006-07-13)
+
+ *) SECURITY: Modify the default templates to add ESCAPE=HTML when
+    inserting the values of variables.  Without telling HTML::Template to
+    escape values in this fashion, a cross-site scripting attack is
+    possible with at least the username field of the login form.  Any site
+    using customized templates should make the equivalent change to their
+    templates.
+
+ *) Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
+    of all responses from the Weblogin scripts.  This is particularly
+    important for the logout script, since otherwise browsers may cache
+    the logout page and not actually be logged out.
+
+ *) Don't ever redirect the user to the URL that attempts Apache
+    authentication if they've already submitted the login form, even if
+    they didn't supply a username or password.  Once the user reaches the
+    login page, the page flow should keep them there until they log in
+    with username and password.
+
+WebAuth 3.5.1 (2006-06-20)
+
+ *) Allow the submit button on the login page to return any value rather
+    than requiring it have the value "Login" so that the template can be
+    more easily translated.  Instead, the login form must include the tag:
+
+        <input type="hidden" name="login" value="yes">
+
+    The form for attempting Apache remote-user authentication should not
+    contain this tag.  Existing login.tmpl files must be updated
+    accordingly when upgrading to this version of the Weblogin server.
+
+ *) In the weblogin confirmation page, the variable remuser is now set to
+    1 if the user has a cookie indicating they want to try REMOTE_USER and
+    is not set otherwise.  This is a change from the previous behavior
+    where it was set to either the string "checked" or the empty string.
+    Templates using this variable will require modification.  This change
+    was made so that the Weblogin scripts don't assume a particular UI
+    presentation.
+
+ *) Add an err_forced template variable for the login.tmpl file that
+    indicates the user had a single sign-on configuration (either an
+    existing cookie or a request to do REMUSER), but the authenticating
+    web site requires username/password authentication.  Existing
+    login.tmpl files must be updated to include a reference to this
+    variable (even if not otherwise used).
+
+ *) Add the @REALMS configuration option to the Weblogin configuration
+    file, for use with Apache authentication where the resulting
+    REMOTE_USER value may be in one of several realms and each realm
+    should be treated identically.
+
+ *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
+    which usually manifested itself while reading keyrings.  Thanks to pod
+    for the analysis.
+
+ *) Properly check for apxs in configure so that an apxs under the
+    provided Apache root will be found.  Thanks to Marco Wise for the
+    debugging.
+
 WebAuth 3.5.0 (2006-03-20)
 
  *) Rename the template variables used by the weblogin templates to be

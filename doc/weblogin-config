@@ -45,6 +45,7 @@ Templates
       err_password      If set, user didn't supply password
       err_loginfailed   If set, login was invalid
       err_cookies       If set, user doesn't support cookies
+      err_forced        If set, username/password login is forced
 
       script_name       Relative URL to which form should be posted
       username          Username, if already known
@@ -67,7 +68,8 @@ Templates
       cancel_url        The cancel URL (return URL plus cancel token)
 
       show_remuser      If set, show the REMOTE_USER cookie configuration
-      remuser           "checked" if REMOTE_USER desired, "" otherwise
+      remuser           If set, the REMOTE_USER cookie is set
+      script_name       Relative URL to which cookie change should be posted
 
   A different template is used in the event of some other WebKDC error.
   It takes the following HTML::Template variables:
@@ -84,6 +86,11 @@ Templates
   logout.tmpl
 
       cookies_flag      If set, found a single sign-on cookie to delete
+
+  When customizing the templates for your site, carefully note the form
+  elements set by the existing templates and make sure that your templates
+  include the same form elements with the same names.  Otherwise, the
+  Weblogin scripts will not work as expected.
 
 Configuration
 
@@ -157,6 +164,24 @@ Configuration
       creating the authenticated user identity.  This is primarily useful
       in conjunction with mod_auth_kerb to strip the local Kerberos realm
       off of the authenticated identity.  Default: not set.
+
+  @REALMS
+
+      Only used when $HONOR_REMOTE_USER is set.  Identical to $REALM but,
+      rather than a single allowed realm, contains a list of acceptable
+      realms, which means it uses a slightly different syntax.  An example
+      setting:
+
+          @REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
+
+      As demonstrated in this example, realms should be listed in
+      parentheses and separated by commas.  "" (the empty realm) is an
+      allowable value and means to allow REMOTE_USER settings that contain
+      no realm information (do not contain a @-sign).  If the realm
+      matches any of the allowable realms, the realm information will be
+      stripped off.  Use this setting instead of $REALM when you have
+      multiple Kerberos realms that you want to treat identically for
+      WebAuth purposes.
 
   $REMOTE_USER_REDIRECT
 

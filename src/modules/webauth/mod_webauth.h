@@ -22,8 +22,13 @@
 
 #include <curl/curl.h>
 
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#elif HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #include "webauth.h"
@@ -53,14 +58,8 @@
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* defines for config directives */
-#define CD_WebKdcURL "WebAuthWebKdcURL"
-#define CM_WebKdcURL "URL for the WebKdc XML service"
-
 #define CD_WebKdcPrincipal "WebAuthWebKdcPrincipal"
 #define CM_WebKdcPrincipal "K5 WebKDC principal name"
-
-#define CD_WebKdcURL "WebAuthWebKdcURL"
-#define CM_WebKdcURL "URL for the WebKdc XML service"
 
 #define CD_WebKdcSSLCertFile "WebAuthWebKdcSSLCertFile"
 #define CM_WebKdcSSLCertFile "cert file containing the WebKDC's certificate"
@@ -68,6 +67,9 @@
 #define CD_WebKdcSSLCertCheck "WebAuthWebKdcSSLCertCheck"
 #define CM_WebKdcSSLCertCheck "whether or not to perform security checks on the SSL cert used by the WebKDC"
 #define DF_WebKdcSSLCertCheck 1
+
+#define CD_WebKdcURL "WebAuthWebKdcURL"
+#define CM_WebKdcURL "URL for the WebKdc XML service"
 
 #define CD_LoginURL "WebAuthLoginURL"
 #define CM_LoginURL "URL for the login page"

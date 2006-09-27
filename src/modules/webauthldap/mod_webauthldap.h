@@ -22,6 +22,12 @@
 #include "apr_xml.h"
 #include "apr_base64.h"
 
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#elif HAVE_STDINT_H
+# include <stdint.h>
+#endif
+
 /* constants */
 #define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1

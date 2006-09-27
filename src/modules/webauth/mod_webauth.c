@@ -76,7 +76,16 @@ strip_end(char *c, char *t)
 static int
 is_https(request_rec *r)
 {
-    const char *scheme = ap_run_http_method(r);
+    const char *scheme;
+
+    /* Apache 2.2 renamed this function but there doesn't appear to be a good
+       way of detecting Apache 2.2.  It did, however, also rename a macro, so
+       use that as a cheat. */
+#ifdef ap_http_method
+    scheme = ap_run_http_method(r);
+#else
+    scheme = ap_run_http_scheme(r);
+#endif
     return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
@@ -197,7 +206,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
                           is_https(rc->r) ? "secure" : "");
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                     "mod_webauth: nuking cookie(%s): (%s)\n", 
+                     "mod_webauth: nuking cookie(%s): (%s)", 
                      name, cookie);
     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
 }
@@ -213,7 +222,7 @@ set_pending_cookie_cb(void *rec, const char *key, const char *value)
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                         "mod_webauth: set_pending_cookie_cb: %s\n", value);
+                         "mod_webauth: set_pending_cookie_cb: %s", value);
     }
 
     return 1;
@@ -258,7 +267,7 @@ mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
-                     "mod_webauth: mwa_setenv: (%s) (%s)\n",
+                     "mod_webauth: mwa_setenv: (%s) (%s)",
                      name, value);
     apr_table_setn(rc->r->subprocess_env, name, value);
     if (rc->dconf->var_prefix != NULL) {
@@ -374,7 +383,7 @@ die(const char *message, server_rec *s)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: fatal error: %s", message);
     }
-    printf("mod_webauth: fatal error: %s\n", message);
+    printf("mod_webauth: fatal error: %s", message);
     exit(1);
 }
 
@@ -2658,7 +2667,7 @@ seconds(const char *value, char **error_str)
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF *)mconf;
 
@@ -2761,7 +2770,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
 
@@ -2772,7 +2781,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
 
@@ -2857,7 +2866,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
 
@@ -2868,7 +2877,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 static const char *
 cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 {
-    int e = (int)cmd->info;
+    intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
     MWA_WACRED *cred;
@@ -2897,7 +2906,7 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
             error_str = 
                 apr_psprintf(cmd->pool,
                              "Invalid value cmd->info(%d) for directive %s",
-                             e,
+                             (int) e,
                              cmd->directive->directive);
             break;
     }

@@ -1,9 +1,35 @@
-webauth (3.5.0-0bpo1) sarge-backports; urgency=low
+webauth (3.5.3-1) unstable; urgency=low
 
-  * Backport to sarge.
-    - Depend on libcurl3-dev instead of libcurl3-openssl-dev.
+  * New usptream release.
+    - Upstream source now supports Apache 2.2 builds.
+    - Improve and document mod_webkdc logging.
+    - Disable debug logging in the weblogin scripts.
 
- -- Russ Allbery <rra@debian.org>  Mon, 27 Mar 2006 14:17:29 -0800
+ -- Russ Allbery <rra@debian.org>  Mon, 11 Sep 2006 20:34:07 -0700
+
+webauth (3.5.2-1) unstable; urgency=medium
+
+  * New upstream release.
+    - SECURITY: Fix the default weblogin templates to always escape form
+      variables.  Sites using customized templates should check their
+      templates for the same issue; see NEWS.gz for more information.
+    - When Apache authentication for weblogin fails, don't retry for that
+      user session even on empty form submissions.
+    - Mark weblogin login and logout pages and not cachable by browsers.
+  * Include NEWS, README, and TODO in the webauth-weblogin doc directory.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 13 Jul 2006 17:56:23 -0700
+
+webauth (3.5.1-1) unstable; urgency=low
+
+  * New upstream release.
+    - Multiple changes to the Weblogin scripts and templates that will
+      require updates to existing templates.  See the upstream NEWS file
+      for more details.
+    - Fix decoding of keyring times on 64-bit platforms.
+  * Update standards version to 3.7.2 (no changes required).
+
+ -- Russ Allbery <rra@debian.org>  Tue, 20 Jun 2006 09:20:44 -0700
 
 webauth (3.5.0-1) unstable; urgency=low
 

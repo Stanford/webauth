@@ -13,8 +13,8 @@ m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
 
 AC_REVISION($Revision$)
-AC_PREREQ(2.57)
-AC_INIT([WebAuth], [3.5.0], [webauth-team@lists.stanford.edu])
+AC_PREREQ(2.59)
+AC_INIT([WebAuth], [3.5.3], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
 
 dnl Store information about the time the package was configured and the person
@@ -148,6 +148,9 @@ AC_CHECK_HEADERS([netinet/in.h])
 
 dnl Checks for types.
 WEBAUTH_TYPE_INT32_T
+AC_CHECK_TYPE([intptr_t], ,
+    [AC_DEFINE([intptr_t], [long],
+        [Define to long if <stdint.h> does not define.])])
 
 dnl Crank up warnings if using GCC
 if test "$GCC" = "yes" ; then

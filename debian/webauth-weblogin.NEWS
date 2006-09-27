@@ -1,0 +1,20 @@
+webauth-weblogin (3.5.2-1) unstable; urgency=medium
+
+  Prior versions of the default weblogin templates had a cross-site
+  scripting vulnerability that potentially allowed an attacker to trick
+  users into submitting their username and password to the attacker's
+  site.  This vulnerability has been corrected in the sample templates as
+  of this release, but any templates based on the sample templates should
+  be checked for this vulnerability as well.
+
+  In the templates, replace any instance of:
+
+      <TMPL_VAR NAME=variable>
+
+  with:
+
+      <TMPL_VAR ESCAPE=HTML NAME=variable>
+
+  where "variable" may be any variable name.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 13 Jul 2006 17:56:23 -0700

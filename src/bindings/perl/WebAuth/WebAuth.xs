@@ -461,7 +461,7 @@ PPCODE:
     I32 klen;
     STRLEN vlen;
     WEBAUTH_ATTR_LIST *list;
-    SV *output;
+    SV *output = NULL;
     int iskey;
 
     if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV)) {
@@ -533,7 +533,7 @@ PPCODE:
     WEBAUTH_ATTR_LIST *list;
     int i, s, iskey;
     HV *hv;
-    SV *output;
+    SV *output = NULL;
     SV *copy = sv_2mortal(newSVsv(buffer));
 
     p_input = SvPV(copy, n_input);

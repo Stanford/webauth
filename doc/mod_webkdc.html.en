@@ -61,7 +61,8 @@ tokens and ticket caches.</p>
 <ul id="topics">
 <li><img alt="" src="../images/down.gif" /> Setting up the WebKDC</li>
 <li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> Setting up multiple WebKDCs</li>
+<li><img alt="" src="../images/down.gif" /> WebKDC Logging</li>
+<li><img alt="" src="../images/down.gif" /> Setting up Multiple WebKDCs</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -118,7 +119,137 @@ WebKdcTokenAcl conf/webkdc/token.acl
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Setting up multiple WebKDCs</h2>
+<h2>WebKDC Logging</h2>
+
+<p>All commands received by the WebKDC and their results are logged to the
+Apache error log with a log level of "notice".  These log messages always
+begin with the string "mod_webkdc: event=" followed by the event,
+which is one of the following:</p>
+
+<dl>
+<dt>getTokens</dt>
+<dd><p>A request for a service, id, proxy, or cred token.  You will see
+    this action most frequently from WebAuth web servers acquiring new
+    service tokens for use later when redirecting users to the Weblogin
+    server and decoding the response.  When delegating user credentials to
+    WebAuth application servers, those servers will send a
+    <code>getTokens</code> request to the WebKDC to obtain those delegated
+    credentials.</p>
+</dd>
+
+<dt>requestToken</dt>
+<dd><p>A request for an id or proxy token for a user.  A proxy token for
+    the WebKDC itself will also be returned for use with future requests
+    by the same user.  This call will normally only be done by the
+    Weblogin component of the WebKDC service; while the call is available
+    to any client, clients wishing to bootstrap WebAuth cookies on their
+    own should use the much simpler webkdcProxyToken call instead.</p>
+</dd>
+
+<dt>webkdcProxyToken</dt>
+<dd><p>A request for a WebKDC proxy token (the token contained in the
+    WebAuth single sign-on cookie) given a Kerberos authenticator.  This
+    can be used by clients to bootstrap a WebAuth single sign-on cookie
+    without having to visit the Weblogin server in a browser.</p>
+</dd>
+
+<dt>webkdcProxyTokenInfo</dt>
+<dd><p>Given a WebKDC proxy token, returns various metadata about it, such
+    as its expiration time.</p>
+</dd>
+</dl>
+
+<p>Those who are familiar with the WebAuth protocol will recognize that
+the four events logged are the four XML elements that the WebKDC protocol
+permits.  (Other errors, such as unknown commands, are of course also
+logged.)</p>
+
+<p>Following the event will be additional key/value pairs in the form
+key=value.  The possible keys are:</p>
+
+<dl>
+<dt>clientIp</dt>
+<dd><p>Only for <code>requestToken</code> requests, this contains the
+    client IP address as indicated by the Weblogin server.  If the
+    Weblogin server didn't include the client IP address in the request,
+    the value will be empty.  Please note that the WebKDC does not
+    authenticate this information, only records whatever was passed in by
+    the Weblogin server, which means that if <code>from</code> is not
+    127.0.0.1 (meaning that the <code>requestToken</code> request didn't
+    come from the Weblogin server), the value of this key should not be
+    trusted.</p>
+</dd>
+
+<dt>errorCode</dt>
+<dd><p>The error code for a protocol-level error.  The presence of this
+    key means that some failure occurred in the course of parsing the XML
+    document and therefore no action was taken in the WebKDC.</p>
+</dd>
+
+<dt>errorMessage</dt>
+<dd><p>The error message corresponding to the error code from a
+    <code>errorCode</code> key.</p>
+</dd>
+
+<dt>from</dt>
+<dd><p>The IP address from which the request came.  For
+    <code>requestToken</code> in the recommended configuration of running
+    Weblogin servers on the same host as the WebKDC, this will normally
+    always be 127.0.0.1, but will be more interesting for the other
+    events.</p>
+</dd>
+
+<dt>lec</dt>
+<dd><p>The login error code, only included for <code>requestToken</code>.
+    If this is 0, the call was successful.  Otherwise, it contains the
+    error code.</p>
+</dd>
+
+<dt>lem</dt>
+<dd><p>If <code>lec</code> is non-zero in <code>requestToken</code>, this
+    contains the error message corresponding to that error code.</p>
+</dd>
+
+<dt>ro</dt>
+<dd><p>Any request options set by the WebAuth server.  The most common
+    value here is "fa", indicating that the WebAuth server requested
+    forced password authentication even if the user already had single
+    sign-on credentials.  For more details on the possible values, see the
+    WebAuth protocol specification.</p>
+</dd>
+
+<dt>rtt</dt>
+<dd><p>The returned token type from a <code>requestToken</code> request.
+    Normally this will be "id" for an id token, but may be another token
+    type depending on what the WebAuth server asked for.</p>
+</dd>
+
+<dt>server</dt>
+<dd><p>For <code>getTokens</code> and <code>requestToken</code>, this will
+    contain the identifier of the requesting server (in the case of
+    <code>requestToken</code>, this is the server that sent the user to
+    Weblogin).</p>
+</dd>
+
+<dt>type</dt>
+<dd><p>The type of token acquired by a <code>getTokens</code> call.</p>
+</dd>
+
+<dt>user</dt>
+<dd><p>The user being authenticated.  This will normally be the username
+    portion of a Kerberos identity, if it is known, for
+    <code>requestToken</code>.  For protocol-level errors, it often will
+    be unknown (because the protocol failed before the username was
+    established) and will instead be the string "&lt;unknown&gt;".  For
+    <code>getTokens</code>, it will be the user the tokens are for (the
+    same as <code>server</code> in the most common case of acquiring
+    service tokens).</p>
+</dd>
+</dl>
+
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Setting up Multiple WebKDCs</h2>
 
 <p>WebAuth V3 was designed so that it would be fairly easy to setup
 multiple WebKDCs for load balancing and redundancy. There are three pieces
@@ -556,6 +687,6 @@ WebKdcTokenMaxTTL 10m
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1995-2006 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2006 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

@@ -9,6 +9,7 @@ VPATH		= @srcdir@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 bindir		= @bindir@
+datarootdir     = @datarootdir@
 libdir		= @libdir@
 mandir		= @mandir@
 D		= $(DESTDIR)
@@ -20,7 +21,7 @@ VERSION		= @PACKAGE_VERSION@
 CC		= @CC@
 INSTALL		= @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-LIBTOOL		= $(top_builddir)libtool
+LIBTOOL		= $(top_builddir)/libtool
 RANLIB		= @RANLIB@
 
 CFLAGS		= @CFLAGS@
@@ -28,7 +29,7 @@ CFLAGS		= @CFLAGS@
 CPPFLAGS	= -I$(top_builddir) -I$(top_srcdir)/src/libwebauth \
 		  @CPPFLAGS@
 
-LDFLAGS		= -L$(top_builddir)src/libwebauth
+LDFLAGS		= -L$(top_builddir)/src/libwebauth
 LDLIBS		= -lwebauth @DEPEND_LIBS@ @LIBS@
 
 PROGS		= wa_keyring

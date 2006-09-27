@@ -34,7 +34,7 @@ use URI ();
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
-our $DEBUG = 1;
+our $DEBUG = 0;
 
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;
@@ -111,9 +111,11 @@ sub print_headers {
         push (@$ca, $cookie);
     }
     if ($ca) {
-        print $q->header (-type => 'text/html', -cookie => $ca);
+        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
+                          -Cache_Control => 'no-cache', -cookie => $ca);
     } else {
-        print $q->header (-type => 'text/html');
+        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
+                          -Cache_Control => 'no-cache');
     }
 }
 
@@ -160,7 +162,10 @@ sub print_login_page {
     # If and only if we got here as the target of a form submission (meaning
     # that they already had one shot at logging in and something didn't work),
     # set the appropriate error status.
-    if ($q->param ('Submit') && $q->param ('Submit') eq 'Login') {
+    #
+    # If they *haven't* already had one shot and forced login is set, display
+    # the error box telling them they're required to log in.
+    if ($q->param ('login')) {
         $page->param (err_password => 1) unless $q->param ('password');
         $page->param (err_username => 1) unless $q->param ('username');
         $page->param (err_cookies => 1) unless $q->cookie ($TEST_COOKIE);
@@ -176,6 +181,9 @@ sub print_login_page {
             || $page->param ('err_loginfailed')) {
             $page->param (error => 1);
         }
+    } elsif ($lvars->{forced_login}) {
+        $page->param (err_forced => 1);
+        $page->param (error => 1);
     }
     print_headers ($q, $resp->proxy_cookies);
     print $page->output;
@@ -233,8 +241,9 @@ sub print_confirm_page {
     if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
         if ($ENV{REMOTE_USER} || $q->cookie ($REMUSER_COOKIE)) {
             $page->param (show_remuser => 1);
-            my $remuser = $q->cookie ($REMUSER_COOKIE) ? 'checked' : '';
-            $page->param (remuser => $remuser);
+            if ($q->cookie ($REMUSER_COOKIE)) {
+                $page->param (remuser => 1);
+            }
             $page->param (script_name => $q->script_name);
         }
     }
@@ -350,8 +359,23 @@ sub add_remuser_token {
     if ($WebKDC::Config::REALM) {
         if (!$realm || $realm ne $WebKDC::Config::REALM) {
             warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
-                . " saw " . ($realm ? $realm : '""') . " expected "
+                . ' saw ' . ($realm ? $realm : '""') . " expected "
                 . $WebKDC::Config::REALM . "\n";
+            return;
+        }
+    } elsif (@WebKDC::Config::REALMS) {
+        my $found = 0;
+        $realm ||= '';
+        for my $check (@WebKDC::Config::REALMS) {
+            if ($check eq $realm) {
+                $found = 1;
+                last;
+            }
+        }
+        if (!$found) {
+            warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
+                . ' saw ' . ($realm ? $realm : '""') . ' not in allowed list'
+                . "\n";
             return;
         }
     } elsif ($realm) {
@@ -421,16 +445,18 @@ while (my $q = CGI::Fast->new) {
     $req->service_token (fix_token ($q->param ('ST')));
     $req->request_token (fix_token ($q->param ('RT')));
 
-    # Also pass to the WebKDC any proxy tokens we hvae from cookies.
+    # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate through all cookies that start with webauth_wpt (Webauth Proxy
     # Token) and stuff them into the WebKDC request.
     my %cart = CGI::Cookie->fetch;
+    my $wpt_cookie;
     for (keys %cart) {
         if (/^webauth_wpt/) {
             my ($name, $val) = split ('=', $cart{$_});
             $name=~ s/^(webauth_wpt_)//;
             $req->proxy_cookie ($name, $q->cookie ($_));
             print STDERR "found a cookie $name\n" if $DEBUG;
+            $wpt_cookie = 1;
         }
     }
 
@@ -470,7 +496,7 @@ while (my $q = CGI::Fast->new) {
     # sure we bounce them back to the login page since otherwise WebAuth is
     # going to fail later.
     my $has_cookies = 1;
-    if ($q->param ('Submit') && $q->param ('Submit') eq 'Login') {
+    if ($q->param ('login')) {
         unless ($q->cookie ($TEST_COOKIE)) {
             $has_cookies = 0;
         }
@@ -495,6 +521,7 @@ while (my $q = CGI::Fast->new) {
              && !$ENV{REMOTE_USER}
              && $q->cookie ($REMUSER_COOKIE)
              && !$is_error
+             && !$q->param ('login')
              && $WebKDC::Config::REMOTE_USER_REDIRECT) {
         print STDERR ("redirecting to REMOTE_USER page\n") if $DEBUG;
         print_remuser_redirect ($q);
@@ -524,6 +551,17 @@ while (my $q = CGI::Fast->new) {
         if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
             $varhash{remuser_failed} = $is_error;
         }
+
+        # If logins were forced, we want to tell the user.  However, if this
+        # is the first site they've authenticated to, we only want to tell the
+        # user that if they request REMUSER support.  So, if forced login was
+        # set *and* either the user has single sign-on cookies or wants to do
+        # REMUSER, set the relevant template variable.
+        if ($status == WK_ERR_LOGIN_FORCED
+            && ($wpt_cookie || $q->cookie ($REMUSER_COOKIE))) {
+            $varhash{forced_login} = 1;
+        }
+
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR ("WebKDC::make_request_token_request failed,"

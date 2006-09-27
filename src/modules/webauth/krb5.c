@@ -124,7 +124,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
 
     if (rc->sconf->cred_cache_dir == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: cred_cache_dir is not set (%s)\n", 
+                     "mod_webauth: %s: cred_cache_dir is not set (%s)", 
                      mwa_func, CM_CredCacheDir);
         return 0;
     }
@@ -158,7 +158,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
     
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                     "mod_webauth: %s: temp_cred_file mktemp(%s)\n", 
+                     "mod_webauth: %s: temp_cred_file mktemp(%s)", 
                      mwa_func, temp_cred_file);
 
     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
