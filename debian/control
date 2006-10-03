@@ -2,12 +2,14 @@ Source: webauth
 Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>> 4.0.0), apache2-dev, libcurl3-openssl-dev, libkrb5-dev, libldap2-dev, libssl-dev, perl (>= 5.6.0-16)
+Build-Depends: debhelper (>> 4.0.0), apache2-threaded-dev (>= 2.2),
+ libcurl3-openssl-dev, libkrb5-dev, libldap2-dev, libssl-dev,
+ perl (>= 5.6.0-16) 
 Standards-Version: 3.7.2
 
 Package: libapache2-webauth
 Architecture: any
-Depends: apache2, ${shlibs:Depends}
+Depends: apache2.2-common, ${shlibs:Depends}
 Description: Apache 2 modules for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -24,7 +26,7 @@ Description: Apache 2 modules for WebAuth authentication
 
 Package: libapache2-webkdc
 Architecture: any
-Depends: apache2, ${shlibs:Depends}
+Depends: apache2.2-common, ${shlibs:Depends}
 Description: Apache 2 modules for a WebAuth authentication KDC
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
