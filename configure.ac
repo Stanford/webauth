@@ -160,14 +160,16 @@ fi
 dnl Generate special flags for apxs, which doesn't understand compiler flags.
 dnl We have to do this with KRB5_LIBS and DEPEND_LIBS as well, since Heimdal
 dnl likes to put -pthread into the compiler flags and apxs doesn't understand
-dnl it.
+dnl it.  Handle -R (runtime search path link option) similarly.
 APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
-APXS_DEPEND_LIBS=`echo "$DEPEND_LIBS" \
+APXS_DEPEND_LIBS=`echo " $DEPEND_LIBS" \
     | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
-    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/'`
-APXS_KRB5_LIBS=`echo "$KRB5_LIBS" \
+    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
+    | sed 's/ -R/ -Wl,-R/'`
+APXS_KRB5_LIBS=`echo "$ KRB5_LIBS" \
     | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
-    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/'`
+    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
+    | sed 's/ -R/ -Wl,-R/'`
 AC_SUBST([APXS_CFLAGS])
 AC_SUBST([APXS_DEPEND_LIBS])
 AC_SUBST([APXS_KRB5_LIBS])
