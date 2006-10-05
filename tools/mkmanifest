@@ -21,7 +21,8 @@ use File::Find qw(find);
 # in releases.
 @IGNORE = (qr%(\A|/)\.cvsignore\Z%, qr/\.[ao]\Z/, qr%(\A|/)CVS(/|\Z)%,
            qr%(\A|/)\.svn(/|\Z)%, qr%(\A|/)\.?\#%, qr/\.(old|bak|orig|rej)$/,
-           qr%(\A|/)core\Z%, qr/~\Z/, qr%\Adebian(/|\Z)%);
+           qr%(\A|/)core\Z%, qr/~\Z/, qr%\Adebian(/|\Z)%,
+           qr%\Apatches(/|\Z)%);
 
 # A list of generated files that should be included in the manifest and
 # therefore included in releases, but which are listed in .cvsignore.
