@@ -67,3 +67,13 @@
 
  *) Write design notes / internals documentation for how WebAuth is put
     together.
+
+ *) Currently, all module errors are logged with ap_log_error.  It looks
+    like we should be using ap_log_rerror when there's a request available
+    and ap_log_cerror (but only with Apache 2.0.55 and later) when there's
+    a connection available.  This would probably include more useful
+    details in the logs.
+
+ *) We're always passing a status of zero to all calls to ap_log_error,
+    but in some cases we do have an error status that we should be
+    passing in.
