@@ -1,0 +1,12 @@
+This directory contains contributed patches to WebAuth that we've chosen
+not to apply for some reason but don't want to lose.  It is not
+distributed in releases and is kept only in Subversion for our internal
+use in development.
+
+When putting a patch in this directory, please make sure that it will
+apply with patch -p1, explain what the patch is for in a preface to the
+patch, state what version number the patch was made against, and note the
+author of the patch.
+
+Please name patches with dashes, not underscores, separating words and
+without any unnecessary extensions like .diff or .patch.

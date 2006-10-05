@@ -1,0 +1,1698 @@
+Changes all calls to ap_log_error into a macro which adds APLOG_MARK and
+always sets the status to 0.  This is probably not what we want exactly,
+since we should be using ap_log_rerror (and possibly ap_log_cerror) in
+places and sometimes the status should not be zero.  However, the largest
+problem is that this patch requires a C99 compiler since it uses a
+variadic macro.
+
+Note that this version of the patch also introduces APLOG_NOERRNO into the
+common case and has a separate macro for cases where this isn't needed.
+This is now deprecated in the current release of Apache.
+
+Patch from Robert Basch <rbasch@MIT.EDU> as part of his work to port
+WebAuth to Apache 1.x.  Patch was originally against WebAuth 3.5.3.
+
+--- webauth-3.5.3/src/modules/webauth/krb5.c.orig	2006-09-12 20:21:27.000000000 -0400
++++ webauth-3.5.3/src/modules/webauth/krb5.c	2006-09-18 14:57:07.000000000 -0400
+@@ -13,22 +13,22 @@ log_webauth_error(server_rec *s, 
+                       const char *extra)
+ {
+     if (status == WA_ERR_KRB5 && ctxt != NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+-                     "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
+-                     mwa_func, func,
+-                     extra == NULL ? "" : " ",
+-                     extra == NULL ? "" : extra,
+-                     webauth_error_message(status), status,
+-                     webauth_krb5_error_message(ctxt), 
+-                     webauth_krb5_error_code(ctxt));
++        mwa_ap_log_error(APLOG_ERR, s,
++                         "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
++                         mwa_func, func,
++                         extra == NULL ? "" : " ",
++                         extra == NULL ? "" : extra,
++                         webauth_error_message(status), status,
++                         webauth_krb5_error_message(ctxt), 
++                         webauth_krb5_error_code(ctxt));
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+-                     "mod_webauth: %s: %s%s%s failed: %s (%d)",
+-                     mwa_func,
+-                     func,
+-                     extra == NULL ? "" : " ",
+-                     extra == NULL ? "" : extra,
+-                     webauth_error_message(status), status);
++        mwa_ap_log_error(APLOG_ERR, s,
++                         "mod_webauth: %s: %s%s%s failed: %s (%d)",
++                         mwa_func,
++                         func,
++                         extra == NULL ? "" : " ",
++                         extra == NULL ? "" : extra,
++                         webauth_error_message(status), status);
+     }
+ }
+ 
+@@ -64,8 +64,8 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void
+     char *kt;
+ 
+     if (rc->sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: called", mwa_func);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: called", mwa_func);
+     }
+ 
+     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
+@@ -98,13 +98,13 @@ cred_cache_destroy(void *data)
+ {
+     char *path = (char*)data;
+     /* 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+-                 "mod_webauth: cleanup cred: %s", path);
++    mwa_ap_log_error(APLOG_ERR, NULL,
++                     "mod_webauth: cleanup cred: %s", path);
+     */
+     if (unlink(path) == -1) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+-                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)", 
+-                     path, errno);
++        mwa_ap_log_error_errno(APLOG_ERR, NULL,
++                               "mod_webauth: cleanup cred: unlink(%s)", 
++                               path);
+     }
+     return APR_SUCCESS;
+ }
+@@ -123,9 +123,9 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA
+     apr_status_t astatus;
+ 
+     if (rc->sconf->cred_cache_dir == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: cred_cache_dir is not set (%s)", 
+-                     mwa_func, CM_CredCacheDir);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: cred_cache_dir is not set (%s)", 
++                         mwa_func, CM_CredCacheDir);
+         return 0;
+     }
+ 
+@@ -157,9 +157,9 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA
+                               apr_pool_cleanup_null);
+     
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: temp_cred_file mktemp(%s)", 
+-                     mwa_func, temp_cred_file);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: temp_cred_file mktemp(%s)", 
++                         mwa_func, temp_cred_file);
+ 
+     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
+     if (ctxt == NULL)
+@@ -170,10 +170,10 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA
+     for (i=0; i < num_creds; i++) {
+         if (strcmp(creds[i]->cred_type, "krb5") == 0) {
+             if (rc->sconf->debug)
+-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                             "mod_webauth: %s: prepare (%s) for (%s)",
+-                             mwa_func, creds[i]->cred_server, 
+-                             creds[i]->subject);
++                mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                                 "mod_webauth: %s: prepare (%s) for (%s)",
++                                 mwa_func, creds[i]->cred_server, 
++                                 creds[i]->subject);
+             if (i == 0) {
+                 status = webauth_krb5_init_via_cred(ctxt,
+                                                     creds[i]->cred_data,
+--- webauth-3.5.3/src/modules/webauth/mod_webauth.c.orig	2006-09-12 20:21:27.000000000 -0400
++++ webauth-3.5.3/src/modules/webauth/mod_webauth.c	2006-09-18 15:13:02.000000000 -0400
+@@ -109,8 +109,8 @@ strip_webauth_info(MWA_REQ_CTXT *rc)
+         return;
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: need to strip: %s", mwa_func, c);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: need to strip: %s", mwa_func, c);
+     s = d = c;
+     cookie_start = copy = 1;
+     while (*s) {
+@@ -138,13 +138,14 @@ strip_webauth_info(MWA_REQ_CTXT *rc)
+     if (*c == '\0') {
+         apr_table_unset(rc->r->headers_in, "Cookie");
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: no cookies after strip", mwa_func);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: no cookies after strip",
++                             mwa_func);
+     } else {
+         /* we modified the Cookie header in place */
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: after strip: %s", mwa_func, c);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: after strip: %s", mwa_func, c);
+     }
+ }
+ 
+@@ -205,9 +206,9 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char
+                           "Thu, 26-Mar-1998 00:00:01 GMT",
+                           is_https(rc->r) ? "secure" : "");
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: nuking cookie(%s): (%s)", 
+-                     name, cookie);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: nuking cookie(%s): (%s)", 
++                         name, cookie);
+     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
+ }
+ 
+@@ -221,8 +222,8 @@ set_pending_cookie_cb(void *rec, const c
+     if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0) {
+         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                         "mod_webauth: set_pending_cookie_cb: %s", value);
++            mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                             "mod_webauth: set_pending_cookie_cb: %s", value);
+     }
+ 
+     return 1;
+@@ -266,9 +267,9 @@ static void
+ mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
+ {
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                     "mod_webauth: mwa_setenv: (%s) (%s)",
+-                     name, value);
++        mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                         "mod_webauth: mwa_setenv: (%s) (%s)",
++                         name, value);
+     apr_table_setn(rc->r->subprocess_env, name, value);
+     if (rc->dconf->var_prefix != NULL) {
+         name = apr_pstrcat(rc->r->pool, 
+@@ -323,8 +324,8 @@ failure_redirect(MWA_REQ_CTXT *rc)
+     uri = rc->dconf->failure_url;
+ 
+     if (uri == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                     "mod_webauth: %s: no URL configured", mwa_func);
++        mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                         "mod_webauth: %s: no URL configured", mwa_func);
+         set_pending_cookies(rc);
+         return HTTP_INTERNAL_SERVER_ERROR;
+     }
+@@ -338,8 +339,9 @@ failure_redirect(MWA_REQ_CTXT *rc)
+     apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: redirect(%s)",
++                         mwa_func, redirect_url);
+ 
+     set_pending_cookies(rc);
+     return do_redirect(rc);
+@@ -355,8 +357,8 @@ login_canceled_redirect(MWA_REQ_CTXT *rc
+     uri = rc->dconf->login_canceled_url;
+ 
+     if (uri == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                   "mod_webauth: %s: no URL configured!", mwa_func);
++        mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                         "mod_webauth: %s: no URL configured!", mwa_func);
+         return failure_redirect(rc);
+     }
+ 
+@@ -369,8 +371,9 @@ login_canceled_redirect(MWA_REQ_CTXT *rc
+     apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+                 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: redirect(%s)", mwa_func, redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: redirect(%s)",
++                         mwa_func, redirect_url);
+ 
+     set_pending_cookies(rc);
+     return do_redirect(rc);
+@@ -380,8 +383,8 @@ static int 
+ die(const char *message, server_rec *s)
+ {
+     if (s) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+-                     "mod_webauth: fatal error: %s", message);
++        mwa_ap_log_error(APLOG_ERR, s,
++                         "mod_webauth: fatal error: %s", message);
+     }
+     printf("mod_webauth: fatal error: %s", message);
+     exit(1);
+@@ -416,7 +419,7 @@ mod_webauth_cleanup(void *data)
+                                                         &webauth_module);
+ 
+     if (sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webauth: cleanup");
++        mwa_ap_log_error(APLOG_DEBUG, s, "mod_webauth: cleanup");
+     }
+ 
+     /* walk through list of servers and clean up */
+@@ -426,9 +429,9 @@ mod_webauth_cleanup(void *data)
+ 
+         if (tconf->ring && tconf->free_ring) {
+             if (sconf->debug) {
+-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
+-                             "mod_webauth: cleanup ring: %s",
+-                             tconf->keyring_path);
++                mwa_ap_log_error(APLOG_DEBUG, s, 
++                                 "mod_webauth: cleanup ring: %s",
++                                 tconf->keyring_path);
+             }
+             webauth_keyring_free(tconf->ring);
+             tconf->ring = NULL;
+@@ -442,9 +445,9 @@ mod_webauth_cleanup(void *data)
+             apr_pool_destroy(tconf->service_token->pool);
+             tconf->service_token = NULL;
+             if (sconf->debug) {
+-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, 
+-                             "mod_webauth: cleanup service_token: %s",
+-                             tconf->st_cache_path);
++                mwa_ap_log_error(APLOG_DEBUG, s, 
++                                 "mod_webauth: cleanup service_token: %s",
++                                 tconf->st_cache_path);
+             }
+         }
+     }
+@@ -501,9 +504,9 @@ init_sconf(server_rec *s, MWA_SCONF *bco
+     /* FIXME: should this be a directive? */
+     if (unlink(sconf->st_cache_path) == -1) {
+         if (errno != ENOENT) {
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
+-                         "mod_webauth: init_sconf: unlink(%s) errno(%d)", 
+-                         sconf->st_cache_path, errno);
++            mwa_ap_log_error_errno(APLOG_ERR, NULL,
++                                   "mod_webauth: init_sconf: unlink(%s)", 
++                                   sconf->st_cache_path);
+         }
+     }
+ 
+@@ -533,7 +536,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_
+     mwa_register_cred_interface(s, sconf, pconf, mwa_krb5_cred_interface);
+ 
+     if (sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webauth: initializing");
++        mwa_ap_log_error(APLOG_DEBUG, s, "mod_webauth: initializing");
+ 
+     apr_pool_cleanup_register(pconf, s, 
+                               mod_webauth_cleanup,
+@@ -546,12 +549,13 @@ mod_webauth_init(apr_pool_t *pconf, apr_
+     version = apr_pstrcat(ptemp, "WebAuth/", webauth_info_version(), NULL);
+     ap_add_version_component(pconf, version);
+ 
+-    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
+-                 "mod_webauth: initialized (%s)%s",
+-                 webauth_info_version(),
+-                 sconf->debug ?
+-                 apr_pstrcat(ptemp," (", webauth_info_build(), ")", NULL) : 
+-                 "");
++    mwa_ap_log_error(APLOG_NOTICE, s, 
++                     "mod_webauth: initialized (%s)%s",
++                     webauth_info_version(),
++                     sconf->debug ?
++                     apr_pstrcat(ptemp, " (", webauth_info_build(), ")",
++                                 NULL) : 
++                     "");
+  
+     return OK;
+ }
+@@ -1006,9 +1010,10 @@ make_proxy_cookie(const char *proxy_type
+ 
+     alist = webauth_attr_list_new(10);
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: webauth_attr_list_new failed", 
+-                     mwa_func);
++        mwa_ap_log_error_errno(APLOG_EMERG, rc->r->server,
++                               "mod_webauth: %s: "
++                               "webauth_attr_list_new failed", 
++                               mwa_func);
+         return 0;
+     }
+ 
+@@ -1071,9 +1076,10 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
+ 
+     alist = webauth_attr_list_new(10);
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: webauth_attr_list_new failed", 
+-                     mwa_func);
++        mwa_ap_log_error_errno(APLOG_EMERG, rc->r->server,
++                               "mod_webauth: %s: "
++                               "webauth_attr_list_new failed", 
++                               mwa_func);
+         return 0;
+     }
+ 
+@@ -1133,9 +1139,9 @@ make_app_cookie(const char *subject, 
+ 
+     alist = webauth_attr_list_new(10);
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: webauth_attr_list_new failed",
+-                     mwa_func);
++        mwa_ap_log_error_errno(APLOG_EMERG, rc->r->server,
++                               "mod_webauth: %s: webauth_attr_list_new failed",
++                               mwa_func);
+         return 0;
+     }
+ 
+@@ -1211,9 +1217,9 @@ app_token_maint(MWA_REQ_CTXT *rc)
+     if (rc->dconf->inactive_expire && 
+         (rc->at.last_used_time + rc->dconf->inactive_expire < curr)) {
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: manage_inactivity: inactive(%s)",
+-                         rc->at.subject);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: manage_inactivity: inactive(%s)",
++                             rc->at.subject);
+         return 0;
+     }
+ 
+@@ -1222,7 +1228,7 @@ app_token_maint(MWA_REQ_CTXT *rc)
+     if ((rc->dconf->last_use_update_interval == 0) ||
+         (rc->at.last_used_time + rc->dconf->last_use_update_interval > curr)) {
+         /*
+-         *ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
++         *mwa_ap_log_error(APLOG_ERR, rc->r->server,
+          * "mod_webauth: manage_inactivity: not updating yet(%s)",
+          * rc->at.subject);
+         */
+@@ -1278,9 +1284,9 @@ parse_app_token(char *token, MWA_REQ_CTX
+     tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r,
+                           "parse_app_token", NULL);
+     if (tt == NULL || strcmp(tt, WA_TT_APP) != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: token type(%s) not (%s)",
+-                     mwa_func, tt ? tt : "(null)", WA_TT_APP);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: token type(%s) not (%s)",
++                         mwa_func, tt ? tt : "(null)", WA_TT_APP);
+         goto cleanup;
+     }
+ 
+@@ -1337,9 +1343,10 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
+         return 0;
+     }  else {
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+-                         mwa_func, cname, rc->at.subject);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: found valid %s cookie "
++                             "for (%s)", 
++                             mwa_func, cname, rc->at.subject);
+         return 1;
+     }
+ }
+@@ -1381,9 +1388,9 @@ parse_proxy_token(char *token, MWA_REQ_C
+     /* make sure its an proxy-token */
+     tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwa_func, NULL);
+     if (tt == NULL || strcmp(tt, WA_TT_PROXY) != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: token type(%s) not (%s)",
+-                     mwa_func, tt ? tt : "(null)", WA_TT_PROXY);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: token type(%s) not (%s)",
++                         mwa_func, tt ? tt : "(null)", WA_TT_PROXY);
+         goto cleanup;
+     }
+ 
+@@ -1411,10 +1418,10 @@ parse_proxy_token(char *token, MWA_REQ_C
+                                    &pt.wpt, &pt.wpt_len, WA_F_NONE);
+ 
+     if (status != WA_ERR_NONE) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: "
+-                     "can't get proxy data from proxy-token",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: "
++                         "can't get proxy data from proxy-token",
++                         mwa_func);
+         goto cleanup;
+     }
+ 
+@@ -1457,9 +1464,10 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *r
+         fixup_setcookie(rc, cname, "");
+     }  else {
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+-                         mwa_func, cname, rc->at.subject);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: found valid %s cookie "
++                             "for (%s)", 
++                             mwa_func, cname, rc->at.subject);
+     }
+     return pt;
+ }
+@@ -1497,18 +1505,18 @@ get_session_key(char *token, MWA_REQ_CTX
+     tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r,
+                           "check_cookie", NULL);
+     if (tt == NULL || strcmp(tt, WA_TT_APP) != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: token type(%s) not (%s)",
+-                     mwa_func, tt ? tt : "(null)", WA_TT_APP);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: token type(%s) not (%s)",
++                         mwa_func, tt ? tt : "(null)", WA_TT_APP);
+         goto cleanup;
+     }
+ 
+     /* pull out session key */
+     status = webauth_attr_list_find(alist, WA_TK_SESSION_KEY, &i);
+     if (i == -1) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                    "mod_webauth: %s: can't find session key in token",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                        "mod_webauth: %s: can't find session key in token",
++                         mwa_func);
+         goto cleanup;
+     }
+ 
+@@ -1517,9 +1525,10 @@ get_session_key(char *token, MWA_REQ_CTX
+     if (klen != WA_AES_128 && 
+         klen != WA_AES_192 &&
+         klen != WA_AES_256) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                     "mod_webauth: get_session_key: invalid key length: %d",
+-                     klen);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                         "mod_webauth: get_session_key: "
++                         "invalid key length: %d",
++                         klen);
+         goto cleanup;
+     }
+ 
+@@ -1564,9 +1573,9 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist
+                                             rc->r, mwa_func, NULL);
+         subject = apr_pstrdup(rc->r->pool, tsub);
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: unknown subject auth type: %s",
+-                     mwa_func, sa);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: unknown subject auth type: %s",
++                         mwa_func, sa);
+         subject = NULL;
+     }
+         
+@@ -1579,17 +1588,17 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist
+                                             &expiration_time,
+                                             WA_F_NONE);
+         if (status != WA_ERR_NONE) {
+-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                             "mod_webauth: %s: "
+-                             "can't get expiration time from id token",
+-                             mwa_func);
++                mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                                 "mod_webauth: %s: "
++                                 "can't get expiration time from id token",
++                                 mwa_func);
+                 return 0;
+         }
+ 
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: got subject(%s) from id token", 
+-                         mwa_func,subject);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: got subject(%s) from id token", 
++                             mwa_func,subject);
+ 
+         make_app_cookie(subject, 0, expiration_time, 0, rc);
+     } else {
+@@ -1624,27 +1633,27 @@ handle_proxy_token(WEBAUTH_ATTR_LIST *al
+                                         &expiration_time,
+                                         WA_F_NONE);
+     if (status != WA_ERR_NONE) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: "
+-                     "can't get expiration time from proxy token",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: "
++                         "can't get expiration time from proxy token",
++                         mwa_func);
+         return 0;
+     }
+ 
+     status = webauth_attr_list_get(alist, WA_TK_WEBKDC_TOKEN,
+                                    &wpt, &wpt_len, WA_F_NONE);
+     if (status != WA_ERR_NONE) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: "
+-                     "can't get proxy data from proxy-token",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: "
++                         "can't get proxy data from proxy-token",
++                         mwa_func);
+         return 0;
+     }
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: got subject(%s) from proxy token", 
+-                     mwa_func, sub);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: got subject(%s) from proxy token", 
++                         mwa_func, sub);
+ 
+     /* FIXME: app-tokens where subject-auth-type is krb5 to need to
+        request an id-token from the WebKDC, assuming the proxy-type
+@@ -1671,9 +1680,9 @@ handle_error_token(WEBAUTH_ATTR_LIST *al
+     error_code = atoi(ec);
+ 
+     if (rc->sconf->debug) 
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: parsed an error token(%d, %s)", 
+-                     mwa_func, error_code, em);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: parsed an error token(%d, %s)", 
++                         mwa_func, error_code, em);
+ 
+     switch (error_code) {
+         case WA_PEC_LOGIN_CANCELED:
+@@ -1690,9 +1699,9 @@ handle_error_token(WEBAUTH_ATTR_LIST *al
+             break;
+     }
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ALERT, 0, rc->r->server,
+-                 "mod_webauth: %s: %s: %s (%d)",
+-                         mwa_func, log_message, em, error_code);
++    mwa_ap_log_error(APLOG_ALERT, rc->r->server,
++                     "mod_webauth: %s: %s: %s (%d)",
++                     mwa_func, log_message, em, error_code);
+         
+     return failure_redirect(rc);
+ 
+@@ -1751,10 +1760,10 @@ parse_returned_token(char *token, WEBAUT
+         code = handle_error_token(alist, rc);
+ 
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: unhandled token type(%s)",
+-                     mwa_func,
+-                     token_type);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: unhandled token type(%s)",
++                         mwa_func,
++                         token_type);
+     }
+     webauth_attr_list_free(alist);
+ 
+@@ -1784,8 +1793,8 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
+     }
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: check_url: found  WEBAUTHR");
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: check_url: found  WEBAUTHR");
+ 
+     /* see if we have WEBAUTHS, which has the session key to use */
+     ws = mwa_remove_note(rc->r, N_WEBAUTHS);
+@@ -1865,13 +1874,14 @@ redirect_request_token(MWA_REQ_CTXT *rc)
+         (rc->r->method_number != M_POST ||
+          (rc->r->method_number == M_POST &&
+           rc->dconf->post_return_url == NULL))) {
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                     "mod_webauth: redirect_request_token: no auth during %s, "
+-                     "denying request",  rc->r->method);
++        mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                         "mod_webauth: redirect_request_token: "
++                         "no auth during %s, denying request",
++                         rc->r->method);
+         if (rc->r->method_number == M_POST) {
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                         "mod_webauth: use %s to specify a return URL",
+-                         CD_PostReturnURL);
++            mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                             "mod_webauth: use %s to specify a return URL",
++                             CD_PostReturnURL);
+         }
+         return HTTP_UNAUTHORIZED;
+     }
+@@ -1880,17 +1890,17 @@ redirect_request_token(MWA_REQ_CTXT *rc)
+ 
+     st = mwa_get_service_token(rc->r->server, rc->sconf, rc->r->pool, 0);
+     if (st == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: no service token, denying request",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_EMERG, rc->r->server,
++                         "mod_webauth: %s: no service token, denying request",
++                         mwa_func);
+         return failure_redirect(rc);
+     }
+ 
+     alist = webauth_attr_list_new(10);
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: webauth_attr_list_new failed",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_EMERG, rc->r->server,
++                         "mod_webauth: %s: webauth_attr_list_new failed",
++                         mwa_func);
+         return failure_redirect(rc);
+     }
+ 
+@@ -1919,24 +1929,24 @@ redirect_request_token(MWA_REQ_CTXT *rc)
+         }
+ 
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: redirecting for proxy token",
+-                         mwa_func);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: redirecting for proxy token",
++                             mwa_func);
+     } else {
+         SET_REQUESTED_TOKEN_TYPE("id");
+         SET_SUBJECT_AUTH(rc->sconf->subject_auth_type);
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: redirecting for id token",
+-                         mwa_func);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: redirecting for id token",
++                             mwa_func);
+     }
+ 
+     if (st->app_state != NULL) {
+         SET_APP_STATE(st->app_state, st->app_state_len);
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: app state is NULL",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: app state is NULL",
++                         mwa_func);
+     }
+ 
+     return_url = make_return_url(rc, 1);
+@@ -1948,8 +1958,9 @@ redirect_request_token(MWA_REQ_CTXT *rc)
+     SET_RETURN_URL(return_url);
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: return_url(%s)", mwa_func, return_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: return_url(%s)",
++                         mwa_func, return_url);
+ 
+     tlen = webauth_token_encoded_length(alist);
+     token = apr_palloc(rc->r->pool, tlen);
+@@ -1977,9 +1988,9 @@ redirect_request_token(MWA_REQ_CTXT *rc)
+     apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: redirect_requst_token: redirect(%s)",
+-                     redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: redirect_requst_token: redirect(%s)",
++                         redirect_url);
+ 
+     set_pending_cookies(rc);
+     return do_redirect(rc);
+@@ -1998,9 +2009,9 @@ extra_redirect(MWA_REQ_CTXT *rc)
+     apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: extra_redirect: redirect(%s)",
+-                     redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: extra_redirect: redirect(%s)",
++                         redirect_url);
+ 
+     set_pending_cookies(rc);
+     return do_redirect(rc);
+@@ -2018,9 +2029,9 @@ ssl_redirect(MWA_REQ_CTXT *rc)
+     apr_uri_parse(rc->r->pool, redirect_url, &uri);
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: ssl_redirect: redirect(%s)",
+-                     redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: ssl_redirect: redirect(%s)",
++                         redirect_url);
+ 
+     if (strcmp(uri.scheme, "http") == 0) {
+         uri.scheme = "https";
+@@ -2035,18 +2046,19 @@ ssl_redirect(MWA_REQ_CTXT *rc)
+         }
+         redirect_url = apr_uri_unparse(rc->r->pool, &uri, 0);
+     } else {
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+-                         "mod_webauth: ssl_redirect: error with "
+-                         "redirect url(%s) denying request", redirect_url);
++            mwa_ap_log_error(APLOG_WARNING, rc->r->server,
++                             "mod_webauth: ssl_redirect: error with "
++                             "redirect url(%s) denying request",
++                             redirect_url);
+             return HTTP_UNAUTHORIZED;
+     }
+ 
+     apr_table_setn(rc->r->err_headers_out, "Location", redirect_url);
+ 
+     if (rc->sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: ssl_redirect: redirect(%s)",
+-                     redirect_url);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: ssl_redirect: redirect(%s)",
++                         redirect_url);
+ 
+     set_pending_cookies(rc);
+     return do_redirect(rc);
+@@ -2080,9 +2092,10 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc
+         fixup_setcookie(rc, cname, "");
+     }  else {
+         if (rc->sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: found valid %s cookie for (%s)", 
+-                         mwa_func, cname, rc->at.subject);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: found valid %s cookie "
++                             "for (%s)", 
++                             mwa_func, cname, rc->at.subject);
+     }
+     return ct;
+ }
+@@ -2122,9 +2135,9 @@ prepare_creds(MWA_REQ_CTXT *rc, char *pr
+     if (mci != NULL) {
+         return mci->prepare_creds(rc, creds, num_creds);
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: unhandled proxy type: (%s)",
+-                     mwa_func, proxy_type);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: unhandled proxy type: (%s)",
++                         mwa_func, proxy_type);
+         return 0;
+     }
+ }
+@@ -2144,9 +2157,9 @@ acquire_creds(MWA_REQ_CTXT *rc, char *pr
+     MWA_PROXY_TOKEN *pt = NULL;
+ 
+     if (rc->sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                     "mod_webauth: %s: need this proxy type: (%s)",
+-                     mwa_func, proxy_type);
++        mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                         "mod_webauth: %s: need this proxy type: (%s)",
++                         mwa_func, proxy_type);
+     }
+ 
+     if (rc->pt && strcmp(rc->pt->proxy_type, proxy_type) == 0) {
+@@ -2171,9 +2184,9 @@ acquire_creds(MWA_REQ_CTXT *rc, char *pr
+            reasonable choice... */
+ 
+         if (rc->sconf->debug) {
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+-                         "mod_webauth: %s: mwa_get_creds_from_webkdc failed!",
+-                         mwa_func);
++            mwa_ap_log_error(APLOG_DEBUG, rc->r->server,
++                             "mod_webauth: %s: mwa_get_creds_from_webkdc "
++                             "failed!", mwa_func);
+         }
+     } else {
+         /* need to construct new cookies for newly gathered creds */
+@@ -2358,10 +2371,10 @@ check_user_id_hook(request_rec *r)
+     rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
+                                                 &webauth_module);
+     if (rc.sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+-                     "mod_webauth: in check_user_id hook(%s)",
+-                     rc.r->unparsed_uri != NULL ? 
+-                     rc.r->unparsed_uri : "null-uri");
++        mwa_ap_log_error(APLOG_DEBUG, r->server,
++                         "mod_webauth: in check_user_id hook(%s)",
++                         rc.r->unparsed_uri != NULL ? 
++                         rc.r->unparsed_uri : "null-uri");
+ 
+     if ((at == NULL) ||
+         ((strcmp(at, "WebAuth") != 0) &&
+@@ -2375,9 +2388,9 @@ check_user_id_hook(request_rec *r)
+         if (rc.sconf->ssl_redirect) {
+             return ssl_redirect(&rc);
+         } else {
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+-                         "mod_webauth: connection is not https, "
+-                         "denying request");
++            mwa_ap_log_error(APLOG_WARNING, r->server,
++                             "mod_webauth: connection is not https, "
++                             "denying request");
+             return HTTP_UNAUTHORIZED;
+         }
+     }
+@@ -2392,32 +2405,33 @@ check_user_id_hook(request_rec *r)
+         if (rc.at.subject != NULL) {
+             /* stick it in note for future reference */
+             if (rc.sconf->debug)
+-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+-                             "mod_webauth: stash note, user(%s)",
+-                             rc.at.subject);
++                mwa_ap_log_error(APLOG_DEBUG, r->server,
++                                 "mod_webauth: stash note, user(%s)",
++                                 rc.at.subject);
+             mwa_setn_note(r, N_SUBJECT, 
+                           apr_pstrdup(rc.r->pool, rc.at.subject));
+         }
+     } else {
+         if (rc.sconf->debug)
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+-                         "mod_webauth: found note, user(%s)",
+-                         rc.at.subject);
++            mwa_ap_log_error(APLOG_DEBUG, r->server,
++                             "mod_webauth: found note, user(%s)",
++                             rc.at.subject);
+     }
+ 
+     if (rc.at.subject == NULL) {
+         /* this should never get called, since gather_tokens should
+          * set us up for a redirect. we put this here as a safety net.
+          */
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+-                     "mod_webauth: check_user_id_hook subject still NULL!");
++        mwa_ap_log_error(APLOG_WARNING, r->server,
++                         "mod_webauth: check_user_id_hook subject "
++                         "still NULL!");
+         return HTTP_UNAUTHORIZED;
+     }
+ 
+     if (rc.sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+-                     "mod_webauth: check_user_id_hook setting user(%s)",
+-                     rc.at.subject);
++        mwa_ap_log_error(APLOG_DEBUG, r->server,
++                         "mod_webauth: check_user_id_hook setting user(%s)",
++                         rc.at.subject);
+ 
+     r->user = (char*)rc.at.subject;
+     r->ap_auth_type = (char*)at;
+@@ -2448,10 +2462,10 @@ check_user_id_hook(request_rec *r)
+ 
+     if (rc.dconf->su_authgroups != NULL) {
+         /* always deny access in this case */
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+-                     "mod_webauth: denying access due to use of unsupported "
+-                     "StanfordAuthGroups directive: %s", 
+-                     rc.dconf->su_authgroups);
++        mwa_ap_log_error(APLOG_WARNING, r->server,
++                         "mod_webauth: denying access due to use of "
++                         "unsupported StanfordAuthGroups directive: %s", 
++                         rc.dconf->su_authgroups);
+         return HTTP_UNAUTHORIZED;
+     }
+ 
+@@ -2468,9 +2482,10 @@ check_user_id_hook(request_rec *r)
+ #endif 
+ 
+     if (rc.sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+-                     "mod_webauth: check_user_id_hook: no_cache(%d) dont_cache(%d) dont_cache_ex(%d)", r->no_cache, 
+-                     rc.dconf->dont_cache, rc.dconf->dont_cache_ex);
++        mwa_ap_log_error(APLOG_DEBUG, r->server,
++                         "mod_webauth: check_user_id_hook: no_cache(%d) "
++                         "dont_cache(%d) dont_cache_ex(%d)", r->no_cache, 
++                         rc.dconf->dont_cache, rc.dconf->dont_cache_ex);
+     }
+ 
+     if (r->proxyreq != PROXYREQ_NONE) {
+@@ -2532,14 +2547,14 @@ translate_name_hook(request_rec *r)
+     s = rp+WEBAUTHR_MAGIC_LEN;
+     p = ap_strchr(s, ';');
+     if (p == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                     "mod_webauth: didn't find end of %s", rmagic);
++        mwa_ap_log_error(APLOG_ERR, r->server,
++                         "mod_webauth: didn't find end of %s", rmagic);
+         return DECLINED;
+     }
+     wr = apr_pstrmemdup(r->pool, s, p-s);
+     /*
+      * if (sconf->debug)
+-     * ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
++     * mwa_ap_log_error(APLOG_ERR, r->server, 
+      * "mod_webauth: stash wr(%s)", wr);
+      */
+     mwa_setn_note(r, N_WEBAUTHR, wr);
+@@ -2550,13 +2565,13 @@ translate_name_hook(request_rec *r)
+         s = p+WEBAUTHS_MAGIC_LEN;
+         p = ap_strchr(s, ';');
+         if (p == NULL) {
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                         "mod_webauth: didn't find end of %s", smagic);
++            mwa_ap_log_error(APLOG_ERR, r->server,
++                             "mod_webauth: didn't find end of %s", smagic);
+             return DECLINED;
+         }
+         ws = apr_pstrmemdup(r->pool, s, p-s);
+         /*if (sconf->debug)
+-         * ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
++         * mwa_ap_log_error(APLOG_ERR, r->server,
+          * "mod_webauth: stash ws(%s)", ws);
+          */
+         mwa_setn_note(r, N_WEBAUTHS, ws);
+@@ -2749,9 +2764,9 @@ cfg_str(cmd_parms *cmd, void *mconf, con
+ #ifndef NO_STANFORD_SUPPORT
+         case SE_ConfirmMsg:
+             /*
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, NULL,
+-                         "mod_webauth: ignoring WebAuth 2.5 directive: %s",
+-                         cmd->directive->directive);
++            mwa_ap_log_error(APLOG_WARNING, NULL,
++                             "mod_webauth: ignoring WebAuth 2.5 directive: %s",
++                             cmd->directive->directive);
+             */
+             break;
+         case SE_Life:
+@@ -2848,9 +2863,9 @@ cfg_flag(cmd_parms *cmd, void *mconfig, 
+ #ifndef NO_STANFORD_SUPPORT
+         case SE_DoConfirm:
+             if (flag) {
+-                ap_log_error(APLOG_MARK, APLOG_WARNING, 0, NULL,
+-                             "mod_webauth: ignoring WebAuth 2.5 directive: %s",
+-                             cmd->directive->directive);
++                mwa_ap_log_error(APLOG_WARNING, NULL,
++                                 "mod_webauth: ignoring WebAuth 2.5 "
++                                 "directive: %s", cmd->directive->directive);
+             }
+             break;
+         case SE_DontCache:
+@@ -3013,16 +3028,16 @@ static const command_rec cmds[] = {
+ #if 0
+ static int webauth_auth_checker(request_rec *r)
+ {
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                 "mod_webauth: in auth_checker hook");
++    mwa_ap_log_error(APLOG_ERR, r->server,
++                     "mod_webauth: in auth_checker hook");
+     return DECLINED;
+ }
+ 
+ 
+ static int webauth_access_checker(request_rec *r)
+ {
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                 "mod_webauth: in accesss_checker hook");
++    mwa_ap_log_error(APLOG_ERR, r->server,
++                     "mod_webauth: in accesss_checker hook");
+     return DECLINED;
+ }
+ #endif 
+--- webauth-3.5.3/src/modules/webauth/mod_webauth.h.orig	2006-09-12 20:21:27.000000000 -0400
++++ webauth-3.5.3/src/modules/webauth/mod_webauth.h	2006-09-16 19:05:42.000000000 -0400
+@@ -33,6 +33,12 @@
+ 
+ #include "webauth.h"
+ 
++/* Macros for calling ap_log_error() */
++#define mwa_ap_log_error(level, s, ...) \
++  ap_log_error(APLOG_MARK, (level)|APLOG_NOERRNO, 0, (s), __VA_ARGS__)
++#define mwa_ap_log_error_errno(level, s, ...) \
++  ap_log_error(APLOG_MARK, (level), 0, (s), __VA_ARGS__)
++
+ /* how long to wait between trying for a new token when 
+  * a renewal attempt fails
+  */
+--- webauth-3.5.3/src/modules/webauth/util.c.orig	2006-09-12 20:21:27.000000000 -0400
++++ webauth-3.5.3/src/modules/webauth/util.c	2006-09-16 12:47:49.000000000 -0400
+@@ -19,9 +19,9 @@ mwa_get_str_attr(WEBAUTH_ATTR_LIST *alis
+ 
+     status = webauth_attr_list_find(alist, name, &i);
+     if (i == -1) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                     "mod_webauth: %s: can't find attr(%s) in attr list",
+-                     func, name);
++        mwa_ap_log_error(APLOG_ERR, r->server,
++                         "mod_webauth: %s: can't find attr(%s) in attr list",
++                         func, name);
+         return NULL;
+     }
+     if (vlen) 
+@@ -92,15 +92,15 @@ mwa_log_apr_error(server_rec *server,
+                   const char *path2)
+ {
+     char errbuff[512];
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                 "mod_webauth: %s: %s (%s%s%s): %s (%d)",
+-                 mwa_func,
+-                 ap_func,
+-                 path1,
+-                 path2 != NULL ? " -> " : "",
+-                 path2 != NULL ? path2  : "",
+-                 apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
+-                 astatus);
++    mwa_ap_log_error(APLOG_ERR, server, 
++                     "mod_webauth: %s: %s (%s%s%s): %s (%d)",
++                     mwa_func,
++                     ap_func,
++                     path1,
++                     path2 != NULL ? " -> " : "",
++                     path2 != NULL ? path2  : "",
++                     apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
++                     astatus);
+ }
+ 
+ 
+@@ -110,13 +110,13 @@ mwa_log_apr_error(server_rec *server,
+ void 
+ mwa_log_request(request_rec *r, const char *msg)
+ {
+-#define LOG_S(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
++#define LOG_S(a,b) mwa_ap_log_error(APLOG_ERR, r->server, \
+               "mod_webauth: %s(%s)", a, (b != NULL)? b:"(null)");
+-#define LOG_D(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
++#define LOG_D(a,b) mwa_ap_log_error(APLOG_ERR, r->server, \
+               "mod_webauth: %s(%d)", a, b);
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                 "mod_webauth: -------------- %s ------------------", msg);
++    mwa_ap_log_error(APLOG_ERR, r->server,
++                     "mod_webauth: -------------- %s ------------------", msg);
+ 
+     LOG_S("ap_auth_type", ap_auth_type(r));
+     LOG_S("the_request", r->the_request);
+@@ -129,8 +129,8 @@ mwa_log_request(request_rec *r, const ch
+     LOG_D("rpu->is_initialized", r->parsed_uri.is_initialized);
+     LOG_S("rpu->query", r->parsed_uri.query);
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+-                 "mod_webauth: -------------- %s ------------------", msg);
++    mwa_ap_log_error(APLOG_ERR, r->server,
++                     "mod_webauth: -------------- %s ------------------", msg);
+ 
+ #undef LOG_S
+ #undef LOG_D
+@@ -143,13 +143,13 @@ mwa_log_webauth_error(server_rec *s, 
+                       const char *func,
+                       const char *extra)
+ {
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+-                 "mod_webauth: %s: %s%s%s failed: %s (%d)",
+-                 mwa_func,
+-                 func,
+-                 extra == NULL ? "" : " ",
+-                 extra == NULL ? "" : extra,
+-                 webauth_error_message(status), status);
++    mwa_ap_log_error(APLOG_ERR, s,
++                     "mod_webauth: %s: %s%s%s failed: %s (%d)",
++                     mwa_func,
++                     func,
++                     extra == NULL ? "" : " ",
++                     extra == NULL ? "" : extra,
++                     webauth_error_message(status), status);
+ }
+ 
+ int
+@@ -181,9 +181,9 @@ mwa_cache_keyring(server_rec *serv, MWA_
+                                   "webauth_keyring_auto_update",
+                                   sconf->keyring_path);
+             /* complain even more */
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
+-                         "mod_webauth: %s: couldn't update ring: %s",
+-                         mwa_func, sconf->keyring_path);
++            mwa_ap_log_error(APLOG_WARNING, serv,
++                             "mod_webauth: %s: couldn't update ring: %s",
++                             mwa_func, sconf->keyring_path);
+     }
+ 
+     if (sconf->debug) {
+@@ -196,8 +196,9 @@ mwa_cache_keyring(server_rec *serv, MWA_
+             msg = "updated";
+         else
+             msg = "<unknown>";
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, serv,
+-                     "mod_webauth: %s key ring: %s", msg, sconf->keyring_path);
++        mwa_ap_log_error(APLOG_DEBUG, serv,
++                         "mod_webauth: %s key ring: %s",
++                         msg, sconf->keyring_path);
+     }
+ 
+     return status;
+@@ -271,9 +272,9 @@ mwa_parse_cred_token(char *token, 
+     } else if (ring != NULL){
+         status = webauth_token_parse(token, blen, 0, ring, &alist);
+     } else {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: callled with NULL key and ring!",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: callled with NULL key and ring!",
++                         mwa_func);
+         return NULL;
+     } 
+         
+@@ -287,9 +288,9 @@ mwa_parse_cred_token(char *token, 
+     /* make sure its a cred-token */
+     tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwa_func, NULL);
+     if (tt == NULL || strcmp(tt, WA_TT_CRED) != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: token type(%s) not (%s)",
+-                     mwa_func, tt ? tt : "(null)", WA_TT_CRED);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: token type(%s) not (%s)",
++                         mwa_func, tt ? tt : "(null)", WA_TT_CRED);
+         goto cleanup;
+     }
+ 
+@@ -325,10 +326,10 @@ mwa_parse_cred_token(char *token, 
+                                    &ct.cred_data_len, WA_F_NONE);
+ 
+     if (status != WA_ERR_NONE) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+-                     "mod_webauth: %s: "
+-                     "can't get cred data from proxy-token",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server,
++                         "mod_webauth: %s: "
++                         "can't get cred data from proxy-token",
++                         mwa_func);
+         goto cleanup;
+     }
+ 
+@@ -377,9 +378,9 @@ mwa_register_cred_interface(server_rec *
+     *new_interface = interface;
+ 
+     if (sconf->debug)
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
+-                     "mod_webauth: registering cred interface: %s",
+-                     interface->type);
++        mwa_ap_log_error(APLOG_DEBUG, server,
++                         "mod_webauth: registering cred interface: %s",
++                         interface->type);
+ }
+ 
+ MWA_CRED_INTERFACE *
+@@ -396,8 +397,8 @@ mwa_find_cred_interface(server_rec *serv
+                 return interfaces[i];
+         }
+     }
+-    ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
+-                 "mod_webauth: mwa_find_cred_interface: not found: %s",
+-                 type);
++    mwa_ap_log_error(APLOG_EMERG, server,
++                     "mod_webauth: mwa_find_cred_interface: not found: %s",
++                     type);
+     return NULL;
+ }
+--- webkdc.c.orig	2006-09-12 20:21:27.000000000 -0400
++++ webkdc.c	2006-09-18 15:16:01.000000000 -0400
+@@ -124,9 +124,10 @@ read_service_token_cache(server_rec *ser
+     }
+ 
+     if (finfo.size == 0) {
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
+-                     "mod_webauth: %s: service token cache is zero length: %s",
+-                     mwa_func, sconf->st_cache_path);
++        mwa_ap_log_error(APLOG_WARNING, server, 
++                         "mod_webauth: %s: service token cache "
++                         "is zero length: %s",
++                         mwa_func, sconf->st_cache_path);
+         return NULL;
+     }
+ 
+@@ -159,16 +160,17 @@ read_service_token_cache(server_rec *ser
+         (s_lra != WA_ERR_NONE) || (s_kt != WA_ERR_NONE) ||
+         (s_nra != WA_ERR_NONE) || (s_created != WA_ERR_NONE) ||
+         (s_key != WA_ERR_NONE)) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: attr_list_get failed for: %s%s%s%s%s%s%s",
+-                     mwa_func,
+-                     (s_expires != WA_ERR_NONE) ? "expires" : "",
+-                     (s_created != WA_ERR_NONE) ? "created" : "",
+-                     (s_token != WA_ERR_NONE) ? "token" : "",
+-                     (s_lra != WA_ERR_NONE) ? "last_renewal_attempt" : "",
+-                     (s_nra != WA_ERR_NONE) ? "next_renewal_attempt" : "",
+-                     (s_kt != WA_ERR_NONE) ? "key_type" : "",
+-                     (s_key != WA_ERR_NONE) ? "key" : "");
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: attr_list_get failed "
++                         "for: %s%s%s%s%s%s%s",
++                         mwa_func,
++                         (s_expires != WA_ERR_NONE) ? "expires" : "",
++                         (s_created != WA_ERR_NONE) ? "created" : "",
++                         (s_token != WA_ERR_NONE) ? "token" : "",
++                         (s_lra != WA_ERR_NONE) ? "last_renewal_attempt" : "",
++                         (s_nra != WA_ERR_NONE) ? "next_renewal_attempt" : "",
++                         (s_kt != WA_ERR_NONE) ? "key_type" : "",
++                         (s_key != WA_ERR_NONE) ? "key" : "");
+         return NULL;
+     }
+ 
+@@ -238,9 +240,10 @@ write_service_token_cache(server_rec *se
+     webauth_attr_list_free(alist);
+ 
+     if (status != WA_ERR_NONE) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+-                     "mod_webauth: %s: webauth_attrs_encode failed: %s (%d)",
+-                     mwa_func, webauth_error_message(status), status);
++        mwa_ap_log_error(APLOG_ERR, server,
++                         "mod_webauth: %s: webauth_attrs_encode failed: "
++                         "%s (%d)",
++                         mwa_func, webauth_error_message(status), status);
+         goto cleanup;
+     }
+ 
+@@ -373,8 +376,8 @@ post_to_webkdc(char *post_data, int post
+     curl = curl_easy_init();
+ 
+     if (curl == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+-                     "mod_webauth: post_to_webkdc: curl_easy_init failed");
++        mwa_ap_log_error(APLOG_ERR, server,
++                         "mod_webauth: post_to_webkdc: curl_easy_init failed");
+         return NULL;
+     }
+ 
+@@ -395,9 +398,10 @@ post_to_webkdc(char *post_data, int post
+     if (!sconf->webkdc_cert_check) {
+         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server,
+-                     "mod_webauth: turning off WebKDC cert checking! "
+-                     "this should only be done during testing/development");
++        mwa_ap_log_error(APLOG_WARNING, server,
++                         "mod_webauth: turning off WebKDC cert checking! "
++                         "this should only be done during "
++                         "testing/development");
+     }
+ 
+     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_gather);
+@@ -422,9 +426,9 @@ post_to_webkdc(char *post_data, int post
+     curl_slist_free_all(headers); /* free the header list */
+ 
+     if (code != CURLE_OK) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+-                     "mod_webauth: curl_easy_perform: error(%d): %s",
+-                     code, curl_error_buff);
++        mwa_ap_log_error(APLOG_ERR, server,
++                         "mod_webauth: curl_easy_perform: error(%d): %s",
++                         code, curl_error_buff);
+         return NULL;
+     }
+     /* null-terminate return data */
+@@ -474,16 +478,16 @@ log_error_response(apr_xml_elem *e,
+         } else if (strcmp(sib->name, "errorMessage") == 0) {
+             error_message = get_elem_text(pool, sib, error_message);
+         } else {
+-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
+-                         "mod_webauth: log_error_response: "
+-                         "ignoring unknown element in <errorResponse>: <%s>",
+-                         sib->name);
++            mwa_ap_log_error(APLOG_WARNING, server, 
++                             "mod_webauth: log_error_response: "
++                             "ignoring unknown element in <errorResponse>: "
++                             "<%s>", sib->name);
+         }
+     }
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                 "mod_webauth: %s: errorResponse from webkdc: errorCode(%s) "
+-                 "errorMessage(%s)",
+-                 mwa_func, error_code, error_message);
++    mwa_ap_log_error(APLOG_ERR, server, 
++                     "mod_webauth: %s: errorResponse from webkdc: "
++                     "errorCode(%s) errorMessage(%s)",
++                     mwa_func, error_code, error_message);
+ 
+ }
+ 
+@@ -507,26 +511,26 @@ parse_service_token_response(apr_xml_doc
+         log_error_response(e, mwa_func, server, pool);
+         return NULL;
+     } else if (strcmp(e->name, "getTokensResponse") != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: unknown response(%s)", 
+-                     mwa_func, e->name);
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: unknown response(%s)", 
++                         mwa_func, e->name);
+         return NULL;
+     }
+ 
+     /* parse it already */
+     e = e->first_child;
+     if (!e || strcmp(e->name, "tokens") != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: can't find <tokens>", 
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: can't find <tokens>", 
++                         mwa_func);
+         return NULL;
+     }
+ 
+     e = e->first_child;
+     if (!e || strcmp(e->name, "token") != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: can't find <token>", 
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: can't find <token>", 
++                         mwa_func);
+         return NULL;
+     }
+ 
+@@ -540,21 +544,21 @@ parse_service_token_response(apr_xml_doc
+         } else if (strcmp(sib->name, "tokenData") == 0) {
+             token_data = get_elem_text(pool, sib, NULL);
+         } else {
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                         "mod_webauth: %s: "
+-                         "ignoring unknown element in <token>: <%s>",
+-                         mwa_func, sib->name);
++            mwa_ap_log_error(APLOG_ERR, server, 
++                             "mod_webauth: %s: "
++                             "ignoring unknown element in <token>: <%s>",
++                             mwa_func, sib->name);
+         }
+     }
+ 
+     if ((session_key == NULL) || (expires == NULL) || (token_data == NULL)) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: "
+-                     "missing %s%s%s",
+-                     mwa_func, 
+-                     session_key == NULL ? "<sessionKey> " : "",
+-                     expires == NULL ? "<expires> " : "",
+-                     token_data == NULL ? "<tokenData> " : "");
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: "
++                         "missing %s%s%s",
++                         mwa_func, 
++                         session_key == NULL ? "<sessionKey> " : "",
++                         expires == NULL ? "<expires> " : "",
++                         token_data == NULL ? "<tokenData> " : "");
+         return NULL;
+     }
+ 
+@@ -623,8 +627,8 @@ request_service_token(server_rec *server
+                               NULL);
+ 
+     if (sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+-                     "mod_webauth: xml_request(%s)", xml_request);
++        mwa_ap_log_error(APLOG_DEBUG, server, 
++                         "mod_webauth: xml_request(%s)", xml_request);
+     }
+ 
+     xml_response = post_to_webkdc(xml_request, 0, server, sconf, pool);
+@@ -633,15 +637,15 @@ request_service_token(server_rec *server
+         return 0;
+ 
+     if (sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+-                     "mod_webauth: xml_response(%s)", xml_response);
++        mwa_ap_log_error(APLOG_DEBUG, server, 
++                         "mod_webauth: xml_response(%s)", xml_response);
+     }
+     
+     xp = apr_xml_parser_create(pool);
+     if (xp == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: apr_xml_parser_create failed", 
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: apr_xml_parser_create failed", 
++                         mwa_func);
+         return 0;
+     }
+ 
+@@ -652,12 +656,12 @@ request_service_token(server_rec *server
+ 
+     if (astatus != APR_SUCCESS) {
+         char errbuff[1024];
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+-                     "mod_webauth: %s: "
+-                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+-                     mwa_func,
+-                     apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
+-                     astatus);
++        mwa_ap_log_error(APLOG_ERR, server, 
++                         "mod_webauth: %s: "
++                         "apr_xml_parser_{feed,done} failed: %s (%d)", 
++                         mwa_func,
++                         apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
++                         astatus);
+         return 0;
+     }
+ 
+@@ -683,9 +687,9 @@ set_app_state(server_rec *server, MWA_SC
+     alist = webauth_attr_list_new(10);
+ 
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
+-                     "mod_webauth: set_app_state: "
+-                     "webauth_attr_list_new failed");
++        mwa_ap_log_error_errno(APLOG_EMERG, server,
++                               "mod_webauth: set_app_state: "
++                               "webauth_attr_list_new failed");
+         return;
+     }
+ 
+@@ -734,8 +738,8 @@ set_service_token(MWA_SERVICE_TOKEN *new
+     apr_pool_create(&p, NULL);
+     sconf->service_token = copy_service_token(p, new_token);
+     if (sconf->debug) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, NULL,
+-                     "mod_webauth: setting service token");
++        mwa_ap_log_error(APLOG_DEBUG, NULL,
++                         "mod_webauth: setting service token");
+     }
+ 
+ }
+@@ -765,9 +769,9 @@ mwa_get_service_token(server_rec *server
+         if (sconf->service_token->next_renewal_attempt > curr) {
+             token = copy_service_token(pool, sconf->service_token);
+             if (sconf->debug) {
+-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
+-                             "mod_webauth: %s: using cached service token",
+-                             mwa_func);
++                mwa_ap_log_error(APLOG_DEBUG, server,
++                                 "mod_webauth: %s: using cached service token",
++                                 mwa_func);
+             }
+             goto done;
+         }
+@@ -780,9 +784,9 @@ mwa_get_service_token(server_rec *server
+     if (token != NULL) {
+ 
+         if (sconf->debug) {
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
+-                         "mod_webauth: %s: read service token from: %s",
+-                         mwa_func, sconf->st_cache_path);
++            mwa_ap_log_error(APLOG_DEBUG, server,
++                             "mod_webauth: %s: read service token from: %s",
++                             mwa_func, sconf->st_cache_path);
+         }
+ 
+         /* see if we (still) need to do a re-request or not,
+@@ -806,10 +810,10 @@ mwa_get_service_token(server_rec *server
+ 
+     if (token == NULL ) {
+ 
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+-                     "mod_webauth: %s: couldn't get new service "
+-                     "token from webkdc",
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, server,
++                         "mod_webauth: %s: couldn't get new service "
++                         "token from webkdc",
++                         mwa_func);
+ 
+         /* couldn't get a new one, lets update renewal_attempt times 
+          * if we have a current token.
+@@ -826,9 +830,9 @@ mwa_get_service_token(server_rec *server
+     } else {
+ 
+         if (sconf->debug) {
+-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
+-                         "mod_webauth: %s: got new service token from webkdc",
+-                         mwa_func);
++            mwa_ap_log_error(APLOG_DEBUG, server,
++                             "mod_webauth: %s: got new service token "
++                             "from webkdc", mwa_func);
+         }
+ 
+         /* got a new one, lets right it out*/
+@@ -844,8 +848,8 @@ mwa_get_service_token(server_rec *server
+ 
+     if (token == NULL && !local_cache_only) {
+         /* really complain! */
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
+-                     "mod_webauth: mwa_get_service_token FAILD!!");
++        mwa_ap_log_error(APLOG_EMERG, server,
++                         "mod_webauth: mwa_get_service_token FAILD!!");
+     }
+     return token;
+ }
+@@ -863,9 +867,9 @@ make_request_token(MWA_REQ_CTXT *rc, MWA
+ 
+     alist = webauth_attr_list_new(10);
+     if (alist == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
+-                     "mod_webauth: %s: webauth_attr_list_new failed",
+-                     mwa_func);
++        mwa_ap_log_error_errno(APLOG_EMERG, rc->r->server,
++                               "mod_webauth: %s: webauth_attr_list_new failed",
++                               mwa_func);
+         return NULL;
+     }
+ 
+@@ -912,27 +916,27 @@ parse_get_creds_response(apr_xml_doc *xd
+         log_error_response(e, mwa_func, rc->r->server, rc->r->pool);
+         return 0;
+     } else if (strcmp(e->name, "getTokensResponse") != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                     "mod_webauth: %s: unknown response(%s)", 
+-                     mwa_func, e->name);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                         "mod_webauth: %s: unknown response(%s)", 
++                         mwa_func, e->name);
+         return 0;
+     }
+ 
+     /* parse it already */
+     tokens = e->first_child;
+     if (!tokens || strcmp(tokens->name, "tokens") != 0) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                     "mod_webauth: %s: can't find <tokens>", 
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                         "mod_webauth: %s: can't find <tokens>", 
++                         mwa_func);
+         return 0;
+     }
+ 
+     for (token = tokens->first_child; token; token = token->next) {
+         if (!token || strcmp(token->name, "token") != 0) {
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                         "mod_webauth: %s: "
+-                         "ignoring unknown element in <tokens>: <%s>",
+-                         mwa_func, token->name);
++            mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                             "mod_webauth: %s: "
++                             "ignoring unknown element in <tokens>: <%s>",
++                             mwa_func, token->name);
+             continue;
+         }
+ 
+@@ -942,18 +946,18 @@ parse_get_creds_response(apr_xml_doc *xd
+             if (strcmp(e->name, "tokenData") == 0) {
+                 token_data = (char*)get_elem_text(rc->r->pool, e, NULL);
+             } else {
+-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                             "mod_webauth: %s: "
+-                             "ignoring unknown element in <token>: <%s>",
+-                             mwa_func, e->name);
++                mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                                 "mod_webauth: %s: "
++                                 "ignoring unknown element in <token>: <%s>",
++                                 mwa_func, e->name);
+             }
+         }
+ 
+         if (token_data == NULL) {
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                         "mod_webauth: %s: "
+-                         "missing <tokenData>",
+-                         mwa_func);
++            mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                             "mod_webauth: %s: "
++                             "missing <tokenData>",
++                             mwa_func);
+             return 0;
+         }
+ 
+@@ -961,10 +965,10 @@ parse_get_creds_response(apr_xml_doc *xd
+         ct = mwa_parse_cred_token(token_data, NULL, &st->key, rc);
+         if (ct != NULL) {
+             MWA_CRED_TOKEN **nct;
+-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                         "mod_webauth: %s: "
+-                         "parsed %s %s",
+-                         mwa_func, ct->cred_type, ct->cred_server);
++            mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                             "mod_webauth: %s: "
++                             "parsed %s %s",
++                             mwa_func, ct->cred_type, ct->cred_server);
+ 
+             if (*acquired_creds == NULL) 
+                 *acquired_creds = apr_array_make(rc->r->pool, 2,
+@@ -1053,8 +1057,8 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *
+                               "</getTokensRequest>",
+                               NULL);
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                 "mod_webauth: xml_request(%s)", xml_request);
++    mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                     "mod_webauth: xml_request(%s)", xml_request);
+ 
+ 
+     xml_response = post_to_webkdc(xml_request, 0, 
+@@ -1063,15 +1067,15 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *
+     if (xml_response == NULL)
+         return 0;
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                 "mod_webauth: xml_response(%s)", xml_response);
++    mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                     "mod_webauth: xml_response(%s)", xml_response);
+ 
+     
+     xp = apr_xml_parser_create(rc->r->pool);
+     if (xp == NULL) {
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                     "mod_webauth: %s: apr_xml_parser_create failed", 
+-                     mwa_func);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                         "mod_webauth: %s: apr_xml_parser_create failed", 
++                         mwa_func);
+         return 0;
+     }
+ 
+@@ -1082,17 +1086,17 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *
+ 
+     if (astatus != APR_SUCCESS) {
+         char errbuff[1024];
+-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                     "mod_webauth: %s: "
+-                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+-                     mwa_func,
+-                     apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
+-                     astatus);
++        mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                         "mod_webauth: %s: "
++                         "apr_xml_parser_{feed,done} failed: %s (%d)", 
++                         mwa_func,
++                         apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
++                         astatus);
+         return 0;
+     }
+ 
+-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+-                 "mod_webauth: xml doc root(%s)", xd->root->name);
++    mwa_ap_log_error(APLOG_ERR, rc->r->server, 
++                     "mod_webauth: xml doc root(%s)", xd->root->name);
+ 
+     return parse_get_creds_response(xd, rc, st, creds, num_creds, 
+                                     acquired_creds);
