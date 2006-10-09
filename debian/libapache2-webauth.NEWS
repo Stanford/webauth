@@ -1,0 +1,21 @@
+libapache2-webauth (3.5.3-2) unstable; urgency=low
+
+  As of this release, the WebAuth module is built for Apache 2.2 rather
+  than Apache 2.0.  Please note that Apache 2.2 moved authentication and
+  authorization functionality out of Apache into modules that may not be
+  enabled by default.  In particular, directives of the form:
+
+      Require valid-user
+      Require user <username>
+
+  will not work unless mod_authz_user is enabled.  To do this, run:
+
+      a2enmod authz_user
+
+  as root.  You do not need to enable this module if you never use
+  directives of that type (if, for instance, you only use Require
+  privgroup directives), but note that the WebAuth tests expect this
+  functionality to be available.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 09 Oct 2006 14:28:00 -0700
+

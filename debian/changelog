@@ -3,10 +3,11 @@ webauth (3.5.3-2) unstable; urgency=low
   * Rebuild for Apache 2.2.
     - Add versioned build dependency.
     - Change module dependencies from apache2 to apache2.2-common.
+    - Document the need to enable authz_user.
   * Depend on apache2-threaded-dev rather than on the virtual apache2-dev
     package.
 
- -- Russ Allbery <rra@debian.org>  Mon,  2 Oct 2006 17:55:38 -0700
+ -- Russ Allbery <rra@debian.org>  Mon,  9 Oct 2006 16:07:54 -0700
 
 webauth (3.5.3-1) unstable; urgency=low
 

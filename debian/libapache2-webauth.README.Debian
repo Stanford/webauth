@@ -55,9 +55,17 @@ installing this package.  You must also do the following:
         chgrp www-data /etc/webauth/keytab
         chmod 640 /etc/webauth/keytab
 
- 3. Enable the WebAuth module:
+ 3. Enable the WebAuth module and the generic user authorization module:
 
+        a2enmod authz_user
         a2enmod webauth
+
+    You can skip enabling authz_user if you won't be using directives of
+    the form "Require user" or "Require valid-user", but since these
+    directives are used in WebAuth tests and in much of the documentation,
+    I recommend enabling that module to avoid confusion.  (This module is
+    new in Apache 2.2; previously, its functionality was built into
+    Apache.)
 
     The WebAuth module will now be loaded the next time you restart your
     Apache server.  Don't restart the server yet; you still need to
@@ -129,4 +137,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:46 2006
+ -- Russ Allbery <rra@debian.org>, Mon,  9 Oct 2006 14:24:51 z
