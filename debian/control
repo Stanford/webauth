@@ -8,6 +8,7 @@ Build-Depends: debhelper (>> 4.0.0), apache2-threaded-dev (>= 2.2),
 Standards-Version: 3.7.2
 
 Package: libapache2-webauth
+Section: net
 Architecture: any
 Depends: apache2.2-common, ${shlibs:Depends}
 Description: Apache 2 modules for WebAuth authentication
@@ -25,6 +26,7 @@ Description: Apache 2 modules for WebAuth authentication
   Homepage: http://webauth.stanford.edu/
 
 Package: libapache2-webkdc
+Section: net
 Architecture: any
 Depends: apache2.2-common, ${shlibs:Depends}
 Description: Apache 2 modules for a WebAuth authentication KDC

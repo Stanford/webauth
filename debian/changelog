@@ -1,3 +1,9 @@
+webauth (3.5.3-3) UNRELEASED; urgency=low
+
+  * Put the Apache modules in the net section to match overrides.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 10 Oct 2006 19:36:59 -0700
+
 webauth (3.5.3-2) unstable; urgency=low
 
   * Rebuild for Apache 2.2.
