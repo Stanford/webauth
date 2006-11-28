@@ -5,6 +5,9 @@ WebAuth 3.5.4 (unreleased)
  *) Escape -R linker flags from apxs, which doesn't understand them.
     Patch from Robert A. Basch.
 
+ *) AllowOverride is meaningless in a <Location> directive; remove it from
+    the WebAuth test configuration.
+
 WebAuth 3.5.3 (2006-09-12)
 
  *) Add the connection IP address and, for Weblogin logins, the client IP
