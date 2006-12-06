@@ -2,6 +2,12 @@
 
 WebAuth 3.5.4 (unreleased)
 
+ *) For pages that the browser should reload each time (WebAuthDoLogout or
+    WebAuthDontCache), also always set the content modification time to
+    now.  Otherwise, the browser may check the last modification time on
+    the page and then serve its cached copy, ignoring any new Cookie
+    headers from the server (such as cookie clearing from a logout page).
+
  *) Escape -R linker flags from apxs, which doesn't understand them.
     Patch from Robert A. Basch.
 
