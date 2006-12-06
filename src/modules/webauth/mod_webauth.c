@@ -47,7 +47,8 @@ dont_cache(MWA_REQ_CTXT *rc)
     rc->r->no_cache = 1;
     rc->r->mtime = apr_time_now();
     apr_table_addn(rc->r->err_headers_out, "Pragma", "no-cache");
-    apr_table_setn(rc->r->err_headers_out, "Cache-Control", "no-cache");
+    apr_table_setn(rc->r->err_headers_out, "Cache-Control",
+                   "no-cache, no-store");
 }
 
 static int

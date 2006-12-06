@@ -8,6 +8,12 @@ WebAuth 3.5.4 (unreleased)
     the page and then serve its cached copy, ignoring any new Cookie
     headers from the server (such as cookie clearing from a logout page).
 
+ *) For WebAuthDoLogout and WebAuthDontCache, set Cache-Control: no-store
+    as well as no-cache.  no-store wasn't really intended for this purpose
+    but preventing the browser from keeping a local copy is more likely to
+    force the behavior we want.  (This is probably not necessary given the
+    above change, but shouldn't hurt.)
+
  *) Escape -R linker flags from apxs, which doesn't understand them.
     Patch from Robert A. Basch.
 
