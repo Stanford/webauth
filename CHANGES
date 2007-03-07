@@ -14,6 +14,11 @@ WebAuth 3.5.4 (unreleased)
     force the behavior we want.  (This is probably not necessary given the
     above change, but shouldn't hurt.)
 
+ *) Fix configure logic and Kerberos library analysis on systems with
+    multiple versions of Kerberos installed.  Make sure that we're running
+    all tests with the right LDFLAGS and CPPFLAGS and set CPPFLAGS
+    properly.
+
  *) Escape -R linker flags from apxs, which doesn't understand them.
     Patch from Robert A. Basch.
 

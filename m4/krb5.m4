@@ -42,9 +42,11 @@ AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5],
 dnl Additional checks for portability between MIT and Heimdal if krb5
 dnl libraries were requested.
 AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5_EXTRA],
-[AC_CHECK_HEADERS([et/com_err.h])
-LIBS_save=$LIBS
+[LIBS_save=$LIBS
 LIBS="$KRB5_LIBS $LIBS"
+CPPFLAGS_save=$CPPFLAGS
+CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
+AC_CHECK_HEADERS([et/com_err.h])
 AC_CHECK_FUNCS([krb5_free_keytab_entry_contents])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
@@ -52,7 +54,8 @@ AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_MIT], [1],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
-LIBS=$LIBS_save])
+LIBS=$LIBS_save
+CPPFLAGS=$CPPFLAGS_save])
 
 dnl The main macro.
 AC_DEFUN([WEBAUTH_LIB_KRB5],
@@ -119,11 +122,11 @@ fi
 
 dnl Generate the final library list and put it into the standard variables.
 KRB5_LIBS="$LDFLAGS $KRB5_LIBS"
-KRB5_CPPFLAGS=`echo "$CPPFLAGS" | sed 's/^  *//'`
+KRB5_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's/^  *//'`
 KRB5_LDFLAGS=`echo "$LDFLAGS" | sed 's/^  *//'`
 AC_SUBST([KRB5_CPPFLAGS])
 AC_SUBST([KRB5_LIBS])
-LDFLAGS=$LDFLAGS_save
 
 dnl Run any extra checks for the desired libraries.
-_WEBAUTH_LIB_KRB5_KRB5_EXTRA])
+_WEBAUTH_LIB_KRB5_KRB5_EXTRA
+LDFLAGS=$LDFLAGS_save])
