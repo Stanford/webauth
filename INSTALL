@@ -48,11 +48,11 @@ site, see doc/install-webkdc.
  3.  Run configure.  The command will look something like:
 
          ./configure --with-apache=/usr/local/apache2 \
-             --with-krb5=/usr/local --with-openssl=/usr/local \
+             --with-kerberos=/usr/local --with-openssl=/usr/local \
              --with-curl=/usr/local --with-ldap=/usr/local
 
      Adjust the paths to match where you have installed those packages.
-     You can omit --with-krb5, --with-openssl, --with-curl, and
+     You can omit --with-kerberos, --with-openssl, --with-curl, and
      --with-ldap if the packages are installed in locations automatically
      searched by your compiler and linker (which will be the case if
      you're using Linux and the packages that come with your Linux
