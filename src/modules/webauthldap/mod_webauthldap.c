@@ -103,9 +103,11 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
         break;
     case E_Filter_templ:
         sconf->filter_templ = apr_pstrdup(cmd->pool, arg);
+        sconf->filter_templ_ex = 1;
         break;
     case E_Port:
         sconf->port = apr_pstrdup(cmd->pool, arg);
+        sconf->port_ex = 1;
         break;
     case E_Privgroupattr:
         sconf->privgroupattr = apr_pstrdup(cmd->pool, arg);
@@ -151,6 +153,7 @@ cfg_flag(cmd_parms * cmd, void *mconfig, int flag)
         break;
     case E_Authrule:
         sconf->set_authrule = flag;
+        sconf->set_authrule_ex = 1;
         break;
     default:
         error_str =
@@ -323,15 +326,21 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     MERGE(base);
     MERGE(binddn);
     MERGE(debug);
-    MERGE(filter_templ);
+    conf->filter_templ = oconf->filter_templ_ex ?
+        oconf->filter_templ : bconf->filter_templ;
+    conf->filter_templ_ex = oconf->filter_templ_ex || bconf->filter_templ_ex;
     MERGE(host);
     MERGE(keytab);
-    MERGE(port);
+    conf->port = oconf->port_ex ? oconf->port : bconf->port;
+    conf->port_ex = oconf->port_ex || bconf->port_ex;
     MERGE(principal);
     MERGE(privgroupattr);
     MERGE(tktcache);
     MERGE(ssl);
     MERGE(separator);
+    conf->set_authrule = oconf->set_authrule_ex ?
+        oconf->set_authrule : bconf->set_authrule;
+    conf->set_authrule_ex = oconf->set_authrule_ex || bconf->set_authrule_ex;
 
     return (void *)conf;
 }

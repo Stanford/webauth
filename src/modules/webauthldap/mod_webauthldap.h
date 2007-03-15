@@ -113,19 +113,22 @@ typedef struct {
 /* server conf stuff */
 typedef struct {
 
-    char* base;
-    char* binddn;           /* not used with the Stanford openldap server */
+    char *base;
+    char *binddn;           /* not used with the Stanford openldap server */
     int   debug;
-    char* filter_templ;
-    char* host;
-    char* keytab;
-    char* port;
-    char* principal;
-    char* privgroupattr;
-    char* separator;
+    char *filter_templ;
+    int   filter_templ_ex;
+    char *host;
+    char *keytab;
+    char *port;
+    int   port_ex;
+    char *principal;
+    char *privgroupattr;
+    char *separator;
     int   set_authrule;
+    int   set_authrule_ex;
     int   ssl;
-    char* tktcache;
+    char *tktcache;
     int ldapversion;
     int scope;
 

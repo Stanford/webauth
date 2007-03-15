@@ -14,6 +14,11 @@ WebAuth 3.5.4 (unreleased)
     force the behavior we want.  (This is probably not necessary given the
     above change, but shouldn't hurt.)
 
+ *) Properly merge configuration settings in mod_webauthldap.  This will
+    correct problems with WebAuthLdapAuthrule, WebAuthLdapFilter, and
+    WebAuthLdapPort configuration options not being honored inside virtual
+    hosts.  Thanks to Wadud Miah for the bug report.
+
  *) Fix configure logic and Kerberos library analysis on systems with
     multiple versions of Kerberos installed.
 
