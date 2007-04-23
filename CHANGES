@@ -19,6 +19,10 @@ WebAuth 3.5.4 (unreleased)
     WebAuthLdapPort configuration options not being honored inside virtual
     hosts.  Thanks to Wadud Miah for the bug report.
 
+ *) Read ticket defaults from krb5.conf properly when built with Heimdal.
+    Heimdal requires a separate function be called to set the defaults
+    rather than using them by default as MIT Kerberos does.
+
  *) Fix configure logic and Kerberos library analysis on systems with
     multiple versions of Kerberos installed.  Make sure that we're running
     all tests with the right LDFLAGS and CPPFLAGS and set CPPFLAGS

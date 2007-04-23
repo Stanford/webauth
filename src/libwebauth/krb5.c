@@ -330,6 +330,9 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
     krb5_get_init_creds_opt_init(&opts);
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
+    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
+#endif
     krb5_get_init_creds_opt_set_forwardable(&opts, 1);
     /* FIXME: we'll need to pull some options from config
        once config is in */
@@ -515,6 +518,9 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     }
 
     krb5_get_init_creds_opt_init(&opts);
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
+    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
+#endif
 
     c->code = krb5_get_init_creds_keytab(c->ctx, &creds, c->princ, keytab,
                                          0, /* start_time */

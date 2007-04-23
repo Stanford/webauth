@@ -49,7 +49,7 @@ install: $(LIBNAME).la
 # directory to confuse libtool.
 $(LIBNAME).la: $(LOBJS)
 	$(LIBTOOL) --mode=link $(CC) -o $@ $(LOBJS) $(LDFLAGS) $(LDLIBS) \
-	    -rpath $(libdir) -version-info 2:2:1 $(VERSION_LDFLAGS)
+	    -rpath $(libdir) -version-info 2:3:1 $(VERSION_LDFLAGS)
 	rm -f .libs/$(LIBNAME).la
 
 clean:
