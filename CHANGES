@@ -2,6 +2,10 @@
 
 WebAuth 3.5.4 (unreleased)
 
+ *) Add a configuration option to WebLogin to attempt to decode return
+    URLs pointing to a Shibboleth IdP and display on the confirmation page
+    the final destination instead of the intermediate IdP.
+
  *) For pages that the browser should reload each time (WebAuthDoLogout or
     WebAuthDontCache), also always set the content modification time to
     now.  Otherwise, the browser may check the last modification time on

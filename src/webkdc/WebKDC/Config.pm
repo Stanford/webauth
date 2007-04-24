@@ -13,6 +13,7 @@ our $REMUSER_EXPIRES = 60 * 60 * 8;
 our $REALM;
 our @REALMS;
 our $REMOTE_USER_REDIRECT;
+our @SHIBBOLETH_IDPS;
 
 if (-f $conf) {
     my $ret = do $conf;

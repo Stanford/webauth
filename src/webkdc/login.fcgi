@@ -31,6 +31,7 @@ use WebKDC ();
 use WebKDC::Config ();
 use WebKDC::WebKDCException;
 use URI ();
+use URI::Escape qw(uri_unescape);
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
@@ -157,6 +158,25 @@ sub parse_uri {
     $lvars->{path} = $uri->path;
     $lvars->{port} = $uri->port if ($uri->port != 80 && $uri->port != 443);
 
+    # Determine what pretty display URL to use.  This is a bit more
+    # complicated if we're using Shibboleth; in that case, try to extract a
+    # URI from the target parameter of the return URL.
+    my $pretty;
+    my @idps = @WebKDC::Config::SHIBBOLETH_IDPS;
+    if (grep { $lvars->{host} eq $_ } @WebKDC::Config::SHIBBOLETH_IDPS) {
+        my ($target) = ($uri->path =~ /\?target=([^&]+)&/);
+        if ($target) {
+            my $realuri = URI->new (uri_unescape ($target));
+            if ($realuri && $realuri->scheme =~ /^https?$/) {
+                $pretty = $realuri->scheme . "://" . $realuri->host;
+            }
+        }
+    }
+    unless ($pretty) {
+        $pretty = $lvars->{scheme} . "://" . $lvars->{host};
+    }
+    $lvars->{pretty} = $pretty;
+
     return 0;
 }
 
@@ -229,7 +249,7 @@ sub fix_token {
 sub print_confirm_page {
     my ($q, $lvars, $resp) = @_;
 
-    my $pretty_return_url = $lvars->{scheme} . "://" . $lvars->{host};
+    my $pretty_return_url = $lvars->{pretty};
     my $return_url = $resp->return_url;
     my $lc = $resp->login_canceled_token;
 

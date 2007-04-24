@@ -199,3 +199,24 @@ Configuration
 
       If using this option, you must also set $HONOR_REMOTE_USER
       (otherwise there would be no point).
+
+  @SHIBBOLETH_IDPS
+
+      The hostnames (as used in URLs) of a local Shibboleth IdP protected
+      by WebAuth.  An example setting:
+
+          @SHIBBOLETH_IDP = ("idp.stanford.edu", "idp-dev.stanford.edu");
+
+      If this variable is set and the return URL for a given WebLogin
+      invocation points to one of the listed hosts, the URL is parsed
+      looking for a setting matching the regular expression:
+
+          \?target=([^&]+)&
+
+      If such a setting is found and the value is parsable as an escaped
+      URL, the hostname is extracted from that URL and is used for the
+      display text on the confirmation page instead of the hostname of the
+      IdP.  This further hides from the user the underlying mechanics of
+      Shibboleth and shows them the final destination host instead of the
+      intermediate IdP host.  This setting only affects the text on the
+      page; the underlying links are left unchanged.
