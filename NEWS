@@ -19,6 +19,12 @@ WebAuth 3.5.4 (unreleased)
     WebAuthLdapPort configuration options not being honored inside virtual
     hosts.  Thanks to Wadud Miah for the bug report.
 
+ *) Refresh the REMOTE_USER configuration cookie on each WebLogin page
+    visit so that it won't expire if the user is using WebLogin
+    regularly.
+
+ *) Document the cookies used by the WebLogin service.
+
  *) Read ticket defaults from krb5.conf properly when built with Heimdal.
 
  *) Fix configure logic and Kerberos library analysis on systems with

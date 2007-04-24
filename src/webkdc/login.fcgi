@@ -51,6 +51,9 @@ our $TEST_COOKIE = "WebloginTestCookie";
 # The name of the cookie holding REMOTE_USER configuration information.
 our $REMUSER_COOKIE = 'weblogin_remuser';
 
+# The lifetime of the REMOTE_USER configuration cookie.
+our $REMUSER_LIFETIME = '+365d';
+
 ##############################################################################
 # Debugging
 ##############################################################################
@@ -87,9 +90,8 @@ sub print_headers {
     # $REMUSER_COOKIE is handled as a special case, since it stores user
     # preferences and should be retained rather than being only a session
     # cookie.
-    #
-    # FIXME: Currently hard-coded to keep for a year.  Should this be longer?
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
+    my $saw_remuser;
     if ($cookies) {
         my ($name, $value);
         while (($name, $value) = each %$cookies) {
@@ -97,7 +99,9 @@ sub print_headers {
             my $cookie;
             if ($name eq $REMUSER_COOKIE) {
                 $cookie = $q->cookie(-name => $name, -value => $value,
-                                     -secure => $secure, -expires => '+365d');
+                                     -secure => $secure,
+                                     -expires => $REMUSER_LIFETIME);
+                $saw_remuser = 1;
             } else {
                 $cookie = $q->cookie(-name => $name, -value => $value,
                                      -secure => $secure);
@@ -105,11 +109,26 @@ sub print_headers {
             push (@$ca, $cookie);
         }
     }
+
+    # If we're not setting the $REMUSER_COOKIE cookie explicitly and it was
+    # set in the query, set it in our page.  This refreshes the expiration
+    # time of the cookie so that, provided the user visits WebLogin at least
+    # once a year, the cookie will never expire.
+    if (!$saw_remuser && $q->cookie ($REMUSER_COOKIE)) {
+        my $cookie = $q->cookie (-name => $REMUSER_COOKIE, -value => 1,
+                                 -secure => $secure,
+                                 -expires => $REMUSER_LIFETIME);
+        push (@$ca, $cookie);
+    }
+
+    # Set the test cookie unless it's already set.
     unless ($q->cookie ($TEST_COOKIE)) {
         my $cookie = $q->cookie (-name => $TEST_COOKIE, -value => 'True',
                                  -path => '/');
         push (@$ca, $cookie);
     }
+
+    # Now, print out the page header with the appropriate cookies.
     if ($ca) {
         print $q->header (-type => 'text/html', -Pragma => 'no-cache',
                           -Cache_Control => 'no-cache', -cookie => $ca);
