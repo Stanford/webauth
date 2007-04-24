@@ -79,7 +79,7 @@ Configuration
   Now, when the user hits /login with a browser, the server will attempt
   to do an SPNEGO authentication.  If the browser supports it, that
   authentication information will be passed on to the Weblogin script in
-  REMOTE_USER and it cobble up a temporary webkdc-proxy token for the
+  REMOTE_USER and it will cobble up a temporary webkdc-proxy token for the
   WebKDC.  If the remote system did not request a Kerberos authenticator
   or any additional credentials and only needs simple authentication, this
   will bypass the login prompt.  If it does need additional information,
