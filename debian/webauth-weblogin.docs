@@ -3,4 +3,5 @@ README
 TODO
 doc/install-spnego
 doc/weblogin-config
+doc/weblogin-cookies
 doc/weblogin-flow

@@ -1,8 +1,14 @@
-webauth (3.5.3-3) UNRELEASED; urgency=low
+webauth (3.5.4-1) unstable; urgency=low
 
+  * New upstream release.
+    - WebLogin supports displaying destination Shibboleth URLs.
+    - Be more aggressive about telling browsers not to cache.
+    - Properly merge directory configurations in mod_webauthldap.
+    - Refresh REMOTE_USER cookies in WebLogin.
+    - Improved WebLogin documentation of cookies used.
   * Put the Apache modules in the net section to match overrides.
 
- -- Russ Allbery <rra@debian.org>  Tue, 10 Oct 2006 19:36:59 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 24 Apr 2007 14:35:35 -0700
 
 webauth (3.5.3-2) unstable; urgency=low
 
