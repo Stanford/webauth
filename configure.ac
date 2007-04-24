@@ -12,9 +12,9 @@ m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
 
-AC_REVISION($Revision$)
-AC_PREREQ(2.59)
-AC_INIT([WebAuth], [3.5.3], [webauth-team@lists.stanford.edu])
+AC_REVISION([$Revision$])
+AC_PREREQ([2.59])
+AC_INIT([WebAuth], [3.5.4], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
 
 dnl Store information about the time the package was configured and the person

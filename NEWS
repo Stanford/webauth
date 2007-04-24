@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.5.4 (unreleased)
+WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return
     URLs pointing to a Shibboleth IdP and display on the confirmation page
