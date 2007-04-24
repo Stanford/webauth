@@ -4,7 +4,7 @@ our $ID = q($Id$ );
 # login.fcgi -- Weblogin login page for WebAuth.
 #
 # Written by Roland Schemers <schemers@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007
 #     Board of Trustees, Leland Stanford Jr. University
 #
 # This is the front page for user authentication for weblogin.  It accepts
@@ -164,7 +164,7 @@ sub parse_uri {
     my $pretty;
     my @idps = @WebKDC::Config::SHIBBOLETH_IDPS;
     if (grep { $lvars->{host} eq $_ } @WebKDC::Config::SHIBBOLETH_IDPS) {
-        my ($target) = ($uri->path =~ /\?target=([^&]+)&/);
+        my ($target) = ($uri->query =~ /[?&]target=([^&]+)/);
         if ($target) {
             my $realuri = URI->new (uri_unescape ($target));
             if ($realuri && $realuri->scheme =~ /^https?$/) {

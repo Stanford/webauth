@@ -211,7 +211,7 @@ Configuration
       invocation points to one of the listed hosts, the URL is parsed
       looking for a setting matching the regular expression:
 
-          \?target=([^&]+)&
+          [?&]target=([^&]+)
 
       If such a setting is found and the value is parsable as an escaped
       URL, the hostname is extracted from that URL and is used for the
