@@ -131,10 +131,11 @@ sub print_headers {
     # Now, print out the page header with the appropriate cookies.
     if ($ca) {
         print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache', -cookie => $ca);
+                          -Cache_Control => 'no-cache, no-store',
+                          -cookie => $ca);
     } else {
         print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache');
+                          -Cache_Control => 'no-cache, no-store');
     }
 }
 

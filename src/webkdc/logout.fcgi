@@ -47,10 +47,11 @@ while (my $q = new CGI::Fast) {
     if ($ca) {
         $PAGE->param (cookies_flag => 1);
         print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache', -cookie => $ca);
+                          -Cache_Control => 'no-cache, no-store',
+                          -cookie => $ca);
     } else {
         print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache');
+                          -Cache_Control => 'no-cache, no-store');
     }
     print $PAGE->output;
 
