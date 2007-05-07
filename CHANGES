@@ -1,5 +1,14 @@
                           WebAuth Change History
 
+WebAuth 3.5.0 (unreleased)
+
+ *) Improve extraction of return URLs for user-friendly display when doing
+    authentication for a Shibboleth IdP.  The target parameter isn't
+    always set, but when it isn't, the shire parameter will generally
+    still contain the destination host.  Also use URI::QueryParam to parse
+    the parameters rather than a regular expression.  Thanks, Robert
+    Basch.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return

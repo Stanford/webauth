@@ -31,7 +31,7 @@ use WebKDC ();
 use WebKDC::Config ();
 use WebKDC::WebKDCException;
 use URI ();
-use URI::Escape qw(uri_unescape);
+use URI::QueryParam ();
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
@@ -160,16 +160,26 @@ sub parse_uri {
 
     # Determine what pretty display URL to use.  This is a bit more
     # complicated if we're using Shibboleth; in that case, try to extract a
-    # URI from the target parameter of the return URL.
+    # URI from the target parameter of the return URL.  If the target
+    # value not a valid URL (e.g. when the SP's localRelayState property
+    # is true, in which case the target value is "cookie"), fall back to
+    # using the value of the shire parameter, which is the location of the
+    # the authentication assertion handler.
     my $pretty;
-    my @idps = @WebKDC::Config::SHIBBOLETH_IDPS;
     if (grep { $lvars->{host} eq $_ } @WebKDC::Config::SHIBBOLETH_IDPS) {
-        my ($target) = ($uri->query =~ /[?&]target=([^&]+)/);
+        my $dest;
+        my $target = $uri->query_param ('target');
         if ($target) {
-            my $realuri = URI->new (uri_unescape ($target));
-            if ($realuri && $realuri->scheme =~ /^https?$/) {
-                $pretty = $realuri->scheme . "://" . $realuri->host;
+            $dest = URI->new ($target);
+        }
+        unless ($dest && $dest->scheme && $dest->scheme =~ /^https?$/) {
+            my $shire = $uri->query_param ('shire');
+            if ($shire) {
+                $dest = URI->new ($shire);
             }
+        }
+        if ($dest && $dest->scheme && $dest->scheme =~ /^https?$/) {
+            $pretty = $dest->scheme . "://" . $dest->host;
         }
     }
     unless ($pretty) {
