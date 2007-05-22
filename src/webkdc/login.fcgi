@@ -140,33 +140,21 @@ sub print_headers {
     }
 }
 
-# Parse the return URL of our request, filling out the provided $lvars struct
-# with the details.  Make sure that the scheme exists and is a valid WebAuth
-# scheme.  Return 0 if everything is okay, 1 if the scheme is invalid.
-sub parse_uri {
-    my ($lvars, $resp) = @_;
-    my $uri = URI->new ($resp->return_url);
-
-    $lvars->{return_url} = $uri->canonical;
-    my $scheme = $uri->scheme;
-    unless (defined ($scheme) && $scheme =~ /^https?$/) {
-        $PAGES{error}->param (err_webkdc => 1);
-        return 1;
-    }
-    $lvars->{scheme} = $scheme;
-    $lvars->{host} = $uri->host;
-    $lvars->{path} = $uri->path;
-    $lvars->{port} = $uri->port if ($uri->port != 80 && $uri->port != 443);
-
-    # Determine what pretty display URL to use.  This is a bit more
-    # complicated if we're using Shibboleth; in that case, try to extract a
-    # URI from the target parameter of the return URL.  If the target
-    # value not a valid URL (e.g. when the SP's localRelayState property
-    # is true, in which case the target value is "cookie"), fall back to
-    # using the value of the shire parameter, which is the location of the
-    # the authentication assertion handler.
+# Determine what pretty display URL to use from the given return URI object.
+#
+# This is a bit more complicated if we're using Shibboleth; in that case, try
+# to extract a URI from the target parameter of the return URL.  If the target
+# value not a valid URL (e.g. when the SP's localRelayState property is true,
+# in which case the target value is "cookie"), fall back to using the value of
+# the shire parameter, which is the location of the the authentication
+# assertion handler.
+#
+# If we're not using Shibboleth, or if we can't parse the Shibboleth URL and
+# find the SP, just return the scheme and host of the return URL.
+sub pretty_return_uri {
+    my ($uri) = @_;
     my $pretty;
-    if (grep { $lvars->{host} eq $_ } @WebKDC::Config::SHIBBOLETH_IDPS) {
+    if (grep { $uri->host eq $_ } @WebKDC::Config::SHIBBOLETH_IDPS) {
         my $dest;
         my $target = $uri->query_param ('target');
         if ($target) {
@@ -182,10 +170,33 @@ sub parse_uri {
             $pretty = $dest->scheme . "://" . $dest->host;
         }
     }
+
+    # The non-Shibboleth case.  Just use the scheme and host.
     unless ($pretty) {
-        $pretty = $lvars->{scheme} . "://" . $lvars->{host};
+        $pretty = $uri->scheme . "://" . $uri->host;
     }
-    $lvars->{pretty} = $pretty;
+
+    return $pretty;
+}
+
+# Parse the return URL of our request, filling out the provided $lvars struct
+# with the details.  Make sure that the scheme exists and is a valid WebAuth
+# scheme.  Return 0 if everything is okay, 1 if the scheme is invalid.
+sub parse_uri {
+    my ($lvars, $resp) = @_;
+    my $uri = URI->new ($resp->return_url);
+
+    $lvars->{return_url} = $uri->canonical;
+    my $scheme = $uri->scheme;
+    unless (defined ($scheme) && $scheme =~ /^https?$/) {
+        $PAGES{error}->param (err_webkdc => 1);
+        return 1;
+    }
+    $lvars->{scheme} = $scheme;
+    $lvars->{host}   = $uri->host;
+    $lvars->{path}   = $uri->path;
+    $lvars->{port}   = $uri->port if ($uri->port != 80 && $uri->port != 443);
+    $lvars->{pretty} = pretty_return_uri ($uri);
 
     return 0;
 }
@@ -319,7 +330,7 @@ sub redisplay_confirm_page {
         print_error_page ($q);
         next;
     }
-    my $pretty_return_url = $uri->scheme . "://" . $uri->host;
+    my $pretty_return_url = pretty_return_uri ($uri);
 
     # Find our page and set general template parameters.
     my $page = $PAGES{confirm};

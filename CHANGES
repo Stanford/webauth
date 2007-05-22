@@ -9,6 +9,9 @@ WebAuth 3.5.0 (unreleased)
     the parameters rather than a regular expression.  Thanks, Robert
     Basch.
 
+ *) Show the correct pretty Shibboleth return URL when redisplaying the
+    confirmation page.   Thanks, Robert Basch.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return

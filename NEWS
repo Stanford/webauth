@@ -5,6 +5,9 @@ WebAuth 3.6.0 (unreleased)
  *) Improve extraction of return URLs for user-friendly display when doing
     authentication for a Shibboleth IdP.  Thanks, Robert Basch.
 
+ *) Show the correct pretty Shibboleth return URL when redisplaying the
+    confirmation page.   Thanks, Robert Basch.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return
