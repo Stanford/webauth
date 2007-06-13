@@ -28,6 +28,10 @@
     option should probably be on by default with new versions of
     mod_webauth, since it's cleaner and doesn't cause any harm.
 
+ *) User request: Add a method for the WebKDC to communicate to the WAS
+    the login method used, so that the WAS can expose this information in
+    an environment variable to CGI applications, etc.
+
  *) A better error message when one talks to the WebKDC directly with a
     browser would be nice.  The current message is rather baffling, and
     it would be good to tell the naive user to set up an application server
