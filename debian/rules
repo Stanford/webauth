@@ -136,9 +136,9 @@ binary-arch: install-stamp
 	dh_install --sourcedir=debian/tmp
 	dh_installman
 	dh_link
+	dh_fixperms
 	dh_strip
 	dh_compress
-	dh_fixperms
 	dh_perl
 	dh_makeshlibs
 	dh_installdeb

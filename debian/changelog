@@ -1,3 +1,10 @@
+webauth (3.5.4-2) unstable; urgency=low
+
+  * Call dh_fixperms before dh_strip so that the WebAuth Perl module will
+    be stripped properly.
+
+ --
+
 webauth (3.5.4-1) unstable; urgency=low
 
   * New upstream release.
