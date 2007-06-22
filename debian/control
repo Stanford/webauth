@@ -78,7 +78,7 @@ Package: libwebauth1-dev
 Section: libdevel
 Priority: extra
 Architecture: any
-Depends: libwebauth1 (= ${Source-Version}), libkrb5-dev
+Depends: libwebauth1 (= ${binary:Version}), libkrb5-dev
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -93,7 +93,8 @@ Description: Development files for WebAuth authentication
 Package: libwebkdc-perl
 Section: perl
 Architecture: all
-Depends: ${shlibs:Depends}, ${perl:Depends}, libwebauth-perl (>= 3.2.6-1), libio-socket-ssl-perl, libwww-perl, libxml-parser-perl
+Depends: ${shlibs:Depends}, ${perl:Depends}, libwebauth-perl (>= 3.2.6-1),
+ libio-socket-ssl-perl, libwww-perl, libxml-parser-perl
 Description: Perl library for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -136,7 +137,8 @@ Description: Command-line utilities for WebAuth authentication
 
 Package: webauth-weblogin
 Architecture: all
-Depends: ${perl:Depends}, libwebauth-perl (>= 3.2.6-1), libwebkdc-perl, libhtml-template-perl, libcgi-fast-perl
+Depends: ${perl:Depends}, libwebauth-perl (>= 3.2.6-1), libwebkdc-perl,
+ libhtml-template-perl, libcgi-fast-perl
 Description: Central login server for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all

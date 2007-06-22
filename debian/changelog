@@ -2,6 +2,8 @@ webauth (3.5.4-2) unstable; urgency=low
 
   * Call dh_fixperms before dh_strip so that the WebAuth Perl module will
     be stripped properly.
+  * Use ${binary:Version} instead of ${Source-Version} in debian/control.
+  * Wrap all Depends lines in debian/control.
 
  --
 
