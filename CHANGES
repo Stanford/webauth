@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.5.0 (unreleased)
+WebAuth 3.6.0 (unreleased)
 
  *) Improve extraction of return URLs for user-friendly display when doing
     authentication for a Shibboleth IdP.  The target parameter isn't
