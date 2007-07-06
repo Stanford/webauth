@@ -12,6 +12,8 @@ WebAuth 3.5.0 (unreleased)
  *) Show the correct pretty Shibboleth return URL when redisplaying the
     confirmation page.   Thanks, Robert Basch.
 
+ *) Update INSTALL references to Apache 2.x instead of 2.0.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return

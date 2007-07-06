@@ -8,7 +8,7 @@ infrastructure, which is more complex and only has to be done once at each
 site, see doc/install-webkdc.
 
  1.  Make sure that you have all of the required packages installed.
-     WebAuth is implemented as Apache 2.0 modules, and therefore requires
+     WebAuth is implemented as Apache 2.x modules, and therefore requires
      an installation of Apache 2.0.43 or later built with SSL and dynamic
      modules.  It also requires MIT Kerberos v5, cURL, and OpenSSL 0.9.7
      or later (for AES support).  See README for more version dependencies.
@@ -23,7 +23,7 @@ site, see doc/install-webkdc.
      libraries aren't large, particularly given the average size of modern
      disks.
 
-     When building Apache 2.0, you'll want to use a configure invocation
+     When building Apache 2.x, you'll want to use a configure invocation
      like:
 
          ./configure --enable-so --enable-ssl --with-ssl=/usr/local
@@ -34,7 +34,7 @@ site, see doc/install-webkdc.
      beware that Apache's build system tends to pick up Berkeley DB 4.0,
      zlib, and GDBM from pubsw, and that you'll therefore need those
      shared libraries available (preferrably on local disk) for the
-     resulting Apache 2.0 server to run.
+     resulting Apache 2.x server to run.
 
  2.  If you are building a CVS pull of the WebAuth distribution (as
      opposed to a packaged release, which already includes the generated
@@ -116,7 +116,7 @@ site, see doc/install-webkdc.
 
  6.  Add Apache directives for WebAuth to your httpd.conf or equivalent
      file.  Stanford users should simply copy conf/stanford-webauth.conf
-     to their Apache 2.0 conf directory and then add the line:
+     to their Apache 2.x conf directory and then add the line:
 
          Include conf/stanford-webauth.conf
 
@@ -162,7 +162,7 @@ site, see doc/install-webkdc.
          cd <apache-root>
          mkdir -p conf/webauth
 
-     where <apache-root> is the root of your Apache 2.0 installation.
+     where <apache-root> is the root of your Apache 2.x installation.
      This directory must be writable by the running web server (and by the
      child servers, not just the main server), so if you have User and
      Group directives in your httpd.conf, <apache-root>/conf/webauth
@@ -218,7 +218,7 @@ site, see doc/install-webkdc.
 
 10.  Restart the server to pick up the configuration changes, and check
      your error log for any errors indicating a problem with the WebAuth
-     installation.  If you are using the default Apache 2.0 setup, be
+     installation.  If you are using the default Apache 2.x setup, be
      sure to start Apache with apachectl startssl to enable SSL.
 
 11.  At this point, WebAuth is available to your web server and will be
@@ -264,7 +264,7 @@ site, see doc/install-webkdc.
      either to put directory information into environment variables or to
      use LDAP-based privilege groups for access control, you need to
      configure the mod_webauthldap module.  Stanford users should simply
-     copy conf/stanford-ldap.conf to their Apache 2.0 conf directory and
+     copy conf/stanford-ldap.conf to their Apache 2.x conf directory and
      then add the line:
 
          Include conf/stanford-ldap.conf
