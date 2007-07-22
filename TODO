@@ -81,3 +81,6 @@
  *) We're always passing a status of zero to all calls to ap_log_error,
     but in some cases we do have an error status that we should be
     passing in.
+
+ *) Add to mod_webauthldap a way to deny access if a user is a member of a
+    particular privgroup.
