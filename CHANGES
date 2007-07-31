@@ -14,6 +14,9 @@ WebAuth 3.6.0 (unreleased)
 
  *) Update INSTALL references to Apache 2.x instead of 2.0.
 
+ *) Enable shared library symbol versioning and checking of defined
+    symbols on all GNU platforms, not just Linux.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return

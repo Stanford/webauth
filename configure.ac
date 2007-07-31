@@ -179,7 +179,7 @@ dnl make sure that all symbols in the library are resolved.  We'd like to do
 dnl this on all platforms, but the syntax is different everywhere and I don't
 dnl feel like dealing with the differences.
 case "$host" in
-*-linux*)
+*-gnu*)
     VERSION_LDFLAGS="-Wl,--version-script=mapfile -Wl,-z,defs"
     ;;
 *)
