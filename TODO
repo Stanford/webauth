@@ -32,6 +32,11 @@
     the login method used, so that the WAS can expose this information in
     an environment variable to CGI applications, etc.
 
+ *) User request: Provide a way of checking the user's entitlements against
+    a list of possible values and export to the environment all matching
+    entitlements, rather than just the first match (like the existing
+    LDAPAUTHRULE support).
+
  *) A better error message when one talks to the WebKDC directly with a
     browser would be nice.  The current message is rather baffling, and
     it would be good to tell the naive user to set up an application server
