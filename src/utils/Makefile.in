@@ -37,7 +37,7 @@ MAN		= wa_keyring.1
 
 all: $(PROGS)
 
-install: $(PROGS)
+install: $(PROGS) $(srcdir)/wa_keyring.1
 	$(INSTALL) -d $D$(bindir) $D$(man1dir)
 	$(LIBTOOL) --mode=install $(INSTALL) wa_keyring $D$(bindir)/wa_keyring
 	$(INSTALL_DATA) $(srcdir)/wa_keyring.1 $D$(man1dir)/wa_keyring.1
@@ -48,7 +48,7 @@ install: $(PROGS)
 wa_keyring: wa_keyring.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ wa_keyring.o $(LDLIBS)
 
-wa_keyring.1: wa_keyring.pod
+$(srcdir)/wa_keyring.1: wa_keyring.pod
 	pod2man --release='$(VERSION)' --section=1 --center='User Programs' \
 	    wa_keyring.pod > $@
 

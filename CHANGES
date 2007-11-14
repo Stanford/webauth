@@ -17,6 +17,9 @@ WebAuth 3.6.0 (unreleased)
  *) Enable shared library symbol versioning and checking of defined
     symbols on all GNU platforms, not just Linux.
 
+ *) Add a correct build dependency for wa_keyring.1 for builds from
+    Subversion.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return
