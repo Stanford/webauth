@@ -32,6 +32,8 @@ WebAuth 3.5.5 (unreleased)
  *) Add a correct build dependency for wa_keyring.1 for builds from
     Subversion.
 
+ *) Strip trailing whitespace from mod_webkdc source files.
+
 WebAuth 3.5.4 (2007-04-24)
 
  *) Add a configuration option to WebLogin to attempt to decode return

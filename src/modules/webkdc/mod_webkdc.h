@@ -31,7 +31,7 @@
 # include <stdint.h>
 #endif
 #if HAVE_UNISTD_H
-# include <unistd.h> 
+# include <unistd.h>
 #endif
 
 #include "webauth.h"
@@ -116,7 +116,7 @@ typedef struct {
     int proxy_token_lifetime;
     int proxy_token_lifetime_ex;
     int service_token_lifetime;
-    int token_max_ttl; 
+    int token_max_ttl;
     int token_max_ttl_ex;
     int keyring_auto_update;
     int keyring_auto_update_ex;
@@ -207,7 +207,7 @@ typedef struct {
     const char *info; /* used only for logging */
 } MWK_RETURNED_TOKEN;
 
-/* used to represent returned proxy-tokens for 
+/* used to represent returned proxy-tokens for
  * the processRequestTokenResponse.
  */
 typedef struct {
@@ -235,28 +235,28 @@ typedef struct {
 
 /* acl.c */
 
-int 
+int
 mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
                         const char *subject,
                         const char *proxy_subject);
 
 
-int 
+int
 mwk_has_service_access(MWK_REQ_CTXT *rc,
                        const char *subject);
 
-int 
+int
 mwk_has_id_access(MWK_REQ_CTXT *rc,
                   const char *subject);
 
 int
 mwk_has_proxy_access(MWK_REQ_CTXT *rc,
-                     const char *subject, 
+                     const char *subject,
                      const char *proxy_type);
 
 int
 mwk_has_cred_access(MWK_REQ_CTXT *rc,
-                    const char *subject, 
+                    const char *subject,
                     const char *cred_type,
                     const char *cred);
 
@@ -275,7 +275,7 @@ void
 mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
 
 /*
- * unlock a mutex 
+ * unlock a mutex
  */
 void
 mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
@@ -286,7 +286,7 @@ mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
  */
 
 char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, 
+mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
                  request_rec *r, const char *func, int *vlen);
 
 /*
@@ -300,8 +300,8 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func);
  */
 
 char *
-mwk_webauth_error_message(request_rec *r, 
-                          int status, 
+mwk_webauth_error_message(request_rec *r,
+                          int status,
                           WEBAUTH_KRB5_CTXT *ctxt,
                           const char *webauth_func,
                           const char *extra);
@@ -311,7 +311,7 @@ mwk_webauth_error_message(request_rec *r,
  */
 void
 mwk_log_webauth_error(server_rec *serv,
-                      int status, 
+                      int status,
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
                       const char *func,
@@ -320,13 +320,13 @@ mwk_log_webauth_error(server_rec *serv,
 /*
  * initialize a string for use with mwk_append_string
  */
-void 
+void
 mwk_init_string(MWK_STRING *string, apr_pool_t *pool);
 
 /*
  * given an MWK_STRING, append some new data to it.
  */
-void 
+void
 mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
 
 int
