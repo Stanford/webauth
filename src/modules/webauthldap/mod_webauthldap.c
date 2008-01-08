@@ -381,6 +381,8 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 {
     server_rec *scheck;
     MWAL_SCONF *sconf;
+    char *tktcache, *tktenv;
+    size_t size;
 
     for (scheck=s; scheck; scheck=scheck->next) {
         sconf = (MWAL_SCONF*)ap_get_module_config(scheck->module_config,
@@ -417,8 +419,29 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
             sconf->ldcount = 0;
             sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
         }
+
+        /* This has to be the same for all server configuration.  For the sake
+           of convenience, grab the last one. */
+        tktcache = sconf->tktcache;
     }
 
+    /* Don't use pool memory for this so that the environment variable
+       pointers don't become invalid when the pool is cleared. */
+    size = strlen("KRB5CCNAME=FILE:") + strlen(tktcache) + 1;
+    tktenv = malloc(size);
+    if (tktenv == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                     "webauthldap: cannot allocate memory for ticket cache"
+                     " environment variable");
+        return -1;
+    }
+    apr_snprintf(tktenv, size, "KRB5CCNAME=FILE:%s", tktcache);
+    if (putenv(tktenv) != 0) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                     "webauthldap: cannot set ticket cache environment"
+                     " variable");
+        return -1;
+    }
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
                  "mod_webauthldap: initialized");
@@ -795,7 +818,6 @@ int
 webauthldap_managedbind(MWAL_LDAP_CTXT* lc) 
 {
     int rc;
-    char* tktenv;
     struct stat keytab_stat;
     int fd;
     int princ_specified;
@@ -803,19 +825,6 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                      "webauthldap(%s): begins ldap bind", lc->r->user);
-
-    /* since SASL will look there, lets put the ticket location into env */
-    tktenv = apr_psprintf(lc->r->pool, "%s=FILE:%s", ENV_KRB5_TICKET, 
-                          lc->sconf->tktcache);
-    if (putenv(tktenv) != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                     "webauthldap(%s): cannot set ticket cache env var", 
-                     lc->r->user);
-        return -1;
-    }
-    if (lc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                     "webauthldap(%s): set ticket to %s", lc->r->user, tktenv);
 
     rc = webauthldap_bind(lc, 0);
 
