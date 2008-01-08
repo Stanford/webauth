@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.6.0 (unreleased)
+WebAuth 3.5.5 (unreleased)
 
  *) Improve extraction of return URLs for user-friendly display when doing
     authentication for a Shibboleth IdP.  The target parameter isn't
@@ -10,7 +10,10 @@ WebAuth 3.6.0 (unreleased)
     Basch.
 
  *) Show the correct pretty Shibboleth return URL when redisplaying the
-    confirmation page.   Thanks, Robert Basch.
+    confirmation page.  Thanks, Robert Basch.
+
+ *) On failure to parse a WebAuth token, include the token in the log
+    message for better debugging.
 
  *) Update INSTALL references to Apache 2.x instead of 2.0.
 

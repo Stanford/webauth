@@ -1272,7 +1272,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_parse", NULL);
+                              "webauth_token_parse", token);
         return 0;
     }
 
