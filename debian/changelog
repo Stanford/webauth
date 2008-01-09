@@ -1,5 +1,12 @@
-webauth (3.5.4-2) unstable; urgency=low
+webauth (3.5.5-1) unstable; urgency=low
 
+  * New upstream release.
+    - Check browser cookie support on first WebLogin visit.
+    - New err_cookies_disabled error template variable.
+    - Fix memory allocation for environment variables in mod_webauthldap.
+    - Improve display of Shibboleth destination URLs.
+  * Incorporate NEWS.Debian into webauth-weblogin.NEWS, since it is the
+    only affected package for the old news item.
   * Call dh_fixperms before dh_strip so that the WebAuth Perl module will
     be stripped properly.
   * Use ${binary:Version} instead of ${Source-Version} in debian/control.
