@@ -83,9 +83,9 @@ sub dump_stuff {
 # Print the headers for a page.  Takes the user's query and any additional
 # cookies to set as parameters, and always adds the test cookie.  Skip any
 # remuser proxy tokens, since those are internal and we want to reauthenticate
-# the user every time.
+# the user every time.  Takes an optional redirection URL.
 sub print_headers {
-    my ($q, $cookies) = @_;
+    my ($q, $cookies, $redir_url) = @_;
     my $ca;
 
     # $REMUSER_COOKIE is handled as a special case, since it stores user
@@ -130,14 +130,11 @@ sub print_headers {
     }
 
     # Now, print out the page header with the appropriate cookies.
-    if ($ca) {
-        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache, no-store',
-                          -cookie => $ca);
-    } else {
-        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache, no-store');
-    }
+    my @params;
+    push (@params, -location => $redir_url, -status => '302 Moved');
+    push (@params, -cookie => $ca) if $ca;
+    print $q->header (-type => 'text/html', -Pragma => 'no-cache',
+                      -Cache_Control => 'no-cache, no-store', @params);
 }
 
 # Determine what pretty display URL to use from the given return URI object.
@@ -229,7 +226,6 @@ sub print_login_page {
     if ($q->param ('login')) {
         $page->param (err_password => 1) unless $q->param ('password');
         $page->param (err_username => 1) unless $q->param ('username');
-        $page->param (err_cookies => 1) unless $q->cookie ($TEST_COOKIE);
         $page->param (err_missinginput => 1) if $page->param ('err_username');
         $page->param (err_missinginput => 1) if $page->param ('err_password');
         if ($err == WK_ERR_LOGIN_FAILED) {
@@ -238,10 +234,8 @@ sub print_login_page {
 
         # Set a generic error indicator if any of the specific ones were set
         # to allow easier structuring of the login page template.
-        if ($page->param ('err_missinginput') || $page->param ('err_cookies')
-            || $page->param ('err_loginfailed')) {
-            $page->param (error => 1);
-        }
+        $page->param (error => 1) if $page->param ('err_missinginput');
+        $page->param (error => 1) if $page->param ('err_loginfailed');
     } elsif ($lvars->{forced_login}) {
         $page->param (err_forced => 1);
         $page->param (error => 1);
@@ -325,7 +319,7 @@ sub redisplay_confirm_page {
     my $uri = URI->new ($return_url);
     unless ($username && $uri && $uri->scheme && $uri->host) {
         $PAGES{error}->param (err_confirm => 1);
-        print STDERR ("missing data when reconstructing confirm page\n")
+        print STDERR "missing data when reconstructing confirm page\n"
             if $LOGGING;
         print_error_page ($q);
         next;
@@ -393,7 +387,7 @@ sub print_remuser_redirect {
         print_error_page ($q);
     } else {
         $uri .= "?RT=" . $q->param ('RT') . ";ST=" . $q->param ('ST');
-        print STDERR "Redirecting to $uri\n" if $DEBUG;
+        print STDERR "redirecting to $uri\n" if $DEBUG;
         print $q->redirect (-uri => $uri);
     }
 }
@@ -494,10 +488,48 @@ while (my $q = CGI::Fast->new) {
     # to the next request.
     unless (defined $q->param ('RT') && defined $q->param ('ST')) {
         $PAGES{error}->param (err_no_request_token => 1);
-        print STDERR ("there was no request or service token\n") if $LOGGING;
+        print STDERR "no request or service token\n" if $LOGGING;
         print_error_page ($q);
         next;
     }
+
+
+    # Check for cookies being enabled in the browser.
+    #
+    # If no cookies are found, this is either the first visit or cookies are
+    # disabled.  To determine which, reload the page as if we'd not already
+    # been here, but appending a flag to the URL indicating that we've tried
+    # to set a cookie.  The cookie should always be present the second time
+    # around.
+    #
+    # If the parameter is already set and we still don't have a cookie, the
+    # user has cookies disabled.  Display the error page.
+    if (!$q->cookie ($TEST_COOKIE)) {
+        if (defined $q->param ('test_cookie')) {
+            print STDERR "no cookie, even after redirection" if $LOGGING;
+
+            # err_cookies_disabled was added as a form parameter with WebAuth
+            # 3.5.5.  Try to adjust for old templates.
+            if ($PAGES{error}->query (name => "err_cookies_disabled")) {
+                $PAGES{error}->param (err_cookies_disabled => 1);
+            } else {
+                print STDERR "warning: err_cookies_disabled not recognized"
+                    . " by WebLogin error template\n" if $LOGGING;
+                $PAGES{error}->param (err_webkdc => 1);
+                my $message = 'You must enable cookies in your web browser.';
+                $PAGES{error}->param (err_msg => $message);
+            }
+            print_error_page ($q);
+            next;
+        } else {
+            my $redir_url = $q->url (-query => 1) . ';test_cookie=1';
+            print STDERR "no cookie set, redirecting to $redir_url\n"
+                if $DEBUG;
+            print_headers ($q, '', $redir_url);
+            next;
+        }
+    }
+    # From this point on, browser cookie support is enforced.
 
     # Set up the parameters to the WebKDC request.
     $req->pass ($q->param ('password')) if $q->param ('password');
@@ -507,8 +539,8 @@ while (my $q = CGI::Fast->new) {
     $req->request_token (fix_token ($q->param ('RT')));
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
-    # Enumerate through all cookies that start with webauth_wpt (Webauth Proxy
-    # Token) and stuff them into the WebKDC request.
+    # Enumerate all cookies that start with webauth_wpt (Webauth Proxy Token)
+    # and stuff them into the WebKDC request.
     my %cart = CGI::Cookie->fetch;
     my $wpt_cookie;
     for (keys %cart) {
@@ -521,9 +553,8 @@ while (my $q = CGI::Fast->new) {
         }
     }
 
-    # Pass in the network connection information.  This used to be used for an
-    # S/Ident callback and now is no longer used, but maybe someday it will be
-    # used for something else.
+    # Pass in the network connection information.  This is only used for
+    # additional logging in the WebKDC.
     $req->local_ip_addr ($ENV{SERVER_ADDR});
     $req->local_ip_port ($ENV{SERVER_PORT});
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
@@ -551,27 +582,15 @@ while (my $q = CGI::Fast->new) {
         $status = WK_ERR_WEBAUTH_SERVER_ERROR;
     }
 
-    # If this page was the result of a form submission (meaning that the user
-    # went through the regular login page and, more importantly, has already
-    # definitely seen a weblogin page), and the test cookie was not set, make
-    # sure we bounce them back to the login page since otherwise WebAuth is
-    # going to fail later.
-    my $has_cookies = 1;
-    if ($q->param ('login')) {
-        unless ($q->cookie ($TEST_COOKIE)) {
-            $has_cookies = 0;
-        }
-    }
-
     # Now, display the appropriate page.  If $status is WK_SUCCESS, we have a
     # successful authentication (by way of proxy token or username/password
     # login).  Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates the first
     # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
     # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
     # requires username/password even if the user has other auth methods.
-    if ($status == WK_SUCCESS && $has_cookies) {
+    if ($status == WK_SUCCESS ) {
         print_confirm_page ($q, \%varhash, $resp);
-        print STDERR ("WebKDC::make_request_token_request sucess\n")
+        print STDERR "WebKDC::make_request_token_request sucess\n"
             if $DEBUG;
 
     # Other authentication methods can be used, REMOTE_USER support is
@@ -584,7 +603,7 @@ while (my $q = CGI::Fast->new) {
              && !$is_error
              && !$q->param ('login')
              && $WebKDC::Config::REMOTE_USER_REDIRECT) {
-        print STDERR ("redirecting to REMOTE_USER page\n") if $DEBUG;
+        print STDERR "redirecting to REMOTE_USER page\n" if $DEBUG;
         print_remuser_redirect ($q);
 
     # The user didn't already ask for REMOTE_USER.  However, we just need
@@ -597,9 +616,8 @@ while (my $q = CGI::Fast->new) {
         $varhash{remuser_url} = $WebKDC::Config::REMOTE_USER_REDIRECT;
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
-        print STDERR ("WebKDC::make_request_token_request failed,"
-                      . " displaying login page (REMOTE_USER allowed)\n")
-            if $DEBUG;
+        print STDERR "WebKDC::make_request_token_request failed,"
+            . " displaying login page (REMOTE_USER allowed)\n" if $DEBUG;
 
     # We've tried REMOTE_USER and failed, the site has said that the user has
     # to use username/password no matter what, REMOTE_USER redirects are not
@@ -607,8 +625,7 @@ while (my $q = CGI::Fast->new) {
     # login screen without the REMOTE_USER choice.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FORCED
-             || $status == WK_ERR_LOGIN_FAILED
-             || !$has_cookies) {
+             || $status == WK_ERR_LOGIN_FAILED) {
         if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
             $varhash{remuser_failed} = $is_error;
         }
@@ -625,9 +642,8 @@ while (my $q = CGI::Fast->new) {
 
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
-        print STDERR ("WebKDC::make_request_token_request failed,"
-                      . " displaying login page (REMOTE_USER not allowed)\n")
-            if $DEBUG;
+        print STDERR "WebKDC::make_request_token_request failed,"
+            . " displaying login page (REMOTE_USER not allowed)\n" if $DEBUG;
 
     # Something abnormal happened.  Figure out what error message to display
     # and throw up the error page instead.

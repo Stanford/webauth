@@ -12,6 +12,7 @@ This is the template for the WebAuth error page.  It is displayed whenever
 the login.fcgi script on the weblogin server encounters an error.
 Variables used:
 
+err_cookies_disabled   : cookies disabled in the web browser
 err_no_request_token   : no request token (user went straight to weblogin)
 err_webkdc             : the WebKDC returned an error
 err_msg                : error message from WebKDC
@@ -29,6 +30,17 @@ err_msg                : error message from WebKDC
             <div class="errortext">
               <p><strong>An error has occurred</strong></p>
 
+              <!-- Error: cookies disabled in web browser -->
+              <TMPL_IF NAME=err_cookies_disabled>
+                <p>Error: You must enable cookies on your web browser.</p>
+                <p>You have just tried to access a web service that is
+                   protected by WebAuth.  However, WebAuth is unable to
+                   tell this web service who you are because your browser
+                   has cookies disabled.</p>
+                <p>WebAuth depends on cookies to communicate with your web
+                   service.  Please enable cookies in your web browser.<p>
+              </TMPL_IF>
+
               <!-- Error: no respson token -->
               <TMPL_IF NAME=err_no_request_token>
                 <p>Error: The URL given is incomplete.</p>
@@ -38,10 +50,15 @@ err_msg                : error message from WebKDC
                 <p>Error: <TMPL_VAR ESCAPE=HTML NAME=err_msg></p>
               </TMPL_IF>
 
-              <p>To try again, please return to the preceding web page
-              (or you may need to start your request for this web
-              service again).  Click <a href="/help.html">help</a> for
-              assistance</p>
+              <TMPL_IF NAME=err_cookies_disabled>
+                <p>To try again, after enabling cookies, press the reload
+                button on your browser.</p>
+              <TMPL_ELSE>
+                <p>To try again, please return to the preceding web page
+                (or you may need to start your request for this web
+                service again).  Click <a href="/help.html">help</a> for
+                assistance</p>
+              </TMPL_IF>
             </div>
           </td>
         </tr>

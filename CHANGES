@@ -2,6 +2,19 @@
 
 WebAuth 3.5.5 (unreleased)
 
+ *) Checks for browser cookies weren't working with Apache authentication
+    support since the login screen was bypassed.  Simplify the logic by
+    checking for browser cookies on the first page visit to WebLogin via a
+    redirect and showing an error immediately if the user doesn't have
+    cookies enabled.
+
+    There is a new template variable, err_cookies_disabled, for the error
+    template, indicating that the user doesn't have cookies enabled.  Old
+    templates are supported but won't offer as nice of an error message.
+    The err_cookies parameter to the login template is no longer used.
+
+    Thanks to Joachim Keltsch for the patch.
+
  *) mod_webauthldap was allocating pool memory for the Kerberos ticket
     cache environment variable.  This memory might be freed while the
     environment variable was still in use, leading to segfaults in
@@ -24,6 +37,9 @@ WebAuth 3.5.5 (unreleased)
  *) On failure to parse a WebAuth token, include the token in the log
     message for better debugging.
 
+ *) Use Javascript in the default login template to set focus to the
+    username entry box.
+
  *) Update INSTALL references to Apache 2.x instead of 2.0.
 
  *) Enable shared library symbol versioning and checking of defined
@@ -31,6 +47,9 @@ WebAuth 3.5.5 (unreleased)
 
  *) Add a correct build dependency for wa_keyring.1 for builds from
     Subversion.
+
+ *) Standardize capitalization and coding style for error reporting and
+    logging in the WebLogin script and simplify some of the logic.
 
  *) Strip trailing whitespace from mod_webkdc source files.
 

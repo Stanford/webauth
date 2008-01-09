@@ -30,6 +30,19 @@ Introduction
   rest of this document, and the abbreviation "remuser" is used in
   variables and cookies.
 
+Cookie Check
+
+  For all methods of visiting WebLogin, the WebLogin script first checks
+  whether a test cookie is already set.  If it isn't, it redirects the
+  user back to the same page with an additional query parameter appended,
+  setting the test cookie in the process.
+
+  If the cookie still isn't set when the browser requests the page again,
+  the user is shown an error page explaining that cookies must be enabled.
+
+  The following page flows assume that this has happened already and the
+  user's test cookie is already set.
+
 Basic Page Flow
 
   Here is the Weblogin page flow in the basic case where no REMOTE_USER

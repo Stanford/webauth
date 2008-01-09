@@ -2,18 +2,21 @@
 
 WebAuth 3.5.5 (unreleased)
 
+ *) Check for browser cookies on the first page visit to WebLogin via a
+    redirect and show an error immediately if the user doesn't have
+    cookies enabled.  This works correctly in the presence of Apache
+    authentication.
+
+    There is a new template variable, err_cookies_disabled, for the error
+    template, indicating that the user doesn't have cookies enabled.  Old
+    templates are supported but won't offer as nice of an error message.
+    The err_cookies parameter to the login template is no longer used.
+
+    Thanks to Joachim Keltsch for the patch.
+
  *) Fix memory allocation in mod_webauthldap for the Kerberos ticket cache
     environment variable to use persistant rather than pool memory.  Fixes
     occasional segfaults in mod_php.
-
- *) mod_webauthldap was allocating pool memory for the Kerberos ticket
-    cache environment variable.  This memory might be freed while the
-    environment variable was still in use, leading to segfaults in
-    embedded code such as mod_php that walked the environment table.
-    Switch to setting the ticket cache once on configuration reload and
-    not freeing the memory allocated.  This may leak a small amount of
-    memory on server reloads but will never invalidate the enivronment
-    variables.
 
  *) Improve extraction of return URLs for user-friendly display when doing
     authentication for a Shibboleth IdP.  Thanks, Robert Basch.
