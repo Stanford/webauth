@@ -83,7 +83,7 @@ Description: Development files for WebAuth authentication
 Package: libwebkdc-perl
 Section: perl
 Architecture: all
-Depends: ${shlibs:Depends}, ${perl:Depends}, libwebauth-perl (>= 3.2.6-1),
+Depends: ${perl:Depends}, libwebauth-perl (>= 3.2.6-1),
  libio-socket-ssl-perl, libwww-perl, libxml-parser-perl
 Description: Perl library for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
