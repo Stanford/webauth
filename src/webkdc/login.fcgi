@@ -131,7 +131,8 @@ sub print_headers {
 
     # Now, print out the page header with the appropriate cookies.
     my @params;
-    push (@params, -location => $redir_url, -status => '302 Moved');
+    push (@params, -location => $redir_url, -status => '302 Moved')
+        if $redir_url;
     push (@params, -cookie => $ca) if $ca;
     print $q->header (-type => 'text/html', -Pragma => 'no-cache',
                       -Cache_Control => 'no-cache, no-store', @params);
