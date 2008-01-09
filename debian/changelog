@@ -1,7 +1,8 @@
 webauth (3.5.5-1) unstable; urgency=low
 
   * New upstream release.
-    - Check browser cookie support on first WebLogin visit.
+    - Check browser cookie support on first WebLogin visit for better
+      cookie checks with Apache authentication.  (Closes: #430486)
     - New err_cookies_disabled error template variable.
     - Fix memory allocation for environment variables in mod_webauthldap.
     - Improve display of Shibboleth destination URLs.
