@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.5.5 (unreleased)
+WebAuth 3.5.5 (2008-01-08)
 
  *) Check for browser cookies on the first page visit to WebLogin via a
     redirect and show an error immediately if the user doesn't have
@@ -22,7 +22,7 @@ WebAuth 3.5.5 (unreleased)
     authentication for a Shibboleth IdP.  Thanks, Robert Basch.
 
  *) Show the correct pretty Shibboleth return URL when redisplaying the
-    confirmation page.   Thanks, Robert Basch.
+    confirmation page.  Thanks, Robert Basch.
 
 WebAuth 3.5.4 (2007-04-24)
 

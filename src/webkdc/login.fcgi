@@ -4,7 +4,7 @@ our $ID = q($Id$ );
 # login.fcgi -- Weblogin login page for WebAuth.
 #
 # Written by Roland Schemers <schemers@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
 #     Board of Trustees, Leland Stanford Jr. University
 #
 # This is the front page for user authentication for weblogin.  It accepts
