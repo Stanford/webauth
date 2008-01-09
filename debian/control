@@ -6,6 +6,7 @@ Build-Depends: debhelper (>> 4.0.0), apache2-threaded-dev (>= 2.2),
  libcurl3-openssl-dev, libkrb5-dev, libldap2-dev, libssl-dev,
  perl (>= 5.6.0-16) 
 Standards-Version: 3.7.2
+Homepage: http://webauth.stanford.edu/
 
 Package: libapache2-webauth
 Section: net
@@ -22,8 +23,6 @@ Description: Apache 2 modules for WebAuth authentication
  GSSAPI binds about the authenticated user.  Directory information can be
  used for authorization control and to populate environment variables.
  These modules should be installed on any web server using WebAuth.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: libapache2-webkdc
 Section: net
@@ -39,8 +38,6 @@ Description: Apache 2 modules for a WebAuth authentication KDC
  server for a particular site.  Only one such server is needed; all web
  servers that use WebAuth will talk to this server to obtain and verify
  authentication credentials.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: libwebauth-perl
 Section: perl
@@ -55,8 +52,6 @@ Description: Perl library for WebAuth authentication
  This package contains the Perl bindings to the WebAuth library, which
  does token encoding and decoding and other lower-level parts of the
  WebAuth protocol.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: libwebauth1
 Section: libs
@@ -71,8 +66,6 @@ Description: Shared libraries for WebAuth authentication
  This package contains the shared library used by the WebAuth modules,
  Perl bindings, and command-line utilities.  It does token encoding and
  decoding and other lower-level parts of the WebAuth protocol.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: libwebauth1-dev
 Section: libdevel
@@ -87,8 +80,6 @@ Description: Development files for WebAuth authentication
  .
  This package contains the symlinks, headers, and static library needed to
  compile and link programs that use libwebauth.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: libwebkdc-perl
 Section: perl
@@ -104,8 +95,6 @@ Description: Perl library for WebAuth authentication
  This package contains the Perl modules that support the weblogin server,
  which handles user authentication and the establishment of initial
  authentication credentials.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: webauth-tests
 Architecture: all
@@ -118,8 +107,6 @@ Description: Tests for the WebAuth authentication modules
  .
  This package contains test HTML files and Apache 2 configuration
  fragments to test a new installation of the WebAuth modules.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: webauth-utils
 Architecture: any
@@ -132,8 +119,6 @@ Description: Command-line utilities for WebAuth authentication
  .
  This package contains an additional command-line tool to manipulate
  WebAuth keyrings.
- .
-  Homepage: http://webauth.stanford.edu/
 
 Package: webauth-weblogin
 Architecture: all
@@ -149,5 +134,3 @@ Description: Central login server for WebAuth authentication
  user authentication and building authentication tokens for WebAuth
  servers.  Only one weblogin server is needed to support a site WebAuth
  installation.  It is normally run on the same system as the WebKDC.
- .
-  Homepage: http://webauth.stanford.edu/
