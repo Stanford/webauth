@@ -10,6 +10,8 @@ webauth (3.5.5-1) unstable; urgency=low
     only affected package for the old news item.
   * Call dh_fixperms before dh_strip so that the WebAuth Perl module will
     be stripped properly.
+  * Recommend httpd-cgi and suggest libapache2-mod-auth-kerb for
+    webauth-weblogin.
   * Use ${binary:Version} instead of ${Source-Version} in debian/control.
   * Move the Homepage pseudo-header from Description to a real header.
   * Wrap all Depends lines in debian/control.
@@ -19,7 +21,7 @@ webauth (3.5.5-1) unstable; urgency=low
   * Update standards version to 3.7.3 (no changes required).
   * Update debhelper compatibility level to V5 (no changes required).
 
- --
+ -- Russ Allbery <rra@debian.org>  Tue, 08 Jan 2008 18:21:00 -0800
 
 webauth (3.5.4-1) unstable; urgency=low
 

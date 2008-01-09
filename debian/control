@@ -123,6 +123,8 @@ Package: webauth-weblogin
 Architecture: all
 Depends: ${perl:Depends}, libwebauth-perl (>= 3.2.6-1), libwebkdc-perl,
  libhtml-template-perl, libcgi-fast-perl
+Recommends: httpd-cgi
+Suggests: libapache2-mod-auth-kerb
 Description: Central login server for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
