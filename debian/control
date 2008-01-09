@@ -91,7 +91,7 @@ Description: Perl library for WebAuth authentication
  user authentication for a domain and creates user authentication
  credentials for any web server that needs strong authentication.
  .
- This package contains the Perl modules that support the weblogin server,
+ This package contains the Perl modules that support the WebLogin server,
  which handles user authentication and the establishment of initial
  authentication credentials.
 
@@ -131,7 +131,7 @@ Description: Central login server for WebAuth authentication
  user authentication for a domain and creates user authentication
  credentials for any web server that needs strong authentication.
  .
- This package contains the CGI-based weblogin server that handles initial
+ This package contains the CGI-based WebLogin server that handles initial
  user authentication and building authentication tokens for WebAuth
- servers.  Only one weblogin server is needed to support a site WebAuth
+ servers.  Only one WebLogin server is needed to support a site WebAuth
  installation.  It is normally run on the same system as the WebKDC.

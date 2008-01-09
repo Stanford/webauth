@@ -18,10 +18,11 @@ webauth (3.5.5-1) unstable; urgency=low
   * Drop the version on the Perl build-depends.  That version is older
     than oldstable.
   * Use a configure-stamp file rather than config.status.
+  * Capitalize WebLogin consistently in package descriptions.
   * Update standards version to 3.7.3 (no changes required).
   * Update debhelper compatibility level to V5 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Tue, 08 Jan 2008 18:21:00 -0800
+ -- Russ Allbery <rra@debian.org>  Tue, 08 Jan 2008 21:57:59 -0800
 
 webauth (3.5.4-1) unstable; urgency=low
 
