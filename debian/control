@@ -5,7 +5,7 @@ Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>> 4.0.0), apache2-threaded-dev (>= 2.2),
  libcurl3-openssl-dev, libkrb5-dev, libldap2-dev, libssl-dev,
  perl (>= 5.6.0-16) 
-Standards-Version: 3.7.2
+Standards-Version: 3.7.3
 Homepage: http://webauth.stanford.edu/
 
 Package: libapache2-webauth
