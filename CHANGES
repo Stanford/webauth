@@ -37,6 +37,8 @@ WebAuth 3.5.5 (2008-01-08)
  *) On failure to parse a WebAuth token, include the token in the log
     message for better debugging.
 
+ *) Mark the test cookie secure to match the other cookies.
+
  *) Use Javascript in the default login template to set focus to the
     username entry box.
 

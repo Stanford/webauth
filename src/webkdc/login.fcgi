@@ -125,7 +125,7 @@ sub print_headers {
     # Set the test cookie unless it's already set.
     unless ($q->cookie ($TEST_COOKIE)) {
         my $cookie = $q->cookie (-name => $TEST_COOKIE, -value => 'True',
-                                 -path => '/');
+                                 -path => '/', -secure => $secure);
         push (@$ca, $cookie);
     }
 
