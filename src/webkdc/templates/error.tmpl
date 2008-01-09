@@ -50,15 +50,10 @@ err_msg                : error message from WebKDC
                 <p>Error: <TMPL_VAR ESCAPE=HTML NAME=err_msg></p>
               </TMPL_IF>
 
-              <TMPL_IF NAME=err_cookies_disabled>
-                <p>To try again, after enabling cookies, press the reload
-                button on your browser.</p>
-              <TMPL_ELSE>
-                <p>To try again, please return to the preceding web page
-                (or you may need to start your request for this web
-                service again).  Click <a href="/help.html">help</a> for
-                assistance</p>
-              </TMPL_IF>
+              <p>To try again, please return to the preceding web page
+              (or you may need to start your request for this web
+              service again).  Click <a href="/help.html">help</a> for
+              assistance</p>
             </div>
           </td>
         </tr>
