@@ -25,18 +25,19 @@ else
     CFLAGS += -O2
 endif
 
-config.status: configure
+configure-stamp:
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) \
 	    --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr \
 	    --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
 	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
 	    --enable-reduced-depends
+	touch configure-stamp
 
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
-build-stamp: config.status
+build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
 	cd src/bindings/perl/WebAuth && $(PERL) Makefile.PL INSTALLDIRS=vendor
@@ -48,7 +49,7 @@ build-stamp: config.status
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp install-stamp
+	rm -f configure-stamp build-stamp install-stamp
 	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
