@@ -1,6 +1,6 @@
                           WebAuth Change History
 
-WebAuth 3.5.5 (2008-01-08)
+WebAuth 3.5.5 (2008-01-14)
 
  *) Checks for browser cookies weren't working with Apache authentication
     support since the login screen was bypassed.  Simplify the logic by

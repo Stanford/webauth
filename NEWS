@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.5.5 (2008-01-08)
+WebAuth 3.5.5 (2008-01-14)
 
  *) Check for browser cookies on the first page visit to WebLogin via a
     redirect and show an error immediately if the user doesn't have
