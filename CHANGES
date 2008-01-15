@@ -53,6 +53,9 @@ WebAuth 3.5.5 (2008-01-14)
  *) Standardize capitalization and coding style for error reporting and
     logging in the WebLogin script and simplify some of the logic.
 
+ *) Update tools/config.{guess,sub} and libtool files to the latest
+    Debian versions.
+
  *) Strip trailing whitespace from mod_webkdc source files.
 
 WebAuth 3.5.4 (2007-04-24)
