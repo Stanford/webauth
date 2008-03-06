@@ -165,11 +165,13 @@ APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
 APXS_DEPEND_LIBS=`echo " $DEPEND_LIBS" \
     | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
     | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
-    | sed 's/ -R/ -Wl,-R/'`
+    | sed 's/ -R/ -Wl,-R/' \
+    | sed 's/ -dynamic/ -Wl,-dynamic'`
 APXS_KRB5_LIBS=`echo "$ KRB5_LIBS" \
     | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
     | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
-    | sed 's/ -R/ -Wl,-R/'`
+    | sed 's/ -R/ -Wl,-R/' \
+    | sed 's/ -dynamic/ -Wl,-dynamic'`
 AC_SUBST([APXS_CFLAGS])
 AC_SUBST([APXS_DEPEND_LIBS])
 AC_SUBST([APXS_KRB5_LIBS])

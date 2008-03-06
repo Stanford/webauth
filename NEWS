@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.6.0 (unreleased)
+
+ *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
+    X 10.5.
+
 WebAuth 3.5.5 (2008-01-14)
 
  *) Check for browser cookies on the first page visit to WebLogin via a

@@ -1,5 +1,10 @@
                           WebAuth Change History
 
+WebAuth 3.6.0 (unreleased)
+
+ *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
+    X 10.5.
+
 WebAuth 3.5.5 (2008-01-14)
 
  *) Checks for browser cookies weren't working with Apache authentication
