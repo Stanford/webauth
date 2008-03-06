@@ -473,6 +473,10 @@ while (my $q = CGI::Fast->new) {
     my $resp = new WebKDC::WebResponse;
     my ($status, $exception);
 
+    # Work around a bug in CGI.
+    $q->{'.script_name'} = $ENV{SCRIPT_NAME};
+    print STDERR "Script name is ", $q->script_name, "\n" if $DEBUG;
+
     # If we already have return_url in the query, we're at the confirmation
     # page and the user has changed the REMOTE_USER configuration.  Set or
     # clear the cookie and then redisplay the confirmation page.
@@ -494,7 +498,6 @@ while (my $q = CGI::Fast->new) {
         next;
     }
 
-
     # Check for cookies being enabled in the browser.
     #
     # If no cookies are found, this is either the first visit or cookies are
@@ -507,7 +510,7 @@ while (my $q = CGI::Fast->new) {
     # user has cookies disabled.  Display the error page.
     if (!$q->cookie ($TEST_COOKIE)) {
         if (defined $q->param ('test_cookie')) {
-            print STDERR "no cookie, even after redirection" if $LOGGING;
+            print STDERR "no cookie, even after redirection\n" if $LOGGING;
 
             # err_cookies_disabled was added as a form parameter with WebAuth
             # 3.5.5.  Try to adjust for old templates.

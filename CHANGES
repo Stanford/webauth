@@ -2,6 +2,10 @@
 
 WebAuth 3.6.0 (unreleased)
 
+ *) In the WebLogin script, work around a bug in the CGI module that
+    causes it to misparse and die on WebLogin URLs that contain two
+    slashes and two plus signs.
+
  *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.
 
