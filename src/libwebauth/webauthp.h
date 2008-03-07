@@ -15,7 +15,7 @@
 # include <string.h>
 #elif HAVE_STRINGS_H
 # include <strings.h>
-#endif 
+#endif
 
 #if HAVE_INTTYPES_H
 # include <inttypes.h>

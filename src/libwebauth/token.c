@@ -11,9 +11,9 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
-/* 
+/*
  *  define some macros for offsets (_O) and sizes (_S) in token
- *  {key-hint}{nonce}{hmac}{token-attributes}{padding} 
+ *  {key-hint}{nonce}{hmac}{token-attributes}{padding}
  */
 
 #define T_HINT_S  4
@@ -26,7 +26,7 @@
 #define T_ATTR_O (T_HMAC_O+T_HMAC_S)
 
 
-static int 
+static int
 binary_encoded_length(const WEBAUTH_ATTR_LIST *list,
                       int *plen)
 {
@@ -67,7 +67,7 @@ webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list)
 
 
 /* ivec is always 0 since we use nonce as ivec */
-static unsigned char aes_ivec[AES_BLOCK_SIZE] = 
+static unsigned char aes_ivec[AES_BLOCK_SIZE] =
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 /*
@@ -138,10 +138,10 @@ webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
     }
     n += plen;
 
-    /* calculate hmac over data+padding 
+    /* calculate hmac over data+padding
        FIXME: change hmac key to something better.*/
     /* HMAC doesn't return an errors */
-    HMAC(EVP_sha1(), 
+    HMAC(EVP_sha1(),
          (void *) key->data, key->length,                    /* key, len */
          (unsigned char *) output + T_ATTR_O, alen + plen,   /* data, len */
          (unsigned char *) output + T_HMAC_O, NULL);         /* hmac, len */
@@ -190,7 +190,7 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
         return WA_ERR_BAD_KEY;
     }
 
-    return webauth_token_create_with_key(list, hint, output, output_len, 
+    return webauth_token_create_with_key(list, hint, output, output_len,
                                          max_output_len, key);
 }
 
@@ -200,7 +200,7 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list,
  */
 
 static int
-decrypt_token(const WEBAUTH_KEY *key, 
+decrypt_token(const WEBAUTH_KEY *key,
               char *input, int elen, int *dlen)
 {
     /* hmac we compute from data */
@@ -353,7 +353,7 @@ webauth_token_parse(char *input,
                 if (ring->entries[i].key != hkey) {
                     if (input_dirty)
                         memcpy(input, buff, input_len);
-                    s = decrypt_token(ring->entries[i].key, 
+                    s = decrypt_token(ring->entries[i].key,
                                       input, input_len, &dlen);
                     input_dirty = 1;
                     if (s == WA_ERR_NONE)
@@ -374,7 +374,7 @@ webauth_token_parse(char *input,
 
     s = check_token(*list, ttl);
 
-    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED || 
+    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED ||
         s == WA_ERR_TOKEN_STALE) {
             return s;
     } else {
@@ -421,7 +421,7 @@ webauth_token_parse_with_key(char *input,
 
     s = check_token(*list, ttl);
 
-    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED || 
+    if (s == WA_ERR_NONE || s == WA_ERR_TOKEN_EXPIRED ||
         s == WA_ERR_TOKEN_STALE) {
             return s;
     } else {

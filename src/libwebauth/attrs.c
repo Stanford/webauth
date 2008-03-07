@@ -63,7 +63,7 @@ int next_entry(WEBAUTH_ATTR_LIST *list)
 
 int
 webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
-                      const char *name, 
+                      const char *name,
                       void *value, int length,
                       int flags)
 {
@@ -82,7 +82,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
     if (FLAG_ISSET(flags, WA_F_COPY_NAME)) {
         list->attrs[i].name = strdup(name);
         if (list->attrs[i].name == NULL)
-            return WA_ERR_NO_MEM;            
+            return WA_ERR_NO_MEM;
     } else {
         list->attrs[i].name = name;
     }
@@ -114,7 +114,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
         }
         value = buff;
         length = elen;
-        flags |= WA_F_COPY_VALUE;        
+        flags |= WA_F_COPY_VALUE;
     }
 
     if (FLAG_ISSET(flags, WA_F_COPY_VALUE) && (buff == NULL)) {
@@ -188,7 +188,7 @@ webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
 }
 
 int
-webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, 
+webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list,
                            const char *name,
                            time_t value,
                            int flags)
@@ -339,7 +339,7 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
             if (vlen != sizeof(uint32_t)) {
                 s = WA_ERR_CORRUPT;
                 goto cleanup;
-            }   
+            }
             memcpy(value, v, vlen);
             *value = ntohl(*value);
         }
@@ -362,7 +362,7 @@ webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
 }
 
 int
-webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, 
+webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list,
                            const char *name,
                            time_t *value,
                            int flags)
@@ -381,7 +381,7 @@ webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
     int space, i, len;
     char *p, *v;
-    
+
     assert(list);
 
     space = 0;
@@ -393,7 +393,7 @@ webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
             space++; /* add one for each VAL_TERM; we find */
             len -= p+1-v;
             v = p+1;
-        } 
+        }
         space += list->attrs[i].length + 1; /* +1 for VAL_TERM */
     }
     return space;
@@ -458,7 +458,7 @@ webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
  * The buffer is modifed.
  */
 int
-webauth_attrs_decode(char *buffer, 
+webauth_attrs_decode(char *buffer,
                      int input_len,
                      WEBAUTH_ATTR_LIST **list)
 {
@@ -481,7 +481,7 @@ webauth_attrs_decode(char *buffer,
 
     while (i >0) {
         name = p;
-        p++; 
+        p++;
         i--;
         while (i && *p != NAME_TERM) {
             p++;

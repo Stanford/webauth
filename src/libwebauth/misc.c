@@ -71,7 +71,7 @@ webauth_hex_decoded_length(int length, int *out_length)
 
 
 int
-webauth_hex_encode(char *input, 
+webauth_hex_encode(char *input,
                    int input_len,
                    char *output,
                    int *output_len,
@@ -106,7 +106,7 @@ webauth_hex_encode(char *input,
 int
 webauth_hex_decode(char *input,
                    int input_len,
-                   char *output, 
+                   char *output,
                    int *output_len,
                    int max_output_len)
 {

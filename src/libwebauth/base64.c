@@ -62,9 +62,9 @@ webauth_base64_decoded_length(const char *input, int input_len,
 }
 
 int
-webauth_base64_encode(const char *input, 
-                      int input_len, 
-                      char *output, 
+webauth_base64_encode(const char *input,
+                      int input_len,
+                      char *output,
                       int *output_len,
                       int output_max)
 {
@@ -122,7 +122,7 @@ webauth_base64_encode(const char *input,
 	    out_len +=1;
 	    break;
 	}
-	
+
 	--input_len;
         if (out_len == output_max) {
             return WA_ERR_NO_ROOM;
@@ -130,7 +130,7 @@ webauth_base64_encode(const char *input,
 	output[out_len] = basis_64[c3 & 0x3F];
 	out_len += 1;
     }
-    
+
     *output_len = out_len;
     return WA_ERR_NONE;
 }
@@ -139,7 +139,7 @@ webauth_base64_encode(const char *input,
  * Parse a base64_string
  */
 
-int 
+int
 webauth_base64_decode(char *input,
                       int input_len,
                       char *output,
@@ -162,11 +162,11 @@ webauth_base64_decode(char *input,
         return WA_ERR_CORRUPT;
 
     while (i <= j) {
-	c1 = (unsigned char) input[i++]; 
+	c1 = (unsigned char) input[i++];
         if (CHAR64(c1) == XX) {
             return WA_ERR_CORRUPT;
         }
-	c2 = (unsigned char) input[i++]; 
+	c2 = (unsigned char) input[i++];
         if (CHAR64(c2) == XX) {
             return WA_ERR_CORRUPT;
         }
@@ -194,7 +194,7 @@ webauth_base64_decode(char *input,
 	if (out_len == output_max) {
             return WA_ERR_NO_ROOM;
         }
-	output[(out_len)++] = 
+	output[(out_len)++] =
             (((CHAR64(c2) & 0xf) << 4) | ((CHAR64(c3) & 0x3c) >> 2));
 
 	if (c4 == '=') {
