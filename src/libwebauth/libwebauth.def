@@ -68,6 +68,7 @@ EXPORTS
 	webauth_krb5_import_cred
 	webauth_krb5_service_principal
 	webauth_krb5_get_principal
+	webauth_krb5_get_realm
 	webauth_krb5_export_ticket
 	webauth_krb5_mk_req
 	webauth_krb5_mk_req_with_data

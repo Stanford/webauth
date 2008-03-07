@@ -2,6 +2,9 @@
 
 WebAuth 3.6.0 (unreleased)
 
+ *) libwebauth provides a new webauth_krb5_get_realm function, which
+    returns the realm of the current authenticated principal.
+
  *) In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.

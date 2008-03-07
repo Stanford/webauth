@@ -898,12 +898,19 @@ WEBAUTH_API int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
                                            char **principal,
                                            int local);
 /*
+ * get the realm from the context. should only be called after a successful
+ * call to webauth_krb5_init_via*.
+ *
+ * realm should be freed when it is no longer needed.
+ */
+WEBAUTH_API int webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context,
+                                       char **realm);
+/*
  * export a ticket for the given server_principal. ticket should
  * be freed when no longer needed.
  *
  * should only be called after one of the webauth_krb5_init_via* methods
  * has been successfully called.
-
  */
 WEBAUTH_API int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
                                            char *server_principal,

@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     char *tgt, *ticket;
     int tgtlen, ticketlen;
     time_t expiration;
-    char *cprinc;
+    char *cprinc, *crealm;
 
     if (argc != 6) {
         usage();
@@ -45,8 +45,9 @@ int main(int argc, char *argv[])
     host = argv[5];
 
     cprinc = NULL;
+    crealm = NULL;
 
-    START_TESTS(25);
+    START_TESTS(27);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
@@ -54,6 +55,8 @@ int main(int argc, char *argv[])
 
     /* test failure case */
     s = webauth_krb5_get_principal(c, &cprinc, 1);
+    TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
+    s = webauth_krb5_get_realm(c, &crealm);
     TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
 
     s = webauth_krb5_init_via_password(c, username, password, 
@@ -65,6 +68,10 @@ int main(int argc, char *argv[])
 
     s = webauth_krb5_get_principal(c, &cprinc, 1);
     /*printf("cprinc = %s\n", cprinc);*/
+    TEST_OK2(WA_ERR_NONE, s);
+
+    s = webauth_krb5_get_realm(c, &crealm);
+    /*printf("crealm = %s\n", crealm);*/
     TEST_OK2(WA_ERR_NONE, s);
 
     /*

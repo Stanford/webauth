@@ -234,6 +234,69 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
 
 
 /*
+**  Given a portion of a Kerberos v5 principal and its length, allocate a new
+**  string and write the escaped form of that portion of a principal to the
+**  newly allocated string.  Returns the newly allocated string, which the
+**  caller is responsible for freeing, or NULL on failure.
+*/
+static char *
+escape_principal(const char *in, size_t length)
+{
+    const char *src;
+    char *out, *dest;
+    size_t needed;
+
+    /* We take two passes through the data, one to count the size of the newly
+       allocated string and one to copy it over. */
+    for (src = in; (src - in) < length; src++) {
+        switch (*src) {
+        case '/':  case '@':  case '\\': case '\t':
+        case '\n': case '\b': case '\0':
+            needed++;
+            break;
+        default:
+            break;
+        }
+        needed++;
+    }
+    out = malloc(needed + 1);
+    if (out == NULL)
+        return NULL;
+    for (src = in, dest = out; (src - in) < length; src++) {
+        switch (*src) {
+        case '/':
+        case '@':
+        case '\\':
+            *dest++ = '\\';
+            *dest++ = *src;
+            break;
+        case '\t':
+            *dest++ = '\\';
+            *dest++ = 't';
+            break;
+        case '\n':
+            *dest++ = '\\';
+            *dest++ = 'n';
+            break;
+        case '\b':
+            *dest++ = '\\';
+            *dest++ = 'b';
+            break;
+        case '\0':
+            *dest++ = '\\';
+            *dest++ = '0';
+            break;
+        default:
+            *dest++ = *src;
+            break;
+        }
+    }
+    *dest = '\0';
+    return out;
+}
+
+
+/*
 **  Create a new WEBAUTH_KRB5_CTXT.
 */
 int
@@ -715,4 +778,46 @@ webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
     /* Fall through to fully-qualified on krb5_aname_to_localname errors. */
     c->code = krb5_unparse_name(c->ctx, c->princ, principal);
     return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
+}
+
+
+/*
+**  Get the authentication realm from the context.  Stores the newly allocated
+**  string in realm and returns WA_ERR_NONE on success, or another error code
+**  on failure.
+*/
+int
+webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context, char **realm)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
+    char *raw;
+    size_t length;
+#ifdef HAVE_KRB5_REALM
+    krb5_realm *data;
+#else
+    krb5_data *data;
+#endif;
+
+    if (c->princ == NULL)
+        return WA_ERR_INVALID_CONTEXT;
+
+    /* Extract the realm from the principal.  This works differently in MIT
+       and Heimdal. */
+#ifdef HAVE_KRB5_REALM
+    data = krb5_princ_realm(c->ctx, c->princ);
+    if (data == NULL)
+        return WA_ERR_INVALID_CONTEXT;
+    raw = krb5_realm_data(data);
+    length = krb5_realm_length(data);
+#else
+    data = krb5_princ_realm(c->ctx, c->princ);
+    if (data == NULL)
+        return WA_ERR_INVALID_CONTEXT;
+    raw = data->data;
+    length = data->length;
+#endif
+
+    /* Encode and return the realm data. */
+    *realm = escape_principal(raw, length);
+    return (*realm == NULL) ? WA_ERR_NO_MEM : WA_ERR_NONE;
 }
