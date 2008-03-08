@@ -85,6 +85,56 @@ static krb5_error_code
 
 
 /*
+**  Replacement for krb5_unparse_name_flags for implementations that don't
+**  have it (MIT and older Heimdal).  Only supports the
+**  KRB5_PRINCIPAL_UNPARSE_NO_REALM flag and always assumes that flag is set.
+*/
+#ifndef HAVE_KRB5_UNPARSE_NAME_FLAGS
+#define KRB5_PRINCIPAL_UNPARSE_NO_REALM 1
+static krb5_error_code
+krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ, int flags,
+                        char **name)
+{
+    krb5_error_code code;
+    krb5_principal copy;
+# ifdef HAVE_KRB5_REALM
+    krb5_realm empty = (char *) "";
+    krb5_realm old_realm;
+# endif
+
+    code = krb5_copy_principal(ctx, princ, &copy);
+    if (code != 0)
+        return code;
+# ifdef HAVE_KRB5_REALM
+    code = krb5_princ_set_realm(ctx, copy, &empty);
+    if (code != 0)
+        return code;
+    code = krb5_unparse_name(ctx, copy, name);
+    if (code != 0)
+        return code;
+    code = krb5_princ_set_realm(ctx, copy, old_realm);
+    if (code != 0)
+        return code;
+    code = krb5_free_principal(copy);
+    if (code != 0)
+        return code;
+# else
+    krb5_free_data_contents(ctx, &copy->realm);
+    krb5_princ_set_realm_length(ctx, copy, 0);
+    krb5_princ_set_realm_data(ctx, copy, NULL);
+    code = krb5_unparse_name(ctx, copy, name);
+    if (code != 0)
+        return code;
+    krb5_free_principal(ctx, copy);
+# endif
+    if ((*name)[strlen(*name) - 1] == '@')
+        (*name)[strlen(*name) - 1] = '\0';
+    return 0;
+}
+#endif
+
+
+/*
 **  Open up a keytab and return a krb5_principal to use with that keytab.  If
 **  in_principal is NULL, returned out_principal is first principal found in
 **  keytab.
@@ -244,7 +294,7 @@ escape_principal(const char *in, size_t length)
 {
     const char *src;
     char *out, *dest;
-    size_t needed;
+    size_t needed = 0;
 
     /* We take two passes through the data, one to count the size of the newly
        allocated string and one to copy it over. */
@@ -749,23 +799,28 @@ webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context, const char *service,
 
 
 /*
-**  Get the principal from a context.  If the local flag is set to true, run
-**  the principal through krb5_aname_to_localname first to try to generate a
-**  local username.  Fall through a fully-qualified name.
+**  Get the principal from a context.
+**
+**  Principal canonicalization is controlled by the third argument.  If it's
+**  WA_KRB5_CANON_NONE, do no canonicalization.  If it's WA_KRB5_CANON_LOCAL,
+**  run the principal through krb5_aname_to_localname first to try to generate
+**  a local username and fall through a fully-qualified name.  If it's
+**  WA_KRB5_CANON_STRIP, strip the realm from the principal, whatever it may
+**  be.
 */
 int
 webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
-                           int local)
+                           enum webauth_krb5_canon canonicalize)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
+    krb5_error_code tcode;
+    char lname[256];
 
     if (c->princ == NULL)
         return WA_ERR_INVALID_CONTEXT;
 
-    if (local) {
-        krb5_error_code tcode;
-        char lname[256];
-
+    switch (canonicalize) {
+    case WA_KRB5_CANON_LOCAL:
         tcode = krb5_aname_to_localname(c->ctx, c->princ, sizeof(lname) - 1,
                                         lname);
         if (tcode == 0) {
@@ -773,10 +828,16 @@ webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
             strcpy(*principal, lname);
             return WA_ERR_NONE;
         }
+        /* Fall through. */
+    case WA_KRB5_CANON_NONE:
+        c->code = krb5_unparse_name(c->ctx, c->princ, principal);
+        break;
+    case WA_KRB5_CANON_STRIP:
+        c->code = krb5_unparse_name_flags(c->ctx, c->princ,
+                                          KRB5_PRINCIPAL_UNPARSE_NO_REALM,
+                                          principal);
+        break;
     }
-
-    /* Fall through to fully-qualified on krb5_aname_to_localname errors. */
-    c->code = krb5_unparse_name(c->ctx, c->princ, principal);
     return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
@@ -796,7 +857,7 @@ webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context, char **realm)
     krb5_realm *data;
 #else
     krb5_data *data;
-#endif;
+#endif
 
     if (c->princ == NULL)
         return WA_ERR_INVALID_CONTEXT;

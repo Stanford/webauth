@@ -109,6 +109,15 @@ typedef enum {
     WA_KAU_UPDATE
 }  WEBAUTH_KAU_STATUS;
 
+/*
+ * Flags for webauth_krb5_get_principal
+ */
+enum webauth_krb5_canon {
+    WA_KRB5_CANON_NONE = 0,
+    WA_KRB5_CANON_LOCAL = 1,
+    WA_KRB5_CANON_STRIP
+};
+
 /******************** constants for token attributes **********/
 
 #define WA_TK_APP_STATE "as"
@@ -888,15 +897,21 @@ WEBAUTH_API int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
  * get the principal from the context. should only be called
  * after a succesfull call to webauth_krb5_init_via*.
  *
- * If local is 1, then krb5_aname_to_localname is called on the
- * principal. If krb5_aname_to_localname returns an error then
- * the fully-qualified principal name is returned.
+ * If the canon argument is WA_KRB5_CANON_LOCAL, then krb5_aname_to_localname
+ * is called on the principal. If krb5_aname_to_localname returns an error
+ * then the fully-qualified principal name is returned.
+ *
+ * If the canon argument is WA_KRB5_CANON_STRIP, then the realm is stripped,
+ * regardless of what it is.
+ *
+ * If the canon argument is WA_KRB5_CANON_NONE, the fully-qualified Kerberos
+ * principal is always returned.
  *
  * principal should be freed when it is no longer needed.
  */
 WEBAUTH_API int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
                                            char **principal,
-                                           int local);
+                                           enum webauth_krb5_canon);
 /*
  * get the realm from the context. should only be called after a successful
  * call to webauth_krb5_init_via*.

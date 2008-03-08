@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     cprinc = NULL;
     crealm = NULL;
 
-    START_TESTS(27);
+    START_TESTS(32);
 
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
@@ -66,9 +66,18 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(server_principal != NULL);
 
-    s = webauth_krb5_get_principal(c, &cprinc, 1);
+    s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_LOCAL);
     /*printf("cprinc = %s\n", cprinc);*/
     TEST_OK2(WA_ERR_NONE, s);
+    TEST_OK(strchr(cprinc, '@') == NULL);
+    free(cprinc);
+    s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_NONE);
+    TEST_OK2(WA_ERR_NONE, s);
+    TEST_OK(strchr(cprinc, '@') != NULL);
+    free(cprinc);
+    s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_STRIP);
+    TEST_OK2(WA_ERR_NONE, s);
+    TEST_OK(strchr(cprinc, '@') == NULL);
 
     s = webauth_krb5_get_realm(c, &crealm);
     /*printf("crealm = %s\n", crealm);*/

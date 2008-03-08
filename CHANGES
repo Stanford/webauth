@@ -5,6 +5,13 @@ WebAuth 3.6.0 (unreleased)
  *) libwebauth provides a new webauth_krb5_get_realm function, which
     returns the realm of the current authenticated principal.
 
+ *) The libwebauth webauth_krb5_get_principal function takes as its third
+    argument, instead of a flag, an enum indicating what sort of
+    canonicalization to perform.  Accepted values are WA_KRB5_CANON_LOCAL
+    (to call krb5_aname_to_localname), WA_KRB5_CANON_STRIP (to strip any
+    realm), and WA_KRB5_CANON_NONE (to return the fully-qualified
+    principal).
+
  *) In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.

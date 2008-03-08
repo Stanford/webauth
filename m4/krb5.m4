@@ -49,7 +49,8 @@ CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
 AC_CHECK_HEADERS([et/com_err.h])
 AC_CHECK_TYPES([krb5_realm], , , [#include <krb5.h>])
 AC_CHECK_FUNCS([krb5_free_keytab_entry_contents \
-                krb5_get_init_creds_opt_set_default_flags])
+                krb5_get_init_creds_opt_set_default_flags \
+                krb5_unparse_name_flags])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
         [Define if your Kerberos implementation is Heimdal.])],
