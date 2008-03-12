@@ -2,7 +2,7 @@
 #include "mod_webkdc.h"
 
 /*
- * used to hold the result of reading the acl file 
+ * used to hold the result of reading the acl file
  *
  * keys/values are of the form:
  *  id;{subject} => int*, int set to 1
@@ -31,19 +31,19 @@ add_entry(MWK_REQ_CTXT *rc,
         char *key = apr_pstrcat(rc->r->pool, "id;", subject, NULL);
         void *p = apr_hash_get(hash, key, APR_HASH_KEY_STRING);
         if (p == NULL) {
-            apr_hash_set(hash, 
+            apr_hash_set(hash,
                          apr_pstrdup(acl->pool, key),
                          APR_HASH_KEY_STRING,
                          apr_pstrdup(acl->pool, "1"));
         }
         return 1;
     } else if (strcmp(entry_type, "cred") == 0) {
-        char *key = apr_pstrcat(rc->r->pool, 
+        char *key = apr_pstrcat(rc->r->pool,
                                 "cred;",
                                 proxy_type,
                                 ";",
                                 subject, NULL);
-        apr_array_header_t *a = 
+        apr_array_header_t *a =
             apr_hash_get(hash, key, APR_HASH_KEY_STRING);
         if (a == NULL) {
             char **c;
@@ -71,7 +71,7 @@ log_apr_error(MWK_REQ_CTXT *rc,
              const char *path)
 {
     char errbuff[512];
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webkdc: %s: %s (%s): %s (%d)",
                  mwk_func,
                  ap_func,
@@ -97,7 +97,7 @@ get_acl(MWK_REQ_CTXT *rc)
     apr_status_t astatus;
     apr_file_t *acl_file;
     apr_pool_t *acl_pool;
-    int lineno, error; 
+    int lineno, error;
     char line[1024];
     struct apr_finfo_t finfo;
 
@@ -106,7 +106,7 @@ get_acl(MWK_REQ_CTXT *rc)
         /* FIXME: stat and free current acl if out-of-date */
         astatus = apr_stat(&finfo, rc->sconf->token_acl_path,
                            APR_FINFO_MTIME, rc->r->pool);
-        
+
         if (astatus != APR_SUCCESS) {
             log_apr_error(rc, astatus, mwk_func, "apr_file_open",
                           rc->sconf->token_acl_path);
@@ -122,9 +122,9 @@ get_acl(MWK_REQ_CTXT *rc)
     }
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: %s: %sloading acl file: %s",
-                     mwk_func, 
+                     mwk_func,
                      acl == NULL ? "" : "re",
                      rc->sconf->token_acl_path);
     }
@@ -161,7 +161,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
     lineno = -1;
 
-    while ((astatus = apr_file_gets(line, sizeof(line)-1, acl_file)) == 
+    while ((astatus = apr_file_gets(line, sizeof(line)-1, acl_file)) ==
            APR_SUCCESS) {
         char *subject, *type;
         char *last;
@@ -172,7 +172,7 @@ get_acl(MWK_REQ_CTXT *rc)
         if (rc->sconf->debug) {
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webkdc: %s: read line: [%s] "
-                         "file %s, line %d", mwk_func, 
+                         "file %s, line %d", mwk_func,
                          line,
                          rc->sconf->token_acl_path, lineno);
         }
@@ -181,8 +181,8 @@ get_acl(MWK_REQ_CTXT *rc)
         /* make sure line ends with a \n, if not it was truncated  */
         if (line[strlen(line)-1] != '\n') {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                         "mod_webkdc: %s: line too long, file %s, line %d", 
-                         mwk_func, 
+                         "mod_webkdc: %s: line too long, file %s, line %d",
+                         mwk_func,
                          rc->sconf->token_acl_path, lineno);
             goto done;
         }
@@ -202,7 +202,7 @@ get_acl(MWK_REQ_CTXT *rc)
         if (type == NULL) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                              "mod_webkdc: %s: missing acl type "
-                             "in file %s, line %d", mwk_func, 
+                             "in file %s, line %d", mwk_func,
                              rc->sconf->token_acl_path, lineno);
                 goto done;
         }
@@ -215,8 +215,8 @@ get_acl(MWK_REQ_CTXT *rc)
                 strcmp(proxy_type, "krb5") != 0) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                              "mod_webkdc: %s: invalid proxy type(%s) "
-                             "in file %s, line %d", mwk_func, 
-                             proxy_type ? proxy_type : "null", 
+                             "in file %s, line %d", mwk_func,
+                             proxy_type ? proxy_type : "null",
                              rc->sconf->token_acl_path, lineno);
                 goto done;
             }
@@ -226,13 +226,13 @@ get_acl(MWK_REQ_CTXT *rc)
             if (cred == NULL) {
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                              "mod_webkdc: %s: missing cred "
-                             "in file %s, line %d", mwk_func, 
+                             "in file %s, line %d", mwk_func,
                              rc->sconf->token_acl_path, lineno);
                 goto done;
             }
 
             if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webkdc: %s: adding cred access: %s %s %s",
                              mwk_func, subject, proxy_type, cred);
             }
@@ -241,7 +241,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
         } else if (strcmp(type, "id") == 0) {
             if (rc->sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webkdc: %s: adding id access: %s",
                              mwk_func, subject);
             }
@@ -251,7 +251,7 @@ get_acl(MWK_REQ_CTXT *rc)
         } else {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webkdc: %s: unknown acl type(%s) "
-                         "in file %s, line %d", mwk_func, 
+                         "in file %s, line %d", mwk_func,
                          type, rc->sconf->token_acl_path, lineno);
             goto done;
         }
@@ -269,7 +269,7 @@ get_acl(MWK_REQ_CTXT *rc)
 
     apr_file_close(acl_file);
 
-    /* if we had any errors, destroy new_acl, re-use old one if 
+    /* if we had any errors, destroy new_acl, re-use old one if
        it was set */
     if (error) {
         apr_pool_destroy(new_acl->pool);
@@ -287,9 +287,9 @@ get_acl(MWK_REQ_CTXT *rc)
         acl = new_acl;
 
         if (rc->sconf->debug) {
-            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webkdc: %s: acl file loaded ok: %s",
-                         mwk_func, 
+                         mwk_func,
                          rc->sconf->token_acl_path);
         }
     }
@@ -325,7 +325,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
 
     /* check non-wild first */
     p = apr_hash_get(acl->entries, key, APR_HASH_KEY_STRING);
-    if (p != NULL) { 
+    if (p != NULL) {
         access = 1;
         goto done;
     }
@@ -350,7 +350,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_id_access: %s => %d",
                      subject, access);
     }
@@ -360,7 +360,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
 
 int
 mwk_has_proxy_access(MWK_REQ_CTXT *rc,
-                     const char *subject, 
+                     const char *subject,
                      const char *proxy_type)
 {
     apr_hash_index_t *hi;
@@ -368,7 +368,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     char *prefix, *key;
     int plen, access;
     MWK_ACL *acl;
-    
+
     access = 0;
 
     mwk_lock_mutex(rc, MWK_MUTEX_TOKENACL); /****** LOCKING! ************/
@@ -409,7 +409,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_proxy_access: %s, %s => %d",
                      subject, proxy_type, access);
     }
@@ -419,7 +419,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
 
 int
 mwk_has_cred_access(MWK_REQ_CTXT *rc,
-                    const char *subject, 
+                    const char *subject,
                     const char *cred_type,
                     const char *cred)
 {
@@ -437,7 +437,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     acl = get_acl(rc);
     if (acl == NULL)
         goto done;
-    
+
     prefix = apr_pstrcat(rc->r->pool, "cred;", cred_type, ";", NULL);
     key = apr_pstrcat(rc->r->pool, prefix, subject, NULL);
 
@@ -481,7 +481,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     mwk_unlock_mutex(rc, MWK_MUTEX_TOKENACL); /****** UNLOCKING! ************/
 
     if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_cred_access: %s, %s, %s => %d",
                      subject, cred_type, cred, access);
     }
@@ -490,7 +490,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
 }
 
 
-int 
+int
 mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
                         const char *subject,
                         const char *proxy_subject)
@@ -501,12 +501,10 @@ mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
         (strncmp(proxy_subject, "WEBKDC:", 7) == 0);
 
    if (rc->sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_can_use_proxy_token: %s, %s, => %d",
                      subject, proxy_subject, access);
     }
 
     return access;
 }
-
-

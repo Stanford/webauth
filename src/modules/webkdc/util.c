@@ -42,22 +42,22 @@ lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
 
     if (type < 0 || type >= MWK_MUTEX_MAX) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webkdc: lock_mutex: invalid type (%d) ignored", 
+                     "mod_webkdc: lock_mutex: invalid type (%d) ignored",
                      type);
         return;
     }
-        
+
     if (mwk_mutex[type] != NULL) {
         if (lock)
             astatus = apr_thread_mutex_lock(mwk_mutex[type]);
-        else 
+        else
             astatus = apr_thread_mutex_unlock(mwk_mutex[type]);
 
         if (astatus != APR_SUCCESS) {
             char errbuff[512];
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webkdc: lock_mutex(%d,%d): %s (%d)",
-                         type, lock, 
+                         type, lock,
                          apr_strerror(astatus, errbuff, sizeof(errbuff)-1),
                          astatus);
             /* FIXME: now what? */
@@ -85,7 +85,7 @@ mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type)
 /*
  *
  */
-void 
+void
 mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
 {
     memset(string, 0, sizeof(MWK_STRING));
@@ -97,7 +97,7 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
 /*
  * given an MWA_STRING, append some new data to it.
  */
-void 
+void
 mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
 {
     int needed_size;
@@ -116,7 +116,7 @@ mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
 
         if (string->data != NULL) {
             memcpy(new_data, string->data, string->size);
-        } 
+        }
         /* don't have to free existing data since it from a pool */
         string->data = new_data;
     }
@@ -131,9 +131,9 @@ mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
  * returns value or NULL on error,
  */
 char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, 
-                 const char *name, 
-                 request_rec *r, 
+mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
+                 const char *name,
+                 request_rec *r,
                  const char *func,
                  int *vlen)
 {
@@ -146,7 +146,7 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
                      func, name);
         return NULL;
     }
-    if (vlen) 
+    if (vlen)
         *vlen = alist->attrs[i].length;
 
     return (char*)alist->attrs[i].value;
@@ -174,8 +174,8 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
 
 
 char *
-mwk_webauth_error_message(request_rec *r, 
-                          int status, 
+mwk_webauth_error_message(request_rec *r,
+                          int status,
                           WEBAUTH_KRB5_CTXT *ctxt,
                           const char *webauth_func,
                           const char *extra)
@@ -187,7 +187,7 @@ mwk_webauth_error_message(request_rec *r,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
                             webauth_error_message(status), status,
-                            webauth_krb5_error_message(ctxt), 
+                            webauth_krb5_error_message(ctxt),
                             webauth_krb5_error_code(ctxt));
     } else {
         return apr_psprintf(r->pool,
@@ -201,7 +201,7 @@ mwk_webauth_error_message(request_rec *r,
 
 void
 mwk_log_webauth_error(server_rec *serv,
-                      int status, 
+                      int status,
                       WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
                       const char *func,
@@ -216,7 +216,7 @@ mwk_log_webauth_error(server_rec *serv,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
                      webauth_error_message(status), status,
-                     webauth_krb5_error_message(ctxt), 
+                     webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
@@ -239,7 +239,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 
     static const char *mwk_func = "mwk_init_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path, 
+    status = webauth_keyring_auto_update(sconf->keyring_path,
                                          sconf->keyring_auto_update,
                                          sconf->keyring_auto_update ?
                                          sconf->keyring_key_lifetime :
@@ -250,7 +250,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 
     if (status != WA_ERR_NONE) {
             mwk_log_webauth_error(serv, status, NULL,
-                                  mwk_func, 
+                                  mwk_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
     } else {
@@ -268,7 +268,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
             mwk_log_webauth_error(serv, status, NULL,
-                                  mwk_func, 
+                                  mwk_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
             /* complain even more */
@@ -279,7 +279,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 
     if (sconf->debug) {
         char *msg;
-        if (kau_status == WA_KAU_NONE) 
+        if (kau_status == WA_KAU_NONE)
             msg = "opened";
         else if (kau_status == WA_KAU_CREATE)
             msg = "create";
