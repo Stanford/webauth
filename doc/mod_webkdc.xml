@@ -22,7 +22,7 @@ the user.  It is designed to store as little state as possible, using the
 browser cookie cache as the repository for (encrypted) authentication
 tokens and ticket caches.</p>
 
-<p>Further details are provided in the 
+<p>Further details are provided in the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 
 </summary>
@@ -225,7 +225,7 @@ achieve this:</p>
   <li>WebKDC keyring file</li>
 </ol>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>All the files should be securely transferred from the master to the
   slave or slaves using a program like <code>scp</code> that encrypts the
   file contents during the transfer.</p>
@@ -401,7 +401,7 @@ change.</p>
 <p>If the path is not absolute, it will considered relative to
 <directive>ServerRoot</directive>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>This directive must be set.</p>
 </note>
 
@@ -457,10 +457,10 @@ future.</p>
 <p>If the path is not absolute, it will be considered relative to
 <directive>ServerRoot</directive>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>This directive must be set.</p>
 
-  <p>The ACL file is cached in memory, but will be re-read automatically if 
+  <p>The ACL file is cached in memory, but will be re-read automatically if
      the modification timestamp on the file changes.</p>
 </note>
 
@@ -492,7 +492,7 @@ principal in the keytab file be used.</p>
 <p>If the path is not absolute, it will considered relative to
 <directive>ServerRoot</directive>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>This directive must be set.</p>
 </note>
 
@@ -574,7 +574,7 @@ This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
 <code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
 hours, days, and weeks, respectively.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>This directive must be set.</p>
 </note>
 
@@ -625,7 +625,7 @@ This includes creating it if it doesn't exist, generating a new key before
 the old key expires, and periodically garbage collecting old keys.  Note
 that auto updating only occurs on server startup and restarts.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
   <p>This directive should be turned off if multiple servers are
   sharing the same keyring file, so that the keyring file can be manually
   updated.  That too may eventually be automated.</p>

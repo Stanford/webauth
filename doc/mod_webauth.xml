@@ -14,7 +14,7 @@
 application server for Apache 2.x.  It should be used on each individual
 Apache server that wants to protect content with WebAuth.</p>
 
-<p>Further details are provided in the 
+<p>Further details are provided in the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 
 </summary>
@@ -88,19 +88,19 @@ set.</p>
  <th>Description:</th>
 </tr>
 
-<tr><td><code>WEBAUTH_USER</code></td>            
+<tr><td><code>WEBAUTH_USER</code></td>
 <td>Name of the WebAuth authenticated user</td></tr>
 
-<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>     
+<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>
 <td>When the token was created</td></tr>
 
-<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td> 
+<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>
 <td>When the token will expire. Note: if
     <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>
     is set then the token may expire sooner due to inactivity.</td></tr>
 
-<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td> 
-<td>When the token was last used. Only available if 
+<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td>
+<td>When the token was last used. Only available if
     <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
     is non-zero</td></tr>
 
@@ -396,8 +396,8 @@ you can enable the <code>webauth</code> handler and point your browser at
 the configured URL to get some information on whether or not mod_webauth
 is configured correctly.</p>
 
-<note><title>Note</title> 
-Just to be safe, you should probably disable the <code>webauth</code> 
+<note><title>Note</title>
+Just to be safe, you should probably disable the <code>webauth</code>
 handler after you have <code>mod_webauth</code> configured correctly.
 </note>
 
@@ -560,7 +560,7 @@ by <em>type</em>:</p>
     <p>The downside to using this option is that returned id-token will
     be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
     <p>
-    Specifying this also requires that 
+    Specifying this also requires that
     <a href="#webauthkeytab">WebAuthKeytab</a> be set.
     (FIXME: it is already always required for obtaining a service-token, though
      it will probably become optional at some point).</p>
@@ -594,10 +594,10 @@ WebAuthSubjectAuthType krb5
 
 <usage>
 <p>
-This directive sets how old tokens that must be considered recent can be 
-before they are considered stale. It is used to help prevent tokens from 
-being replayed, and to ignore those token if they occur in cookies, URLs, 
-etc. This requires clocks between the web server and the WebKDC to be 
+This directive sets how old tokens that must be considered recent can be
+before they are considered stale. It is used to help prevent tokens from
+being replayed, and to ignore those token if they occur in cookies, URLs,
+etc. This requires clocks between the web server and the WebKDC to be
 synchronized. </p>
 
 <p>The units for the TTL are specified by appending a single letter,
@@ -653,7 +653,7 @@ browser (though hopefully this should never happen).</p>
 </example>
 
 <note>
-  <title>Compatibility</title> 
+  <title>Compatibility</title>
   <p>In versions of WebAuth prior to 3.5.0, the default for
   WebAuthExtraRedirect was off.  Also, prior to 3.5.0, this directive was
   only accepted in directory and .htaccess configuration contexts, not in
@@ -676,7 +676,7 @@ browser (though hopefully this should never happen).</p>
 This is the URL used to post XML requests to the WebKDC, and
 should use always SSL. </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -700,7 +700,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 This is the name of the Kerberos V5 Principal to use when communicating with
 the WebKDC. It used to request a service-token from the WebKDC. </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -714,7 +714,7 @@ WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 
 <directivesynopsis>
 <name>WebAuthLoginURL</name>
-<description>The URL browsers get redirected to when the user is 
+<description>The URL browsers get redirected to when the user is
 unauthenticated
 </description>
 <syntax>WebAuthLoginURL <em>url</em></syntax>
@@ -728,7 +728,7 @@ This is the URL browsers get redirected to when the user is unauthenticated
 and needs to either login or reuse an existing single-sign-on credential.
 This should alway use SSL. </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -752,14 +752,14 @@ be treated the same as <code>WebAuth</code> when used with the
 <code>AuthType</code> directive.
 </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive exists to help people transition from other
 <code>AuthType</code> names to <code>WebAuth</code>. It is recommended
 that people transition over to using only <code>WebAuth</code> as soon
 as possible.</p>
     <p>Setting this directive to <code>StanfordAuth</code> and then using
-<code>StanfordAuth</code> in an <code>AuthType</code> directive  will also 
-cause two additional environment variables to get set: 
+<code>StanfordAuth</code> in an <code>AuthType</code> directive  will also
+cause two additional environment variables to get set:
 <code>SU_AUTH_USER</code> and <code>SU_AUTH_AGE</code>.
 </p>
 </note>
@@ -817,7 +817,7 @@ of a child.
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -844,7 +844,7 @@ specified, then the first principal in the keytab file be used.</p>
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -874,7 +874,7 @@ and maintained automatically.
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set.</p>
 </note>
 
@@ -902,9 +902,9 @@ expiration time in the id-token returned from the WebKDC is used, which
 is the recommended configuration.
 </p>
 
-<p> To be effective, this directive should be used with the 
+<p> To be effective, this directive should be used with the
 <a href="#webauthforcelogin">WebAuthForceLogin</a>
-directive, otherwise single-sign-on 
+directive, otherwise single-sign-on
 will automatically log the user back in when the token expires.
 </p>
 
@@ -977,7 +977,7 @@ WebAuthPostReturnURL /myapp/
 <usage>
 <p>
 This directive controls which URL the user is returned to if they
-have to login, but hit the cancel button while logging in. 
+have to login, but hit the cancel button while logging in.
 </p>
 <p>If this directive is not set and the user hits the cancel button,
 they will be taken to a standard "login canceled" page at the WebKDC.
@@ -999,13 +999,13 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 
 <usage>
 <p>
-The webauth module sets various environment variables that are made 
-available at the time of document or application serving. They are 
-all prefixed by "WEBAUTH" (for instance WEBAUTH_USER), but some CGI apps 
-(specifically the Oracle WRB) have expectations about and/or restrictions 
+The webauth module sets various environment variables that are made
+available at the time of document or application serving. They are
+all prefixed by "WEBAUTH" (for instance WEBAUTH_USER), but some CGI apps
+(specifically the Oracle WRB) have expectations about and/or restrictions
 on the names of environment variables they can handle. Set this to a string
- you want prepended to the environment variables this 
-module defines, and they will be set in addition to the standard "WEBAUTH" 
+ you want prepended to the environment variables this
+module defines, and they will be set in addition to the standard "WEBAUTH"
 ones.</p>
 
 <example><title>Example</title>
@@ -1040,7 +1040,7 @@ given location.</p>
   &lt;/Location&gt;
 </example>
 
-<note><title>Note</title> 
+<note><title>Note</title>
 WebAuth-related cookies are all cookis that start with
 the prefix "webauth_".
 </note>
@@ -1061,18 +1061,18 @@ the prefix "webauth_".
 <usage>
 <p>
     Duration of inactivity allowed before an app-token (webauth_at cookie)
-    is considered expired and re-auth occurs. Setting this requires 
+    is considered expired and re-auth occurs. Setting this requires
     mod_webauth to periodically update the webauth_at cookie, based on the
-    setting of the 
+    setting of the
   <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
   directive.
 </p>
 
-<p> To be effective, this directive should be used with the 
+<p> To be effective, this directive should be used with the
 <a href="#webauthforcelogin">WebAuthForceLogin</a>
 directive, otherwise single-sign-on will automatically log the
-user back in when the token expires due to inactivity. Additionally, 
-this value should be higher then the value of 
+user back in when the token expires due to inactivity. Additionally,
+this value should be higher then the value of
   <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>,
 otherwise the cookie will expire before the last-used-time is updated.
 </p>
@@ -1110,9 +1110,9 @@ WebAuthLastUseUpdateInterval 10m
     updating of the cookie.
 </p>
 
-<p> This directive is normally only used with 
+<p> This directive is normally only used with
    <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>, though
-it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</code> 
+it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</code>
  environment variable updated.
 </p>
 
@@ -1222,15 +1222,15 @@ LogLevel debug<br />
 <usage>
 <p>
 If a user attempts to access a WebAuth-protected page via <code>http</code>
-instead of <code>https</code> and this directive is turned off, then access 
-will be denied. If this directive is tuned on, then the user will 
-be redirected to the same URL using <code>https</code> instead of 
+instead of <code>https</code> and this directive is turned off, then access
+will be denied. If this directive is tuned on, then the user will
+be redirected to the same URL using <code>https</code> instead of
 <code>http</code>. Once accessing pages using <code>https</code>, they will
 remain accessing pages via <code>https</code> unless the application
 redirects the user back to <code>http</code>.
 </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>If the server is not configured to run SSL on the default port, then
     the <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a> directive
     must be used to specify which port to redirect the user to.
@@ -1257,9 +1257,9 @@ WebAuthSSLRedirect on<br />
 
 <usage>
 <p>
-This is used in conjunction with the 
+This is used in conjunction with the
 <a href="#webauthsslredirect">WebAuthSSLRedirect</a> directive and controls
-which port the user is redirected to when redirecting them to the 
+which port the user is redirected to when redirecting them to the
 <code>https</code> version of the URL. This is useful during development if
 you run the Apache server on ports 8080 and 8443, for example.
 </p>
@@ -1284,7 +1284,7 @@ WebAuthSSLRedirectPort 8443<br />
 
 <usage>
 <p>
-Setting this to <code>on</code> will cause the following headers to be 
+Setting this to <code>on</code> will cause the following headers to be
 included in the response to tell browsers not to cache the returned document.
 </p>
 
@@ -1293,13 +1293,13 @@ included in the response to tell browsers not to cache the returned document.
  <th>Header Name</th>
  <th>Header Value</th>
 </tr>
-<tr><td><code>Expires</code></td>            
+<tr><td><code>Expires</code></td>
     <td>(current time)</td></tr>
 
-<tr><td><code>Pragma</code></td>     
+<tr><td><code>Pragma</code></td>
      <td>no-cache</td></tr>
 
-<tr><td><code>Cache-Control</code></td> 
+<tr><td><code>Cache-Control</code></td>
 <td>no-cache</td></tr>
 </table>
 
@@ -1317,7 +1317,7 @@ WebAuthDontCache on<br />
 
 <directivesynopsis>
 <name>WebAuthKeyringAutoUpdate</name>
-<description>Whether or not we auto-update the keyring file 
+<description>Whether or not we auto-update the keyring file
 </description>
 <syntax>WebAuthKeyringAutoUpdate on|off</syntax>
 <default>WebAuthKeyringAutoUpdate on</default>
@@ -1332,7 +1332,7 @@ key before the old key expires, and periodically garbage collecting
 old keys. Note that auto updating only occurs on server startup and restarts.
 </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive should be turned off if multiple servers are
 sharing the same keyring file so the keyring file can be manually updated.
 That too will eventually be automated.</p>
@@ -1394,7 +1394,7 @@ for the duration of a single request. </p>
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive must be set if the <a href="#webauthcred">WebAuthCred</a> and <a href="#webauthusecreds">WebAuthUseCreds</a>
 directives are used.</p>
 </note>
@@ -1446,7 +1446,7 @@ the <a href="#webauthcred">WebAuthCred</a> directive.
 <usage>
 <p>
 This directive specifies which credentials a particular request may need.
-It should be used should be used in conjunction with the <a href="#webauthusecreds">WebAuthUseCreds</a> 
+It should be used should be used in conjunction with the <a href="#webauthusecreds">WebAuthUseCreds</a>
 directive.
 </p>
 
@@ -1483,7 +1483,7 @@ specify that multiple credentials are required.</p>
 
 <usage>
 <p>
-This is the name of a file holding one or more certificates to verify the 
+This is the name of a file holding one or more certificates to verify the
 WebKDC's SSL Certificate with. This directive is only needed if you
 are using a self-signed certificate with your WebKDC. If you are using a
 self-signed certificate, you should copy that certificate (the file
@@ -1494,7 +1494,7 @@ file, and point to that file with this directive.
 <p>If the path
 is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>This directive is only needed when the <strong>WebKDC</strong> is using a
 self-signed certificate. It is not needed if your WebAuth server is using
 a self-signed certificate</p>
@@ -1523,9 +1523,9 @@ on the certificate used by the WebKDC when mod_webauth communicates directly
 with the WebKDC.
 </p>
 
-<note><title>Note</title> 
+<note><title>Note</title>
     <p>Setting this directive to <code>off</code> opens a security hole
-and should only be used in development when the 
+and should only be used in development when the
 <a href="#webauthwebkdcsslcertfile"><code>WebAuthWebKdcSSLCertFile</code></a>
 directive cannot be used.
 </p>

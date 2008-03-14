@@ -407,7 +407,7 @@
       re-request resource (with returned id token in URL)
   9.  -----------------> WAS
 
-      set the app token cookie, response from app 
+      set the app token cookie, response from app
   10. &lt;----------------- WAS
 
   ---------------------------------------------------------------
@@ -1097,11 +1097,11 @@
        &lt;proxyToken>...&lt;/proxyToken>
        &lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here -->
       &lt;!-- for type="login" -->
-       &lt;loginToken>...&lt;/loginToken>     
+       &lt;loginToken>...&lt;/loginToken>
     &lt;/subjectCredential>
 
     &lt;!-- request token from WAS -->
-    &lt;requestToken>{base64-request-token}&lt;/requestToken> 
+    &lt;requestToken>{base64-request-token}&lt;/requestToken>
 
     &lt;!-- request info from front-end, for logging purposes -->
     &lt;requestInfo>
@@ -1122,7 +1122,7 @@
             <artwork>
   &lt;requestTokenResponse>
 
-    &lt;!-- loginErrorCode will be set in a requestTokenResponse if 
+    &lt;!-- loginErrorCode will be set in a requestTokenResponse if
          there was an error related to logging in  -->
     &lt;loginErrorCode>{numeric}&lt;loginErrorCode>
     &lt;loginErrorMessage>{message}&lt;loginErrorMessage>
@@ -1142,7 +1142,7 @@
     &lt;!-- subject from subjectCredential -->
     &lt;subject>...&lt;/subject>
 
-    &lt;!-- requestedToken will either be an error, id, or proxy token. 
+    &lt;!-- requestedToken will either be an error, id, or proxy token.
          not set if &lt;loginErrorCode> is set. -->
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
 
@@ -1238,7 +1238,7 @@
   &lt;webkdcProxyTokenResponse>
 
     &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
-  
+
     &lt;!-- subject from subjectCredential -->
     &lt;subject>...&lt;/subject>
 
@@ -2044,7 +2044,7 @@
         token and new proxy token.  The response from a request token is
         an error token, id token, or proxy token.  change se back to et.
         Expiration times in tokens indicate when the token expires and
-        when any data within the token (subject info, proxy data, etc.) 
+        when any data within the token (subject info, proxy data, etc.)
         expires.  Simplify XML messages by placing base64-encoded data
         directly in &lt;requestCredential> and &lt;subjectCredential>
         instead of having them in another tag.  Wrap tokens in &lt;tokens>
