@@ -185,3 +185,7 @@ CREDITS
   easier to package for a Linux distribution, for the initial Debian
   package build rules, and for generic WebKDC templates suitable for a new
   installation and for use as examples.
+
+  Thanks to Dmitri Priimak for work on cross-realm support, WebLogin
+  improvements, and testing of unusual Kerberos realms and principal
+  names.

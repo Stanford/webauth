@@ -2,6 +2,25 @@
 
 WebAuth 3.6.0 (unreleased)
 
+ *) Add the WebKdcLocalRealms configuration option to mod_webkdc, which
+    specifies the transformation behavior for authenticated identities.
+    The default is "local", which runs krb5_aname_to_localname and uses
+    the result as the authenticated identity (matching previous behavior).
+    Setting it to "none" always keeps the fully-qualified Kerberos
+    principal as the authenticated identity, and setting it to a list of
+    realms strips the realm if it matches one of the listed realms and
+    uses the fully-qualified Kerberos principal otherwise.
+
+    Thanks to Dmitri Priimak for the patch.
+
+ *) Add the WebKdcPermittedRealms configuration option to mod_webkdc.  If
+    set, only Kerberos principals in the listed realms will be able to
+    obtain authentication tokens from the WebKDC.  This allows sites with
+    Kerberos cross-realm trust to prevent users in foreign realms from
+    obtaining WebAuth credentials that satisfy "require valid-user".
+
+    Thanks to Dmitri Priimak for the patch.
+
  *) In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.

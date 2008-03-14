@@ -24,7 +24,7 @@
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>WebAuth V3 WebKDC module</td></tr>
-<tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webkdc_module</td></tr>
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c</td></tr></table>
 <h3>Summary</h3>
@@ -41,7 +41,7 @@ the user.  It is designed to store as little state as possible, using the
 browser cookie cache as the repository for (encrypted) authentication
 tokens and ticket caches.</p>
 
-<p>Further details are provided in the 
+<p>Further details are provided in the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 
 </div>
@@ -52,6 +52,8 @@ tokens and ticket caches.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringautoupdate">WebKdcKeyringAutoUpdate</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyringkeylifetime">WebKdcKeyringKeyLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeytab">WebKdcKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdclocalrealms">WebKdcLocalRealms</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcpermittedrealms">WebKdcPermittedRealms</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcproxytokenlifetime">WebKdcProxyTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
@@ -262,7 +264,7 @@ achieve this:</p>
   <li>WebKDC keyring file</li>
 </ol>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>All the files should be securely transferred from the master to the
   slave or slaves using a program like <code>scp</code> that encrypts the
   file contents during the transfer.</p>
@@ -378,7 +380,7 @@ becomes valid and is used in service tokens.</p>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -398,7 +400,7 @@ WebKdcDebug on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -412,7 +414,7 @@ change.</p>
 <p>If the path is not absolute, it will considered relative to
 <code class="directive">ServerRoot</code>.</p>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>This directive must be set.</p>
 </div>
 
@@ -429,7 +431,7 @@ WebKdcKeyring conf/webkdc/keyring
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -438,7 +440,7 @@ This includes creating it if it doesn't exist, generating a new key before
 the old key expires, and periodically garbage collecting old keys.  Note
 that auto updating only occurs on server startup and restarts.</p>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>This directive should be turned off if multiple servers are
   sharing the same keyring file, so that the keyring file can be manually
   updated.  That too may eventually be automated.</p>
@@ -457,7 +459,7 @@ WebKdcKeyringAutoUpdate off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -490,7 +492,7 @@ WebKdcKeyringKeyLifetime 60d<br />
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -503,12 +505,84 @@ principal in the keytab file be used.</p>
 <p>If the path is not absolute, it will considered relative to
 <code class="directive">ServerRoot</code>.</p>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>This directive must be set.</p>
 </div>
 
 <div class="example"><h3>Example</h3><p><code>
 WebKdcKeytab conf/webkdc/keytab service/webkdc
+</code></p></div>
+
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcLocalRealms" id="WebKdcLocalRealms">WebKdcLocalRealms</a> <a name="webkdclocalrealms" id="webkdclocalrealms">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Realms to be stripped from authenticated identities</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcLocalRealms none|local|<em>realm</em> ...</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcLocalRealms local</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+
+<p>This directive controls stripping realm qualifications from the
+authenticated identity of a WebAuth user.  The realm is defined as the
+portion of the authenticated identity following the first unescaped
+<code>@</code> in the identity.</p>
+
+<p>If set to <code>none</code>, no transformations are done and the
+authenticated identity is always passed in its fully-qualified form.  This
+is probably the best option for sites that use multiple local Kerberos
+realms where none is the logical default realm.</p>
+
+<p>If set to <code>local</code> (the default), the authenticated identity
+will be passed to the krb5_aname_to_localname function on the WebKDC.
+Normally, this will strip off the realm if it matches the default Kerberos
+realm of the WebKDC (not the requesting WebAuth Application Server) and
+otherwise leave it; however, more complex canonicalization rules may be
+specified in the <code>/etc/krb5.conf</code> file on the WebKDC.</p>
+
+<p>Otherwise, the space-separated arguments to this directive are taken to
+be realms that should be stripped from the authenticated identity.  The
+realms must be given in escaped form in the WebKDC configuration (for
+example, any <code>@</code> in a realm must be given as
+<code>\@</code>).</p>
+
+<div class="note"><h3>Note</h3>
+  <p>The canonicalization done is that specified on the WebKDC, not in the
+  WebAuth Application Server.  There is no way to perform different
+  authenticated identity canonicalization on different WebAuth Application
+  Servers using the same WebKDC.</p>
+</div>
+
+<div class="example"><h3>Example</h3><p><code>
+# Strip stanford.edu and WIN.STANFORD.EDU but leave other realms
+WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
+</code></p></div>
+
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcPermittedRealms" id="WebKdcPermittedRealms">WebKdcPermittedRealms</a> <a name="webkdcpermittedrealms" id="webkdcpermittedrealms">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>List of permitted authentication realms</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcPermittedRealms <em>realm</em> ...</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+
+<p>By default, the WebKDC allows authentication via any realm with which
+there is cross-realm trust.  If this directive is given, it restricts
+authentication to principals in one of the realms listed in this
+directive.  The realms must be given in escaped form in the WebKDC
+configuration (for example, any <code>@</code> in a realm must be given as
+<code>\@</code>).</p>
+
+<div class="example"><h3>Example</h3><p><code>
+WebKdcPermittedRealms stanford.edu WIN.STANFORD.EDU
 </code></p></div>
 
 
@@ -520,7 +594,7 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcProxyTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of underlying proxied-credential)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -561,7 +635,7 @@ WebKdcProxyTokenLifetime 2h
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcServiceTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -581,7 +655,7 @@ This letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
 <code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
 hours, days, and weeks, respectively.</p>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>This directive must be set.</p>
 </div>
 
@@ -599,7 +673,7 @@ WebKdcServiceTokenLifetime 30d
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenAcl <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -634,10 +708,10 @@ future.</p>
 <p>If the path is not absolute, it will be considered relative to
 <code class="directive">ServerRoot</code>.</p>
 
-<div class="note"><h3>Note</h3> 
+<div class="note"><h3>Note</h3>
   <p>This directive must be set.</p>
 
-  <p>The ACL file is cached in memory, but will be re-read automatically if 
+  <p>The ACL file is cached in memory, but will be re-read automatically if
      the modification timestamp on the file changes.</p>
 </div>
 
@@ -656,7 +730,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
 
@@ -687,6 +761,6 @@ WebKdcTokenMaxTTL 10m
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 2006 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2008 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

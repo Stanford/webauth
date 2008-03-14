@@ -1745,16 +1745,131 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 }
 
 /*
- * attempt to login. If successful, fill in both sub_cred and
- * rtokens and return MWK_OK. If unsuccessful, generate an errorResponse/log
- * and return MWK_ERROR.
- *
- * This is the point at which different types of authentication
- * could be plugged in, and the point at which we should create
- * all the different types of proxy-tokens we'll be needing at
- * login time.
+ * Check that the realm of the authenticated principal is in the list of
+ * permitted realms, or that the list of realms is empty.  Returns MWK_OK if
+ * the realm is permitted, MWK_ERROR otherwise.  Sets the error on a failure,
+ * so the caller doesn't need to do so.
  */
+static int
+realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
+                const char *mwk_func)
+{
+    int status;
+    char *realm;
+    apr_array_header_t *realms;
+    char **allowed;
+    int okay = 0;
 
+    /* If we aren't restricting the realms, always return true. */
+    if (rc->sconf->permitted_realms->nelts <= 0)
+        return MWK_OK;
+
+    /* Get the realm. */
+    status = webauth_krb5_get_realm(ctxt, &realm);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                             "webauth_krb5_get_realm", NULL);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        return MWK_ERROR;
+    }
+
+    /*
+     * We assume that all realms listed in the configuration are already
+     * escaped, as is the realm parameter.
+     */
+    realms = apr_array_copy(rc->r->pool, rc->sconf->permitted_realms);
+    while ((allowed = apr_array_pop(realms)) != NULL)
+        if (apr_strnatcmp(*allowed, realm) == 0) {
+            okay = 1;
+            break;
+        }
+    free(realm);
+    if (okay == 0) {
+        char *msg = apr_psprintf(rc->r->pool, "realm %s is not permitted",
+                                 realm);
+        set_errorResponse(rc, WA_PEC_UNAUTHORIZED, msg, mwk_func, 1);
+        return MWK_ERROR;
+    }
+    return MWK_OK;
+}
+
+/*
+ * Get the subject (the authenticated identity).  This is where we do local
+ * realm conversion if requested or strip off the realm if requested to do so.
+ * Returns MWK_OK if we successfully set the subject and MWK_ERROR otherwise.
+ * Sets the error on a failure, so the caller doesn't need to do so.
+ *
+ * The subject is returned as newly allocated pool memory.
+ */
+static int
+get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt, char **subject_out,
+            const char *mwk_func)
+{
+    char *subject;
+    enum webauth_krb5_canon canonicalize = WA_KRB5_CANON_LOCAL;
+    int status;
+
+    /*
+     * If WebKdcLocalRealms was set, it may be set to a keyword or to a list
+     * of realms.  "local" is the default, but recognize it explicitly as
+     * well.  If the first element is neither "none" nor "local," treat it as
+     * a list of realms.
+     */
+    if (rc->sconf->local_realms->nelts > 0) {
+        apr_array_header_t *realms;
+        char *realm;
+        char **local;
+
+        realms = apr_array_copy(rc->r->pool, rc->sconf->local_realms);
+        local = apr_array_pop(realms);
+        if (apr_strnatcmp(*local, "none") == 0) {
+            canonicalize = WA_KRB5_CANON_NONE;
+        } else if (apr_strnatcmp(*local, "local") == 0) {
+            canonicalize = WA_KRB5_CANON_LOCAL;
+        } else {
+            canonicalize = WA_KRB5_CANON_NONE;
+            status = webauth_krb5_get_realm(ctxt, &realm);
+            if (status != WA_ERR_NONE) {
+                char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                                      "webauth_krb5_get_realm",
+                                                      NULL);
+                set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+                return MWK_ERROR;
+            }
+            do {
+                if (apr_strnatcmp(*local, realm) == 0)
+                    canonicalize = WA_KRB5_CANON_STRIP;
+            } while ((local = apr_array_pop(realms)) != NULL);
+            free(realm);
+        }
+    }
+
+    /*
+     * We now know the canonicalization method we're using, so we can retrieve
+     * the principal from the context.
+     */
+    status = webauth_krb5_get_principal(ctxt, &subject, canonicalize);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                             "webauth_krb5_get_principal",
+                                              NULL);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        return MWK_ERROR;
+    }
+    *subject_out = apr_pstrdup(rc->r->pool, subject);
+    free(subject);
+    return MWK_OK;
+}
+
+/*
+ * attempt to login. If successful, fill in both sub_cred and rtokens and
+ * return MWK_OK. If unsuccessful, generate an errorResponse/log and return
+ * MWK_ERROR.
+ *
+ * This is the point at which different types of authentication could be
+ * plugged in, and the point at which we should create all the different types
+ * of proxy-tokens we'll be needing at login time.
+ */
 static enum mwk_status
 mwk_do_login(MWK_REQ_CTXT *rc,
              MWK_LOGIN_TOKEN *lt,
@@ -1810,21 +1925,13 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         server_principal = temp;
     }
 
+    /* Check if the realm of the authenticated principal is permitted. */
+    if (realm_permitted(rc, ctxt, mwk_func) != MWK_OK)
+        goto cleanup;
 
     /* get subject, attempt local-name conversion */
-    status = webauth_krb5_get_principal(ctxt, &subject, 1);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth_krb5_get_principal",
-                                              NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+    if (get_subject(rc, ctxt, &subject, mwk_func) != MWK_OK)
         goto cleanup;
-    } else {
-        char *new_subject = apr_pstrdup(rc->r->pool, subject);
-        free(subject);
-        subject = new_subject;
-    }
-
     *subject_out = subject;
 
     /* export TGT for webkdc-proxy-token */
@@ -2845,10 +2952,12 @@ config_server_create(apr_pool_t *p, server_rec *s)
     sconf = (MWK_SCONF*)apr_pcalloc(p, sizeof(MWK_SCONF));
 
     /* init defaults */
-    sconf->token_max_ttl = DF_TokenMaxTTL;
+    sconf->token_max_ttl        = DF_TokenMaxTTL;
     sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
-    sconf->keyring_auto_update = DF_KeyringAutoUpdate;
+    sconf->keyring_auto_update  = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
+    sconf->permitted_realms     = apr_array_make(p, 0, sizeof(char *));
+    sconf->local_realms         = apr_array_make(p, 0, sizeof(char *));
     return (void *)sconf;
 }
 
@@ -2889,6 +2998,28 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(token_acl_path);
     MERGE_INT(service_token_lifetime);
+
+    /* Duplicates in permitted realms are okay. */
+    if (bconf->permitted_realms == NULL)
+        conf->permitted_realms = oconf->permitted_realms;
+    else if (oconf->permitted_realms == NULL)
+        conf->permitted_realms = bconf->permitted_realms;
+    else
+        conf->permitted_realms = apr_array_append(p, bconf->permitted_realms,
+                                                  oconf->permitted_realms);
+
+    /*
+     * Duplicates in local realms aren't okay if the first element is a
+     * keyword rather than a realm.  FIXME: Handle this correctly.
+     */
+    if (bconf->local_realms == NULL)
+        conf->local_realms = oconf->local_realms;
+    else if (oconf->local_realms == NULL)
+        conf->local_realms = bconf->local_realms;
+    else
+        conf->local_realms = apr_array_append(p, bconf->local_realms,
+                                              oconf->local_realms);
+
     return (void *)conf;
 }
 
@@ -2940,42 +3071,51 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
+    char **realm;
 
     MWK_SCONF *sconf = (MWK_SCONF *)
         ap_get_module_config(cmd->server->module_config, &webkdc_module);
 
+    /* server configs */
     switch (e) {
-        /* server configs */
-        case E_Keyring:
-            sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
-            break;
-        case E_Keytab:
-            sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-            break;
-        case E_TokenAcl:
-            sconf->token_acl_path = ap_server_root_relative(cmd->pool, arg);
-            break;
-        case E_ProxyTokenLifetime:
-            sconf->proxy_token_lifetime = seconds(arg, &error_str);
-            sconf->proxy_token_lifetime_ex = 1;
-            break;
-        case E_TokenMaxTTL:
-            sconf->token_max_ttl = seconds(arg, &error_str);
-            sconf->token_max_ttl_ex = 1;
-            break;
-        case E_KeyringKeyLifetime:
-            sconf->keyring_key_lifetime = seconds(arg, &error_str);
-            sconf->keyring_key_lifetime_ex = 1;
-            break;
-        case E_ServiceTokenLifetime:
-            sconf->service_token_lifetime = seconds(arg, &error_str);
-            break;
-        default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
+    case E_Keyring:
+        sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
+        break;
+    case E_Keytab:
+        sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
+        break;
+    case E_TokenAcl:
+        sconf->token_acl_path = ap_server_root_relative(cmd->pool, arg);
+        break;
+    case E_ProxyTokenLifetime:
+        sconf->proxy_token_lifetime = seconds(arg, &error_str);
+        sconf->proxy_token_lifetime_ex = 1;
+        break;
+    case E_TokenMaxTTL:
+        sconf->token_max_ttl = seconds(arg, &error_str);
+        sconf->token_max_ttl_ex = 1;
+        break;
+    case E_KeyringKeyLifetime:
+        sconf->keyring_key_lifetime = seconds(arg, &error_str);
+        sconf->keyring_key_lifetime_ex = 1;
+        break;
+    case E_ServiceTokenLifetime:
+        sconf->service_token_lifetime = seconds(arg, &error_str);
+        break;
+    case E_PermittedRealms:
+        realm = apr_array_push(sconf->permitted_realms);
+        *realm = apr_pstrdup(cmd->pool, arg);
+        break;
+    case E_LocalRealms:
+        realm = apr_array_push(sconf->local_realms);
+        *realm = apr_pstrdup(cmd->pool, arg);
+        break;
+    default:
+        error_str =
+            apr_psprintf(cmd->pool,
+                         "Invalid value cmd->info(%d) for directive %s",
+                         (int) e, cmd->directive->directive);
+        break;
     }
     return error_str;
 }
@@ -3037,13 +3177,16 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 
 
 #define SSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
+    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
 
 #define SSTR12(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_str12,(void*)mconfig, RSRC_CONF, TAKE12, help}
+    {dir, (cmd_func)cfg_str12,(void*)mconfig, RSRC_CONF, TAKE12, help}
 
 #define SFLAG(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
+    {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
+
+#define ISTR(dir,mconfig,help) \
+    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, ITERATE, help}
 
 static const command_rec cmds[] = {
     /* server/vhost */
@@ -3058,6 +3201,8 @@ static const command_rec cmds[] = {
     SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime,
          CM_ServiceTokenLifetime),
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
+    ISTR(CD_PermittedRealms, E_PermittedRealms, CM_PermittedRealms),
+    ISTR(CD_LocalRealms, E_LocalRealms, CM_LocalRealms),
     { NULL }
 };
 

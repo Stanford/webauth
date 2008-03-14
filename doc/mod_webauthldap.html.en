@@ -24,7 +24,7 @@
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>LDAP authorization and lookup for WebAuth V3</td></tr>
-<tr><th><a href="module-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauthldap_module</td></tr>
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauthldap.c</td></tr></table>
 <h3>Summary</h3>
@@ -187,7 +187,7 @@ Stanford users, since WebAuth v2 was never publically released.</p>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAttribute <em>ldap_attribute_name</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>"displayName", "mail"</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>All attributes indicated by this directive will be looked up in LDAP
@@ -225,7 +225,7 @@ WebAuthLdapAttribute suUnivid<br />
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAuthorizationAttribute <em>ldap_attribute_name</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>Specifies the attribute in the LDAP directory in a user's entry that
@@ -255,7 +255,7 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapAuthrule <em>on|off</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>By default, this module will put the authorization rule under which the
@@ -276,7 +276,7 @@ WebAuthLdapAuthrule off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapBase <em>valid_search_base</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>The lookup of the user's entry will begin at the specified search
@@ -298,7 +298,7 @@ WebAuthLdapBase cn=people,dc=acme,dc=com
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapBindDN <em>valid_bind_dn</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>The bind DN specifies the LDAP identity that this module will use when
@@ -318,7 +318,7 @@ WebAuthLdapBindDN cn=myDN,dc=acme,dc=com
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapDebug <em>on|off</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>If set to on, additional tracing and debugging output will be sent to
@@ -338,7 +338,7 @@ WebAuthLdapDebug on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapFilter <em>valid_ldap_filter</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>uid=USER</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>This can be any properly formed LDAP filter.  The current user's
@@ -360,7 +360,7 @@ WebAuthLdapFilter (&amp;(objectClass=superson)(uid=USER))
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapHost <em>hostname</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>The LDAP server must support SASL GSSAPI Kerberos V binds.  No other
@@ -382,7 +382,7 @@ bind type is supported by mod_webauthldap at this time.</p>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapKeytab <em>path</em>  [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>Specifies the keytab used for GSSAPI authentication to the LDAP
@@ -410,7 +410,7 @@ WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapPort <em>port_num</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>389</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>Normally, you will never need to change this, even if using SSL.  Some
@@ -429,7 +429,7 @@ WebAuthLdapPort 389
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapSeparator <em>separator</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>If set, overrides the default handling of multi-valued attributes.
@@ -455,7 +455,7 @@ WebAuthLdapSeparator |
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapSSL <em>on|off</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>If set, this module will use SSL when talking to the LDAP server.  The
@@ -476,7 +476,7 @@ WebAuthLdapSSL on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapTktCache <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Contributed</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
 <p>If this cache exists and is valid and readable, it will be used until
@@ -500,6 +500,6 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 1995-2006 The Apache Software Foundation or its licensors, as applicable.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2008 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

@@ -504,6 +504,82 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
 </directivesynopsis>
 
 <directivesynopsis>
+<name>WebKdcLocalRealms</name>
+<description>Realms to be stripped from authenticated identities</description>
+<syntax>WebKdcLocalRealms none|local|<em>realm</em> ...</syntax>
+<default>WebKdcLocalRealms local</default>
+<contextlist>
+  <context>server config</context>
+  <context>virtual host</context>
+</contextlist>
+
+<usage>
+
+<p>This directive controls stripping realm qualifications from the
+authenticated identity of a WebAuth user.  The realm is defined as the
+portion of the authenticated identity following the first unescaped
+<code>@</code> in the identity.</p>
+
+<p>If set to <code>none</code>, no transformations are done and the
+authenticated identity is always passed in its fully-qualified form.  This
+is probably the best option for sites that use multiple local Kerberos
+realms where none is the logical default realm.</p>
+
+<p>If set to <code>local</code> (the default), the authenticated identity
+will be passed to the krb5_aname_to_localname function on the WebKDC.
+Normally, this will strip off the realm if it matches the default Kerberos
+realm of the WebKDC (not the requesting WebAuth Application Server) and
+otherwise leave it; however, more complex canonicalization rules may be
+specified in the <code>/etc/krb5.conf</code> file on the WebKDC.</p>
+
+<p>Otherwise, the space-separated arguments to this directive are taken to
+be realms that should be stripped from the authenticated identity.  The
+realms must be given in escaped form in the WebKDC configuration (for
+example, any <code>@</code> in a realm must be given as
+<code>\@</code>).</p>
+
+<note><title>Note</title>
+  <p>The canonicalization done is that specified on the WebKDC, not in the
+  WebAuth Application Server.  There is no way to perform different
+  authenticated identity canonicalization on different WebAuth Application
+  Servers using the same WebKDC.</p>
+</note>
+
+<example><title>Example</title>
+# Strip stanford.edu and WIN.STANFORD.EDU but leave other realms
+WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
+</example>
+
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcPermittedRealms</name>
+<description>List of permitted authentication realms</description>
+<syntax>WebKdcPermittedRealms <em>realm</em> ...</syntax>
+<default>(none)</default>
+<contextlist>
+  <context>server config</context>
+  <context>virtual host</context>
+</contextlist>
+
+<usage>
+
+<p>By default, the WebKDC allows authentication via any realm with which
+there is cross-realm trust.  If this directive is given, it restricts
+authentication to principals in one of the realms listed in this
+directive.  The realms must be given in escaped form in the WebKDC
+configuration (for example, any <code>@</code> in a realm must be given as
+<code>\@</code>).</p>
+
+<example><title>Example</title>
+WebKdcPermittedRealms stanford.edu WIN.STANFORD.EDU
+</example>
+
+</usage>
+</directivesynopsis>
+
+<directivesynopsis>
 <name>WebKdcProxyTokenLifetime</name>
 <description>Lifetime of webkdc-proxy tokens we create</description>
 <syntax>WebKdcProxyTokenLifetime <em>nnnn[s|m|h|d|w]</em></syntax>

@@ -69,6 +69,12 @@
 #define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
 #define DF_TokenMaxTTL (60*5)
 
+#define CD_PermittedRealms "WebKdcPermittedRealms"
+#define CM_PermittedRealms "list of realms permited for authentication"
+
+#define CD_LocalRealms "WebKdcLocalRealms"
+#define CM_LocalRealms "realms stripped from identities, \"none\" or \"local\""
+
 /* max number of <token>'s we will return. 64 is overkill */
 #define MAX_TOKENS_RETURNED 64
 
@@ -101,6 +107,8 @@ enum {
     E_ProxyTokenLifetime,
     E_ServiceTokenLifetime,
     E_TokenMaxTTL,
+    E_PermittedRealms,
+    E_LocalRealms,
 };
 
 extern module webkdc_module;
@@ -111,7 +119,7 @@ typedef struct {
     char *keytab_path;
     char *keytab_principal;
     char *token_acl_path;
-    int  debug;
+    int debug;
     int debug_ex;
     int proxy_token_lifetime;
     int proxy_token_lifetime_ex;
@@ -122,6 +130,8 @@ typedef struct {
     int keyring_auto_update_ex;
     int keyring_key_lifetime;
     int keyring_key_lifetime_ex;
+    apr_array_header_t *permitted_realms;
+    apr_array_header_t *local_realms;
     /* stuff we need to clean up on restarts and what not */
     WEBAUTH_KEYRING *ring; /* our keyring */
     int free_ring;         /* set if we should free ring */

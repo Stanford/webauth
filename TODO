@@ -48,9 +48,11 @@
     trusting the identity in the proxy token.
 
  *) The mod_webauthldap module needs a lot of formatting and coding style
-    cleanup.  All of WebAuth needs a general dead code removal pass and
-    evaluation of all the places marked FIXME, spawning either entries for
-    this list or removal as unimportant.
+    cleanup.
+
+ *) All of WebAuth needs a general dead code removal pass and evaluation
+    of all the places marked FIXME, spawning either entries for this list
+    or removal as unimportant.
 
  *) Allow WebAuthExtraRedirect in the server and virtual host
     configuration.
@@ -58,11 +60,6 @@
  *) Allow users to forward tickets into the weblogin script via SPNEGO and
     use that forwarded ticket to create a first-class single sign-on
     cookie that can be used by sites requiring proxy credentials.
-
- *) Evaluate whether multiple realm support is possible.  It might be as
-    easy as letting people enter a full principal name into the login
-    field of weblogin, provided that cross-realm is set up properly, but
-    I'm not sure.
 
  *) Provide a better way (over protocol, perhaps?) of synchronizing keyrings
     across machines in a pool.
@@ -89,3 +86,14 @@
 
  *) Add to mod_webauthldap a way to deny access if a user is a member of a
     particular privgroup.
+
+ *) Write a custom merging function for WebKdcLocalRealms so that the
+    keywords are preserved properly.  If a keyword is set, that should
+    override any list of realms, but if both the old and new configuration
+    contain list of realms, they should be combined.
+
+ *) Support an "any" option for WebKdcPermittedRealms so that the default
+    can be explicitly set (possibly overriding an earlier explicit list).
+
+ *) Support listing multiple privgroups and attributes on the same line in
+    the mod_webauthldap module using the iterate flag.
