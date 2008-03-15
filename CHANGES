@@ -21,6 +21,10 @@ WebAuth 3.6.0 (unreleased)
 
     Thanks to Dmitri Priimak for the patch.
 
+ *) Add an additional check to webkdcProxyTokenRequest processing in
+    mod_webkdc to ensure that the Kerberos authenticator and the included
+    Kerberos TGT are for the same principal.
+
  *) The WebLogin login.tmpl template may be called with err_rejected set
     if the authenticating principal is rejected by the WebKDC.  Login
     templates should be modified to handle this variable.

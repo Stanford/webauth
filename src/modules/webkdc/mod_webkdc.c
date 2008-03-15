@@ -2351,6 +2351,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     char *tgt;
     int sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, status, token_len;
     char *client_principal, *proxy_subject, *server_principal;
+    char *check_principal;
     time_t tgt_expiration, creation;
     WEBAUTH_KRB5_CTXT *ctxt;
     WEBAUTH_ATTR_LIST *alist;
@@ -2441,7 +2442,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                            rc->sconf->keytab_principal,
                                            &server_principal,
                                            &client_principal,
-                                           1,
+                                           0,
                                            pd_data,
                                            pd_len,
                                            &dpd_data,
@@ -2455,23 +2456,53 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         goto cleanup;
     }
 
-    *subject_out = apr_pstrdup(rc->r->pool, client_principal);
-    free(client_principal);
-
     proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:",
                                 server_principal, NULL);
     free(server_principal);
 
     status = webauth_krb5_init_via_cred(ctxt, dpd_data, dpd_len, NULL);
     free(dpd_data);
-
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth__krb5_init_via_cred",
+                                              "webauth_krb5_init_via_cred",
                                               NULL);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        free(client_principal);
         goto cleanup;
     }
+    status = webauth_krb5_get_principal(ctxt, &check_principal,
+                                        WA_KRB5_CANON_NONE);
+    if (status != WA_ERR_NONE) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                              "webauth_krb5_get_principal",
+                                              NULL);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        free(client_principal);
+        goto cleanup;
+    }
+
+    /*
+     * Clients aren't allowed to forward a TGT for a different principal than
+     * the authentication principal.
+     */
+    if (strcmp(client_principal, check_principal) != 0) {
+        free(client_principal);
+        free(check_principal);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                          "authenticator and Kerberos TGT mismatch"
+                          mwk_func, 1);
+        goto cleanup;
+    }
+    free(client_principal);
+    free(check_principal);
+
+    /* Check if the realm of the authenticated principal is permitted. */
+    if (realm_permitted(rc, ctxt, mwk_func) != MWK_OK)
+        goto cleanup;
+
+    /* Get the subject and canonicalize the authentication identity. */
+    if (get_subject(rc, ctxt, subject_out, mwk_func) != MWK_OK)
+        goto cleanup;
 
     /* now export the tgt again, for sanity checking and to get
        expiration */
