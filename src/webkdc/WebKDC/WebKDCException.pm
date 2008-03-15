@@ -14,7 +14,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, @ErrorNames);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter);
     @EXPORT      = qw(WK_SUCCESS
 		      WK_ERR_USER_AND_PASS_REQUIRED

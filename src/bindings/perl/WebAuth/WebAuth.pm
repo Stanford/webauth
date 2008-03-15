@@ -54,6 +54,7 @@ our %EXPORT_TAGS = (
 				    WA_PEC_PROXY_TOKEN_REQUIRED
 				    WA_PEC_LOGIN_CANCELED
 				    WA_PEC_LOGIN_FORCED
+				    WA_PEC_USER_REJECTED
 				    WA_AES_KEY
 				    WA_AES_128
 				    WA_AES_192
@@ -114,7 +115,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
 		   );
 
 our @EXPORT = qw ();
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 bootstrap WebAuth $VERSION;
 
@@ -135,7 +136,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -627,6 +628,7 @@ The following constants from webauth.h are available:
   WA_PEC_PROXY_TOKEN_REQUIRED
   WA_PEC_LOGIN_CANCELED
   WA_PEC_LOGIN_FORCED
+  WA_PEC_USER_REJECTED
 
   WA_AES_KEY
   WA_AES_128
