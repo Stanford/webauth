@@ -97,3 +97,10 @@
 
  *) Support listing multiple privgroups and attributes on the same line in
     the mod_webauthldap module using the iterate flag.
+
+ *) Switch all the WebAuth library interfaces to using opaque structs
+    instead of typedefs, matching our current coding style.
+
+ *) Investigate whether we can provide higher-level interfaces to the
+    WebAuth library so that we don't have to provide as many different
+    functions.
