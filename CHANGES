@@ -66,6 +66,9 @@ WebAuth 3.6.0 (unreleased)
  *) Remove the maxlength restriction on the username entry box in the
     example login.tmpl template.
 
+ *) Fix a typo in the webkdcProxyTokenInfoRequest example in the protocol
+    specification.
+
  *) Strip trailing whitespace from all libwebauth and more mod_webkdc
     source files.
 

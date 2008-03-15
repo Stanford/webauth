@@ -1267,7 +1267,7 @@
             <artwork>
   &lt;webkdcProxyTokenInfoRequest>
     &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
-  &lt;/webkdcProxyTokenRequest>
+  &lt;/webkdcProxyTokenInfoRequest>
             </artwork>
           </figure>
 
@@ -2164,7 +2164,8 @@
 
         <t hangText='2.11 (2008-03-14, rra)'>
         <vspace blankLines='0'/>Add error code 18, indicating that the
-        WebKDC did not permit the user's principal to authenticate.</t>
+        WebKDC did not permit the user's principal to authenticate.  Fix
+        typo in the webkdcProxyTokenInfoRequest example.</t>
       </list>
     </section>
   </back>
