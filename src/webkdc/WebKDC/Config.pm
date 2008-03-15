@@ -14,6 +14,7 @@ our $REALM;
 our @REALMS;
 our $REMOTE_USER_REDIRECT;
 our @SHIBBOLETH_IDPS;
+our $DEFAULT_REALM;
 
 if (-f $conf) {
     my $ret = do $conf;

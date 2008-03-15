@@ -21,9 +21,25 @@ WebAuth 3.6.0 (unreleased)
 
     Thanks to Dmitri Priimak for the patch.
 
+ *) The WebLogin login.tmpl template may be called with err_rejected set
+    if the authenticating principal is rejected by the WebKDC.  Login
+    templates should be modified to handle this variable.
+
+ *) Add a new error to the WebKDC protocol, 18, indicating that the WebKDC
+    did not permit that user to authenticate.  This error is returned when
+    WebKdcPermittedRealms is set and the realm of the authenticating
+    principal isn't included.  Add support for the new error in the
+    WebLogin code, setting the template variable err_rejected.
+
  *) In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.
+
+ *) WebLogin now supports a new configuration variable, $DEFAULT_REALM.
+    If set, WebLogin will append @ and $DEFAULT_REALM to usernames that do
+    not contain @ before passing them to the WebKDC.  This is primarily
+    useful if principals should be authenticated in a different Kerberos
+    realm than the default realm of the WebKDC.
 
  *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.

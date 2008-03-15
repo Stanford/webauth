@@ -18,6 +18,7 @@ err_username           : no username error
 err_password           : no password error
 err_loginfailed        : username and password were incorrect
 err_forced             : web site requires username/password login
+err_rejected           : username not permitted to authenticate
 RT                     : Response Token
 ST                     : Service Token
 LC                     : Login Cancel Token
@@ -55,6 +56,11 @@ remuser_url            : where to send the user for REMOTE_USER auth
           <TMPL_IF NAME=err_loginfailed>
             <!-- Error: login failed. -->
             Error: You entered an incorrect username or password (or both).
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_rejected>
+            <!-- Error: user principal rejected. -->
+            Error: That username may not authenticate to this service.
           </TMPL_IF>
 
           <TMPL_IF NAME=err_forced>
@@ -97,7 +103,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
                     <td><strong>Username:</strong></td>
                     <td><input name="username" type="text"
                                value="<TMPL_VAR ESCAPE=HTML NAME=username>"
-                               size="10" maxlength="8"><br/></td>
+                               size="18"><br/></td>
                   </tr>
                   <tr>
                     <td><strong>Password:</strong></td>

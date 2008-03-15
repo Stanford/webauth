@@ -56,6 +56,7 @@ our %pec_mapping = (
              # only inside a token which we can't decrypt
 	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
 	     &WA_PEC_LOGIN_FORCED  => WK_ERR_LOGIN_FORCED,
+	     &WA_PEC_USER_REJECTED  => WK_ERR_USER_REJECTED,
 	     );
 
 sub get_keyring {

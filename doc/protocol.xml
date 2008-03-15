@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='January' year='2006' />
+    <date month='March year='2008' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -972,6 +972,9 @@
             <t hangText='17'>The WAS server requested a forced login in
             the request token, so obtaining the id or proxy token via the
             webkdc-proxy token is not allowed.</t>
+
+            <t hangText='18'>The user's principal was not permitted to
+            authenticate to the WebKDC.</t>
           </list>
         </section>
 
@@ -1186,6 +1189,11 @@
             <t hangText='17'>The WAS server requested a forced login.  The
             web front-end should prompt for the username and password even
             though a webkdc-proxy token is available.</t>
+
+            <t hangText='18'>The user's principal was not permitted to
+            authenticate to the WebKDC.  The web front-end may re-prompt
+            for another username and password or just display an
+            error.</t>
           </list>
 
           <t>If the request option attribute in the request token has "lc"
@@ -2153,6 +2161,10 @@
         <vspace blankLines='0'/>Add a specification for the encoding of
         Kerberos credentials in tokens.  Specify the size of
         timestamps.</t>
+
+        <t hangText='2.11 (2008-03-14, rra)'>
+        <vspace blankLines='0'/>Add error code 18, indicating that the
+        WebKDC did not permit the user's principal to authenticate.</t>
       </list>
     </section>
   </back>

@@ -77,6 +77,24 @@ sub dump_stuff {
 }
 
 ##############################################################################
+# Utility functions
+##############################################################################
+
+# Escape special characters in the principal name to match the escaping done
+# by krb5_unparse_name.  This hopefully will make the principal suitable for
+# passing to krb5_parse_name and getting the same results as the original
+# unescaped principal.
+sub krb5_escape {
+    my ($principal) = @_;
+    $principal =~ s/\\/\\\\/g;
+    $principal =~ s/\@/\\@/g;
+    $principal =~ s/\t/\\t/g;
+    $principal =~ s/\x08/\\b/g;
+    $principal =~ s/\x00/\\0/g;
+    return $principal;
+}
+
+##############################################################################
 # Output
 ##############################################################################
 
@@ -232,11 +250,15 @@ sub print_login_page {
         if ($err == WK_ERR_LOGIN_FAILED) {
             $page->param (err_loginfailed => 1);
         }
+        if ($err == WK_ERR_USER_REJECTED) {
+            $page->param (err_rejected => 1);
+        }
 
         # Set a generic error indicator if any of the specific ones were set
         # to allow easier structuring of the login page template.
         $page->param (error => 1) if $page->param ('err_missinginput');
         $page->param (error => 1) if $page->param ('err_loginfailed');
+        $page->param (error => 1) if $page->param ('err_rejected');
     } elsif ($lvars->{forced_login}) {
         $page->param (err_forced => 1);
         $page->param (error => 1);
@@ -536,11 +558,16 @@ while (my $q = CGI::Fast->new) {
     # From this point on, browser cookie support is enforced.
 
     # Set up the parameters to the WebKDC request.
-    $req->pass ($q->param ('password')) if $q->param ('password');
-    $req->user ($q->param ('username'))
-        if ($q->param('password') && $q->param('username'));
     $req->service_token (fix_token ($q->param ('ST')));
     $req->request_token (fix_token ($q->param ('RT')));
+    $req->pass ($q->param ('password')) if $q->param ('password');
+    if ($q->param ('password') && $q->param ('username')) {
+        my $username = $q->param ('username');
+        if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
+            $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
+        }
+        $req->user ($username);
+    }
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate all cookies that start with webauth_wpt (Webauth Proxy Token)
@@ -629,7 +656,8 @@ while (my $q = CGI::Fast->new) {
     # login screen without the REMOTE_USER choice.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FORCED
-             || $status == WK_ERR_LOGIN_FAILED) {
+             || $status == WK_ERR_LOGIN_FAILED
+             || $status == WK_ERR_USER_REJECTED) {
         if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
             $varhash{remuser_failed} = $is_error;
         }

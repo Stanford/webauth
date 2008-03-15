@@ -45,6 +45,7 @@ Templates
       err_password      If set, user didn't supply password
       err_loginfailed   If set, login was invalid
       err_forced        If set, username/password login is forced
+      err_rejected      If set, user was rejected by WebKDC
 
       script_name       Relative URL to which form should be posted
       username          Username, if already known
@@ -136,6 +137,15 @@ Configuration
       paranoid is nice.  Default: "https://localhost/webkdc-service/".
       You generally only want to change the local part of the URL, and
       then only if you want to use a non-standard URL for the WebKDC.
+
+  $DEFAULT_REALM
+
+      A default Kerberos realm to append to the provided username if the
+      username doesn't contain a "@".  This is primarily useful if users
+      should be authenticated in a different Kerberos realm than the
+      default realm for the system on which the WebKDC is running.  (Note
+      that principals containing embedded escaped "@" characters will not
+      have $DEFAULT_REALM appended.)
 
   $HONOR_REMOTE_USER
 

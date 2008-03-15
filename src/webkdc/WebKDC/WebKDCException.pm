@@ -22,7 +22,8 @@ BEGIN {
 		      WK_ERR_UNRECOVERABLE_ERROR
 		      WK_ERR_REQUEST_TOKEN_STALE
 		      WK_ERR_WEBAUTH_SERVER_ERROR
-                      WK_ERR_LOGIN_FORCED
+		      WK_ERR_LOGIN_FORCED
+		      WK_ERR_USER_REJECTED
 		      );
     @EXPORT_OK   = ();
 }
@@ -32,10 +33,11 @@ our @EXPORT_OK;
 sub WK_SUCCESS                         () {0;}
 sub WK_ERR_USER_AND_PASS_REQUIRED      () {1;}
 sub WK_ERR_LOGIN_FAILED                () {2;}
-sub WK_ERR_UNRECOVERABLE_ERROR	       () {3;}
+sub WK_ERR_UNRECOVERABLE_ERROR         () {3;}
 sub WK_ERR_REQUEST_TOKEN_STALE         () {4;}
 sub WK_ERR_WEBAUTH_SERVER_ERROR        () {5;}
 sub WK_ERR_LOGIN_FORCED                () {6;}
+sub WK_ERR_USER_REJECTED               () {7;}
 
 our @ErrorNames = qw(SUCCESS
 		     UNUSED USER_AND_PASS_REQUIRED
@@ -43,7 +45,8 @@ our @ErrorNames = qw(SUCCESS
 		     UNRECOVERABLE_ERROR
 		     REQUEST_TOKEN_STALE
 		     WEBAUTH_SERVER_ERROR
-                     LOGIN_FORCED);
+		     LOGIN_FORCED
+		     USER_REJECTED);
 
 sub new {
     my ($type, $status, $mesg, $pec) = @_;
@@ -135,6 +138,7 @@ The following constants are exported:
   WK_ERR_REQUEST_TOKEN_STATLE
   WK_ERR_WEBAUTH_SERVER_ERROR
   WK_ERR_LOGIN_FORCED
+  WK_ERR_USER_REJECTED
 
 =over 4
 
@@ -182,6 +186,12 @@ This status code indicates that a function was called that required a
 username and password even if single sign-on credentials were available.
 The user should be prompted for their username and password and the function
 should be called again with that data.
+
+=item WK_ERR_USER_REJECTED
+
+This status code indicates that the authenticated principal was rejected
+by the WebKDC configuration (usually because WebKdcPermittedRealms was set
+and the realm of the principal wasn't in that list).
 
 =back
 

@@ -97,6 +97,7 @@ typedef enum {
                                          login and try again */
     WA_PEC_LOGIN_CANCELED = 16, /* user canceled login process */
     WA_PEC_LOGIN_FORCED = 17, /* user must re-login */
+    WA_PEC_USER_REJECTED = 18, /* principal not permitted to authenticate */
 }  WEBAUTH_ET_ERR;
 
 
