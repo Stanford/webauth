@@ -29,7 +29,8 @@ WebAuth 3.6.0 (unreleased)
     did not permit that user to authenticate.  This error is returned when
     WebKdcPermittedRealms is set and the realm of the authenticating
     principal isn't included.  Add support for the new error in the
-    WebLogin code, setting the template variable err_rejected.
+    WebLogin code, setting the template variable err_rejected.  Based on
+    work by Dmitri Priimak.
 
  *) In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
