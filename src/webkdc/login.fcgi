@@ -563,8 +563,16 @@ while (my $q = CGI::Fast->new) {
     $req->pass ($q->param ('password')) if $q->param ('password');
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
-        if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
-            $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
+        if (defined (&WebKDC::Config::map_username)) {
+            $username = WebKDC::Config::map_username ($username);
+        }
+        if (defined $username) {
+            if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
+                $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
+            }
+        } else {
+            $username = '';
+            $status = WK_ERR_LOGIN_FAILED;
         }
         $req->user ($username);
     }
@@ -602,7 +610,9 @@ while (my $q = CGI::Fast->new) {
     $req->remote_user ($ENV{REMOTE_USER});
 
     # Pass the information along to the WebKDC and get the repsonse.
-    ($status, $exception) = WebKDC::make_request_token_request ($req, $resp);
+    if (!$status) {
+        ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    }
 
     # Parse the result from the WebKDC and get the login cancel information if
     # any.  (The login cancel stuff is oddly placed here, like it was added as
@@ -619,7 +629,10 @@ while (my $q = CGI::Fast->new) {
     # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
     # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
     # requires username/password even if the user has other auth methods.
-    if ($status == WK_SUCCESS ) {
+    if ($status == WK_SUCCESS) {
+        if (defined (&WebKDC::Config::record_login)) {
+            WebKDC::Config::record_login ($req->user);
+        }
         print_confirm_page ($q, \%varhash, $resp);
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $DEBUG;
@@ -701,7 +714,7 @@ while (my $q = CGI::Fast->new) {
 
         # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"
-            . " $errmsg: $exception\n" if $LOGGING;
+            . " $errmsg: $error\n" if $LOGGING;
         $PAGES{error}->param (err_webkdc => 1);
         $PAGES{error}->param (err_msg => $errmsg);
         print_error_page ($q);

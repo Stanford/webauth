@@ -1,8 +1,8 @@
-                          Weblogin Configuration
+                          WebLogin Configuration
 
 Introduction
 
-  Weblogin is the name for the component of WebAuth that handles user
+  WebLogin is the name for the component of WebAuth that handles user
   authentication interaction.  It is a CGI service that runs on the WebKDC
   and presents HTML login forms, status pages, and handles translating
   browser cookies into XML requests to the WebKDC and vice versa.  It
@@ -16,7 +16,7 @@ Introduction
 
 Templates
 
-  Weblogin uses a set of template HTML pages to display the login, logout,
+  WebLogin uses a set of template HTML pages to display the login, logout,
   confirmation, and error pages.  Internally, it uses the HTML::Template
   Perl module to process these templates.  For detailed information about
   the supported syntax, install that module and then run:
@@ -24,7 +24,7 @@ Templates
       perldoc HTML::Template
 
   You can probably figure out the details you need by looking at the
-  existing templates, though.  Weblogin doesn't use any advanced features.
+  existing templates, though.  WebLogin doesn't use any advanced features.
 
   You will almost certainly want to customize these templates for your
   site to match your local page look and feel.  The provided templates are
@@ -92,7 +92,7 @@ Templates
   When customizing the templates for your site, carefully note the form
   elements set by the existing templates and make sure that your templates
   include the same form elements with the same names.  Otherwise, the
-  Weblogin scripts will not work as expected.
+  WebLogin scripts will not work as expected.
 
 Configuration
 
@@ -231,3 +231,29 @@ Configuration
       Shibboleth and shows them the final destination host instead of the
       intermediate IdP host.  This setting only affects the text on the
       page; the underlying links are left unchanged.
+
+  In addition to the above variable settings, the configuration file may
+  define Perl functions.  If these functions are defined, they're called
+  by the WebLogin scripts where appropriate.
+
+  map_username
+
+      If defined, this function is called with the user-provided username
+      as its only argument.  It is called before any qualification using
+      $DEFAULT_REALM, and is not called if REMOTE_USER is set and Apache
+      authentication is being honored.
+
+      This function should return the string to pass to the WebKDC as the
+      username.  It may perform arbitrary transformations of the username
+      into the Kerberos principal to use for authentication.  For example,
+      it might accept an e-mail address and look up the corresponding
+      Kerberos principal in a database.
+
+  record_login
+
+      If defined, this function is called after any successful login,
+      regardless of the authentication mechanism used.  It's called even
+      if the user was authenticated via an existing single sign-on cookie.
+      The only argument passed to the function is the username (as passed
+      to the WebKDC, not as entered by the user), and the return value (if
+      any) is ignored.
