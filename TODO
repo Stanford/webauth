@@ -104,3 +104,10 @@
  *) Investigate whether we can provide higher-level interfaces to the
     WebAuth library so that we don't have to provide as many different
     functions.
+
+ *) A test suite (and a redesign of the code so that it can be tested) is
+    desperately needed for all the code currently embedded in Apache
+    modules.
+
+ *) Remove the local argument from webauth_krb5_rd_req_with_data.  It's
+    not actually useful.
