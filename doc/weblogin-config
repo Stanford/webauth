@@ -113,7 +113,10 @@ Configuration
       $VARIABLE = 10;
 
   The former is for variables that take strings, and the latter is for
-  variables that take numbers.  The following variables are recognized:
+  variables that take numbers.  The following variables are recognized.
+  In some cases, the preferred name of the variable has changed, but the
+  old version is supported for backward compatibility; this is noted in
+  parens after the variable name.
 
   $KEYRING_PATH
 
@@ -138,6 +141,23 @@ Configuration
       You generally only want to change the local part of the URL, and
       then only if you want to use a non-standard URL for the WebKDC.
 
+  $BYPASS_CONFIRM
+
+      By default, a confirmation page is always shown to the user and they
+      have to follow the link to continue to wherever they were trying to
+      go.  This is required by the HTTP protocol when the user entered
+      their username and password since one is not permitted to return a
+      redirect as the result of a POST.  By default, the page is always
+      presented for consistency and to warn the user that they're entering
+      an authenticated site.
+
+      When this variable is set to a true value (1 is a good true value),
+      the confirmation page is only shown when required by protocol
+      (namely, after a POST of the login form).  In all other cases
+      (existing single sign-on cookie, successful Apache authentication,
+      etc.), the user is silently redirected to the destination page.
+      Default: false.
+
   $DEFAULT_REALM
 
       A default Kerberos realm to append to the provided username if the
@@ -145,9 +165,9 @@ Configuration
       should be authenticated in a different Kerberos realm than the
       default realm for the system on which the WebKDC is running.  (Note
       that principals containing embedded escaped "@" characters will not
-      have $DEFAULT_REALM appended.)
+      have $DEFAULT_REALM appended.)  Default: not set.
 
-  $HONOR_REMOTE_USER
+  $REMUSER_ENABLED (was $HONOR_REMOTE_USER)
 
       Whether to honor Apache authentication.  If this variable is set to
       a true value (1 is a good true value) and REMOTE_USER is set in the
@@ -163,25 +183,21 @@ Configuration
 
   $REMUSER_EXPIRES
 
-      Only used when $HONOR_REMOTE_USER is set.  The credentials generated
+      Only used when $REMUSER_ENABLED is set.  The credentials generated
       from REMOTE_USER will expire after this many seconds (given as a
       number).  Default: 28800 (eight hours).
 
-  $REALM
+  @REMUSER_REALMS (was @REALMS)
 
-      Only used when $HONOR_REMOTE_USER is set.  If this variable is set,
-      REMOTE_USER is expected to contain an @-sign.  Everything after the
-      @-sign must match the value of this variable, and is stripped before
-      creating the authenticated user identity.  This is primarily useful
-      in conjunction with mod_auth_kerb to strip the local Kerberos realm
-      off of the authenticated identity.  Default: not set.
+      Only used when $REMUSER_ENABLED is set.  If this variable is set,
+      everything after the @ sign in REMOTE_USER must match one of the
+      values in this list and is stripped before creating the
+      authenticated user identity.  This variable is equivalent to the
+      combination of WebKdcLocalRealms and WebKdcPermittedRealms in the
+      mod_webkdc configuration but must be set separately due to how
+      Apache authentication is supported.
 
-  @REALMS
-
-      Only used when $HONOR_REMOTE_USER is set.  Identical to $REALM but,
-      rather than a single allowed realm, contains a list of acceptable
-      realms, which means it uses a slightly different syntax.  An example
-      setting:
+      An example setting:
 
           @REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
 
@@ -190,11 +206,15 @@ Configuration
       allowable value and means to allow REMOTE_USER settings that contain
       no realm information (do not contain a @-sign).  If the realm
       matches any of the allowable realms, the realm information will be
-      stripped off.  Use this setting instead of $REALM when you have
-      multiple Kerberos realms that you want to treat identically for
-      WebAuth purposes.
+      stripped off.
 
-  $REMOTE_USER_REDIRECT
+      If this variable is not set, the REMOTE_USER information must not
+      contain an @.  If it does, it will be ignored and login will proceed
+      as if it weren't set.
+
+      Default: not set.
+
+  $REMUSER_REDIRECT (was $REMOTE_USER_REDIRECT)
 
       The URL to redirect users to when trying to authenticate them with
       Apache authentication.  Setting this variable enables the optional
@@ -208,8 +228,13 @@ Configuration
       option to the confirm page to manage that cookie if the user used
       Apache authentication or if the cookie is already present.
 
-      If using this option, you must also set $HONOR_REMOTE_USER
-      (otherwise there would be no point).
+      If using this option, you must also set $REMUSER_ENABLED (otherwise
+      there would be no point).  Default: false.
+
+  $REALM
+
+      Equivalent to setting @REMUSER_REALMS to the single realm set here.
+      Use @REMUSER_REALMS instead.  Default: not set.
 
   @SHIBBOLETH_IDPS
 
@@ -230,7 +255,7 @@ Configuration
       IdP.  This further hides from the user the underlying mechanics of
       Shibboleth and shows them the final destination host instead of the
       intermediate IdP host.  This setting only affects the text on the
-      page; the underlying links are left unchanged.
+      page; the underlying links are left unchanged.  Default: not set.
 
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called

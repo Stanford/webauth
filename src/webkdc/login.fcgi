@@ -1,9 +1,10 @@
 #!/usr/bin/perl -w
 our $ID = q($Id$ );
 #
-# login.fcgi -- Weblogin login page for WebAuth.
+# login.fcgi -- WebLogin login page for WebAuth.
 #
 # Written by Roland Schemers <schemers@stanford.edu>
+# Extensive updates by Russ Allbery <rra@stanford.edu>
 # Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
 #     Board of Trustees, Leland Stanford Jr. University
 #
@@ -296,6 +297,14 @@ sub print_confirm_page {
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
+    # If configured to permit bypassing the confirmation page and the page was
+    # not the target of a POST, return a redirect to the final page instead of
+    # displaying a confirmation page.
+    if ($WebKDC::Config::BYPASS_CONFIRM and not $lvars->{force_confirm}) {
+        print $q->redirect ($return_url);
+        return;
+    }
+
     # Find our page and set general template parameters.
     my $page = $PAGES{confirm};
     $page->param (return_url => $return_url);
@@ -316,7 +325,7 @@ sub print_confirm_page {
 
     # If REMOTE_USER is done at a separate URL *and* REMOTE_USER support was
     # either requested or used, show the checkbox for it.
-    if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
+    if ($WebKDC::Config::REMUSER_REDIRECT) {
         if ($ENV{REMOTE_USER} || $q->cookie ($REMUSER_COOKIE)) {
             $page->param (show_remuser => 1);
             if ($q->cookie ($REMUSER_COOKIE)) {
@@ -401,9 +410,9 @@ sub get_login_cancel_url {
 # Redirect the user to the REMOTE_USER-enabled login URL.
 sub print_remuser_redirect {
     my ($q) = @_;
-    my $uri = $WebKDC::Config::REMOTE_USER_REDIRECT;
+    my $uri = $WebKDC::Config::REMUSER_REDIRECT;
     unless ($uri) {
-        print STDERR "REMOTE_USER_REDIRECT not configured\n" if $LOGGING;
+        print STDERR "REMUSER_REDIRECT not configured\n" if $LOGGING;
         $PAGES{error}->param (err_webkdc => 1);
         my $errmsg = "unrecoverable error occured. Try again later.";
         $PAGES{error}->param (err_msg => $errmsg);
@@ -434,14 +443,7 @@ sub add_remuser_token {
     # our configuration file.  Note that if a realm is specified in the
     # configuration file, it must be present in REMOTE_USER.
     my ($user, $realm) = split ('@', $ENV{REMOTE_USER}, 2);
-    if ($WebKDC::Config::REALM) {
-        if (!$realm || $realm ne $WebKDC::Config::REALM) {
-            warn "weblogin: realm mismatch in REMOTE_USER $ENV{REMOTE_USER}:"
-                . ' saw ' . ($realm ? $realm : '""') . " expected "
-                . $WebKDC::Config::REALM . "\n";
-            return;
-        }
-    } elsif (@WebKDC::Config::REALMS) {
+    if (@WebKDC::Config::REMUSER_REALMS) {
         my $found = 0;
         $realm ||= '';
         for my $check (@WebKDC::Config::REALMS) {
@@ -599,12 +601,12 @@ while (my $q = CGI::Fast->new) {
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
     $req->remote_ip_port ($ENV{REMOTE_PORT});
 
-    # If WebKDC::Config::HONOR_REMOTE_USER is set to a true value, cobble up a
+    # If WebKDC::Config::REMUSER_ENABLED is set to a true value, cobble up a
     # proxy token using the value of REMOTE_USER and add it to the request.
     # This allows the WebKDC to trust Apache authentication mechanisms like
     # SPNEGO or client-side certificates if so configured.  Either way, pass
     # the REMOTE_USER into the WebKDC for logging purposes.
-    if ($ENV{REMOTE_USER} && $WebKDC::Config::HONOR_REMOTE_USER) {
+    if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
         add_remuser_token ($req);
     }
     $req->remote_user ($ENV{REMOTE_USER});
@@ -629,10 +631,15 @@ while (my $q = CGI::Fast->new) {
     # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
     # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
     # requires username/password even if the user has other auth methods.
+    #
+    # If username was set, we were the target of a form submission and
+    # therefore by protocol must display a real page.  Otherwise, we can
+    # return a redirect if BYPASS_CONFIRM is set.
     if ($status == WK_SUCCESS) {
         if (defined (&WebKDC::Config::record_login)) {
             WebKDC::Config::record_login ($req->user);
         }
+        $varhash{force_confirm} = 1 if $q->param ('username');
         print_confirm_page ($q, \%varhash, $resp);
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $DEBUG;
@@ -646,7 +653,7 @@ while (my $q = CGI::Fast->new) {
              && $q->cookie ($REMUSER_COOKIE)
              && !$is_error
              && !$q->param ('login')
-             && $WebKDC::Config::REMOTE_USER_REDIRECT) {
+             && $WebKDC::Config::REMUSER_REDIRECT) {
         print STDERR "redirecting to REMOTE_USER page\n" if $DEBUG;
         print_remuser_redirect ($q);
 
@@ -656,8 +663,8 @@ while (my $q = CGI::Fast->new) {
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              && !$q->cookie ($REMUSER_COOKIE)
              && !$is_error
-             && $WebKDC::Config::REMOTE_USER_REDIRECT) {
-        $varhash{remuser_url} = $WebKDC::Config::REMOTE_USER_REDIRECT;
+             && $WebKDC::Config::REMUSER_REDIRECT) {
+        $varhash{remuser_url} = $WebKDC::Config::REMUSER_REDIRECT;
         print_login_page ($q, \%varhash, $status, $resp, $req->request_token,
                           $req->service_token);
         print STDERR "WebKDC::make_request_token_request failed,"
@@ -671,7 +678,7 @@ while (my $q = CGI::Fast->new) {
              || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED
              || $status == WK_ERR_USER_REJECTED) {
-        if ($WebKDC::Config::REMOTE_USER_REDIRECT) {
+        if ($WebKDC::Config::REMUSER_REDIRECT) {
             $varhash{remuser_failed} = $is_error;
         }
 

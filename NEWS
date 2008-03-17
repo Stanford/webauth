@@ -42,6 +42,11 @@ WebAuth 3.6.0 (unreleased)
     useful if principals should be authenticated in a different Kerberos
     realm than the default realm of the WebKDC.
 
+ *) WebLogin now supports a new configuration file, $BYPASS_CONFIRM.  If
+    set, the confirmation page will only be displayed if required by the
+    HTTP protocol after a POST of the login form.  Otherwise, the user
+    will be silently redirected to the destination site.
+
  *) Add support for a map_username function defined in the WebLogin config
     file.  If defined, this function will be called to map the
     user-supplied username to a Kerberos principal for authentication.
@@ -49,6 +54,11 @@ WebAuth 3.6.0 (unreleased)
  *) Add support for a record_login function defined in the WebLogin config
     file.  If defined, this function will be called after any successful
     authentication.
+
+ *) Many of the REMOTE_USER configuration variables have been renamed for
+    consistency.  The old names are still supported for backward
+    compatibility.  $REALM has been deprecated in favor of setting
+    @REMUSER_REALMS to a list with a single value.
 
  *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.
