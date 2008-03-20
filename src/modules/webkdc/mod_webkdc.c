@@ -2489,7 +2489,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         free(client_principal);
         free(check_principal);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                          "authenticator and Kerberos TGT mismatch"
+                          "authenticator and Kerberos TGT mismatch",
                           mwk_func, 1);
         goto cleanup;
     }
