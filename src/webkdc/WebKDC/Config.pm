@@ -8,12 +8,14 @@ my $conf = "/etc/webkdc/webkdc.conf";
 our $KEYRING_PATH = "../conf/webkdc/keyring";
 our $TEMPLATE_PATH = "./generic/templates";
 our $URL = "https://localhost/webkdc-service/";
+our $BYPASS_CONFIRM;
 our $DEFAULT_REALM;
 our $REMUSER_ENABLED;
 our $REMUSER_EXPIRES = 60 * 60 * 8;
 our @REMUSER_REALMS;
 our $REMUSER_REDIRECT;
 our @SHIBBOLETH_IDPS;
+our $WEBKDC_PRINCIPAL;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;

@@ -80,6 +80,27 @@ sub get_child_value {
     }
 }
 
+# Takes the Kerberos V5 request and the exported TGT and makes a
+# <webkdcProxyTokenRequest> call.  A wrapper around proxy_token_request, which
+# does the actual work.  This just handles exceptions.
+sub make_proxy_token_request($$) {
+    my ($req, $tgt) = @_;
+
+    my ($token, $subject);
+    eval {
+        ($token, $subject) = WebKDC::proxy_token_request($req, $tgt);
+    };
+
+    my $e = $@;
+    if (isa($e, 'WebKDC::WebKDCException')) {
+        return ($e->status(), $e);
+    } elsif ($e) {
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    } else {
+        return (WebKDC::WK_SUCCESS, undef, $token, $subject);
+    }
+}
+
 # takes a WebKDC::WebRequest and WebKDC::WebResponse
 sub make_request_token_request($$) {
     my ($req, $resp) = @_;
@@ -96,6 +117,61 @@ sub make_request_token_request($$) {
 	return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } else {
 	return (WebKDC::WK_SUCCESS, undef);
+    }
+}
+
+# Takes the Kerberos V5 request and the exported TGT and makes a
+# <webkdcProxyTokenRequest> call.  Throws an exception on failure.
+sub proxy_token_request($$) {
+    my ($req, $tgt) = @_;
+
+    # Build the XML request.
+    my $webkdc_doc = new WebKDC::XmlDoc;
+    $webkdc_doc->start('webkdcProxyTokenRequest');
+    $webkdc_doc->start('subjectCredential', {'type' => 'krb5'}, $req)->end;
+    $webkdc_doc->start('proxyData', undef, $tgt)->end;
+    $webkdc_doc->end('webkdcProxyTokenRequest');
+
+    # Send the request to the WebKDC.
+    my $ua = new LWP::UserAgent;
+    my $http_req = new HTTP::Request(POST => $WebKDC::Config::URL);
+    $http_req->content_type('text/xml');
+    $http_req->content($webkdc_doc->root->to_string());
+
+    # Get the response.
+    my $http_res = $ua->request($http_req);
+    if (!$http_res->is_success) {
+        # FIXME: Better error reporting needed here.
+        print STDERR "post failed\n";
+        print STDERR $http_res->as_string . "\n";
+        print STDERR $http_res->content . "\n";
+        die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
+                                        "post to webkdc failed");
+    }
+    my $root;
+    eval {
+        $root = new WebKDC::XmlElement($http_res->content);
+    };
+    if ($@) {
+	my $msg = "unable to parse response from webkdc: $@";
+	print STDERR "$msg ".$http_res->content."\n";
+	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR, $msg);
+    }
+    if ($root->name() eq 'errorResponse') {
+	my $error_code = get_child_value($root, 'errorCode', 1);
+	my $error_message = get_child_value($root, 'errorMessage', 0);
+	my $wk_err = $pec_mapping{$error_code} || WK_ERR_UNRECOVERABLE_ERROR;
+	die new WebKDC::WebKDCException($wk_err,
+					"WebKDC error: $error_message ".
+					"($error_code)", $error_code);
+    } elsif ($root->name eq 'webkdcProxyTokenResponse') {
+        my $token = get_child_value($root, 'webkdcProxyToken', 0);
+        my $subject = get_child_value($root, 'subject', 0);
+        return ($token, $subject);
+    } else {
+        die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
+                                        "unknown response from WebKDC: "
+                                        . $root->name);
     }
 }
 

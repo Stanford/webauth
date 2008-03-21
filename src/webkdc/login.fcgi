@@ -424,6 +424,38 @@ sub print_remuser_redirect {
     }
 }
 
+# Generate a proxy token using forwarded credentials and pass it into the
+# WebKDC with the other proxy tokens.
+sub add_proxy_token {
+    my ($req) = @_;
+    print STDERR "adding a proxy token for $ENV{REMOTE_USER}\n"
+        if $DEBUG;
+    my ($kreq, $data);
+    my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
+    eval {
+        my $context = krb5_new;
+        krb5_init_via_cache($context);
+        my ($tgt, $expires) = krb5_export_tgt($context);
+        ($kreq, $data) = krb5_mk_req($context, $principal, $tgt);
+        $kreq = base64_encode($kreq);
+        $data = base64_encode($data);
+    };
+    if ($@) {
+        print STDERR "failed to create proxy token request for"
+            . " $ENV{REMOTE_USER}: $@\n" if $LOGGING;
+        return;
+    }
+    my ($status, $error, $token, $subject)
+        = WebKDC::make_proxy_token_request ($kreq, $data);
+    if ($status != WK_SUCCESS) {
+        print STDERR "failed to obtain proxy token for $ENV{REMOTE_USER}:"
+            . " $error\n" if $LOGGING;
+        return;
+    }
+    print STDERR "adding krb5 proxy token for $subject\n" if $DEBUG;
+    $req->proxy_cookie ('krb5', $token);
+}
+
 # Generate a proxy token containing the REMOTE_USER identity and pass it into
 # the WebKDC along with the other proxy tokens.  Takes the request to the
 # WebKDC that we're putting together.  If the REMOTE_USER isn't valid for some
@@ -495,7 +527,7 @@ sub add_remuser_token {
 while (my $q = CGI::Fast->new) {
     my $req = new WebKDC::WebRequest;
     my $resp = new WebKDC::WebResponse;
-    my ($status, $exception);
+    my ($status, $error);
 
     # Work around a bug in CGI.
     $q->{'.script_name'} = $ENV{SCRIPT_NAME};
@@ -601,13 +633,19 @@ while (my $q = CGI::Fast->new) {
     $req->remote_ip_addr ($ENV{REMOTE_ADDR});
     $req->remote_ip_port ($ENV{REMOTE_PORT});
 
-    # If WebKDC::Config::REMUSER_ENABLED is set to a true value, cobble up a
-    # proxy token using the value of REMOTE_USER and add it to the request.
-    # This allows the WebKDC to trust Apache authentication mechanisms like
-    # SPNEGO or client-side certificates if so configured.  Either way, pass
-    # the REMOTE_USER into the WebKDC for logging purposes.
+    # If WebKDC::Config::REMUSER_ENABLED is set to a true value, see if we
+    # have a ticket cache.  If so, obtain a proxy token in advance.
+    # Otherwise, cobble up a proxy token using the value of REMOTE_USER and
+    # add it to the request.  This allows the WebKDC to trust Apache
+    # authentication mechanisms like SPNEGO or client-side certificates if so
+    # configured.  Either way, pass the REMOTE_USER into the WebKDC for
+    # logging purposes.
     if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
-        add_remuser_token ($req);
+        if ($ENV{KRB5CCNAME} && $WebKDC::Config::WEBKDC_PRINCIPAL) {
+            add_proxy_token ($req);
+        } else {
+            add_remuser_token ($req);
+        }
     }
     $req->remote_user ($ENV{REMOTE_USER});
 

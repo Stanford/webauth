@@ -54,18 +54,22 @@ Configuration
   Create a principal in Kerberos called HTTP/weblogin.example.com, where
   weblogin.example.com is the name of the system that will be used in the
   WebAuthLoginURL directives for your WebAuth application servers.  Store
-  the key for that principal in the keytab configured above.  The
-  principal name *must* match the name used in the URL, *not* the name of
-  the system (if different).  Also, the HTTP must be in all caps.  For
-  information on how to get a Kerberos principal created and how to
-  download a keytab, contact your local Kerberos administrator.
+  the key for that principal in the keytab configured above.  Some
+  browsers use the name in the URL to construct the principal name and
+  others use the reverse DNS lookup of the IP address to which they're
+  connecting.  You may want to patch mod_auth_kerb to support the
+  KrbServiceName Any option and then put both principals in the keytab
+  (the Debian libapache2-mod-auth-kerb package already has this patch
+  applied).  The HTTP must be in all caps.  For information on how to get
+  a Kerberos principal created and how to download a keytab, contact your
+  local Kerberos administrator.
 
-  Finally, edit /etc/webkdc/webkdc.conf (creating it if it doesn't already
-  exist) and put, in it:
+  Finally, edit /etc/webkdc/webkdc.conf or wherever your webkdc.conf file
+  is located (creating it if it doesn't already exist) and put, in it:
 
-      our $HONOR_REMOTE_USER = 1;
-      our $REMUSER_EXPIRES = 60 * 60 * 8;
-      our $REALM = 'EXAMPLE.COM';
+      $REMUSER_ENABLED = 1;
+      $REMUSER_EXPIRES = 60 * 60 * 8;
+      @REMUSER_REALMS = ("EXAMPLE.COM");
 
   The first line tells the Weblogin script to trust REMOTE_USER as set by
   Apache if present (so make sure that there isn't a way of accessing the
@@ -92,6 +96,33 @@ Configuration
   browser should handle this correctly.  Further interactions will
   continue on the /login-simple URL, bypassing SPNEGO.
 
+Configuration with Delegation
+
+  The above uses only Kerberos authentication.  You can also optionally
+  support ticket delegation for browsers that support delegation over
+  SPNEGO.  (Normally, this requires additional browser-specific security
+  configuration to enable.)  To enable that support, add:
+
+      KrbSaveCredentials on
+
+  to the configuration for /login described above and add:
+
+      $WEBKDC_PRINCIPAL = "service/webkdc";
+
+  to /etc/webkdc/webkdc.conf or wherever your webkdc.conf file is
+  located, where the value is whatever principal you use for your WebKDC
+  (the same value that you use for WebAuthWebKdcPrincipal).  You will also
+  need to configure REMOTE_USER support as described above.  Now, if the
+  browser delegates credentials, those credentials will be used to create
+  a proxy token for the WebKDC and the WebKDC will be able to support
+  requests for additional credentials without needing to prompt the user
+  for their password.
+
+  If you enable this support, make sure that KRB5CCNAME is not set in the
+  environment of your Apache process except by mod_auth_kerb, since the
+  WebLogin script uses that environment variable to locate the ticket
+  cache to use.
+
 Notes and Cautions
 
   If the user is successfully authenticated with SPNEGO, the Weblogin
@@ -102,18 +133,26 @@ Notes and Cautions
   their Kerberos tickets.
 
   However, there is currently no way of extracting from mod_auth_kerb the
-  expiration date of the ticket used to authenticate, so the
-  authentication tokens created by the WebKDC will be valid for whatever
-  period is defined in $REMUSER_EXPIRES in webkdc.conf even if the user's
-  Kerberos credentials are about to expire.  This may be improved later by
-  adding a way to export the expiration time of the ticket from
-  mod_auth_kerb to somewhere the Weblogin script can see it.
+  expiration date of the ticket used to authenticate, so the unless the
+  user delegates credentials, the authentication tokens created by the
+  WebKDC will be valid for whatever period is defined in $REMUSER_EXPIRES
+  in webkdc.conf even if the user's Kerberos credentials are about to
+  expire.  This may be improved later by adding a way to export the
+  expiration time of the ticket from mod_auth_kerb to somewhere the
+  Weblogin script can see it.
 
 Implementation Details
 
-  Under the hood, if the Weblogin script sees $HONOR_REMOTE_USER is set
-  and finds REMOTE_USER in the environment, what it does is create a
-  webkdc-proxy token using the WebKDC keyring, with a proxy subject of
+  Under the hood, if the WebLogin script sees $REMUSER_ENABLED is set and
+  finds REMOTE_USER in the environment, it checks to see if KRB5CCNAME is
+  set.  If it is, and $WEBKDC_PRINCIPAL is set in the configuration file,
+  it uses the provided ticket cache to request a proxy token from the
+  WebKDC.  That proxy token is then added to the WebKDC login request as
+  if it came from a browser's cookies.
+
+  If KRB5CCNAME or $WEBKDC_PRINCIPAL is not set, there are no delegated
+  credentials.  In this case, the WebLogin script creates a webkdc-proxy
+  token using the WebKDC keyring, with a proxy subject of
   "WEBKDC:remuser".  It then passes that webkdc-proxy token in to the
   WebKDC in an initial request and sees if it gets back the desired tokens
   based on the strength of that webkdc-proxy token.  If it does, it

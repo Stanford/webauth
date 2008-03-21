@@ -257,6 +257,13 @@ Configuration
       intermediate IdP host.  This setting only affects the text on the
       page; the underlying links are left unchanged.  Default: not set.
 
+  $WEBKDC_PRINCIPAL
+
+      The Kerberos principal used by the WebKDC.  Currently, this
+      configuration variable is only used with Apache REMOTE_USER support
+      and ticket delegation to generate a proxy token based on a forwarded
+      ticket, but it must be set in that case.  Default: not set.
+
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
   by the WebLogin scripts where appropriate.

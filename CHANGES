@@ -50,6 +50,13 @@ WebAuth 3.6.0 (unreleased)
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.
 
+ *) WebLogin now will use delegated credentials to request a krb5 proxy
+    token from the WebKDC if present, allowing browsers that support
+    credential delegation to still get single sign-on even to services
+    that require proxy credentials or krb5 authenticators.  See
+    doc/install-spnego for configuration details.  Based on work by
+    Joachim Keltsch.
+
  *) WebLogin now supports a new configuration variable, $DEFAULT_REALM.
     If set, WebLogin will append @ and $DEFAULT_REALM to usernames that do
     not contain @ before passing them to the WebKDC.  This is primarily
@@ -76,6 +83,10 @@ WebAuth 3.6.0 (unreleased)
 
  *) Ensure the weblogin-config documentation includes explicit defaults
     for all of the possible configuration variables.
+
+ *) Add information to install-spnego about the two different ways of
+    forming HTTP/* principals and a reference to the mod_auth_kerb patch
+    that allows one to use a keytab with multiple principals.
 
  *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.

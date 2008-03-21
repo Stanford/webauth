@@ -36,6 +36,12 @@ WebAuth 3.6.0 (unreleased)
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.
 
+ *) WebLogin now supports delegated credentials, allowing browsers that
+    support credential delegation via SPNEGO to still get single sign-on
+    even to services that require proxy credentials or krb5
+    authenticators.  See doc/install-spnego for configuration details.
+    Based on work by Joachim Keltsch.
+
  *) WebLogin now supports a new configuration variable, $DEFAULT_REALM.
     If set, WebLogin will append @ and $DEFAULT_REALM to usernames that do
     not contain @ before passing them to the WebKDC.  This is primarily
