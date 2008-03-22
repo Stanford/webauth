@@ -144,7 +144,7 @@ binary-arch: install-stamp
 	dh_strip
 	dh_compress
 	dh_perl
-	dh_makeshlibs
+	dh_makeshlibs -V 'libwebauth1 (>= 3.6.0)'
 	dh_installdeb
 	dh_shlibdeps -L libwebauth1 -l debian/libwebauth1/usr/lib
 	dh_gencontrol
