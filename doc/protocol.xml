@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='March year='2008' />
+    <date month='March' year='2008' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
