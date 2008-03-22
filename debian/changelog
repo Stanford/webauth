@@ -1,3 +1,20 @@
+webauth (3.6.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - Fix prematurely freed internal data in mod_webauth.
+    - Work around a CGI Perl module bug in WebLogin that caused crashes
+      for WebLogin URLs containing two slashes and two plus signs.
+    - Add WebLogin support for delegated credentials.  Based on work by
+      Joachim Keltsch.  (Closes: #466792)
+    - New WebKdcLocalRealms and WebKdcPermittedRealms mod_webkdc options.
+    - New WebKDC protocol error for a login rejected by policy.
+    - New err_rejected variable in the weblogin login.tmpl template.
+    - Several new WebLogin configuration options and hooks.
+    - WebLogin REMOTE_USER variables have been renamed for consistency,
+      but the old variables will continue to work.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 21 Mar 2008 22:10:09 -0700
+
 webauth (3.5.5-1) unstable; urgency=low
 
   * New upstream release.
