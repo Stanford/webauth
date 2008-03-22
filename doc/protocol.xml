@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc private="WebAuth Documentation"?>
-<?rfc toc="yes"?>
+<?rfc toc="yes" symrefs="yes"?>
 <rfc>
   <front>
     <title>WebAuth V3 Technical Specification</title>
@@ -36,15 +36,15 @@
     <section anchor='intro' title='Introduction'>
       <section anchor='components' title='WebAuth Components'>
         <t>The WebAuth protocol involves interactions between three basic
-        components:</t>
-
-        <list style='numbers'>
-          <t>User-Agent (UA), the user's browser</t>
-          <t>WebAuth-enabled Application Server (WAS), a web server that
-             wants to serve content authenticated via Webauth</t>
-          <t>WebKDC, the login server and provider of authenticators to
-             the other two components</t>
-        </list>
+        components:
+          <list style='numbers'>
+            <t>User-Agent (UA), the user's browser</t>
+            <t>WebAuth-enabled Application Server (WAS), a web server that
+               wants to serve content authenticated via Webauth</t>
+            <t>WebKDC, the login server and provider of authenticators to
+               the other two components</t>
+          </list>
+        </t>
 
         <t>The WebAuth protocol allows a WAS to securely identify a user
         accessing resources.  It also supports single sign-on, allowing a
@@ -134,70 +134,72 @@
         They also include a SHA1 HMAC used to detect data modification or
         tampering.</t>
 
-        <t>There are currently nine different types of tokens:</t>
+        <t>There are currently nine different types of tokens:
+          <list style='hanging' hangIndent='4'>
+            <t hangText='webkdc-service (encrypted with WebKDC private key)'>
+            <vspace blankLines='0'/>The webkdc-service-token is used by
+            WebAuth App Servers to communicate with the WebKDC.  It
+            contains a session key that is shared between the WebKDC and
+            the WAS.  <vspace blankLines='1' /> webkdc-service tokens are
+            created only by the WebKDC, and are used only by a WAS.  From
+            the perspective of the WAS, they are opaque blobs that are
+            sent back to the WebKDC</t>
 
-        <list style='hanging' hangIndent='4'>
-          <t hangText='webkdc-service (encrypted with WebKDC private key)'>
-          <vspace blankLines='0'/>The webkdc-service-token is used by
-          WebAuth App Servers to communicate with the WebKDC.  It contains
-          a session key that is shared between the WebKDC and the WAS.
-          <vspace blankLines='1' />
-          webkdc-service tokens are created only by the WebKDC, and are
-          used only by a WAS.  From the perspective of the WAS, they are
-          opaque blobs that are sent back to the WebKDC</t>
+            <t hangText='webkdc-proxy (encrypted with WebKDC private key)'>
+            <vspace blankLines='0'/>The webkdc-proxy-token contains a
+            user's proxied credentials (generally, but not necessarily, a
+            Kerberos V5 TGT).  It can only be decrypted by the WebKDC, and
+            the WebKDC will only allow a webkdc-proxy token to be used by
+            the server it was originally generated for.  The main use of a
+            webkdc-proxy token is by the WebKDC itself to implement single
+            sign-on; that webkdc-proxy token is usually put in a cookie
+            scoped to the Weblogin service.  Its secondary use is to allow
+            WAS servers to request credential-tokens.</t>
 
-          <t hangText='webkdc-proxy (encrypted with WebKDC private key)'>
-          <vspace blankLines='0'/>The webkdc-proxy-token contains a user's
-          proxied credentials (generally, but not necessarily, a Kerberos
-          V5 TGT).  It can only be decrypted by the WebKDC, and the WebKDC
-          will only allow a webkdc-proxy token to be used by the server it
-          was originally generated for.  The main use of a webkdc-proxy
-          token is by the WebKDC itself to implement single sign-on; that
-          webkdc-proxy token is usually put in a cookie scoped to the
-          Weblogin service.  Its secondary use is to allow WAS servers to
-          request credential-tokens.</t>
+            <t hangText='request (encrypted with session key)'>
+            <vspace blankLines='0'/>The request token contains the request
+            from a WAS for a token (usually an id token) from the WebKDC.
+            It is AES-encrypted in a session key from a webkdc-service
+            token, and contains information like the return URL and type
+            of token requested.  A webkdc-service token is always included
+            in a request along with a request token.</t>
 
-          <t hangText='request (encrypted with session key)'>
-          <vspace blankLines='0'/>The request token contains the request
-          from a WAS for a token (usually an id token) from the WebKDC.
-          It is AES-encrypted in a session key from a webkdc-service
-          token, and contains information like the return URL and type of
-          token requested.  A webkdc-service token is always included in a
-          request along with a request token.</t>
+            <t hangText='error (encrypted with session key)'>
+            <vspace blankLines='0'/>An error token is returned by the
+            WebKDC in the event of an unrecoverable error that occurred
+            while asking for a token with a request token.</t>
 
-          <t hangText='error (encrypted with session key)'>
-          <vspace blankLines='0'/>An error token is returned by the WebKDC
-          in the event of an unrecoverable error that occurred while
-          asking for a token with a request token.</t>
+            <t hangText='id (encrypted with session key)'>
+            <vspace blankLines='0'/>An id token contains the identity of
+            the user trying to access a resource.  The WAS will verify the
+            id token and then will normally construct an app token for
+            future use.</t>
 
-          <t hangText='id (encrypted with session key)'>
-          <vspace blankLines='0'/>An id token contains the identity of the
-          user trying to access a resource.  The WAS will verify the id
-          token and then will normally construct an app token for future
-          use.</t>
+            <t hangText='proxy (encrypted with session key)'>
+            <vspace blankLines='0'/>A proxy token is used to return a
+            webkdc-proxy token to a WAS.  It includes information about
+            the webkdc-proxy token such as its expiration and its
+            type.</t>
 
-          <t hangText='proxy (encrypted with session key)'>
-          <vspace blankLines='0'/>A proxy token is used to return a
-          webkdc-proxy token to a WAS.  It includes information about the
-          webkdc-proxy token such as its expiration and its type.</t>
+            <t hangText='cred (encrypted with session key)'>
+            <vspace blankLines='0'/>A credential token contains a
+            credential for a user (generally a Kerberos V5 service
+            ticket).</t>
 
-          <t hangText='cred (encrypted with session key)'>
-          <vspace blankLines='0'/>A credential token contains a credential
-          for a user (generally a Kerberos V5 service ticket).</t>
+            <t hangText='login (encrypted with WebKDC private key)'>
+            <vspace blankLines='0'/>A login tokens is used by the WebKDC
+            with the requestTokenRequest command.  It contains the user's
+            username and password and is used to obtain the inital
+            webkdc-proxy token.  It normally only used internally by the
+            Weblogin component of te WebKDC.</t>
 
-          <t hangText='login (encrypted with WebKDC private key)'>
-          <vspace blankLines='0'/>A login tokens is used by the WebKDC
-          with the requestTokenRequest command.  It contains the user's
-          username and password and is used to obtain the inital
-          webkdc-proxy token.  It normally only used internally by the
-          Weblogin component of te WebKDC.</t>
-
-          <t hangText='app (encrypted with WAS private key)'>
-          <vspace blankLines='0'/>An app token is used by a WAS server to
-          store data, such as the identity of a user after it has been
-          verified from an id token, a proxy token, or credentials for
-          future use.</t>
-        </list>
+            <t hangText='app (encrypted with WAS private key)'>
+            <vspace blankLines='0'/>An app token is used by a WAS server
+            to store data, such as the identity of a user after it has
+            been verified from an id token, a proxy token, or credentials
+            for future use.</t>
+          </list>
+        </t>
 
         <t>Their exact formats are discussed in detail at the end of this
         document.</t>
@@ -216,24 +218,24 @@
         are only valid for a short period of time (5 minutes by
         default).  Any attempt to re-use them after that will fail.  If a
         user bookmarks a URL with a token in it (or hits their "back"
-        button) then one of three things can happen:</t>
+        button) then one of three things can happen:
+          <list style='symbols'>
+            <t>The user has a valid cookie. In this case, the token in the
+            URL is ignored (but still stripped out from the URL before
+            passing it to the app), so there is no problem.</t>
 
-        <list style='symbols'>
-          <t>The user has a valid cookie. In this case, the token in the
-          URL is ignored (but still stripped out from the URL before
-          passing it to the app), so there is no problem.</t>
+            <t>The user has no valid cookie, but the token in the URL is
+            still valid.  In this case, the user will be authenticated and
+            a cookie will be created.  Note that this can only happen
+            until the token is no longer "fresh" (as mentioned, 5 minutes
+            by default).</t>
 
-          <t>The user has no valid cookie, but the token in the URL is
-          still valid.  In this case, the user will be authenticated and a
-          cookie will be created.  Note that this can only happen until
-          the token is no longer "fresh" (as mentioned, 5 minutes by
-          default).</t>
-
-          <t>The user has no valid cookie, and the token is too old. In
-          this case, the user will be redirected to the login page is
-          usual (the token will be stripped from the URL before the
-          redirect).</t>
-        </list>
+            <t>The user has no valid cookie, and the token is too old. In
+            this case, the user will be redirected to the login page is
+            usual (the token will be stripped from the URL before the
+            redirect).</t>
+          </list>
+        </t>
 
         <section anchor='kmsessionkeys' title='Distributing and Managing
           Session Keys'>
@@ -285,21 +287,21 @@
           <t>Since key rings are never sent over the network by the
           WebAuth protocol, WebAuth implementations can use whatever
           mechanism they wish to store keys.  However, the following
-          data should be stored for each key:</t>
+          data should be stored for each key:
+            <list style='hanging' hangIndent='4'>
+              <t hangText='key type'><vspace blankLines='0'/>Type of the
+              key.  AES is the only supported key type right now.</t>
 
-          <list style='hanging' hangIndent='4'>
-            <t hangText='key type'><vspace blankLines='0'/>Type of the
-            key.  AES is the only supported key type right now.</t>
+              <t hangText='key data'><vspace blankLines='0'/>The binary
+              data that makes up the key.</t>
 
-            <t hangText='key data'><vspace blankLines='0'/>The binary data
-            that makes up the key.</t>
+              <t hangText='creation'><vspace blankLines='0'/>Time the key
+              was created.</t>
 
-            <t hangText='creation'><vspace blankLines='0'/>Time the key
-            was created.</t>
-
-            <t hangText='valid_after'><vspace blankLines='0'/>When the key
-            becomes valid.</t>
-          </list>
+              <t hangText='valid_after'><vspace blankLines='0'/>When the
+              key becomes valid.</t>
+            </list>
+          </t>
 
           <t>Of note is the valid_after value.  It is used to create
           post-dated keys in the key ring, to allow for new keys to get
@@ -420,85 +422,89 @@
           needed.</postamble>
         </figure>
 
-        <list style='numbers'>
-          <t>The WAS connects directly to the WebKDC and requests a
-          service token and session key to use for further requests.  It
-          includes in this request the results of krb5_mk_req for the
-          WebKDC's service principal, using the WAS's private Kerberos
-          key.</t>
+        <t>
+          <list style='numbers'>
+            <t>The WAS connects directly to the WebKDC and requests a
+            service token and session key to use for further requests.  It
+            includes in this request the results of krb5_mk_req for the
+            WebKDC's service principal, using the WAS's private Kerberos
+            key.</t>
 
-          <t>The WebKDC authenticates the WAS server via Kerberos V5 and
-          returns the webkdc-service token and corresponding session
-          key.</t>
+            <t>The WebKDC authenticates the WAS server via Kerberos V5 and
+            returns the webkdc-service token and corresponding session
+            key.</t>
 
-          <t>The UA requests a WebAuth-protected resource from WAS.</t>
+            <t>The UA requests a WebAuth-protected resource from WAS.</t>
 
-          <t>No app token is found either in a cookie or in the URL, so
-          the WAS constructs a request token, asking for an id token.  The
-          request token also contains the return URL, requested type of
-          token, and any additional desired options.  It may also contain
-          an app token with the session key encrypted in the WAS's private
-          key (for handling server pools).  The request token is encrypted
-          with the AES session key shared between the WAS and the WebKDC.
-          The WAS then returns a temporary redirect to the UA, sending the
-          UA to the Weblogin component of the WebKDC and including the
-          request token in the redirect URL.</t>
+            <t>No app token is found either in a cookie or in the URL, so
+            the WAS constructs a request token, asking for an id token.
+            The request token also contains the return URL, requested type
+            of token, and any additional desired options.  It may also
+            contain an app token with the session key encrypted in the
+            WAS's private key (for handling server pools).  The request
+            token is encrypted with the AES session key shared between the
+            WAS and the WebKDC.  The WAS then returns a temporary redirect
+            to the UA, sending the UA to the Weblogin component of the
+            WebKDC and including the request token in the redirect
+            URL.</t>
 
-          <t>The US follows the redirect and sends a request to the
-          Weblogin component of the WebKDC, including the request token in
-          the URL.  No cookies are sent to the WebKDC since the user has
-          never previously authenticated.</t>
+            <t>The US follows the redirect and sends a request to the
+            Weblogin component of the WebKDC, including the request token
+            in the URL.  No cookies are sent to the WebKDC since the user
+            has never previously authenticated.</t>
 
-          <t>The WebKDC decrypts the request token, checks the creation
-          time to make sure the request is fresh, and sends back a login
-          form or other authentication prompt to the UA.  The request
-          token or needed information derived from it will generally be
-          included in a hidden form field.  (This assumes that a form
-          prompt is needed to authenticate the user.  If the user can be
-          authenticated directly by the Weblogin server via some method
-          such as SPNEGO, it may skip sending back a login form and
-          therefore also skip the next step, proceeding directly to
-          checking the authorization of the WAS.)</t>
+            <t>The WebKDC decrypts the request token, checks the creation
+            time to make sure the request is fresh, and sends back a login
+            form or other authentication prompt to the UA.  The request
+            token or needed information derived from it will generally be
+            included in a hidden form field.  (This assumes that a form
+            prompt is needed to authenticate the user.  If the user can be
+            authenticated directly by the Weblogin server via some method
+            such as SPNEGO, it may skip sending back a login form and
+            therefore also skip the next step, proceeding directly to
+            checking the authorization of the WAS.)</t>
 
-          <t>The user enters their username and password or other
-          authentication credentials and instructs their UA to submit the
-          form back to the WebKDC.</t>
+            <t>The user enters their username and password or other
+            authentication credentials and instructs their UA to submit
+            the form back to the WebKDC.</t>
 
-          <t>The WebKDC validates the username and password or other
-          authentication credentials and also makes sure that the WAS is
-          allowed to request the token asked for in the request token.
-          Assuming the username and password are valid, the WebKDC
-          constructs a webkdc-proxy token and the id token and then sends
-          a confirmation page back to the UA which includes a link back to
-          the WAS that contains the id token (and any additional state
-          information sent by the WAS) in the URL.  The response page also
-          sets a cookie containing the webkdc-proxy token.  (For some
-          forms of authentication that can be repeated without prompting
-          the user, such as SPNEGO, the WebKDC may decide not to set a
-          webkdc-proxy cookie.)</t>
+            <t>The WebKDC validates the username and password or other
+            authentication credentials and also makes sure that the WAS is
+            allowed to request the token asked for in the request token.
+            Assuming the username and password are valid, the WebKDC
+            constructs a webkdc-proxy token and the id token and then
+            sends a confirmation page back to the UA which includes a link
+            back to the WAS that contains the id token (and any additional
+            state information sent by the WAS) in the URL.  The response
+            page also sets a cookie containing the webkdc-proxy token.
+            (For some forms of authentication that can be repeated without
+            prompting the user, such as SPNEGO, the WebKDC may decide not
+            to set a webkdc-proxy cookie.)</t>
 
-          <t>When the user follows the link on the confirmation page, the
-          UA will re-request the original resource but now with the id
-          token included in the URL.</t>
+            <t>When the user follows the link on the confirmation page,
+            the UA will re-request the original resource but now with the
+            id token included in the URL.</t>
 
-          <t>The WAS will see the id token in the URL and will check to
-          ensure it is fresh.  It will then look at the subject
-          authenticator-type in the token to see if it needs to verify the
-          subject.  If the authenticator-type is krb5, it uses its
-          Kerberos keytab to verify the identity of the subject.  The
-          subject will, in this case, be the result of a krb5_mk_req
-          call.
-          <vspace blankLines='1' />
-          After verifying the subject if desired, the WAS creates an app
-          token based on the id token and puts it into a cookie to
-          authenticate future requests from that UA.  The app token will
-          inherit the expiration time of the id token.  The WAS then
-          passes the request to the underlying web application, stripping
-          the id token from the URL before doing so and including the
-          WebAuth-derived authentication information.  When the web
-          application returns the resource, the WAS adds a header to set
-          the app token before sending that resource back to the UA.</t>
-        </list>
+            <t>The WAS will see the id token in the URL and will check to
+            ensure it is fresh.  It will then look at the subject
+            authenticator-type in the token to see if it needs to verify
+            the subject.  If the authenticator-type is krb5, it uses its
+            Kerberos keytab to verify the identity of the subject.  The
+            subject will, in this case, be the result of a krb5_mk_req
+            call.
+            <vspace blankLines='1' />
+            After verifying the subject if desired, the WAS creates an app
+            token based on the id token and puts it into a cookie to
+            authenticate future requests from that UA.  The app token will
+            inherit the expiration time of the id token.  The WAS then
+            passes the request to the underlying web application,
+            stripping the id token from the URL before doing so and
+            including the WebAuth-derived authentication information.
+            When the web application returns the resource, the WAS adds a
+            header to set the app token before sending that resource back
+            to the UA.</t>
+          </list>
+        </t>
 
         <t>The above assumes that the WAS will use a WebAuth app token in
         a cookie for further session authentication.  An equally valid
@@ -534,15 +540,17 @@
           </artwork>
         </figure>
 
-        <list style='numbers'>
-          <t>The UA requests a WebAuth-protected resource from WAS and
-          includes a cookie containing an app token for that WAS.</t>
+        <t>
+          <list style='numbers'>
+            <t>The UA requests a WebAuth-protected resource from WAS and
+            includes a cookie containing an app token for that WAS.</t>
 
-          <t>The WAS decrypts the app token with its private key,
-          determines the user identity from the contents, and passes the
-          request to the underlying application along with that
-          identity.</t>
-        </list>
+            <t>The WAS decrypts the app token with its private key,
+            determines the user identity from the contents, and passes the
+            request to the underlying application along with that
+            identity.</t>
+          </list>
+        </t>
       </section>
 
       <section anchor='sc3' title='No App Token, Proxy Token (Single
@@ -587,36 +595,38 @@
           discussed.</postamble>
         </figure>
 
-        <list style='numbers'>
-          <t>The UA requests a WebAuth-protected resource from the
-          WAS.</t>
+        <t>
+          <list style='numbers'>
+            <t>The UA requests a WebAuth-protected resource from the
+            WAS.</t>
 
-          <t>No app token is found either in a cookie or in the URL, so
-          the WAS constructs a request token, asking for an id token.
-          This is done in exactly the same way as in the first
-          scenario.</t>
+            <t>No app token is found either in a cookie or in the URL, so
+            the WAS constructs a request token, asking for an id token.
+            This is done in exactly the same way as in the first
+            scenario.</t>
 
-          <t>The US follows the redirect and sends a request to the
-          Weblogin component of the WebKDC, including the request token in
-          the URL.  Included in this request is a cookie containing a
-          webkdc-proxy token since the user has previously
-          authenticated.</t>
+            <t>The US follows the redirect and sends a request to the
+            Weblogin component of the WebKDC, including the request token
+            in the URL.  Included in this request is a cookie containing a
+            webkdc-proxy token since the user has previously
+            authenticated.</t>
 
-          <t>The WebKDC detects and decrypts the valid webkdc-proxy token
-          using its private key.  It uses it to construct a new id token
-          and then generates a confirmation page containing a link to the
-          return URL.  That link includes the id token, just as with the
-          first scenario.</t>
+            <t>The WebKDC detects and decrypts the valid webkdc-proxy
+            token using its private key.  It uses it to construct a new id
+            token and then generates a confirmation page containing a link
+            to the return URL.  That link includes the id token, just as
+            with the first scenario.</t>
 
-          <t>When the user follows the link on the confirmation page, the
-          UA will re-request the original resource but now with the id
-          token included in the URL.</t>
+            <t>When the user follows the link on the confirmation page,
+            the UA will re-request the original resource but now with the
+            id token included in the URL.</t>
 
-          <t>The WAS verifies the id token, passes the request to the
-          application with that identity information, and returns the
-          result while setting an app token in a cookie as in the first
-          scenario.</t>
-        </list>
+            <t>The WAS verifies the id token, passes the request to the
+            application with that identity information, and returns the
+            result while setting an app token in a cookie as in the first
+            scenario.</t>
+          </list>
+        </t>
       </section>
 
       <section anchor='sc4' title='No App Token, Credentials Required'>
@@ -667,51 +677,56 @@
           discussed.</postamble>
         </figure>
 
-        <list style='numbers'>
-          <t>The UA requests a WebAuth-protected resource from the
-          WAS.</t>
+        <t>
+          <list style='numbers'>
+            <t>The UA requests a WebAuth-protected resource from the
+            WAS.</t>
 
-          <t>The WAS sees no app token containing the required credentials
-          and constructs a request token asking for a proxy token of the
-          desired type.  It then returns a redirect to the Weblogin
-          component of the WebKDC, including the request token in the URL,
-          as previously.  The only difference is in the contents of the
-          request token.</t>
+            <t>The WAS sees no app token containing the required
+            credentials and constructs a request token asking for a proxy
+            token of the desired type.  It then returns a redirect to the
+            Weblogin component of the WebKDC, including the request token
+            in the URL, as previously.  The only difference is in the
+            contents of the request token.</t>
 
-          <t>The UA follows the redirect to the WebKDC, including the
-          request token in the URL and the webkdc-proxy token for the
-          WebKDC itself since the user had previously authenticated.</t>
+            <t>The UA follows the redirect to the WebKDC, including the
+            request token in the URL and the webkdc-proxy token for the
+            WebKDC itself since the user had previously authenticated.</t>
 
-          <t>The WebKDC decrypts and validates the webkdc-proxy token and
-          uses it to construct a proxy token as requested by the WAS.  It
-          then returns a confirmation page containing a link to the return
-          URL with the proxy token embedded in the URL (along with any
-          additional state information requested), as before.</t>
+            <t>The WebKDC decrypts and validates the webkdc-proxy token
+            and uses it to construct a proxy token as requested by the
+            WAS.  It then returns a confirmation page containing a link to
+            the return URL with the proxy token embedded in the URL (along
+            with any additional state information requested), as
+            before.</t>
 
-          <t>The user follows the link and the UA re-requests the original
-          resource, now including the proxy token in the URL.</t>
+            <t>The user follows the link and the UA re-requests the
+            original resource, now including the proxy token in the
+            URL.</t>
 
-          <t>The WAS decrypts and verifies the proxy token and recovers
-          from it the embedded webkdc-proxy token.  It then sends an XML
-          request direct to the WebKDC, including its webkdc-service token
-          and the webkdc-proxy token, requesting an id token and whatever
-          credential tokens it needs.</t>
+            <t>The WAS decrypts and verifies the proxy token and recovers
+            from it the embedded webkdc-proxy token.  It then sends an XML
+            request direct to the WebKDC, including its webkdc-service
+            token and the webkdc-proxy token, requesting an id token and
+            whatever credential tokens it needs.</t>
 
-          <t>The WebKDC receives the webkdc-service token and webkdc-proxy
-          token, verifies that the subject of the webkdc-service token is
-          permitted to use the webkdc-proxy token and verifies that it is
-          allowed to request that type of credential token.  If everything
-          is okay, it returns the requested id and credential tokens.</t>
+            <t>The WebKDC receives the webkdc-service token and
+            webkdc-proxy token, verifies that the subject of the
+            webkdc-service token is permitted to use the webkdc-proxy
+            token and verifies that it is allowed to request that type of
+            credential token.  If everything is okay, it returns the
+            requested id and credential tokens.</t>
 
-          <t>After verifying the returned id token, the WAS will create an
-          app token for further authentication.  It will also often create
-          new app tokens containing the provided credentials for its own
-          futher use so that it doesn't have to keep asking for credential
-          tokens or store them locally.  The request is then passed to the
-          web application, along with the user's identity and the
-          credentials, and the result passed back to the UA along with the
-          new cookies.</t>
-        </list>
+            <t>After verifying the returned id token, the WAS will create
+            an app token for further authentication.  It will also often
+            create new app tokens containing the provided credentials for
+            its own futher use so that it doesn't have to keep asking for
+            credential tokens or store them locally.  The request is then
+            passed to the web application, along with the user's identity
+            and the credentials, and the result passed back to the UA
+            along with the new cookies.</t>
+          </list>
+        </t>
 
         <t>Normally, the requested credential tokens will be Kerberos
         service tickets that the WAS can then use to talk to other
@@ -918,64 +933,65 @@
 
         <section anchor='xmlerrorcode' title='&lt;errorCode&gt;'>
           <t>This is a numeric error code for an errorResponse message.
-          It MUST be one of the following.</t>
+          It MUST be one of the following:
+            <list style='hanging' hangIndent='4'>
+              <t hangText='1'>The service token used was expired.</t>
 
-          <list style='hanging' hangIndent='4'>
-            <t hangText='1'>The service token used was expired.</t>
+              <t hangText='2'>The service token used was corrupt and/or
+              was unable to be decrypted.</t>
 
-            <t hangText='2'>The service token used was corrupt and/or was
-            unable to be decrypted.</t>
+              <t hangText='3'>The proxy token used was expired.</t>
 
-            <t hangText='3'>The proxy token used was expired.</t>
+              <t hangText='4'>The proxy token used was corrupt and/or was
+              unable to be decrypted.</t>
 
-            <t hangText='4'>The proxy token used was corrupt and/or was
-            unable to be decrypted.</t>
+              <t hangText='5'>The request was invalid.  For example, a
+              required element was missing, an attribute value was
+              incorrect, the server was unable to parse the XML request,
+              etc.  This generally indicates a bug in the client.</t>
 
-            <t hangText='5'>The request was invalid.  For example, a
-            required element was missing, an attribute value was
-            incorrect, the server was unable to parse the XML request,
-            etc.  This generally indicates a bug in the client.</t>
+              <t hangText='6'>The request was unauthorized.  An attempt
+              was made to request a token type that the client was not
+              authorized to request.</t>
 
-            <t hangText='6'>The request was unauthorized.  An attempt was
-            made to request a token type that the client was not
-            authorized to request.</t>
+              <t hangText='7'>The server encountered an internal error
+              (out of memory, for example).  If the client retries the
+              request may succeed, though some external event might be
+              causing the problem (such as a Kerberos server being
+              down).</t>
 
-            <t hangText='7'>The server encountered an internal error (out
-            of memory, for example).  If the client retries the request
-            may succeed, though some external event might be causing the
-            problem (such as a Kerberos server being down).</t>
+              <t hangText='8'>The request token was stale.</t>
 
-            <t hangText='8'>The request token was stale.</t>
+              <t hangText='9'>The request token was invalid.</t>
 
-            <t hangText='9'>The request token was invalid.</t>
+              <t hangText='10'>Unable to obtain the requested credential
+              token.</t>
 
-            <t hangText='10'>Unable to obtain the requested credential
-            token.</t>
+              <t hangText='11'>The krb5 &lt;requesterCredential> was
+              bad.</t>
 
-            <t hangText='11'>The krb5 &lt;requesterCredential> was
-            bad.</t>
+              <t hangText='12'>The login token was stale.</t>
 
-            <t hangText='12'>The login token was stale.</t>
+              <t hangText='13'>The login token was invalid.</t>
 
-            <t hangText='13'>The login token was invalid.</t>
+              <t hangText='14'>Login failed due to bad password or invalid
+              username.</t>
 
-            <t hangText='14'>Login failed due to bad password or invalid
-            username.</t>
+              <t hangText='15'>A webkdc-proxy token of a certain type was
+              required to fulfill the request but was not present in the
+              request.</t>
 
-            <t hangText='15'>A webkdc-proxy token of a certain type was
-            required to fulfill the request but was not present in the
-            request.</t>
+              <t hangText='16'>The user hit the cancel button during the
+              login process.</t>
 
-            <t hangText='16'>The user hit the cancel button during the
-            login process.</t>
+              <t hangText='17'>The WAS server requested a forced login in
+              the request token, so obtaining the id or proxy token via
+              the webkdc-proxy token is not allowed.</t>
 
-            <t hangText='17'>The WAS server requested a forced login in
-            the request token, so obtaining the id or proxy token via the
-            webkdc-proxy token is not allowed.</t>
-
-            <t hangText='18'>The user's principal was not permitted to
-            authenticate to the WebKDC.</t>
-          </list>
+              <t hangText='18'>The user's principal was not permitted to
+              authenticate to the WebKDC.</t>
+            </list>
+          </t>
         </section>
 
         <section anchor='xmlerrmsg' title='&lt;errorMessage&gt;'>
@@ -1167,34 +1183,34 @@
           &lt;requestTokenResponse> will be returned, but
           &lt;requestedToken> will be unset, and &lt;loginErrorCode> will
           be set.  The error codes used by &lt;loginErrorCode> are a
-          subset of those used by &lt;errorCode>:</t>
+          subset of those used by &lt;errorCode>:
+            <list style='hanging' hangIndent='4'>
+              <t hangText='14'>Login failed due to bad password or invalid
+              username.  The web front-end should re-prompt for the
+              username and password.</t>
 
-          <list style='hanging' hangIndent='4'>
-            <t hangText='14'>Login failed due to bad password or invalid
-            username.  The web front-end should re-prompt for the username
-            and password.</t>
+              <t hangText='15'>A webkdc-proxy token of a certain type was
+              required and was not present in the request.  The web
+              front-end should prompt for the username and password.  This
+              error code may occur when two different strengths of
+              webkdc-proxy tokens are used, one that's good only for id
+              tokens (but may be possible to generate without prompting
+              the user) and one that can generate proxy tokens.  If the
+              WAS requests a proxy token and the webkdc-proxy token
+              available is only good for id tokens and cannot be used to
+              generate proxy tokens, this error code is returned,
+              prompting the front-end to do stronger authentication.</t>
 
-            <t hangText='15'>A webkdc-proxy token of a certain type was
-            required and was not present in the request.  The web
-            front-end should prompt for the username and password.  This
-            error code may occur when two different strengths of
-            webkdc-proxy tokens are used, one that's good only for id
-            tokens (but may be possible to generate without prompting the
-            user) and one that can generate proxy tokens.  If the WAS
-            requests a proxy token and the webkdc-proxy token available is
-            only good for id tokens and cannot be used to generate proxy
-            tokens, this error code is returned, prompting the front-end
-            to do stronger authentication.</t>
+              <t hangText='17'>The WAS server requested a forced login.
+              The web front-end should prompt for the username and
+              password even though a webkdc-proxy token is available.</t>
 
-            <t hangText='17'>The WAS server requested a forced login.  The
-            web front-end should prompt for the username and password even
-            though a webkdc-proxy token is available.</t>
-
-            <t hangText='18'>The user's principal was not permitted to
-            authenticate to the WebKDC.  The web front-end may re-prompt
-            for another username and password or just display an
-            error.</t>
-          </list>
+              <t hangText='18'>The user's principal was not permitted to
+              authenticate to the WebKDC.  The web front-end may re-prompt
+              for another username and password or just display an
+              error.</t>
+            </list>
+          </t>
 
           <t>If the request option attribute in the request token has "lc"
           in it, then &lt;loginCanceledToken> will be returned.  This
@@ -1462,133 +1478,135 @@
         <t>The following is an exhaustive list of the attribute names used
         in tokens.  All time values are 32-bit values stored in network
         byte order and are the number of seconds since 1970-01-01 00:00:00
-        UTC.</t>
+        UTC.
+          <list style='hanging' hangIndent='4'>
+            <t hangText='as (binary)'>
+            <vspace blankLines='0'/>Optional data included in the request
+            token.  If present, the same data will be sent back to the WAS
+            as a second parameter to the URL, not included in the
+            encrypted response token.</t>
 
-        <list style='hanging' hangIndent='4'>
-          <t hangText='as (binary)'>
-          <vspace blankLines='0'/>Optional data included in the request
-          token.  If present, the same data will be sent back to the WAS
-          as a second parameter to the URL, not included in the encrypted
-          response token.</t>
+            <t hangText='cmd (string)'>
+            <vspace blankLines='0'/>The name of the XML command being
+            executed (for example, getTokensRequest).  Included in the
+            request token sent for XML commands.</t>
 
-          <t hangText='cmd (string)'>
-          <vspace blankLines='0'/>The name of the XML command being
-          executed (for example, getTokensRequest).  Included in the
-          request token sent for XML commands.</t>
+            <t hangText='crd (binary)'>
+            <vspace blankLines='0'/>Credential data (for example, an
+            encoded Kerberos V5 service ticket).</t>
 
-          <t hangText='crd (binary)'>
-          <vspace blankLines='0'/>Credential data (for example, an encoded
-          Kerberos V5 service ticket).</t>
+            <t hangText='crs (string)'>
+            <vspace blankLines='0'/>The identity of the service credential
+            data can be used to access (normally the text representation
+            of the server principal for a Kerberos V5 service ticket).</t>
 
-          <t hangText='crs (string)'>
-          <vspace blankLines='0'/>The identity of the service credential
-          data can be used to access (normally the text representation of
-          the server principal for a Kerberos V5 service ticket).</t>
+            <t hangText='crt (string)'>
+            <vspace blankLines='0'/>Credential type.  Currently this is
+            always krb5.</t>
 
-          <t hangText='crt (string)'>
-          <vspace blankLines='0'/>Credential type.  Currently this is
-          always krb5.</t>
+            <t hangText='ct (binary time)'>
+            <vspace blankLines='0'/>Creation time of the token.  For tokens
+            used to exchange messages between servers (request, error, id,
+            proxy, credential), this value is used to ensure that the
+            request is fresh.  For example, tokens of this type with a ct
+            older then 5 minutes will get flagged by the server (WAS or
+            WebKDC) as being stale.</t>
 
-          <t hangText='ct (binary time)'>
-          <vspace blankLines='0'/>Creation time of the token.  For tokens
-          used to exchange messages between servers (request, error, id,
-          proxy, credential), this value is used to ensure that the
-          request is fresh.  For example, tokens of this type with a ct
-          older then 5 minutes will get flagged by the server (WAS or
-          WebKDC) as being stale.</t>
+            <t hangText='ec (string)'>
+            <vspace blankLines='0'/>Error code from the WebKDC.  This will
+            be the ASCII digit representation of one of the error codes
+            that are returned in XML messages.</t>
 
-          <t hangText='ec (string)'>
-          <vspace blankLines='0'/>Error code from the WebKDC.  This will
-          be the ASCII digit representation of one of the error codes that
-          are returned in XML messages.</t>
+            <t hangText='em (string)'>
+            <vspace blankLines='0'/>Error message from the WebKDC.  This
+            should only be used for logging and/or debugging, since it is
+            not localized and not in a format meant for end-user
+            consumption.</t>
 
-          <t hangText='em (string)'>
-          <vspace blankLines='0'/>Error message from the WebKDC.  This
-          should only be used for logging and/or debugging, since it is
-          not localized and not in a format meant for end-user
-          consumption.</t>
+            <t hangText='et (binary time)'>
+            <vspace blankLines='0'/>Expiration time of the token.</t>
 
-          <t hangText='et (binary time)'>
-          <vspace blankLines='0'/>Expiration time of the token.</t>
+            <t hangText='k (binary)'>
+            <vspace blankLines='0'/>AES session key.</t>
 
-          <t hangText='k (binary)'>
-          <vspace blankLines='0'/>AES session key.</t>
+            <t hangText='lt (binary time)'>
+            <vspace blankLines='0'/>Last-used time.  If this attribute is
+            set in an app token present in a cookie, the WAS SHOULD
+            periodically update it (by setting a new cookie with an
+            updated last-used time) as it is used for access.  This
+            attribute is used to implement timing out of unused but still
+            unexpired app tokens.</t>
 
-          <t hangText='lt (binary time)'>
-          <vspace blankLines='0'/>Last-used time.  If this attribute is
-          set in an app token present in a cookie, the WAS SHOULD
-          periodically update it (by setting a new cookie with an updated
-          last-used time) as it is used for access.  This attribute is
-          used to implement timing out of unused but still unexpired app
-          tokens.</t>
+            <t hangText='p (string)'>
+            <vspace blankLines='0'/>User's password, in a login token.</t>
 
-          <t hangText='p (string)'>
-          <vspace blankLines='0'/>User's password, in a login token.</t>
+            <t hangText='pd (binary)'>
+            <vspace blankLines='0'/>Proxy data, such as an encoded
+            Kerberos V5 TgT.</t>
 
-          <t hangText='pd (binary)'>
-          <vspace blankLines='0'/>Proxy data, such as an encoded Kerberos
-          V5 TgT.</t>
+            <t hangText='ps (string)'>
+            <vspace blankLines='0'/>Proxy subject, the subject from the
+            webkdc-service token that was used when the webkdc-proxy token
+            was created.  This is used to verify that a webkdc-proxy token
+            is being used by the same entity as originally requested
+            it.</t>
 
-          <t hangText='ps (string)'>
-          <vspace blankLines='0'/>Proxy subject, the subject from the
-          webkdc-service token that was used when the webkdc-proxy token
-          was created.  This is used to verify that a webkdc-proxy token
-          is being used by the same entity as originally requested it.</t>
+            <t hangText='pt (string)'>
+            <vspace blankLines='0'/>Proxy type (such as krb5).</t>
 
-          <t hangText='pt (string)'>
-          <vspace blankLines='0'/>Proxy type (such as krb5).</t>
+            <t hangText='ro (string)'>
+            <vspace blankLines='0'/>Comma-separated list of request
+            options.  Currently, the following options are supported: lc,
+            to return an error code to the application if login is
+            cancelled; and fa, to force interactive authentication even if
+            the user has a webkdc-proxy token.</t>
 
-          <t hangText='ro (string)'>
-          <vspace blankLines='0'/>Comma-separated list of request options.
-          Currently, the following options are supported: lc, to return an
-          error code to the application if login is cancelled; and fa, to
-          force interactive authentication even if the user has a
-          webkdc-proxy token.</t>
+            <t hangText='rtt (string)'>
+            <vspace blankLines='0'/>Requested token type in a request
+            token.  This is either id for an id token or proxy for a proxy
+            token.</t>
 
-          <t hangText='rtt (string)'>
-          <vspace blankLines='0'/>Requested token type in a request token.
-          This is either id for an id token or proxy for a proxy
-          token.</t>
+            <t hangText='ru (string)'>
+            <vspace blankLines='0'/>Return URL.  The user to return the
+            user to after authentication.</t>
 
-          <t hangText='ru (string)'>
-          <vspace blankLines='0'/>Return URL.  The user to return the user
-          to after authentication.</t>
+            <t hangText='s (string)'>
+            <vspace blankLines='0'/>The authenticated subject.  In
+            webkdc-service tokens, this is the server identity that
+            authenticated to get the webkdc-service token.  In all other
+            tokens, it is the user who authenticated.  Server subjects
+            have the form "type:identifier".  Currently, the only defined
+            type is "krb5" indicating that the server authenticated with
+            Kerberos V5, and in that case the identifier is the text form
+            of a fully qualified Kerberos V5 principal.</t>
 
-          <t hangText='s (string)'>
-          <vspace blankLines='0'/>The authenticated subject.  In
-          webkdc-service tokens, this is the server identity that
-          authenticated to get the webkdc-service token.  In all other
-          tokens, it is the user who authenticated.  Server subjects have
-          the form "type:identifier".  Currently, the only defined type is
-          "krb5" indicating that the server authenticated with Kerberos
-          V5, and in that case the identifier is the text form of a fully
-          qualified Kerberos V5 principal.</t>
+            <t hangText='sa (string)'>
+            <vspace blankLines='0'/>Subject authenticator type in an id
+            token.  This is currently either krb5, indicating that a
+            Kerberos V5 authenticator is included, or webkdc, indicating
+            no additional authenticator is provided.</t>
 
-          <t hangText='sa (string)'>
-          <vspace blankLines='0'/>Subject authenticator type in an id
-          token.  This is currently either krb5, indicating that a
-          Kerberos V5 authenticator is included, or webkdc, indicating no
-          additional authenticator is provided.</t>
+            <t hangText='sad (binary)'>
+            <vspace blankLines='0'/>Subject authenticator data.  If the sa
+            is krb5, this is the output of krb5_mk_req using the same
+            Kerberos V5 principal as the webkdc-service token's
+            subject.</t>
 
-          <t hangText='sad (binary)'>
-          <vspace blankLines='0'/>Subject authenticator data.  If the sa
-          is krb5, this is the output of krb5_mk_req using the same
-          Kerberos V5 principal as the webkdc-service token's subject.</t>
+            <t hangText='t (string)'>
+            <vspace blankLines='0'/>The token type.  Currently recognized
+            token types are webkdc-service, webkdc-proxy, req, error, id,
+            proxy, cred, and app.  Used by a server to ensure that a token
+            is being used for the correct purpose.</t>
 
-          <t hangText='t (string)'>
-          <vspace blankLines='0'/>The token type.  Currently recognized
-          token types are webkdc-service, webkdc-proxy, req, error, id,
-          proxy, cred, and app.  Used by a server to ensure that a token
-          is being used for the correct purpose.</t>
+            <t hangText='wt (binary)'>
+            <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
+            that is being included inside another token.</t>
 
-          <t hangText='wt (binary)'>
-          <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
-          that is being included inside another token.</t>
-
-          <t hangText='u (string)'>
-          <vspace blankLines='0'/>The user's username in a login
-          token.</t>
-        </list>
+            <t hangText='u (string)'>
+            <vspace blankLines='0'/>The user's username in a login
+            token.</t>
+          </list>
+        </t>
       </section>
 
       <section anchor='tokenspecific' title='Specific Token Encoding'>
@@ -1887,98 +1905,99 @@
         <t>The credential encoding uses the following attributes, where
         binary number is a 32-bit number in network byte order and binary
         time is a 32-bit time in seconds since 1970-01-01 00:00:00
-        UTC:</t>
+        UTC:
+          <list style='hanging' hangIndent='4'>
+            <t hangText='c (string)'>
+            <vspace blankLines='0'/>Client principal name.</t>
 
-        <list style='hanging' hangIndent='4'>
-          <t hangText='c (string)'>
-          <vspace blankLines='0'/>Client principal name.</t>
+            <t hangText='s (string)'>
+            <vspace blankLines='0'/>Server principal name.</t>
 
-          <t hangText='s (string)'>
-          <vspace blankLines='0'/>Server principal name.</t>
+            <t hangText='K (binary number)'>
+            <vspace blankLines='0'/>Kerberos encryption type for the
+            session key.  This will be whatever numerical constant is used
+            by Kerberos for that encryption type.</t>
 
-          <t hangText='K (binary number)'>
-          <vspace blankLines='0'/>Kerberos encryption type for the session
-          key.  This will be whatever numerical constant is used by
-          Kerberos for that encryption type.</t>
+            <t hangText='k (binary)'>
+            <vspace blankLines='0'/>Kerberos session key.</t>
 
-          <t hangText='k (binary)'>
-          <vspace blankLines='0'/>Kerberos session key.</t>
+            <t hangText='ta (binary time)'>
+            <vspace blankLines='0'/>Authentication time of the
+            credential.</t>
 
-          <t hangText='ta (binary time)'>
-          <vspace blankLines='0'/>Authentication time of the
-          credential.</t>
+            <t hangText='ts (binary time)'>
+            <vspace blankLines='0'/>Start time of the credential (the time
+            at which the credential becomes valid).</t>
 
-          <t hangText='ts (binary time)'>
-          <vspace blankLines='0'/>Start time of the credential (the time
-          at which the credential becomes valid).</t>
+            <t hangText='te (binary time)'>
+            <vspace blankLines='0'/>Expiration time of the credential,
+            after which it is no longer valid.</t>
 
-          <t hangText='te (binary time)'>
-          <vspace blankLines='0'/>Expiration time of the credential, after
-          which it is no longer valid.</t>
+            <t hangText='tr (binary time)'>
+            <vspace blankLines='0'/>Renewal end time of the credential.
+            The credential may be renewed up until this time.</t>
 
-          <t hangText='tr (binary time)'>
-          <vspace blankLines='0'/>Renewal end time of the credential.  The
-          credential may be renewed up until this time.</t>
+            <t hangText='i (binary)'>
+            <vspace blankLines='0'/>Flag set to 0 or 1 indicating whether
+            the credential was obtained via S/Key.  This attribute should
+            probably always be 0 or not provided; it is not supported at
+            all by Heimdal.</t>
 
-          <t hangText='i (binary)'>
-          <vspace blankLines='0'/>Flag set to 0 or 1 indicating whether
-          the credential was obtained via S/Key.  This attribute should
-          probably always be 0 or not provided; it is not supported at all
-          by Heimdal.</t>
+            <t hangText='f (binary number)'>
+            <vspace blankLines='0'/>The ticket flags.  This is a 32-bit
+            bitmask of Kerberos ticket flags, as defined by the Kerberos
+            v5 protocol specification.</t>
 
-          <t hangText='f (binary number)'>
-          <vspace blankLines='0'/>The ticket flags.  This is a 32-bit
-          bitmask of Kerberos ticket flags, as defined by the Kerberos v5
-          protocol specification.</t>
+            <t hangText='na (binary number)'>
+            <vspace blankLines='0'/>The number of addresses associated
+            with the credential.  Address checking on credentials is
+            generally not useful for WebAuth, so it might be best to
+            always skip including this in the credential, but space is
+            provided in case it's useful for some reason.  For each
+            address, there is a corresponding "A" attribute holding the
+            address type and an "a" attribute holding the address
+            itself.</t>
 
-          <t hangText='na (binary number)'>
-          <vspace blankLines='0'/>The number of addresses associated with
-          the credential.  Address checking on credentials is generally
-          not useful for WebAuth, so it might be best to always skip
-          including this in the credential, but space is provided in case
-          it's useful for some reason.  For each address, there is a
-          corresponding "A" attribute holding the address type and an "a"
-          attribute holding the address itself.</t>
+            <t hangText='A# (binary number)'>
+            <vspace blankLines='0'/>The type of address for the #th
+            address.  # is replaced by the index number of the address.
+            Addresses are numbered starting with 0, so if na was 2, there
+            will be an A0 attribute and an A1 attribute (but no A2
+            attribute).</t>
 
-          <t hangText='A# (binary number)'>
-          <vspace blankLines='0'/>The type of address for the #th
-          address.  # is replaced by the index number of the address.
-          Addresses are numbered starting with 0, so if na was 2, there
-          will be an A0 attribute and an A1 attribute (but no A2
-          attribute).</t>
+            <t hangText='a# (binary)'>
+            <vspace blankLines='0'/>The #th address in the credential.  #
+            is replaced by the index number of the address.  Addresses are
+            numbered starting with 0, so if na was 2, there will be an a0
+            attribute and an a1 attribute (but no a2 attribute).</t>
 
-          <t hangText='a# (binary)'>
-          <vspace blankLines='0'/>The #th address in the credential.  # is
-          replaced by the index number of the address.  Addresses are
-          numbered starting with 0, so if na was 2, there will be an a0
-          attribute and an a1 attribute (but no a2 attribute).</t>
+            <t hangText='t (binary)'>
+            <vspace blankLines='0'/>The Kerberos ticket.</t>
 
-          <t hangText='t (binary)'>
-          <vspace blankLines='0'/>The Kerberos ticket.</t>
+            <t hangText='t2 (binary)'>
+            <vspace blankLines='0'/>The second Kerberos ticket in the
+            credentials, if any.</t>
 
-          <t hangText='t2 (binary)'>
-          <vspace blankLines='0'/>The second Kerberos ticket in the
-          credentials, if any.</t>
+            <t hangText='nd (binary number)'>
+            <vspace blankLines='0'/>The number of authenticatation data
+            blocks in the credential.  For each data block, there is a
+            corresponding "D" attribute holding the data type and a "d"
+            attribute holding the data block itself.</t>
 
-          <t hangText='nd (binary number)'>
-          <vspace blankLines='0'/>The number of authenticatation data
-          blocks in the credential.  For each data block, there is a
-          corresponding "D" attribute holding the data type and a "d"
-          attribute holding the data block itself.</t>
+            <t hangText='D# (binary number)'>
+            <vspace blankLines='0'/>The type of authentication data for
+            the #th data block.  # is replaced by the index number of the
+            data block.  Data blocks are numbered starting with 0, so if
+            nd was 2, there will be a D0 attribute and a D1 attribute (but
+            no D2 attribute).</t>
 
-          <t hangText='D# (binary number)'>
-          <vspace blankLines='0'/>The type of authentication data for the
-          #th data block.  # is replaced by the index number of the data
-          block.  Data blocks are numbered starting with 0, so if nd was
-          2, there will be a D0 attribute and a D1 attribute (but no D2
-          attribute).</t>
-
-          <t hangText='d# (binary number)'>
-          <vspace blankLines='0'/>The #th authentication data block.  # is
-          replaced by the index number of the block.  Data blocks are
-          numbered starting with 0, so if nd was 2, there will be a d0
-          attribute and a d1 attribute (but no d2 attribute).</t>
-        </list>
+            <t hangText='d# (binary number)'>
+            <vspace blankLines='0'/>The #th authentication data block.  #
+            is replaced by the index number of the block.  Data blocks are
+            numbered starting with 0, so if nd was 2, there will be a d0
+            attribute and a d1 attribute (but no d2 attribute).</t>
+          </list>
+        </t>
       </section>
     </section>
 
@@ -2014,159 +2033,166 @@
 
   <back>
     <section anchor='history' title='Document Revision History'>
-      <list style='hanging' hangIndent='4'>
-        <t hangText='0.1 (2002-10-02, schemers)'>
-        <vspace blankLines='0'/>First draft.</t>
+      <t>
+        <list style='hanging' hangIndent='4'>
+          <t hangText='0.1 (2002-10-02, schemers)'>
+          <vspace blankLines='0'/>First draft.</t>
 
-        <t hangText='0.2 (2002-10-04, schemers)'>
-        <vspace blankLines='0'/>Fixed typos and added more text in section
-        1.2.  Use SHA1 everywhere instead of MD5.  Change attribute
-        separator in tokes from "\n" to ';'.  Change time attributes
-        inside of tokens from four-byte binary network byte order to ASCII
-        strings.  Changed description of time prepended to tokens from
-        {creation-time} to {key-hint}.</t>
+          <t hangText='0.2 (2002-10-04, schemers)'>
+          <vspace blankLines='0'/>Fixed typos and added more text in
+          section 1.2.  Use SHA1 everywhere instead of MD5.  Change
+          attribute separator in tokes from "\n" to ';'.  Change time
+          attributes inside of tokens from four-byte binary network byte
+          order to ASCII strings.  Changed description of time prepended
+          to tokens from {creation-time} to {key-hint}.</t>
 
-        <t hangText='0.3 (2002-10-07, schemers)'>
-        <vspace blankLines='0'/>Major changes.  Combine LS and WKDC into
-        WebKDC.</t>
+          <t hangText='0.3 (2002-10-07, schemers)'>
+          <vspace blankLines='0'/>Major changes.  Combine LS and WKDC into
+          WebKDC.</t>
 
-        <t hangText='0.4 (2002-10-26, schemers)'>
-        <vspace blankLines='0'/>Change time attributes inside tokens back
-        to four byte binary network byte order.  Get rid of default values
-        for attributes.  Requested token is now contained within the
-        response token.  Got rid of unneeded or not fleshed out token
-        attributes (rth, san, ver).  Add new token attributes (rt, rt-t,
-        rt-et, sad).  Change the id token to use sad instead of s for
-        krb5.</t>
+          <t hangText='0.4 (2002-10-26, schemers)'>
+          <vspace blankLines='0'/>Change time attributes inside tokens
+          back to four byte binary network byte order.  Get rid of default
+          values for attributes.  Requested token is now contained within
+          the response token.  Got rid of unneeded or not fleshed out
+          token attributes (rth, san, ver).  Add new token attributes (rt,
+          rt-t, rt-et, sad).  Change the id token to use sad instead of s
+          for krb5.</t>
 
-        <t hangText='0.5 (2002-10-30, schemers)'>
-        <vspace blankLines='0'/>Use errorResponse message for indicating
-        errors.  Remove app names for now; will re-specify when
-        requirements are more clear.  Change et in it token to se to
-        indicate when the subject expires.</t>
+          <t hangText='0.5 (2002-10-30, schemers)'>
+          <vspace blankLines='0'/>Use errorResponse message for indicating
+          errors.  Remove app names for now; will re-specify when
+          requirements are more clear.  Change et in it token to se to
+          indicate when the subject expires.</t>
 
-        <t hangText='0.6 (2002-11-01, schemers)'>
-        <vspace blankLines='0'/>Rename service token and proxy token to
-        webkdc-service token and webkdc-proxy token to signify that they
-        are only used by the WebKDC.  Remove response token and add error
-        token and new proxy token.  The response from a request token is
-        an error token, id token, or proxy token.  change se back to et.
-        Expiration times in tokens indicate when the token expires and
-        when any data within the token (subject info, proxy data, etc.)
-        expires.  Simplify XML messages by placing base64-encoded data
-        directly in &lt;requestCredential> and &lt;subjectCredential>
-        instead of having them in another tag.  Wrap tokens in &lt;tokens>
-        element to make it easier to interate through all the tokens in a
-        &lt;getTokensRequest>.</t>
+          <t hangText='0.6 (2002-11-01, schemers)'>
+          <vspace blankLines='0'/>Rename service token and proxy token to
+          webkdc-service token and webkdc-proxy token to signify that they
+          are only used by the WebKDC.  Remove response token and add
+          error token and new proxy token.  The response from a request
+          token is an error token, id token, or proxy token.  change se
+          back to et.  Expiration times in tokens indicate when the token
+          expires and when any data within the token (subject info, proxy
+          data, etc.)  expires.  Simplify XML messages by placing
+          base64-encoded data directly in &lt;requestCredential> and
+          &lt;subjectCredential> instead of having them in another tag.
+          Wrap tokens in &lt;tokens> element to make it easier to interate
+          through all the tokens in a &lt;getTokensRequest>.</t>
 
-        <t hangText='0.61 (2002-11-03, schemers)'>
-        <vspace blankLines='0'/>Add a new form of request token that is
-        sent in XML requests along with a webkdc-service token to indicate
-        which XML command is being requested.  Update
-        &lt;requesterCredential> for type "service" to include
-        &lt;serviceToken> and &lt;requestToken>.</t>
+          <t hangText='0.61 (2002-11-03, schemers)'>
+          <vspace blankLines='0'/>Add a new form of request token that is
+          sent in XML requests along with a webkdc-service token to
+          indicate which XML command is being requested.  Update
+          &lt;requesterCredential> for type "service" to include
+          &lt;serviceToken> and &lt;requestToken>.</t>
 
-        <t hangText='0.7 (2002-11-05, schemers)'>
-        <vspace blankLines='0'/>Rename prt/prd/pro attributes to pt/pd/ps.
-        Formatting and clarification.</t>
+          <t hangText='0.7 (2002-11-05, schemers)'>
+          <vspace blankLines='0'/>Rename prt/prd/pro attributes to
+          pt/pd/ps.  Formatting and clarification.</t>
 
-        <t hangText='0.8 (2002-11-07, schemers)'>
-        <vspace blankLines='0'/>Add a section on the security model and
-        support for sending application state in a request token to enable
-        server pools.</t>
+          <t hangText='0.8 (2002-11-07, schemers)'>
+          <vspace blankLines='0'/>Add a section on the security model and
+          support for sending application state in a request token to
+          enable server pools.</t>
 
-        <t hangText='0.85 (2002-11-08, schemers)'>
-        <vspace blankLines='0'/>Forgot to add a final WebAuth redirect in
-        the usage scenarios that sets the cookies and re-requests the
-        original URL.</t>
+          <t hangText='0.85 (2002-11-08, schemers)'>
+          <vspace blankLines='0'/>Forgot to add a final WebAuth redirect
+          in the usage scenarios that sets the cookies and re-requests the
+          original URL.</t>
 
-        <t hangText='0.90 (2002-11-13, schemers)'>
-        <vspace blankLines='0'/>Undo 0.85, since after initial Apache
-        prototyping I think we can get away without doing the extra
-        redirect.  Add some text to the security model section describing
-        what happens if a user bookmarks or replays a URL with a token in
-        it.</t>
+          <t hangText='0.90 (2002-11-13, schemers)'>
+          <vspace blankLines='0'/>Undo 0.85, since after initial Apache
+          prototyping I think we can get away without doing the extra
+          redirect.  Add some text to the security model section
+          describing what happens if a user bookmarks or replays a URL
+          with a token in it.</t>
 
-        <t hangText='0.91 (2002-11-14, schemers)'>
-        <vspace blankLines='0'/>Don't rewrite proxy/cred tokens into app
-        tokens before storing them in cookies.  Just re-encrypt them using
-        the WAS private key.  This is so that they can't be used as app
-        tokens.  Change the name of proxy/webkdc-proxy cookies.</t>
+          <t hangText='0.91 (2002-11-14, schemers)'>
+          <vspace blankLines='0'/>Don't rewrite proxy/cred tokens into app
+          tokens before storing them in cookies.  Just re-encrypt them
+          using the WAS private key.  This is so that they can't be used
+          as app tokens.  Change the name of proxy/webkdc-proxy
+          cookies.</t>
 
-        <t hangText='0.99 (2002-12-04, schemers)'>
-        <vspace blankLines='0'/>Document error codes for &lt;errorCode>.
-        Add new requestToken command for the WebKDC web front-end to use
-        to talk to the WebKDC.  Recommended URL for WebKDC POST is now
-        /webkdc-service/.  Remove line that says an &lt;errorCode> can
-        occur within a &lt;token> returned in a &lt;getTokensResponse>;
-        the whole request succeeds or fails.  Update format for
-        &lt;subjectCredential> to be consistent across XML commands.
-        Update format for &lt;requesterCredential> by moving
-        &lt;requestToken> out into enclosing element, which also removes
-        the need for the &lt;serviceToken> element.  Also consistent
-        across commands.  Only subject names in webkdc-service tokens have
-        the form "krb5:{principal}"; subject names referring to users will
-        have only the username (unless krb5 is used and the call to
-        krb5_aname_to_localname fails, in which case the fully-qualified
-        principal name is used).  Remove inactivity timeout value from
-        token.  Change rr (request reason) token attribute to ro (request
-        options).  Add lc (login cancelled) and fa (forced authentication)
-        to request options.  Add &lt;loginCancelledToken> to requestToken
-        command response.  Add two new error codes for forced
-        authentication and login cancelled.</t>
+          <t hangText='0.99 (2002-12-04, schemers)'>
+          <vspace blankLines='0'/>Document error codes for &lt;errorCode>.
+          Add new requestToken command for the WebKDC web front-end to use
+          to talk to the WebKDC.  Recommended URL for WebKDC POST is now
+          /webkdc-service/.  Remove line that says an &lt;errorCode> can
+          occur within a &lt;token> returned in a &lt;getTokensResponse>;
+          the whole request succeeds or fails.  Update format for
+          &lt;subjectCredential> to be consistent across XML commands.
+          Update format for &lt;requesterCredential> by moving
+          &lt;requestToken> out into enclosing element, which also removes
+          the need for the &lt;serviceToken> element.  Also consistent
+          across commands.  Only subject names in webkdc-service tokens
+          have the form "krb5:{principal}"; subject names referring to
+          users will have only the username (unless krb5 is used and the
+          call to krb5_aname_to_localname fails, in which case the
+          fully-qualified principal name is used).  Remove inactivity
+          timeout value from token.  Change rr (request reason) token
+          attribute to ro (request options).  Add lc (login cancelled) and
+          fa (forced authentication) to request options.  Add
+          &lt;loginCancelledToken> to requestToken command response.  Add
+          two new error codes for forced authentication and login
+          cancelled.</t>
 
-        <t hangText='1.00 (2002-12-06, schemers)'>
-        <vspace blankLines='0'/>Add &lt;loginErrorCode> and
-        &lt;loginErrorMessage> to &lt;requestTokenResponse>.</t>
+          <t hangText='1.00 (2002-12-06, schemers)'>
+          <vspace blankLines='0'/>Add &lt;loginErrorCode> and
+          &lt;loginErrorMessage> to &lt;requestTokenResponse>.</t>
 
-        <t hangText='1.01 (2002-12-12, schemers)'>
-        <vspace blankLines='0'/>Keys in the keyring no longer expire.  The
-        key with the most current (but not post-dated) valid_after will
-        always be used to encrypt new keys.</t>
+          <t hangText='1.01 (2002-12-12, schemers)'>
+          <vspace blankLines='0'/>Keys in the keyring no longer expire.
+          The key with the most current (but not post-dated) valid_after
+          will always be used to encrypt new keys.</t>
 
-        <t hangText='1.02 (2003-01-14, schemers)'>
-        <vspace blankLines='0'/>Return &lt;subject> in &lt;requestToken>
-        response so the web front-end can display the authenticated
-        username.</t>
+          <t hangText='1.02 (2003-01-14, schemers)'>
+          <vspace blankLines='0'/>Return &lt;subject> in &lt;requestToken>
+          response so the web front-end can display the authenticated
+          username.</t>
 
-        <t hangText='1.03 (2003-01-20, schemers)'>
-        <vspace blankLines='0'/>Fix type in credential token coding
-        example: change ct to crt.  Add crs attribute to credential
-        token.</t>
+          <t hangText='1.03 (2003-01-20, schemers)'>
+          <vspace blankLines='0'/>Fix type in credential token coding
+          example: change ct to crt.  Add crs attribute to credential
+          token.</t>
 
-        <t hangText='1.04 (2003-01-29, schemers)'>
-        <vspace blankLines='0'/>When appending WEBAUTHR to return URL, use
-        "?WEBAUTHR=...;" instead of ";WEBAUTHR=...;" so browers handle
-        relative URLs correctly.</t>
+          <t hangText='1.04 (2003-01-29, schemers)'>
+          <vspace blankLines='0'/>When appending WEBAUTHR to return URL,
+          use "?WEBAUTHR=...;" instead of ";WEBAUTHR=...;" so browers
+          handle relative URLs correctly.</t>
 
-        <t hangText='1.05 (2003-07-24, schemers)'>
-        <vspace blankLines='0'/>Add webkdcProxyToken and
-        webkdcProxyTokenInfo commands.  Added requestInfo to requestToken
-        command for S/Ident support.</t>
+          <t hangText='1.05 (2003-07-24, schemers)'>
+          <vspace blankLines='0'/>Add webkdcProxyToken and
+          webkdcProxyTokenInfo commands.  Added requestInfo to
+          requestToken command for S/Ident support.</t>
 
-        <t hangText='2.00 (2006-01-02, rra)'>
-        <vspace blankLines='0'/>Rewritten in XML and substantially edited,
-        clarified, and reworked.  Added &lt;remoteUser> to
-        &lt;requestInfo> and clarified that &lt;requestInfo> must be used
-        only for logging and auditing now that we're not trying to do
-        S/Ident any more.  Don't assume Kerberos in the first descriptions
-        of protocol elements.  Add text explaining why one may not have a
-        webkdc-proxy token with other forms of authentication.</t>
+          <t hangText='2.00 (2006-01-02, rra)'>
+          <vspace blankLines='0'/>Rewritten in XML and substantially
+          edited, clarified, and reworked.  Added &lt;remoteUser> to
+          &lt;requestInfo> and clarified that &lt;requestInfo> must be
+          used only for logging and auditing now that we're not trying to
+          do S/Ident any more.  Don't assume Kerberos in the first
+          descriptions of protocol elements.  Add text explaining why one
+          may not have a webkdc-proxy token with other forms of
+          authentication.</t>
 
-        <t hangText='2.01 (2006-01-23, rra)'>
-        <vspace blankLines='0'/>Move the document history into an
-        appendix.  Document the magic WEBKDC prefix to proxy subjects.</t>
+          <t hangText='2.01 (2006-01-23, rra)'>
+          <vspace blankLines='0'/>Move the document history into an
+          appendix.  Document the magic WEBKDC prefix to proxy
+          subjects.</t>
 
-        <t hangText='2.10 (2006-02-17, rra)'>
-        <vspace blankLines='0'/>Add a specification for the encoding of
-        Kerberos credentials in tokens.  Specify the size of
-        timestamps.</t>
+          <t hangText='2.10 (2006-02-17, rra)'>
+          <vspace blankLines='0'/>Add a specification for the encoding of
+          Kerberos credentials in tokens.  Specify the size of
+          timestamps.</t>
 
-        <t hangText='2.11 (2008-03-14, rra)'>
-        <vspace blankLines='0'/>Add error code 18, indicating that the
-        WebKDC did not permit the user's principal to authenticate.  Fix
-        typo in the webkdcProxyTokenInfoRequest example.</t>
-      </list>
+          <t hangText='2.11 (2008-03-14, rra)'>
+          <vspace blankLines='0'/>Add error code 18, indicating that the
+          WebKDC did not permit the user's principal to authenticate.  Fix
+          typo in the webkdcProxyTokenInfoRequest example.  Fix XML
+          formatting issues.</t>
+        </list>
+      </t>
     </section>
   </back>
 </rfc>

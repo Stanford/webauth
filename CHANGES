@@ -104,6 +104,9 @@ WebAuth 3.6.0 (2008-03-22)
  *) Remove the maxlength restriction on the username entry box in the
     example login.tmpl template.
 
+ *) Properly nest all <list> elements inside <t> elements in the protocol
+    specification and explicitly set the symrefs formatting directive.
+
  *) Fix a typo in the webkdcProxyTokenInfoRequest example in the protocol
     specification.
 
