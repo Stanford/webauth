@@ -9,10 +9,14 @@
 # This has to be exported for some magic to work later.
 export DH_OPTIONS
 
-# These are used for cross-compiling and for saving the configure script
-# from having to guess our platform (since we know it already)
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+# Tell Autoconf the correct system types.
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+    SYSTEM = --build $(DEB_HOST_GNU_TYPE)
+else
+    SYSTEM = --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
 
 ifndef PERL
     PERL = /usr/bin/perl
@@ -27,12 +31,11 @@ endif
 
 configure-stamp:
 	dh_testdir
-	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) \
-	    --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr \
+	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr \
 	    --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
 	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
-	    --enable-reduced-depends
-	touch configure-stamp
+	    --enable-reduced-depends $(SYSTEM)
+	touch $@
 
 build: build-arch build-indep
 build-arch: build-stamp
@@ -44,7 +47,7 @@ build-stamp: configure-stamp
 	cd src/bindings/perl/WebAuth && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
 	cd src/webkdc && $(MAKE) OPTIMIZE="$(CFLAGS)"
-	touch build-stamp
+	touch $@
 
 clean:
 	dh_testdir
@@ -64,17 +67,18 @@ install-stamp: build-stamp
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/apache2/modules
 	cd src/libwebauth && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
 	cd src/utils && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
-	cp src/modules/webauth/.libs/mod_webauth.so \
+	install -m 644 src/modules/webauth/.libs/mod_webauth.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	cp src/modules/webauthldap/.libs/mod_webauthldap.so \
+	install -m 644 src/modules/webauthldap/.libs/mod_webauthldap.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	cp src/modules/webkdc/.libs/mod_webkdc.so \
+	install -m 644 src/modules/webkdc/.libs/mod_webkdc.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	mkdir -p $(CURDIR)/debian/tmp/etc/webauth
-	mkdir -p $(CURDIR)/debian/tmp/etc/webkdc
-	cp src/modules/webkdc/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
-	cp debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
-	mkdir -p $(CURDIR)/debian/tmp/etc/apache2/mods-available
+	install -d $(CURDIR)/debian/tmp/etc/webauth
+	install -d $(CURDIR)/debian/tmp/etc/webkdc
+	install -m 644 src/modules/webkdc/token.acl \
+	    $(CURDIR)/debian/tmp/etc/webkdc/
+	install -m 644 debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
+	install -d $(CURDIR)/debian/tmp/etc/apache2/mods-available
 	set -e; cd conf/debian && for f in *.conf *.load ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
@@ -82,31 +86,30 @@ install-stamp: build-stamp
 	cd src/bindings/perl/WebAuth \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic
 	set -e; cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
 	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
 	done
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
+	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
 	set -e; cd src/webkdc && for f in templates/*.tmpl ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
 	install -m 644 src/webkdc/templates/help.html \
 	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
+	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
 	set -e; cd src/webkdc && for f in images/*.png ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/conf
-	cp tests/mod_webauth/conf/*.conf \
+	install -d $(CURDIR)/debian/tmp/usr/share/webauth/conf
+	install -m 644 tests/mod_webauth/conf/*.conf \
 	    $(CURDIR)/debian/tmp/usr/share/webauth/conf/
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/webauth/htdocs
+	install -d $(CURDIR)/debian/tmp/usr/share/webauth/htdocs
 	cp -r tests/mod_webauth/htdocs/tests \
 	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
 	cp -r tests/mod_webauth/htdocs/ldaptests \
 	    $(CURDIR)/debian/tmp/usr/share/webauth/htdocs/
-	touch install-stamp
+	touch $@
 
 # Build the architecture-independent packages.
 binary-indep: DH_OPTIONS=-i

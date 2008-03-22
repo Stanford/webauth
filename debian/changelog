@@ -12,6 +12,10 @@ webauth (3.6.0-1) unstable; urgency=low
     - Several new WebLogin configuration options and hooks.
     - WebLogin REMOTE_USER variables have been renamed for consistency,
       but the old variables will continue to work.
+  * Minor debian/rules tweaking:
+    - Use the right configure arguments for cross-compiles.
+    - Use touch $@ to create stamp files.
+    - Use install rather than cp and mkdir.
 
  -- Russ Allbery <rra@debian.org>  Fri, 21 Mar 2008 22:10:09 -0700
 
