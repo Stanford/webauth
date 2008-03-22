@@ -1784,13 +1784,14 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
             okay = 1;
             break;
         }
-    free(realm);
     if (okay == 0) {
         char *msg = apr_psprintf(rc->r->pool, "realm %s is not permitted",
                                  realm);
         set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
+        free(realm);
         return MWK_ERROR;
     }
+    free(realm);
     return MWK_OK;
 }
 
