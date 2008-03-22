@@ -912,7 +912,7 @@ WEBAUTH_API int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
  */
 WEBAUTH_API int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
                                            char **principal,
-                                           enum webauth_krb5_canon);
+                                           int canon);
 /*
  * get the realm from the context. should only be called after a successful
  * call to webauth_krb5_init_via*.

@@ -810,7 +810,7 @@ webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context, const char *service,
 */
 int
 webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
-                           enum webauth_krb5_canon canonicalize)
+                           int canonicalize)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_error_code tcode;
