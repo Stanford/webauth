@@ -97,6 +97,10 @@ WebAuth 3.6.0 (unreleased)
  *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.
 
+ *) Update config.guess and config.sub to the 2008-01-16 versions,
+    install-sh to the Automake 1.10 version, and ltmain.sh and libtool.m4
+    to the versions from the 1.5.26-1 Debian package.
+
  *) Remove the maxlength restriction on the username entry box in the
     example login.tmpl template.
 
