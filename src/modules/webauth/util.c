@@ -87,7 +87,8 @@ mwa_setn_note(request_rec *r,
               const char *valfmt,
               ...)
 {
-    char *note, *val;
+    const char *note;
+    char *val;
     va_list ap;
     request_rec *top = get_top(r);
 
