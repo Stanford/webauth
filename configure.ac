@@ -167,7 +167,7 @@ APXS_DEPEND_LIBS=`echo " $DEPEND_LIBS" \
     | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
     | sed 's/ -R/ -Wl,-R/' \
     | sed 's/ -dynamic/ -Wl,-dynamic/'`
-APXS_KRB5_LIBS=`echo "$ KRB5_LIBS" \
+APXS_KRB5_LIBS=`echo " $KRB5_LIBS" \
     | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
     | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
     | sed 's/ -R/ -Wl,-R/' \
