@@ -86,6 +86,7 @@ install-stamp: build-stamp
 	cd src/bindings/perl/WebAuth \
 	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
+	install -d $(CURDIR)/debian/tmp/usr/share/weblogin
 	set -e; cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
 	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
 	done
