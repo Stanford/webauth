@@ -381,7 +381,8 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 {
     server_rec *scheck;
     MWAL_SCONF *sconf;
-    char *tktcache, *tktenv;
+    char *tktenv;
+    char *tktcache = NULL;
     size_t size;
 
     for (scheck=s; scheck; scheck=scheck->next) {
@@ -427,20 +428,22 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 
     /* Don't use pool memory for this so that the environment variable
        pointers don't become invalid when the pool is cleared. */
-    size = strlen("KRB5CCNAME=FILE:") + strlen(tktcache) + 1;
-    tktenv = malloc(size);
-    if (tktenv == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "webauthldap: cannot allocate memory for ticket cache"
-                     " environment variable");
-        return -1;
-    }
-    apr_snprintf(tktenv, size, "KRB5CCNAME=FILE:%s", tktcache);
-    if (putenv(tktenv) != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "webauthldap: cannot set ticket cache environment"
-                     " variable");
-        return -1;
+    if (tktcache != NULL) {
+        size = strlen("KRB5CCNAME=FILE:") + strlen(tktcache) + 1;
+        tktenv = malloc(size);
+        if (tktenv == NULL) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                         "webauthldap: cannot allocate memory for ticket cache"
+                         " environment variable");
+            return -1;
+        }
+        apr_snprintf(tktenv, size, "KRB5CCNAME=FILE:%s", tktcache);
+        if (putenv(tktenv) != 0) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                         "webauthldap: cannot set ticket cache environment"
+                         " variable");
+            return -1;
+        }
     }
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s, 
