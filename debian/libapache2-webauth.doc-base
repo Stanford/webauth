@@ -4,7 +4,7 @@ Author: Roland Schemers and Russ Allbery
 Abstract: The detailed protocol specification for WebAuth, including all
  URL formats, token formats, and the XML protocol for talking to the
  WebKDC.  Also includes the security model and design considerations.
-Section: Apps/Net
+Section: System/Security
 
 Format: text
 Files: /usr/share/doc/libapache2-webauth/protocol.txt.gz

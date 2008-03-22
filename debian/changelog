@@ -16,6 +16,7 @@ webauth (3.6.0-1) unstable; urgency=low
     - Use the right configure arguments for cross-compiles.
     - Use touch $@ to create stamp files.
     - Use install rather than cp and mkdir.
+  * Update the doc-base section for the WebAuth protocol specification.
 
  -- Russ Allbery <rra@debian.org>  Fri, 21 Mar 2008 22:10:09 -0700
 
