@@ -803,12 +803,13 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     req_cred->type = apr_pstrdup(rc->r->pool, at);
 
     if (strcmp(at, "service") == 0) {
-        const char *token = get_elem_text(rc, e, mwk_func);
+        char *token = get_elem_text(rc, e, mwk_func);
+
         if (token == NULL) {
             return MWK_ERROR;
         }
 
-        if (!parse_service_token(rc, (char*)token, &req_cred->u.st)) {
+        if (!parse_service_token(rc, token, &req_cred->u.st)) {
             return MWK_ERROR;
         }
         /* pull out subject from service token */

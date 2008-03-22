@@ -100,6 +100,9 @@ WebAuth 3.6.0 (2008-03-22)
  *) Fix a compiler warning in mod_webauthldap when setting the Kerberos
     ticket cache.
 
+ *) Fix an incorrect const qualifier when parsing requester credentials in
+    mod_webkdc.
+
  *) Update config.guess and config.sub to the 2008-01-16 versions,
     install-sh to the Automake 1.10 version, and ltmain.sh and libtool.m4
     to the versions from the 1.5.26-1 Debian package.
