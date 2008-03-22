@@ -74,12 +74,29 @@ mwa_remove_note(request_rec *r, const char *note)
 }
 
 /*
- * set note in main request. does not make copy of data
+ * set note in main request. the prefix should be a string constant. the
+ * full key for the note is constructed by concatenating the prefix with
+ * the name, if the latter is not null. the value of the note is specified
+ * by a format string and subsequent argument list. key (if necessary)
+ * and value strings are created in the topmost request's pool.
  */
 void
-mwa_setn_note(request_rec *r, const char *note, const char *val)
+mwa_setn_note(request_rec *r,
+              const char *prefix,
+              const char *name,
+              const char *valfmt,
+              ...)
 {
+    char *note, *val;
+    va_list ap;
     request_rec *top = get_top(r);
+
+    note = name ? apr_pstrcat(top->pool, prefix, name, NULL) : prefix;
+
+    va_start(ap, valfmt);
+    val = apr_pvsprintf(top->pool, valfmt, ap);
+    va_end(ap);
+
     apr_table_setn(top->notes, note, val);
 }
 
@@ -355,10 +372,7 @@ mwa_parse_cred_token(char *token,
 void
 mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
-    char *key;
-
-    key = apr_pstrcat(rc->r->pool, "mod_webauth_ENV_", name, NULL);
-    mwa_setn_note(rc->r, key, value);
+    mwa_setn_note(rc->r, "mod_webauth_ENV_", name, "%s", value);
 }
 
 static apr_array_header_t *cred_interfaces = NULL;

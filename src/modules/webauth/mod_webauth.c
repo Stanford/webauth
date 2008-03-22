@@ -250,14 +250,13 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
 static void
 fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
-    char *cookie = apr_psprintf(rc->r->pool,
-                                "%s=%s; path=/;%s",
-                                name,
-                                value,
-                                is_https(rc->r) ? "secure" : "");
     mwa_setn_note(rc->r, 
-                  apr_pstrcat(rc->r->pool, "mod_webauth_COOKIE_", name, NULL),
-                  cookie);
+                  "mod_webauth_COOKIE_",
+                  name,
+                  "%s=%s; path=/;%s",
+                  name,
+                  value,
+                  is_https(rc->r) ? "secure" : "");
 }
 
 /*
@@ -2397,8 +2396,7 @@ check_user_id_hook(request_rec *r)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                              "mod_webauth: stash note, user(%s)",
                              rc.at.subject);
-            mwa_setn_note(r, N_SUBJECT, 
-                          apr_pstrdup(rc.r->pool, rc.at.subject));
+            mwa_setn_note(r, N_SUBJECT, NULL, "%s", rc.at.subject);
         }
     } else {
         if (rc.sconf->debug)
@@ -2544,7 +2542,7 @@ translate_name_hook(request_rec *r)
      * ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, 
      * "mod_webauth: stash wr(%s)", wr);
      */
-    mwa_setn_note(r, N_WEBAUTHR, wr);
+    mwa_setn_note(r, N_WEBAUTHR, NULL, "%s", wr);
 
     s = p+1;
     p = ap_strstr(s, smagic);
@@ -2561,7 +2559,7 @@ translate_name_hook(request_rec *r)
          * ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
          * "mod_webauth: stash ws(%s)", ws);
          */
-        mwa_setn_note(r, N_WEBAUTHS, ws);
+        mwa_setn_note(r, N_WEBAUTHS, NULL, "%s", ws);
         s = p+1;
     }
 

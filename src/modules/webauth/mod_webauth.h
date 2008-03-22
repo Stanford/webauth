@@ -500,10 +500,18 @@ char *
 mwa_remove_note(request_rec *r, const char *note);
 
 /*
- * set note to main request. does not make copy of data
+ * set note in main request. the prefix should be a string constant. the
+ * full key for the note is constructed by concatenating the prefix with
+ * the name, if the latter is not null. the value of the note is specified
+ * by a format string and subsequent argument list. key (if necessary)
+ * and value strings are created in the topmost request's pool.
  */
 void
-mwa_setn_note(request_rec *r, const char *note, const char *val);
+mwa_setn_note(request_rec *r,
+              const char *prefix,
+              const char *name,
+              const char *valfmt,
+              ...);
 
 /*
  * log interesting stuff from the request

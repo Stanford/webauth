@@ -2,6 +2,12 @@
 
 WebAuth 3.6.0 (unreleased)
 
+ *) Allocate all note keys and values in the top-most request pool in
+    mod_webauth, avoiding problems with prematurely freed internal data
+    structures.  This fixes problems with checking access permissions of
+    subdirectories in mod_autoindex and may have fixed problems elsewhere.
+    Thanks to Ian Ward Comfort for the patch.
+
  *) Add the WebKdcLocalRealms configuration option to mod_webkdc, which
     specifies the transformation behavior for authenticated identities.
     The default is "local", which runs krb5_aname_to_localname and uses
