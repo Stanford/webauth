@@ -478,7 +478,7 @@ sub add_remuser_token {
     if (@WebKDC::Config::REMUSER_REALMS) {
         my $found = 0;
         $realm ||= '';
-        for my $check (@WebKDC::Config::REALMS) {
+        for my $check (@WebKDC::Config::REMUSER_REALMS) {
             if ($check eq $realm) {
                 $found = 1;
                 last;
@@ -675,7 +675,7 @@ while (my $q = CGI::Fast->new) {
     # return a redirect if BYPASS_CONFIRM is set.
     if ($status == WK_SUCCESS) {
         if (defined (&WebKDC::Config::record_login)) {
-            WebKDC::Config::record_login ($req->user);
+            WebKDC::Config::record_login ($resp->subject);
         }
         $varhash{force_confirm} = 1 if $q->param ('username');
         print_confirm_page ($q, \%varhash, $resp);
