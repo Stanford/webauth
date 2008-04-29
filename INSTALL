@@ -176,23 +176,16 @@ site, see doc/install-webkdc.
      webauth/app-server.stanford.edu.  (Note that at Stanford, other
      principals may not work.)
 
-     Stanford users can request a keytab be created for their system by
-     sending mail to srvtab-request@stanford.edu, specifying the SUNet ID
-     that should be able to download the keytab.  The keytab can then be
-     downloaded with the command:
+     Stanford users can create a WebAuth keytab for a server with:
 
-         /usr/pubsw/sbin/leland_srvtab \
-             -f <apache-root>/conf/webauth/srvtab \
-             -k <apache-root>/conf/webauth/keytab \
-             webauth.<your-system>
+         wallet -f <apache-root>/conf/webauth/keytab get keytab \
+             webauth/<your-system>.stanford.edu
 
-     replacing <apache-root> and <your-system> as above, except in this
-     case, <your-system> should *not* be fully qualified (it should be
-     just the system name without .stanford.edu).  Note that Stanford's
-     current keytab download system doesn't allow a keytab to be
-     downloaded without simultaneously downloading a srvtab, but the
-     resulting conf/webauth/srvtab file is not used by WebAuth and can be
-     deleted after leland_srvtab is run.
+     replacing <apache-root> and <your-system> as above.  You must already
+     be authenticated as a user, administrator, or admin team member for
+     the system, as set up in NetDB.  For more information, see:
+
+         http://www.stanford.edu/services/kerberos/sysadmin/wallet.html
 
      After installing the keytab, make sure that it is readable by the
      user that the web server runs as.  (It may have been created only

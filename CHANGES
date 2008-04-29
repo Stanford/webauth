@@ -1,5 +1,10 @@
                           WebAuth Change History
 
+WebAuth 3.6.1 (unreleased)
+
+ *) Update the INSTALL documentation for obtaining keytabs for Stanford
+    users to reference wallet instead of leland_srvtab.
+
 WebAuth 3.6.0 (2008-03-22)
 
  *) Allocate all note keys and values in the top-most request pool in
