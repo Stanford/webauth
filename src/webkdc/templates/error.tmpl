@@ -41,9 +41,16 @@ err_msg                : error message from WebKDC
                    service.  Please enable cookies in your web browser.<p>
               </TMPL_IF>
 
-              <!-- Error: no respson token -->
+              <!-- Error: no response token -->
               <TMPL_IF NAME=err_no_request_token>
                 <p>Error: The URL given is incomplete.</p>
+              </TMPL_IF>
+
+              <!-- Error: missing data when redisplaying the confirm page -->
+              <TMPL_IF NAME=err_confirm>
+                <p>Error: Necessary form data was missing.</p>
+                <p>You have probably accessed a stale cached page by
+                   mistake.</p>
               </TMPL_IF>
 
               <TMPL_IF NAME=err_webkdc>

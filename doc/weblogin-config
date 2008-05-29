@@ -79,6 +79,7 @@ Templates
 
       err_cookies_disabled      If set, user doesn't have cookies enabled
       err_no_request_token      If set, user had no request token
+      err_confirm               If set, incomplete data for confirm page
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
 

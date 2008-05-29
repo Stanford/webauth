@@ -2,6 +2,13 @@
 
 WebAuth 3.6.1 (unreleased)
 
+ *) Handle err_confirm in the error.tmpl sample template and document this
+    in doc/weblogin-config.  This error is returned when redisplaying the
+    confirmation page after a change in the REMOTE_USER cookie.
+
+ *) Fix a coding error in login.fcgi when redisplaying the confirmation
+    page fails.  Thanks to pod for the report.
+
  *) Update the INSTALL documentation for obtaining keytabs for Stanford
     users to reference wallet instead of leland_srvtab.
 

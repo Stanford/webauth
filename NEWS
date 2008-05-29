@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.6.1 (unreleased)
+
+ *) Handle err_confirm in the error.tmpl sample template and document this
+    in doc/weblogin-config.  This error is returned when redisplaying the
+    confirmation page after a change in the REMOTE_USER cookie.
+
 WebAuth 3.6.0 (2008-03-22)
 
  *) Allocate all note keys and values in the top-most request pool in

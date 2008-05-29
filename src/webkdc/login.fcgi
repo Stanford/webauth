@@ -354,7 +354,7 @@ sub redisplay_confirm_page {
         print STDERR "missing data when reconstructing confirm page\n"
             if $LOGGING;
         print_error_page ($q);
-        next;
+        return;
     }
     my $pretty_return_url = pretty_return_uri ($uri);
 
