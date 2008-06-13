@@ -107,3 +107,5 @@
 
  *) Remove the local argument from webauth_krb5_rd_req_with_data.  It's
     not actually useful.
+
+ *) Add support for WebAuthDoLogout in an .htaccess file.
