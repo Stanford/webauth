@@ -109,3 +109,10 @@
     not actually useful.
 
  *) Add support for WebAuthDoLogout in an .htaccess file.
+
+ *) Allow a WebAuth Application Server to specify that authentication
+    should be done using a particular instance (and perhaps only a
+    particular realm?) so that the WebLogin server knows to manage a
+    different set of single sign-on credentials for that user.  This
+    allows applications with specific credential requirements to not
+    interfere with a user's other logins.
