@@ -116,3 +116,7 @@
     different set of single sign-on credentials for that user.  This
     allows applications with specific credential requirements to not
     interfere with a user's other logins.
+
+ *) Check the Cookie header for multiple webauth_at cookies and try each
+    of them.  This works around a bug in IE 7 where bar.com cookies are
+    sent to foo.bar.com as well as the foo.bar.com cookies.
