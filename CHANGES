@@ -9,6 +9,10 @@ WebAuth 3.6.1 (unreleased)
  *) Fix a coding error in login.fcgi when redisplaying the confirmation
     page fails.  Thanks to pod for the report.
 
+ *) Fix an off-by-one error in error code to error string mapping in
+    WebKDC::WebKDCException that resulted in incorrect error names in
+    WebLogin error messages.  Thanks to pod for the report.
+
  *) Update the INSTALL documentation for obtaining keytabs for Stanford
     users to reference wallet instead of leland_srvtab.
 

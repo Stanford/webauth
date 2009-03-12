@@ -40,7 +40,7 @@ sub WK_ERR_LOGIN_FORCED                () {6;}
 sub WK_ERR_USER_REJECTED               () {7;}
 
 our @ErrorNames = qw(SUCCESS
-		     UNUSED USER_AND_PASS_REQUIRED
+		     USER_AND_PASS_REQUIRED
 		     LOGIN_FAILED
 		     UNRECOVERABLE_ERROR
 		     REQUEST_TOKEN_STALE
