@@ -468,30 +468,21 @@ WebAuthDebug on
 <h2>Setting up load-balanced WebAuth servers</h2>
 
 <p>WebAuth V3 was designed so that it would be fairly easy to setup
-multiple WebAuth servers for load balancing and redundancy.  There are two
-pieces of information that need to be shared between WebAuth servers in
-order to achieve this:</p>
-
-<ol>
-  <li>Kerberos keytab file</li>
-  <li>WebAuth keyring file</li>
-</ol>
+multiple WebAuth servers for load balancing and redundancy.  In order to
+achieve this, the WebAuth keyring has to be shared between the WebAuth
+servers.  The Kerberos keytab file does not have to be shared; each system
+can use a separate keytab file.</p>
 
 <div class="note"><h3>Note</h3>
-<p>All the files should be securely transferred from the master to the
+<p>The keyring file should be securely transferred from the master to the
 slave(s) using a program like <code>scp</code> or kerberized
 <code>rcp</code>.</p>
 </div>
 
 <p>By convention, one of the WebAuth servers should be designated as the
-master and other servers should be designated as slaves.  These files
+master and other servers should be designated as slaves.  The keyring
 should only be updated on the master and pushed manually to the
 slaves.</p>
-
-<p>The Kerberos keytab file is specified using the
-<a href="#webauthkeytab">WebAuthKeyTab</a> directive.  This is a standard
-Kerberos V5 keytab file containing the principal/key used by WebAuth
-servers to initially communicate with the WebKDC.</p>
 
 <p>The WebAuth keyring file is specified using the
 <a href="#webauthkeyring">WebAuthKeyring</a> directive.  This file
@@ -1600,6 +1591,6 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 2008 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2009 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

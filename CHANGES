@@ -13,6 +13,10 @@ WebAuth 3.6.1 (unreleased)
     WebKDC::WebKDCException that resulted in incorrect error names in
     WebLogin error messages.  Thanks to pod for the report.
 
+ *) Update the mod_webauth documentation to reflect that separate WebAuth
+    servers in the same load-balanced pool can use separate keytabs.  Only
+    the keyring needs to be shared between systems.
+
  *) Update the INSTALL documentation for obtaining keytabs for Stanford
     users to reference wallet instead of leland_srvtab.
 
