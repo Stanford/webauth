@@ -1,4 +1,0 @@
-etc/apache2/mods-available/webkdc.conf
-etc/apache2/mods-available/webkdc.load
-etc/webkdc/token.acl
-usr/lib/apache2/modules/mod_webkdc.so
