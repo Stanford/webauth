@@ -17,7 +17,7 @@ in environment variables.  The module was designed for use with an LDAP
 server that supports LDAP version 3 and allows binds authenticated using
 SASL GSSAPI Kerberos 5.</p>
 
-<p>For other Webauth documentation see the
+<p>For other WebAuth documentation see the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 </summary>
 
@@ -109,7 +109,7 @@ returned values, separated by that separator.</p>
 
 </section>
 
-<section><title>Webauth 2.x backward compatibility</title>
+<section><title>WebAuth 2.x backward compatibility</title>
 
 <p>StanfordAuth as an AuthType is supported as a form of backward
 compatibility, to ease the transition from WebAuth v2.  When it is used,

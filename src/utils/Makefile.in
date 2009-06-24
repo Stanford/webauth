@@ -1,4 +1,4 @@
-# Makefile for Webauth utilities
+# Makefile for WebAuth utilities
 # $Id$
 
 srcdir		= @srcdir@

@@ -40,7 +40,7 @@
           <list style='numbers'>
             <t>User-Agent (UA), the user's browser</t>
             <t>WebAuth-enabled Application Server (WAS), a web server that
-               wants to serve content authenticated via Webauth</t>
+               wants to serve content authenticated via WebAuth</t>
             <t>WebKDC, the login server and provider of authenticators to
                the other two components</t>
           </list>
@@ -85,7 +85,7 @@
 
           <t>The first type of request are those requests coming from a UA
           after it has been redirected by a WAS.  This component of the
-          WebKDC is referred to as the Weblogin service.  When the WebKDC
+          WebKDC is referred to as the WebLogin service.  When the WebKDC
           receives one of these, it will first see if the request includes
           a cookie that contains cached credentials.  If the request
           contains a valid cookie, this cookie is used to obtain a new
@@ -153,7 +153,7 @@
             the server it was originally generated for.  The main use of a
             webkdc-proxy token is by the WebKDC itself to implement single
             sign-on; that webkdc-proxy token is usually put in a cookie
-            scoped to the Weblogin service.  Its secondary use is to allow
+            scoped to the WebLogin service.  Its secondary use is to allow
             WAS servers to request credential-tokens.</t>
 
             <t hangText='request (encrypted with session key)'>
@@ -191,7 +191,7 @@
             with the requestTokenRequest command.  It contains the user's
             username and password and is used to obtain the inital
             webkdc-proxy token.  It normally only used internally by the
-            Weblogin component of te WebKDC.</t>
+            WebLogin component of te WebKDC.</t>
 
             <t hangText='app (encrypted with WAS private key)'>
             <vspace blankLines='0'/>An app token is used by a WAS server
@@ -444,12 +444,12 @@
             WAS's private key (for handling server pools).  The request
             token is encrypted with the AES session key shared between the
             WAS and the WebKDC.  The WAS then returns a temporary redirect
-            to the UA, sending the UA to the Weblogin component of the
+            to the UA, sending the UA to the WebLogin component of the
             WebKDC and including the request token in the redirect
             URL.</t>
 
             <t>The US follows the redirect and sends a request to the
-            Weblogin component of the WebKDC, including the request token
+            WebLogin component of the WebKDC, including the request token
             in the URL.  No cookies are sent to the WebKDC since the user
             has never previously authenticated.</t>
 
@@ -459,7 +459,7 @@
             token or needed information derived from it will generally be
             included in a hidden form field.  (This assumes that a form
             prompt is needed to authenticate the user.  If the user can be
-            authenticated directly by the Weblogin server via some method
+            authenticated directly by the WebLogin server via some method
             such as SPNEGO, it may skip sending back a login form and
             therefore also skip the next step, proceeding directly to
             checking the authorization of the WAS.)</t>
@@ -606,7 +606,7 @@
             scenario.</t>
 
             <t>The US follows the redirect and sends a request to the
-            Weblogin component of the WebKDC, including the request token
+            WebLogin component of the WebKDC, including the request token
             in the URL.  Included in this request is a cookie containing a
             webkdc-proxy token since the user has previously
             authenticated.</t>
@@ -685,7 +685,7 @@
             <t>The WAS sees no app token containing the required
             credentials and constructs a request token asking for a proxy
             token of the desired type.  It then returns a redirect to the
-            Weblogin component of the WebKDC, including the request token
+            WebLogin component of the WebKDC, including the request token
             in the URL, as previously.  The only difference is in the
             contents of the request token.</t>
 
@@ -839,7 +839,7 @@
       <t>This section describes the XML protocol used to talk to the
       WebKDC.  It is used by a WAS to request a webkdc-service token and
       session key or to use a proxy token to request credential tokens,
-      and internally by the Weblogin component of the WebKDC to request
+      and internally by the WebLogin component of the WebKDC to request
       webkdc-proxy, id, and proxy tokens from the WebKDC to return to the
       UA></t>
 
@@ -1007,7 +1007,7 @@
         requestToken, webkdcProxyToken, and webkdcProxyTokenInfo.  The
         getTokens command is used directly by the WAS to request either a
         service token or id and credential tokens from a proxy token.  The
-        requestToken command is used by the Weblogin component of the
+        requestToken command is used by the WebLogin component of the
         WebKDC to process a request token sent in a URL from a WAS.  The
         webkdcProxyToken command converts an existing credential (such as
         a Kerberos V5 TGT) into a webkdc-proxy token and can be used to
@@ -1096,7 +1096,7 @@
         </section>
 
         <section anchor='xmlrequesttoken' title='requestToken'>
-          <t>The requestToken command is used by the Weblogin component of
+          <t>The requestToken command is used by the WebLogin component of
           the WebKDC to process a request token sent in a URL from a
           WAS.</t>
 
@@ -1216,7 +1216,7 @@
           in it, then &lt;loginCanceledToken> will be returned.  This
           token should be returned to the WAS if the user elects to cancel
           authentication so that the application can take appropriate
-          action.  Note that it is up to the Weblogin component to send
+          action.  Note that it is up to the WebLogin component to send
           back that token as the requested token (WEBAUTHR in the return
           URL) if the user hits the cancel button.</t>
 
@@ -1306,7 +1306,7 @@
 
       <section anchor='xmlpost' title='Posting XML to the WebKDC'>
         <t>The XML data should be sent via POST to the WebKDC's URL, which
-        should be different than the URL of the Weblogin service but
+        should be different than the URL of the WebLogin service but
         should be on the same system.  By convention, it is normally
         /webkdc-service/ on the designated WebKDC system, but this SHOULD
         be configurable in any WebAuth implementation.</t>
@@ -1840,7 +1840,7 @@
         </section>
 
         <section anchor='tokenlogin' title='login Token Encoding'>
-          <t>A login token is used by the Weblogin component of the WebKDC
+          <t>A login token is used by the WebLogin component of the WebKDC
           to communicate a username and password to the rest of the
           WebKDC when it needs to authenticate a user.</t>
 

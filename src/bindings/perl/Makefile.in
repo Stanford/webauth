@@ -1,4 +1,4 @@
-# Makefile for Webauth Perl bindings
+# Makefile for WebAuth Perl bindings
 # $Id$
 
 srcdir = @srcdir@

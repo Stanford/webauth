@@ -13,11 +13,11 @@
 <body>
 <div id="page-header">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.0</p>
+<p class="apache">Apache HTTP Server Version 2.2</p>
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.0</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.2</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauthldap</h1>
 <div class="toplang">
@@ -36,7 +36,7 @@ in environment variables.  The module was designed for use with an LDAP
 server that supports LDAP version 3 and allows binds authenticated using
 SASL GSSAPI Kerberos 5.</p>
 
-<p>For other Webauth documentation see the
+<p>For other WebAuth documentation see the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
@@ -60,7 +60,7 @@ SASL GSSAPI Kerberos 5.</p>
 <li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li>
 <li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
 <li><img alt="" src="../images/down.gif" /> Ad hoc attributes lookup</li>
-<li><img alt="" src="../images/down.gif" /> Webauth 2.x backward compatibility</li>
+<li><img alt="" src="../images/down.gif" /> WebAuth 2.x backward compatibility</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -146,7 +146,7 @@ returned values, separated by that separator.</p>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Webauth 2.x backward compatibility</h2>
+<h2>WebAuth 2.x backward compatibility</h2>
 
 <p>StanfordAuth as an AuthType is supported as a form of backward
 compatibility, to ease the transition from WebAuth v2.  When it is used,

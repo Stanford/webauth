@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 our $ID = q($Id$ );
 #
-# logout.fcgi -- Weblogin logout page for WebAuth.
+# logout.fcgi -- WebLogin logout page for WebAuth.
 #
 # Written by Jeanmarie Lucker <jlucker@stanford.edu>
 # Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr. University

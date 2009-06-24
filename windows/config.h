@@ -43,10 +43,10 @@
 #define PACKAGE_BUILD_INFO "Built by schemers@slapshot-xp.stanford.edu on 2003-07-28 21:22:55 UTC"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "Webauth"
+#define PACKAGE_NAME "WebAuth"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Webauth 3.2.0"
+#define PACKAGE_STRING "WebAuth 3.2.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "webauth"

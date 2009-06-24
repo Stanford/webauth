@@ -2,14 +2,14 @@
 
 Introduction
 
-  The Weblogin front-end for user authentication can optionally support
+  The WebLogin front-end for user authentication can optionally support
   SPNEGO for browsers that support it, with fallback to the standard
   username/password authentication.  SPNEGO is the Microsoft protocol for
   doing GSSAPI authentication (or NTLMv2 authentication, but that's less
   interesting) over HTTP.  It is supported by, at least, IE on PC, Firefox
   on all platforms, and Safari on Mac, and probably by other browsers.
 
-  Before trying this configuration, set up a basic WebKDC and Weblogin
+  Before trying this configuration, set up a basic WebKDC and WebLogin
   server as described in install-webkdc and make sure that's working
   first.
 
@@ -20,7 +20,7 @@ Introduction
 
 Configuration
 
-  To use SPNEGO, you need to have two login URLs on your Weblogin server
+  To use SPNEGO, you need to have two login URLs on your WebLogin server
   rather than just one (traditionally /login).  The following instructions
   assume that you are using /login as the URL to try SPNEGO first and
   /login-simple for the password fallback.  This also allows clients that
@@ -71,7 +71,7 @@ Configuration
       $REMUSER_EXPIRES = 60 * 60 * 8;
       @REMUSER_REALMS = ("EXAMPLE.COM");
 
-  The first line tells the Weblogin script to trust REMOTE_USER as set by
+  The first line tells the WebLogin script to trust REMOTE_USER as set by
   Apache if present (so make sure that there isn't a way of accessing the
   script via an Apache authentication mechanism that you don't trust!).
   The second line says how good authentication via REMOTE_USER should be
@@ -82,7 +82,7 @@ Configuration
 
   Now, when the user hits /login with a browser, the server will attempt
   to do an SPNEGO authentication.  If the browser supports it, that
-  authentication information will be passed on to the Weblogin script in
+  authentication information will be passed on to the WebLogin script in
   REMOTE_USER and it will cobble up a temporary webkdc-proxy token for the
   WebKDC.  If the remote system did not request a Kerberos authenticator
   or any additional credentials and only needs simple authentication, this
@@ -125,10 +125,10 @@ Configuration with Delegation
 
 Notes and Cautions
 
-  If the user is successfully authenticated with SPNEGO, the Weblogin
+  If the user is successfully authenticated with SPNEGO, the WebLogin
   server will not set a single sign-on cookie the way that it normally
   does with password authentication.  Instead, the next time that the user
-  is redirected to the Weblogin server, the SPNEGO authentication will be
+  is redirected to the WebLogin server, the SPNEGO authentication will be
   repeated.  That way, their general WebAuth authentication won't outlast
   their Kerberos tickets.
 
@@ -139,7 +139,7 @@ Notes and Cautions
   in webkdc.conf even if the user's Kerberos credentials are about to
   expire.  This may be improved later by adding a way to export the
   expiration time of the ticket from mod_auth_kerb to somewhere the
-  Weblogin script can see it.
+  WebLogin script can see it.
 
 Implementation Details
 

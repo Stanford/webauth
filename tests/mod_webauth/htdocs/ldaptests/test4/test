@@ -17,7 +17,7 @@ print<<EOS;
 
 You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
 <br>
-This tests the Webauth 2.x compatibility directives, <b>AuthType StanfordAuth</b> and <b>require group <i>groupname</i></b>.
+This tests the WebAuth 2.x compatibility directives, <b>AuthType StanfordAuth</b> and <b>require group <i>groupname</i></b>.
 <br>
 In this case, you have been authorized by the privgroup "$AUTHRULE" as you can see
  by the environment variable WEBAUTH_LDAPAUTHRULE below.

@@ -612,7 +612,7 @@ while (my $q = CGI::Fast->new) {
     }
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
-    # Enumerate all cookies that start with webauth_wpt (Webauth Proxy Token)
+    # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)
     # and stuff them into the WebKDC request.
     my %cart = CGI::Cookie->fetch;
     my $wpt_cookie;

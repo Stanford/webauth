@@ -1,4 +1,4 @@
-# Makefile for the Webauth test suite
+# Makefile for the WebAuth test suite
 # $Id$
 
 srcdir		= @srcdir@

@@ -2,7 +2,7 @@
 <html>
   <head>
     <http-equiv="pragma" content="no-cache">
-    <title>Webauth Login</title>
+    <title>WebAuth Login</title>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
   </head>
 
@@ -31,7 +31,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
   </TMPL_IF>
 
   <body onload="document.login.username.focus();">
-    <h1 align="center">Webauth Login</h1>
+    <h1 align="center">WebAuth Login</h1>
     <TMPL_IF NAME=error>
       <div class="error" align="center">
         <p><strong>
@@ -120,7 +120,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
             <div class="loginlinks">
               <a href="/help.html">help</a>
               <TMPL_IF NAME=login_cancel>
-                <!-- The Webauth Server has a cancel url.-->
+                <!-- The WebAuth Server has a cancel url.-->
                 <a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">cancel</a>
               </TMPL_IF>
             </div>
@@ -156,8 +156,8 @@ remuser_url            : where to send the user for REMOTE_USER auth
     <div class="trailer">
       <h2>Caution:</h2>
 
-      <p>Never enter your Webauth username and password on a web page
-      unless the page is a page directly served by the Webauth login
+      <p>Never enter your WebAuth username and password on a web page
+      unless the page is a page directly served by the WebAuth login
       server.</p>
     </div>
   </body>

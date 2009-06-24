@@ -246,7 +246,7 @@ WebAuth 3.5.4 (2007-04-24)
 
 WebAuth 3.5.3 (2006-09-12)
 
- *) Add the connection IP address and, for Weblogin logins, the client IP
+ *) Add the connection IP address and, for WebLogin logins, the client IP
     address to the WebKDC to the WebKDC log messages whenever processing
     XML requests.
 
@@ -256,7 +256,7 @@ WebAuth 3.5.3 (2006-09-12)
     that WebAuth will compile under Apache 2.2.  Thanks to Jim Rodgers for
     the patch.
 
- *) Turn off debug-level logging in the Weblogin login.fcgi script by
+ *) Turn off debug-level logging in the WebLogin login.fcgi script by
     default.  The REMOTE_USER code now seems to be stable and working
     correctly and the extra verbose logging is not needed.
 
@@ -282,7 +282,7 @@ WebAuth 3.5.2 (2006-07-13)
     templates.
 
  *) Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
-    of all responses from the Weblogin scripts.  This is particularly
+    of all responses from the WebLogin scripts.  This is particularly
     important for the logout script, since otherwise browsers may cache
     the logout page and not actually be logged out.
 
@@ -302,14 +302,14 @@ WebAuth 3.5.1 (2006-06-20)
 
     The form for attempting Apache remote-user authentication should not
     contain this tag.  Existing login.tmpl files must be updated
-    accordingly when upgrading to this version of the Weblogin server.
+    accordingly when upgrading to this version of the WebLogin server.
 
  *) In the weblogin confirmation page, the variable remuser is now set to
     1 if the user has a cookie indicating they want to try REMOTE_USER and
     is not set otherwise.  This is a change from the previous behavior
     where it was set to either the string "checked" or the empty string.
     Templates using this variable will require modification.  This change
-    was made so that the Weblogin scripts don't assume a particular UI
+    was made so that the WebLogin scripts don't assume a particular UI
     presentation.
 
  *) Add an err_forced template variable for the login.tmpl file that
@@ -319,7 +319,7 @@ WebAuth 3.5.1 (2006-06-20)
     login.tmpl files must be updated to include a reference to this
     variable (even if not otherwise used).
 
- *) Add the @REALMS configuration option to the Weblogin configuration
+ *) Add the @REALMS configuration option to the WebLogin configuration
     file, for use with Apache authentication where the resulting
     REMOTE_USER value may be in one of several realms and each realm
     should be treated identically.

@@ -1,8 +1,8 @@
-                            Weblogin Page Flow
+                            WebLogin Page Flow
 
 Introduction
 
-  Weblogin is the name for the component of WebAuth that handles user
+  WebLogin is the name for the component of WebAuth that handles user
   authentication interaction.  It is a CGI service that runs on the WebKDC
   and presents HTML login forms, status pages, and handles translating
   browser cookies into XML requests to the WebKDC and vice versa.  See
@@ -14,7 +14,7 @@ Introduction
   users.  However, attempting SPNEGO unconditionally has deleterious
   effects in some browsers:  some versions of Opera hang or stop loading
   the page with an error, and IE throws up a basic-auth dialog box unless
-  the Weblogin URL has been added to its intranet sites.  We therefore
+  the WebLogin URL has been added to its intranet sites.  We therefore
   want to permit a configuration where the username/password dialog box is
   always shown first, but the user may choose to attempt SPNEGO, and then
   may also choose to set a cookie that always directs them to SPNEGO.
@@ -45,11 +45,11 @@ Cookie Check
 
 Basic Page Flow
 
-  Here is the Weblogin page flow in the basic case where no REMOTE_USER
+  Here is the WebLogin page flow in the basic case where no REMOTE_USER
   complications are introduced:
 
-   1. User is sent to Weblogin with a request token and a webkdc-service
-      token from the WAS.  Weblogin passes that request and any single
+   1. User is sent to WebLogin with a request token and a webkdc-service
+      token from the WAS.  WebLogin passes that request and any single
       sign-on cookies from the browser to the WebKDC.  If the WebKDC says
       that authentication is successful (based on the cookies, generally,
       but it is also allowed to make out-of-band decisions even though it
@@ -57,7 +57,7 @@ Basic Page Flow
       was successful.  In that case, go to step 3.  Otherwise, proceed to
       step 2.
 
-   2. Weblogin presents a username/password form, keeping the request
+   2. WebLogin presents a username/password form, keeping the request
       token in a hidden field.  This form will also have an "I don't want
       to log in" link if the application provided a cancel URL.  If the
       user submits a username and password, it is validated with the
@@ -76,9 +76,9 @@ Page Flow with REMOTE_USER
   install-spengo (for example) that sets up an alias to the login script
   as an authentication failure handler, we get the following page flow:
 
-   1. User is sent to Weblogin with a request token and a webkdc-service
-      token from the WAS.  Weblogin (via Apache) attempts to authenticate.
-      If they succeed, Weblogin is called with REMOTE_USER set.  It uses
+   1. User is sent to WebLogin with a request token and a webkdc-service
+      token from the WAS.  WebLogin (via Apache) attempts to authenticate.
+      If they succeed, WebLogin is called with REMOTE_USER set.  It uses
       that information to generate an artificial single sign-on token and
       calls the WebKDC with it to get an appropriate id or proxy token.
       If that authentication is sufficient, go to step 5.  Otherwise, go
@@ -101,7 +101,7 @@ Page Flow with REMOTE_USER
       described above.  Go to step 5 if the user is authenticated, step 4
       otherwise.
 
-   4. Weblogin presents the username/password form with hidden fields as
+   4. WebLogin presents the username/password form with hidden fields as
       above.  User submits username/password, which is then validated.
       When successful, proceed to step 5.  The submit target of the form
       must be a URL not protected by Apache authentication (generally the
@@ -117,11 +117,11 @@ Page Flow with Optional REMOTE_USER
   Apache authentication if desired.  To do that, we will use the following
   page flow:
 
-   1. User is sent to Weblogin with tokens.  Weblogin passes the request
+   1. User is sent to WebLogin with tokens.  WebLogin passes the request
       and any single sign-on cookies to the WebKDC.  If the user is
       authenticated, go to step 6.  Otherwise, continue to step 2.
 
-   2. Weblogin checks for the "always use REMOTE_USER" cookie.  If present
+   2. WebLogin checks for the "always use REMOTE_USER" cookie.  If present
       *and* the application doesn't require username/password
       authentication, user is redirected to the configured REMOTE_USER
       URL, keeping the tokens at the end of the URL.  Go to step 3.
@@ -133,7 +133,7 @@ Page Flow with Optional REMOTE_USER
       protected by Apache authentication) as a failure handler.  Go to
       step 5.
 
-   4. The Weblogin script takes the REMOTE_USER value, cobbles up a single
+   4. The WebLogin script takes the REMOTE_USER value, cobbles up a single
       sign-on token, and passes that to the WebKDC.  If that's sufficient
       for authentication, proceed to step 6.  Otherwise, the
       username/password dialog is presented again.  Note that this case

@@ -93,7 +93,7 @@ which is one of the following:</p>
 <dt>getTokens</dt>
 <dd><p>A request for a service, id, proxy, or cred token.  You will see
     this action most frequently from WebAuth web servers acquiring new
-    service tokens for use later when redirecting users to the Weblogin
+    service tokens for use later when redirecting users to the WebLogin
     server and decoding the response.  When delegating user credentials to
     WebAuth application servers, those servers will send a
     <code>getTokens</code> request to the WebKDC to obtain those delegated
@@ -104,7 +104,7 @@ which is one of the following:</p>
 <dd><p>A request for an id or proxy token for a user.  A proxy token for
     the WebKDC itself will also be returned for use with future requests
     by the same user.  This call will normally only be done by the
-    Weblogin component of the WebKDC service; while the call is available
+    WebLogin component of the WebKDC service; while the call is available
     to any client, clients wishing to bootstrap WebAuth cookies on their
     own should use the much simpler webkdcProxyToken call instead.</p>
 </dd>
@@ -113,7 +113,7 @@ which is one of the following:</p>
 <dd><p>A request for a WebKDC proxy token (the token contained in the
     WebAuth single sign-on cookie) given a Kerberos authenticator.  This
     can be used by clients to bootstrap a WebAuth single sign-on cookie
-    without having to visit the Weblogin server in a browser.</p>
+    without having to visit the WebLogin server in a browser.</p>
 </dd>
 
 <dt>webkdcProxyTokenInfo</dt>
@@ -133,13 +133,13 @@ key=value.  The possible keys are:</p>
 <dl>
 <dt>clientIp</dt>
 <dd><p>Only for <code>requestToken</code> requests, this contains the
-    client IP address as indicated by the Weblogin server.  If the
-    Weblogin server didn't include the client IP address in the request,
+    client IP address as indicated by the WebLogin server.  If the
+    WebLogin server didn't include the client IP address in the request,
     the value will be empty.  Please note that the WebKDC does not
     authenticate this information, only records whatever was passed in by
-    the Weblogin server, which means that if <code>from</code> is not
+    the WebLogin server, which means that if <code>from</code> is not
     127.0.0.1 (meaning that the <code>requestToken</code> request didn't
-    come from the Weblogin server), the value of this key should not be
+    come from the WebLogin server), the value of this key should not be
     trusted.</p>
 </dd>
 
@@ -157,7 +157,7 @@ key=value.  The possible keys are:</p>
 <dt>from</dt>
 <dd><p>The IP address from which the request came.  For
     <code>requestToken</code> in the recommended configuration of running
-    Weblogin servers on the same host as the WebKDC, this will normally
+    WebLogin servers on the same host as the WebKDC, this will normally
     always be 127.0.0.1, but will be more interesting for the other
     events.</p>
 </dd>
@@ -191,7 +191,7 @@ key=value.  The possible keys are:</p>
 <dd><p>For <code>getTokens</code> and <code>requestToken</code>, this will
     contain the identifier of the requesting server (in the case of
     <code>requestToken</code>, this is the server that sent the user to
-    Weblogin).</p>
+    WebLogin).</p>
 </dd>
 
 <dt>type</dt>
