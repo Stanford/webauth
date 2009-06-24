@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='March' year='2008' />
+    <date month='June' year='2009' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1165,6 +1165,11 @@
          not set if &lt;loginErrorCode> is set. -->
     &lt;requestedToken>{base64-token}&lt;/requestedToken>
 
+    &lt;!-- requestedTokenType will be the type of requestedToken,
+         one of error, id, or proxy.  not set if &lt;LoginErrorCode> is
+         set. -->
+    &lt;requestedTokenType>error|id|proxy&lt;/requestedToken>
+
     &lt;!-- set if request token request options has "lc" -->
     &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
 
@@ -1211,6 +1216,10 @@
               error.</t>
             </list>
           </t>
+
+          <t>requestedTokenType is included so that the WebLogin component
+          can make display decisions based on whether the remote site
+          requested an id token or a proxy token.</t>
 
           <t>If the request option attribute in the request token has "lc"
           in it, then &lt;loginCanceledToken> will be returned.  This
@@ -2191,6 +2200,12 @@
           WebKDC did not permit the user's principal to authenticate.  Fix
           typo in the webkdcProxyTokenInfoRequest example.  Fix XML
           formatting issues.</t>
+
+          <t hangText=2.12 (2009-06-24, rra)'>
+          <vspace blankLines='0'/>Add requestedTokenType to the XML
+          returned in response to &lt;requestToken> so that the WebLogin
+          component can make decisions based on whether the WAS requested
+          an id token or a proxy token.</t>
         </list>
       </t>
     </section>
