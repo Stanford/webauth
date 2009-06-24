@@ -1,5 +1,4 @@
-/*  $Id$
-**
+/*
 **  MIT Kerberos interface for WebAuth.
 **
 **  This file is *included* (via the preprocessor) in krb5.c for systems that

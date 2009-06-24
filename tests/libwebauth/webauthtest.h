@@ -4,8 +4,6 @@
  * this file contains some simple macros to emulate Perl's test
  * harness. FIXME: should move this to libwebauth or common so
  * other C tests can use it.
- *
- * $Id$
  */
 
 #ifndef _WEBAUTHTESTS_H

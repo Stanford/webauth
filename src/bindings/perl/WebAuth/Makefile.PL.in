@@ -1,5 +1,4 @@
 # Makefile.PL for WebAuth Perl bindings.  -*- perl -*-
-# $Id$
 
 # It's practically impossible to change the library link order with the Perl
 # build system.  It's also pratically impossible to correctly link a Perl

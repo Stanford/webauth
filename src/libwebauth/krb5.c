@@ -1,5 +1,4 @@
-/*  $Id$
-**
+/*
 **  Kerberos interface for WebAuth.
 **
 **  All WebAuth functions that use Kerberos use the routines in this file.

@@ -6,8 +6,6 @@
  * encode and decode lists of attributes, generate tokens from them, encode
  * and decode tokens in base64 or hex encoding, and some additional utility
  * functions to generate random numbers or new AES keys.
- *
- * $Id$
  */
 
 #ifndef _WEBAUTH_H

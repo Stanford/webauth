@@ -1,5 +1,4 @@
 dnl ldap.m4 -- Find the OpenLDAP libraries
-dnl $Id$
 dnl
 dnl Defines the macro WEBAUTH_LIB_LDAP, which probes for the OpenLDAP
 dnl libraries and defines the output variables LDAP_LIBS and LDAP_CPPFLAGS to

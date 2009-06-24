@@ -1,5 +1,4 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl $Id$
 
 dnl Put more complex macros into separate files to make them easier to
 dnl maintain.  (Also good for macros that should be used in other projects as

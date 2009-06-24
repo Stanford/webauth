@@ -1,5 +1,4 @@
 dnl curl.m4 -- Find the cURL libraries.
-dnl $Id$
 dnl
 dnl Defines the macro WEBAUTH_LIB_CURL, which probes for the cURL libraries
 dnl and defines the output variables CURL_CPPFLAGS and CURL_LIBS to the

@@ -1,5 +1,4 @@
 # Makefile for WebAuth Perl bindings
-# $Id$
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@

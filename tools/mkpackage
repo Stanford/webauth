@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-$ID = q$Id$;
 #
 # mkpackage -- Wrapper around tar to create a WebAuth module package.
 #

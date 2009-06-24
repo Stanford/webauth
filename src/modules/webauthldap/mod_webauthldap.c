@@ -1,7 +1,3 @@
-/*
-$Id$
-*/
-
 #include "httpd.h"
 #include "http_config.h"
 #include "http_protocol.h"

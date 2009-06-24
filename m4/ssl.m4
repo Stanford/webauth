@@ -1,5 +1,4 @@
 dnl ssl.m4 -- Probe for the OpenSSL libraries.
-dnl $Id$
 dnl
 dnl Defines the macro WEBAUTH_LIB_SSL, which probes for the OpenSSL libraries
 dnl and defines SSL_CPPFLAGS and SSL_LIBS.  It also defines CRYPTO_CPPFLAGS

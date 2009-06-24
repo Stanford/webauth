@@ -1,5 +1,4 @@
 #! /bin/sh
-# $Id$
 #
 # mkheader -- Generate the webauth.h header, including config.h information.
 #

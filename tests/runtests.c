@@ -1,6 +1,4 @@
-/* $Id$
-
-   Run a set of tests, reporting results.
+/* Run a set of tests, reporting results.
 
    Copyright 2000, 2001 Russ Allbery <rra@stanford.edu>
 

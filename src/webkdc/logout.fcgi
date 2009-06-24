@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-our $ID = q($Id$ );
 #
 # logout.fcgi -- WebLogin logout page for WebAuth.
 #

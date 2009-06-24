@@ -1,5 +1,4 @@
 #! /usr/bin/perl
-# $Id$
 #
 # Generate a filename-only manifest from a source tree.
 #

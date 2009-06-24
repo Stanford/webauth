@@ -1,5 +1,4 @@
 # Makefile for webauth module
-# $Id$
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
