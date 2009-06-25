@@ -146,17 +146,21 @@ Configuration
 
       By default, a confirmation page is always shown to the user and they
       have to follow the link to continue to wherever they were trying to
-      go.  This is required by the HTTP protocol when the user entered
-      their username and password since one is not permitted to return a
-      redirect as the result of a POST.  By default, the page is always
-      presented for consistency and to warn the user that they're entering
-      an authenticated site.
+      go.  This page serves to warn the user that they're entering an
+      authenticated site, to tell them what site they're authenticating
+      to, and to give them an opportunity to cancel logging on to that
+      site.
 
       When this variable is set to a true value (1 is a good true value),
-      the confirmation page is only shown when required by protocol
-      (namely, after a POST of the login form).  In all other cases
-      (existing single sign-on cookie, successful Apache authentication,
-      etc.), the user is silently redirected to the destination page.
+      the confirmation page is suppressed and the user is silently
+      redirected to the destination page.  For REMOTE_USER authentication
+      or authentication using a single sign-on cookie, this is done with a
+      302 redirect page.  After username/password login, this is done with
+      a 303 redirect, but only if SERVER_PROTOCOL is set in the
+      environment to HTTP/1.1.  Otherwise, the regular confirmation page
+      is displayed.  When the 303 redirect is used, the page body is the
+      normal redirect page.
+
       Default: false.
 
   $DEFAULT_REALM

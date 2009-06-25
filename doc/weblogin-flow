@@ -211,6 +211,12 @@ Implementation
       We do *not* have to preserve the proxy cookies, since we will have
       set them the first time through the confirm page.
 
+      Note that the confirmation page can be suppressed with a WebLogin
+      configuration option.  If it is suppressed, it is replaced by a 302
+      redirect (following REMOTE_USER authentication or authentication
+      based on an existing single sign-on cookie) or a 303 redirect
+      (following username/password form submission).
+
    7. If we get this far, the user isn't authenticated yet.  There are
       six possibilities.
 

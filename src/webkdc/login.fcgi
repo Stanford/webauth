@@ -4,7 +4,7 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 #     Board of Trustees, Leland Stanford Jr. University
 #
 # This is the front page for user authentication for weblogin.  It accepts
@@ -101,9 +101,10 @@ sub krb5_escape {
 # Print the headers for a page.  Takes the user's query and any additional
 # cookies to set as parameters, and always adds the test cookie.  Skip any
 # remuser proxy tokens, since those are internal and we want to reauthenticate
-# the user every time.  Takes an optional redirection URL.
+# the user every time.  Takes an optional redirection URL and an optional
+# parameter saying that this is a post redirect.
 sub print_headers {
-    my ($q, $cookies, $redir_url) = @_;
+    my ($q, $cookies, $redir_url, $post) = @_;
     my $ca;
 
     # $REMUSER_COOKIE is handled as a special case, since it stores user
@@ -149,8 +150,10 @@ sub print_headers {
 
     # Now, print out the page header with the appropriate cookies.
     my @params;
-    push (@params, -location => $redir_url, -status => '302 Moved')
-        if $redir_url;
+    if ($redir_url) {
+        push (@params, -location => $redir_url,
+              -status => $post ? '303 See Also' : '302 Moved');
+    }
     push (@params, -cookie => $ca) if $ca;
     print $q->header (-type => 'text/html', -Pragma => 'no-cache',
                       -Cache_Control => 'no-cache, no-store', @params);
@@ -298,11 +301,14 @@ sub print_confirm_page {
 
     # If configured to permit bypassing the confirmation page and the page was
     # not the target of a POST, return a redirect to the final page instead of
-    # displaying a confirmation page.
+    # displaying a confirmation page.  If the page was the target of the post,
+    # we'll return a 303 redirect later on but present the regular
+    # confirmation page as the body in case the browser doesn't support it.
     if ($WebKDC::Config::BYPASS_CONFIRM and not $lvars->{force_confirm}) {
-        print $q->redirect ($return_url);
+        print_headers ($q, $resp->proxy_cookies, $return_url);
         return;
     }
+    my $redirect = $WebKDC::Config::BYPASS_CONFIRM;
 
     # Find our page and set general template parameters.
     my $page = $PAGES{confirm};
@@ -334,8 +340,14 @@ sub print_confirm_page {
         }
     }
 
-    # Print out the page, including any updated proxy cookies if needed.
-    print_headers ($q, $resp->proxy_cookies);
+    # Print out the page, including any updated proxy cookies if needed.  If
+    # we're suppressing the confirm page and the browser used HTTP/1.1, use
+    # the HTTP 303 redirect code as well.
+    if ($redirect && $ENV{SERVER_PROTOCOL} eq 'HTTP/1.1') {
+        print_headers ($q, $resp->proxy_cookies, $return_url, 1);
+    } else {
+        print_headers ($q, $resp->proxy_cookies);
+    }
     print $page->output;
 }
 

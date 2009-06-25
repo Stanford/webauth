@@ -2,6 +2,16 @@
 
 WebAuth 3.6.1 (unreleased)
 
+    Setting $BYPASS_CONFIRM in the WebLogin configuration now also
+    suppresses the confirmation page after username/password login
+    provided that the browser supports HTTP/1.1 (and the web server tells
+    the WebLogin script that in the form Apache does).
+
+    WebLogin now sets and updates its cookies after successful
+    authentication even if the confirmation screen is bypassed.  This
+    primarily affects the update of the expiration time of the REMOTE_USER
+    cookie.
+
     Handle err_confirm in the error.tmpl sample template and document this
     in doc/weblogin-config.  This error is returned when redisplaying the
     confirmation page after a change in the REMOTE_USER cookie.
