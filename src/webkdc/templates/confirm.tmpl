@@ -39,6 +39,17 @@ remuser                : set if REMOTE_USER is desired
               requested:</p>
               <p><a href="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
                  <TMPL_VAR ESCAPE=HTML NAME=pretty_return_url></a></p>
+              <TMPL_IF NAME=token_rights>
+                <p>If you continue to this website, you will grant it
+                permission to obtain the following credentials on your
+                behalf:</p>
+                <blockquote><p><TMPL_LOOP NAME=token_rights>
+                  <TMPL_VAR NAME=type> <TMPL_VAR NAME=name><br/>
+                  <!-- <TMPL_VAR NAME=principal> -->
+                  <!-- <TMPL_VAR NAME=instance> -->
+                  <!-- <TMPL_VAR NAME=realm> -->
+                </TMPL_LOOP></p></blockquote>
+              </TMPL_IF>
               <p><strong>Protect your assets:</strong><br/>
                  Quit your web browser when you are finished (see below
                  for more details)</p>

@@ -15,6 +15,7 @@ our $REMUSER_EXPIRES = 60 * 60 * 8;
 our @REMUSER_REALMS;
 our $REMUSER_REDIRECT;
 our @SHIBBOLETH_IDPS;
+our $TOKEN_ACL;
 our $WEBKDC_PRINCIPAL;
 
 # Obsolete variables supported for backward compatibility.

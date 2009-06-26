@@ -284,6 +284,43 @@ sub fix_token {
     return $token;
 }
 
+# Parse the token.acl file and return a reference to a list of the credentials
+# that the requesting WAS is permitted to obtain.  Takes the WebKDC response,
+# from which it obtains the requesting identity.
+sub token_rights {
+    my ($resp) = @_;
+    return [] unless $TOKEN_ACL;
+    unless (open (ACL, '<', $TOKEN_ACL)) {
+        return [];
+    }
+    my $requester = $resp->requester_subject;
+    my $rights = [];
+    local $_;
+    while (<ACL>) {
+        s/\#.*//;
+        next if /^\s*$/;
+        my ($id, $token, $type, $name) = split;
+        next unless $token eq 'cred';
+        next unless $id =~ s/^krb5://;
+        $id = quotemeta $id;
+        $id =~ s/\\*/[^\@]*/g;
+        next unless $requester =~ /$id/;
+        my $data = {};
+        $data->{type} = $type;
+        $data->{name} = $name;
+        if ($type eq 'krb5') {
+            my ($principal, $realm) = split ('@', $name, 2);
+            my $instance;
+            ($principal, $instance) = split ('/', $principal, 2);
+            $data->{principal} = $principal;
+            $data->{instance}  = $instance;
+            $data->{realm}     = $realm;
+        }
+        push (@$rights, $data);
+    }
+    return $rights;
+}
+
 # Given the query, the local variables, and the WebKDC response, print the
 # login page, filling in all of the various bits of data that the page
 # template needs.
@@ -293,28 +330,40 @@ sub print_confirm_page {
     my $pretty_return_url = $lvars->{pretty};
     my $return_url = $resp->return_url;
     my $lc = $resp->login_canceled_token;
+    my $token_type = $resp->response_token_type;
 
     # FIXME: This looks like it generates extra, unnecessary semicolons, but
     # should be checked against the parser in the WebAuth module.
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
-    # If configured to permit bypassing the confirmation page and the page was
-    # not the target of a POST, return a redirect to the final page instead of
-    # displaying a confirmation page.  If the page was the target of the post,
-    # we'll return a 303 redirect later on but present the regular
-    # confirmation page as the body in case the browser doesn't support it.
-    if ($WebKDC::Config::BYPASS_CONFIRM and not $lvars->{force_confirm}) {
-        print_headers ($q, $resp->proxy_cookies, $return_url);
-        return;
+    # If configured to permit bypassing the confirmation page, the WAS
+    # requested an id token (not a proxy token, which may indicate ticket
+    # delegation), and the page was not the target of a POST, return a
+    # redirect to the final page instead of displaying a confirmation page.
+    # If the page was the target of the post, we'll return a 303 redirect
+    # later on but present the regular confirmation page as the body in case
+    # the browser doesn't support it.
+    my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
+    if ($bypass and $bypass eq 'id') {
+        $bypass = ($token_type eq 'id') ? 1 : 0;
     }
-    my $redirect = $WebKDC::Config::BYPASS_CONFIRM;
+    if ($token_type eq 'id') {
+        if ($bypass and not $lvars->{force_confirm}) {
+            print_headers ($q, $resp->proxy_cookies, $return_url);
+            return;
+        }
+    }
 
-    # Find our page and set general template parameters.
+    # Find our page and set general template parameters.  token_rights was
+    # added in WebAuth 3.6.1.  Adjust for older templates.
     my $page = $PAGES{confirm};
     $page->param (return_url => $return_url);
     $page->param (username => $resp->subject);
     $page->param (pretty_return_url => $pretty_return_url);
+    if ($token_type eq 'proxy' and $page->query (name => 'token_rights')) {
+        $page->param (token_rights => token_rights ($resp));
+    }
 
     # If there is a login cancel option, handle creating the link for it.
     if (defined $lc) {
@@ -353,6 +402,9 @@ sub print_confirm_page {
 
 # Given the query, redisplay the confirmation page after a change in the
 # REMOTE_USER cookie.  Also set the new REMOTE_USER cookie.
+#
+# FIXME: We lose the token rights.  Maybe we should preserve the identity of
+# the WAS in a hidden variable?
 sub redisplay_confirm_page {
     my ($q) = @_;
     my $return_url = $q->param ('return_url');

@@ -71,6 +71,19 @@ Templates
       remuser           If set, the REMOTE_USER cookie is set
       script_name       Relative URL to which cookie change should be posted
 
+      token_rights      List (for TMPL_LOOP) of credentials WAS may request
+        type              Type of credential (e.g. krb5)
+        name              Credential (e.g. afs/example.com@EXAMPLE.COM)
+        principal         First part of principal (e.g. afs)
+        instance          Remaining part of principal (e.g. example.com)
+        realm             Realm of credential (e.g. EXAMPLE.COM)
+
+  token_rights will be a list, each member of which is a hash.  The keys
+  of the hash are listed under token_rights above.  principal, instance,
+  and realm will only be set if type is "krb5".  See the WebKDC manual
+  under WebKdcTokenAcl and the WebAuth protocol documentation for more
+  information about the type of credentials that can be delegated.
+
   A different template is used when the user doesn't have cookies enabled
   or in the event of some other WebKDC error.  It takes the following
   HTML::Template variables:
@@ -160,6 +173,14 @@ Configuration
       environment to HTTP/1.1.  Otherwise, the regular confirmation page
       is displayed.  When the 303 redirect is used, the page body is the
       normal redirect page.
+
+      When this variable is set to the special value "id", the
+      confirmation page is suppressed as described above unless the WAS
+      requests a proxy token instead of an id token (which would allow it
+      to later request delegated credentials to act on behalf of the
+      user).  If the site requests a proxy token, the confirmation page
+      will be displayed so that the user can be shown what credentials the
+      WAS will be able to request.
 
       Default: false.
 
@@ -261,6 +282,13 @@ Configuration
       Shibboleth and shows them the final destination host instead of the
       intermediate IdP host.  This setting only affects the text on the
       page; the underlying links are left unchanged.  Default: not set.
+
+  $TOKEN_ACL
+
+      The path to the token.acl file used by mod_webkdc.  This variable
+      must be set if you wish to include a summary of the delegated
+      credentials that a WAS may request in the confirmation page.
+      Default: not set.
 
   $WEBKDC_PRINCIPAL
 

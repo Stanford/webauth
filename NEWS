@@ -7,6 +7,19 @@ WebAuth 3.6.1 (unreleased)
     provided that the browser supports HTTP/1.1 (and the web server tells
     the WebLogin script that in the form Apache does).
 
+    Setting $BYPASS_CONFIRM to the special value "id" in the WebLogin
+    configuration suppresses the confirmation page only if the WebAuth
+    Application Server requests an id token (in other words, only asks for
+    the user's identity).  If it instead requests a proxy token, which
+    would allow it to later ask for delegated user credentials, the
+    confirmation page is still displayed.
+
+    Add a new WebLogin configuration variable $TOKEN_ACL.  If set to the
+    path of the token.acl file used by the WebKDC, and if the WebAuth
+    Application Server requests a proxy token, the list of credentials the
+    WAS may request is provided to the confirmation page template for
+    display to the user.  See doc/weblogin-config for more information.
+
     WebLogin now sets and updates its cookies after successful
     authentication even if the confirmation screen is bypassed.  This
     primarily affects the update of the expiration time of the REMOTE_USER
