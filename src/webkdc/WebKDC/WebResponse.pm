@@ -51,6 +51,12 @@ sub response_token {
     return $self->{'response_token'};
 }
 
+sub response_token_type {
+    my $self = shift;
+    $self->{'response_token_type'} = shift if @_;
+    return $self->{'response_token_type'};
+}
+
 sub login_canceled_token {
     my $self = shift;
     $self->{'lc_token'} = shift if @_;

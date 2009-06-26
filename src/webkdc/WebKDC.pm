@@ -302,6 +302,8 @@ sub request_token_request($$) {
 	my $requester_sub = get_child_value($root, 'requesterSubject', 0);
 	my $subject = get_child_value($root, 'subject', 1);
 	my $returned_token = get_child_value($root, 'requestedToken', 1);
+	my $returned_token_type = get_child_value($root, 'requestedTokenType',
+						  1);
 	my $app_state = get_child_value($root, 'appState', 1);
 	my $login_canceled_token = get_child_value($root, 'loginCanceledToken',
 						   1);
@@ -319,6 +321,7 @@ sub request_token_request($$) {
 	}
 	$wresp->return_url($return_url);
 	$wresp->response_token($returned_token);
+	$wresp->response_token_type($returned_token_type);
 	$wresp->requester_subject($requester_sub);
 	$wresp->app_state($app_state) if defined($app_state);
 	$wresp->login_canceled_token($login_canceled_token) 

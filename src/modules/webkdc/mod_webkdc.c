@@ -2279,12 +2279,18 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* requestedToken, don't need to quote */
-    if (rtoken.token_data)
+    if (rtoken.token_data) {
         ap_rvputs(rc->r,
                   "<requestedToken>",
                   rtoken.token_data,
                   "</requestedToken>",
                   NULL);
+        ap_rvputs(rc->r,
+                  "<requestedTokenType>",
+                  apr_xml_quote_string(rc->r->pool,
+                                       req_token.requested_token_type, 1),
+                  "</requestedTokenType>", NULL);
+    }
 
     if (ap_strstr(req_token.request_options, "lc")) {
         MWK_RETURNED_TOKEN lc_token;
