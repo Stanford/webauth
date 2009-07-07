@@ -11,9 +11,10 @@ configuration information given in INSTALL, but with comments explaining
 each step.
 
 The files beginning with stanford-* are configuration specific to Stanford
-University's WebAuth v3 setup.  If you are at Stanford, you should be able
-to just copy these configuration files into the conf subdirectory of your
-Apache installation root and then add:
+University's WebAuth setup.  If you are at Stanford and you are not using
+Debian or Ubuntu, you should be able to just copy these configuration
+files into the conf subdirectory of your Apache installation root and then
+add:
 
     Include conf/stanford-webauth.conf
     Include conf/stanford-ldap.conf
@@ -24,3 +25,7 @@ this just loads and configures the modules; you will still need to add
 directives to <Location> or <Directory> containers or .htaccess files as
 appropriate to restrict access, require authentication, or perform LDAP
 queries.
+
+If you are using Debian or Ubuntu, you probably want to install the
+packages that come with the operating system and follow the instructions
+in /usr/share/doc/libapache2-webauth/README.Debian instead.

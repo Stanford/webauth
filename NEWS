@@ -40,6 +40,8 @@ WebAuth 3.6.1 (unreleased)
     servers in the same load-balanced pool can use separate keytabs.  Only
     the keyring needs to be shared between systems.
 
+    Improved the comments in the provided sample configuration files.
+
     Update the INSTALL documentation for obtaining keytabs for Stanford
     users to reference wallet instead of leland_srvtab.
 
