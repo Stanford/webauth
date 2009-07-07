@@ -1,7 +1,18 @@
 #!/bin/sh
-# autogen -- Run the appropriate commands to bootstrap a CVS checkout.
+#
+# Run this shell script to bootstrap as necessary after a fresh checkout.
 
 set -e
-autoconf
-autoheader
+
+autoreconf -i --force
 rm -rf autom4te.cache
+
+# Generate manual pages.
+version=`grep '^WebAuth' NEWS | head -1 | cut -d' ' -f2`
+pod2man --release="$version" --center="WebAuth" tools/wa_keyring.pod \
+    > tools/wa_keyring.1
+
+# Generate protocol documentation.
+cd docs
+xml2rfc protocol.xml protocol.html
+xml2rfc protocol.xml protocol.txt
