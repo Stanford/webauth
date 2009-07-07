@@ -73,6 +73,8 @@ dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
 dist_template_DATA = weblogin/images weblogin/templates
 
 # Build and install the Perl bindings if desired.
+BINDINGS =
+BINDINGS_INSTALL =
 if BUILD_PERL
 BINDINGS += perl/WebAuth.o
 BINDINGS_INSTALL += install-data-local-perl
