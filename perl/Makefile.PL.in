@@ -16,7 +16,7 @@ use Config;
 use ExtUtils::MakeMaker;
 
 # We have to tell MakeMaker to find the WebAuth library here.
-$PATH = '@abs_top_builddir@/src/libwebauth/.libs';
+$PATH = '@abs_top_builddir@/lib/.libs';
 
 # Hack the local path into lddlflags so that it will be first.  Otherwise, we
 # may accidentally build against an already installed libwebauth instead of
@@ -45,7 +45,7 @@ WriteMakefile (
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'WebAuth.pm',
        AUTHOR         => 'Roland Schemers (schemers@stanford.edu)') : ()),
-    INC               => '-I@top_srcdir@/src/libwebauth',
+    INC               => '-I@top_srcdir@/lib',
     LDDLFLAGS         => $lddlflags,
     LIBS              => "$additions -lwebauth"
                          . ' @DEPEND_LIBS@ @LIBS@',
