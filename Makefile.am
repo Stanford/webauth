@@ -116,8 +116,10 @@ MOD_WEBKDC = modules/webkdc/mod_webkdc.la
 MOD_WEBKDC_INSTALL = install-exec-local-webkdc
 endif
 
-all-local: $(BINDINGS) $(MOD_WEBKDC) modules/webauth/mod_webauth.la \
-		modules/webauthldap/mod_webauthldap.la
+if BUILD_WEBKDC
+MODULES += modules/webkdc/mod_webkdc.la
+MODULES_INSTALL += install-exec-local-webkdc
+endif
 
 modules/webauth/mod_webauth.la: lib/libwebauth.la lib/webauth.h \
 		$(MOD_WEBAUTH_FILES) modules/webauth/mod_webauth.h
@@ -136,14 +138,18 @@ modules/webkdc/mod_webkdc.la: lib/libwebauth.la lib/webauth.h \
 	$(APXS) -c $(APXS_CFLAGS) -I. $(CPPFLAGS) $(LDFLAGS) \
 	    lib/libwebauth.la $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBKDC_FILES)
 
-install-exec-local: $(BINDINGS_INSTALL) $(MOD_WEBKDC_INSTALL) \
-		modules/webauth/mod_webauth.la \
-		modules/webauthldap/mod_webauthldap.la
+install-exec-local-webauth: modules/webauth/mod_webauth.la
 	$(APXS) -i modules/webauth/mod_webauth.la
+
+install-exec-local-webauthldap: modules/webauthldap/mod_webauthldap.la
 	$(APXS) -i modules/webauth/mod_webauthldap.la
 
 install-exec-local-webkdc: modules/webkdc/mod_webkdc.la
 	$(APXS) -i modules/webauth/mod_webkdc.la
+
+# Run the hooks for bindings and Apache modules.
+all-local: $(BINDINGS) $(MODULES)
+install-exec-local: $(BINDINGS_INSTALL) $(MODULES_INSTALL)
 
 DISTCLEANFILES = perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
