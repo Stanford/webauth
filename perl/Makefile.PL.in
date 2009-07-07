@@ -41,9 +41,9 @@ package main;
 use ExtUtils::MakeMaker;
 WriteMakefile (
     NAME              => 'WebAuth',
-    VERSION_FROM      => 'WebAuth.pm',
+    VERSION_FROM      => 'lib/WebAuth.pm',
     ($] >= 5.005 ?
-      (ABSTRACT_FROM  => 'WebAuth.pm',
+      (ABSTRACT_FROM  => 'lib/WebAuth.pm',
        AUTHOR         => 'Roland Schemers (schemers@stanford.edu)') : ()),
     INC               => '-I@top_srcdir@/lib',
     LDDLFLAGS         => $lddlflags,

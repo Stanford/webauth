@@ -8,11 +8,11 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.pm perl/WebAuth.xs perl/WebKDC.pm \
-	perl/WebKDC/Config.pm perl/WebKDC/Token.pm \
-	perl/WebKDC/WebKDCException.pm perl/WebKDC/WebRequest.pm \
-	perl/WebKDC/WebResponse.pm perl/WebKDC/XmlDoc.pm \
-	perl/WebKDC/XmlElement.pm perl/test.pl
+PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm \
+	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm \
+	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm \
+	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm \
+	perl/lib/WebKDC/XmlElement.pm perl/test.pl perl/typemap
 
 # These are the source files for the Apache modules, for passing to apxs and
 # for adding to EXTRA_DIST (since we can't tell Automake about the WebAuth
@@ -84,10 +84,12 @@ endif
 # complexity is here to handle building outside of the source directory, in
 # which case we need to copy various files from the source directory and make
 # sure they're up to date since Perl can't handle VPATH builds.
-perl/WebAuth.o: $(srcdir)/perl/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
+perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
 		$(srcdir)/perl/typemap
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    [ ! -d "$(builddir)/WebKDC" ] || mkdir "$(builddir)/WebKDC" ; \
+	    for d in lib lib/WebKDC ; do \
+		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ; \
+	    done ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
 	    done \
