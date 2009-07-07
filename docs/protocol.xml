@@ -2201,7 +2201,7 @@
           typo in the webkdcProxyTokenInfoRequest example.  Fix XML
           formatting issues.</t>
 
-          <t hangText=2.12 (2009-06-24, rra)'>
+          <t hangText='2.12 (2009-06-24, rra)'>
           <vspace blankLines='0'/>Add requestedTokenType to the XML
           returned in response to &lt;requestToken> so that the WebLogin
           component can make decisions based on whether the WAS requested
