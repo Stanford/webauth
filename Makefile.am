@@ -153,13 +153,16 @@ install-exec-local-webkdc: modules/webkdc/mod_webkdc.la
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL) $(MODULES_INSTALL)
 
-DISTCLEANFILES = perl/Makefile
+DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
-	configure tools/wa_keyring.1 m4/libtool.m4 m4/ltoptions.m4 \
-	m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4
+	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
+	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
+	tests/webauth_keyring tests/webauth_keyring2 tools/wa_keyring.1
 
-# Also run make clean in the perl directory if needed.
+# Also run make clean in the perl directory if needed and clean up the module
+# directories.
 clean-local:
+	rm -rf modules/*/.libs modules/*/*.la modules/*/*.lo modules/*/*.slo
 	set -e; if [ -f "perl/Makefile" ] ; then \
 	    cd perl && $(MAKE) clean ; \
 	    cd perl && [ ! -f Makefile.old ] || mv Makefile.old Makefile ; \
