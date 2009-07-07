@@ -36,6 +36,14 @@ WebAuth 3.6.1 (unreleased)
     WebKDC::WebKDCException that resulted in incorrect error names in
     WebLogin error messages.  Thanks to pod for the report.
 
+    The WebAuth test suite is now installed by default under
+    /usr/local/share/webauth.  This can be modified with the --prefix,
+    --datarootdir, or --datadir options to configure.
+
+    The WebLogin scripts and templates are now installed by default under
+    /usr/local/share/weblogin.  This can be modified with the --prefix or
+    --datadir options to configure.
+
     Update the mod_webauth documentation to reflect that separate WebAuth
     servers in the same load-balanced pool can use separate keytabs.  Only
     the keyring needs to be shared between systems.
