@@ -65,11 +65,17 @@ bin_PROGRAMS = tools/wa_keyring
 tools_wa_keyring_LDADD = lib/libwebauth.la
 dist_man_MANS = tools/wa_keyring.1
 
+# Only install the WebLogin script and configuration if configured to build
+# and install mod_webkdc.  These don't have to go together, but that's the
+# strongly recommended configuration and this is simpler than adding yet
+# another configure option.
+if BUILD_WEBKDC
 weblogindir = $(datadir)/weblogin
 templatedir = $(weblogindir)/generic
 dist_pkgdata_DATA = tests/mod_webauth/conf tests/mod_webauth/htdocs
 dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
 dist_template_DATA = weblogin/images weblogin/templates
+endif
 
 # Build and install the Perl bindings if desired.
 BINDINGS =
