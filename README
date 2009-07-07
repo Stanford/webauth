@@ -3,8 +3,8 @@
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008 Board of Trustees,
   Leland Stanford Jr.  University.  This software is distributed under an
-  MIT-style license.  Please see the section LICENSE below for terms of
-  use and redistribution.
+  MIT-style license.  Please see the file LICENSE in the distribution for
+  terms of use and redistribution.
 
   For release history and user-visible changes, see the file NEWS.
 
@@ -74,8 +74,8 @@ REQUIREMENTS
   build its Apache modules.  Heimdal 0.6 may work, but has not been
   well-tested.  Heimdal 0.7 has been used more extensively.
 
-  The WebAuth Perl bindings have been tested with Perl 5.6.1 and Perl
-  5.8.x.
+  The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
+  but are no longer tested with versions earlier than 5.10.
 
   For the end user, WebAuth requires that the user's browser be able to
   handle cookies of moderate length (up to 1KB) and URLs of a similar
@@ -89,11 +89,12 @@ REQUIREMENTS
   make features.  WebAuth also requires Perl 5.6.1 or later for the
   weblogin server; Perl is not required for the basic WebAuth module.
 
-  WebAuth is primarily tested with GCC on Solaris 8 and Linux (glibc 2.3).
-  It has been lightly tested on AIX 4.3.  Other Unix platforms that
-  support Apache 2.0 or 2.2 should also work, but have not been tested.
-  Some amount of porting may be required.  WebAuth does use libtool to try
-  to build shared libraries portably.
+  WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).  It
+  has been lightly tested on Solaris and Mac OS X, and earlier releases
+  were tested on AIX 4.3.  Other Unix platforms that support Apache 2.0 or
+  2.2 should also work, but have not been tested.  Some amount of porting
+  may be required.  WebAuth does use libtool to try to build shared
+  libraries portably.
 
 SUPPORT
 
@@ -137,30 +138,6 @@ SUPPORT
   primary focus is supporting the needs of Stanford University, however,
   and problems that don't affect Stanford's use of WebAuth will generally
   not be prioritized.
-
-LICENSE
-
-  Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008 Board of Trustees,
-  Leland Stanford Jr. University.
-
-  Permission is hereby granted, free of charge, to any person obtaining a
-  copy of this software and associated documentation files (the
-  "Software"), to deal in the Software without restriction, including
-  without limitation the rights to use, copy, modify, merge, publish,
-  distribute, sublicense, and/or sell copies of the Software, and to
-  permit persons to whom the Software is furnished to do so, subject to
-  the following conditions:
-
-  The above copyright notice and this permission notice shall be included
-  in all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SOURCE REPOSITORY
 
