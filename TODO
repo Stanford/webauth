@@ -127,6 +127,10 @@ Documentation:
  * Write design notes / internals documentation for how WebAuth is put
    together.
 
+ * Update the docs/test-plan document and check it against the current
+   implementation and the set of things that can be tested (such as SPNEGO
+   and advanced configuration).
+
 Style:
 
  * The mod_webauthldap module needs a lot of formatting and coding style

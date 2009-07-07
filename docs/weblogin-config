@@ -143,8 +143,8 @@ Configuration
 
       The path to the directory containing the login.tmpl, confirm.tmpl,
       error.tmpl, and logout.tmpl templates.  Default:
-      "./generic/templates" (which works for the default installation
-      paths).
+      "/usr/local/share/weblogin/generic/templates" (which works for the
+      default installation paths).
 
   $URL
 

@@ -8,7 +8,7 @@ Introduction
   protocol, see the protocol specification provided as doc/protocol.txt
   and doc/protocol.html in the distribution and also available at:
 
-      http://www.stanford.edu/services/webauth/protocol.html
+      http://webauth.stanford.edu/protocol.html
 
   This document describes the additional cookies used internally by the
   WebLogin script, which are not part of the general WebAuth protocol.
