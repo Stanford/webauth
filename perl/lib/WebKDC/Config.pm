@@ -6,7 +6,7 @@ use warnings;
 my $conf = "/etc/webkdc/webkdc.conf";
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";
-our $TEMPLATE_PATH = "./generic/templates";
+our $TEMPLATE_PATH = "/usr/local/share/weblogin/generic/templates";
 our $URL = "https://localhost/webkdc-service/";
 our $BYPASS_CONFIRM;
 our $DEFAULT_REALM;
