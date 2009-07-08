@@ -1,3 +1,11 @@
+# Exception class for WebKDC call failures.
+#
+# Written by Roland Schemers
+# Copyright 2002, 2003, 2005, 2006, 2008, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebKDC::WebKDCException;
 
 use strict;

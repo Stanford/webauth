@@ -1,3 +1,13 @@
+/*
+ * Core WebAuth LDAP Apache module code.
+ *
+ * Written by Anton Ushakov
+ * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #include "httpd.h"
 #include "http_config.h"
 #include "http_protocol.h"

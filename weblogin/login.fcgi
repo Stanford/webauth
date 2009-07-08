@@ -2,17 +2,19 @@
 #
 # login.fcgi -- WebLogin login page for WebAuth.
 #
-# Written by Roland Schemers <schemers@stanford.edu>
-# Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
-#     Board of Trustees, Leland Stanford Jr. University
-#
 # This is the front page for user authentication for weblogin.  It accepts
 # information from the user, passes it to the WebKDC for authentication, sets
 # appropriate cookies, and displays the confirmation page and return links.
 #
 # It should use FastCGI if available, using the Perl CGI::Fast module's
 # ability to fall back on regular operation if FastCGI isn't available.
+#
+# Written by Roland Schemers <schemers@stanford.edu>
+# Extensive updates by Russ Allbery <rra@stanford.edu>
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 ##############################################################################
 # Modules and declarations

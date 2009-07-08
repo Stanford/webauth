@@ -1,3 +1,13 @@
+/*
+ * Functions to manipulate attribute lists.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing term.s
+ */
+
 #include "webauthp.h"
 #include <sys/types.h>
 #if HAVE_NETINET_IN_H

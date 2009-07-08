@@ -1,3 +1,12 @@
+/*
+ * Private include files and interfaces for the WebAuth library.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #ifndef _WEBAUTHP_H
 #define _WEBAUTHP_H
 

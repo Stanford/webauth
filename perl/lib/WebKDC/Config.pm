@@ -1,3 +1,11 @@
+# Configuration for the WebLogin script.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2004, 2005, 2006, 2007, 2008, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebKDC::Config;
 
 use strict;

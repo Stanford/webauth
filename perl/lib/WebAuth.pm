@@ -1,3 +1,15 @@
+# Perl bindings for the WebAuth client library.
+#
+# This is the Perl boostrap file for the WebAuth module, nearly all of which
+# is implemented in XS.  For the actual source, see WebAuth.xs.  This file
+# contains the bootstrap and export code and the documentation.
+#
+# Written by Roland Schemers
+# Copyright 2003, 2005, 2008, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebAuth;
 
 use 5.006;

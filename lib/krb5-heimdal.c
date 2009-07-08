@@ -1,11 +1,16 @@
 /*
-**  Heimdal Kerberos interface for WebAuth.
-**
-**  This file is *included* (via the preprocessor) in krb5.c for systems that
-**  use Heimdal Kerberos.  If you make any changes here, you probably also
-**  need to make a corresponding change to krb5-mit.c for systems with MIT
-**  Kerberos.
-*/
+ * Heimdal Kerberos interface for WebAuth.
+ *
+ * This file is *included* (via the preprocessor) in krb5.c for systems that
+ * use Heimdal Kerberos.  If you make any changes here, you probably also need
+ * to make a corresponding change to krb5-mit.c for systems with MIT Kerberos.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2002, 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 /* Heimdal 0.6 doesn't have KRB5_TC_MATCH_SRV_NAMEONLY, but the effect of
    KRB5_TC_DONT_MATCH_REALM appears to be the same. */

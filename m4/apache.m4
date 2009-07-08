@@ -6,6 +6,12 @@ dnl point to the full path to apxs.  Also sets the APACHE_ROOT output variable
 dnl to the root of the Apache installation.  If the --with-apache option isn't
 dnl given, apxs2 and apxs is searched for on the user's path (unless
 dnl --with-apxs is given) and /usr/local/apache2 is used as the Apache root.
+dnl
+dnl Written by Russ Allbery <rra@stanford.edu>
+dnl Copyright 2002, 2003, 2004, 2006, 2009
+dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
+dnl See LICENSE for licensing terms.
 
 AC_DEFUN([WEBAUTH_APACHE],
 [APACHE_ROOT=/usr/local/apache2

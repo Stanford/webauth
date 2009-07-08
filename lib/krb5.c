@@ -1,25 +1,30 @@
 /*
-**  Kerberos interface for WebAuth.
-**
-**  All WebAuth functions that use Kerberos use the routines in this file.
-**  This is the only code in WebAuth with direct Kerberos dependencies, so
-**  ports to different versions of Kerberos should only require changing this
-**  one file and its associated components.
-**
-**  There are currently only five functions whose implementation varies
-**  between MIT and Heimdal, namely cred_to_attr_encoding,
-**  cred_from_attr_encoding, webauth_krb5_mk_req_with_data,
-**  webauth_krb5_rd_req_with_data, and webauth_krb5_export_tgt.  Since those
-**  functions need (in most cases) intimate knowledge of the layout of data
-**  structures, it's easiest to just maintain two implementations.
-**  Accordingly, we *include* either krb5-mit.c or krb5-heimdal.c into this
-**  file based on configure results.  We do this with the preprocessor to
-**  preserve static linkage of functions.
-**
-**  Accordingly, if you don't see some functino here, look in krb5-mit.c and
-**  krb5-heimdal.c.  If you have to modify either of those files, you'll
-**  probably need to modify both.
-*/
+ * Kerberos interface for WebAuth.
+ *
+ * All WebAuth functions that use Kerberos use the routines in this file.
+ * This is the only code in WebAuth with direct Kerberos dependencies, so
+ * ports to different versions of Kerberos should only require changing this
+ * one file and its associated components.
+ *
+ * There are currently only five functions whose implementation varies between
+ * MIT and Heimdal, namely cred_to_attr_encoding, cred_from_attr_encoding,
+ * webauth_krb5_mk_req_with_data, webauth_krb5_rd_req_with_data, and
+ * webauth_krb5_export_tgt.  Since those functions need (in most cases)
+ * intimate knowledge of the layout of data structures, it's easiest to just
+ * maintain two implementations.  Accordingly, we *include* either krb5-mit.c
+ * or krb5-heimdal.c into this file based on configure results.  We do this
+ * with the preprocessor to preserve static linkage of functions.
+ *
+ * Accordingly, if you don't see some functino here, look in krb5-mit.c and
+ * krb5-heimdal.c.  If you have to modify either of those files, you'll
+ * probably need to modify both.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2006, 2007, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include "webauthp.h"
 

@@ -1,3 +1,12 @@
+/*
+ * General WebAuth utility functions.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #include "webauthp.h"
 
 #include <ctype.h>

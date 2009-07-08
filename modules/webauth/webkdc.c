@@ -1,5 +1,11 @@
 /*
- * service token related stuff
+ * Management of service tokens and WebKDC queries.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2004, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
  */
 
 #include "mod_webauth.h"

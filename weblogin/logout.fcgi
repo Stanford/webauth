@@ -2,14 +2,16 @@
 #
 # logout.fcgi -- WebLogin logout page for WebAuth.
 #
-# Written by Jeanmarie Lucker <jlucker@stanford.edu>
-# Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr. University
-#
 # This is the logout page for weblogin authentication.  It doesn't do anything
 # at present except destroy the proxy tokens and display a web page.
 #
 # It should use FastCGI if available, using the Perl CGI::Fast module's
 # ability to fall back on regular operation if FastCGI isn't available.
+#
+# Written by Jeanmarie Lucker <jlucker@stanford.edu>
+# Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 use strict;
 

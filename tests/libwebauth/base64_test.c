@@ -1,3 +1,12 @@
+/*
+ * Test suite for libwebauth base64 encoding and decoding.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include "config.h"
 

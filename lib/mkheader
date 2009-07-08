@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# mkheader -- Generate the webauth.h header, including config.h information.
+# Generate the webauth.h header, including config.h information.
 #
 # This shell script runs after configure and generates the webauth.h header
 # with the appropriate magic to allow use of int32_t and uint32_t.  It exists
@@ -9,6 +9,11 @@
 #
 # The first argument should be the path to webauth.h.in and the second
 # argument should be the path to webauth.h.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2003, 2009 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 # Find the definitions of int32_t and uint32_t.
 int32=`grep '^#define int32_t' config.h | sed 's/^#/# /'`

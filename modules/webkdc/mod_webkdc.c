@@ -1,5 +1,11 @@
 /*
- * mod_webdc
+ * Core Apache WebKDC module code.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
  */
 
 #include "mod_webkdc.h"

@@ -3,6 +3,12 @@ dnl
 dnl Defines the macro WEBAUTH_LIB_LDAP, which probes for the OpenLDAP
 dnl libraries and defines the output variables LDAP_LIBS and LDAP_CPPFLAGS to
 dnl the appropriate preprocessor and linker flags.
+dnl
+dnl Written by Russ Allbery <rra@stanford.edu>
+dnl Copyright 2003, 2004, 2006, 2009
+dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
+dnl See LICENSE for licensing terms.
 
 AC_DEFUN([WEBAUTH_LIB_LDAP],
 [AC_ARG_WITH([ldap],

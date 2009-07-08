@@ -1,4 +1,12 @@
-/* WebAuth.xs -- XS bindings for libwebauth.  -*- c -*- */
+/* -*- c -*-
+ * Perl XS bindings for the WebAuth library.
+ *
+ * Written by Roland Schemers
+ * Copyright 2003, 2005, 2006, 2008, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include "EXTERN.h"
 #include "perl.h"

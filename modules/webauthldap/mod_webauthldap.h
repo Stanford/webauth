@@ -1,3 +1,13 @@
+/*
+ * Internal definitions and prototypes for Apache WebAuth LDAP module.
+ *
+ * Written by Anton Ushakov
+ * Copyright 2003, 2005, 2006, 2007, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #ifndef MOD_WEBAUTHLDAP_H
 #define MOD_WEBAUTHLDAP_H
 

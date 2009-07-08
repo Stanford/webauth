@@ -1,5 +1,11 @@
 /*
- * krb5-related functions
+ * Kerberos-related functions for the WebAuth Apache module.
+ *
+ * Written by Roland Schemers
+ * Copyright 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
  */
 
 #include "mod_webauth.h"

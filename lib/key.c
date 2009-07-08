@@ -1,3 +1,13 @@
+/*
+ * Handling of keys and keyrings.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2009
+ *    Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #include "webauthp.h"
 
 #include <stdio.h>

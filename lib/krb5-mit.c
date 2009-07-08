@@ -1,10 +1,17 @@
 /*
-**  MIT Kerberos interface for WebAuth.
-**
-**  This file is *included* (via the preprocessor) in krb5.c for systems that
-**  use MIT Kerberos.  If you make any changes here, you probably also need to
-**  make a corresponding change to krb5-heimdal.c for systems with Heimdal.
-*/
+ * MIT Kerberos interface for WebAuth.
+ *
+ * This file is *included* (via the preprocessor) in krb5.c for systems that
+ * use MIT Kerberos.  If you make any changes here, you probably also need to
+ * make a corresponding change to krb5-heimdal.c for systems with Heimdal.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Based on the original Kerberos support code by Roland Schemers
+ * Copyright 2002, 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 /*
 **  Take a single Kerberos v5 credential and serialize it into a buffer, using

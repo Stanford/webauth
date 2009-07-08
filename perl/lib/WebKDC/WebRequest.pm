@@ -1,3 +1,11 @@
+# An object encapsulating a request to a WebKDC.
+#
+# Written by Roland Schemers
+# Copyright 2002, 2003, 2005, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebKDC::WebRequest;
 
 use strict;

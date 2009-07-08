@@ -1,3 +1,13 @@
+/*
+ * Internal definitions and prototypes for Apache WebKDC module.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #ifndef MOD_WEBKDC_H
 #define MOD_WEBKDC_H
 

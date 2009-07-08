@@ -1,3 +1,10 @@
+# Parse and manipulate XML documents and elements.
+#
+# Written by Roland Schemers
+# Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebKDC::XmlElement;
 
 use strict;

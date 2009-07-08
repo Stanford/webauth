@@ -1,3 +1,10 @@
+# Manipulate a document composed of WebKDC::XmlElement objects.
+#
+# Written by Roland Schemers
+# Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
 package WebKDC::XmlDoc;
 
 use strict;

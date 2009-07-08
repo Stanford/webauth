@@ -1,4 +1,4 @@
-/** @file
+/*
  * Interface to the libwebauth utility library.
  *
  * The libwebauth utility library contains the basic token handling functions
@@ -6,6 +6,12 @@
  * encode and decode lists of attributes, generate tokens from them, encode
  * and decode tokens in base64 or hex encoding, and some additional utility
  * functions to generate random numbers or new AES keys.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2008, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
  */
 
 #ifndef _WEBAUTH_H

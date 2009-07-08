@@ -1,9 +1,10 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
-
-#########################
-
-# change 'tests => 1' to 'tests => last_test_to_print';
+# Test suite for WebAuth Perl bindings.
+#
+# Written by Roland Schemers
+# Copyright 2002, 2003, 2005, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 use strict;
 
