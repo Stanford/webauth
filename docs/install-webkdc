@@ -27,6 +27,7 @@ monitored for security.
          libwww (LWP)
          Crypt::SSLeay (for LWP https support)
          URI
+         XML::Parser
 
      You'll probably also want to install and configure mod_fastcgi as
      well, though it's not a requirement.  If you decide to install it,
