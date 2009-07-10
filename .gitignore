@@ -23,6 +23,8 @@
 /perl/WebAuth.c
 /perl/blib/
 /perl/pm_to_blib
+/perl/webauth_keyring
+/perl/webauth_keyring2
 /stamp-h1
 /stamp-h2
 /tests/libwebauth/attrs_test
