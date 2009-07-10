@@ -27,6 +27,12 @@ Protocol:
    applications with specific credential requirements to not interfere
    with a user's other logins.
 
+ * Rather than using our own Kerberos ticket serialization format, store
+   tickets in the form that would be used when forwarding tickets, thus
+   letting the Kerberos library do the encoding and decoding for us.
+
+ * Use a better key for the HMAC than the encryption key of the token.
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -40,6 +46,16 @@ General:
 
 libwebauth:
 
+ * The current library interface is very low-level.  Ideally, the library
+   should treat particular WebAuth tokens as first-class objects with
+   their own manipulation functions and not expose all of the low-level
+   marshal and unmarshal functions to clients.
+
+ * The library needs a way of doing error logging that isn't just
+   returning error codes.  We probably need some sort of global WebAuth
+   context that can stash error messages, similar to how the Kerberos
+   library API works.
+
  * Switch all the WebAuth library interfaces to using opaque structs
    instead of typedefs, matching our current coding style.
 
@@ -49,6 +65,37 @@ libwebauth:
 
  * Remove the local argument from webauth_krb5_rd_req_with_data.  It's not
    actually useful.
+
+ * webauth_attr_list_add_time assumes that timestamps are unsigned 32-bit
+   values.
+
+ * String to number conversion in the WebAuth library is being done with
+   atol instead of with strtol and with error checking.
+
+ * Add locking to the code reading and writing keyrings so that two
+   processes don't simultaneously update a keyring.
+
+ * Stop including addresses in serialized Kerberos tickets and figure out
+   what to do about the is_skey attribute.
+
+ * Once logging is available, log better error messages when reading
+   keytabs and obtaining initial credentials fails.
+
+ * Replace the internal verify_tgt function with krb5_verify_init_creds.
+
+ * The code to get a Kerberos error message always just uses com_err right
+   now.  This needs modification to call the appropriate Kerberos error
+   message function.
+
+ * Support configuration of options for initial Kerberos tickets, such as
+   ticket lifetime.  We also probably want to suppress some options by
+   default that we never use.
+
+ * Do proper error handling in the case where random number initialization
+   fails.
+
+ * webauth_krb5_rd_req_with_data does not check for memory allocation
+   failure properly in all cases.
 
 mod_webauth:
 
@@ -139,3 +186,6 @@ Style:
  * All of WebAuth needs a general dead code removal pass and evaluation of
    all the places marked FIXME, spawning either entries for this list or
    removal as unimportant.
+
+ * Change all header guards prefixed with an underscore and a capital
+   letter.  Those identifiers are reserved by the C standard.

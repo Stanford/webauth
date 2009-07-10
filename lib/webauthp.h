@@ -10,10 +10,6 @@
 #ifndef _WEBAUTHP_H
 #define _WEBAUTHP_H
 
-/*
- * this is the more "private" version of libwebauth
- */
-
 #include "config.h"
 
 #ifdef HAVE_STDLIB_H
@@ -35,14 +31,6 @@
 
 #include <assert.h>
 
-#include "webauth.h"
+#include <lib/webauth.h>
 
-/*
-**  Local variables:
-**  mode: c
-**  c-basic-offset: 4
-**  indent-tabs-mode: nil
-**  end:
-*/
-
-#endif
+#endif /* !_WEBAUTHP_H */
