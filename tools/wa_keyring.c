@@ -26,7 +26,7 @@
 
 #include <openssl/md5.h>
 
-#include "webauth.h"
+#include <lib/webauth.h>
 
 #define BUFSIZE 4096
 #define MAX_ATTRS 128

@@ -20,7 +20,7 @@
 #include <string.h>
 #endif
 
-#include "webauth.h"
+#include <lib/webauth.h>
 #include "webauthtest.h"
 
 #define BUFSIZE 2048

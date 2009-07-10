@@ -41,7 +41,7 @@
 # include <unistd.h>
 #endif
 
-#include "webauth.h"
+#include <lib/webauth.h>
 
 /* how long to wait between trying for a new token when 
  * a renewal attempt fails

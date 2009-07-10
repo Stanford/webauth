@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "webauth.h"
+#include <lib/webauth.h>
 #include "webauthtest.h"
 
 #define BUFSIZE 4096
