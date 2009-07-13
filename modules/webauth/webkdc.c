@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webauth.h"
+#include <modules/webauth/mod_webauth.h>
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA

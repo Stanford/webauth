@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webkdc.h"
+#include <modules/webkdc/mod_webkdc.h>
 
 /*
  * used to hold the result of reading the acl file

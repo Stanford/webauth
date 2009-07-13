@@ -14,37 +14,27 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm \
 	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm \
 	perl/lib/WebKDC/XmlElement.pm perl/test.pl perl/typemap
 
-# These are the source files for the Apache modules, for passing to apxs and
-# for adding to EXTRA_DIST (since we can't tell Automake about the WebAuth
-# modules directly).  The mod_*.c file must be listed first or apxs will
-# generate the module under the wrong name.
-#
-# Header files aren't included here, since apxs doesn't recognize them as
-# headers and passes them along to the linker.  They're listed in
-# EXTRA_SOURCES instead.
-MOD_WEBAUTH_FILES = modules/webauth/mod_webauth.c modules/webauth/krb5.c \
-	modules/webauth/util.c modules/webauth/webkdc.c
-MOD_WEBAUTHLDAP_FILES = modules/webauthldap/mod_webauthldap.c
-MOD_WEBKDC_FILES = modules/webkdc/mod_webkdc.c modules/webkdc/acl.c \
-	modules/webkdc/util.c
-
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		  \
-	conf/debian/webauth.conf conf/debian/webauth.load		  \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	  \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			  \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		  \
-	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	  \
-	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		  \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	  \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth  \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	  \
-	perl/README lib/mapfile modules/webauth/mod_webauth.h		  \
-	modules/webauthldap/mod_webauthldap.h modules/webkdc/mod_webkdc.h \
-	tools/wa_keyring.pod $(PERL_FILES) $(MOD_WEBAUTH_FILES)		  \
-	$(MOD_WEBAUTHLDAP_FILES) $(MOD_WEBKDC_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
+	conf/debian/webauth.conf conf/debian/webauth.load		   \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
+	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	   \
+	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml  \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
+	lib/mapfile lib/mkheader lib/webauth.h.in modules/webauth/krb5.c   \
+	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h	   \
+	modules/webauth/util.c modules/webauth/webkdc.c			   \
+	modules/webauthldap/mod_webauthldap.c				   \
+	modules/webauthldap/mod_webauthldap.h modules/webkdc/acl.c	   \
+	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		   \
+	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP \
+	tests/TESTS tools/wa_keyring.pod $(PERL_FILES)
 
 lib_LTLIBRARIES = lib/libwebauth.la
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c \
@@ -100,6 +90,26 @@ perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
 install-data-local-perl: perl/WebAuth.o
 	cd perl && $(MAKE) install DESTDIR=$(DESTDIR)
 
+# These are the source files for the Apache modules for passing to apxs.
+# They are prefixed with $(srcdir) since that's what we want the dependency
+# to be on.  Due to apxs misfeatures, we have to copy them into the build
+# directory before building.  The mod_*.c file must be listed first or apxs
+# will generate the module under the wrong name.
+#
+# Header files aren't included here, since apxs doesn't recognize them as
+# headers and passes them along to the linker.
+MOD_WEBAUTH_FILES = modules/webauth/mod_webauth.c modules/webauth/krb5.c \
+	modules/webauth/util.c modules/webauth/webkdc.c
+MOD_WEBAUTH_FILES_SRC = $(srcdir)/modules/webauth/mod_webauth.c \
+	$(srcdir)/modules/webauth/krb5.c $(srcdir)/modules/webauth/util.c \
+	$(srcdir)/modules/webauth/webkdc.c
+MOD_WEBAUTHLDAP_FILES = modules/webauthldap/mod_webauthldap.c
+MOD_WEBAUTHLDAP_FILES_SRC = $(srcdir)/modules/webauthldap/mod_webauthldap.c
+MOD_WEBKDC_FILES = modules/webkdc/mod_webkdc.c modules/webkdc/acl.c \
+	modules/webkdc/util.c
+MOD_WEBKDC_FILES_SRC = $(srcdir)/modules/webkdc/mod_webkdc.c \
+	$(srcdir)/modules/webkdc/acl.c $(srcdir)/modules/webkdc/util.c
+
 # Automake can't handle apxs directly, so we do the module builds via explicit
 # rules.  Installation is handled by an install-exec-local rule.
 MODULES =
@@ -126,20 +136,43 @@ MODULES_INSTALL += install-exec-local-webkdc
 endif
 
 modules/webauth/mod_webauth.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBAUTH_FILES) modules/webauth/mod_webauth.h
-	$(APXS) -c $(APXS_CFLAGS) -I. $(CPPFLAGS) $(CURL_CPPFLAGS) \
-	    $(LDFLAGS) $(CURL_LDFLAGS) lib/libwebauth.la $(CURL_LIBS) \
-	    $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBAUTH_FILES)
+		$(MOD_WEBAUTH_FILES_SRC) modules/webauth/mod_webauth.h
+	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
+	    [ -d modules ] || mkdir modules ; \
+	    [ -d modules/webauth ] || mkdir modules/webauth ; \
+	    for f in $(MOD_WEBAUTH_FILES_SRC) ; do \
+		cp $$f modules/webauth/ ; \
+	    done ; \
+	fi
+	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) \
+	    $(CURL_CPPFLAGS) $(LDFLAGS) $(CURL_LDFLAGS) lib/libwebauth.la \
+	    $(CURL_LIBS) $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBAUTH_FILES)
 
 modules/webauthldap/mod_webauthldap.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBAUTHLDAP_FILES) modules/webauthldap/mod_webauthldap.h
-	$(APXS) -c $(APXS_CFLAGS) -I. $(CPPFLAGS) $(KRB5_CPPFLAGS) \
-	    $(LDAP_CPPFLAGS) $(LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS) \
-	    $(APXS_KRB5_LIBS) $(LDAP_LIBS) $(LIBS) $(MOD_WEBAUTHLDAP_FILES)
+		$(MOD_WEBAUTHLDAP_FILES_SRC) \
+		modules/webauthldap/mod_webauthldap.h
+	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
+	    [ -d modules ] || mkdir modules ; \
+	    [ -d modules/webauthldap ] || mkdir modules/webauthldap ; \
+	    for f in $(MOD_WEBAUTHLDAP_FILES_SRC) ; do \
+		cp $$f modules/webauthldap/ ; \
+	    done ; \
+	fi
+	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) \
+	    $(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS) $(LDFLAGS) $(KRB5_LDFLAGS) \
+	    $(LDAP_LDFLAGS) $(APXS_KRB5_LIBS) $(LDAP_LIBS) $(LIBS) \
+	    $(MOD_WEBAUTHLDAP_FILES)
 
 modules/webkdc/mod_webkdc.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBKDC_FILES) modules/webkdc/mod_webkdc.h
-	$(APXS) -c $(APXS_CFLAGS) -I. $(CPPFLAGS) $(LDFLAGS) \
+		$(MOD_WEBKDC_FILES_SRC) modules/webkdc/mod_webkdc.h
+	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
+	    [ -d modules ] || mkdir modules ; \
+	    [ -d modules/webkdc ] || mkdir modules/webkdc ; \
+	    for f in $(MOD_WEBKDC_FILES_SRC) ; do \
+		cp $$f modules/webkdc/ ; \
+	    done ; \
+	fi
+	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) $(LDFLAGS) \
 	    lib/libwebauth.la $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBKDC_FILES)
 
 install-exec-local-webauth: modules/webauth/mod_webauth.la
@@ -155,6 +188,7 @@ install-exec-local-webkdc: modules/webkdc/mod_webkdc.la
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL) $(MODULES_INSTALL)
 
+CLEANFILES = tests/webauth_keyring tests/webauth_keyring2
 DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
@@ -164,7 +198,12 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 # Also run make clean in the perl directory if needed and clean up the module
 # directories.
 clean-local:
-	rm -rf modules/*/.libs modules/*/*.la modules/*/*.lo modules/*/*.slo
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
+	    rm -rf modules/webauth modules/webauthldap modules/webkdc ; \
+	else \
+	    rm -rf modules/*/.libs modules/*/*.la modules/*/*.lo \
+		modules/*/*.slo ; \
+	fi
 	set -e; if [ -f "perl/Makefile" ] ; then \
 	    cd perl && $(MAKE) clean ; \
 	    cd perl && [ ! -f Makefile.old ] || mv Makefile.old Makefile ; \
@@ -227,7 +266,7 @@ tests_libwebauth_token_test_SOURCES = tests/libwebauth/token_test.c \
 	tests/libwebauth/webauthtest.h
 tests_libwebauth_token_test_LDADD = lib/libwebauth.la
 
-check-local: $(check_PROGRAMS)
+check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
 	@set -e; if [ -f perl/Makefile ] ; then \
 	    echo '' ; \

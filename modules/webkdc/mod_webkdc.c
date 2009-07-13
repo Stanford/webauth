@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webkdc.h"
+#include <modules/webkdc/mod_webkdc.h>
 
 /* attr list macros to make code easier to read and audit
  * we don't need to check error codes since we are using

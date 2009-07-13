@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webauth.h"
+#include <modules/webauth/mod_webauth.h>
 
 module AP_MODULE_DECLARE_DATA webauth_module;
 

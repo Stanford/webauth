@@ -32,7 +32,7 @@
 #endif
 #include <ldap.h>
 
-#include "mod_webauthldap.h"
+#include <modules/webauthldap/mod_webauthldap.h>
 
 module AP_MODULE_DECLARE_DATA webauthldap_module;
 

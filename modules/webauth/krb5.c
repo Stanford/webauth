@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webauth.h"
+#include <modules/webauth/mod_webauth.h>
 
 static void
 log_webauth_error(server_rec *s, 

@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include "mod_webauth.h"
+#include <modules/webauth/mod_webauth.h>
 
 /*
  * get a required char* attr from a token, with logging if not present.
