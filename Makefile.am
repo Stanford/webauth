@@ -30,25 +30,20 @@ MOD_WEBKDC_FILES = modules/webkdc/mod_webkdc.c modules/webkdc/acl.c \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		      \
-	conf/debian/webauth.conf conf/debian/webauth.load		      \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	      \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			      \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		      \
-	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	      \
-	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml     \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		      \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	      \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth      \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	      \
-	perl/README lib/Makefile.vc lib/libwebauth.def lib/mapfile	      \
-	modules/webauth/Makefile.vc modules/webauth/mod_webauth.h	      \
-	modules/webauthldap/Makefile.vc modules/webauthldap/mod_webauthldap.h \
-	modules/webkdc/mod_webkdc.h tools/Makefile.vc tools/wa_keyring.pod    \
-	windows/BUILD.txt windows/INSTALL.txt windows/buildenv.bat	      \
-	windows/config.h windows/krb5.ini windows/make_zip windows/sasl.reg   \
-	windows/setup.bat windows/stanford-webauth.conf			      \
-	windows/webauth-ssl.conf $(PERL_FILES) $(MOD_WEBAUTH_FILES)	      \
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		  \
+	conf/debian/webauth.conf conf/debian/webauth.load		  \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	  \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			  \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		  \
+	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	  \
+	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		  \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	  \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth  \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	  \
+	perl/README lib/mapfile modules/webauth/mod_webauth.h		  \
+	modules/webauthldap/mod_webauthldap.h modules/webkdc/mod_webkdc.h \
+	tools/wa_keyring.pod $(PERL_FILES) $(MOD_WEBAUTH_FILES)		  \
 	$(MOD_WEBAUTHLDAP_FILES) $(MOD_WEBKDC_FILES)
 
 lib_LTLIBRARIES = lib/libwebauth.la
