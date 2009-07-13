@@ -179,10 +179,10 @@ install-exec-local-webauth: modules/webauth/mod_webauth.la
 	$(APXS) -i modules/webauth/mod_webauth.la
 
 install-exec-local-webauthldap: modules/webauthldap/mod_webauthldap.la
-	$(APXS) -i modules/webauth/mod_webauthldap.la
+	$(APXS) -i modules/webauthldap/mod_webauthldap.la
 
 install-exec-local-webkdc: modules/webkdc/mod_webkdc.la
-	$(APXS) -i modules/webauth/mod_webkdc.la
+	$(APXS) -i modules/webkdc/mod_webkdc.la
 
 # Run the hooks for bindings and Apache modules.
 all-local: $(BINDINGS) $(MODULES)
