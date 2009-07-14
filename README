@@ -29,6 +29,19 @@ DESCRIPTION
   to authenticate to the WebKDC.  The protocol is sufficiently general,
   however, to allow other methods to be added.
 
+  WebAuth supports obtaining of credentials on behalf of the user by
+  trusted application servers, allowing cleaner implementation of
+  portal-style applications.
+
+  WebAuth also provides a second module that can do LDAP directory lookups
+  using Kerberos v5 GSS-API authentication and use the result to authorize
+  web clients by privilege groups or provide directory information to web
+  applications in environment variables.
+
+  For more information on the Stanford WebAuth project, see:
+
+      <http://webauth.stanford.edu/>
+
   This is a substantial reworking of the previous Stanford WebAuth system,
   which was based primarily around the S/Ident protocol for user
   authentication but supported a fallback to a web login server and used
@@ -39,20 +52,6 @@ DESCRIPTION
   server model with "web single sign-on" (single sign-on that works for
   all authenticated web sites within an authentication realm, but which
   does not necessarily tie into desktop single sign-on systems).
-
-  For more information on the Stanford WebAuth project, see:
-
-      <http://webauth.stanford.edu/>
-
-  WebAuth also provides a second module that can do LDAP directory lookups
-  using Kerberos v5 GSS-API authentication and use the result to authorize
-  web clients by privilege groups or provide directory information to web
-  applications in environment variables.
-
-  WebAuth also supports obtaining of credentials on behalf of the user by
-  trusted application servers, allowing cleaner implementation of
-  portal-style applications, although this support has not been as fully
-  tested as other portions of WebAuth.
 
 REQUIREMENTS
 
