@@ -9,6 +9,8 @@ webauth (3.6.1-1) UNRELEASED; urgency=low
     - New variables for the WebLogin confirmation page containing
       delegated credential details.
     - Better WebLogin cookie handling with confirmation bypass.
+  * Update debian/copyright to include a copy of the more thorough new
+    upstream LICENSE file.
 
  -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 10:45:38 -0700
 
