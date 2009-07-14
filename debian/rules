@@ -73,6 +73,9 @@ install-stamp: build-stamp
 	mkdir -p $(CURDIR)/debian/tmp/usr/bin
 	./libtool --mode=install install -m 755 tools/wa_keyring \
 	    $(CURDIR)/debian/tmp/usr/bin/
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
+	install -m 644 tools/wa_keyring.1 \
+	    $(CURDIR)/debian/tmp/usr/share/man/man1/
 	install -m 644 modules/webauth/.libs/mod_webauth.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
 	install -m 644 modules/webauthldap/.libs/mod_webauthldap.so \
