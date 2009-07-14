@@ -1,3 +1,4 @@
 etc/webkdc/webkdc.conf
-usr/share/perl5
+usr/lib/perl5/WebKDC
+usr/lib/perl5/WebKDC.pm
 usr/share/man/man3/WebKDC*.3pm

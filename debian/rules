@@ -44,8 +44,8 @@ build-indep: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
-	cd src/perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
+	cd perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	cd perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	$(MAKE) check
 endif
@@ -66,12 +66,11 @@ install-stamp: build-stamp
 	dh_testroot
 	dh_clean -k
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/apache2/modules
-	libtool --mode=install install -m 644 lib/libwebauth.la \
+	./libtool --mode=install install -m 644 lib/libwebauth.la \
 	    $(CURDIR)/debian/tmp/usr/lib/
 	mkdir -p $(CURDIR)/debian/tmp/usr/bin
-	libtool --mode=install install -m 755 tools/wa_keyring \
+	./libtool --mode=install install -m 755 tools/wa_keyring \
 	    $(CURDIR)/debian/tmp/usr/bin/
-	cd src/utils && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
 	install -m 644 modules/webauth/.libs/mod_webauth.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
 	install -m 644 modules/webauthldap/.libs/mod_webauthldap.so \
