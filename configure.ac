@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.63])
-AC_INIT([WebAuth], [3.6.0], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [3.6.1], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.10])

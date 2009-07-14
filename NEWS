@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.6.1 (unreleased)
+WebAuth 3.6.1 (2009-07-14)
 
     Setting $BYPASS_CONFIRM in the WebLogin configuration now also
     suppresses the confirmation page after username/password login
