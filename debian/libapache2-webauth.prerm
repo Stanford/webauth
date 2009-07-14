@@ -5,10 +5,10 @@ set -e
 
 if [ "$1" = remove ] || [ "$1" = deconfigure ] ; then
     if [ -f /etc/apache2/mods-enabled/webauthldap.load ] ; then
-        /usr/sbin/a2dismod webauthldap
+        a2dismod webauthldap
     fi
     if [ -f /etc/apache2/mods-enabled/webauth.load ] ; then
-        /usr/sbin/a2dismod webauth
+        a2dismod webauth
     fi
 fi
 

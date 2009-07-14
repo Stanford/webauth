@@ -9,6 +9,7 @@ webauth (3.6.1-1) UNRELEASED; urgency=low
     - New variables for the WebLogin confirmation page containing
       delegated credential details.
     - Better WebLogin cookie handling with confirmation bypass.
+  * Remove full paths to a2dismod in the package prerm scripts.
   * Update standards version to 3.8.2.
     - Change sections of Apache modules.
     - Run test suite iff nocheck is not set in DEB_BUILD_OPTIONS.
