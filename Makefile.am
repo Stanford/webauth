@@ -34,7 +34,10 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	modules/webauthldap/mod_webauthldap.h modules/webkdc/acl.c	   \
 	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		   \
 	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP \
-	tests/TESTS tools/wa_keyring.pod $(PERL_FILES)
+	tests/TESTS tests/mod_webauth tools/wa_keyring.pod		   \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
+	weblogin/images/help.xcf weblogin/images/login.xcf		   \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 lib_LTLIBRARIES = lib/libwebauth.la
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c \
@@ -56,10 +59,15 @@ dist_man_MANS = tools/wa_keyring.1
 # another configure option.
 if BUILD_WEBKDC
 weblogindir = $(datadir)/weblogin
-templatedir = $(weblogindir)/generic
-dist_pkgdata_DATA = tests/mod_webauth/conf tests/mod_webauth/htdocs
+imagedir    = $(weblogindir)/generic/images
+templatedir = $(weblogindir)/generic/templates
 dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
-dist_template_DATA = weblogin/images weblogin/templates
+dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png	\
+	weblogin/images/help.png weblogin/images/login.png		\
+	weblogin/images/logout.png
+dist_template_DATA = weblogin/templates/confirm.tmpl			\
+	weblogin/templates/error.tmpl weblogin/templates/help.html	\
+	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl
 endif
 
 # Build and install the Perl bindings if desired.
