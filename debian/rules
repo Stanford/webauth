@@ -46,6 +46,9 @@ build-stamp: configure-stamp
 	$(MAKE)
 	cd src/perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
 	cd src/perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	$(MAKE) check
+endif
 	touch $@
 
 clean:
