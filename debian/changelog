@@ -9,6 +9,8 @@ webauth (3.6.1-1) UNRELEASED; urgency=low
     - New variables for the WebLogin confirmation page containing
       delegated credential details.
     - Better WebLogin cookie handling with confirmation bypass.
+  * Fix a POD issue in the WebKDC module that will be fixed in the next
+    upstream release.
   * Remove full paths to a2dismod in the package prerm scripts.
   * Update standards version to 3.8.2.
     - Change sections of Apache modules.
