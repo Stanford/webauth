@@ -32,21 +32,20 @@ endif
 configure-stamp:
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr \
-	    --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
-	    --enable-mod_webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
+	    --mandir=\$${prefix}/share/man --enable-mod_webkdc \
+	    --enable-perl --with-apxs=/usr/bin/apxs2 \
 	    --enable-reduced-depends $(SYSTEM)
 	touch $@
 
+# Rebuild the Perl module to pick up the correct installation paths.
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
-	cd src/bindings/perl/WebAuth && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/bindings/perl/WebAuth && $(MAKE) OPTIMIZE="$(CFLAGS)"
-	cd src/webkdc && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd src/webkdc && $(MAKE) OPTIMIZE="$(CFLAGS)"
+	cd src/perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
+	cd src/perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
 	touch $@
 
 clean:
@@ -56,49 +55,49 @@ clean:
 	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
-# Unfortunately, we have to run make install in the various directories
-# separately and install Apache modules manually because apxs with the current
-# Makefiles doesn't correctly handle DESTDIR.
+# Unfortunately, we have to manually install since upstream uses apxs -i,
+# which doesn't handle DESTDIR.
 install: install-stamp
 install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/apache2/modules
-	cd src/libwebauth && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	libtool --mode=install install -m 644 lib/libwebauth.la \
+	    $(CURDIR)/debian/tmp/usr/lib/
+	mkdir -p $(CURDIR)/debian/tmp/usr/bin
+	libtool --mode=install install -m 755 tools/wa_keyring \
+	    $(CURDIR)/debian/tmp/usr/bin/
 	cd src/utils && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
-	install -m 644 src/modules/webauth/.libs/mod_webauth.so \
+	install -m 644 modules/webauth/.libs/mod_webauth.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	install -m 644 src/modules/webauthldap/.libs/mod_webauthldap.so \
+	install -m 644 modules/webauthldap/.libs/mod_webauthldap.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	install -m 644 src/modules/webkdc/.libs/mod_webkdc.so \
+	install -m 644 modules/webkdc/.libs/mod_webkdc.so \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
 	install -d $(CURDIR)/debian/tmp/etc/webauth
 	install -d $(CURDIR)/debian/tmp/etc/webkdc
-	install -m 644 src/modules/webkdc/token.acl \
-	    $(CURDIR)/debian/tmp/etc/webkdc/
+	install -m 644 conf/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
 	install -m 644 debian/webkdc.conf $(CURDIR)/debian/tmp/etc/webkdc/
 	install -d $(CURDIR)/debian/tmp/etc/apache2/mods-available
 	set -e; cd conf/debian && for f in *.conf *.load ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
 	done
-	cd src/bindings/perl/WebAuth \
-	    && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
-	cd src/webkdc && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
+	cd perl && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
 	install -d $(CURDIR)/debian/tmp/usr/share/weblogin
-	set -e; cd src/webkdc && for f in login.fcgi logout.fcgi ; do \
+	set -e; cd weblogin && for f in login.fcgi logout.fcgi ; do \
 	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
 	done
 	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
-	set -e; cd src/webkdc && for f in templates/*.tmpl ; do \
+	set -e; cd weblogin && for f in templates/*.tmpl ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
-	install -m 644 src/webkdc/templates/help.html \
+	install -m 644 weblogin/templates/help.html \
 	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
 	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
-	set -e; cd src/webkdc && for f in images/*.png ; do \
+	set -e; cd weblogin && for f in images/*.png ; do \
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
 	done
