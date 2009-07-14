@@ -76,12 +76,16 @@ install-stamp: build-stamp
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
 	install -m 644 tools/wa_keyring.1 \
 	    $(CURDIR)/debian/tmp/usr/share/man/man1/
-	install -m 644 modules/webauth/.libs/mod_webauth.so \
+	./libtool --mode=install install -m 644 \
+	    modules/webauth/mod_webauth.la \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	install -m 644 modules/webauthldap/.libs/mod_webauthldap.so \
+	./libtool --mode=install install -m 644 \
+	    modules/webauthldap/mod_webauthldap.la \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	install -m 644 modules/webkdc/.libs/mod_webkdc.so \
+	./libtool --mode=install install -m 644 \
+	    modules/webkdc/mod_webkdc.la \
 	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
+	rm $(CURDIR)/debian/tmp/usr/lib/apache2/modules/*.la
 	install -d $(CURDIR)/debian/tmp/etc/webauth
 	install -d $(CURDIR)/debian/tmp/etc/webkdc
 	install -m 644 conf/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
@@ -92,6 +96,9 @@ install-stamp: build-stamp
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
 	done
 	cd perl && $(MAKE) install PREFIX=$(CURDIR)/debian/tmp/usr
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/perl5
+	mv $(CURDIR)/debian/tmp/usr/lib/perl5/WebKDC* \
+	    $(CURDIR)/debian/tmp/usr/share/perl5
 	install -d $(CURDIR)/debian/tmp/usr/share/weblogin
 	set -e; cd weblogin && for f in login.fcgi logout.fcgi ; do \
 	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
