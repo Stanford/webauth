@@ -1,0 +1,2646 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en"><head><title>WebAuth Documentation: WebAuth V3 Technical Specification</title>
+<meta http-equiv="Expires" content="Tue, 14 Jul 2009 17:42:21 +0000">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="description" content="WebAuth V3 Technical Specification">
+<meta name="generator" content="xml2rfc v1.33 (http://xml.resource.org/)">
+<style type='text/css'><!--
+        body {
+                font-family: verdana, charcoal, helvetica, arial, sans-serif;
+                font-size: small; color: #000; background-color: #FFF;
+                margin: 2em;
+        }
+        h1, h2, h3, h4, h5, h6 {
+                font-family: helvetica, monaco, "MS Sans Serif", arial, sans-serif;
+                font-weight: bold; font-style: normal;
+        }
+        h1 { color: #900; background-color: transparent; text-align: right; }
+        h3 { color: #333; background-color: transparent; }
+
+        td.RFCbug {
+                font-size: x-small; text-decoration: none;
+                width: 30px; height: 30px; padding-top: 2px;
+                text-align: justify; vertical-align: middle;
+                background-color: #000;
+        }
+        td.RFCbug span.RFC {
+                font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+                font-weight: bold; color: #666;
+        }
+        td.RFCbug span.hotText {
+                font-family: charcoal, monaco, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+                font-weight: normal; text-align: center; color: #FFF;
+        }
+
+        table.TOCbug { width: 30px; height: 15px; }
+        td.TOCbug {
+                text-align: center; width: 30px; height: 15px;
+                color: #FFF; background-color: #900;
+        }
+        td.TOCbug a {
+                font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, sans-serif;
+                font-weight: bold; font-size: x-small; text-decoration: none;
+                color: #FFF; background-color: transparent;
+        }
+
+        td.header {
+                font-family: arial, helvetica, sans-serif; font-size: x-small;
+                vertical-align: top; width: 33%;
+                color: #FFF; background-color: #666;
+        }
+        td.author { font-weight: bold; font-size: x-small; margin-left: 4em; }
+        td.author-text { font-size: x-small; }
+
+        /* info code from SantaKlauss at http://www.madaboutstyle.com/tooltip2.html */
+        a.info {
+                /* This is the key. */
+                position: relative;
+                z-index: 24;
+                text-decoration: none;
+        }
+        a.info:hover {
+                z-index: 25;
+                color: #FFF; background-color: #900;
+        }
+        a.info span { display: none; }
+        a.info:hover span.info {
+                /* The span will display just on :hover state. */
+                display: block;
+                position: absolute;
+                font-size: smaller;
+                top: 2em; left: -5em; width: 15em;
+                padding: 2px; border: 1px solid #333;
+                color: #900; background-color: #EEE;
+                text-align: left;
+        }
+
+        a { font-weight: bold; }
+        a:link    { color: #900; background-color: transparent; }
+        a:visited { color: #633; background-color: transparent; }
+        a:active  { color: #633; background-color: transparent; }
+
+        p { margin-left: 2em; margin-right: 2em; }
+        p.copyright { font-size: x-small; }
+        p.toc { font-size: small; font-weight: bold; margin-left: 3em; }
+        table.toc { margin: 0 0 0 3em; padding: 0; border: 0; vertical-align: text-top; }
+        td.toc { font-size: small; font-weight: bold; vertical-align: text-top; }
+
+        ol.text { margin-left: 2em; margin-right: 2em; }
+        ul.text { margin-left: 2em; margin-right: 2em; }
+        li      { margin-left: 3em; }
+
+        /* RFC-2629 <spanx>s and <artwork>s. */
+        em     { font-style: italic; }
+        strong { font-weight: bold; }
+        dfn    { font-weight: bold; font-style: normal; }
+        cite   { font-weight: normal; font-style: normal; }
+        tt     { color: #036; }
+        tt, pre, pre dfn, pre em, pre cite, pre span {
+                font-family: "Courier New", Courier, monospace; font-size: small;
+        }
+        pre {
+                text-align: left; padding: 4px;
+                color: #000; background-color: #CCC;
+        }
+        pre dfn  { color: #900; }
+        pre em   { color: #66F; background-color: #FFC; font-weight: normal; }
+        pre .key { color: #33C; font-weight: bold; }
+        pre .id  { color: #900; }
+        pre .str { color: #000; background-color: #CFF; }
+        pre .val { color: #066; }
+        pre .rep { color: #909; }
+        pre .oth { color: #000; background-color: #FCF; }
+        pre .err { background-color: #FCC; }
+
+        /* RFC-2629 <texttable>s. */
+        table.all, table.full, table.headers, table.none {
+                font-size: small; text-align: center; border-width: 2px;
+                vertical-align: top; border-collapse: collapse;
+        }
+        table.all, table.full { border-style: solid; border-color: black; }
+        table.headers, table.none { border-style: none; }
+        th {
+                font-weight: bold; border-color: black;
+                border-width: 2px 2px 3px 2px;
+        }
+        table.all th, table.full th { border-style: solid; }
+        table.headers th { border-style: none none solid none; }
+        table.none th { border-style: none; }
+        table.all td {
+                border-style: solid; border-color: #333;
+                border-width: 1px 2px;
+        }
+        table.full td, table.headers td, table.none td { border-style: none; }
+
+        hr { height: 1px; }
+        hr.insert {
+                width: 80%; border-style: none; border-width: 0;
+                color: #CCC; background-color: #CCC;
+        }
+--></style>
+</head>
+<body>
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
+<tr><td class="header">WebAuth Documentation</td><td class="header">R. Schemers</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">R. Allbery</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">Stanford University</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">June 2009</td></tr>
+</table></td></tr></table>
+<h1><br />WebAuth V3 Technical Specification</h1>
+
+<h3>Abstract</h3>
+
+<p>Defines the WebAuth protocol for authenticating users to web
+      applications using only the basic capabilities of a web browser.
+      Authentication is handled by a central login server using a protocol
+      local to the given site.  Authentication information is then passed
+      to application servers via encrypted tokens in a URL and maintained
+      by the browser as cookies.
+</p><a name="toc"></a><br /><hr />
+<h3>Table of Contents</h3>
+<p class="toc">
+<a href="#intro">1.</a>&nbsp;
+Introduction<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#components">1.1.</a>&nbsp;
+WebAuth Components<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#compua">1.1.1.</a>&nbsp;
+User-Agent (UA)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#compwas">1.1.2.</a>&nbsp;
+WebAuth-enabled Application
+          Server (WAS)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#compwkdc">1.1.3.</a>&nbsp;
+WebKDC<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokens">1.2.</a>&nbsp;
+WebAuth Tokens<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#keymgmt">1.3.</a>&nbsp;
+Security Model and Key Management<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#kmsessionkeys">1.3.1.</a>&nbsp;
+Distributing and Managing
+          Session Keys<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#kmprivatekeys">1.3.2.</a>&nbsp;
+Distributing and Managing
+          Private Keys<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#kmpool">1.3.3.</a>&nbsp;
+Supporting Server Pools<br />
+<a href="#scenarios">2.</a>&nbsp;
+WebAuth Scenarios<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#sc1">2.1.</a>&nbsp;
+No Tokens (Initial Sign-On)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#sc2">2.2.</a>&nbsp;
+App Token<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#sc3">2.3.</a>&nbsp;
+No App Token, Proxy Token (Single
+          Sign-On)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#sc4">2.4.</a>&nbsp;
+No App Token, Credentials Required<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#logout">2.5.</a>&nbsp;
+Logging Out<br />
+<a href="#httpconv">3.</a>&nbsp;
+URL Formats<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#redirectkdc">3.1.</a>&nbsp;
+Redirects to the WebKDC<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#redirectwas">3.2.</a>&nbsp;
+Redirects to the WAS<br />
+<a href="#xmlproto">4.</a>&nbsp;
+WebKDC XML Protocol<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlover">4.1.</a>&nbsp;
+XML Protocol Overview<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlcommon">4.2.</a>&nbsp;
+Common XML Elements<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlmsgid">4.2.1.</a>&nbsp;
+&lt;messageId&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlvers">4.2.2.</a>&nbsp;
+&lt;protocolVersion&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlerrorcode">4.2.3.</a>&nbsp;
+&lt;errorCode&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlerrmsg">4.2.4.</a>&nbsp;
+&lt;errorMessage&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlcmd">4.3.</a>&nbsp;
+XML Commands<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlgettokens">4.3.1.</a>&nbsp;
+getTokens<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlrequesttoken">4.3.2.</a>&nbsp;
+requestToken<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlwebkdcproxytoken">4.3.3.</a>&nbsp;
+webkdcProxyToken<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlwebkdcproxyinfo">4.3.4.</a>&nbsp;
+webkdcProxyTokenInfo<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlpost">4.4.</a>&nbsp;
+Posting XML to the WebKDC<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#xmlex">4.5.</a>&nbsp;
+XML Examples<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor1">4.5.1.</a>&nbsp;
+WAS Asking for webkdc-service Token<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor2">4.5.2.</a>&nbsp;
+WAS Asking for a credential Token<br />
+<a href="#tokenformat">5.</a>&nbsp;
+Token Format<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenencoding">5.1.</a>&nbsp;
+Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenattrs">5.2.</a>&nbsp;
+Assigned Token Attributes<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenspecific">5.3.</a>&nbsp;
+Specific Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenwebkdcservice">5.3.1.</a>&nbsp;
+webkdc-service Token
+          Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenwebkdcproxy">5.3.2.</a>&nbsp;
+webkdc-proxy Token
+          Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenrequest">5.3.3.</a>&nbsp;
+request Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenerror">5.3.4.</a>&nbsp;
+error Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenid">5.3.5.</a>&nbsp;
+id Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenproxy">5.3.6.</a>&nbsp;
+proxy Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokencred">5.3.7.</a>&nbsp;
+credential Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenlogin">5.3.8.</a>&nbsp;
+login Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tokenapp">5.3.9.</a>&nbsp;
+app Token Encoding<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#krb5token">5.4.</a>&nbsp;
+Kerberos v5 Credential Encoding<br />
+<a href="#cookies">6.</a>&nbsp;
+Cookie Formats<br />
+<a href="#history">Appendix&nbsp;A.</a>&nbsp;
+Document Revision History<br />
+<a href="#rfc.authors">&#167;</a>&nbsp;
+Authors' Addresses<br />
+</p>
+<br clear="all" />
+
+<a name="intro"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1"></a><h3>1.&nbsp;
+Introduction</h3>
+
+<a name="components"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.1"></a><h3>1.1.&nbsp;
+WebAuth Components</h3>
+
+<p>The WebAuth protocol involves interactions between three basic
+        components:
+          </p>
+<ol class="text">
+<li>User-Agent (UA), the user's browser
+</li>
+<li>WebAuth-enabled Application Server (WAS), a web server that
+               wants to serve content authenticated via WebAuth
+</li>
+<li>WebKDC, the login server and provider of authenticators to
+               the other two components
+</li>
+</ol><p>
+        
+</p>
+<p>The WebAuth protocol allows a WAS to securely identify a user
+        accessing resources.  It also supports single sign-on, allowing a
+        user to access multiple WebAuth-protected applications without
+        having to authenticate to each one separately (unless an
+        application requires this for security reasons).
+</p>
+<p>The WAS can also choose to either trust the WebKDC to vouch for
+        the identity of a user, or it can request the WebKDC use an
+        authenticator, such as a Kerberos V5 service request (krb5_mk_req)
+        that it can verify using its own Kerberos V5 keys.
+</p>
+<a name="compua"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.1.1"></a><h3>1.1.1.&nbsp;
+User-Agent (UA)</h3>
+
+<p>The User-Agent is a web browser that supports cookies.  No
+          plugins, Java, or JavaScript are required. The UA will be
+          redirected to the WebKDC as requested to by a WAS.
+</p>
+<a name="compwas"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.1.2"></a><h3>1.1.2.&nbsp;
+WebAuth-enabled Application
+          Server (WAS)</h3>
+
+<p>A WebAuth-enabled Application Server is a web server
+          configured to use WebAuth to authenticate users.  If a user
+          hasn't been authenticated yet (indicated by the UA possessing
+          and presenting a WAS cookie), they will be redirected to the
+          WebKDC.  Otherwise, the WebAuth-established authenticated
+          identity will be used for access control.
+</p>
+<p>All interactions between the UA and WAS SHOULD be protected
+          with TLS or SSL to prevent cookies being disclosed to an
+          eavesdropper that could use those cookies to impersonate a user.
+          The secure flag SHOULD be set on all WAS cookies to request that
+          the browser enforce this.
+</p>
+<a name="compwkdc"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.1.3"></a><h3>1.1.3.&nbsp;
+WebKDC</h3>
+
+<p>The WebKDC will listen for two different type of requests,
+          distinguished by different URLs.
+</p>
+<p>The first type of request are those requests coming from a UA
+          after it has been redirected by a WAS.  This component of the
+          WebKDC is referred to as the WebLogin service.  When the WebKDC
+          receives one of these, it will first see if the request includes
+          a cookie that contains cached credentials.  If the request
+          contains a valid cookie, this cookie is used to obtain a new
+          credentials and the user is redirected back to the WAS (unless
+          the WAS has requested the user reauthenticate).  This is the way
+          that WebAuth implements single sign-on.
+</p>
+<p>If the cookie is not present or has expired, then the user will
+          be prompted for their username and password.  After submitting
+          this information back to the WebKDC, the WebKDC will then verify
+          the username and password, using whatever protocol is suitable
+          for that site (Kerberos V5 is the default).  The WebKDC will the
+          generate two "tokens".  One is placed in a cookie scoped for the
+          WebKDC and used to provide single sign-on in future requests,
+          and one that gets sent back to the WAS, which will verify it
+          upon receipt.
+</p>
+<p>The second type of the WebKDC handles consist of XML messages
+          that get POSTed to the WebKDC via HTTPS directly from a WAS.
+          These message are used to establish keys for the WAS servers or
+          to request additional credentials for a user.
+</p>
+<p>The WebKDC is also responsible for ensuring that the server
+          making a request is authorized to make the request.  For
+          example, one WAS server can't use a "token" that was created for
+          use by another WAS server.
+</p>
+<p>All interactions between the UA or WAS and the WebKDC MUST be
+          protected via TLS or SSL to prevent disclosure of passwords, as
+          well as sensitive data such as the tokens which are used to
+          provide single sign-on and access to application resources.
+</p>
+<a name="tokens"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.2"></a><h3>1.2.&nbsp;
+WebAuth Tokens</h3>
+
+<p>Tokens provide a standard mechanism to exchange and store
+        information that is cryptographically secure from both tampering
+        and disclosure.  Tokens also contain information such as creation
+        times to help detect replays, and expiration times so data is
+        never trusted/used forever.  Tokens also enable authentication of
+        the servers using them.
+</p>
+<p>Tokens get transfered between servers using URL query
+        parameters, POST data, cookies, and XML documents.  They are
+        AES-encrypted using either a private key, or a shared session key.
+        They also include a SHA1 HMAC used to detect data modification or
+        tampering.
+</p>
+<p>There are currently nine different types of tokens:
+          </p>
+<blockquote class="text"><dl>
+<dt>webkdc-service (encrypted with WebKDC private key)</dt>
+<dd>
+            The webkdc-service-token is used by
+            WebAuth App Servers to communicate with the WebKDC.  It
+            contains a session key that is shared between the WebKDC and
+            the WAS.  <br />
+<br />
+ webkdc-service tokens are
+            created only by the WebKDC, and are used only by a WAS.  From
+            the perspective of the WAS, they are opaque blobs that are
+            sent back to the WebKDC
+</dd>
+<dt>webkdc-proxy (encrypted with WebKDC private key)</dt>
+<dd>
+            The webkdc-proxy-token contains a
+            user's proxied credentials (generally, but not necessarily, a
+            Kerberos V5 TGT).  It can only be decrypted by the WebKDC, and
+            the WebKDC will only allow a webkdc-proxy token to be used by
+            the server it was originally generated for.  The main use of a
+            webkdc-proxy token is by the WebKDC itself to implement single
+            sign-on; that webkdc-proxy token is usually put in a cookie
+            scoped to the WebLogin service.  Its secondary use is to allow
+            WAS servers to request credential-tokens.
+</dd>
+<dt>request (encrypted with session key)</dt>
+<dd>
+            The request token contains the request
+            from a WAS for a token (usually an id token) from the WebKDC.
+            It is AES-encrypted in a session key from a webkdc-service
+            token, and contains information like the return URL and type
+            of token requested.  A webkdc-service token is always included
+            in a request along with a request token.
+</dd>
+<dt>error (encrypted with session key)</dt>
+<dd>
+            An error token is returned by the
+            WebKDC in the event of an unrecoverable error that occurred
+            while asking for a token with a request token.
+</dd>
+<dt>id (encrypted with session key)</dt>
+<dd>
+            An id token contains the identity of
+            the user trying to access a resource.  The WAS will verify the
+            id token and then will normally construct an app token for
+            future use.
+</dd>
+<dt>proxy (encrypted with session key)</dt>
+<dd>
+            A proxy token is used to return a
+            webkdc-proxy token to a WAS.  It includes information about
+            the webkdc-proxy token such as its expiration and its
+            type.
+</dd>
+<dt>cred (encrypted with session key)</dt>
+<dd>
+            A credential token contains a
+            credential for a user (generally a Kerberos V5 service
+            ticket).
+</dd>
+<dt>login (encrypted with WebKDC private key)</dt>
+<dd>
+            A login tokens is used by the WebKDC
+            with the requestTokenRequest command.  It contains the user's
+            username and password and is used to obtain the inital
+            webkdc-proxy token.  It normally only used internally by the
+            WebLogin component of te WebKDC.
+</dd>
+<dt>app (encrypted with WAS private key)</dt>
+<dd>
+            An app token is used by a WAS server
+            to store data, such as the identity of a user after it has
+            been verified from an id token, a proxy token, or credentials
+            for future use.
+</dd>
+</dl></blockquote><p>
+        
+</p>
+<p>Their exact formats are discussed in detail at the end of this
+        document.
+</p>
+<a name="keymgmt"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.3"></a><h3>1.3.&nbsp;
+Security Model and Key Management</h3>
+
+<p>As mentioned in the previous section, tokens are at the heart
+        of the WebAuth security model.  They are used to authenticate
+        requests and responses between servers, as well as protect data
+        that is stored in URLs and cookies.  Shared symmetric keys
+        (session keys) are used to encrypt tokens between servers, and
+        private keys are used to encrypt tokens meant for a only a single
+        server to decrypt.
+</p>
+<p>Also note that any tokens that appear in URLs are tokens that
+        are only valid for a short period of time (5 minutes by
+        default).  Any attempt to re-use them after that will fail.  If a
+        user bookmarks a URL with a token in it (or hits their "back"
+        button) then one of three things can happen:
+          </p>
+<ul class="text">
+<li>The user has a valid cookie. In this case, the token in the
+            URL is ignored (but still stripped out from the URL before
+            passing it to the app), so there is no problem.
+</li>
+<li>The user has no valid cookie, but the token in the URL is
+            still valid.  In this case, the user will be authenticated and
+            a cookie will be created.  Note that this can only happen
+            until the token is no longer "fresh" (as mentioned, 5 minutes
+            by default).
+</li>
+<li>The user has no valid cookie, and the token is too old. In
+            this case, the user will be redirected to the login page is
+            usual (the token will be stripped from the URL before the
+            redirect).
+</li>
+</ul><p>
+        
+</p>
+<a name="kmsessionkeys"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.3.1"></a><h3>1.3.1.&nbsp;
+Distributing and Managing
+          Session Keys</h3>
+
+<p>In order to exchange session keys, a key distribution
+          protocol is needed.  For this purpose, we use Kerberos V5 and
+          TLS/SSL to bootstrap and get the session keys.  The WAS that
+          needs a session key will post an XML message to the WebKDC
+          requesting a service token.  This message contains the result of
+          krb5_mk_req call for the WebKDC's server principal, which the
+          WebKDC uses to authenticate the server making the request.  The
+          WebKDC will then send back the service token and a copy the
+          session key that is also encrypted (in the WebKDC's key) inside
+          of the service token.  The WAS will need both to make future
+          requests to the WebKDC.  The whole transaction itself is
+          protected with TLS or SSL.
+</p>
+<p>There are no long term keys stored on the WebKDC itself other
+          its own private key.  Once the WAS obtains the service token and
+          session key, it will cache them both until the service token
+          expires.  Before the service token expires, the WAS must request
+          a new service token and will be given a corresponding new
+          session key.
+</p>
+<p>The WebAuth protocol is designed so that other authentication
+          mechanisms may be used to bootstrap, such as GSS-API or TLS
+          client authentication between servers.  Kerberos V5 is just the
+          first implemented bootstrap authentication mechanism.
+</p>
+<p>One potential issue here is that potentially weaker keys
+          (Kerberos V5 keytabs, which could be 3DES or even just DES) are
+          being used to bootstrap into stronger WebAuth AES keys.  This
+          issue is partially mitigated by the use of TLS or SSL to further
+          protect the transaction.  This seems to be an acceptable risk,
+          but it's worth being aware of.  The Kerberos V5 infrastructure
+          should obviously use as strong of keys as possible.
+</p>
+<a name="kmprivatekeys"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.3.2"></a><h3>1.3.2.&nbsp;
+Distributing and Managing
+          Private Keys</h3>
+
+<p>Both the WebKDC and the WAS servers need private keys to
+          encrypt their tokens with.  These keys will be
+          randomly-generated 128-bit AES keys (longer keys are supported
+          if needed).  They are stored in key rings on the WebKDC or WAS
+          server.  The key ring SHOULD support holding both currently
+          valid keys and keys that will be valid in the future.
+</p>
+<p>Since key rings are never sent over the network by the
+          WebAuth protocol, WebAuth implementations can use whatever
+          mechanism they wish to store keys.  However, the following
+          data should be stored for each key:
+            </p>
+<blockquote class="text"><dl>
+<dt>key type</dt>
+<dd>Type of the
+              key.  AES is the only supported key type right now.
+</dd>
+<dt>key data</dt>
+<dd>The binary
+              data that makes up the key.
+</dd>
+<dt>creation</dt>
+<dd>Time the key
+              was created.
+</dd>
+<dt>valid_after</dt>
+<dd>When the
+              key becomes valid.
+</dd>
+</dl></blockquote><p>
+          
+</p>
+<p>Of note is the valid_after value.  It is used to create
+          post-dated keys in the key ring, to allow for new keys to get
+          generated and distributed among a pool of servers (for load
+          balancing/fail-over) in such a way that all the keys can be
+          updated before the key becomes valid.
+</p>
+<p>There is no support in the WebAuth protocol itself for
+          distributing key rings among pools of servers, but a mechanism
+          such as SSH can be used.
+</p>
+<p>Stand-alone servers (not part of a pool) SHOULD automatically
+          generate new keys when needed on a restart.
+</p>
+<a name="kmpool"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1.3.3"></a><h3>1.3.3.&nbsp;
+Supporting Server Pools</h3>
+
+<p>In order to support server pools, we need to ensure that any
+          server that receives a token is able to decrypt and verify
+          it.  Note that we are only talking about the WebAuth protocol
+          here.  Applications must solve their own synchronization issues
+          as well when using a pool of servers as a front end.
+</p>
+<p>For the WebKDC, all we need to do is distribute the same key
+          ring across all the WebKDCs.  Post-dating new keys when adding
+          them makes this task easier, since the key ring only has to be
+          updated on all WebKDCs by the time the key becomes valid.
+</p>
+<p>For a WAS, there are two issues.  First, we also need to
+          distribute the key ring so all WAS servers can decrypt their
+          app-tokens.  The second question is how to deal with session
+          keys.
+</p>
+<p>Responses from the WebKDC come back to the WAS encrypted
+          in the session key, not the WAS server's private key.  If the
+          response comes back to a different WAS server, it will not have
+          the same session key that the requesting WAS server had.  One
+          could work around this by sharing the same service token and
+          session key across all the servers, but this would be painful
+          and expensive to do.
+</p>
+<p>The most flexible and recommended solution is for WAS servers
+          to include some state (described below) in each request token.
+          The WebKDC treats this state as opaque data and returns it to
+          the WAS server along with the requested token.  It is
+          transmitted alongside the returned token, not inside it, so that
+          the WAS doesn't have to know the session key to read it.  To use
+          this method, the WAS server creates an app token (which is
+          encrypted in its private key, shared among all the sytsems in
+          the pool), includes in it the session key, and sends this as the
+          state in the request token.  Since the WebKDC returns this state
+          along with its response, any WAS in the pool can then decrypt
+          the state with its private key, recover the session key, and
+          then use that to decrypt the rest of the response.
+</p>
+<p>Another somewhat simpler way to handle this is make sure that
+          the return URL in the request token contains the server's
+          private hostname or IP address instead of the virtual or pool
+          address.  This solves the problem as the request always comes
+          back to WAS server that initiated the request.  However, this
+          means that the real server name or IP address must be exposed to
+          the UA and transparent failover among systems in the pool will
+          not be supported.
+</p>
+<a name="scenarios"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2"></a><h3>2.&nbsp;
+WebAuth Scenarios</h3>
+
+<p>There are five basic scenarios in the WebAuth protocol.
+</p>
+<a name="sc1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2.1"></a><h3>2.1.&nbsp;
+No Tokens (Initial Sign-On)</h3>
+
+<p>The first scenario is a user request to a
+          WebAuth-protected resource without any prior WebAuth login and
+          without any authentication cookies.  In other words, there is no
+          app token or proxy token in the UA cookie jar.
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  ---------------------------------------------------------------
+      UA                 WAS            WebKDC
+  ---------------------------------------------------------------
+                         send K5 auth for webkdc-service token
+  1.                     WAS ---------&gt; WebKDC
+
+                         return session key, webkdc-service token
+  2.                     WAS &lt;--------- WebKDC
+
+      request resource
+  3.  -----------------&gt; WAS
+
+      redirect to WebKDC w/request token asking for id token
+  4.  &lt;----------------- WAS
+
+      pass along request token
+  5.  -------------------------------&gt; WebKDC
+
+      login form sent back
+  6.  &lt;------------------------------- WebKDC
+
+      post login form with user authentication (password)
+  7.  -------------------------------&gt; WebKDC
+
+      confirmation page sent back, link contains id token
+  8.  &lt;------------------------------- WebKDC
+
+      re-request resource (with returned id token in URL)
+  9.  -----------------&gt; WAS
+
+      set the app token cookie, response from app
+  10. &lt;----------------- WAS
+
+  ---------------------------------------------------------------
+</pre></div>
+<p>The first and second steps normally happen when the
+          WAS is first started or when its previous service token expire
+          and are included for completeness.  They are omitted in all
+          further scenarios, but should be assumed to happen when
+          needed.
+</p>
+<p>
+          </p>
+<ol class="text">
+<li>The WAS connects directly to the WebKDC and requests a
+            service token and session key to use for further requests.  It
+            includes in this request the results of krb5_mk_req for the
+            WebKDC's service principal, using the WAS's private Kerberos
+            key.
+</li>
+<li>The WebKDC authenticates the WAS server via Kerberos V5 and
+            returns the webkdc-service token and corresponding session
+            key.
+</li>
+<li>The UA requests a WebAuth-protected resource from WAS.
+</li>
+<li>No app token is found either in a cookie or in the URL, so
+            the WAS constructs a request token, asking for an id token.
+            The request token also contains the return URL, requested type
+            of token, and any additional desired options.  It may also
+            contain an app token with the session key encrypted in the
+            WAS's private key (for handling server pools).  The request
+            token is encrypted with the AES session key shared between the
+            WAS and the WebKDC.  The WAS then returns a temporary redirect
+            to the UA, sending the UA to the WebLogin component of the
+            WebKDC and including the request token in the redirect
+            URL.
+</li>
+<li>The US follows the redirect and sends a request to the
+            WebLogin component of the WebKDC, including the request token
+            in the URL.  No cookies are sent to the WebKDC since the user
+            has never previously authenticated.
+</li>
+<li>The WebKDC decrypts the request token, checks the creation
+            time to make sure the request is fresh, and sends back a login
+            form or other authentication prompt to the UA.  The request
+            token or needed information derived from it will generally be
+            included in a hidden form field.  (This assumes that a form
+            prompt is needed to authenticate the user.  If the user can be
+            authenticated directly by the WebLogin server via some method
+            such as SPNEGO, it may skip sending back a login form and
+            therefore also skip the next step, proceeding directly to
+            checking the authorization of the WAS.)
+</li>
+<li>The user enters their username and password or other
+            authentication credentials and instructs their UA to submit
+            the form back to the WebKDC.
+</li>
+<li>The WebKDC validates the username and password or other
+            authentication credentials and also makes sure that the WAS is
+            allowed to request the token asked for in the request token.
+            Assuming the username and password are valid, the WebKDC
+            constructs a webkdc-proxy token and the id token and then
+            sends a confirmation page back to the UA which includes a link
+            back to the WAS that contains the id token (and any additional
+            state information sent by the WAS) in the URL.  The response
+            page also sets a cookie containing the webkdc-proxy token.
+            (For some forms of authentication that can be repeated without
+            prompting the user, such as SPNEGO, the WebKDC may decide not
+            to set a webkdc-proxy cookie.)
+</li>
+<li>When the user follows the link on the confirmation page,
+            the UA will re-request the original resource but now with the
+            id token included in the URL.
+</li>
+<li>The WAS will see the id token in the URL and will check to
+            ensure it is fresh.  It will then look at the subject
+            authenticator-type in the token to see if it needs to verify
+            the subject.  If the authenticator-type is krb5, it uses its
+            Kerberos keytab to verify the identity of the subject.  The
+            subject will, in this case, be the result of a krb5_mk_req
+            call.
+            <br />
+<br />
+
+            After verifying the subject if desired, the WAS creates an app
+            token based on the id token and puts it into a cookie to
+            authenticate future requests from that UA.  The app token will
+            inherit the expiration time of the id token.  The WAS then
+            passes the request to the underlying web application,
+            stripping the id token from the URL before doing so and
+            including the WebAuth-derived authentication information.
+            When the web application returns the resource, the WAS adds a
+            header to set the app token before sending that resource back
+            to the UA.
+</li>
+</ol><p>
+        
+</p>
+<p>The above assumes that the WAS will use a WebAuth app token in
+        a cookie for further session authentication.  An equally valid
+        choice from a protocol perspective would be for the WAS to create
+        its own authentication cookies and not bother with an app token.
+        Whether to do this or use app tokens is a decision entirely
+        internal to the WAS, but note that the metadata in the id token
+        (particularly the expiration time) MUST be honored by the WAS.
+</p>
+<p>All cookies set by the WebAuth protocol MUST be session cookies
+        that are destroyed when the browser is closed.  This allows the
+        user to easily log out by closing the browser before the tokens in
+        the cookies expire.
+</p>
+<a name="sc2"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2.2"></a><h3>2.2.&nbsp;
+App Token</h3>
+
+<p>In the second scenario, the user requests a
+          WebAuth-protected resource and already has an app token in a
+          cookie.  This will be the most common case.
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  ---------------------------------------------------------------
+      UA                 WAS            WebKDC
+  ---------------------------------------------------------------
+      request resource
+  1.  -----------------&gt; WAS
+
+      response
+  2.  &lt;----------------- WAS
+
+  ---------------------------------------------------------------
+</pre></div>
+<p>
+          </p>
+<ol class="text">
+<li>The UA requests a WebAuth-protected resource from WAS and
+            includes a cookie containing an app token for that WAS.
+</li>
+<li>The WAS decrypts the app token with its private key,
+            determines the user identity from the contents, and passes the
+            request to the underlying application along with that
+            identity.
+</li>
+</ol><p>
+        
+</p>
+<a name="sc3"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2.3"></a><h3>2.3.&nbsp;
+No App Token, Proxy Token (Single
+          Sign-On)</h3>
+
+<p>In the third scenario, the user requests a
+          WebAuth-protected resource and doesn't have an app token for
+          that WAS, but does have a webkdc-proxy token (in a cookie) for
+          the WebKDC.  This is the single sign-on case:  the user has not
+          authenticated to that application, but has previously
+          authenticated via WebAuth.  The WebKDC can use the user's
+          webkdc-proxy token to authenticate the user without having to
+          prompt them for their password again.
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  ---------------------------------------------------------------
+      UA                 WAS            WebKDC
+  ---------------------------------------------------------------
+      request resource
+  1.  -----------------&gt; WAS
+
+      redirect to WebKDC w/request token asking for id token
+  2.  &lt;----------------- WAS
+
+      pass along request token
+  3.  -------------------------------&gt; WebKDC
+
+      confirmation page sent back, link contains id token
+  4.  &lt;------------------------------- WebKDC
+
+      re-request resource (with returned id token in URL)
+  5.  -----------------&gt; WAS
+
+      set the app token cookie, response from app
+  6.  &lt;----------------- WAS
+
+  ---------------------------------------------------------------
+</pre></div>
+<p>This assumes the WAS has already established a
+          session key with the WebKDC, as previously
+          discussed.
+</p>
+<p>
+          </p>
+<ol class="text">
+<li>The UA requests a WebAuth-protected resource from the
+            WAS.
+</li>
+<li>No app token is found either in a cookie or in the URL, so
+            the WAS constructs a request token, asking for an id token.
+            This is done in exactly the same way as in the first
+            scenario.
+</li>
+<li>The US follows the redirect and sends a request to the
+            WebLogin component of the WebKDC, including the request token
+            in the URL.  Included in this request is a cookie containing a
+            webkdc-proxy token since the user has previously
+            authenticated.
+</li>
+<li>The WebKDC detects and decrypts the valid webkdc-proxy
+            token using its private key.  It uses it to construct a new id
+            token and then generates a confirmation page containing a link
+            to the return URL.  That link includes the id token, just as
+            with the first scenario.
+</li>
+<li>When the user follows the link on the confirmation page,
+            the UA will re-request the original resource but now with the
+            id token included in the URL.
+</li>
+<li>The WAS verifies the id token, passes the request to the
+            application with that identity information, and returns the
+            result while setting an app token in a cookie as in the first
+            scenario.
+</li>
+</ol><p>
+        
+</p>
+<a name="sc4"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2.4"></a><h3>2.4.&nbsp;
+No App Token, Credentials Required</h3>
+
+<p>In the fourth scenario, the user requests a
+          WebAuth-protected resource that needs proxied credentials to act
+          on the user's behalf.  In this case, the WAS must request a
+          proxy token, which it will then use to request additional
+          credentials via the XML interface.  In the below discussion, we
+          assume the US already has a webkdc-proxy cookie and the WebKDC
+          can use single sign-on, but this is not required.  If there is
+          no webkdc-proxy cookie, the user will be prompted for
+          authentication and then everything else will proceed as
+          below.
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  ---------------------------------------------------------------
+      UA                 WAS                WebKDC
+  ---------------------------------------------------------------
+      request resource
+  1.  -----------------&gt; WAS
+
+      redirect to WebKDC w/request token asking for proxy token
+  2.  &lt;----------------- WAS
+
+      pass along request token
+  3.  ------------------------------------&gt; WebKDC
+
+      confirmation page sent back, contains proxy token
+  4.  &lt;------------------------------------ WebKDC
+
+      re-request resource (with returned proxy token in URL)
+  5.  -----------------&gt; WAS
+
+                             send proxy token with request
+  6.                     WAS -------------&gt; WebKDC
+
+                             returns credential token
+  7.                     WAS &lt;------------- WebKDC
+
+      set the app token cookie, response from app
+  8.  &lt;----------------- WAS
+  ---------------------------------------------------------------
+</pre></div>
+<p>This assumes the WAS has already established a
+          session key with the WebKDC, as previously
+          discussed.
+</p>
+<p>
+          </p>
+<ol class="text">
+<li>The UA requests a WebAuth-protected resource from the
+            WAS.
+</li>
+<li>The WAS sees no app token containing the required
+            credentials and constructs a request token asking for a proxy
+            token of the desired type.  It then returns a redirect to the
+            WebLogin component of the WebKDC, including the request token
+            in the URL, as previously.  The only difference is in the
+            contents of the request token.
+</li>
+<li>The UA follows the redirect to the WebKDC, including the
+            request token in the URL and the webkdc-proxy token for the
+            WebKDC itself since the user had previously authenticated.
+</li>
+<li>The WebKDC decrypts and validates the webkdc-proxy token
+            and uses it to construct a proxy token as requested by the
+            WAS.  It then returns a confirmation page containing a link to
+            the return URL with the proxy token embedded in the URL (along
+            with any additional state information requested), as
+            before.
+</li>
+<li>The user follows the link and the UA re-requests the
+            original resource, now including the proxy token in the
+            URL.
+</li>
+<li>The WAS decrypts and verifies the proxy token and recovers
+            from it the embedded webkdc-proxy token.  It then sends an XML
+            request direct to the WebKDC, including its webkdc-service
+            token and the webkdc-proxy token, requesting an id token and
+            whatever credential tokens it needs.
+</li>
+<li>The WebKDC receives the webkdc-service token and
+            webkdc-proxy token, verifies that the subject of the
+            webkdc-service token is permitted to use the webkdc-proxy
+            token and verifies that it is allowed to request that type of
+            credential token.  If everything is okay, it returns the
+            requested id and credential tokens.
+</li>
+<li>After verifying the returned id token, the WAS will create
+            an app token for further authentication.  It will also often
+            create new app tokens containing the provided credentials for
+            its own futher use so that it doesn't have to keep asking for
+            credential tokens or store them locally.  The request is then
+            passed to the web application, along with the user's identity
+            and the credentials, and the result passed back to the UA
+            along with the new cookies.
+</li>
+</ol><p>
+        
+</p>
+<p>Normally, the requested credential tokens will be Kerberos
+        service tickets that the WAS can then use to talk to other
+        services that use Kerberos authentication.  Since the webkdc-proxy
+        token is generally a Kerberos V5 TGT, this works together well and
+        allows WebAuth to treat the UA's cookie jar as essentially a
+        Kerberos V5 ticket cache.  However, this is not required by the
+        protocol and credential tokens may be any form of credential
+        supported by the WAS and WebKDC.
+</p>
+<p>As with an id token, the WAS may choose not to put the
+        credentials in an app token for subsequent use.  It may instead
+        want to store them on the server tied to a session cookie or some
+        other internal state-tracking mechanism.  However, the metadata in
+        the credential tokens (particularly expiration time) MUST be
+        honored.
+</p>
+<p>The credentials returned by the WebKDC in a credential token
+        SHOULD encode an expiration time that cannot be manipulated by the
+        WAS so that the WAS is need not be trusted to honor credential
+        expiration.
+</p>
+<a name="logout"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2.5"></a><h3>2.5.&nbsp;
+Logging Out</h3>
+
+<p>The only fully effective way to log out of WebAuth is to close
+        the browsing session, which will cause all WebAuth cookies to be
+        discarded since they all MUST be session cookies.  This is a
+        weakness in the WebAuth protocol created by the use of scoped
+        cookies to hold all authentication information.  Fixing it
+        requires keeping additional queriable state outside of the user's
+        cookies and the WAS and WebKDC keys.
+</p>
+<p>Logging out of an application requires removing all session
+        cookies associated with a given application on a given server
+        removed.  This can be achieved with a logout link available
+        within the application itself that leads to a page that clears
+        all the cookies.  A WebAuth WAS implementation SHOULD provide
+        some simple way for an application developer to indicate that
+        going to a given URL should remove all app cookies.
+</p>
+<p>After logging out of the application, the user can also be
+        sent to a logout page on the WebKDC that removes the
+        webkdc-proxy cookie used for single sign-on.  After going to
+        such a page, the user will have to reauthenticate to access any
+        new web application.  However, their UA will retain app cookies
+        for other applications they have already used in this session
+        and have not logged out of, so the user SHOULD be warned to
+        close the browser to fully log out.
+</p>
+<p>There is a field in the app token in which the WAS may record
+        a session timeout, causing the app token to become invalid if it
+        is not used within a certain period of time.  The WAS may also
+        request in a request token that the webkdc-proxy token be
+        ignored and the user be forced to re-authenticate even if
+        already authenticated.
+</p>
+<a name="httpconv"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3"></a><h3>3.&nbsp;
+URL Formats</h3>
+
+<a name="redirectkdc"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.1"></a><h3>3.1.&nbsp;
+Redirects to the WebKDC</h3>
+
+<p>Each WAS will be configured with a URL to redirect a UA to when
+        the user needs to be authenticated.  When making an authentication
+        request, the WAS must include both the request token and the
+        webkdc-service token (the latter so that the WebKDC can decrypt
+        the request token).  These tokens will be passed via query
+        parameters in the URL.
+</p>
+<p>The format is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  https://{host}/{webkdc-uri}?RT={request-token};ST={service-token}
+</pre></div>
+<p>where RT is the base64-encoded request token and ST
+          is the base64-encoded service token.
+</p>
+<a name="redirectwas"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.2"></a><h3>3.2.&nbsp;
+Redirects to the WAS</h3>
+
+<p>When the WebKDC sends the UA back to the WAS with an id or
+        proxy token, it will construct a return URL by taking the
+        return-url specified in the request token and appending
+        "?WEBAUTHR={token};" to it, where {token} is the requested token.
+        If the "as" (application state) attribute was specified in the
+        request token, it is base64-encoded and then appended to the URL
+        (always after WEBAUTHR) as "WEBAUTHS={state};" where {state} is
+        the application state provided in the request token.
+</p>
+<p>To be precise, the format is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  {return-url}?WEBAUTHR={token}[;WEBAUTHS={state};]
+</pre></div>
+<p>where the part in [] is optional.
+</p>
+<p>The WAS will generally strip the added components off the URL
+        before passing the request to the underlying web application.  It
+        may verify the token, construct an app token, and return a
+        redirect to the same URL with the WebAuth data stripped and the
+        cookie set rather than immediately passing the request to the
+        application, to "clean up" the URL in the UA, avoid embedding
+        outdated tokens in bookmarks, and confusing applications that are
+        aware of their own URLs.
+</p>
+<a name="xmlproto"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4"></a><h3>4.&nbsp;
+WebKDC XML Protocol</h3>
+
+<p>This section describes the XML protocol used to talk to the
+      WebKDC.  It is used by a WAS to request a webkdc-service token and
+      session key or to use a proxy token to request credential tokens,
+      and internally by the WebLogin component of the WebKDC to request
+      webkdc-proxy, id, and proxy tokens from the WebKDC to return to the
+      UA>
+</p>
+<a name="xmlover"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.1"></a><h3>4.1.&nbsp;
+XML Protocol Overview</h3>
+
+<p>The protocol consists of an exchange of XML-formatted messages
+        over an HTTPS connection.  A protocol interaction consists of a
+        single XML message sent by the client with HTTP POST and a single
+        XML message response from the server.
+</p>
+<p>For ease of parsing, for any elements that require a
+        base64-encoded value, there must be no whitespace after the open
+        element and before the close element.
+</p>
+<p>For example, this is valid:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;requestToken&gt;{base64-webkdc-service-token}&lt;/requestToken&gt;
+</pre></div>
+<p>while this is not:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;requestToken&gt;
+      {base64-webkdc-service-token}
+  &lt;/requestToken&gt;
+</pre></div>
+<p>The spec uses whitespace in the following examples for
+        readability, but bearing in mind the above, it should be omitted
+        in practice.
+</p>
+<p>The command request format is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;xxxxRequest&gt;
+    &lt;!-- optional, no default --&gt;
+    &lt;messageId&gt;{message-id}&lt;/messageId&gt;
+    &lt;!-- optional, default is 1 --&gt;
+    &lt;protocolVersion&gt;1&lt;/protocolVersion&gt;
+    &lt;!-- rest depends on command --&gt;
+  &lt;/xxxxRequest&gt;
+</pre></div>
+<p>where xxxx is the type of request.
+</p>
+<p>The command response format on success is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;xxxxResponse&gt;
+    &lt;!-- only if present in request --&gt;
+    &lt;messageId&gt;{message-id}&lt;/messageId&gt;
+    &lt;!-- rest depends on command --&gt;
+  &lt;/xxxxResponse&gt;
+</pre></div>
+<p>where xxxx is the type of request being responded
+          to.
+</p>
+<p>The command response format on failure is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;errorResponse&gt;
+     &lt;!-- only if present in request --&gt;
+    &lt;messageId&gt;{message-id}&lt;/messageId&gt;
+    &lt;errorCode&gt;{numeric}&lt;errorCode&gt;
+    &lt;errorMessage&gt;{message}&lt;errorMessage&gt;
+  &lt;/errorResponse&gt;
+</pre></div>
+<p>where xxxx is the type of request being responded
+          to.
+</p>
+<a name="xmlcommon"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2"></a><h3>4.2.&nbsp;
+Common XML Elements</h3>
+
+<p>The following elements are common to all commands.
+</p>
+<a name="xmlmsgid"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.1"></a><h3>4.2.1.&nbsp;
+&lt;messageId&gt;</h3>
+
+<p>If a request message contains a &lt;messageId> element, then
+          the value of this element MUST be returned in the response
+          message corresponding to the request.
+</p>
+<a name="xmlvers"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.2"></a><h3>4.2.2.&nbsp;
+&lt;protocolVersion&gt;</h3>
+
+<p>This is an optional string that specifies the version of the
+          protocol in use.  The default value if not specified is 1.
+          Currently, the only supported protocol is version 1.  Using any
+          other value MUST return an error.
+</p>
+<a name="xmlerrorcode"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.3"></a><h3>4.2.3.&nbsp;
+&lt;errorCode&gt;</h3>
+
+<p>This is a numeric error code for an errorResponse message.
+          It MUST be one of the following:
+            </p>
+<blockquote class="text"><dl>
+<dt>1</dt>
+<dd>The service token used was expired.
+</dd>
+<dt>2</dt>
+<dd>The service token used was corrupt and/or
+              was unable to be decrypted.
+</dd>
+<dt>3</dt>
+<dd>The proxy token used was expired.
+</dd>
+<dt>4</dt>
+<dd>The proxy token used was corrupt and/or was
+              unable to be decrypted.
+</dd>
+<dt>5</dt>
+<dd>The request was invalid.  For example, a
+              required element was missing, an attribute value was
+              incorrect, the server was unable to parse the XML request,
+              etc.  This generally indicates a bug in the client.
+</dd>
+<dt>6</dt>
+<dd>The request was unauthorized.  An attempt
+              was made to request a token type that the client was not
+              authorized to request.
+</dd>
+<dt>7</dt>
+<dd>The server encountered an internal error
+              (out of memory, for example).  If the client retries the
+              request may succeed, though some external event might be
+              causing the problem (such as a Kerberos server being
+              down).
+</dd>
+<dt>8</dt>
+<dd>The request token was stale.
+</dd>
+<dt>9</dt>
+<dd>The request token was invalid.
+</dd>
+<dt>10</dt>
+<dd>Unable to obtain the requested credential
+              token.
+</dd>
+<dt>11</dt>
+<dd>The krb5 &lt;requesterCredential> was
+              bad.
+</dd>
+<dt>12</dt>
+<dd>The login token was stale.
+</dd>
+<dt>13</dt>
+<dd>The login token was invalid.
+</dd>
+<dt>14</dt>
+<dd>Login failed due to bad password or invalid
+              username.
+</dd>
+<dt>15</dt>
+<dd>A webkdc-proxy token of a certain type was
+              required to fulfill the request but was not present in the
+              request.
+</dd>
+<dt>16</dt>
+<dd>The user hit the cancel button during the
+              login process.
+</dd>
+<dt>17</dt>
+<dd>The WAS server requested a forced login in
+              the request token, so obtaining the id or proxy token via
+              the webkdc-proxy token is not allowed.
+</dd>
+<dt>18</dt>
+<dd>The user's principal was not permitted to
+              authenticate to the WebKDC.
+</dd>
+</dl></blockquote><p>
+          
+</p>
+<a name="xmlerrmsg"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.4"></a><h3>4.2.4.&nbsp;
+&lt;errorMessage&gt;</h3>
+
+<p>This is a textual description of the error code, meant to be
+          human readable but not ideal for displaying to the user (it is
+          not localized).  It's useful for log messages or for
+          localization of last resort.
+</p>
+<a name="xmlcmd"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.3"></a><h3>4.3.&nbsp;
+XML Commands</h3>
+
+<p>There are currently four commands defined: getTokens,
+        requestToken, webkdcProxyToken, and webkdcProxyTokenInfo.  The
+        getTokens command is used directly by the WAS to request either a
+        service token or id and credential tokens from a proxy token.  The
+        requestToken command is used by the WebLogin component of the
+        WebKDC to process a request token sent in a URL from a WAS.  The
+        webkdcProxyToken command converts an existing credential (such as
+        a Kerberos V5 TGT) into a webkdc-proxy token and can be used to
+        bootstrap WebAuth authentication from an existing Kerberos ticket
+        cache for improved single sign-on.  The webkdcProxyTokenInfo
+        command returns information about an existing webkdc-proxy
+        token.
+</p>
+<a name="xmlgettokens"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.3.1"></a><h3>4.3.1.&nbsp;
+getTokens</h3>
+
+<p>The getTokens command is used to request tokens (service, id,
+          proxy, or credential).
+</p>
+<p>The request message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensRequest&gt;
+    &lt;requesterCredential type="service|krb5"&gt;
+       &lt;!-- for type="service" --&gt;
+        {base64-webkdc-service-token}
+       &lt;!-- for type="krb5" --&gt;
+        {base64-krb5-mk-req-data}
+    &lt;/requesterCredential&gt;
+
+    &lt;!-- not present when only requesting a webkdc-service token --&gt;
+    &lt;subjectCredential type="proxy"&gt;
+       &lt;proxyToken&gt;{base64-webkdc-proxy-token}&lt;/proxyToken&gt;
+       &lt;!-- additional &lt;proxyToken&gt;...&lt;/proxyToken&gt; here --&gt;
+    &lt;/subjectCredential&gt;
+
+    &lt;!-- present when requestCredential is of type="service" --&gt;
+    &lt;requestToken&gt;{base64-request-token}&lt;/requestToken&gt;
+
+    &lt;tokens&gt;
+      &lt;token type="id|proxy|service|cred" id="{id-for-response}"&gt;
+        &lt;!-- for type="id" --&gt;
+         &lt;!-- optional, default is krb5 --&gt;
+         &lt;authenticator type="krb5|webkdc"/&gt;
+        &lt;!-- for type="proxy" --&gt;
+         &lt;proxyType&gt;krb5&lt;/proxyType&gt;
+        &lt;!-- for type="cred" --&gt;
+         &lt;credentialType&gt;krb5&lt;/credentialType&gt;
+         &lt;serverPrincipal&gt;{krb5-service}&lt;/serverPrincipal&gt;
+      &lt;/token&gt;
+      &lt;!-- additional &lt;token&gt;...&lt;/token&gt; requests go here --&gt;
+    &lt;/tokens&gt;
+  &lt;/getTokensRequest&gt;
+</pre></div>
+<p>The response message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensResponse&gt;
+    &lt;tokens&gt;
+      &lt;token id="{id-from-request}"&gt;
+        &lt;tokenData&gt;{base64}&lt;/tokenData&gt;
+        &lt;!-- for type="service" --&gt;
+         &lt;sessionKey&gt;{base64-session-key}&lt;/sessionKey&gt;
+         &lt;expires&gt;{expiration-time}&lt;/expires&gt;
+      &lt;/token&gt;
+      &lt;!-- additional &lt;token&gt;...&lt;/token&gt; responses go here --&gt;
+    &lt;/tokens&gt;
+  &lt;/getTokensResponse&gt;
+</pre></div>
+<p>If any errors occur, an &lt;errorResponse> message will be
+          returned instead.
+</p>
+<p>When the WAS is requesting a webkdc-service token and a
+          corresponding session key, it provides requesterCredentials of
+          type "krb5", does not include subjectCredential or requestToken,
+          and asks only for a single service token.  Otherwise, it
+          provides requesterCredentials of type "service", includes the
+          proxy token in subjectCredential and a request token, and asks
+          for one or more "id" or "cred" tokens.
+</p>
+<p>requesterCredentials of type "krb5" can only be used to obtain
+          a webkdc-service token.  They can't be used for obtaining any
+          other tokens, nor can a credential of type "service" be used to
+          request another webkdc-service token.  In all other cases, the
+          requesterCredentials are a webkdc-service token.
+</p>
+<p>subjectCredentials are required when requesting id, proxy, or
+          cred tokens.
+</p>
+<a name="xmlrequesttoken"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.3.2"></a><h3>4.3.2.&nbsp;
+requestToken</h3>
+
+<p>The requestToken command is used by the WebLogin component of
+          the WebKDC to process a request token sent in a URL from a
+          WAS.
+</p>
+<p>The request message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;requestTokenRequest&gt;
+
+    &lt;requesterCredential type="service"&gt;
+      {base64-webkdc-service-token}
+    &lt;/requesterCredential&gt;
+
+    &lt;subjectCredential type="proxy|login"&gt;
+      &lt;!-- for type="proxy" --&gt;
+       &lt;!-- need to pass in all the existing proxy-tokens, since
+            we (the web front-end) don't know which we might need --&gt;
+       &lt;proxyToken&gt;...&lt;/proxyToken&gt;
+       &lt;!-- additional &lt;proxyToken&gt;...&lt;/proxyToken&gt; here --&gt;
+      &lt;!-- for type="login" --&gt;
+       &lt;loginToken&gt;...&lt;/loginToken&gt;
+    &lt;/subjectCredential&gt;
+
+    &lt;!-- request token from WAS --&gt;
+    &lt;requestToken&gt;{base64-request-token}&lt;/requestToken&gt;
+
+    &lt;!-- request info from front-end, for logging purposes --&gt;
+    &lt;requestInfo&gt;
+      &lt;remoteUser&gt;xxxx&lt;/remoteUser&gt;
+      &lt;!-- if one of these is provided, all must be --&gt;
+       &lt;localIpAddr&gt;n.n.n.n&lt;/localIpAddr&gt;
+       &lt;localIpPort&gt;nnnn&lt;/localIpPort&gt;
+       &lt;remoteIpAddr&gt;n.n.n.n&lt;/remoteIpAddr&gt;
+       &lt;remoteIpPort&gt;nnnn&lt;/remoteIport&gt;
+    &lt;/requestInfo&gt;
+
+  &lt;/requestTokenRequest&gt;
+</pre></div>
+<p>The response message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;requestTokenResponse&gt;
+
+    &lt;!-- loginErrorCode will be set in a requestTokenResponse if
+         there was an error related to logging in  --&gt;
+    &lt;loginErrorCode&gt;{numeric}&lt;loginErrorCode&gt;
+    &lt;loginErrorMessage&gt;{message}&lt;loginErrorMessage&gt;
+
+    &lt;!-- any updated/new proxy tokens created, only passed back
+         if subjectCredential was type="login"  --&gt;
+    &lt;proxyTokens&gt;
+      &lt;proxyToken type="..."&gt;{base64-proxy-token}&lt;/proxyToken&gt;
+    &lt;/proxyTokens&gt;
+
+    &lt;!-- the url to return to the user to --&gt;
+    &lt;returnUrl&gt;...&lt;/returnUrl&gt;
+
+    &lt;!-- subject inside of service-token used to make request --&gt;
+    &lt;requesterSubject&gt;...&lt;/requesterSubject&gt;
+
+    &lt;!-- subject from subjectCredential --&gt;
+    &lt;subject&gt;...&lt;/subject&gt;
+
+    &lt;!-- requestedToken will either be an error, id, or proxy token.
+         not set if &lt;loginErrorCode&gt; is set. --&gt;
+    &lt;requestedToken&gt;{base64-token}&lt;/requestedToken&gt;
+
+    &lt;!-- requestedTokenType will be the type of requestedToken,
+         one of error, id, or proxy.  not set if &lt;LoginErrorCode&gt; is
+         set. --&gt;
+    &lt;requestedTokenType&gt;error|id|proxy&lt;/requestedToken&gt;
+
+    &lt;!-- set if request token request options has "lc" --&gt;
+    &lt;loginCanceledToken&gt;{base64-error-token}&lt;/loginCanceledToken&gt;
+
+    &lt;!-- app state is the opaque app state passed in the
+         request token that we hand back to WAS --&gt;
+    &lt;appState&gt;{base64-state}&lt;/appState&gt;
+
+  &lt;/requestTokenResponse&gt;
+</pre></div>
+<p>If any non-login-related errors occur, an &lt;errorResponse>
+          message will be returned instead.
+</p>
+<p>If a login-related error occurs then a
+          &lt;requestTokenResponse> will be returned, but
+          &lt;requestedToken> will be unset, and &lt;loginErrorCode> will
+          be set.  The error codes used by &lt;loginErrorCode> are a
+          subset of those used by &lt;errorCode>:
+            </p>
+<blockquote class="text"><dl>
+<dt>14</dt>
+<dd>Login failed due to bad password or invalid
+              username.  The web front-end should re-prompt for the
+              username and password.
+</dd>
+<dt>15</dt>
+<dd>A webkdc-proxy token of a certain type was
+              required and was not present in the request.  The web
+              front-end should prompt for the username and password.  This
+              error code may occur when two different strengths of
+              webkdc-proxy tokens are used, one that's good only for id
+              tokens (but may be possible to generate without prompting
+              the user) and one that can generate proxy tokens.  If the
+              WAS requests a proxy token and the webkdc-proxy token
+              available is only good for id tokens and cannot be used to
+              generate proxy tokens, this error code is returned,
+              prompting the front-end to do stronger authentication.
+</dd>
+<dt>17</dt>
+<dd>The WAS server requested a forced login.
+              The web front-end should prompt for the username and
+              password even though a webkdc-proxy token is available.
+</dd>
+<dt>18</dt>
+<dd>The user's principal was not permitted to
+              authenticate to the WebKDC.  The web front-end may re-prompt
+              for another username and password or just display an
+              error.
+</dd>
+</dl></blockquote><p>
+          
+</p>
+<p>requestedTokenType is included so that the WebLogin component
+          can make display decisions based on whether the remote site
+          requested an id token or a proxy token.
+</p>
+<p>If the request option attribute in the request token has "lc"
+          in it, then &lt;loginCanceledToken> will be returned.  This
+          token should be returned to the WAS if the user elects to cancel
+          authentication so that the application can take appropriate
+          action.  Note that it is up to the WebLogin component to send
+          back that token as the requested token (WEBAUTHR in the return
+          URL) if the user hits the cancel button.
+</p>
+<p>If the request option attribute in the request token has "fa"
+          in it and a login token is not provided, this command will
+          return a &lt;loginErrorCode> of 17, which indicates that the
+          user is being forced to log in. Any passed-in webkdc-proxy
+          tokens are ignored.
+</p>
+<p>The &lt;requestInfo> data is provided only for logging and
+          audit purposes and MUST NOT be used for authentication.
+</p>
+<a name="xmlwebkdcproxytoken"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.3.3"></a><h3>4.3.3.&nbsp;
+webkdcProxyToken</h3>
+
+<p>The webkdcProxyToken command is used to convert an existing
+          credential, such as a Kerberos V5 TGT, into a webkdc-proxy
+          token.  It can be used to bootstrap WebAuth authentication from
+          an existing Kerberos ticket cache for improved single
+          sign-on.
+</p>
+<p>The request message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;webkdcProxyTokenRequest&gt;
+
+    &lt;subjectCredential type="krb5"&gt;
+      &lt;!-- for type="krb5" --&gt;
+      {base64-krb5-mk-req-data}
+    &lt;/subjectCredential&gt;
+
+    &lt;proxyData&gt;
+      &lt;!-- for subjectCredential type="krb5" --&gt;
+      {base64-krb5-mk-priv-on-tgt}
+    &lt;/proxyData&gt;
+
+  &lt;/webkdcProxyTokenRequest&gt;
+</pre></div>
+<p>The response message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;webkdcProxyTokenResponse&gt;
+
+    &lt;webkdcProxyToken&gt;{base64-proxy-token}&lt;/webkdcProxyToken&gt;
+
+    &lt;!-- subject from subjectCredential --&gt;
+    &lt;subject&gt;...&lt;/subject&gt;
+
+  &lt;/webkdcProxyTokenResponse&gt;
+</pre></div>
+<p>If any errors occur, an &lt;errorResponse> message will be
+          returned instead.
+</p>
+<a name="xmlwebkdcproxyinfo"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.3.4"></a><h3>4.3.4.&nbsp;
+webkdcProxyTokenInfo</h3>
+
+<p>The webkdcProxyTokenInfo command is used to get information
+          about an existing webkdc-proxy-token.
+</p>
+<p>The request message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;webkdcProxyTokenInfoRequest&gt;
+    &lt;webkdcProxyToken&gt;{base64-proxy-token}&lt;/webkdcProxyToken&gt;
+  &lt;/webkdcProxyTokenInfoRequest&gt;
+</pre></div>
+<p>the response message is:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;webkdcProxyTokenInfoResponse&gt;
+    &lt;subject&gt;...&lt;/subject&gt;
+    &lt;proxyType&gt;...&lt;/proxyType&gt;
+    &lt;creationTime&gt;...&lt;/creationTime&gt;
+    &lt;expirationTime&gt;...&lt;/expirationTime&gt;
+  &lt;/webkdcProxyTokenInfoResponse&gt;
+</pre></div>
+<p>If any errors occur, an &lt;errorResponse> message will be
+          returned instead.
+</p>
+<a name="xmlpost"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.4"></a><h3>4.4.&nbsp;
+Posting XML to the WebKDC</h3>
+
+<p>The XML data should be sent via POST to the WebKDC's URL, which
+        should be different than the URL of the WebLogin service but
+        should be on the same system.  By convention, it is normally
+        /webkdc-service/ on the designated WebKDC system, but this SHOULD
+        be configurable in any WebAuth implementation.
+</p>
+<p>The Content-Type of the POST data MUST be text/xml.
+</p>
+<p>This URL MUST use the HTTPS protocol, as sensitive data is sent
+        without additional encryption.
+</p>
+<a name="xmlex"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.5"></a><h3>4.5.&nbsp;
+XML Examples</h3>
+
+<a name="anchor1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.5.1"></a><h3>4.5.1.&nbsp;
+WAS Asking for webkdc-service Token</h3>
+
+<p>In this example, the WAS requests a webkdc-service token and
+          associated session key for itself.  Such a request is sent when
+          the WAS needs to send requests to the WebKDC and doesn't have a
+          non-expired webkdc-service token cached.  The WAS will cache the
+          token and the corresponding session key until it nears
+          expiration time, at which point it SHOULD request a new one.
+</p>
+<p>The request:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensRequest&gt;
+     &lt;requesterCredential type="krb5"&gt;
+        {base64-krb5-mk-req-data}
+     &lt;/requesterCredential&gt;
+     &lt;tokens&gt;
+       &lt;token type="service" id="0"/&gt;
+     &lt;/tokens&gt;
+  &lt;/getTokensRequest&gt;
+</pre></div>
+<p>The response:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensResponse&gt;
+    &lt;tokens&gt;
+      &lt;token id="0"&gt;
+        &lt;sessionKey&gt;{base64-session-key}&lt;/sessionKey&gt;
+        &lt;expires&gt;{expiration-time}&lt;/expires&gt;
+        &lt;tokenData&gt;{base64}&lt;/tokenData&gt;
+      &lt;/token&gt;
+    &lt;/tokens&gt;
+  &lt;/getTokensResponse&gt;
+</pre></div>
+<a name="anchor2"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.5.2"></a><h3>4.5.2.&nbsp;
+WAS Asking for a credential Token</h3>
+
+<p>In this example, the WAS requests an K5 ticket using a
+          previously obtained webkdc-proxy token (presumably obtained from
+          the UA via a redirect to the WebKDC with a request token).  The
+          webkdc-proxy token's type MUST match the requested credential's
+          type.
+</p>
+<p>The request:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensRequest&gt;
+    &lt;requesterCredential type="service"&gt;
+      {base64-webkdc-service-token}
+    &lt;/requesterCredential&gt;
+
+    &lt;requestToken&gt;{base64-request-token}&lt;/requestToken&gt;
+
+    &lt;subjectCredential type="proxy"&gt;
+      {webkdc-proxy-token}
+    &lt;/subjectCredential&gt;
+    &lt;tokens&gt;
+      &lt;token type="credential" id="0"/&gt;
+        &lt;credentialType&gt;krb5&lt;/credentialType&gt;
+        &lt;serverPrincipal&gt;service/ldap@stanford.edu&lt;/serverPrincipal&gt;
+      &lt;/token&gt;
+    &lt;/tokens&gt;
+  &lt;/getTokensRequest&gt;
+</pre></div>
+<p>The response:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  &lt;getTokensResponse&gt;
+    &lt;tokens&gt;
+      &lt;token id="0"&gt;
+        &lt;tokenData&gt;{base64}&lt;/tokenData&gt;
+      &lt;/token&gt;
+    &lt;/tokens&gt;
+  &lt;/getTokensResponse&gt;
+</pre></div>
+<p>The WebKDC will verify that the webkdc-proxy token was
+          granted to the same server identified by the request token.
+</p>
+<a name="tokenformat"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5"></a><h3>5.&nbsp;
+Token Format</h3>
+
+<a name="tokenencoding"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.1"></a><h3>5.1.&nbsp;
+Token Encoding</h3>
+
+<p>All encrypted tokens have the following general
+          encoding:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  {key-hint}{nonce}{hmac}{token-attributes}{padding}
+</pre></div>
+<p>Everything except {key-hint} is AES-encrypted.
+</p>
+<p>{key-hint} is a four-byte Unix UTC time stored in network byte
+        order.  It is not encrypted and is used only as a hint for the
+        server to determine which key to use to decrypt the token.  It
+        MUST NOT be used for any other purpose as its value is not
+        protected from modification.
+</p>
+<p>{nonce} is 16 random bytes and is encrypted with the rest of
+        the data in the token.  It is used to ensure that two tokens with
+        the same data and same encryption key don't encrypt to the same
+        value.
+</p>
+<p>{hmac} is the SHA1 HMAC of the actual data including the
+        padding (in other words, the pre-encryption concatenation of
+        {token-attributes} and {padding}).  The key used with HMAC is the
+        AES private key.  (A better solution would be to use a different
+        key, but that requires having two keys or using a key-derivation
+        function to derive the HMAC key from the AES key.  One possible
+        future approach would be to use a key-derivation function like TLS
+        uses.
+</p>
+<p>{token-attributes} is a sequence of name=value pairs, separated
+        by a ';' character.  Names are not allowed to contain either '='
+        or ';'.  Values MAY contain binary data, but MUST escape any ';'
+        in the data by adding an additional ';'.
+</p>
+<p>For example, if we had the following names and
+          values:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  a=1
+  msg=hello;there
+  bin={binarydata}
+  b=2
+</pre></div>
+<p>They would be encoded as:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  a=1;msg=hello;;there;bin={binarydata};b=2;
+</pre></div>
+<p>{padding} is any padding of the data required to make the
+        length a multiple of 16 bytes for AES encryption.  There is always
+        padding present.  If the length is already a multiple of 16 bytes,
+        16 bytes of padding will be added.  The value of each padding byte
+        MUST be equal to the length of the padding.  For example, if the
+        padding length is 7, each byte in the padding must be equal to
+        0x07.
+</p>
+<p>The whole token is base64-encoded before being used in XML
+        data, a cookie, or a query parameter.
+</p>
+<a name="tokenattrs"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.2"></a><h3>5.2.&nbsp;
+Assigned Token Attributes</h3>
+
+<p>The following is an exhaustive list of the attribute names used
+        in tokens.  All time values are 32-bit values stored in network
+        byte order and are the number of seconds since 1970-01-01 00:00:00
+        UTC.
+          </p>
+<blockquote class="text"><dl>
+<dt>as (binary)</dt>
+<dd>
+            Optional data included in the request
+            token.  If present, the same data will be sent back to the WAS
+            as a second parameter to the URL, not included in the
+            encrypted response token.
+</dd>
+<dt>cmd (string)</dt>
+<dd>
+            The name of the XML command being
+            executed (for example, getTokensRequest).  Included in the
+            request token sent for XML commands.
+</dd>
+<dt>crd (binary)</dt>
+<dd>
+            Credential data (for example, an
+            encoded Kerberos V5 service ticket).
+</dd>
+<dt>crs (string)</dt>
+<dd>
+            The identity of the service credential
+            data can be used to access (normally the text representation
+            of the server principal for a Kerberos V5 service ticket).
+</dd>
+<dt>crt (string)</dt>
+<dd>
+            Credential type.  Currently this is
+            always krb5.
+</dd>
+<dt>ct (binary time)</dt>
+<dd>
+            Creation time of the token.  For tokens
+            used to exchange messages between servers (request, error, id,
+            proxy, credential), this value is used to ensure that the
+            request is fresh.  For example, tokens of this type with a ct
+            older then 5 minutes will get flagged by the server (WAS or
+            WebKDC) as being stale.
+</dd>
+<dt>ec (string)</dt>
+<dd>
+            Error code from the WebKDC.  This will
+            be the ASCII digit representation of one of the error codes
+            that are returned in XML messages.
+</dd>
+<dt>em (string)</dt>
+<dd>
+            Error message from the WebKDC.  This
+            should only be used for logging and/or debugging, since it is
+            not localized and not in a format meant for end-user
+            consumption.
+</dd>
+<dt>et (binary time)</dt>
+<dd>
+            Expiration time of the token.
+</dd>
+<dt>k (binary)</dt>
+<dd>
+            AES session key.
+</dd>
+<dt>lt (binary time)</dt>
+<dd>
+            Last-used time.  If this attribute is
+            set in an app token present in a cookie, the WAS SHOULD
+            periodically update it (by setting a new cookie with an
+            updated last-used time) as it is used for access.  This
+            attribute is used to implement timing out of unused but still
+            unexpired app tokens.
+</dd>
+<dt>p (string)</dt>
+<dd>
+            User's password, in a login token.
+</dd>
+<dt>pd (binary)</dt>
+<dd>
+            Proxy data, such as an encoded
+            Kerberos V5 TgT.
+</dd>
+<dt>ps (string)</dt>
+<dd>
+            Proxy subject, the subject from the
+            webkdc-service token that was used when the webkdc-proxy token
+            was created.  This is used to verify that a webkdc-proxy token
+            is being used by the same entity as originally requested
+            it.
+</dd>
+<dt>pt (string)</dt>
+<dd>
+            Proxy type (such as krb5).
+</dd>
+<dt>ro (string)</dt>
+<dd>
+            Comma-separated list of request
+            options.  Currently, the following options are supported: lc,
+            to return an error code to the application if login is
+            cancelled; and fa, to force interactive authentication even if
+            the user has a webkdc-proxy token.
+</dd>
+<dt>rtt (string)</dt>
+<dd>
+            Requested token type in a request
+            token.  This is either id for an id token or proxy for a proxy
+            token.
+</dd>
+<dt>ru (string)</dt>
+<dd>
+            Return URL.  The user to return the
+            user to after authentication.
+</dd>
+<dt>s (string)</dt>
+<dd>
+            The authenticated subject.  In
+            webkdc-service tokens, this is the server identity that
+            authenticated to get the webkdc-service token.  In all other
+            tokens, it is the user who authenticated.  Server subjects
+            have the form "type:identifier".  Currently, the only defined
+            type is "krb5" indicating that the server authenticated with
+            Kerberos V5, and in that case the identifier is the text form
+            of a fully qualified Kerberos V5 principal.
+</dd>
+<dt>sa (string)</dt>
+<dd>
+            Subject authenticator type in an id
+            token.  This is currently either krb5, indicating that a
+            Kerberos V5 authenticator is included, or webkdc, indicating
+            no additional authenticator is provided.
+</dd>
+<dt>sad (binary)</dt>
+<dd>
+            Subject authenticator data.  If the sa
+            is krb5, this is the output of krb5_mk_req using the same
+            Kerberos V5 principal as the webkdc-service token's
+            subject.
+</dd>
+<dt>t (string)</dt>
+<dd>
+            The token type.  Currently recognized
+            token types are webkdc-service, webkdc-proxy, req, error, id,
+            proxy, cred, and app.  Used by a server to ensure that a token
+            is being used for the correct purpose.
+</dd>
+<dt>wt (binary)</dt>
+<dd>
+            A webkdc-proxy or webkdc-service token
+            that is being included inside another token.
+</dd>
+<dt>u (string)</dt>
+<dd>
+            The user's username in a login
+            token.
+</dd>
+</dl></blockquote><p>
+        
+</p>
+<a name="tokenspecific"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3"></a><h3>5.3.&nbsp;
+Specific Token Encoding</h3>
+
+<p>The following sections describe which tokens are supported,
+        what they're used for, and which attributes are included and what
+        those attributes mean in that context.
+</p>
+<a name="tokenwebkdcservice"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.1"></a><h3>5.3.1.&nbsp;
+webkdc-service Token
+          Encoding</h3>
+
+<p>webkdc-service tokens are used by WAS servers to communicate
+          with the WebKDC.  They are returned by WebKDC after an entity
+          authenticates with the WebKDC using the XML interface while
+          requesting a service token.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=webkdc-service
+  k={session-key}
+  s=krb5:{requesting-servers-k5-principal}
+  ct={creation-time}
+  et={expiration-time}
+</pre></div>
+<p>All attributes are AES-encrypted in the WebKDC's private
+          key.  The server that initially requested the token will also
+          receive {session-key} and {expiration-time} out-of-band from the
+          token itself.  That additional data must also be stored by the
+          WAS for the duration of the token.
+</p>
+<a name="tokenwebkdcproxy"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.2"></a><h3>5.3.2.&nbsp;
+webkdc-proxy Token
+          Encoding</h3>
+
+<p>A webkdc-proxy token is a proxy authentication token
+          maintained by the WebKDC on behalf of another user, or on behalf
+          of itself.  Normally it contains a Kerberos V5 TGT.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=webkdc-proxy
+  ps={subject-from-webkdc-service-token-used-to-get-proxy-token}
+  pt=krb5|...
+  s={username}
+  pd={proxy-data}
+  ct={creation-date}
+  et={expiration-date}
+</pre></div>
+<p>All attributes are AES-encrypted in the WebKDC's private
+          key.
+</p>
+<p>As a special case, webkdc-proxy tokens that the WebKDC
+          obtains on behalf of itself (returned as part of a
+          requestTokenRequest, for example) have a ps attribute value of
+          WEBKDC:krb5:{server-principal} where {server-principal} is the
+          Kerberos principal of the WebKDC.
+</p>
+<p>When a webkdc-proxy-token is used, the WebKDC checks that the
+          subject in the webkdc-service token accompanying the request is
+          authorized to used the webkdc-proxy token granted to the ps
+          subject or that the ps subject starts with "WEBKDC:".
+</p>
+<a name="tokenrequest"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.3"></a><h3>5.3.3.&nbsp;
+request Token Encoding</h3>
+
+<p>A request token is sent to the WebKDC server by a WAS along
+          with the WAS's webkdc-service token.  It is used to request
+          tokens via the HTML interface, and is also used with the XML
+          interface (in a restricted form) to allow the WebKDC to verify
+          that a request being made with a webkdc-service token is both
+          recent and for the specified command.
+</p>
+<p>The first form is used with the requestTokenRequest
+            command:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=req
+  ct={creation-time}
+  [as={binary-state-data}]
+  ru={return-redirect-url}
+  [ro=fa,lc]
+  rtt=id|proxy
+  # for rt=id
+  sa=krb5|webkdc
+  # for rt=proxy
+  pt=krb5
+</pre></div>
+<p>The second form is used with the getTokensRequest
+            command in the XML interface:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=req
+  ct={creation-time}
+  cmd={xml-command-we-are-going-to-execute}
+</pre></div>
+<p>All attributes are AES-encrypted in the webkdc-service token
+          session key.
+</p>
+<p>The value of ct is used to prevent replay attacks.  Values
+          older than a certain time (probably 5 minutes by default) should
+          be rejected as a replay.
+</p>
+<p>cmd indicates which XML command we are invoking (for example,
+          getTokensRequest).  The WebKDC will compare this command against
+          the name of the command in the XML, thereby verifying the
+          unencrypted XML request.
+</p>
+<a name="tokenerror"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.4"></a><h3>5.3.4.&nbsp;
+error Token Encoding</h3>
+
+<p>An error token is sent from the WebKDC as a response to a
+          request token when an error occurs.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=error
+  ct={creation-time}
+  ec={error-code}
+  em={error-message}
+</pre></div>
+<p>All attributes are AES-encrypted in the webkdc-service token
+          session key.
+</p>
+<p>The value of ct is used to prevent replay attacks.  Values
+          older than a certain time (probably 5 minutes by default) should
+          be rejected as a replay.
+</p>
+<a name="tokenid"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.5"></a><h3>5.3.5.&nbsp;
+id Token Encoding</h3>
+
+<p>The id token is returned by the WebKDC and is bound to an
+          WAS.  It is used to communicate the authenticated identity of a
+          user.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=id
+  sa=krb5|webkdc
+  # for sa=webkdc
+  s={username}
+  # for sa=krb5
+  sad={result-of-krb5-mk-req-for-webauth/hostname}
+  ct={creation-time}
+  et={expiration-time}
+</pre></div>
+<p>All attributes are AES-encrypted in the webkdc-service token
+          session key.
+</p>
+<p>If "at" is krb5, then "sad" (subject authenticator data) is
+          the result of a call to krb5_mk_req for the WAS service
+          principal (as determined from the subject of the webkdc-service
+          token) using the user's TGT from a krb5 webkdc-procy token.
+</p>
+<p>If at is webkdc, we are trusting the webkdc and "s" contains
+          the authenticated user's identity (generally as a Kerberos V5
+          principal name in text form).
+</p>
+<p>The value of ct is used to prevent replay attacks.  Values
+          older than a certain time (probably 5 minutes by default) should
+          be rejected as a replay, as id tokens are only used once and
+          re-written into an app token.
+</p>
+<p>The value of et is used to let the application know how long
+          the authentication information in the id token should be
+          considered valid for.  The value for et is at latest the
+          expiration time of the proxy-token used to create it.
+</p>
+<a name="tokenproxy"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.6"></a><h3>5.3.6.&nbsp;
+proxy Token Encoding</h3>
+
+<p>A proxy token is returned by the WebKDC when a WAS requests a
+          proxy token from the WebKDC via the HTML interface.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=proxy
+  pt=krb5|...
+  s={username}
+  wt={webkdc-proxy-token}
+  ct={creation-time}
+  et={expiration-time}
+</pre></div>
+<p>All attributes are AES-encrypted in the webkdc-service token
+          session key.
+</p>
+<p>The value of ct is used to prevent replay attacks.  Values
+          older then a certain time (probably 5 minutes by default) should
+          be rejected as a replay, as proxy tokens are only used once and
+          re-written into an app token.
+</p>
+<p>wt is the webkdc-proxy token (in binary form).  It can be
+          used by the WAS later to request credential tokens from the
+          WebKDC.
+</p>
+<a name="tokencred"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.7"></a><h3>5.3.7.&nbsp;
+credential Token Encoding</h3>
+
+<p>A credential token is an authentication credential for the
+          user for some other service, used by the WAS for proxied
+          authentication.  It is normally a K5 service ticket generated by
+          the WebKDC from the user's TGT.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=cred
+  crs={server-principal}
+  crt=krb5|...
+  s={username}
+  cd={credential-data}
+  ct={creation-date}
+  et={expiration-date}
+</pre></div>
+<p>All attributes are AES-encrypted in the webkdc-service token
+          session key.
+</p>
+<a name="tokenlogin"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.8"></a><h3>5.3.8.&nbsp;
+login Token Encoding</h3>
+
+<p>A login token is used by the WebLogin component of the WebKDC
+          to communicate a username and password to the rest of the
+          WebKDC when it needs to authenticate a user.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=login
+  ct={creation-time}
+  p={password}
+  u={username}
+</pre></div>
+<p>All attributes are AES-encrypted in the WebKDC's private
+          key.
+</p>
+<a name="tokenapp"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.9"></a><h3>5.3.9.&nbsp;
+app Token Encoding</h3>
+
+<p>An app token is controlled and maintained by a WAS.  The main
+          use of an app token is to cache the idenity within an id token
+          after it has been verified.
+</p>
+<p>Token format:
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+  t=app
+  et={expiration-time}
+  [ct={creation-time}]
+  [s={username}]
+  [k=session-key]
+  [lt={last-use-time}]
+</pre></div>
+<p>All attributes are AES-encrypted in the WAS's private
+          key.
+</p>
+<p>app tokens are normally created on first receipt of an id
+          token.   After the id token is verified, it is converted into an
+          app token and then stored in a cookie.
+</p>
+<p>{last-use-time} is optional and should only be included if
+          the WAS wishes to invalidate idle but unexpired app tokens.
+</p>
+<p>{session-key} is only present when an app token is being used
+          as the application state inside of a request token.  This is
+          done when serving the same web resource with a pool of servers
+          that all should be able to decrypt the id token from the
+          WebKDC.
+</p>
+<a name="krb5token"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.4"></a><h3>5.4.&nbsp;
+Kerberos v5 Credential Encoding</h3>
+
+<p>Kerberos v5 credentials may be included in several types of
+        WebAuth tokens.  Whenever this is done, the credential data is
+        encoded using the same basic encoding format as a token, and the
+        system receiving the credential must decode it and recreate the
+        Kerberos v5 credential structure to use it.  This allows
+        interoperability between different platforms and different
+        Kerberos implementations.
+</p>
+<p>The credential encoding uses the following attributes, where
+        binary number is a 32-bit number in network byte order and binary
+        time is a 32-bit time in seconds since 1970-01-01 00:00:00
+        UTC:
+          </p>
+<blockquote class="text"><dl>
+<dt>c (string)</dt>
+<dd>
+            Client principal name.
+</dd>
+<dt>s (string)</dt>
+<dd>
+            Server principal name.
+</dd>
+<dt>K (binary number)</dt>
+<dd>
+            Kerberos encryption type for the
+            session key.  This will be whatever numerical constant is used
+            by Kerberos for that encryption type.
+</dd>
+<dt>k (binary)</dt>
+<dd>
+            Kerberos session key.
+</dd>
+<dt>ta (binary time)</dt>
+<dd>
+            Authentication time of the
+            credential.
+</dd>
+<dt>ts (binary time)</dt>
+<dd>
+            Start time of the credential (the time
+            at which the credential becomes valid).
+</dd>
+<dt>te (binary time)</dt>
+<dd>
+            Expiration time of the credential,
+            after which it is no longer valid.
+</dd>
+<dt>tr (binary time)</dt>
+<dd>
+            Renewal end time of the credential.
+            The credential may be renewed up until this time.
+</dd>
+<dt>i (binary)</dt>
+<dd>
+            Flag set to 0 or 1 indicating whether
+            the credential was obtained via S/Key.  This attribute should
+            probably always be 0 or not provided; it is not supported at
+            all by Heimdal.
+</dd>
+<dt>f (binary number)</dt>
+<dd>
+            The ticket flags.  This is a 32-bit
+            bitmask of Kerberos ticket flags, as defined by the Kerberos
+            v5 protocol specification.
+</dd>
+<dt>na (binary number)</dt>
+<dd>
+            The number of addresses associated
+            with the credential.  Address checking on credentials is
+            generally not useful for WebAuth, so it might be best to
+            always skip including this in the credential, but space is
+            provided in case it's useful for some reason.  For each
+            address, there is a corresponding "A" attribute holding the
+            address type and an "a" attribute holding the address
+            itself.
+</dd>
+<dt>A# (binary number)</dt>
+<dd>
+            The type of address for the #th
+            address.  # is replaced by the index number of the address.
+            Addresses are numbered starting with 0, so if na was 2, there
+            will be an A0 attribute and an A1 attribute (but no A2
+            attribute).
+</dd>
+<dt>a# (binary)</dt>
+<dd>
+            The #th address in the credential.  #
+            is replaced by the index number of the address.  Addresses are
+            numbered starting with 0, so if na was 2, there will be an a0
+            attribute and an a1 attribute (but no a2 attribute).
+</dd>
+<dt>t (binary)</dt>
+<dd>
+            The Kerberos ticket.
+</dd>
+<dt>t2 (binary)</dt>
+<dd>
+            The second Kerberos ticket in the
+            credentials, if any.
+</dd>
+<dt>nd (binary number)</dt>
+<dd>
+            The number of authenticatation data
+            blocks in the credential.  For each data block, there is a
+            corresponding "D" attribute holding the data type and a "d"
+            attribute holding the data block itself.
+</dd>
+<dt>D# (binary number)</dt>
+<dd>
+            The type of authentication data for
+            the #th data block.  # is replaced by the index number of the
+            data block.  Data blocks are numbered starting with 0, so if
+            nd was 2, there will be a D0 attribute and a D1 attribute (but
+            no D2 attribute).
+</dd>
+<dt>d# (binary number)</dt>
+<dd>
+            The #th authentication data block.  #
+            is replaced by the index number of the block.  Data blocks are
+            numbered starting with 0, so if nd was 2, there will be a d0
+            attribute and a d1 attribute (but no d2 attribute).
+</dd>
+</dl></blockquote><p>
+        
+</p>
+<a name="cookies"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6"></a><h3>6.&nbsp;
+Cookie Formats</h3>
+
+<p>Cookies are used to hold tokens in a UA for future use.  All
+      cookies MUST be scoped to a single server; there are no domain-wide
+      cookies.  All cookies will be encoded in base64 before passing them
+      to the UA.
+</p>
+<p>The tokens that are put in cookies are webkdc-proxy, proxy, app,
+      and cred tokens.  The following naming convention will be used to
+      name cookies.
+</p>
+<p>Note that proxy tokens and credential tokens are originally
+      encrypted in the webkdc-service token session key, but are
+      re-encrypted using the WAS private key before being stored in a
+      cookie.
+</p>
+<p>app token cookies will be named webauth_at.
+</p>
+<p>webkdc-proxy token cookies will be named webauth_wpt_{type} where
+      {type} is the type of the webkdc-proxy token (usually krb5).
+</p>
+<p>proxy token cookies will be named webauth_pt_{type} where {type}
+      is the type of the proxy token (usually krb5).
+</p>
+<p>credential tokens will be named webauth_ct_{type}_{service} where
+      {type} is the type of the credential token (usually krb5) and
+      {service} is the krb5 service name, potentially with special
+      characters escaped.
+</p>
+<a name="history"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.A"></a><h3>Appendix A.&nbsp;
+Document Revision History</h3>
+
+<p>
+        </p>
+<blockquote class="text"><dl>
+<dt>0.1 (2002-10-02, schemers)</dt>
+<dd>
+          First draft.
+</dd>
+<dt>0.2 (2002-10-04, schemers)</dt>
+<dd>
+          Fixed typos and added more text in
+          section 1.2.  Use SHA1 everywhere instead of MD5.  Change
+          attribute separator in tokes from "\n" to ';'.  Change time
+          attributes inside of tokens from four-byte binary network byte
+          order to ASCII strings.  Changed description of time prepended
+          to tokens from {creation-time} to {key-hint}.
+</dd>
+<dt>0.3 (2002-10-07, schemers)</dt>
+<dd>
+          Major changes.  Combine LS and WKDC into
+          WebKDC.
+</dd>
+<dt>0.4 (2002-10-26, schemers)</dt>
+<dd>
+          Change time attributes inside tokens
+          back to four byte binary network byte order.  Get rid of default
+          values for attributes.  Requested token is now contained within
+          the response token.  Got rid of unneeded or not fleshed out
+          token attributes (rth, san, ver).  Add new token attributes (rt,
+          rt-t, rt-et, sad).  Change the id token to use sad instead of s
+          for krb5.
+</dd>
+<dt>0.5 (2002-10-30, schemers)</dt>
+<dd>
+          Use errorResponse message for indicating
+          errors.  Remove app names for now; will re-specify when
+          requirements are more clear.  Change et in it token to se to
+          indicate when the subject expires.
+</dd>
+<dt>0.6 (2002-11-01, schemers)</dt>
+<dd>
+          Rename service token and proxy token to
+          webkdc-service token and webkdc-proxy token to signify that they
+          are only used by the WebKDC.  Remove response token and add
+          error token and new proxy token.  The response from a request
+          token is an error token, id token, or proxy token.  change se
+          back to et.  Expiration times in tokens indicate when the token
+          expires and when any data within the token (subject info, proxy
+          data, etc.)  expires.  Simplify XML messages by placing
+          base64-encoded data directly in &lt;requestCredential> and
+          &lt;subjectCredential> instead of having them in another tag.
+          Wrap tokens in &lt;tokens> element to make it easier to interate
+          through all the tokens in a &lt;getTokensRequest>.
+</dd>
+<dt>0.61 (2002-11-03, schemers)</dt>
+<dd>
+          Add a new form of request token that is
+          sent in XML requests along with a webkdc-service token to
+          indicate which XML command is being requested.  Update
+          &lt;requesterCredential> for type "service" to include
+          &lt;serviceToken> and &lt;requestToken>.
+</dd>
+<dt>0.7 (2002-11-05, schemers)</dt>
+<dd>
+          Rename prt/prd/pro attributes to
+          pt/pd/ps.  Formatting and clarification.
+</dd>
+<dt>0.8 (2002-11-07, schemers)</dt>
+<dd>
+          Add a section on the security model and
+          support for sending application state in a request token to
+          enable server pools.
+</dd>
+<dt>0.85 (2002-11-08, schemers)</dt>
+<dd>
+          Forgot to add a final WebAuth redirect
+          in the usage scenarios that sets the cookies and re-requests the
+          original URL.
+</dd>
+<dt>0.90 (2002-11-13, schemers)</dt>
+<dd>
+          Undo 0.85, since after initial Apache
+          prototyping I think we can get away without doing the extra
+          redirect.  Add some text to the security model section
+          describing what happens if a user bookmarks or replays a URL
+          with a token in it.
+</dd>
+<dt>0.91 (2002-11-14, schemers)</dt>
+<dd>
+          Don't rewrite proxy/cred tokens into app
+          tokens before storing them in cookies.  Just re-encrypt them
+          using the WAS private key.  This is so that they can't be used
+          as app tokens.  Change the name of proxy/webkdc-proxy
+          cookies.
+</dd>
+<dt>0.99 (2002-12-04, schemers)</dt>
+<dd>
+          Document error codes for &lt;errorCode>.
+          Add new requestToken command for the WebKDC web front-end to use
+          to talk to the WebKDC.  Recommended URL for WebKDC POST is now
+          /webkdc-service/.  Remove line that says an &lt;errorCode> can
+          occur within a &lt;token> returned in a &lt;getTokensResponse>;
+          the whole request succeeds or fails.  Update format for
+          &lt;subjectCredential> to be consistent across XML commands.
+          Update format for &lt;requesterCredential> by moving
+          &lt;requestToken> out into enclosing element, which also removes
+          the need for the &lt;serviceToken> element.  Also consistent
+          across commands.  Only subject names in webkdc-service tokens
+          have the form "krb5:{principal}"; subject names referring to
+          users will have only the username (unless krb5 is used and the
+          call to krb5_aname_to_localname fails, in which case the
+          fully-qualified principal name is used).  Remove inactivity
+          timeout value from token.  Change rr (request reason) token
+          attribute to ro (request options).  Add lc (login cancelled) and
+          fa (forced authentication) to request options.  Add
+          &lt;loginCancelledToken> to requestToken command response.  Add
+          two new error codes for forced authentication and login
+          cancelled.
+</dd>
+<dt>1.00 (2002-12-06, schemers)</dt>
+<dd>
+          Add &lt;loginErrorCode> and
+          &lt;loginErrorMessage> to &lt;requestTokenResponse>.
+</dd>
+<dt>1.01 (2002-12-12, schemers)</dt>
+<dd>
+          Keys in the keyring no longer expire.
+          The key with the most current (but not post-dated) valid_after
+          will always be used to encrypt new keys.
+</dd>
+<dt>1.02 (2003-01-14, schemers)</dt>
+<dd>
+          Return &lt;subject> in &lt;requestToken>
+          response so the web front-end can display the authenticated
+          username.
+</dd>
+<dt>1.03 (2003-01-20, schemers)</dt>
+<dd>
+          Fix type in credential token coding
+          example: change ct to crt.  Add crs attribute to credential
+          token.
+</dd>
+<dt>1.04 (2003-01-29, schemers)</dt>
+<dd>
+          When appending WEBAUTHR to return URL,
+          use "?WEBAUTHR=...;" instead of ";WEBAUTHR=...;" so browers
+          handle relative URLs correctly.
+</dd>
+<dt>1.05 (2003-07-24, schemers)</dt>
+<dd>
+          Add webkdcProxyToken and
+          webkdcProxyTokenInfo commands.  Added requestInfo to
+          requestToken command for S/Ident support.
+</dd>
+<dt>2.00 (2006-01-02, rra)</dt>
+<dd>
+          Rewritten in XML and substantially
+          edited, clarified, and reworked.  Added &lt;remoteUser> to
+          &lt;requestInfo> and clarified that &lt;requestInfo> must be
+          used only for logging and auditing now that we're not trying to
+          do S/Ident any more.  Don't assume Kerberos in the first
+          descriptions of protocol elements.  Add text explaining why one
+          may not have a webkdc-proxy token with other forms of
+          authentication.
+</dd>
+<dt>2.01 (2006-01-23, rra)</dt>
+<dd>
+          Move the document history into an
+          appendix.  Document the magic WEBKDC prefix to proxy
+          subjects.
+</dd>
+<dt>2.10 (2006-02-17, rra)</dt>
+<dd>
+          Add a specification for the encoding of
+          Kerberos credentials in tokens.  Specify the size of
+          timestamps.
+</dd>
+<dt>2.11 (2008-03-14, rra)</dt>
+<dd>
+          Add error code 18, indicating that the
+          WebKDC did not permit the user's principal to authenticate.  Fix
+          typo in the webkdcProxyTokenInfoRequest example.  Fix XML
+          formatting issues.
+</dd>
+<dt>2.12 (2009-06-24, rra)</dt>
+<dd>
+          Add requestedTokenType to the XML
+          returned in response to &lt;requestToken> so that the WebLogin
+          component can make decisions based on whether the WAS requested
+          an id token or a proxy token.
+</dd>
+</dl></blockquote><p>
+      
+</p>
+<a name="rfc.authors"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Authors' Addresses</h3>
+<table width="99%" border="0" cellpadding="0" cellspacing="0">
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Roland Schemers</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stanford University</td></tr>
+<tr cellpadding="3"><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Russ Allbery</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stanford University</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">255 Panama Street, MC 4136</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stanford, CA  94305-4136</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">US</td></tr>
+<tr><td class="author" align="right">Email:&nbsp;</td>
+<td class="author-text"><a href="mailto:rra@stanford.edu">rra@stanford.edu</a></td></tr>
+<tr><td class="author" align="right">URI:&nbsp;</td>
+<td class="author-text"><a href="http://www.eyrie.org/~eagle/">http://www.eyrie.org/~eagle/</a></td></tr>
+</table>
+</body></html>

@@ -1,5 +1,4 @@
 dnl krb5.m4 -- Find the compiler and linker flags for Kerberos v5.
-dnl $Id$
 dnl
 dnl Finds the compiler and linker flags and adds them to CPPFLAGS and LIBS.
 dnl Provides --with-kerberos and --enable-reduced-depends configure options to
@@ -13,6 +12,12 @@ dnl modifying the main variables.  All of the non-krb5 stuff has been
 dnl stripped out, as has the initial probe for reduced dependencies and some
 dnl other things that we're doing in the main configure script.  Don't just
 dnl blindly replace it with updates from other packages.
+dnl
+dnl Written by Russ Allbery <rra@stanford.edu>
+dnl Copyright 2002, 2003, 2004, 2006, 2007, 2008, 2009
+dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
+dnl See LICENSE for licensing terms.
 
 dnl Does the appropriate library checks for reduced-dependency krb5 linkage.
 AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5_REDUCED],

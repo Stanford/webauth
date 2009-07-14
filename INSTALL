@@ -30,20 +30,14 @@ site, see doc/install-webkdc.
 
      (changing the last if your OpenSSL is installed somewhere else).
 
-     Stanford users who are building Apache with GCC from pubsw should
-     beware that Apache's build system tends to pick up Berkeley DB 4.0,
-     zlib, and GDBM from pubsw, and that you'll therefore need those
-     shared libraries available (preferrably on local disk) for the
-     resulting Apache 2.x server to run.
-
- 2.  If you are building a CVS pull of the WebAuth distribution (as
+ 2.  If you are building a Git clone of the WebAuth distribution (as
      opposed to a packaged release, which already includes the generated
      configure script), cd to the top of the source tree and run:
 
          ./autogen
 
-     to generate the configure script.  Autoconf 2.57 or later is
-     required.
+     to generate the configure script.  Autoconf 2.63 and Automake 1.10 or
+     later are required.
 
  3.  Run configure.  The command will look something like:
 
@@ -63,10 +57,8 @@ site, see doc/install-webkdc.
      that you give to --with-apache.  If your Apache installation doesn't
      have a single root directory (if you are, for example, using the
      Apache package installed from a Linux distribution), you can instead
-     specify the full path to apxs with --with-apxs, and the --with-apache
-     option should point to the directory above your htdocs directory (and
-     will only be used for installing the test suite, if you choose to do
-     that).
+     specify the full path to apxs with --with-apxs instead of
+     --with-apache.
 
      You may optionally build Perl bindings for libwebauth by passing the
      --enable-perl option to configure.  If you do this, whatever version
@@ -168,6 +160,11 @@ site, see doc/install-webkdc.
      Group directives in your httpd.conf, <apache-root>/conf/webauth
      should be writable by that user and group.
 
+     You can put these files somewhere else if you wish.  Just change
+     WebAuthKeyring and WebAuthKeytab in your Apache configuration.  Only
+     the keyring directory needs to be writable by the Apache process.
+     The keytab just needs to be readable.
+
  8.  Install a keytab in <apache-root>/conf/webauth/keytab.  The
      recommended principal name is webauth/<your-system> where
      <your-system> is the fully qualified, all-lowercase name of your
@@ -199,7 +196,7 @@ site, see doc/install-webkdc.
 
      If you have not installed an SSL certificate before, there are
      instructions available as part of the mod_ssl FAQ.  See
-     <http://httpd.apache.org/docs-2.0/ssl/ssl_faq.html#realcert>.  Debian
+     <http://httpd.apache.org/docs-2.2/ssl/ssl_faq.html#realcert>.  Debian
      users can quickly install a self-signed certificate with the
      apache2-ssl-certificate utility that comes with the Apache package.
 
@@ -232,13 +229,10 @@ site, see doc/install-webkdc.
      set of test pages that you can use to configure your installation
      with various different configuration options.
 
-     To install this test suite, run:
-
-         make install-tests
-
-     The tests will be installed in htdocs/tests under the path that you
-     gave to WebAuth's --with-apache configure option.  A configuration
-     fragment will also be installed in conf/webauth-tests.conf.
+     To install this test suite, copy (recursively) the files in
+     tests/mod_webauth/conf into your Apache configuration directory and
+     the files in tests/mod_webauth/htdocs under your Apache document
+     root.
 
      Now, edit your httpd.conf file and add the line:
 

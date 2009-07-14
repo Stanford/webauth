@@ -1,10 +1,20 @@
+/*
+ * Test suite for libwebauth random number generation functions.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "webauth.h"
+#include <lib/webauth.h>
 #include "webauthtest.h"
 
 #define BUFSIZE 2048

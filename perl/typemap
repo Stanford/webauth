@@ -1,0 +1,12 @@
+# Typemap file for the Perl bindings to the WebAuth library.
+#
+# Written by Roland Schemers
+# Copyright 2003, 2005, 2009
+#     Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+TYPEMAP
+WEBAUTH_KEY *	T_PTROBJ
+WEBAUTH_KEYRING *	T_PTROBJ
+WEBAUTH_KRB5_CTXT *	T_PTROBJ

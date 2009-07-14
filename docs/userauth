@@ -1,0 +1,124 @@
+         User Authentication and Authorization with WebAuth
+
+Activating general authentication in a WebAuth server is as simple as
+adding the following two lines:
+
+    AuthType WebAuth
+    Require valid-user
+
+in the appropriate part of the WebAuth server configuration file.  This
+will require that all accesses to that portion of the web server be
+authenticated using WebAuth.
+
+Authentication controls for WebAuth match the basic authentication
+controls within Apache.  Control directives can be asserted from within
+Location and Directory containers.  For example, to require WebAuth
+authentication for all documents being served from a WebAuth server, put:
+
+    <Location "/">
+        AuthType WebAuth
+        require valid-user
+    </Location>
+
+or:
+
+    <Directory "/webroot/">
+        AuthType WebAuth
+        require valid-user
+     </Directory>
+
+into the server configuration file.  The difference between these two
+forms is that the former protects the / URL and everything below it,
+whereas the latter protects the documents stored in the local directory
+/webroot and everything below it.  Whether you want to specify your access
+restrictions by URL or by directory is entirely up to you; which is more
+convenient will depend on what you're serving through your web server.
+
+Just as with basic authentication directives in Apache, the WebAuth
+restrictions apply recursively through the document tree.  In other words,
+a block like:
+
+    <Location "/private/">
+        AuthType WebAuth
+        require valid-user
+    </Location>
+
+protects not only the URL /private/ but also /private/papers/ or
+/private/papers/2003.html, but not /private.html.  In other words, the
+access restrictions apply to anything at or below the protected URL or
+directory.
+
+Just as with basic authentication in Apache, the require directive can be
+also placed into an access control file (typically a file named .htaccess
+within most server configurations) within the document tree that the
+server is serving.  For example, the entire server could be set up to
+require authentication (see above) but further restrictions could be
+placed on file access within a sub-directory.
+
+To limit access to files in or below the directory /webroot/personal/jdoe
+to only jdoe, put the following in a file named .htaccess (assuming a
+default Apache configuration) in /webroot/personal/jdoe:
+
+    AuthType WebAuth
+    require user jdoe
+
+Any user id other than jdoe attempting to access files in the
+/webroot/personal/jdoe directory (or any subdirectories below it) will be
+forbidden access.
+
+The require directive will also work in combination with host/domain
+directive controls.  This allows for access to be granted either based on
+from what machine the user is browsing (host/domain identification) or
+from the user's WebAuth credentials.  This is done using the standard
+Apache "satisfy" directive.
+
+For example, to limit access to the directory /webroot/personal/jdoe so
+that jdoe can access those files from anywhere OR anyone can access the
+files within that directory if they're coming from a stanford.edu system,
+put the following in a file named .htaccess in /webroot/personal/jdoe:
+
+    AuthType WebAuth
+    require user jdoe
+    order deny,allow
+    deny from all
+    allow from stanford.edu
+    satisfy any
+
+The first two directives work the same as above.  The next two lines are
+set a default policy to deny all access to that directory unless some
+other access rule permits access.  "allow from stanford.edu" allows all
+access to that directory from any system whose IP address resolves in DNS
+to a stanford.edu hostname.  Finally, "satisfy any" says that if any
+access rule succeeds, the user should be allowed access.
+
+Without the "satisfy any" line, the user would have to BOTH be coming from
+a stanford.edu system AND authenticate as jdoe.  "satisfy any" grants
+access if either of those conditions are satisfied.
+
+Another common pattern is:
+
+    AuthType WebAuth
+    require valid-user
+    order deny,allow
+    deny from all
+    allow from stanford.edu
+    satisfy any
+
+which is the same as the previous one, but which allows any authenticated
+user to access the content.  This configuration can be used to provide
+light protection for content that should be restricted to only Stanford
+affiliates.
+
+It's important to remember that a wide variety of people may have access
+to systems within a particular domain, and that particularly at Stanford,
+many people have access to stanford.edu systems who are not necessarily
+closely affiliated with the university.  These sorts of access
+restrictions are therefore only suitable for resources that only require
+very light protection.
+
+If all of that just confused you, don't worry too much.  It's not
+necessary to understand all the details of how this recipe works in order
+to use it.  For more detailed information and more examples, see the
+Apache manual; all of this works exactly the same way as it does with a
+completely stock Apache server except that the user identity is
+established using WebAuth instead of some other authentication mechanism.

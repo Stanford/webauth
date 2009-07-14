@@ -1,21 +1,17 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl $Id$
+dnl
+dnl Written by Russ Allbery <rra@stanford.edu>
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009
+dnl    Board of Trustees, Leland Stanford Jr. University
+dnl
+dnl See LICENSE for licensing terms.
 
-dnl Put more complex macros into separate files to make them easier to
-dnl maintain.  (Also good for macros that should be used in other projects as
-dnl well.)
-m4_include([m4/apache.m4])
-m4_include([m4/curl.m4])
-m4_include([m4/int32.m4])
-m4_include([m4/krb5.m4])
-m4_include([m4/libtool.m4])
-m4_include([m4/ssl.m4])
-m4_include([m4/ldap.m4])
-
-AC_REVISION([$Revision$])
-AC_PREREQ([2.59])
-AC_INIT([WebAuth], [3.6.0], [webauth-team@lists.stanford.edu])
-AC_CONFIG_AUX_DIR([tools])
+AC_PREREQ([2.63])
+AC_INIT([WebAuth], [3.6.1], [webauth-team@lists.stanford.edu])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
+AM_INIT_AUTOMAKE([1.10])
+AM_MAINTAINER_MODE
 
 dnl Store information about the time the package was configured and the person
 dnl who configured it into another variable.
@@ -40,32 +36,36 @@ AC_ARG_ENABLE([reduced-depends],
      fi])
 
 dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
-MODULES=
+build_webkdc=false
 AC_ARG_ENABLE([mod_webkdc],
     AC_HELP_STRING([--enable-mod_webkdc],
         [Build and install the WebKDC Apache module]),
     [if test x"$enableval" != xno ; then
-        MODULES=webkdc
+        build_webkdc=true
      fi])
-AC_SUBST(MODULES)
+AM_CONDITIONAL([BUILD_WEBKDC], [test x"$build_webkdc" = xtrue])
 
 dnl Provide a way to disable building mod_webauth for systems that don't need
 dnl it, like the WebKDC, or for a pure library build.
+build_webauth=true
 AC_ARG_ENABLE([mod_webauth],
     AC_HELP_STRING([--disable-mod_webauth],
         [Do not build the WebAuth Apache module]),
-    [if test x"$enableval" = xyes ; then
-        MODULES="webauth $MODULES"
-     fi],
-    [MODULES="webauth $MODULES"])
+    [if test x"$enableval" = xno ; then
+        build_webauth=false
+     fi])
+AM_CONDITIONAL([BUILD_WEBAUTH], [test x"$build_webauth" = xtrue])
 
+dnl Provide a way to disable building mod_webauthldap for systems that don't
+dnl need the directory integration.
+build_webauthldap=true
 AC_ARG_ENABLE([mod_webauthldap],
     AC_HELP_STRING([--disable-mod_webauthldap],
         [Do not build the WebAuth LDAP  module]),
-    [if test x"$enableval" = xyes ; then
-        MODULES="webauthldap $MODULES"
-     fi],
-    [MODULES="webauthldap $MODULES"])
+    [if test x"$enableval" = xno ; then
+        build_webauthldap=false
+     fi])
+AM_CONDITIONAL([BUILD_WEBAUTHLDAP], [test x"$build_webauthldap" = xtrue])
 
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
 dnl is set in the environment, always use it; otherwise, use -g unless
@@ -87,37 +87,29 @@ dnl Allow the user to indicate that the Perl modules should not be built.
 AC_ARG_ENABLE([perl],
     AC_HELP_STRING([--enable-perl], [Build Perl bindings]),
     [if test x"$enableval" = xyes ; then
-        build_perl=yes
-        BINDINGS=perl
+        build_perl=true
      else
-        build_perl=no
-        BINDINGS=
+        build_perl=false
      fi],
-     [case "$MODULES" in
-      *webkdc*)
-         BINDINGS=perl
-         build_perl=yes
-         ;;
-      *)
-         BINDINGS=
-         build_perl=no
-         ;;
-      esac])
-AC_SUBST(BINDINGS)
+     [if test x"$build_webkdc" = xtrue ; then
+         build_perl=true
+      else
+         build_perl=false
+      fi])
+AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
 
 dnl Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
+AC_USE_SYSTEM_EXTENSIONS
+AM_PROG_CC_C_O
 AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_MAKE_SET
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 
 dnl Find apxs, which may be in a separate Apache 2.x installation location.
 WEBAUTH_APACHE
 
 dnl Find Perl, used to build the Perl bindings.
-if test x"$build_perl" = xyes ; then
+if test x"$build_perl" = xtrue ; then
     AC_PATH_PROG([PERL], [perl])
 fi
 
@@ -143,7 +135,6 @@ fi
 AC_SUBST([DEPEND_LIBS])
 
 dnl Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS([netinet/in.h])
 
 dnl Checks for types.
@@ -182,7 +173,7 @@ dnl this on all platforms, but the syntax is different everywhere and I don't
 dnl feel like dealing with the differences.
 case "$host" in
 *-gnu*)
-    VERSION_LDFLAGS="-Wl,--version-script=mapfile -Wl,-z,defs"
+    VERSION_LDFLAGS='-Wl,--version-script=${srcdir}/lib/mapfile -Wl,-z,defs'
     ;;
 *)
     VERSION_LDFLAGS=""
@@ -191,49 +182,16 @@ esac
 AC_SUBST([VERSION_LDFLAGS])
 
 dnl Output files.
+AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h mod-config.h])
-AC_CONFIG_FILES([
-    Makefile
-    src/Makefile
-    src/bindings/Makefile
-    src/libwebauth/Makefile
-    src/modules/Makefile
-    src/modules/webauth/Makefile
-    src/modules/webauthldap/Makefile
-    src/utils/Makefile
-    src/webkdc/Makefile
-    tests/Makefile
-    tests/libwebauth/Makefile
-])
-if test x"$build_perl" = xyes ; then
-    AC_CONFIG_FILES([
-        src/bindings/perl/Makefile
-        src/bindings/perl/WebAuth/Makefile.PL
-    ])
+if test x"$build_perl" = xtrue ; then
+    AC_CONFIG_FILES([perl/Makefile.PL])
 fi
-
-dnl Only create the WebKDC makefile if we're building the WebKDC.
-case "$MODULES" in
-*webkdc*)
-    AC_CONFIG_FILES([src/modules/webkdc/Makefile])
-    ;;
-esac
 
 dnl Generate webauth.h from webauth.h.in.
-AC_CONFIG_COMMANDS([src/libwebauth/webauth.h],
-    [$srcdir/tools/mkheader $srcdir/$filename.in $filename],
-    [filename=src/libwebauth/webauth.h])
-
-dnl Link all of the Perl binding files into the build tree, since Perl doesn't
-dnl support the VPATH thing.
-if test x"$build_perl" = xyes ; then
-    AC_CONFIG_COMMANDS([src/bindings/perl/WebAuth/WebAuth.xs],
-    [if test x"$ac_srcdir" != x. && test x"$ac_srcdir" != x ; then
-        for f in WebAuth.pm WebAuth.xs test.pl typemap ; do
-            $LN_S "$ac_srcdir/$f" "src/bindings/perl/WebAuth/$f"
-        done
-    fi], [LN_S="$LN_S"])
-fi
+AC_CONFIG_COMMANDS([lib/webauth.h],
+    [${srcdir}/lib/mkheader ${srcdir}/${filename}.in ${filename}],
+    [filename=lib/webauth.h])
 
 dnl Generate config.h.
 AC_OUTPUT
