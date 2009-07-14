@@ -87,7 +87,7 @@ Section: perl
 Architecture: all
 Depends: ${perl:Depends}, libwebauth-perl (>= 3.2.6-1),
  libio-socket-ssl-perl, libwww-perl, libxml-parser-perl
-Description: Perl library for WebAuth authentication
+Description: Perl libraries for WebAuth central login server
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
  user authentication for a domain and creates user authentication

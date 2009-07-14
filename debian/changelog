@@ -13,6 +13,7 @@ webauth (3.6.1-1) UNRELEASED; urgency=low
     - Change sections of Apache modules.
     - Run test suite iff nocheck is not set in DEB_BUILD_OPTIONS.
   * Add Vcs-Git and Vcs-Browser source control fields.
+  * Improve short description for libwebkdc-perl.
   * Update debian/copyright to include a copy of the more thorough new
     upstream LICENSE file.
 
