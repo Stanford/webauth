@@ -1,9 +1,9 @@
 README
 TODO
-doc/mod_webauth.html.en
-doc/mod_webauth.xml
-doc/mod_webauthldap.html.en
-doc/mod_webauthldap.xml
-doc/protocol.*
-doc/test-plan
-doc/userauth
+docs/mod_webauth.html.en
+docs/mod_webauth.xml
+docs/mod_webauthldap.html.en
+docs/mod_webauthldap.xml
+docs/protocol.*
+docs/test-plan
+docs/userauth
