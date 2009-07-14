@@ -1,173 +1,243 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.6.1 (unreleased)
+WebAuth 3.6.1 (2009-07-14)
 
- *) Handle err_confirm in the error.tmpl sample template and document this
+    Setting $BYPASS_CONFIRM in the WebLogin configuration now also
+    suppresses the confirmation page after username/password login
+    provided that the browser supports HTTP/1.1 (and the web server tells
+    the WebLogin script that in the form Apache does).
+
+    Setting $BYPASS_CONFIRM to the special value "id" in the WebLogin
+    configuration suppresses the confirmation page only if the WebAuth
+    Application Server requests an id token (in other words, only asks for
+    the user's identity).  If it instead requests a proxy token, which
+    would allow it to later ask for delegated user credentials, the
+    confirmation page is still displayed.
+
+    Add a new WebLogin configuration variable $TOKEN_ACL.  If set to the
+    path of the token.acl file used by the WebKDC, and if the WebAuth
+    Application Server requests a proxy token, the list of credentials the
+    WAS may request is provided to the confirmation page template for
+    display to the user.  See doc/weblogin-config for more information.
+
+    WebLogin now sets and updates its cookies after successful
+    authentication even if the confirmation screen is bypassed.  This
+    primarily affects the update of the expiration time of the REMOTE_USER
+    cookie.
+
+    Handle err_confirm in the error.tmpl sample template and document this
     in doc/weblogin-config.  This error is returned when redisplaying the
     confirmation page after a change in the REMOTE_USER cookie.
 
+    Fix a coding error in login.fcgi when redisplaying the confirmation
+    page fails.  Thanks to pod for the report.
+
+    Fix an off-by-one error in error code to error string mapping in
+    WebKDC::WebKDCException that resulted in incorrect error names in
+    WebLogin error messages.  Thanks to pod for the report.
+
+    The WebLogin scripts and templates are now installed by default under
+    /usr/local/share/weblogin.  This can be modified with the --prefix or
+    --datadir options to configure.
+
+    There is no longer an install-tests target; instead, to install the
+    test suite, copy the directories under tests/mod_webauth recursively.
+    This will be replaced by a better test suite mechanism in a future
+    version of WebAuth.
+
+    Update the mod_webauth documentation to reflect that separate WebAuth
+    servers in the same load-balanced pool can use separate keytabs.  Only
+    the keyring needs to be shared between systems.
+
+    Improved the comments in the provided sample configuration files.
+
+    Update the INSTALL documentation for obtaining keytabs for Stanford
+    users to reference wallet instead of leland_srvtab.
+
 WebAuth 3.6.0 (2008-03-22)
 
- *) Allocate all note keys and values in the top-most request pool in
+    Allocate all note keys and values in the top-most request pool in
     mod_webauth, avoiding problems with prematurely freed internal data
     structures.  This fixes problems with checking access permissions of
     subdirectories in mod_autoindex and may have fixed problems elsewhere.
     Thanks to Ian Ward Comfort for the patch.
 
- *) Add the WebKdcLocalRealms configuration option to mod_webkdc, which
+    Add the WebKdcLocalRealms configuration option to mod_webkdc, which
     specifies the transformation behavior for authenticated identities.
     The default is "local", which runs krb5_aname_to_localname and uses
     the result as the authenticated identity (matching previous behavior).
     Setting it to "none" always keeps the fully-qualified Kerberos
     principal as the authenticated identity, and setting it to a list of
     realms strips the realm if it matches one of the listed realms and
-    uses the fully-qualified Kerberos principal otherwise.
+    uses the fully-qualified Kerberos principal otherwise.  Thanks to
+    Dmitri Priimak for the patch.
 
-    Thanks to Dmitri Priimak for the patch.
-
- *) Add the WebKdcPermittedRealms configuration option to mod_webkdc.  If
+    Add the WebKdcPermittedRealms configuration option to mod_webkdc.  If
     set, only Kerberos principals in the listed realms will be able to
     obtain authentication tokens from the WebKDC.  This allows sites with
     Kerberos cross-realm trust to prevent users in foreign realms from
     obtaining WebAuth credentials that satisfy "require valid-user".
-
     Thanks to Dmitri Priimak for the patch.
 
- *) The WebLogin login.tmpl template may be called with err_rejected set
+    Add an additional check to webkdcProxyTokenRequest processing in
+    mod_webkdc to ensure that the Kerberos authenticator and the included
+    Kerberos TGT are for the same principal.
+
+    The WebLogin login.tmpl template may be called with err_rejected set
     if the authenticating principal is rejected by the WebKDC.  Login
     templates should be modified to handle this variable.
 
- *) Add a new error to the WebKDC protocol, 18, indicating that the WebKDC
+    Add a new error to the WebKDC protocol, 18, indicating that the WebKDC
     did not permit that user to authenticate.  This error is returned when
     WebKdcPermittedRealms is set and the realm of the authenticating
     principal isn't included.  Add support for the new error in the
     WebLogin code, setting the template variable err_rejected.  Based on
     work by Dmitri Priimak.
 
- *) In the WebLogin script, work around a bug in the CGI module that
+    libwebauth provides a new webauth_krb5_get_realm function, which
+    returns the realm of the current authenticated principal.
+
+    The libwebauth webauth_krb5_get_principal function takes as its third
+    argument, instead of a flag, an enum indicating what sort of
+    canonicalization to perform.  Accepted values are WA_KRB5_CANON_LOCAL
+    (to call krb5_aname_to_localname), WA_KRB5_CANON_STRIP (to strip any
+    realm), and WA_KRB5_CANON_NONE (to return the fully-qualified
+    principal).
+
+    In the WebLogin script, work around a bug in the CGI module that
     causes it to misparse and die on WebLogin URLs that contain two
     slashes and two plus signs.
 
- *) WebLogin now supports delegated credentials, allowing browsers that
+    WebLogin now supports delegated credentials, allowing browsers that
     support credential delegation via SPNEGO to still get single sign-on
     even to services that require proxy credentials or krb5
     authenticators.  See doc/install-spnego for configuration details.
     Based on work by Joachim Keltsch.
 
- *) WebLogin now supports a new configuration variable, $DEFAULT_REALM.
+    WebLogin now supports a new configuration variable, $DEFAULT_REALM.
     If set, WebLogin will append @ and $DEFAULT_REALM to usernames that do
     not contain @ before passing them to the WebKDC.  This is primarily
     useful if principals should be authenticated in a different Kerberos
     realm than the default realm of the WebKDC.
 
- *) WebLogin now supports a new configuration file, $BYPASS_CONFIRM.  If
+    WebLogin now supports a new configuration file, $BYPASS_CONFIRM.  If
     set, the confirmation page will only be displayed if required by the
     HTTP protocol after a POST of the login form.  Otherwise, the user
     will be silently redirected to the destination site.
 
- *) Add support for a map_username function defined in the WebLogin config
+    Add support for a map_username function defined in the WebLogin config
     file.  If defined, this function will be called to map the
     user-supplied username to a Kerberos principal for authentication.
 
- *) Add support for a record_login function defined in the WebLogin config
+    Add support for a record_login function defined in the WebLogin config
     file.  If defined, this function will be called after any successful
     authentication.
 
- *) Many of the REMOTE_USER configuration variables have been renamed for
+    Many of the REMOTE_USER configuration variables have been renamed for
     consistency.  The old names are still supported for backward
     compatibility.  $REALM has been deprecated in favor of setting
     @REMUSER_REALMS to a list with a single value.
 
- *) Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
+    Escape Mac OS X compiler flags for apxs, fixing build issues on Mac OS
     X 10.5.
 
 WebAuth 3.5.5 (2008-01-14)
 
- *) Check for browser cookies on the first page visit to WebLogin via a
+    Check for browser cookies on the first page visit to WebLogin via a
     redirect and show an error immediately if the user doesn't have
     cookies enabled.  This works correctly in the presence of Apache
-    authentication.
+    authentication.  Thanks to Joachim Keltsch for the patch.
 
     There is a new template variable, err_cookies_disabled, for the error
     template, indicating that the user doesn't have cookies enabled.  Old
     templates are supported but won't offer as nice of an error message.
     The err_cookies parameter to the login template is no longer used.
 
-    Thanks to Joachim Keltsch for the patch.
-
- *) Fix memory allocation in mod_webauthldap for the Kerberos ticket cache
+    Fix memory allocation in mod_webauthldap for the Kerberos ticket cache
     environment variable to use persistant rather than pool memory.  Fixes
     occasional segfaults in mod_php.
 
- *) Improve extraction of return URLs for user-friendly display when doing
+    Improve extraction of return URLs for user-friendly display when doing
     authentication for a Shibboleth IdP.  Thanks, Robert Basch.
 
- *) Show the correct pretty Shibboleth return URL when redisplaying the
+    Show the correct pretty Shibboleth return URL when redisplaying the
     confirmation page.  Thanks, Robert Basch.
+
+    Mark the test cookie secure to match other cookies so that we're
+    testing what we're using.
+
+    Use Javascript in the default login template to set focus to the
+    username entry box.
 
 WebAuth 3.5.4 (2007-04-24)
 
- *) Add a configuration option to WebLogin to attempt to decode return
+    Add a configuration option to WebLogin to attempt to decode return
     URLs pointing to a Shibboleth IdP and display on the confirmation page
     the final destination instead of the intermediate IdP.
 
- *) For pages that the browser should reload each time (WebAuthDoLogout or
+    For pages that the browser should reload each time (WebAuthDoLogout or
     WebAuthDontCache), also always set the content modification time to
     now.  Otherwise, the browser may check the last modification time on
     the page and then serve its cached copy, ignoring any new Cookie
     headers from the server (such as cookie clearing from a logout page).
 
- *) For WebAuthDoLogout, WebAuthDontCache, and all WebLogin pages, set
+    For WebAuthDoLogout, WebAuthDontCache, and all WebLogin pages, set
     Cache-Control: no-store as well as no-cache.  no-store wasn't really
     intended for this purpose but preventing the browser from keeping a
     local copy is more likely to force the behavior we want.  (This is
     probably not necessary given the above change, but shouldn't hurt.)
 
- *) Properly merge configuration settings in mod_webauthldap.  This will
+    Properly merge configuration settings in mod_webauthldap.  This will
     correct problems with WebAuthLdapAuthrule, WebAuthLdapFilter, and
     WebAuthLdapPort configuration options not being honored inside virtual
     hosts.  Thanks to Wadud Miah for the bug report.
 
- *) Refresh the REMOTE_USER configuration cookie on each WebLogin page
+    Refresh the REMOTE_USER configuration cookie on each WebLogin page
     visit so that it won't expire if the user is using WebLogin
     regularly.
 
- *) Document the cookies used by the WebLogin service.
+    Document the cookies used by the WebLogin service.
 
- *) Read ticket defaults from krb5.conf properly when built with Heimdal.
+    Read ticket defaults from krb5.conf properly when built with Heimdal.
 
- *) Fix configure logic and Kerberos library analysis on systems with
+    Fix configure logic and Kerberos library analysis on systems with
     multiple versions of Kerberos installed.
+
+    Escape -R linker flags from apxs, which doesn't understand them.
+    Patch from Robert A. Basch.
 
 WebAuth 3.5.3 (2006-09-12)
 
- *) Add the connection IP address and, for Weblogin logins, the client IP
+    Add the connection IP address and, for WebLogin logins, the client IP
     address to the WebKDC to the WebKDC log messages whenever processing
     XML requests.
 
- *) Document the log messages from the WebKDC in the mod_webkdc manual.
+    Document the log messages from the WebKDC in the mod_webkdc manual.
 
- *) Initial port to Apache 2.2.  Thanks to Jim Rodgers for the patch.
+    Initial port to Apache 2.2.  Thanks to Jim Rodgers for the patch.
 
- *) Turn off debug-level logging in the Weblogin login.fcgi script by
+    Turn off debug-level logging in the WebLogin login.fcgi script by
     default.  The REMOTE_USER code now seems to be stable and working
     correctly and the extra verbose logging is not needed.
 
+    Remove extraneous newlines from the messages logged by the mod_webauth
+    module.
+
 WebAuth 3.5.2 (2006-07-13)
 
- *) SECURITY: Modify the default templates to add ESCAPE=HTML when
+    SECURITY: Modify the default templates to add ESCAPE=HTML when
     inserting the values of variables.  Without telling HTML::Template to
     escape values in this fashion, a cross-site scripting attack is
     possible with at least the username field of the login form.  Any site
     using customized templates should make the equivalent change to their
     templates.
 
- *) Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
-    of all responses from the Weblogin scripts.  This is particularly
+    Set Pragma: no-cache and Cache-Control: no-cache in the HTTP headers
+    of all responses from the WebLogin scripts.  This is particularly
     important for the logout script, since otherwise browsers may cache
     the logout page and not actually be logged out.
 
- *) Don't ever redirect the user to the URL that attempts Apache
+    Don't ever redirect the user to the URL that attempts Apache
     authentication if they've already submitted the login form, even if
     they didn't supply a username or password.  Once the user reaches the
     login page, the page flow should keep them there until they log in
@@ -175,7 +245,7 @@ WebAuth 3.5.2 (2006-07-13)
 
 WebAuth 3.5.1 (2006-06-20)
 
- *) Allow the submit button on the login page to return any value rather
+    Allow the submit button on the login page to return any value rather
     than requiring it have the value "Login" so that the template can be
     more easily translated.  Instead, the login form must include the tag:
 
@@ -183,162 +253,177 @@ WebAuth 3.5.1 (2006-06-20)
 
     The form for attempting Apache remote-user authentication should not
     contain this tag.  Existing login.tmpl files must be updated
-    accordingly when upgrading to this version of the Weblogin server.
+    accordingly when upgrading to this version of the WebLogin server.
 
- *) In the weblogin confirmation page, the variable remuser is now set to
+    In the weblogin confirmation page, the variable remuser is now set to
     1 if the user has a cookie indicating they want to try REMOTE_USER and
     is not set otherwise.  This is a change from the previous behavior
     where it was set to either the string "checked" or the empty string.
     Templates using this variable will require modification.  This change
-    was made so that the Weblogin scripts don't assume a particular UI
+    was made so that the WebLogin scripts don't assume a particular UI
     presentation.
 
- *) Add an err_forced template variable for the login.tmpl file that
+    Add an err_forced template variable for the login.tmpl file that
     indicates the user had a single sign-on configuration (either an
     existing cookie or a request to do REMUSER), but the authenticating
     web site requires username/password authentication.  Existing
     login.tmpl files must be updated to include a reference to this
     variable (even if not otherwise used).
 
- *) Add the @REALMS configuration option to the Weblogin configuration
+    Add the @REALMS configuration option to the WebLogin configuration
     file, for use with Apache authentication where the resulting
     REMOTE_USER value may be in one of several realms and each realm
     should be treated identically.
 
- *) Fix decoding of time_t values in tokens on 64-bit platforms, a bug
+    Modify the default login template to show a single error message if
+    the user provided neither username nor password rather than showing
+    the missing username and missing password errors one after the other.
+
+    Fix decoding of time_t values in tokens on 64-bit platforms, a bug
     which usually manifested itself while reading keyrings.  Thanks to pod
     for the analysis.
 
- *) Properly check for apxs in configure so that an apxs under the
+    Properly check for apxs in configure so that an apxs under the
     provided Apache root will be found.  Thanks to Marco Wise for the
     debugging.
 
 WebAuth 3.5.0 (2006-03-20)
 
- *) Rename the template variables used by the weblogin templates to be
+    Rename the template variables used by the weblogin templates to be
     a bit more consistent and add an error variable to the login template
     that is set whenever there was any error.  Existing weblogin templates
     will require modifications.  See doc/weblogin-config for the new
     configuration and customization documentation.
 
- *) Sometimes an Apache authentication mechanism should only be attempted
+    Sometimes an Apache authentication mechanism should only be attempted
     if the user explicitly requests it since it may fail in a way that
     doesn't allow weblogin to proceed.  SPNEGO is an example, since it has
     bad behavior with some browsers.  Implement weblogin script support
     for the required more complex page flow and additional template
     variables.
 
- *) Document in detail how to configure the weblogin front-end, including
+    Document in detail how to configure the weblogin front-end, including
     all of the template variables used and the configuration variables
     that can be set in /etc/webkdc/webkdc.conf.
 
- *) Document in detail the page flow for the weblogin script and the
+    Document in detail the page flow for the weblogin script and the
     variables it uses when rendering page templates.
 
- *) WebAuthExtraRedirect is now the default.  If you don't want this
+    WebAuthExtraRedirect is now the default.  If you don't want this
     behavior, you now need to turn it off explicitly in the Apache
     configuration.
 
- *) WebAuthExtraRedirect is now accepted at the server and virtual host
+    WebAuthExtraRedirect is now accepted at the server and virtual host
     level as well as in <Directory> and .htaccess files.
 
- *) In the WebKDC installation instructions, stop recommending that the
+    In the WebKDC installation instructions, stop recommending that the
     WebkDC /webkdc-service URL run on a different port than the regular
     SSL port.  There's no reason why it and the weblogin service can't
     both run on the regular SSL port.
 
- *) Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
+    Preliminary port to Heimdal 0.6 (0.7 was previously supported).  This
     has not yet been well-tested.
+
+    Recommend installing an SSL certificate before testing in INSTALL,
+    since otherwise WebAuth would be unhappy.  Combine a few steps
+    together and also recommend WebAuthSSLRedirect on.
+
+    Change WebAuthSSLRedirect to on in the recommended and default
+    configuration files, since it works with the standard installation
+    instructions.
 
 WebAuth 3.4.2 (2006-02-17)
 
- *) Don't try to build the modules with -z defs.  If it actually works, it
+    Don't try to build the modules with -z defs.  If it actually works, it
     breaks the build, since Apache modules refer to symbols that are only
     in httpd, not in any linked library.
 
- *) Transform -pthread or -pthreads in the Kerberos compiler flags into
+    Transform -pthread or -pthreads in the Kerberos compiler flags into
     something that apxs can handle.  This is needed for some builds of
     Heimdal.
 
- *) Added another fix for finding et/com_err.h on Red Hat, this time for
+    Add another fix for finding et/com_err.h on Red Hat, this time for
     mod_webauthldap.
 
- *) Search for apxs2 in the path before apxs.  WebAuth requires Apache
+    Search for apxs2 in the path before apxs.  WebAuth requires Apache
     2.x, so if apxs2 is available, it's more likely the right thing to use
     than apxs.  This change allows the WebAuth build to find apxs properly
     on Debian without extra configure flags.
 
- *) Documented the Kerberos ticket encoding for WebAuth tokens in the
+    Document the Kerberos ticket encoding for WebAuth tokens in the
     protocol specification.
 
 WebAuth 3.4.1 (2006-02-06)
 
- *) Reverted the change in 3.4.0 to not strip WebAuth data from the URLs
-    for unprotected URLs since it didn't work with .htaccess files.
+    Revert the change in 3.4.0 to not strip WebAuth data from the URLs for
+    unprotected URLs since it didn't work with .htaccess files.
 
- *) Documented the WebAuthStripURL directive as a partial replacement for
+    Document the WebAuthStripURL directive as a partial replacement for
     the problem the reverted change was supposed to solve.  This directive
     has always been supported but it was previously undocumented and not
     guaranteed to remain.
 
- *) Ported to Heimdal.  The Kerberos implementation dependencies are all
+    Port to Heimdal.  The Kerberos implementation dependencies are all
     inside libwebauth, which can now be built with either MIT Kerberos or
     Heimdal.  Mixed environments with some Heimdal-based WebAuth modules
     and some MIT-based modules should work correctly.
 
- *) Avoid deprecated OpenLDAP interfaces whose prototypes are unavailable
+    Avoid deprecated OpenLDAP interfaces whose prototypes are unavailable
     by default in OpenLDAP 2.3.
 
- *) Support et/com_err.h as well as com_err.h for portability to Red Hat
+    Support et/com_err.h as well as com_err.h for portability to Red Hat
     Enterprise Linux 4 and possibly other newer Red Hat-based Linux
     systems.
 
 WebAuth 3.4.0 (2006-01-24)
 
- *) Added support to the weblogin server and WebKDC module to trust an
+    Add support to the weblogin server and WebKDC module to trust an
     authentication identity asserted by Apache.  This allows use of any
     authentication type that Apache supports as WebAuth authentication, in
     particular SPNEGO/GSSAPI.
 
- *) Allow login.fcgi to be used as the target of an ErrorDocument Apache
+    Allow login.fcgi to be used as the target of an ErrorDocument Apache
     directive and read the query parameters from the redirect environment
     variable.  This lets one use SPNEGO as the default and fall back on
     password authentication if it fails.  To support this feature, there
     is an additional template variable for the login template,
     script_name, that should be used as the action of the login form.
 
- *) The WebAuth module no longer strips WebAuth data (WEBAUTHR and
+    The WebAuth module no longer strips WebAuth data (WEBAUTHR and
     WEBAUTHS) from the internal URL for requests to URLs not protected by
     WebAuth.  This way, Apache with mod_webauth loaded will not interfere
     with applications that wish to implement the WebAuth protocol
     themselves.   Thanks to Mats Henrikson for the report.
 
- *) Rewrote the WebAuth protocol documentation in RFC 2629 XML.  In the
+    Rewrite the WebAuth protocol documentation in RFC 2629 XML.  In the
     process, edited it extensively for consistency of terminology, updated
     it in a few places, and clarified the wording.
 
- *) Better Kerberos library checks, including support for MIT Kerberos 1.4
+    Better Kerberos library checks, including support for MIT Kerberos 1.4
     and use of krb5-config where appropriate.
 
- *) Added --enable-reduced-depends to configure to request the minimal
+    Add --enable-reduced-depends to configure to request the minimal
     possible shared library dependencies be encoded at run-time.  This is
     for systems that properly implement transitive shared library
     dependencies, in order to minimize shared library conflicts introduced
     by SONAME changes and upgrades (mainly for Linux distribution
     packagers).
 
- *) The public interface for the libwebauth library now uses char *
+    The public interface for the libwebauth library now uses char *
     uniformly instead of unsigned char *, since using the latter is too
     annoying and causes too many compiler warnings.
 
- *) Remove more vestiges of S/Ident support.  mod_webkdc will no longer
+    Remove more vestiges of S/Ident support.  mod_webkdc will no longer
     recognize the old Apache S/Ident directives.
 
- *) Lots of general documentation updates for clarity and style.
+    Ask the linker to be sure that all external references are defined
+    when linking the Apache modules on Linux.
+
+    Lots of general documentation updates for clarity and style.
 
 WebAuth 3.3.0 (2005-10-04)
 
- *) All WebKDC support for S/Ident removed.  The S/Ident protocol is
+    All WebKDC support for S/Ident removed.  The S/Ident protocol is
     inherently vulnerable to an active man-in-the-middle attack that is
     particularly severe for WebAuth, since S/Ident authentication is done
     by a single server and WebAuth users regularly visit that server.
@@ -346,191 +431,224 @@ WebAuth 3.3.0 (2005-10-04)
     single sign-on cookie and then impersonate the user to all WebAuth
     sites in that domain.
 
- *) Added WebAuthLdapSeparator to specify the separator for multivalued
+    Add WebAuthLdapSeparator to specify the separator for multivalued
     attributes.  When set in the server configuration, all values of a
     multivalued attribute are concatenated together, separated by that
     separator, and put into the base WEBAUTH_LDAP_* environment variable
     (rather than only the first one).
 
- *) Cleaned up, expanded, and improved the module documentation for
+    Clean up, expand, and improve the module documentation for
     mod_webauthldap.
+
+    Add symbol versioning for libwebauth on Linux.  Symbol versioning is
+    not supported on other platforms (at least yet).
 
 WebAuth 3.2.8 (2005-06-03)
 
- *) mod_webauth now treats empty keyrings the same as keyrings that cannot
+    mod_webauth now treats empty keyrings the same as keyrings that cannot
     be read, which will force the creation of a new keyring if auto-update
     is turned on.
 
- *) The mod_webkdc manual has been expanded and improved, fixing several
+    The mod_webkdc manual has been expanded and improved, fixing several
     documentation bugs (including a badly incorrect wa_keyring gc
     example).
 
 WebAuth 3.2.7 (2005-04-23)
 
- *) Update libtool to 1.5.6 (the Debian version) to support proper shared
+    Update libtool to 1.5.6 (the Debian version) to support proper shared
     library builds on Linux MIPS.
+
+    In the weblogin login script, check to be sure the service token is
+    set as well as the request token to avoid weird error messages from
+    the WebKDC module later on.
 
 WebAuth 3.2.6 (2005-04-19)
 
- *) Rename the Perl bindings from WebAuth3 to WebAuth to match the name of
+    Rename the Perl bindings from WebAuth3 to WebAuth to match the name of
     the shared library.
 
 WebAuth 3.2.5 (2005-04-14)
 
- *) Downgrade most of the messages from mod_webauthldap to info from
+    Downgrade most of the messages from mod_webauthldap to info from
     notice, including the messages about authorization.  Downgrade the
     message about failed authorization from warning to notice.  This seems
     more consistent with the Apache documentation of log levels.
 
 WebAuth 3.2.4 (2004-08-25)
 
- *) In the weblogin script, only check for cookies when the user is not
+    In the weblogin script, only check for cookies when the user is not
     using S/Ident to authenticate.  This fixes the problem with users
     seeing the login page even if S/Ident is enabled, and then being
     allowed to proceed with S/Ident authentication after a simple page
     reload.
 
+    Clean up and comment the weblogin login and logout scripts and
+    remove Perl module uses that are no longer needed.
+
+    Fix the error reporting in the WebKDC module when S/Ident requests
+    fail.  Previously, the actual error would never be reported.
+
 WebAuth 3.2.3 (2004-06-23)
 
- *) Long delays for some clients after redirects from mod_webauth should
+    Long delays for some clients after redirects from mod_webauth should
     improve.  The redirect was being returned without a body but also
     without a Content-Length, forcing clients supporting keep-alive to
     wait for a timeout.  This may (but hopefully won't) cause more looping
     problems.
 
- *) The WebKDC package now looks at /etc/webkdc/webkdc.conf and paths can
+    The WebKDC package now looks at /etc/webkdc/webkdc.conf and paths can
     be overridden by modifying that file.
 
- *) Replaced the sample weblogin server templates with generic templates
+    Replace the sample WebLogin server templates with generic templates
     that don't use any Stanford-copyrighted logos or design.
 
- *) Install a man page for wa_keyring and the header file for the webauth
+    Install a man page for wa_keyring and the header file for the webauth
     library.
-
- *) Added configuration and rules for Debian packages.
 
 WebAuth 3.2.2 (2004-03-02)
 
- *) Add new WebAuthSSLReturn directive. If an unauth'd user shows up
+    Add new WebAuthSSLReturn directive. If an unauth'd user shows up
     via http at a webauth-protected page and gets redirected to weblogin,
     the return URL will be https.
 
- *) Fixed a bug in libwebauth that prevented wa_keyring from adding keys
-    to an empty keyring file.
+    Fix a bug in libwebauth that prevented wa_keyring from adding keys to
+    an empty keyring file.
 
- *) Fix various compilation problems with Sun cc, including signed vs.
+    Add a new mod-config.h for Autoconf results that we want to use in
+    module builds, and use this to fix compatibility in mod_webauthldap
+    for older versions of the Kerberos libraries and remove code to add
+    Autoconf results to the compile command line for mod_webkdc builds.
+
+    Fix various compilation problems with Sun cc, including signed vs.
     unsigned char mismatches and C++-style comments.
 
- *) Fix invalid HTML in the templates for the weblogin pages.
+    Fix invalid HTML in the templates for the weblogin pages.
 
- *) Support older 1.2.x Kerberos libraries in mod_webauthldap.
+    Include the right compiler flags to find the extra Kerberos libraries
+    we need when probing for S/Ident, if they're in a non-standard
+    location that isn't the same as the S/Ident location.
 
- *) Fix some portability issues with non-GNU make.
+    Support older 1.2.x Kerberos libraries in mod_webauthldap.
+
+    Fix some portability issues with non-GNU make.
 
 WebAuth 3.2.1 (2003-09-10)
 
- *) When AuthType is StanfordAuth, don't default to WebAuthDontCache.
+    When AuthType is StanfordAuth, don't default to WebAuthDontCache.
     This appears to break IE 6.0 downloads.
 
- *) Add WebAuthPostReturnURL directive to allow an app to deal with 
+    Add WebAuthPostReturnURL directive to allow an app to deal with 
     handling a POST that didn't have authentication.
 
- *) When operating in legacy mode, only check LDAP for a group if it
+    When operating in legacy mode, only check LDAP for a group if it
     contains a colon.  Otherwise, defer to Apache's normal group handling.
     This fixes handling of user-defined groups in .htaccess files when
     backward compatibility is turned on.
 
- *) When a call to the LDAP server fails, try binding again and retrying
+    When a call to the LDAP server fails, try binding again and retrying
     the call before actually failing.  The connection may have timed out
     or something else may have temporarily gone wrong.  This will help
     with error messages about the LDAP server not being available.
 
- *) Fix the setting of the interactive flag on S/Ident queries in the
+    Fix the setting of the interactive flag on S/Ident queries in the
     WebKDC.
 
- *) Corrected handling of successful S/Ident calls returning errors in
+    Correct handling of successful S/Ident calls returning errors in
     mod_webkdc when debugging is turned off.
 
 WebAuth 3.2.0 (2003-08-07)
 
- *) Added S/Ident support to weblogin and the WebKDC.
+    Add S/Ident support to weblogin and the WebKDC.
 
- *) Added a preliminary port to Windows.  See windows/BUILD.txt for more
+    Add a preliminary port to Windows.  See windows/BUILD.txt for more
     information.
 
- *) Fixed a bug when handling sub-requests (like in mod_autoindex).  This
+    Fix a bug when handling sub-requests (like in mod_autoindex).  This
     could have caused authentication information to be incorrect in pages
     generated by fancy indexing.
 
- *) Removed WebAuthProxyHeaders directive.  Added new documentation
-    to mod_webauth.xml that recommends people use mod_headers instead.
-    See "Using WebAuth with Proxy Servers" in that document.
+    Add new WebKDC commands webkdcProxyToken and webkdcProxyTokenInfo.
 
- *) Modified WebAuthDontCache so it also adds "Pragma: no-cache" and
+    Add three new functions to libwebauth: webauth_krb5_init_via_cache
+    and webauth_krb5_{mk,rd}_req_with_data.
+
+    Remove the WebAuthProxyHeaders directive.  Add new documentation to
+    mod_webauth.xml that recommends people use mod_headers instead.  See
+    "Using WebAuth with Proxy Servers" in that document.
+
+    Modify WebAuthDontCache so it also adds "Pragma: no-cache" and
     "Cache-Control: no-cache" headers in addition to the "Expires" header.
 
- *) Modified WebAuthDoLogout so that it enables WebAuthDontCache
+    Modify WebAuthDoLogout so that it enables WebAuthDontCache
     automatically.  (If the logout page was cached, second and subsequent
     visits wouldn't remove the login cookie correctly.)
 
- *) When returning redirects, make sure to set r->header_only so there
+    When returning redirects, make sure to set r->header_only so there
     is no extra content generated by Apache.  Also set the same Expires,
     Pragma, and Cache-Control headers that WebAuthDontCache sets.  This
     will hopefully work around the bugs that occur when caching redirects
     in some browsers.
 
- *) Increased robustness of the privgroup handling in mod_webauthldap when
+    Increased robustness of the privgroup handling in mod_webauthldap when
     the LDAP query returns multiple entries.  Errors when looking for
     attributes in one entry no longer prevent checking for attributes in
     additional entries.
 
- *) The weblogin test cookie is now a session cookie like the WebAuth
+    The WebLogin test cookie is now a session cookie like the WebAuth
     cookie, so we test what we use, and so it works correctly with
     browsers that disable non-session cookies.
 
- *) Build portability fix for Tru64 and other platforms whose sed cannot
+    Build portability fix for Tru64 and other platforms whose sed cannot
     handle multiline patterns.
 
- *) Removed extra logging from mod_webauth/webkdc.c, and moved other
+    Remove extra logging from mod_webauth/webkdc.c, and moved other
     extraneous logging so it's only logged at a level of APLOG_DEBUG when
     WebAuthDebug is turned on.
 
 WebAuth 3.1.2 (2003-05-29)
 
- *) mod_webauthldap has several bugfixes, supports multiple virtualhosts,
-    and has better memory utilization and thread safety improvements.
+    Multiple bugs were fixed in mod_webauthldap, it now supports multiple
+    virtualhosts, and it now has better memory utilization and thread
+    safety improvements.
 
- *) Correctly construct the return URL for reverse proxies.
+    Correctly construct the return URL for reverse proxies.
 
- *) Ported to Solaris 7 with gcc 2.95.  Basic WebAuth (but not LDAP)
+    Don't try to decode a zero length service token cache file.  Log a
+    warning and return NULL as if there were no file.
+
+    Ported to Solaris 7 with gcc 2.95.  Basic WebAuth (but not LDAP)
     ported to AIX 4.3.
+
+    Modify wa_keyring to not use getopt (not available on windows), and
+    change strftime format from %T to %H:%M:%S (%T also not available on
+    windows strftime).
 
 WebAuth 3.1.1 (2003-05-08)
 
- *) Fixed HTML_TEMPLATE_ROOT in src/webkdc/logout.fcgi script by
-    changing the path to relative instead of absolute.
+    Fix HTML_TEMPLATE_ROOT in src/webkdc/logout.fcgi script by changing
+    the path to relative instead of absolute.
 
 WebAuth 3.1.0 (2003-05-01)
 
- *) Added a new Apache module, mod_webauthldap, for LDAP directory
+    Add a new Apache module, mod_webauthldap, for LDAP directory
     information lookups via Kerberos v5 GSS-API binds.  This module
     provides the same directory lookup capability as older versions of
     WebAuth, but does so against OpenLDAP servers, via Kerberos v5
     authentication, and with considerably more flexible support for what
     attributes to query. See the mod_webauthldap manual for more details.
 
- *) Added WebAuthSSLRedirect and WebAuthSSLRedirectPort directives so
-    that users can be redirected from http to https when accessing
-    a WebAuth-protected resource.
+    Add WebAuthSSLRedirect and WebAuthSSLRedirectPort directives so that
+    users can be redirected from http to https when accessing a
+    WebAuth-protected resource.
 
- *) Added a WebAuthAuthType directive to help people transition to
+    Add a WebAuthAuthType directive to help people transition to
     mod_webauth from older versions.  This directive allows you to specify
     an additional AuthType name that will be treated the same as WebAuth.
     If this directive is set to StanfordAuth, it will also set two extra
-    environment variables: SU_AUTH_USER and SU_AUTH_AGE (these were set
-    by WebAuth 2.5).
+    environment variables: SU_AUTH_USER and SU_AUTH_AGE (these were set by
+    WebAuth 2.5).
 
- *) Added more backward compatibility support for WebAuth 2.5 by allowing
+    Add more backward compatibility support for WebAuth 2.5 by allowing
     the following directives to appear in .htaccess files:
 
     StanfordAuthConfirmMsg  -> ignored
@@ -549,7 +667,7 @@ WebAuth 3.1.0 (2003-05-01)
 
     StanfordAuthGroups      -> unsupported, if specified access is denied
 
- *) Allowed these directives to be present in .htaccess files (they were
+    Allow these directives to be present in .htaccess files (they were
     previously only allowed in <Directory>/<Location> directives):
 
         WebAuthExtraRedirect
@@ -559,40 +677,52 @@ WebAuth 3.1.0 (2003-05-01)
 
     This is in partial support of backward compatibility.
 
- *) Added WebAuthProxyHeaders directive to pass WebAuth information to
-    a proxied server.  See the WebAuth module documentation for more
+    Add WebAuthProxyHeaders directive to pass WebAuth information to a
+    proxied server.  See the WebAuth module documentation for more
     information.
 
- *) Added WebAuthWebKdcSSLCertCheck directive to enable/disable checking
-    of the WebKDC SSL certificate.  Defaults to "on" and should only
-    be turned off for debugging/testing purposes.
+    Add WebAuthWebKdcSSLCertCheck directive to enable/disable checking of
+    the WebKDC SSL certificate.  Defaults to "on" and should only be
+    turned off for debugging/testing purposes.
 
- *) Added new WebAuthDontCache directive, which signals a browser not to
+    Add new WebAuthDontCache directive, which signals a browser not to
     cache those web pages.  Defaults to 0 (allow documents to be cached).
 
- *) Modified WebAuthKeytab and WebKdcKeytab directives so you can
+    Modify the WebAuthKeytab and WebKdcKeytab directives so you can
     optionally specify which principal to use with the specified keytab,
     instead of using the first principal found.  This is useful if the
     keytab contains multiple keys.
 
- *) Removed the service token cache on restarts, so that a restart will
+    Remove the service token cache on restarts, so that a restart will
     clear up any inconsistencies between the server and the WebKDC.
 
- *) Have the WebKDC re-read the token ACL file if its mtime changes.
+    Have the WebKDC re-read the token ACL file if its mtime changes.
 
- *) Added --with-apxs configure option to set the path to apxs
-    independently from the path to the Apache installation.  This was
-    needed in order to easily build WebAuth on Linux distributions that
-    install Apache following the Linux Filesystem Standard.
+    Clean up environment variable setting.  Set environment variables
+    (r->subprocess_env) in check_user_id hook instead of waiting until
+    fixups hook to make them more accessible to other hooks/modules.
 
- *) Bug fixed in scrubbing WebAuth tokens from the URL.
+    Add --with-apxs configure option to set the path to apxs independently
+    from the path to the Apache installation.  This was needed in order to
+    easily build WebAuth on Linux distributions that install Apache
+    following the Linux Filesystem Standard.
+
+    Fix several bugs in scrubbing WebAuth tokens from the URL.
+
+    If we are proxying or the URI passed to the server in the HTTP request
+    has a scheme, use it as the return URL instead of constructing one
+    relative to the server.
+
+    Restructure the mod_webauth code to define a pluggable credential
+    interface, isolating all credential-related functions so that new
+    credential types can easily be supported.
 
 WebAuth 3.0.0 (2003-02-18)
 
- *) Initial public release of WebAuth v3.  This is a complete rewrite of
+    Initial public release of WebAuth v3.  This is a complete rewrite of
     the WebAuth system, sharing no common code with the previous release.
     It is now based on Apache 2.0, Kerberos v5, and a new infrastructure
     for managing authentication tokens.
 
- *) This is the initial release with basic authentication support and Perl
+    This is the initial release with basic authentication support and Perl
     bindings only.

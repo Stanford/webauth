@@ -1,0 +1,45 @@
+                             WebLogin Cookies
+
+Introduction
+
+  The WebAuth protocol uses cookies to store encrypted credentials and to
+  remember authentication information for WebAuth-enabled Application
+  Servers.  For information about the cookies used as part of the
+  protocol, see the protocol specification provided as doc/protocol.txt
+  and doc/protocol.html in the distribution and also available at:
+
+      http://webauth.stanford.edu/protocol.html
+
+  This document describes the additional cookies used internally by the
+  WebLogin script, which are not part of the general WebAuth protocol.
+
+WebLogin Test Cookie
+
+  The first time a user goes to the WebLogin server, it tries to set a
+  cookie with the name WebloginTestCookie and makes sure the browser
+  returns that cookie.  This cookie is a session cookie to try to match
+  the behavior of the protocol cookies that WebAuth uses.  It will have
+  the value "True".  If this cookie isn't set after the user
+  authenticates, WebLogin will assume that the browser doesn't support
+  cookies and will try to display an appropriate error message.
+
+REMOTE_USER Cookie
+
+  If WebLogin is configured to optionally allow Apache authentication
+  before falling back to a username and password, it uses a cookie to
+  store that user preference.  See doc/weblogin-flow for more information
+  about the page flow when optional REMOTE_USER is enabled.
+
+  The name of this cookie is weblogin_remuser and it will be set to either
+  "1" or to an empty value (the latter only if the user has explicitly
+  turned REMOTE_USER authentication off).  Unlike all of the other cookies
+  used by WebAuth, this is intended to be a persistant preference and is
+  therefore not a session cookie.  The lifetime is set to 365 days by
+  default (set at the top of the login.fcgi script -- currently, this is
+  not a configurable parameter).
+
+  If this cookie is already present and WebLogin isn't changing its value
+  due to changed user configuration, WebLogin will reset it with an
+  updated expiration date.  That way, the cookie will still expire if the
+  user stops using that WebLogin server, but provided that they use the
+  server at least once a year, the cookie will not expire.

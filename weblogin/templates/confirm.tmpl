@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>WebAuth Confirm</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
+
+  <TMPL_IF NAME=notdefined>
+<!--
+This is the template for the WebAuth confirm page.  This page is called
+from login.fcgi script on the weblogin server after successful
+authentication and provides a link to continue to the appropriate web
+page, as well as (optionally) a way to set preferences for doing
+REMOTE_USER authentication.  Variables used:
+
+username               : the authenticated identity of the user
+return_url             : the WebAuth-protected page now authenticated for
+pretty_return_url      : same, but cleaned up for use as link text
+login_cancel           : a cancel URL was specified
+cancel_url             : the specified cancel URL
+show_remuser           : show REMOTE_USER login preferences
+remuser                : set if REMOTE_USER is desired
+-->
+  </TMPL_IF>
+
+  <body>
+    <h1 align="center">WebAuth Confirm</h1>
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <tr>
+          <td><img alt="Confirm" src="/images/confirm.png"
+                   width="160" height="160"/></td>
+          <td>
+            <div class="logintext">
+              <p>You are logged into WebAuth as user
+              <strong><TMPL_VAR ESCAPE=HTML NAME=username></strong></p>
+              <p>Click this link to continue to the website you
+              requested:</p>
+              <p><a href="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
+                 <TMPL_VAR ESCAPE=HTML NAME=pretty_return_url></a></p>
+              <TMPL_IF NAME=token_rights>
+                <p>If you continue to this website, you will grant it
+                permission to obtain the following credentials on your
+                behalf:</p>
+                <blockquote><p><TMPL_LOOP NAME=token_rights>
+                  <TMPL_VAR NAME=type> <TMPL_VAR NAME=name><br/>
+                  <!-- <TMPL_VAR NAME=principal> -->
+                  <!-- <TMPL_VAR NAME=instance> -->
+                  <!-- <TMPL_VAR NAME=realm> -->
+                </TMPL_LOOP></p></blockquote>
+              </TMPL_IF>
+              <p><strong>Protect your assets:</strong><br/>
+                 Quit your web browser when you are finished (see below
+                 for more details)</p>
+              <TMPL_IF NAME=login_cancel>
+                <p><a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">Cancel</a>
+                   logging on to this service</p>
+              </TMPL_IF>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <TMPL_IF NAME=show_remuser>
+      <div class="remuserbox" align="center">
+        <form action="<TMPL_VAR ESCAPE=HTML NAME=script_name>" method="post"
+              enctype="application/x-www-form-urlencoded">
+          <input type="hidden" name="return_url"
+                 value="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
+          <input type="hidden" name="username"
+                 value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+          <TMPL_IF NAME=login_cancel>
+            <input type="hidden" name="cancel_url"
+                   value="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">
+          </TMPL_IF>
+          <table border="1" width="70%">
+            <tr>
+              <td>
+                <TMPL_IF NAME=remuser>
+                  <input type="checkbox" name="remuser" checked>
+                <TMPL_ELSE>
+                  <input type="checkbox" name="remuser">
+                </TMPL_IF>
+              </td>
+              <td>
+                <input type="submit" name="Submit" value="Change Setting">
+              </td>
+              <td>
+                Check this box to always attempt to use your computer
+                login information in the future.
+              </td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </TMPL_IF>
+
+    <div class="trailer">
+      <h2>Important Security Information</h2>
+
+      <p>WebAuth provides a general web login service for many different
+      websites.  Websites that use this WebAuth server that would ask you
+      to login will not do so now that you have logged into WebAuth.</p>
+
+      <p><strong>Quit the web browser you are using when you are finished
+      with this browser session.</strong></p>
+
+      <p>If you do not, anyone subsequently using your computer will be
+      able to use the browser program to go to those websites, and the
+      websites will treat that person as you, giving that person access to
+      your protected web assets. You are responsible for preventing that
+      from happening with this web session, and the best way to do it is
+      to quit the browser program when you are finished with it, or lock
+      your computer if you need to leave your computer but aren't through
+      with the browser.</p>
+    </div>
+  </body>
+</html>

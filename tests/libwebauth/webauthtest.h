@@ -1,11 +1,14 @@
-/** @file
- * webauth test harness macros
+/*
+ * WebAuth test harness macros.
  *
- * this file contains some simple macros to emulate Perl's test
- * harness. FIXME: should move this to libwebauth or common so
- * other C tests can use it.
+ * This file contains some simple macros to emulate Perl's test harness.
+ * FIXME: should move this to libwebauth or common so other C tests can use
+ * it.
  *
- * $Id$
+ * Written by Roland Schemers
+ * Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
  */
 
 #ifndef _WEBAUTHTESTS_H

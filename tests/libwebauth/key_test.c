@@ -1,3 +1,13 @@
+/*
+ * Test suite for libwebauth key and keyring handling.
+ *
+ * Written by Roland Schemers
+ * Copyright 2002, 2003, 2005, 2006, 2009
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
+
 #include "config.h"
 
 #include <fcntl.h>
@@ -6,7 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "webauth.h"
+#include <lib/webauth.h>
 #include "webauthtest.h"
 
 #define BUFSIZE 4096

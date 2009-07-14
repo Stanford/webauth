@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>WebAuth Error</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
+
+  <TMPL_IF NAME=notdefined>
+<!--
+This is the template for the WebAuth error page.  It is displayed whenever
+the login.fcgi script on the weblogin server encounters an error.
+Variables used:
+
+err_cookies_disabled   : cookies disabled in the web browser
+err_no_request_token   : no request token (user went straight to weblogin)
+err_webkdc             : the WebKDC returned an error
+err_msg                : error message from WebKDC
+-->
+  </TMPL_IF>
+
+  <body>
+    <h1 align="center">WebAuth Error</h1>
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <tr>
+          <td><img alt="Error" src="/images/error.png"
+                   width="160" height="160"/></td>
+          <td>
+            <div class="errortext">
+              <p><strong>An error has occurred</strong></p>
+
+              <!-- Error: cookies disabled in web browser -->
+              <TMPL_IF NAME=err_cookies_disabled>
+                <p>Error: You must enable cookies on your web browser.</p>
+                <p>You have just tried to access a web service that is
+                   protected by WebAuth.  However, WebAuth is unable to
+                   tell this web service who you are because your browser
+                   has cookies disabled.</p>
+                <p>WebAuth depends on cookies to communicate with your web
+                   service.  Please enable cookies in your web browser.<p>
+              </TMPL_IF>
+
+              <!-- Error: no response token -->
+              <TMPL_IF NAME=err_no_request_token>
+                <p>Error: The URL given is incomplete.</p>
+              </TMPL_IF>
+
+              <!-- Error: missing data when redisplaying the confirm page -->
+              <TMPL_IF NAME=err_confirm>
+                <p>Error: Necessary form data was missing.</p>
+                <p>You have probably accessed a stale cached page by
+                   mistake.</p>
+              </TMPL_IF>
+
+              <TMPL_IF NAME=err_webkdc>
+                <p>Error: <TMPL_VAR ESCAPE=HTML NAME=err_msg></p>
+              </TMPL_IF>
+
+              <p>To try again, please return to the preceding web page
+              (or you may need to start your request for this web
+              service again).  Click <a href="/help.html">help</a> for
+              assistance</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

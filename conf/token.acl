@@ -1,0 +1,5 @@
+# token.acl -- Sample ACL file for the WebKDC.
+
+# If uncommented, this would let anyone with a krb5 webauth/*@example.com
+# principal to get an id token (perform basic authentication).
+#krb5:webauth/*@example.com id

@@ -1,4 +1,11 @@
 #!/usr/bin/perl -w
+#
+# Utility functions for mod_webauth tests.
+#
+# Written by Roland Schemers
+# Copyright 2003 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 use CGI qw/:standard/;
 use CGI::Cookie;

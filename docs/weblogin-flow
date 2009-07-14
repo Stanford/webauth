@@ -1,0 +1,255 @@
+                            WebLogin Page Flow
+
+Introduction
+
+  WebLogin is the name for the component of WebAuth that handles user
+  authentication interaction.  It is a CGI service that runs on the WebKDC
+  and presents HTML login forms, status pages, and handles translating
+  browser cookies into XML requests to the WebKDC and vice versa.  See
+  doc/weblogin-config for full configuration and customization
+  documentation.
+
+  We want to support SPNEGO (and other authentication methods implemented
+  by other Apache modules) as a possible authentication mechanism for
+  users.  However, attempting SPNEGO unconditionally has deleterious
+  effects in some browsers:  some versions of Opera hang or stop loading
+  the page with an error, and IE throws up a basic-auth dialog box unless
+  the WebLogin URL has been added to its intranet sites.  We therefore
+  want to permit a configuration where the username/password dialog box is
+  always shown first, but the user may choose to attempt SPNEGO, and then
+  may also choose to set a cookie that always directs them to SPNEGO.
+
+  This is generalized into a system that handles any Apache authentication
+  type, but makes it optional.  weblogin can be configured in any of three
+  modes: always ask for username and password unless the user has a single
+  sign-on cookie, always attempt Apache authentication first and only ask
+  for username and password as a fallback, or ask for username and
+  password by default but provide the option of Apache authentication and
+  a cookie that can be set to always attempt it first.  Apache
+  authentication is referred to as REMOTE_USER through the code and the
+  rest of this document, and the abbreviation "remuser" is used in
+  variables and cookies.
+
+Cookie Check
+
+  For all methods of visiting WebLogin, the WebLogin script first checks
+  whether a test cookie is already set.  If it isn't, it redirects the
+  user back to the same page with an additional query parameter appended,
+  setting the test cookie in the process.
+
+  If the cookie still isn't set when the browser requests the page again,
+  the user is shown an error page explaining that cookies must be enabled.
+
+  The following page flows assume that this has happened already and the
+  user's test cookie is already set.
+
+Basic Page Flow
+
+  Here is the WebLogin page flow in the basic case where no REMOTE_USER
+  complications are introduced:
+
+   1. User is sent to WebLogin with a request token and a webkdc-service
+      token from the WAS.  WebLogin passes that request and any single
+      sign-on cookies from the browser to the WebKDC.  If the WebKDC says
+      that authentication is successful (based on the cookies, generally,
+      but it is also allowed to make out-of-band decisions even though it
+      generally won't), it returns an id token or proxy token and says it
+      was successful.  In that case, go to step 3.  Otherwise, proceed to
+      step 2.
+
+   2. WebLogin presents a username/password form, keeping the request
+      token in a hidden field.  This form will also have an "I don't want
+      to log in" link if the application provided a cancel URL.  If the
+      user submits a username and password, it is validated with the
+      WebKDC.  If that validation fails, they are returned to the same
+      page with an error.  If it succeeds, they proceed to step 3.
+
+   3. User is presented with a confirmation page that states their
+      authenticated identity, provides a link back to the original service
+      with the id or proxy token in the URL, and also provides an "I don't
+      want to log in" link going to the cancel URL of the application if
+      provided by the initial request.
+
+Page Flow with REMOTE_USER
+
+  If we always try Apache authentication first, using the configuration in
+  install-spengo (for example) that sets up an alias to the login script
+  as an authentication failure handler, we get the following page flow:
+
+   1. User is sent to WebLogin with a request token and a webkdc-service
+      token from the WAS.  WebLogin (via Apache) attempts to authenticate.
+      If they succeed, WebLogin is called with REMOTE_USER set.  It uses
+      that information to generate an artificial single sign-on token and
+      calls the WebKDC with it to get an appropriate id or proxy token.
+      If that authentication is sufficient, go to step 5.  Otherwise, go
+      to step 2.
+
+      If Apache authentication does *not* succeed, Apache throws an
+      authentication error (401) and then dispatches the request to the
+      401 error handler.  Go to step 3.
+
+   2. Apache authentication succeeded, but that wasn't sufficient to
+      authenticate the user.  Present the regular username/password dialog
+      with hidden fields as above, repeat until the username/password
+      works, and then go to step 5.
+
+   3. The login page is invoked again as a 401 error handler and reads the
+      request token and webkdc-service token out of the separate
+      environment variables Apache uses for error handlers.  This login
+      page must obviously not be protected by Apache authentication.  It
+      passes the request to the WebKDC with any single sign-on cookies as
+      described above.  Go to step 5 if the user is authenticated, step 4
+      otherwise.
+
+   4. WebLogin presents the username/password form with hidden fields as
+      above.  User submits username/password, which is then validated.
+      When successful, proceed to step 5.  The submit target of the form
+      must be a URL not protected by Apache authentication (generally the
+      same failure handler URL is reused).
+
+   5. User is presented with a confirmation page as described above and
+      can continue, authenticated, to the application.
+
+Page Flow with Optional REMOTE_USER
+
+  We want to instead allow the user to select whether to attempt Apache
+  authentication or not, and to set a cookie that says to always use
+  Apache authentication if desired.  To do that, we will use the following
+  page flow:
+
+   1. User is sent to WebLogin with tokens.  WebLogin passes the request
+      and any single sign-on cookies to the WebKDC.  If the user is
+      authenticated, go to step 6.  Otherwise, continue to step 2.
+
+   2. WebLogin checks for the "always use REMOTE_USER" cookie.  If present
+      *and* the application doesn't require username/password
+      authentication, user is redirected to the configured REMOTE_USER
+      URL, keeping the tokens at the end of the URL.  Go to step 3.
+      Otherwise, go to step 5.
+
+   3. Apache attempts authentication.  If successful, the user is passed
+      to the login script with REMOTE_USER set.  Go to step 4.  Otherwise,
+      the user is sent to the login script with a different URL (not
+      protected by Apache authentication) as a failure handler.  Go to
+      step 5.
+
+   4. The WebLogin script takes the REMOTE_USER value, cobbles up a single
+      sign-on token, and passes that to the WebKDC.  If that's sufficient
+      for authentication, proceed to step 6.  Otherwise, the
+      username/password dialog is presented again.  Note that this case
+      should not happen, since we catch applications that require
+      username/password at step 2 and don't send them through the Apache
+      authentication route.  But if it does, loop there until successful
+      authentication, and then go to step 6.
+
+   5. No REMOTE_USER cookie was set, REMOTE_USER was tried and failed, or
+      the WAS requested forced login.  If it was tried and failed, read
+      the token information out of the failure handler environment
+      variables.  Present a username/password dialog box that also has an
+      alternative that says to try REMOTE_USER, but suppress the latter if
+      called as a failure handler or if forced login was requested.  Loop
+      until the user successfully authenticates with username/password and
+      then go to step 6.
+
+   6. The user has successfully authenticated.  Show the standard page
+      with the link to the application.  If we used REMOTE_USER *or* if a
+      REMOTE_USER cookie is present, Also show a check box indicating
+      whether the "always use REMOTE_USER" cookie is present and a button
+      that lets the user change that setting while returning them to the
+      same confirmation page with the same link to the calling
+      application.
+
+Implementation
+
+  In order to implement this page flow, the login.fcgi script uses the
+  following logic:
+
+   1. If we already have return_url set in the query, we're at the
+      confirmation page and the user has changed their REMOTE_USER
+      configuration.  Set or clear the REMOTE_USER cookie as appropriate
+      and then go to step 6 (displaying the confirmation page).
+      Otherwise, continue to step 2.
+
+   2. Check to see if the environment variable REDIRECT_QUERY_STRING is
+      set.  If so, set a flag saying we're running as an error handler.
+
+   3. Make sure we have a request token RT and a webkdc-service token ST
+      in the request.  If not, throw up the error page.
+
+   4. Construct the message we're going to send to the WebKDC.  We always
+      talk to the WebKDC unless we're already at the confirmation page,
+      since the WebKDC may decide to authenticate the user at any step.
+      The WebKDC request contains:
+
+       * The request token from RT.
+       * The webkdc-service token from ST.
+       * The username and password if provided in the request (via a form
+         submission, for instance).
+       * Any tokens stored in cookies beginning with "webauth_wpt_".
+         These are the single sign-on cookies.
+       * Remote and local IP address and port information for logging.
+       * If Apache REMOTE_USER support is enabled *and* REMOTE_USER is
+         set, an additional single sign-on token manufactured from the
+         identity in REMOTE_USER.
+
+   5. Submit the request to the WebKDC and read the response.  Pull out
+      the login cancel URL, if any, from the response no matter what and
+      store it for later use.
+
+   6. If the WebKDC said that the user is now authenticated, display the
+      confirmation page.  Display the configuration checkbox for
+      REMOTE_USER unless the REMOTE_USER cookie is not set *and*
+      REMOTE_USER is not set in the environment (which means that either
+      we attempted Apache authentication and failed or we never tried).
+      The configuration checkbox, if present, must contain all of the data
+      required to rebuild the confirmation page, namely:
+
+       * The return URL including response token and state token.
+       * The authenticated username.
+       * The login cancel token, if any.
+
+      We do *not* have to preserve the proxy cookies, since we will have
+      set them the first time through the confirm page.
+
+      Note that the confirmation page can be suppressed with a WebLogin
+      configuration option.  If it is suppressed, it is replaced by a 302
+      redirect (following REMOTE_USER authentication or authentication
+      based on an existing single sign-on cookie) or a 303 redirect
+      (following username/password form submission).
+
+   7. If we get this far, the user isn't authenticated yet.  There are
+      six possibilities.
+
+       * If the WebKDC returns a fatal error, display the error page and
+         we're done.  They lose.
+
+       * If the WebKDC returns WK_ERR_USER_AND_PASS_REQUIRED, they *do*
+         have a "use REMOTE_USER" cookie, and we are not running as a
+         failure handler, redirect to the configured REMOTE_USER URL,
+         including the original request token and webkdc-service token in
+         the URL.
+
+       * If the WebKDC returns WK_ERR_USER_AND_PASS_REQUIRED, they do
+         *not* have a "use REMOTE_USER" cookie, and we are not running as
+         a failure handler, display the login page including the button
+         that lets them try Apache authentication.
+
+       * If the WebKDC returns WK_ERR_USER_AND_PASS_REQUIRED and neither
+         of the above cases are true, we tried Apache authentication and
+         it failed.  Display the login page but omit the button that lets
+         them try Apache authentication.
+
+       * If the WebKDC returns WK_ERR_LOGIN_FORCED, well, username and
+         password are required.  We don't get to even try Apache
+         authentication in this case.  Present the username/password
+         dialog without the REMOTE_USER button.
+
+       * If the WebKDC returns WK_ERR_LOGIN_FAILED, they already tried
+         using a username and password but got the wrong one.  In this
+         case, don't show the REMOTE_USER button.  They've already made a
+         choice, and more importantly the original login may have been
+         forced.  We don't want someone to have forced login, enter the
+         wrong username and password, and then get a REMOTE_USER option.
+         They may choose to take it, and then end up being authenticated
+         but still having to enter their username and password (very
+         confusing).

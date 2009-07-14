@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>WebAuth Logout</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
+
+<!--
+This is the template for WebAuth logout.  It is displayed whenever the
+logout.fcgi script is executed.  logout.fcgi deletes the single sign-on
+cookie.  Variables used:
+
+cookies_flag           : found a single sign-on cookie to delete
+-->
+
+  <body>
+    <h1 align="center">WebAuth Logout</h1>
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <tr>
+          <td><img alt="Logout" src="/images/logout.png"
+                   width="160" height="160"/></td>
+          <td>
+            <div class="logouttext" align="center">
+              <p><strong>You have chosen to remove your WebAuth single
+              sign-on cookie.</strong></p>
+
+              <p><strong>Results:</strong>
+              <TMPL_IF NAME=cookies_flag>
+                Single sign-on cookie has been deleted.
+              <TMPL_ELSE> 
+                No single sign-on cookies found to delete.
+              </TMPL_IF>
+              </p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

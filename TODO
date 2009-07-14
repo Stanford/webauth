@@ -1,122 +1,191 @@
                             WebAuth To-Do List
 
- *) Currently, there is no good logout strategy other than closing the
-    browser, since the user remains logged in to each web site they've
-    visited even if they go to the logout page on the weblogin server and
-    destroy their global credentials.  The best solution to this proposed
-    so far is to maintain global state on the WebKDC servers (shared
-    between them somehow) and to have the WebAuth servers query the WebKDC
-    to see whether the credentials are still valid.  This is a lot of work
-    and raises some basic questions (such as, is HTTPS too slow for that
-    query from the WebAuth server).
+Protocol:
 
-    In the meantime, having the WebAuth logout handler automatically
-    redirect to the weblogin logout page might ameliorate some of the
-    problems.
+ * Currently, there is no good logout strategy other than closing the
+   browser, since the user remains logged in to each web site they've
+   visited even if they go to the logout page on the weblogin server and
+   destroy their global credentials.  The best solution to this proposed
+   so far is to maintain global state on the WebKDC servers (shared
+   between them somehow) and to have the WebAuth servers query the WebKDC
+   to see whether the credentials are still valid.  This is a lot of work
+   and raises some basic questions (such as, is HTTPS too slow for that
+   query from the WebAuth server).
 
- *) User request: It would be nice to have a per-directory option to
-    recognize a login if the WebAuth cookie is available, but not force it
-    if the user isn't logged in.  This might address the HelpSU dependence
-    on S/Ident as well.
+   In the meantime, having the WebAuth logout handler automatically
+   redirect to the weblogin logout page might ameliorate some of the
+   problems.
 
- *) User request: Currently, WebAuth always appends ?WEBAUTHR even if
-    there's already an ? in the URL, which means that applications that
-    want to do WebAuth themselves cannot do normal CGI parsing of the
-    URL.  Just changing this would break backward compatibility, so a new
-    option needs to be added to the request token allowing the
-    implementation to request proper CGI syntax be used in the URL.  This
-    option should probably be on by default with new versions of
-    mod_webauth, since it's cleaner and doesn't cause any harm.
+ * User request: Add a method for the WebKDC to communicate to the WAS the
+   login method used, so that the WAS can expose this information in an
+   environment variable to CGI applications, etc.
 
- *) User request: Add a method for the WebKDC to communicate to the WAS
-    the login method used, so that the WAS can expose this information in
-    an environment variable to CGI applications, etc.
+ * Allow a WebAuth Application Server to specify that authentication
+   should be done using a particular instance (and perhaps only a
+   particular realm?) so that the WebLogin server knows to manage a
+   different set of single sign-on credentials for that user.  This allows
+   applications with specific credential requirements to not interfere
+   with a user's other logins.
 
- *) User request: Provide a way of checking the user's entitlements against
-    a list of possible values and export to the environment all matching
-    entitlements, rather than just the first match (like the existing
-    LDAPAUTHRULE support).
+ * Rather than using our own Kerberos ticket serialization format, store
+   tickets in the form that would be used when forwarding tickets, thus
+   letting the Kerberos library do the encoding and decoding for us.
 
- *) A better error message when one talks to the WebKDC directly with a
-    browser would be nice.  The current message is rather baffling, and
-    it would be good to tell the naive user to set up an application server
-    or weblogin server.
+ * Use a better key for the HMAC than the encryption key of the token.
 
- *) If mod_webauth obtains a proxy token instead of an id token and
-    WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
-    id token from the WebKDC and then verify it rather than simply
-    trusting the identity in the proxy token.
+General:
 
- *) The mod_webauthldap module needs a lot of formatting and coding style
-    cleanup.
+ * Currently, all module errors are logged with ap_log_error.  It looks
+   like we should be using ap_log_rerror when there's a request available
+   and ap_log_cerror (but only with Apache 2.0.55 and later) when there's
+   a connection available.  This would probably include more useful
+   details in the logs.
 
- *) All of WebAuth needs a general dead code removal pass and evaluation
-    of all the places marked FIXME, spawning either entries for this list
-    or removal as unimportant.
+ * We're always passing a status of zero to all calls to ap_log_error, but
+   in some cases we do have an error status that we should be passing in.
 
- *) Allow WebAuthExtraRedirect in the server and virtual host
-    configuration.
+libwebauth:
 
- *) Provide a better way (over protocol, perhaps?) of synchronizing keyrings
-    across machines in a pool.
+ * The current library interface is very low-level.  Ideally, the library
+   should treat particular WebAuth tokens as first-class objects with
+   their own manipulation functions and not expose all of the low-level
+   marshal and unmarshal functions to clients.
 
- *) Compile the WebAuth version into the modules rather than getting the
-    version from the webauth library.  In the webauth and webkdc modules,
-    warn if the versions don't match at runtime (but proceed anyway).
+ * The library needs a way of doing error logging that isn't just
+   returning error codes.  We probably need some sort of global WebAuth
+   context that can stash error messages, similar to how the Kerberos
+   library API works.
 
- *) Add POD documentation for all Perl modules.  Many of the WebKDC modules
-    currently don't have documentation.
+ * Switch all the WebAuth library interfaces to using opaque structs
+   instead of typedefs, matching our current coding style.
 
- *) Write design notes / internals documentation for how WebAuth is put
-    together.
+ * Investigate whether we can provide higher-level interfaces to the
+   WebAuth library so that we don't have to provide as many different
+   functions.
 
- *) Currently, all module errors are logged with ap_log_error.  It looks
-    like we should be using ap_log_rerror when there's a request available
-    and ap_log_cerror (but only with Apache 2.0.55 and later) when there's
-    a connection available.  This would probably include more useful
-    details in the logs.
+ * Remove the local argument from webauth_krb5_rd_req_with_data.  It's not
+   actually useful.
 
- *) We're always passing a status of zero to all calls to ap_log_error,
-    but in some cases we do have an error status that we should be
-    passing in.
+ * webauth_attr_list_add_time assumes that timestamps are unsigned 32-bit
+   values.
 
- *) Add to mod_webauthldap a way to deny access if a user is a member of a
-    particular privgroup.
+ * String to number conversion in the WebAuth library is being done with
+   atol instead of with strtol and with error checking.
 
- *) Write a custom merging function for WebKdcLocalRealms so that the
-    keywords are preserved properly.  If a keyword is set, that should
-    override any list of realms, but if both the old and new configuration
-    contain list of realms, they should be combined.
+ * Add locking to the code reading and writing keyrings so that two
+   processes don't simultaneously update a keyring.
 
- *) Support an "any" option for WebKdcPermittedRealms so that the default
-    can be explicitly set (possibly overriding an earlier explicit list).
+ * Stop including addresses in serialized Kerberos tickets and figure out
+   what to do about the is_skey attribute.
 
- *) Support listing multiple privgroups and attributes on the same line in
-    the mod_webauthldap module using the iterate flag.
+ * Once logging is available, log better error messages when reading
+   keytabs and obtaining initial credentials fails.
 
- *) Switch all the WebAuth library interfaces to using opaque structs
-    instead of typedefs, matching our current coding style.
+ * Replace the internal verify_tgt function with krb5_verify_init_creds.
 
- *) Investigate whether we can provide higher-level interfaces to the
-    WebAuth library so that we don't have to provide as many different
-    functions.
+ * The code to get a Kerberos error message always just uses com_err right
+   now.  This needs modification to call the appropriate Kerberos error
+   message function.
 
- *) A test suite (and a redesign of the code so that it can be tested) is
-    desperately needed for all the code currently embedded in Apache
-    modules.
+ * Support configuration of options for initial Kerberos tickets, such as
+   ticket lifetime.  We also probably want to suppress some options by
+   default that we never use.
 
- *) Remove the local argument from webauth_krb5_rd_req_with_data.  It's
-    not actually useful.
+ * Do proper error handling in the case where random number initialization
+   fails.
 
- *) Add support for WebAuthDoLogout in an .htaccess file.
+ * webauth_krb5_rd_req_with_data does not check for memory allocation
+   failure properly in all cases.
 
- *) Allow a WebAuth Application Server to specify that authentication
-    should be done using a particular instance (and perhaps only a
-    particular realm?) so that the WebLogin server knows to manage a
-    different set of single sign-on credentials for that user.  This
-    allows applications with specific credential requirements to not
-    interfere with a user's other logins.
+mod_webauth:
 
- *) Check the Cookie header for multiple webauth_at cookies and try each
-    of them.  This works around a bug in IE 7 where bar.com cookies are
-    sent to foo.bar.com as well as the foo.bar.com cookies.
+ * User request: It would be nice to have a per-directory option to
+   recognize a login if the WebAuth cookie is available, but not force it
+   if the user isn't logged in.
+
+ * User request: Currently, WebAuth always appends ?WEBAUTHR even if
+   there's already an ? in the URL, which means that applications that
+   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
+   Just changing this would break backward compatibility, so a new option
+   needs to be added to the request token allowing the implementation to
+   request proper CGI syntax be used in the URL.  This option should
+   probably be on by default with new versions of mod_webauth, since it's
+   cleaner and doesn't cause any harm.
+
+ * If mod_webauth obtains a proxy token instead of an id token and
+   WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
+   id token from the WebKDC and then verify it rather than simply trusting
+   the identity in the proxy token.
+
+ * Allow WebAuthExtraRedirect in the server and virtual host
+   configuration.
+
+ * Add support for WebAuthDoLogout in an .htaccess file.
+
+ * Check the Cookie header for multiple webauth_at cookies and try each of
+   them.  This works around a bug in IE 7 where bar.com cookies are sent
+   to foo.bar.com as well as the foo.bar.com cookies.
+
+mod_webauthldap:
+
+ * User request: Provide a way of checking the user's entitlements against
+   a list of possible values and export to the environment all matching
+   entitlements, rather than just the first match (like the existing
+   LDAPAUTHRULE support).
+
+ * Add to mod_webauthldap a way to deny access if a user is a member of a
+   particular privgroup.
+
+ * Support listing multiple privgroups and attributes on the same line in
+   the mod_webauthldap module using the iterate flag.
+
+mod_webkdc:
+
+ * A better error message when one talks to the WebKDC directly with a
+   browser would be nice.  The current message is rather baffling, and it
+   would be good to tell the naive user to set up an application server or
+   weblogin server.
+
+ * Write a custom merging function for WebKdcLocalRealms so that the
+   keywords are preserved properly.  If a keyword is set, that should
+   override any list of realms, but if both the old and new configuration
+   contain list of realms, they should be combined.
+
+ * Support an "any" option for WebKdcPermittedRealms so that the default
+   can be explicitly set (possibly overriding an earlier explicit list).
+
+Build System:
+
+ * Compile the WebAuth version into the modules rather than getting the
+   version from the webauth library.  In the webauth and webkdc modules,
+   warn if the versions don't match at runtime (but proceed anyway).
+
+Test Suite:
+
+ * A test suite (and a redesign of the code so that it can be tested) is
+   desperately needed for all the code currently embedded in Apache
+   modules.
+
+Documentation:
+
+ * Add POD documentation for all Perl modules.  Many of the WebKDC modules
+   currently don't have documentation.
+
+ * Write design notes / internals documentation for how WebAuth is put
+   together.
+
+ * Update the docs/test-plan document and check it against the current
+   implementation and the set of things that can be tested (such as SPNEGO
+   and advanced configuration).
+
+Style:
+
+ * The mod_webauthldap module needs a lot of formatting and coding style
+   cleanup.
+
+ * All of WebAuth needs a general dead code removal pass and evaluation of
+   all the places marked FIXME, spawning either entries for this list or
+   removal as unimportant.
+
+ * Change all header guards prefixed with an underscore and a capital
+   letter.  Those identifiers are reserved by the C standard.
