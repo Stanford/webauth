@@ -1,3 +1,17 @@
+webauth (3.6.1-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - $BYPASS_CONFIRM now suppresses the confirm page after POST for
+      browsers that support this.
+    - $BYPASS_CONFIRM can be set to "id" to only bypass the confirmation
+      page if the WAS is not requesting a proxy token (and hence may
+      request delegated credentials).
+    - New variables for the WebLogin confirmation page containing
+      delegated credential details.
+    - Better WebLogin cookie handling with confirmation bypass.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 10:45:38 -0700
+
 webauth (3.6.0-1) unstable; urgency=low
 
   * New upstream release.
