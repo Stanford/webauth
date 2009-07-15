@@ -1,4 +1,4 @@
-webauth (3.6.1-1) UNRELEASED; urgency=low
+webauth (3.6.1-1) unstable; urgency=low
 
   * New upstream release.
     - $BYPASS_CONFIRM now suppresses the confirm page after POST for
@@ -20,7 +20,7 @@ webauth (3.6.1-1) UNRELEASED; urgency=low
   * Update debian/copyright to include a copy of the more thorough new
     upstream LICENSE file.
 
- -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 10:45:38 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 19:10:11 -0700
 
 webauth (3.6.0-1) unstable; urgency=low
 
