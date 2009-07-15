@@ -9,7 +9,7 @@ webauth (3.6.1-1) unstable; urgency=low
     - New variables for the WebLogin confirmation page containing
       delegated credential details.
     - Better WebLogin cookie handling with confirmation bypass.
-  * Remove -L and -l flags to dh_shlibdeps, which just confuse it now.
+  * Remove -L and -l flags to dh_shlibdeps, which are no longer needed.
   * Remove full paths to a2dismod in the package prerm scripts.
   * Update standards version to 3.8.2.
     - Change sections of Apache modules.
@@ -19,7 +19,7 @@ webauth (3.6.1-1) unstable; urgency=low
   * Update debian/copyright to include a copy of the more thorough new
     upstream LICENSE file.
 
- -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 19:10:11 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 14 Jul 2009 19:32:01 -0700
 
 webauth (3.6.0-1) unstable; urgency=low
 
