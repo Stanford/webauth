@@ -291,8 +291,8 @@ sub fix_token {
 # from which it obtains the requesting identity.
 sub token_rights {
     my ($resp) = @_;
-    return [] unless $TOKEN_ACL;
-    unless (open (ACL, '<', $TOKEN_ACL)) {
+    return [] unless $WebKDC::Config::TOKEN_ACL;
+    unless (open (ACL, '<', $WebKDC::Config::TOKEN_ACL)) {
         return [];
     }
     my $requester = $resp->requester_subject;
@@ -394,7 +394,7 @@ sub print_confirm_page {
     # Print out the page, including any updated proxy cookies if needed.  If
     # we're suppressing the confirm page and the browser used HTTP/1.1, use
     # the HTTP 303 redirect code as well.
-    if ($redirect && $ENV{SERVER_PROTOCOL} eq 'HTTP/1.1') {
+    if ($bypass && $ENV{SERVER_PROTOCOL} eq 'HTTP/1.1') {
         print_headers ($q, $resp->proxy_cookies, $return_url, 1);
     } else {
         print_headers ($q, $resp->proxy_cookies);

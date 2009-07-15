@@ -445,6 +445,8 @@ following fashion:
     # display the error message and don't prompt anymore
   }
 
+=back
+
 =head1 AUTHOR
 
 Roland Schemers (schemers@stanford.edu)
