@@ -182,12 +182,17 @@ Implementation
       The WebKDC request contains:
 
        * The request token from RT.
+
        * The webkdc-service token from ST.
+
        * The username and password if provided in the request (via a form
          submission, for instance).
+
        * Any tokens stored in cookies beginning with "webauth_wpt_".
          These are the single sign-on cookies.
+
        * Remote and local IP address and port information for logging.
+
        * If Apache REMOTE_USER support is enabled *and* REMOTE_USER is
          set, an additional single sign-on token manufactured from the
          identity in REMOTE_USER.

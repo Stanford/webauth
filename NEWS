@@ -393,7 +393,7 @@ WebAuth 3.4.0 (2006-01-24)
     WEBAUTHS) from the internal URL for requests to URLs not protected by
     WebAuth.  This way, Apache with mod_webauth loaded will not interfere
     with applications that wish to implement the WebAuth protocol
-    themselves.   Thanks to Mats Henrikson for the report.
+    themselves.  Thanks to Mats Henrikson for the report.
 
     Rewrite the WebAuth protocol documentation in RFC 2629 XML.  In the
     process, edited it extensively for consistency of terminology, updated
