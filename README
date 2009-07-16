@@ -8,6 +8,15 @@
 
   For release history and user-visible changes, see the file NEWS.
 
+BLURB
+
+  WebAuth is a web single sign-on system for authenticating users of web
+  services.  It relies on redirects to a central login server on the first
+  attempt to access protected resources and stores credentials so that
+  users can access multiple protected sites without reauthenticating.  It
+  supports delegation of specific Kerberos credentials to protected sites
+  and authorization of users based on LDAP directory information.
+
 DESCRIPTION
 
   WebAuth is a comprehensive system for authenticating web users, built on
