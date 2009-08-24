@@ -1,10 +1,10 @@
-webauth (3.6.1-2) UNRELEASED; urgency=low
+webauth (3.6.1-2) unstable; urgency=low
 
   * Do not install the libwebauth.la file.  Libtool *.la files force other
     packages using Libtool to declare excessive library dependencies.
   * Update standards version to 3.8.3 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Mon, 24 Aug 2009 16:18:59 -0700
+ -- Russ Allbery <rra@debian.org>  Mon, 24 Aug 2009 16:24:26 -0700
 
 webauth (3.6.1-1) unstable; urgency=low
 
