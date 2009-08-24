@@ -1,4 +1,3 @@
 usr/include
 usr/lib/libwebauth.a
-usr/lib/libwebauth.la
 usr/lib/libwebauth.so
