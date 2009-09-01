@@ -1,5 +1,16 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.6.2 (unreleased)
+
+    SECURITY: When generating the redirect to test for cookie support if
+    the test cookie is not already set, be sure not to include the
+    username and password query fields in the redirect URL.  Otherwise, if
+    the user purged the test cookie between requesting the login form and
+    submitting it or for some reason didn't submit the test cookie with
+    the login form, the user's password would end up in the WebAuth URL,
+    be logged by the web server, and possibly be included in referrer
+    information sent by the browser.
+
 WebAuth 3.6.1 (2009-07-14)
 
     Setting $BYPASS_CONFIRM in the WebLogin configuration now also

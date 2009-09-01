@@ -647,7 +647,9 @@ while (my $q = CGI::Fast->new) {
             print_error_page ($q);
             next;
         } else {
-            my $redir_url = $q->url (-query => 1) . ';test_cookie=1';
+            $q->delete ('username', 'password', 'submit');
+            $q->param (-name => 'test_cookie', -value => 1);
+            my $redir_url = $q->url (-query => 1);
             print STDERR "no cookie set, redirecting to $redir_url\n"
                 if $DEBUG;
             print_headers ($q, '', $redir_url);
