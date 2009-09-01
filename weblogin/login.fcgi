@@ -648,7 +648,7 @@ while (my $q = CGI::Fast->new) {
             next;
         } else {
             $q->delete ('username', 'password', 'submit');
-            $q->param (-name => 'test_cookie', -value => 1);
+            $q->param (test_cookie => 1);
             my $redir_url = $q->url (-query => 1);
             print STDERR "no cookie set, redirecting to $redir_url\n"
                 if $DEBUG;
@@ -657,6 +657,26 @@ while (my $q = CGI::Fast->new) {
         }
     }
     # From this point on, browser cookie support is enforced.
+
+    # If the user sent a password, force POST as a method.  Otherwise, if we
+    # continue, the password may show up in referrer strings sent by the
+    # browser to the remote site.
+    #
+    # err_bad_method was added as a form parameter with WebAuth 3.6.2.  Try to
+    # adjust for old templates.
+    if ($q->param ('password') and $q->request_method ne 'POST') {
+        if ($PAGES{error}->query (name => 'err_bad_method')) {
+            $PAGES{error}->param (err_bad_method => 1);
+        } else {
+            print STDERR "warning: err_bad_method not recognized by WebLogin"
+                . " error template\n" if $LOGGING;
+            $PAGES{error}->param (err_webkdc => 1);
+            my $message = 'You must use the POST method to log in.';
+            $PAGES{error}->param (err_msg => $message);
+        }
+        print_error_page ($q);
+        next;
+    }
 
     # Set up the parameters to the WebKDC request.
     $req->service_token (fix_token ($q->param ('ST')));
