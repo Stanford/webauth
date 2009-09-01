@@ -627,6 +627,15 @@ while (my $q = CGI::Fast->new) {
     # to set a cookie.  The cookie should always be present the second time
     # around.
     #
+    # However, do not do this as the result of a POST; not only may it violate
+    # the HTTP/1.0 protocol for browsers that don't support 1.1, but if the
+    # user already got the login page, it's not clear how they couldn't have
+    # cookie support.  If we redirect them and strip out the username and
+    # password, we get a confusing error message or we have to throw the no
+    # cookie support error page.  Just continue on at that point and hope
+    # everything works.  We may be dealing with an automated script that wants
+    # to authenticate via POST without going through the test cookie dance.
+    #
     # If the parameter is already set and we still don't have a cookie, the
     # user has cookies disabled.  Display the error page.
     if (!$q->cookie ($TEST_COOKIE)) {
@@ -646,7 +655,7 @@ while (my $q = CGI::Fast->new) {
             }
             print_error_page ($q);
             next;
-        } else {
+        } elsif ($q->request_method ne 'POST') {
             $q->delete ('username', 'password', 'submit');
             $q->param (test_cookie => 1);
             my $redir_url = $q->url (-query => 1);

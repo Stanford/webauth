@@ -15,6 +15,12 @@ WebAuth 3.6.2 (unreleased)
     since continuing risks exposing the password in the browser history
     and via referrer information.
 
+    If the user submits the login form via POST without including the test
+    cookie, assume that the browser supports cookies and proceed.  We
+    won't present the initial login form without seeing the test cookie,
+    so something strange is happening.  Continuing and assuming everything
+    will work seems to be the best approach.
+
 WebAuth 3.6.1 (2009-07-14)
 
     Setting $BYPASS_CONFIRM in the WebLogin configuration now also
