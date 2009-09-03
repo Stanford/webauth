@@ -4,12 +4,9 @@ WebAuth 3.6.2 (unreleased)
 
     SECURITY: When generating the redirect to test for cookie support if
     the test cookie is not already set, be sure not to include the
-    username and password query fields in the redirect URL.  Otherwise, if
-    the user purged the test cookie between requesting the login form and
-    submitting it or for some reason didn't submit the test cookie with
-    the login form, the user's password would end up in the WebAuth URL,
-    be logged by the web server, and possibly be included in referrer
-    information sent by the browser.
+    username and password query fields in the redirect URL.  Otherwise,
+    the user's password could be logged in the Apache logs and possibly be
+    included in referrer information sent by the browser.
 
     SECURITY: Reject username/password logins via methods other than POST,
     since continuing risks exposing the password in the browser history
