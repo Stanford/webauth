@@ -158,6 +158,11 @@ mod_webkdc:
  * Support an "any" option for WebKdcPermittedRealms so that the default
    can be explicitly set (possibly overriding an earlier explicit list).
 
+WebLogin:
+
+ * The error page should return the appropriate HTTP error code instead of
+   success.
+
 Build System:
 
  * Compile the WebAuth version into the modules rather than getting the
