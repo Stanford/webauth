@@ -1,3 +1,16 @@
+webauth (3.6.2-1) UNRELEASED; urgency=high
+
+  * New upstream release.
+    - CVE-2009-2945: When generating a redirect to test for cookie
+      support, be sure not to include a password in the URL.  Reject
+      username/password logins via methods other than POST.
+    - If the user submits the login form via POST without the test cookie,
+      assume the browser supports cookies and don't probe.
+    - New script (in /usr/share/doc/webauth-weblogin/weblogin-passcheck)
+      to find passwords exposed by CVE-2009-2945.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 08 Sep 2009 12:30:00 -0700
+
 webauth (3.6.1-2) unstable; urgency=low
 
   * Do not install the libwebauth.la file.  Libtool *.la files force other

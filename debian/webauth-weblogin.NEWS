@@ -1,3 +1,15 @@
+webauth-weblogin (3.6.2-1) unstable; urgency=high
+
+  Versions of the webauth-weblogin package between 3.5.5 and 3.6.1,
+  inclusive, could in rare cases convert the user login to a GET and
+  expose the user's password in the URL, from which it would enter the
+  user's browser history and possibly be sent to remote web sites via
+  referrer.  /usr/share/doc/webauth-weblogin/weblogin-passcheck is a
+  script that searches WebLogin web server logs and identifies users that
+  may be affected by this problem.  Run it with -h for usage information.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 08 Sep 2009 12:35:53 -0700
+
 webauth-weblogin (3.6.0-1) unstable; urgency=low
 
   The login.tmpl WebLogin template has a new error variable, err_rejected,
