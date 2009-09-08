@@ -1,4 +1,4 @@
-webauth (3.6.2-1) UNRELEASED; urgency=high
+webauth (3.6.2-1) unstable; urgency=high
 
   * New upstream release.
     - CVE-2009-2945: When generating a redirect to test for cookie
@@ -9,7 +9,7 @@ webauth (3.6.2-1) UNRELEASED; urgency=high
     - New script (in /usr/share/doc/webauth-weblogin/weblogin-passcheck)
       to find passwords exposed by CVE-2009-2945.
 
- -- Russ Allbery <rra@debian.org>  Tue, 08 Sep 2009 12:30:00 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 08 Sep 2009 15:30:20 -0700
 
 webauth (3.6.1-2) unstable; urgency=low
 
