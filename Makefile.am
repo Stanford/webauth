@@ -35,9 +35,9 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		   \
 	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP \
 	tests/TESTS tests/mod_webauth tools/wa_keyring.pod		   \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
-	weblogin/images/help.xcf weblogin/images/login.xcf		   \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		   \
+	weblogin/images/error.xcf weblogin/images/help.xcf		   \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 lib_LTLIBRARIES = lib/libwebauth.la
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c \
