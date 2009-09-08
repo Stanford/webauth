@@ -1,4 +1,4 @@
-                          WebAuth release 3.6.1
+                          WebAuth release 3.6.2
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Board of
@@ -7,6 +7,15 @@
   distribution for terms of use and redistribution.
 
   For release history and user-visible changes, see the file NEWS.
+
+BLURB
+
+  WebAuth is a web single sign-on system for authenticating users of web
+  services.  It relies on redirects to a central login server on the first
+  attempt to access protected resources and stores credentials so that
+  users can access multiple protected sites without reauthenticating.  It
+  supports delegation of specific Kerberos credentials to protected sites
+  and authorization of users based on LDAP directory information.
 
 DESCRIPTION
 

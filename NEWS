@@ -1,5 +1,29 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.6.2 (2009-09-10)
+
+    SECURITY: When generating the redirect to test for cookie support if
+    the test cookie is not already set, be sure not to include the
+    username and password query fields in the redirect URL.  Otherwise,
+    the user's password could be logged in the Apache logs and possibly be
+    included in referrer information sent by the browser.
+
+    SECURITY: Reject username/password logins via methods other than POST,
+    since continuing risks exposing the password in the browser history
+    and via referrer information.
+
+    If the user submits the login form via POST without including the test
+    cookie, assume that the browser supports cookies and proceed.  We
+    won't present the initial login form without seeing the test cookie,
+    so something strange is happening.  Continuing and assuming everything
+    will work seems to be the best approach.
+
+    Add tools/weblogin-passcheck to examine Apache logs looking for users
+    who were affected by the above security vulnerabilities.  This script
+    is not installed by default but is provided in the distribution for
+    WebLogin administrators to use to determine the scope of this problem.
+    For documentation, run tools/weblogin-passcheck -h.
+
 WebAuth 3.6.1 (2009-07-14)
 
     Setting $BYPASS_CONFIRM in the WebLogin configuration now also
@@ -393,7 +417,7 @@ WebAuth 3.4.0 (2006-01-24)
     WEBAUTHS) from the internal URL for requests to URLs not protected by
     WebAuth.  This way, Apache with mod_webauth loaded will not interfere
     with applications that wish to implement the WebAuth protocol
-    themselves.   Thanks to Mats Henrikson for the report.
+    themselves.  Thanks to Mats Henrikson for the report.
 
     Rewrite the WebAuth protocol documentation in RFC 2629 XML.  In the
     process, edited it extensively for consistency of terminology, updated
