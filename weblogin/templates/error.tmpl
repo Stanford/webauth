@@ -34,12 +34,12 @@ err_msg                : error message from WebKDC
               <!-- Error: browser submitted login page via GET -->
               <TMPL_IF NAME=err_bad_method>
                 <p>Error: Login form not properly submitted.</p>
-                <p>Your browser has submitted the login form via GET
-                   instead of POST, which risks exposing your password to
-                   in your browser history and to other web sites you
-                   visit.  This should never happen.  Please check that
-                   your browser is not misconfigured and you do not use
-                   browser plugins that override proper form handling.</p>
+                <p>Your browser has improperly submitted the login form
+                   via GET instead of POST, which risks exposing your
+                   password in your browser history and to other web sites
+                   you visit.  Please check that your browser is not
+                   misconfigured and you do not use browser plugins that
+                   override proper form handling.</p>
               </TMPL_IF>
 
               <!-- Error: cookies disabled in web browser -->
