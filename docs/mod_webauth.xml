@@ -224,7 +224,7 @@ this way.</p>
 
 </section>
 
-<section><title>PHP 4.x Integration</title>
+<section><title>PHP 4.x and 5.x Integration</title>
 
 <p>Using mod_webauth with PHP is very similar to using it from Perl.  You
 need to first WebAuth-protect the pages that are served by the PHP
@@ -386,6 +386,17 @@ use of two Kerberos V5 credentials.</p>
 &lt;/Location&gt;
 </pre>
 </example>
+
+<note><title>Warning</title>
+  If you are using Active Directory as your KDC, be aware that Active
+  Directory Kerberos tickets can be relatively large because they contain
+  extra authorization information.  This means the corresponding cookies
+  set by WebAuth that hold delegated credentials can also be large, and in
+  combination with other cookies may exceed the maximum cookie size
+  allowed for by the HTTP protocol.  If you run into problems, you can
+  work around this by suppressing the PAC authorization information for
+  the services that don't need it in your Active Directory.
+</note>
 
 </section>
 

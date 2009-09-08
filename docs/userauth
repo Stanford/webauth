@@ -1,4 +1,4 @@
-         User Authentication and Authorization with WebAuth
+            User Authentication and Authorization with WebAuth
 
 Activating general authentication in a WebAuth server is as simple as
 adding the following two lines:

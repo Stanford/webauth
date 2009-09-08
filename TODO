@@ -20,6 +20,10 @@ Protocol:
    login method used, so that the WAS can expose this information in an
    environment variable to CGI applications, etc.
 
+ * User request: Increase the timeout of the token sent by the WAS to the
+   WebLogin server for initial user login.  It doesn't contain security
+   information and therefore doesn't need to expire in five minutes.
+
  * Allow a WebAuth Application Server to specify that authentication
    should be done using a particular instance (and perhaps only a
    particular realm?) so that the WebLogin server knows to manage a
