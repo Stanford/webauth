@@ -7,7 +7,7 @@
  * and decode tokens in base64 or hex encoding, and some additional utility
  * functions to generate random numbers or new AES keys.
  *
- * $Id$
+ * $Id: webauth.h.in 3949 2008-03-22 04:32:54Z rra $
  */
 
 #ifndef _WEBAUTH_H

@@ -1,5 +1,5 @@
 # watch -- Rules for uscan to find new upstream versions.
-# $Id$
+# $Id: watch 2498 2006-03-20 18:02:22Z rra $
 #
 # I don't use this personally since I'm also one of the upstream
 # maintainers, but it's included for the benefit of automated package

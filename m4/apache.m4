@@ -1,5 +1,5 @@
 dnl apache.m4 -- Find the root of the Apache installation.
-dnl $Id$
+dnl $Id: apache.m4 2556 2006-05-06 19:26:09Z rra $
 dnl
 dnl Defines the macro WEBAUTH_APACHE, which allows the user to specify the
 dnl root of the Apache installation and defines the output variable APXS to

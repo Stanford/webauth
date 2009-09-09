@@ -323,7 +323,7 @@ reasonably soon :-)  Patches below.
 +
  /*****************************  Common Section  *****************************/
  
- static const char plugin_id[] = "$Id$";
+ static const char plugin_id[] = "$Id: BUILD.txt 1969 2003-07-30 19:12:43Z schemers $";
 @@ -629,7 +636,8 @@
  	    
  	    maj_stat = gss_import_name (&min_stat,

@@ -1,5 +1,5 @@
 # Makefile for the Webauth test suite
-# $Id$
+# $Id: Makefile.in 2582 2006-06-09 23:26:35Z rra $
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@

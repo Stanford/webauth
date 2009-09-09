@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-our $ID = q($Id$ );
+our $ID = q($Id: logout.fcgi 3175 2007-04-24 01:26:28Z rra $ );
 #
 # logout.fcgi -- Weblogin logout page for WebAuth.
 #

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-our $ID = q($Id$ );
+our $ID = q($Id: login.fcgi 3966 2008-03-23 00:28:59Z rra $ );
 #
 # login.fcgi -- WebLogin login page for WebAuth.
 #

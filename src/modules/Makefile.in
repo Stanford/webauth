@@ -1,5 +1,5 @@
 # Makefile for WebAuth modules
-# $Id$
+# $Id: Makefile.in 1712 2003-02-13 01:25:05Z eagle $
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@

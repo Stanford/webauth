@@ -1,6 +1,6 @@
 #!/bin/sh
 # autogen -- Run the appropriate commands to bootstrap a CVS checkout.
-# $Id$
+# $Id: autogen 2372 2006-01-06 02:10:25Z rra $
 
 set -e
 autoconf

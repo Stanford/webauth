@@ -5,7 +5,7 @@
  * harness. FIXME: should move this to libwebauth or common so
  * other C tests can use it.
  *
- * $Id$
+ * $Id: webauthtest.h 1310 2002-10-14 17:39:33Z schemers $
  */
 
 #ifndef _WEBAUTHTESTS_H

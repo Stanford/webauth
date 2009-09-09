@@ -1,5 +1,5 @@
 # Makefile for libwebauth
-# $Id$
+# $Id: Makefile.in 3927 2008-03-07 22:53:58Z rra $
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@

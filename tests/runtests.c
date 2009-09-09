@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: runtests.c 1889 2003-05-15 00:14:44Z eagle $
 
    Run a set of tests, reporting results.
 

@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: krb5.c 3949 2008-03-22 04:32:54Z rra $
 **
 **  Kerberos interface for WebAuth.
 **

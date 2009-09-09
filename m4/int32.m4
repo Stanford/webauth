@@ -1,5 +1,5 @@
 dnl int32.m4 -- Find an appropriate int32_t and uint32_t.
-dnl $Id$
+dnl $Id: int32.m4 1953 2003-07-23 20:50:47Z eagle $
 dnl
 dnl The public macro exposed by this file is WEBAUTH_TYPE_INT32_T.  This macro
 dnl locates the appropriate header files to include for int32_t and uint32_t

@@ -1,5 +1,5 @@
 # Makefile for webauthldap module
-# $Id$
+# $Id: Makefile.in 2449 2006-02-09 18:55:30Z rra $
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@

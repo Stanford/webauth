@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id$
+# $Id: mkmanifest 2784 2006-10-05 00:38:24Z rra $
 #
 # Generate a filename-only manifest from a source tree.
 #

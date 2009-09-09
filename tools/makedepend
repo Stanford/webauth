@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id$
+# $Id: makedepend 1559 2002-12-11 23:04:49Z eagle $
 #
 # makedepend -- Generate dependencies for makefiles.
 #

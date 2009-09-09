@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl $Id$
+dnl $Id: configure.ac 3960 2008-03-22 20:18:03Z rra $
 
 dnl Put more complex macros into separate files to make them easier to
 dnl maintain.  (Also good for macros that should be used in other projects as
@@ -12,7 +12,7 @@ m4_include([m4/libtool.m4])
 m4_include([m4/ssl.m4])
 m4_include([m4/ldap.m4])
 
-AC_REVISION([$Revision$])
+AC_REVISION([$Revision: 3960 $])
 AC_PREREQ([2.59])
 AC_INIT([WebAuth], [3.6.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([tools])

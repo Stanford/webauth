@@ -1,5 +1,5 @@
 # Makefile for Webauth utilities
-# $Id$
+# $Id: Makefile.in 3662 2007-11-14 23:48:52Z rra $
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@

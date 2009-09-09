@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-$ID = q$Id$;
+$ID = q$Id: mkpackage 1985 2003-08-13 22:25:12Z eagle $;
 #
 # mkpackage -- Wrapper around tar to create a WebAuth module package.
 #

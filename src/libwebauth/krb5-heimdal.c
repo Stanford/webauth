@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: krb5-heimdal.c 3925 2008-03-07 19:16:15Z rra $
 **
 **  Heimdal Kerberos interface for WebAuth.
 **

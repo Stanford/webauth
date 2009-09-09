@@ -1,5 +1,5 @@
 /* mod-config.h.in -- Stripped config.h.in for use with Apache modules.
-   $Id$
+   $Id: mod-config.h.in 2447 2006-02-09 18:31:36Z rra $
 
    We can't include the regular config.h into Apache modules because many
    of the symbols defined by Autoconf conflict with symbols that are also

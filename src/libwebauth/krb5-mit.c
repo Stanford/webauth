@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: krb5-mit.c 3925 2008-03-07 19:16:15Z rra $
 **
 **  MIT Kerberos interface for WebAuth.
 **

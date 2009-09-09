@@ -1,5 +1,5 @@
 /*
-$Id$
+$Id: mod_webauthldap.c 3961 2008-03-22 20:19:20Z rra $
 */
 
 #include "httpd.h"
