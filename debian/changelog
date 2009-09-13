@@ -1,3 +1,11 @@
+webauth (3.6.2-2) UNRELEASED; urgency=low
+
+  * Set DESTDIR instead of PREFIX when installing the Perl modules.  Perl
+    5.10.1 doesn't allow changing PREFIX at install time.  Thanks, Niko
+    Tyni.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 13 Sep 2009 14:19:04 -0700
+
 webauth (3.6.2-1) unstable; urgency=high
 
   * New upstream release.
