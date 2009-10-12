@@ -132,6 +132,13 @@ mod_webauth:
 
 mod_webauthldap:
 
+ * User request: There's no inherent reason why mod_webauthldap needs to
+   be limited to working with mod_webauth.  Allow additional auth types to
+   be processed, or remove auth-type restrictions entirely and just rely
+   on require privgroup.  This will also require using REMOTE_USER instead
+   of WEBAUTH_USER and, for use with mod_auth_kerb, dealing with a
+   REMOTE_USER that's qualified with the realm.
+
  * User request: Provide a way of checking the user's entitlements against
    a list of possible values and export to the environment all matching
    entitlements, rather than just the first match (like the existing
