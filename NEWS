@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.6.3 (unreleased)
+
+    wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
+    link it with libcrypto.  Fixes build failures with gold.
+
 WebAuth 3.6.2 (2009-09-10)
 
     SECURITY: When generating the redirect to test for cookie support if

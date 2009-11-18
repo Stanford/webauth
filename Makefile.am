@@ -50,7 +50,7 @@ lib_libwebauth_la_LDFLAGS = -version-info 3:0:2 $(VERSION_LDFLAGS) \
 lib_libwebauth_la_LIBADD = $(CRYPTO_LIBS) $(KRB5_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
-tools_wa_keyring_LDADD = lib/libwebauth.la
+tools_wa_keyring_LDADD = lib/libwebauth.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
 
 # Only install the WebLogin script and configuration if configured to build
