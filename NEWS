@@ -5,6 +5,9 @@ WebAuth 3.6.3 (unreleased)
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 
+    Mention setting $KEYRING_PATH in docs/install-spnego and expand the
+    documentation in docs/weblogin-config.
+
 WebAuth 3.6.2 (2009-09-10)
 
     SECURITY: When generating the redirect to test for cookie support if

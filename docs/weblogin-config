@@ -136,8 +136,10 @@ Configuration
   $KEYRING_PATH
 
       The path to the WebKDC keyring.  This is used to encrypt some
-      communications with the WebKDC.  Default: "../conf/webkdc/keyring"
-      (which works for the default installation paths inside the Apache
+      communications with the WebKDC, particularly when allowing
+      authentication to the WebLogin server via a native Apache method
+      such as Negotiate-Auth.  Default: "../conf/webkdc/keyring" (which
+      works for the default installation paths inside the Apache
       configuration directory).
 
   $TEMPLATE_PATH
