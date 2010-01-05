@@ -42,6 +42,10 @@ our $DEBUG = 0;
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;
 
+# Set to true in our signal handler to indicate that the script should exit
+# once it finishes processing the current request.
+our $EXITING = 0;
+
 # The names of the template pages that we use.  The beginning of the main
 # routine changes the values here to be HTML::Template objects.
 our %PAGES = (login   => 'login.tmpl',
@@ -586,6 +590,9 @@ sub add_remuser_token {
                                path => $WebKDC::Config::TEMPLATE_PATH)
 } keys %PAGES;
 
+# Exit safely if we get a SIGTERM.
+$SIG{TERM} = sub { $EXITING = 1 }
+
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
@@ -865,6 +872,7 @@ while (my $q = CGI::Fast->new) {
 # for all of the pages for the next run and restart the script if its
 # modification time has changed.
 } continue {
+    exit if $EXITING;
     for (keys %PAGES) {
         $PAGES{$_}->clear_params;
     }

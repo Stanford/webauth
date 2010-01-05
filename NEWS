@@ -2,6 +2,12 @@
 
 WebAuth 3.6.3 (unreleased)
 
+    Catch SIGTERM in the login.fcgi script and only exit once processing
+    of the current request has completed.  mod_fastcgi restarts FastCGI
+    scripts periodically by killing the old one with SIGTERM, which
+    previously could result in internal server errors handed back to the
+    client if the script was killed in the middle of processing a request.
+
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 
