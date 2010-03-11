@@ -144,6 +144,16 @@ mod_webauthldap:
    entitlements, rather than just the first match (like the existing
    LDAPAUTHRULE support).
 
+ * User request: It would be nice to support multiple keytabs and different
+   credentials in different virtual hosts so that the server would switch
+   credentials and see different data depending on the context.  This would
+   require a significant reworking of the internals.
+
+ * Currently, WebAuthLdapKeytab is defined to be acceptable in virtual
+   hosts.  A caution should be added that it's not reasonable to define
+   multiple keytabs, since the implementation currently only supports one
+   set of authentication credentials.
+
  * Add to mod_webauthldap a way to deny access if a user is a member of a
    particular privgroup.
 
