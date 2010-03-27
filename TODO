@@ -162,6 +162,13 @@ mod_webauthldap:
 
 mod_webkdc:
 
+ * Return from a password login any additional information provided by
+   the KDC, such as upcoming password expiration information.
+
+ * Ensure there is a proper return from a password login for an expired
+   password so that it can be recognized and acted on by the WebLogin
+   server.
+
  * A better error message when one talks to the WebKDC directly with a
    browser would be nice.  The current message is rather baffling, and it
    would be good to tell the naive user to set up an application server or
@@ -177,8 +184,32 @@ mod_webkdc:
 
 WebLogin:
 
+ * Display a message if the password prompt is forced in order to get a
+   TGT for credential delegation to the destination site.
+
+ * Add a web services interface for the WebLogin login process and
+   documentation for how to parse the redirect URL and make the login
+   request, returning the return URL.
+
+ * Add a password change screen to the standard WebLogin scripts.
+
+ * If an attempted password login results in an expired password error,
+   send the user to the password change screen to change their password
+   immediately, and then continue the authenticated access after their
+   password has been changed.
+
  * The error page should return the appropriate HTTP error code instead of
    success.
+
+ * Incorporate the Stanford advanced settings page into the included
+   WebLogin scripts, used to set the cookie saying to use Negotiate-Auth.
+
+ * Add a replay cache for WebLogin interactions, possibly using memcached,
+   so that one cannot use the browser back button to reply a password
+   login after the previous user has logged out.
+
+ * Add a rate limit for WebLogin logins that blocks excessive failed
+   password attempts for a specific user.
 
 Build System:
 
