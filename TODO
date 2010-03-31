@@ -37,6 +37,9 @@ Protocol:
 
  * Use a better key for the HMAC than the encryption key of the token.
 
+ * Redo the WebKDC XML protocol to look more like a modern web services
+   interface.
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -181,6 +184,11 @@ mod_webkdc:
 
  * Support an "any" option for WebKdcPermittedRealms so that the default
    can be explicitly set (possibly overriding an earlier explicit list).
+
+ * Improve logging for better metrics analysis.  More clearly indicate
+   success versus failure, log clearly whether authentication was via
+   username/password or via a single sign-on cookie, and find a way to
+   differentiate between trusted Apache authentication and single sign-on.
 
 WebLogin:
 
