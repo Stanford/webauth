@@ -487,7 +487,8 @@ sub print_remuser_redirect {
         $PAGES{error}->param (err_msg => $errmsg);
         print_error_page ($q);
     } else {
-        $uri .= "?RT=" . $q->param ('RT') . ";ST=" . $q->param ('ST');
+        $uri .= "?RT=" . fix_token ($q->param ('RT')) .
+                ";ST=" . fix_token ($q->param ('ST'));
         print STDERR "redirecting to $uri\n" if $DEBUG;
         print $q->redirect (-uri => $uri);
     }
