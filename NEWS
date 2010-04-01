@@ -8,6 +8,10 @@ WebAuth 3.6.3 (unreleased)
     previously could result in internal server errors handed back to the
     client if the script was killed in the middle of processing a request.
 
+    Correctly encode RT and ST tokens in the URL when redirecting to an
+    alternate URL to attempt REMOTE_USER authentication in WebLogin.
+    Patch from Ian Ward Comfort.
+
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 
