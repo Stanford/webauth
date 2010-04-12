@@ -194,10 +194,10 @@ site, see doc/install-webkdc.
      through SSL to preserve the security of the WebAuth authentication
      tokens.
 
-     If you have not installed an SSL certificate before, there are
-     instructions available as part of the mod_ssl FAQ.  See
-     <http://httpd.apache.org/docs-2.2/ssl/ssl_faq.html#realcert>.  Debian
-     users can quickly install a self-signed certificate with the
+     If you have not installed an SSL certificate before, there
+     are instructions available as part of the mod_ssl FAQ.  See
+     <http://httpd.apache.org/docs/2.2/ssl/ssl_faq.html#realcert>.
+     Debian users can quickly install a self-signed certificate with the
      apache2-ssl-certificate utility that comes with the Apache package.
 
      Stanford users, for university applications, can obtain one of the
