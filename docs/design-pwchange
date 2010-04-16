@@ -3,9 +3,9 @@
 
 Introduction
 
-  This document lays out the protocol design for adding password change
-  support to WebAuth via the WebLogin and the WebKDC.  It summarizes the
-  additional components required and the modifications needed for existing
+  This document lays out the design for adding password change support to
+  WebAuth via the WebLogin and the WebKDC.  It summarizes the additional
+  components required and the modifications needed for existing
   components.
 
   The goal of this work is to provide user password change (when they know
