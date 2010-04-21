@@ -141,7 +141,6 @@ use warnings;
 use WebAuth;
 
 use overload '""' => \&to_string;
-use UNIVERSAL qw(isa);
 
 BEGIN {
     use Exporter   ();
@@ -227,7 +226,8 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebAuth::Exception");
+    return 0 unless ref $e;
+    return 0 if !$e->isa("WebAuth::Exception");
     return @_ ? $e->status() == shift : 1;
 }
 

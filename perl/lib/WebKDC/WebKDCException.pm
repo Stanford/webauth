@@ -13,8 +13,6 @@ use warnings;
 
 use WebAuth;
 
-use UNIVERSAL qw(isa);
-
 use overload '""' => \&to_string;
 
 BEGIN {
@@ -98,7 +96,8 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebKDC::WebKDCException");
+    return 0 unless $ref $e;
+    return 0 if !$e->isa("WebKDC::WebKDCException");
     return @_ ? $e->status() == shift : 1;
 }
 

@@ -10,7 +10,6 @@ package WebKDC;
 
 use strict;
 use warnings;
-use UNIVERSAL qw(isa);
 
 use LWP::UserAgent;
 
@@ -100,7 +99,7 @@ sub make_proxy_token_request($$) {
     };
 
     my $e = $@;
-    if (isa($e, 'WebKDC::WebKDCException')) {
+    if (ref $e and $e->isa('WebKDC::WebKDCException')) {
         return ($e->status(), $e);
     } elsif ($e) {
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
@@ -119,7 +118,7 @@ sub make_request_token_request($$) {
 
     my $e = $@;
 
-    if (isa($e, "WebKDC::WebKDCException")) {
+    if (ref $e and $e->isa("WebKDC::WebKDCException")) {
 	return ($e->status(), $e);
     } elsif ($e) {
 	return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);

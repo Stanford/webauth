@@ -15,6 +15,9 @@ WebAuth 3.6.3 (unreleased)
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 
+    Avoid importing isa from UNIVERSAL in the WebAuth Perl modules.  This
+    is deprecated in Perl 5.12 and later.
+
     Mention setting $KEYRING_PATH in docs/install-spnego and expand the
     documentation in docs/weblogin-config.
 

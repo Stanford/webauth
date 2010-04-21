@@ -14,7 +14,6 @@ use warnings;
 use WebAuth qw(:const :hex :token);
 use WebKDC::WebKDCException;
 
-use UNIVERSAL qw(isa);
 use Carp;
 
 use overload '""' => \&to_string;

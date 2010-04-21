@@ -9,7 +9,6 @@
 use strict;
 
 use Test;
-use UNIVERSAL qw(isa);
 
 # FIME: need a better way to test kerberos, might need to put
 # in another test file. For now, comment/uncomment one or the other.
@@ -77,7 +76,7 @@ eval {
     WebAuth::base64_decode('axc');
 };
 
-ok (isa($@, "WebAuth::Exception"));
+ok ($@->isa("WebAuth::Exception"));
 ok (WebAuth::Exception::match($@, WA_ERR_CORRUPT));
 ok (WebAuth::Exception::match($@));
 
@@ -95,7 +94,7 @@ ok(WebAuth::hex_decode('68656c6c6f'), 'hello');
 eval {
     ok(WebAuth::hex_decode('FOOBAR'), undef);
 };
-ok (isa($@, "WebAuth::Exception"));
+ok ($@->isa("WebAuth::Exception"));
 ok (WebAuth::Exception::match($@, WA_ERR_CORRUPT));
 ok (WebAuth::Exception::match($@));
 
@@ -124,13 +123,13 @@ ok(compareHashes($a,$b), 1);
 eval {
     $b = WebAuth::attrs_decode('x=1;y=23');
 };
-ok (isa($@, "WebAuth::Exception"));
+ok ($@->isa("WebAuth::Exception"));
 ok($@->status(), WebAuth::WA_ERR_CORRUPT);
 
 eval {
     $b = WebAuth::attrs_decode('x=1;zr');
 };
-ok (isa($@, "WebAuth::Exception"));
+ok ($@->isa("WebAuth::Exception"));
 ok($@->status(), WebAuth::WA_ERR_CORRUPT);
 
 ######################################## random
@@ -147,13 +146,13 @@ ok(length(WebAuth::random_key(WebAuth::WA_AES_256)), WebAuth::WA_AES_256);
 my $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 			      WebAuth::random_key(WebAuth::WA_AES_128));
 ok(defined($key));
-ok(isa($key, 'WEBAUTH_KEYPtr'));
+ok($key->isa('WEBAUTH_KEYPtr'));
 
 # invalid key material length
 eval {
     $key = WebAuth::key_create(WebAuth::WA_AES_KEY, WebAuth::random_key(2));
 };
-ok (isa($@, "WebAuth::Exception"));
+ok ($@->isa("WebAuth::Exception"));
 
 # $ring = WebAuth::keyring_new($initial_capacity);
 # WebAuth::keyring_add($ring, c, vf, vt, $key); # use webauth_key_copy internally
@@ -166,7 +165,7 @@ $key = WebAuth::key_create(WebAuth::WA_AES_KEY,
 my $attrs = { "a" => "1",  "b" => "hello", "c" => "world" };
 
 my $ring = WebAuth::keyring_new(32);
-ok(isa($ring, 'WEBAUTH_KEYRINGPtr'));
+ok($ring->isa('WEBAUTH_KEYRINGPtr'));
 ok ($ring != undef);
 
 my $curr=time();
@@ -202,7 +201,7 @@ WebAuth::keyring_write_file($ring, "webauth_keyring");
 
 # read key ring
 my $ring2 = WebAuth::keyring_read_file("webauth_keyring");
-ok(isa($ring2, 'WEBAUTH_KEYRINGPtr'));
+ok($ring2->isa('WEBAUTH_KEYRINGPtr'));
 
 # write key ring2
 WebAuth::keyring_write_file($ring2, "webauth_keyring2");
@@ -215,7 +214,7 @@ if ($run_kerb) {
     eval {
 	my $c = WebAuth::krb5_new();
 
-	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
+	ok($c->isa('WEBAUTH_KRB5_CTXTPtr'));
 	#FIXME my $ctx_princ = WebAuth::krb5_get_principal($c);
 
 	my $sp = WebAuth::krb5_init_via_password($c, $kuser, $kpass, 
@@ -240,7 +239,7 @@ if ($run_kerb) {
 
 	# nuke current context and import from tgt we created
 	$c = WebAuth::krb5_new();
-	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
+	ok($c->isa('WEBAUTH_KRB5_CTXTPtr'));
 
 	WebAuth::krb5_init_via_cred($c, $tgt);
 
@@ -248,18 +247,18 @@ if ($run_kerb) {
 	WebAuth::krb5_import_cred($c, $ticket);
 	# nuke current context and get from keytab
 	$c = WebAuth::krb5_new();
-	ok(isa($c, 'WEBAUTH_KRB5_CTXTPtr'));
+	ok($c->isa('WEBAUTH_KRB5_CTXTPtr'));
 
 	WebAuth::krb5_init_via_keytab($c, $kkeytab, undef);
     };
-    ok (!isa($@, "WebAuth::Exception"));
-    if (isa($@, "WebAuth::Exception")) {
+    ok (!$@->isa("WebAuth::Exception"));
+    if ($@ and $@->isa("WebAuth::Exception")) {
 	die $@;
     }
 }
 
 };
-if (isa($@, "WebAuth::Exception")) {
+if ($@ and $@->isa("WebAuth::Exception")) {
     die $@;
 }
 
