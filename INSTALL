@@ -182,7 +182,7 @@ site, see doc/install-webkdc.
      be authenticated as a user, administrator, or admin team member for
      the system, as set up in NetDB.  For more information, see:
 
-         http://www.stanford.edu/services/kerberos/sysadmin/wallet.html
+         https://itservices.stanford.edu/service/kerberos/wallet
 
      After installing the keytab, make sure that it is readable by the
      user that the web server runs as.  (It may have been created only
