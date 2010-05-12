@@ -44,6 +44,7 @@ typedef struct {
     krb5_ccache cc;
     krb5_principal princ;
     krb5_error_code code;
+    char *pwchange_err;
     int keep_cache;
 } WEBAUTH_KRB5_CTXTP;
 
@@ -407,10 +408,58 @@ webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
     assert(c);
     if (c->code == 0)
         return "success";
-    else
-        return error_message(c->code);
+    else {
+        if (c->pwchange_err != NULL)
+            return c->pwchange_err;
+        else
+            return error_message(c->code);
+    }
 }
 
+/*
+ * Change a user's password.
+ */
+int
+webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
+                             const char *username,
+                             const char *pass
+                            )
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
+    int result_code;
+    krb5_data result_code_string, result_string;
+
+    assert(c != NULL);
+    assert(username != NULL);
+    assert(password != NULL);
+
+    /* The actual change. */
+    c->code = krb5_set_password_using_ccache(c->ctx, c->cc, (char *) password,
+                                             username, &result_code,
+                                             &result_code_string,
+                                             &result_string);
+
+    /* Everything from here on is just handling diagnostics and output. */
+    if (c->code != 0) {
+        sprintf(c->pwchange_err, "password change failed for %s", username);
+        goto done;
+    }
+    if (result_code != 0) {
+        sprintf(c->pwchange_err, "password change failed for %s:"
+                " (%d) %.*s%s%.*s", username, result_code,
+                (int) result_code_string.length,
+                (char *) result_code_string.data,
+                result_string.length == 0 ? "" : ": ",
+                (int) result_string.length,
+                (char *) result_string.data);
+        goto done;
+    }
+    krb5_free_data_contents(c->context, &result_string);
+    krb5_free_data_contents(c->context, &result_code_string);
+
+done:
+    return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
+}
 
 /*
  * Obtain a TGT from a user's password, verifying it with the provided keytab
