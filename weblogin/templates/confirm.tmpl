@@ -21,6 +21,9 @@ login_cancel           : a cancel URL was specified
 cancel_url             : the specified cancel URL
 show_remuser           : show REMOTE_USER login preferences
 remuser                : set if REMOTE_USER is desired
+warn_expire            : show warning for upcoming password expiration
+expire_date            : the date and time of password expiration
+expire_time_left       : the amount of time left until password expiration
 -->
   </TMPL_IF>
 
@@ -28,6 +31,19 @@ remuser                : set if REMOTE_USER is desired
     <h1 align="center">WebAuth Confirm</h1>
     <div class="loginbox" align="center">
       <table border="1" width="70%">
+        <TMPL_IF NAME=warn_expire>
+          <tr>
+            <td colspan="2">
+              <div class="errortext">
+                Warning: Your password will expire in
+                <TMPL_VAR NAME=expire_time_left>, on
+                <TMPL_VAR NAME=expire_date>.  Please change your password
+                before this happens.  You may do so by going to
+                <a href="/pwchange">the password change form</a>.
+              </div>
+            </td>
+          </tr>
+        </TMPL_IF>
         <tr>
           <td><img alt="Confirm" src="/images/confirm.png"
                    width="160" height="160"/></td>
