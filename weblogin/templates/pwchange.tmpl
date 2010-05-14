@@ -29,6 +29,7 @@ username               : the username
 password               : the old password
 new_passwd1            : the new password (first)
 new_passwd2            : the new password (second)
+changepw               : set to show this is not our first visit
 -->
   </TMPL_IF>
 
@@ -87,7 +88,7 @@ new_passwd2            : the new password (second)
                        value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
                 <input type="hidden" name="CPT"
                        value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
-                <input type="hidden" name="login" value="yes">
+                <input type="hidden" name="changepw" value="yes">
                 <TMPL_IF NAME=skip_username>
                   <input type="hidden" name="username"
                          value="<TMPL_VAR ESCAPE=HTML NAME=username>">
