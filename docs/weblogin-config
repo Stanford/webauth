@@ -300,6 +300,20 @@ Configuration
       and ticket delegation to generate a proxy token based on a forwarded
       ticket, but it must be set in that case.  Default: not set.
 
+  $EXPIRED_PW_SERVER
+
+      A server that implements the kadmin-remctl interface for querying
+      the time a principal has until password expiration (via the
+      check_expire command).  If this is not set, then the check to see if
+      the user's password is expiring soon is disabled.  Default: not set.
+
+  $EXPIRED_PW_WARNING
+
+      The time period in seconds that we check against for password
+      expirations.  Any password with an expiration time less than this
+      number of seconds should bring up a warning on the login confirmation
+      screen.  Default: not set.
+
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
   by the WebLogin scripts where appropriate.
