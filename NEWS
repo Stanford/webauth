@@ -21,6 +21,11 @@ WebAuth 3.6.3 (unreleased)
     Mention setting $KEYRING_PATH in docs/install-spnego and expand the
     documentation in docs/weblogin-config.
 
+    Changed terminology in the WebAuth protocol specification to refer to
+    a KRB_AP_REQ rather than the results of krb5_mk_req.  The latter is a
+    call specific to a particular API, whereas the former is the term used
+    in the Kerberos protocol documentation.  Thanks, Liam Atkinson.
+
 WebAuth 3.6.2 (2009-09-10)
 
     SECURITY: When generating the redirect to test for cookie support if
