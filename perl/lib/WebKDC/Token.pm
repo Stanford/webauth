@@ -36,7 +36,7 @@ BEGIN {
 our @EXPORT_OK;
 
 
-our %ta_desc = 
+our %ta_desc =
     (
      &WA_TK_APP_STATE => 'app-state',
      &WA_TK_COMMAND => 'command',
@@ -61,7 +61,7 @@ our %ta_desc =
      &WA_TK_TOKEN_TYPE => 'token-type',
      &WA_TK_USERNAME => 'username',
      &WA_TK_WEBKDC_TOKEN => 'webkdc-token',
-     );	       
+     );
 
 sub get_ta_desc($) {
     my $ta = shift;
@@ -194,7 +194,7 @@ sub init {
 sub session_key {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_SESSION_KEY} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_SESSION_KEY};    
+    return $self->{'attrs'}{&WA_TK_SESSION_KEY};
 }
 
 sub subject {
@@ -247,7 +247,7 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'app') && 
+	($self->token_type() eq 'app') &&
 	defined($self->expiration_time());
 }
 
@@ -315,7 +315,7 @@ sub creation_time {
 
 sub expiration_time {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_EXPIRATION_TIME} = 
+    $self->{'attrs'}{&WA_TK_EXPIRATION_TIME} =
 	pack("N", shift) if @_;
     my $time = $self->{'attrs'}{&WA_TK_EXPIRATION_TIME};
     if (defined($time)) {
@@ -330,11 +330,11 @@ sub validate_token {
 
     # FIXME: add support for sa=webkdc as well
     croak "validate_token failed" unless
-	($self->token_type() eq 'id') && 
-	(($self->subject_auth() eq 'krb5' && 
+	($self->token_type() eq 'id') &&
+	(($self->subject_auth() eq 'krb5' &&
 	  defined($self->subject_auth_data())) ||
 	 ($self->subject_auth() eq 'webkdc' &&
-	  defined($self->subject()))) && 
+	  defined($self->subject()))) &&
 	defined($self->creation_time()) &&
 	defined($self->expiration_time());
 }
@@ -399,8 +399,8 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'login') && 
-	defined($self->username) && 
+	($self->token_type() eq 'login') &&
+	defined($self->username) &&
 	defined($self->password);
 }
 
@@ -481,8 +481,8 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'proxy') && 
-	($self->proxy_type() eq 'krb5') && 
+	($self->token_type() eq 'proxy') &&
+	($self->proxy_type() eq 'krb5') &&
 	defined($self->webkdc_token()) &&
 	defined($self->creation_time());
 	defined($self->expiration_time());
@@ -566,8 +566,8 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'cred') && 
-	($self->cred_type() eq 'krb5') && 
+	($self->token_type() eq 'cred') &&
+	($self->cred_type() eq 'krb5') &&
 	defined($self->cred_data()) &&
 	defined($self->creation_time());
 	defined($self->expiration_time());
@@ -657,8 +657,8 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'webkdc-proxy') && 
-	($self->proxy_type() =~ /^(?:krb5|remuser)$/) && 
+	($self->token_type() eq 'webkdc-proxy') &&
+	($self->proxy_type() =~ /^(?:krb5|remuser)$/) &&
 	defined($self->proxy_subject()) &&
 	defined($self->proxy_data()) &&
 	defined($self->creation_time());
@@ -757,7 +757,7 @@ sub validate_token {
 
     # FIXME: more checks for request_options, req_token_type (sa/prt)
     croak "validate_token failed" unless
-	($self->token_type() eq 'req') && 
+	($self->token_type() eq 'req') &&
 	defined($self->creation_time());
 
     if ($self->command()) {
@@ -766,7 +766,7 @@ sub validate_token {
     } else {
 	croak "validate_token failed" unless
 	    defined($self->return_url()) &&
-	    ($self->requested_token_type() eq 'id') && 
+	    ($self->requested_token_type() eq 'id') &&
 	    ($self->subject_auth() eq 'krb5' ||
 	     ($self->subject_auth() eq 'webkdc'));
     }
@@ -832,7 +832,7 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_token failed" unless
-	($self->token_type() eq 'error') && 
+	($self->token_type() eq 'error') &&
 	defined($self->creation_time()) &&
 	defined($self->error_code()) &&
 	defined($self->error_message());
@@ -876,7 +876,7 @@ sub init {
 sub session_key {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_SESSION_KEY} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_SESSION_KEY};    
+    return $self->{'attrs'}{&WA_TK_SESSION_KEY};
 }
 
 sub subject {
@@ -911,7 +911,7 @@ sub validate_token {
     my $self = shift;
 
     croak "validate_webkdc-service token failed" unless
-	($self->token_type() eq 'webkdc-service') && 
+	($self->token_type() eq 'webkdc-service') &&
 	defined($self->session_key()) &&
 	defined($self->subject()) &&
 	defined($self->creation_time()) &&
@@ -941,8 +941,12 @@ WebKDC::Token - token objects for use with WebAuth
 
   my $id_token_str = bas64_encode($id_token->to_token($key));
 
-  # parse an encrypted/encoded token
-  my $req_token = new WebKDC::RequestToken($req_token_str, $key, $ttl, 1);
+  # parse an encrypted/encoded token, given the encrypted/encoded token,
+  # the keyring used to encrypt it, and an optional time to live.  If the
+  # TTL is not zero, the token is treated as invalid if its creation time is
+  # more than ttl ago (this is not needed if the token had an expiration
+  # time set when it was created).
+  my $req_token = new WebKDC::RequestToken($req_token_str, $key, $ttl);
 
 =head1 DESCRIPTION
 
@@ -1118,7 +1122,7 @@ The WebKDC::ErrorToken object is used to represent WebAuth error-tokens.
 
 =head1 WebKDC::WebKDCProxyToken
 
-The WebKDC::WebKDCProxyToken object is used to represent WebAuth 
+The WebKDC::WebKDCProxyToken object is used to represent WebAuth
 webkdc-proxy-tokens.
 
   $token = new WebKDC::WebKDCProxyToken;
@@ -1133,7 +1137,7 @@ webkdc-proxy-tokens.
 
 =head1 WebKDC::WebKDCServiceToken
 
-The WebKDC::WebKDCServiceToken object is used to represent WebAuth 
+The WebKDC::WebKDCServiceToken object is used to represent WebAuth
 webkdc-service-tokens.
 
   $token = new WebKDC::WebKDCServiceToken;
