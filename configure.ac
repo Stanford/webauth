@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010
 dnl    Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
@@ -138,10 +138,9 @@ dnl Checks for header files.
 AC_CHECK_HEADERS([netinet/in.h])
 
 dnl Checks for types.
-WEBAUTH_TYPE_INT32_T
-AC_CHECK_TYPE([intptr_t], ,
-    [AC_DEFINE([intptr_t], [long],
-        [Define to long if <stdint.h> does not define.])])
+AC_TYPE_INT32_T
+AC_TYPE_UINT32_T
+AC_TYPE_INTPTR_T
 
 dnl Crank up warnings if using GCC
 if test "$GCC" = "yes" ; then
