@@ -28,10 +28,12 @@ use WebKDC::WebKDCException;
 use URI ();
 use URI::QueryParam ();
 
-# FIXME: Only call when configured to use.
-use Date::Parse;
-use Time::Duration;
-use Net::Remctl;
+# These are required only if we are going to check for expiring passwords.
+if ($WebKDC::Config::EXPIRED_PW_SERVER) {
+    require Date::Parse;
+    require Time::Duration;
+    require Net::Remctl;
+}
 
 BEGIN {
     use Exporter   ();
@@ -335,6 +337,7 @@ sub print_confirm_page {
     my ($self) = @_;
     my $q = $self->{query};
     my $resp = $self->{response};
+    my $page = $self->{pages}->{confirm};
 
     my $pretty_return_url = $self->{lvars}->{pretty};
     my $return_url = $resp->return_url;
@@ -347,17 +350,22 @@ sub print_confirm_page {
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
     # Find out if the user is within the window to have a password expiration
-    # warning.
-    # FIXME: Skip this if the user is authed via REMOTE_USER.
-    my $expiring = $self->time_to_pwexpire ();
-    my $expire_warning = 0;
-    if (defined $expiring
-        && ((time () - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
+    # warning.  Skip if using remote_user.
+    if (!$q->cookie ($self->{remuser_cookie})
+        && $WebKDC::Config::EXPIRED_PW_REDIRECT) {
 
-        $expire_warning = 1;
-        $page->param (warn_expire => 1);
-        $page->param (expire_date => localtime ($expiring));
-        $page->param (expire_time_left = duration ($expiring - time ()));
+        my $expiring = $self->time_to_pwexpire ();
+        my $expire_warning = 0;
+        if (defined $expiring
+            && ((time () - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
+
+            $expire_warning = 1;
+            $page->param (warn_expire => 1);
+            $page->param (expire_date => localtime ($expiring));
+            $page->param (expire_time_left => duration ($expiring - time ()));
+            $page->param (pwchange_url
+                          => $WebKDC::Config::EXPIRED_PW_REDIRECT);
+        }
     }
 
     # If configured to permit bypassing the confirmation page, the WAS
@@ -382,7 +390,6 @@ sub print_confirm_page {
 
     # Find our page and set general template parameters.  token_rights was
     # added in WebAuth 3.6.1.  Adjust for older templates.
-    my $page = $self->{pages}->{confirm};
     $page->param (return_url => $return_url);
     $page->param (username => $resp->subject);
     $page->param (pretty_return_url => $pretty_return_url);
@@ -442,7 +449,7 @@ sub redisplay_confirm_page {
     unless ($username && $uri && $uri->scheme && $uri->host) {
         $self->{pages}->{error}->param (err_confirm => 1);
         print STDERR "missing data when reconstructing confirm page\n"
-            if $LOGGING;
+            if $self->{logging};
         $self->print_error_page ();
         return;
     }
@@ -502,36 +509,22 @@ sub print_pwchange_page {
 
     # Get and pass along various field values that remain across attempts.
     my $username = $q->param ('username');
-    my $return_url = $q->param ('return_url');
     $page->param (username => $username);
     $page->param (script_name => $q->script_name);
+    $page->param (CPT => $q->param ('CPT'));
 
-    # FIXME: Set skip_username if the user has been directed here from the
+    # FIXMEJCR: Set skip_username if the user has been directed here from the
     #        confirmation page with username set.  Need to decide how to
     #        handle that later.
+    # (I think this is already fixed by Russ deciding we should just create
+    #  the CPT token on the confirmation page.  Leave the note here for now
+    #  just in case.)
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token.
     if ($q->param ('CPT')) {
         $page->param (skip_username => 1);
         $page->param (skip_password => 1);
-    }
-
-    # Return url might or might not be set, depending on whether the user
-    # was directed to the password change form or came on their own.  If it
-    # exists but there is a problem parsing it, we warn the user but stop
-    # caring about it, as it's not critical.
-    if ($return_url) {
-        my $uri = URI->new ($return_url);
-        if ($uri && $uri->scheme && $uri->host) {
-            my $pretty_return_url = $self->pretty_return_uri ($uri);
-            $page->param (return_url => $return_url);
-            $page->param (pretty_return_url => $pretty_return_url);
-        } else {
-            print STDERR "missing data when reconstructing changepw page\n"
-                if $LOGGING;
-            $page->param (err_returnurl => 1);
-        }
     }
 
     # Print out the page.
@@ -655,29 +648,49 @@ sub add_remuser_token {
 # Password change functions
 ##############################################################################
 
-# FIXME: Very unsure about how I should be doing this.. started as a stub
-#        and abandoned.  Clean up after getting advice from Russ.
 # Create a kadmin/changepw token using the username and password.
 sub add_changepw_token {
     my ($self) = @_;
     my $q = $self->{query};
+    my $username = $q->param ('username');
+    my $password = $q->param ('password');
 
     # Don't bother if the token already is created.
-    return if $query->param ('CPT');
+    return if $q->param ('CPT');
 
-    # FIXME: Actually get the token and get into useful form.
-    my $credential = '';
+    print STDERR "adding a kadmin/changepw cred token for $ENV{REMOTE_USER}\n"
+        if $self->{debug};
 
-    # Create the token.
+    # Create a ticket for kadmin/changepw with the user name and password.
+    my ($ticket, $expires);
+    eval {
+        my $context = krb5_new;
+        krb5_init_via_password ($context, $username, $password, '',
+                                'kadmin/changepw');
+        ($ticket, $expires) = krb5_export_ticket ($context,
+                                                  'kadmin/changepw');
+    };
+    if ($@) {
+        print STDERR "failed to create kadmin/changepw credential for"
+            . " $ENV{REMOTE_USER}: $@\n" if $self->{logging};
+        return;
+    }
+
+    # Create the token to contain the credential.
     my $token = new WebKDC::CredToken;
     $token->creation_time (time);
     $token->expiration_time (time + $CHANGEPW_EXPIRES);
     $token->cred_type ('krb5');
-    $token->cred_data ($credential);
-    $token->subject ('changepw/'.$user);
+    $token->cred_data ($ticket);
+    $token->subject ($username);
 
     # Add the token to the web page.
     my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+    unless ($keyring) {
+        warn "weblogin: unable to initialize a keyring from"
+            . " $WebKDC::Config::KEYRING_PATH\n";
+        return;
+    }
     $self->{CPT} = base64_encode ($token->to_token ($keyring));
 }
 
@@ -687,14 +700,55 @@ sub change_user_password {
     my $q = $self->{query};
     my ($status, $error);
 
-    # FIXME: How do I reget the context from the token?
-    my $context = '';
-    my $username = $q->param ('username');
-    my $pass = $q->param ('new_passwd1');
+    print STDERR "changing password for $ENV{REMOTE_USER}\n"
+        if $self->{debug};
 
-    # FIXME: Get the error and status correctly, mostly placeholder now.
-    my $error = WebAuth::krb5_change_password ($context, $username, $pass);
-    return ($status, $error);
+    my $username = $q->param ('username');
+    my $password = $q->param ('password');
+    my $cpt = $q->param ('CPT');
+
+    my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+    unless ($keyring) {
+        warn "weblogin: unable to initialize a keyring from"
+            . " $WebKDC::Config::KEYRING_PATH\n";
+        return;
+    }
+
+    # Decode the credential token with keyring and token, then verify token
+    # validity.
+    my $ttl = '';
+    my $token = new WebKDC::CredToken ($cpt, $keyring, '');
+    if ($token->subject ne $username) {
+        my $e = "failed to change password for $ENV{REMOTE_USER}: "
+            . "invalid username";
+        print STDERR $e, "\n" if $self->{logging};
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    } elsif ($token->cred_type ne 'krb5') {
+        my $e = "failed to change password for $ENV{REMOTE_USER}: "
+            . "invalid credential type";
+        print STDERR $e, "\n" if $self->{logging};
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    } elsif ($token->expiration_time > time) {
+        my $e = "failed to change password for $ENV{REMOTE_USER}: "
+            . "credential token expired";
+        print STDERR $e, "\n" if $self->{logging};
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    }
+
+    # Change the password and return any error status plus exception object.
+    eval {
+        my $context = WebAuth::webauth_krb5_new ();
+        krb5_init_via_cred ($context, $token->cred_data);
+        krb5_change_password ($context, $username, $password)
+    };
+    my $e = $@;
+    if (ref $e and $e->isa('WebKDC::WebKDCException')) {
+        return ($e->status(), $e->message());
+    } elsif ($e) {
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+    } else {
+        return (WebKDC::WK_SUCCESS, undef);
+    }
 }
 
 # Given the password expiration time for a user, parse it and compare to
@@ -704,14 +758,10 @@ sub time_to_pwexpire {
     my ($self) = @_;
     my $q = $self->{query};
 
-    # FIXME: Set TEST_EXPIRED_PASSWD later.
-    # remctl lsdb check_expire $principal pwexpire
-
     # Return if we've not set an expired password command.
     return undef unless $WebKDC::Config::EXPIRED_PW_SERVER;
 
-    # Put the username into the command to find the expired password, then
-    # get the response.
+    # Get the current password expire time from the server.
     my $username = $q->param ('username');
     if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
         $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
@@ -728,7 +778,7 @@ sub time_to_pwexpire {
     # warning into the log but not stop page processing.
     return undef unless $expiration;
     if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
-        print STDERR "invalid password expire time: $output\n"
+        print STDERR "invalid password expire time: $expiration\n"
             if $self->{logging};
         return undef;
     }
@@ -847,27 +897,27 @@ sub test_pwchange_fields {
 
     # Even if it's a hidden field and not given to user, this should exist.
     if (!$q->param ('username')) {
-        $self->{pages}->{pwchange}->param (err_username => 1)
-        $errors = 1;
+        $self->{pages}->{pwchange}->param (err_username => 1);
+        $error = 1;
     }
 
     # For password, we do not require it if we already have a kadmin/changepw
     # token.
     if (!$q->param ('password') && !$q->param ('CPT')) {
-        $self->{pages}->{pwchange}->param (err_password => 1)
-        $errors = 1;
+        $self->{pages}->{pwchange}->param (err_password => 1);
+        $error = 1;
     }
 
     # Check both for empty new password, and for it to not match itself.
     if (!$q->param ('new_passwd1') || !$q->param ('new_passwd2')) {
         $self->{pages}->{pwchange}->param (err_newpassword => 1);
-        $errors = 1;
+        $error = 1;
     } elsif ($q->param ('new_passwd1') ne $q->param ('new_passwd2')) {
         $self->{pages}->{pwchange}->param (err_newpassword_match => 1);
-        $errors = 1;
+        $error = 1;
     }
 
-    return 1 unless $errors;
+    return 1 unless $error;
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
@@ -888,9 +938,7 @@ sub test_expired_password {
 
     # Password has already expired.  Direct the user to the password change
     # page.
-
-    # FIXME: Get service ticket for kadmin/changepw and tokenize.
-    #        Make sure RT and ST are passed on
+    $self->add_changepw_token;
 
     $self->{pages}->{pwchange}->param (error => 1);
     $self->{pages}->{pwchange}->param (skip_username => 1);
@@ -940,7 +988,7 @@ sub setup_kdc_request {
             my ($name, $val) = split ('=', $cart{$_});
             $name=~ s/^(webauth_wpt_)//;
             $self->{request}->proxy_cookie ($name, $q->cookie ($_));
-            print STDERR "found a cookie $name\n" if $DEBUG;
+            print STDERR "found a cookie $name\n" if $self->{debug};
             $wpt_cookie = 1;
         }
     }
@@ -1061,7 +1109,8 @@ sub process_response {
         $self->print_login_page ($status, $req->request_token,
                                  $req->service_token);
         print STDERR "WebKDC::make_request_token_request failed,"
-            . " displaying login page (REMOTE_USER not allowed)\n" if $DEBUG;
+            . " displaying login page (REMOTE_USER not allowed)\n"
+            if $self->{debug};
 
     # Something abnormal happened.  Figure out what error message to display
     # and throw up the error page instead.
@@ -1087,7 +1136,7 @@ sub process_response {
 
         # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"
-            . " $errmsg: $error\n" if $LOGGING;
+            . " $errmsg: $error\n" if $self->{logging};
         $self->{pages}->{error}->param (err_webkdc => 1);
         $self->{pages}->{error}->param (err_msg => $errmsg);
         $self->print_error_page ();
