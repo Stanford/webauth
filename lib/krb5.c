@@ -482,7 +482,6 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     assert(c != NULL);
     assert(username != NULL);
     assert(password != NULL);
-    assert(keytab != NULL);
     assert(server_principal_out != NULL);
 
     c->code = krb5_parse_name(c->ctx, username, &c->princ);
@@ -538,8 +537,12 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     krb5_free_cred_contents(c->ctx, &creds);
     if (c->code != 0)
         return WA_ERR_KRB5;
-    else
-        return verify_tgt(c, keytab, server_principal, server_principal_out);
+    else {
+        if (keytab != NULL)
+            return verify_tgt(c, keytab, server_principal, server_principal_out);
+        else
+            return WA_ERR_NONE;
+    }
 }
 
 
