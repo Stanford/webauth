@@ -103,10 +103,10 @@ while (my $q = CGI::Fast->new) {
     # handle the error pages, so we stop processing this request.
     next unless $weblogin->test_request_token ();
     next unless $weblogin->test_cookies ();
-    next unless $weblogin->test_unpassworded_post ();
+    next unless $weblogin->test_password_no_post ();
 
     # FIXME: Add a check for expired password.
-    next unless $weblogin->text_expired_password ();
+    next unless $weblogin->test_expired_password ();
 
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.

@@ -351,11 +351,11 @@ sub print_confirm_page {
 
     # Find out if the user is within the window to have a password expiration
     # warning.  Skip if using remote_user.
+    my $expire_warning = 0;
     if (!$q->cookie ($self->{remuser_cookie})
         && $WebKDC::Config::EXPIRED_PW_REDIRECT) {
 
         my $expiring = $self->time_to_pwexpire ();
-        my $expire_warning = 0;
         if (defined $expiring
             && ((time () - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
 
