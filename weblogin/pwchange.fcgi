@@ -88,81 +88,42 @@ while (my $q = CGI::Fast->new) {
     my $weblogin = new WebLogin ($q, \%PAGES);
     my ($status, $error);
 
-    # FIXME: Move all of this into a subroutine in WebLogin?
-    # If sent from weblogin on an expired password and without changepw token:
-    #   Get service ticket for kadmin/changepw principal in the login realm
-    #   Present form, username, with a token token containing the
-    #     kadmin/changepw credentials, and the RT and ST tokens from the
-    #     initial WebLogin interaction (as cred token).
-    # FIXME: Verify this against the work I do to actually direct us here.
-    if ($weblogin->{query}->param ('pwexpired')
-        && !$weblogin->{query}->cookie ($PWEXPIRED_COOKIE)) {
+    # Cases we might encounter:
+    # * Expired password -- login.fcgi creates a changepw cred token and
+    #   sends us here.
+    # * Password going to expire soon -- login.fcgi creates a changpw cred
+    #   token and gives a button to send us here.
+    # * User choice -- User comes here on their own, needing to enter username
+    #   and password
 
-        # FIXME: Need help on getting the kadmin/changepw token properly
-        # Get service ticket.
-        # Make into a token.
-        # Present initial page.
+    # Check to see if this is our first visit and simply show the change page
+    # if so.
+    if (!$weblogin->{query}->param ('username')) {
+        $weblogin->print_pwchange_page;
         next;
     }
 
     # Test to make sure that all required fields are filled out.
-    next unless $weblogin->test_pwchange_fields ();
+    next unless $weblogin->test_pwchange_fields;
+    next unless $weblogin->test_cookies;
+    next unless $weblogin->test_password_no_post;
 
     # Attempt password change via krb5_change_password API
-    # FIXME - Stubs
-    my ($status, $error) = $weblogin->change_user_password ();
+    my ($status, $error) = $weblogin->change_user_password;
 
     # We've successfully changed the password...
     if ($status == WK_SUCCESS) {
 
-        # If we've got RT and ST tokens, go through the normal login process.
-        # using the username and new password.  Make sure we have the new
-        # password and then just continue with normal page flow.
-        # FIXME: Verify that this actually works, of course.
-        if (defined $q->param ('RT') && defined $q->param ('ST')) {
-            $weblogin->{query}->param ('password') = $q->('new_password1');
-
-        # Otherwise, we came here by the user directly coming to change
-        # their password, rather than them having been directed here.  Just
-        # display a confirmation page.
-        } else {
-            $self->print_pwchange_confirm_page ();
-            next;
-        }
+        $weblogin->print_pwchange_confirm_page;
 
     # The password change failed for some reason.  Display the password
     # change page again, with the error template variable filled in.
     } else {
-        $self->{pages}->{pwchange}->param (error => 1);
-        $self->{pages}->{pwchange}->param (err_pwchange => 1);
-        $self->{pages}->{pwchange}->param (err_msg => $error);
-        $self->print_pwchange_page ();
-        next;
+        $weblogin->{pages}->{pwchange}->param (error => 1);
+        $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
+        $weblogin->{pages}->{pwchange}->param (err_msg => $error);
+        $weblogin->print_pwchange_page;
     }
-
-    # FIXME: Cookies and passwords should probably be tested before changepw.
-    # Test for lack of a request token, cookies not being enabled, or sending
-    # passwords over a non-POST method.  If found, these will internally
-    # handle the error pages, so we stop processing this request.
-    next unless $weblogin->test_request_token ();
-    next unless $weblogin->test_cookies ();
-    next unless $weblogin->test_password_no_post ();
-
-    # Set up all WebKDC parameters, including tokens, proxy tokens, and
-    # REMOTE_USER parameters.
-    my %cart = CGI::Cookie->fetch;
-    $status = $weblogin->setup_kdc_request (%cart);
-
-    # Pass the information along to the WebKDC and get the response.
-    if (!$status) {
-        ($status, $error)
-            = WebKDC::make_request_token_request ($weblogin->{request},
-                                                  $weblogin->{response});
-    }
-
-    # Send the response we got off to the handler, where it can decide which
-    # page to display based on the response.
-    $weblogin->process_response ($status, $error);
 
 # Done on each pass through the FastCGI loop.  Clear out template parameters
 # for all of the pages for the next run and restart the script if its

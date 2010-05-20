@@ -300,12 +300,18 @@ Configuration
       and ticket delegation to generate a proxy token based on a forwarded
       ticket, but it must be set in that case.  Default: not set.
 
+  $EXPIRED_PW_REDIRECT
+
+      The location for the password redirect form, used to redirect users
+      with expiring passwords to update those passwords.  If this is not set,
+      then the check to see if the user's password is expiring soon is
+      disabled.  Default: not set.
+
   $EXPIRED_PW_SERVER
 
       A server that implements the kadmin-remctl interface for querying
       the time a principal has until password expiration (via the
-      check_expire command).  If this is not set, then the check to see if
-      the user's password is expiring soon is disabled.  Default: not set.
+      check_expire command).  Default: not set.
 
   $EXPIRED_PW_WARNING
 

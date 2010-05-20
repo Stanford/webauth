@@ -24,6 +24,7 @@ remuser                : set if REMOTE_USER is desired
 warn_expire            : show warning for upcoming password expiration
 expire_date            : the date and time of password expiration
 expire_time_left       : the amount of time left until password expiration
+pwchange_url           : URL for the password change form
 -->
   </TMPL_IF>
 
@@ -38,8 +39,12 @@ expire_time_left       : the amount of time left until password expiration
                 Warning: Your password will expire in
                 <TMPL_VAR NAME=expire_time_left>, on
                 <TMPL_VAR NAME=expire_date>.  Please change your password
-                before this happens.  You may do so by going to
-                <a href="/pwchange">the password change form</a>.
+                before this happens.
+                <form action="<TMPL_VAR ESCAPE=HTML NAME=pwchange_url>"
+                    method="post" enctype="application/x-www-form-urlencoded">
+                    <input type="submit" name="Submit"
+                        value="Password Change Page">
+                </form>
               </div>
             </td>
           </tr>
