@@ -103,9 +103,6 @@ while (my $q = CGI::Fast->new) {
     next unless $weblogin->test_cookies ();
     next unless $weblogin->test_password_no_post ();
 
-    # FIXME: Add a check for expired password.
-    next unless $weblogin->test_expired_password ();
-
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;

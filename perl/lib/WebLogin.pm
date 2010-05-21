@@ -350,7 +350,9 @@ sub print_confirm_page {
             $page->param (pwchange_url
                           => $WebKDC::Config::EXPIRING_PW_URL);
 
-            # FIXMEJCR: Actually create the CPT value and set it.
+            # Create and set the kadmin/changepw token.
+            $self->add_changepw_token;
+            $page->param (CPT => $self->{CPT});
         }
     }
 
@@ -755,11 +757,13 @@ sub time_to_pwexpire {
     # Return if we've not set an expired password command.
     return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
 
+    # FIXME: The kadmin remctl interface isn't going to swallow
+    # fully-qualified principal names.  This means that this won't work in
+    # a multi-realm situation, currently.  If/when that changes, we should
+    # add the default realm to the principal if none is currently there.
+
     # Get the current password expire time from the server.
     my $username = $q->param ('username');
-    if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
-        $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
-    }
     my $result = remctl ($WebKDC::Config::EXPIRING_PW_SERVER, undef, 0,
                          'check_expire', $username, 'pwexpire');
     return undef if $result->error;
@@ -919,28 +923,6 @@ sub test_pwchange_fields {
     return 0;
 }
 
-# Check to see if we have an expired password.  If so, redirect the user to
-# the check password page, with a field set telling the page that they were
-# redirected here for an expired password.
-sub test_expired_password {
-    my ($self) = @_;
-    my $q = $self->{query};
-
-    my $expiring = $self->time_to_pwexpire;
-    return 1 unless defined $expiring;
-    return 1 if ((time - $expiring) > 0);
-
-    # Password has already expired.  Direct the user to the password change
-    # page.
-    $self->add_changepw_token;
-
-    $self->{pages}->{pwchange}->param (error => 1);
-    $self->{pages}->{pwchange}->param (skip_username => 1);
-    $self->{pages}->{pwchange}->param (skip_password => 1);
-    $self->print_pwchange_page;
-    return 0;
-}
-
 ##############################################################################
 # Primary page handler
 ##############################################################################
@@ -1049,6 +1031,20 @@ sub process_response {
         $self->print_confirm_page;
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $self->{debug};
+
+    # User's password has expired.  Create the kadmin/changepw token and
+    # go to the pwchange page.
+    # FIXMEJCR: Why was I setting error?  I should do this differently
+    } elsif ($status == WK_ERR_CREDS_EXPIRED) {
+
+        $self->{pages}->{pwchange}->param (error => 1);
+        $self->{pages}->{pwchange}->param (skip_username => 1);
+        $self->{pages}->{pwchange}->param (skip_password => 1);
+
+        $self->add_changepw_token;
+        $self->{pages}->{pwchange}->param (CPT => $self->{CPT});
+
+        $self->print_pwchange_page;
 
     # Other authentication methods can be used, REMOTE_USER support is
     # requested by cookie, we're not already at the REMOTE_USER-authenticated
