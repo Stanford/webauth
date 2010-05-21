@@ -41,9 +41,13 @@ pwchange_url           : URL for the password change form
                 <TMPL_VAR NAME=expire_date>.  Please change your password
                 before this happens.
                 <form action="<TMPL_VAR ESCAPE=HTML NAME=pwchange_url>"
-                    method="post" enctype="application/x-www-form-urlencoded">
-                    <input type="submit" name="Submit"
-                        value="Password Change Page">
+                      method="post" enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="username"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                  <input type="hidden" name="CPT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
+                  <input type="submit" name="Submit"
+                         value="Change Password">
                 </form>
               </div>
             </td>
