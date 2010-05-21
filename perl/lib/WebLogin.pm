@@ -1,7 +1,8 @@
 # WebLogin interactions with the browser for WebAuth
 #
-# Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Written by Roland Schemers <schemers@stanford.edu>
+# Extensive updates by Russ Allbery <rra@stanford.edu>
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
 #     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
@@ -34,23 +35,6 @@ if ($WebKDC::Config::EXPIRED_PW_SERVER) {
     require Time::Duration;
     require Net::Remctl;
 }
-
-BEGIN {
-    use Exporter   ();
-    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
-
-    # set the version for version checking
-    $VERSION     = 1.00;
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw();
-    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-
-    # your exported package globals go here,
-    # as well as any optionally exported functions
-    @EXPORT_OK   = qw();
-}
-
-our @EXPORT_OK;
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
@@ -355,14 +339,14 @@ sub print_confirm_page {
     if (!$q->cookie ($self->{remuser_cookie})
         && $WebKDC::Config::EXPIRED_PW_REDIRECT) {
 
-        my $expiring = $self->time_to_pwexpire ();
+        my $expiring = $self->time_to_pwexpire;
         if (defined $expiring
-            && ((time () - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
+            && ((time - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
 
             $expire_warning = 1;
             $page->param (warn_expire => 1);
             $page->param (expire_date => localtime ($expiring));
-            $page->param (expire_time_left => duration ($expiring - time ()));
+            $page->param (expire_time_left => duration ($expiring - time));
             $page->param (pwchange_url
                           => $WebKDC::Config::EXPIRED_PW_REDIRECT);
         }
@@ -394,7 +378,7 @@ sub print_confirm_page {
     $page->param (username => $resp->subject);
     $page->param (pretty_return_url => $pretty_return_url);
     if ($token_type eq 'proxy' and $page->query (name => 'token_rights')) {
-        $page->param (token_rights => $self->token_rights ());
+        $page->param (token_rights => $self->token_rights);
     }
 
     # If there is a login cancel option, handle creating the link for it.
@@ -450,7 +434,7 @@ sub redisplay_confirm_page {
         $self->{pages}->{error}->param (err_confirm => 1);
         print STDERR "missing data when reconstructing confirm page\n"
             if $self->{logging};
-        $self->print_error_page ();
+        $self->print_error_page;
         return;
     }
     my $pretty_return_url = $self->pretty_return_uri ($uri);
@@ -528,7 +512,7 @@ sub print_pwchange_page {
     }
 
     # Print out the page.
-    $self->print_headers ();
+    $self->print_headers;
     print $page->output;
 }
 
@@ -548,7 +532,7 @@ sub print_remuser_redirect {
         $self->{pages}->{error}->param (err_webkdc => 1);
         my $errmsg = "unrecoverable error occured. Try again later.";
         $self->{pages}->{error}->param (err_msg => $errmsg);
-        $self->print_error_page ();
+        $self->print_error_page;
     } else {
         $uri .= "?RT=" . $self->fix_token ($q->param ('RT')) .
                 ";ST=" . $self->fix_token ($q->param ('ST'));
@@ -737,7 +721,7 @@ sub change_user_password {
 
     # Change the password and return any error status plus exception object.
     eval {
-        my $context = WebAuth::webauth_krb5_new ();
+        my $context = &WebAuth::webauth_krb5_new;
         krb5_init_via_cred ($context, $token->cred_data);
         krb5_change_password ($context, $username, $password)
     };
@@ -828,7 +812,7 @@ sub test_cookies {
             my $message = 'You must enable cookies in your web browser.';
             $self->{pages}->{error}->param (err_msg => $message);
         }
-        $self->print_error_page ();
+        $self->print_error_page;
         return 0;
     } elsif ($self->{query}->request_method ne 'POST') {
         $self->{query}->delete ('username', 'password', 'submit');
@@ -864,7 +848,7 @@ sub test_password_no_post {
         my $message = 'You must use the POST method to log in.';
         $self->{pages}->{error}->param (err_msg => $message);
     }
-    $self->print_error_page ();
+    $self->print_error_page;
     return 0;
 }
 
@@ -878,7 +862,7 @@ sub test_request_token {
 
     $self->{pages}->{error}->param (err_no_request_token => 1);
     print STDERR "no request or service token\n" if $self->{logging};
-    $self->print_error_page ();
+    $self->print_error_page;
     return 0;
 }
 
@@ -921,7 +905,7 @@ sub test_pwchange_fields {
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page ();
+    $self->print_pwchange_page;
     return 0;
 }
 
@@ -932,9 +916,9 @@ sub test_expired_password {
     my ($self) = @_;
     my $q = $self->{query};
 
-    my $expiring = $self->time_to_pwexpire ();
+    my $expiring = $self->time_to_pwexpire;
     return 1 unless defined $expiring;
-    return 1 if ((time () - $expiring) > 0);
+    return 1 if ((time - $expiring) > 0);
 
     # Password has already expired.  Direct the user to the password change
     # page.
@@ -943,7 +927,7 @@ sub test_expired_password {
     $self->{pages}->{pwchange}->param (error => 1);
     $self->{pages}->{pwchange}->param (skip_username => 1);
     $self->{pages}->{pwchange}->param (skip_password => 1);
-    $self->print_pwchange_page ();
+    $self->print_pwchange_page;
     return 0;
 }
 
@@ -1010,9 +994,9 @@ sub setup_kdc_request {
     # logging purposes.
     if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
         if ($ENV{KRB5CCNAME} && $WebKDC::Config::WEBKDC_PRINCIPAL) {
-            $self->add_proxy_token ();
+            $self->add_proxy_token;
         } else {
-            $self->add_remuser_token ();
+            $self->add_remuser_token;
         }
     }
     $self->{request}->remote_user ($ENV{REMOTE_USER});
@@ -1032,8 +1016,8 @@ sub process_response {
     # an afterthought, and should probably be handled in a cleaner fashion.)
     my %params = map { $_ => $q->param ($_) } $q->param;
     $self->{lvars} = \%params;
-    $self->get_login_cancel_url ();
-    if ($status == WK_SUCCESS && $self->parse_uri ()) {
+    $self->get_login_cancel_url;
+    if ($status == WK_SUCCESS && $self->parse_uri) {
         $status = WK_ERR_WEBAUTH_SERVER_ERROR;
     }
 
@@ -1052,7 +1036,7 @@ sub process_response {
             WebKDC::Config::record_login ($resp->subject);
         }
         $self->{lvars}->{force_confirm} = 1 if $q->param ('username');
-        $self->print_confirm_page ();
+        $self->print_confirm_page;
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $self->{debug};
 
@@ -1067,7 +1051,7 @@ sub process_response {
              && !$q->param ('login')
              && $WebKDC::Config::REMUSER_REDIRECT) {
         print STDERR "redirecting to REMOTE_USER page\n" if $self->{debug};
-        $self->print_remuser_redirect ();
+        $self->print_remuser_redirect;
 
     # The user didn't already ask for REMOTE_USER.  However, we just need
     # authentication (not forced login) and we haven't already tried
@@ -1139,7 +1123,7 @@ sub process_response {
             . " $errmsg: $error\n" if $self->{logging};
         $self->{pages}->{error}->param (err_webkdc => 1);
         $self->{pages}->{error}->param (err_msg => $errmsg);
-        $self->print_error_page ();
+        $self->print_error_page;
     }
 
 }
