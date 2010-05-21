@@ -86,7 +86,6 @@ $SIG{TERM} = sub { $EXITING = 1 };
 while (my $q = CGI::Fast->new) {
 
     my $weblogin = new WebLogin ($q, \%PAGES);
-    my ($status, $error);
 
     # Cases we might encounter:
     # * Expired password -- login.fcgi creates a changepw cred token and
