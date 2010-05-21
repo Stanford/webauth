@@ -25,8 +25,9 @@ our $REMUSER_REDIRECT;
 our @SHIBBOLETH_IDPS;
 our $TOKEN_ACL;
 our $WEBKDC_PRINCIPAL;
-our $EXPIRED_PW_SERVER;
-our $EXPIRED_PW_WARNING;
+our $EXPIRING_PW_SERVER;
+our $EXPIRING_PW_WARNING;
+our $EXPIRING_PW_URL;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;
