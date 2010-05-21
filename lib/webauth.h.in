@@ -796,15 +796,16 @@ WEBAUTH_API int webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
 
 /*
  * Initialize a context with username/password to obtain a ticket-granting
- * ticket (TGT).  The TGT is verified using the specified keytab.  The TGT
- * will be placed in the specified cache, or a memory cache if cache_name is
- * NULL.
+ * ticket (TGT).  The TGT is verified using the specified keytab, unless
+ * the keytab is NULL.  The TGT will be placed in the specified cache, or a
+ * memory cache if cache_name is NULL.
  *
  * If server_princpal is NULL, the first principal in the keytab will be used.
  * Otherwise, the specifed server principal will be used.
  *
  * server_principal_out will be set to the fully qualified server principal
- * used and should be freed if WA_ERR_NONE is returned.
+ * used, unless the keytab is NULL.  If WA_ERR_NONE is returned, then it
+ * should instead be freed.
  *
  * Returns WA_ERR_NONE, WA_ERR_LOGIN_FAILED, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */

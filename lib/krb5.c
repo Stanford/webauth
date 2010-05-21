@@ -28,6 +28,7 @@
 
 #include <lib/webauthp.h>
 
+#include <errno.h>
 #include <krb5.h>
 #ifdef HAVE_ET_COM_ERR_H
 # include <et/com_err.h>
@@ -427,6 +428,7 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     int result_code;
+    int retval;
     krb5_data result_code_string, result_string;
 
     assert(c != NULL);
@@ -441,17 +443,21 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
 
     /* Everything from here on is just handling diagnostics and output. */
     if (c->code != 0) {
-        sprintf(c->pwchange_err, "password change failed for %s", username);
         goto done;
     }
     if (result_code != 0) {
-        sprintf(c->pwchange_err, "password change failed for %s:"
-                " (%d) %.*s%s%.*s", username, result_code,
-                (int) result_code_string.length,
-                (char *) result_code_string.data,
-                result_string.length == 0 ? "" : ": ",
-                (int) result_string.length,
-                (char *) result_string.data);
+        retval = asprintf(c->pwchange_err, "password change failed for %s:"
+                          " (%d) %.*s%s%.*s", username, result_code,
+                          (int) result_code_string.length,
+                          (char *) result_code_string.data,
+                          result_string.length == 0 ? "" : ": ",
+                          (int) result_string.length,
+                          (char *) result_string.data);
+        if (retval == -1) {
+            c->pwchange_err = NULL;
+            c->code = ENOMEM
+        }
+
         goto done;
     }
     krb5_free_data_contents(c->context, &result_string);
@@ -463,8 +469,9 @@ done:
 
 /*
  * Obtain a TGT from a user's password, verifying it with the provided keytab
- * and server principal.
- */
+ * and server principal if given.  If no keytab is given, we do not verify
+ * the TGT, and server_principal_out is not set.
+*/
 int
 webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username, const char *password,
