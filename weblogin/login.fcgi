@@ -28,11 +28,9 @@ use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
 use HTML::Template ();
-use WebAuth qw(:base64 :const :krb5 :key);
-use WebLogin;
+use WebLogin ();
 use WebKDC ();
 use WebKDC::Config ();
-use WebKDC::WebKDCException;
 
 # Set to true in our signal handler to indicate that the script should exit
 # once it finishes processing the current request.
@@ -87,7 +85,7 @@ $SIG{TERM} = sub { $EXITING = 1 };
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
 
-    my $weblogin = new WebLogin ($q, \%PAGES);
+    my $weblogin = WebLogin->new ($q, \%PAGES);
     my ($status, $error);
 
     # If we already have return_url in the query, we're at the confirmation

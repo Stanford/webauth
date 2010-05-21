@@ -38,9 +38,7 @@ our $EXITING = 0;
 
 # The names of the template pages that we use.  The beginning of the main
 # routine changes the values here to be HTML::Template objects.
-our %PAGES = (login    => 'login.tmpl',
-              confirm  => 'confirm.tmpl',
-              pwchange => 'pwchange.tmpl',
+our %PAGES = (pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
 
 ##############################################################################
@@ -85,7 +83,7 @@ $SIG{TERM} = sub { $EXITING = 1 };
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
 
-    my $weblogin = new WebLogin ($q, \%PAGES);
+    my $weblogin = WebLogin->new ($q, \%PAGES);
 
     # Cases we might encounter:
     # * Expired password -- login.fcgi creates a changepw cred token and
@@ -112,7 +110,6 @@ while (my $q = CGI::Fast->new) {
 
     # We've successfully changed the password...
     if ($status == WK_SUCCESS) {
-
         $weblogin->print_pwchange_confirm_page;
 
     # The password change failed for some reason.  Display the password
