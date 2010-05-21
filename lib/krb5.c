@@ -532,6 +532,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
             case KRB5KDC_ERR_PREAUTH_FAILED:
             case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
                 return WA_ERR_LOGIN_FAILED;
+            case KRB5KDC_ERR_KEY_EXP:
+                return WA_ERR_CREDS_EXPIRED;
             default:
                 /* FIXME: needs better logging. */
                 return WA_ERR_KRB5;

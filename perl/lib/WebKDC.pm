@@ -64,6 +64,7 @@ our %pec_mapping = (
 	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
 	     &WA_PEC_LOGIN_FORCED  => WK_ERR_LOGIN_FORCED,
 	     &WA_PEC_USER_REJECTED  => WK_ERR_USER_REJECTED,
+	     &WA_PEC_CREDS_EXPIRED  => WK_ERR_CREDS_EXPIRED,
 	     );
 
 sub get_keyring {

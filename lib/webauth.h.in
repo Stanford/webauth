@@ -88,6 +88,7 @@ typedef enum {
     WA_ERR_LOGIN_FAILED,     /* Bad username/password. */
     WA_ERR_TOKEN_EXPIRED,    /* Token has expired. */
     WA_ERR_TOKEN_STALE,      /* Token is stale. */
+    WA_ERR_CREDS_EXPIRED,    /* Password has expired. */
 
     /* Update webauth_error_message when adding more codes. */
 
@@ -116,6 +117,7 @@ typedef enum {
     WA_PEC_LOGIN_CANCELED              = 16, /* User cancelled login */
     WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
     WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
+    WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
 } WEBAUTH_ET_ERR;
 
 /*

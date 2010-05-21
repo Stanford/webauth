@@ -67,6 +67,7 @@ our %EXPORT_TAGS = (
 				    WA_PEC_LOGIN_CANCELED
 				    WA_PEC_LOGIN_FORCED
 				    WA_PEC_USER_REJECTED
+				    WA_PEC_CREDS_EXPIRED
 				    WA_AES_KEY
 				    WA_AES_128
 				    WA_AES_192
@@ -243,17 +244,17 @@ WebAuth - Perl extension for WebAuth (version 3)
 
   use WebAuth;
 
-  eval {  
+  eval {
     $key = WebAuth::random_key(WebAuth::WA_AES_128);
     ...
   };
   if (WebAuth::Exception::match($@)) {
-    # handle exception 
+    # handle exception
   }
 
 =head1 DESCRIPTION
 
-WebAuth is a low-level Perl interface into the WebAuth C API. 
+WebAuth is a low-level Perl interface into the WebAuth C API.
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
 
@@ -329,7 +330,7 @@ hash table get converted to strings if they aren't already.
 
  $attrs = attrs_decode($input);
 
-attr decodes the $input string and returns the result in $attrs as 
+attr decodes the $input string and returns the result in $attrs as
 a reference to a hash, or croaks in case of an error.
 
 =item random_bytes(length)
@@ -355,7 +356,7 @@ WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
  $key = key_create($type, $key_material);
 
 Creates a reference to a WEBAUTH_KEYPtr object, or undef
-on error. $type must be WA_AES_KEY, and $key_material must 
+on error. $type must be WA_AES_KEY, and $key_material must
 be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
@@ -391,18 +392,18 @@ Reads a keyring from a file and returns it in $ring on success.
 
   $token = token_create($attrs, $hint, $key_or_ring);
 
-Takes as input $attrs (which must be a reference to a hash) and 
-$key_or_ring (created with keyring_new or key_create) and returns 
+Takes as input $attrs (which must be a reference to a hash) and
+$key_or_ring (created with keyring_new or key_create) and returns
 the encrypted token. If hint is 0, the current time will be used.
 
-The values in the $attrs hash table get converted to strings if they 
+The values in the $attrs hash table get converted to strings if they
 aren't already.
 
 =item token_parse(token, ttl, key_or_ring)
 
   $attrs = token_parse($token, $ttl, $key_or_ring);
 
-Takes as input an encrypted token and a key_or_ring (created with 
+Takes as input an encrypted token and a key_or_ring (created with
 keyring_new or key_create) and returns the attributes.
 
 =item krb5_new()
@@ -416,19 +417,19 @@ Creates a new WEBAUTH_KRB5_CTXT reference in $context.
   krb5_keep_cred_cache($context);
 
 If called before $context is no longer in use, prevents the credential
-cache (created via one of the calls to krb5_init_via*) from being 
+cache (created via one of the calls to krb5_init_via*) from being
 destroyed. This should only be used you need to keep a file-based
 credential cache from being removed.
 
 =item krb5_init_via_password(context, user, password, keytab, server_principal[, cache])
 
-   ($principal) = krb5_init_via_password($context, $user, $password, 
+   ($principal) = krb5_init_via_password($context, $user, $password,
                                          $keytab, $server_principal[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
 doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
-cache will be used and destroyed when the context is destroyed. 
+cache will be used and destroyed when the context is destroyed.
 
 If $server_princpal is undef or "", then the first princpal found in the
 keytab will be used.
@@ -450,7 +451,7 @@ keytab will be used.
 
    krb5_init_via_cache($context, "/tmp/krb5cc_foo");
 
-Initializes a context using the specified ticket cache. If $cache is not 
+Initializes a context using the specified ticket cache. If $cache is not
 specified, the default kerberos ticket cache is used.
 
 =item krb5_init_via_cred(context, cred[, cache])
@@ -497,8 +498,8 @@ to the constructed principal, represented as a string.
     $principal = krb5_getprincipal($context, 1);
 
 Used to get the principal associated with the context. Should only be
-called after a successful call to krb5_init_via*. If local is 1, then 
-krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+called after a successful call to krb5_init_via*. If local is 1, then
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname
 returns an error then the fully-qualified principal name is returned.
 
 =item krb5_mk_req(context, principal[,data])
@@ -512,13 +513,13 @@ returned as $edata.
 
 =item krb5_rd_req(context, request, keytab, server_principal, local[, edata])
 
-   ($principal[, $data]) 
-      = krb5_rd_req($context, $request, $keytab, 
+   ($principal[, $data])
+      = krb5_rd_req($context, $request, $keytab,
                               $server_princpal, 1[, $edata]);
 
 Used to read a request created with krb5_mk_req. On success $principal
-will be set to the client principal in the request. If local is 1, then 
-krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+will be set to the client principal in the request. If local is 1, then
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname
 returns an error then the fully-qualified principal name is returned.
 
 If $server_princpal is undef or "", then the first princpal found in the
@@ -535,7 +536,7 @@ wrong happens. These exceptions will be of type WebAuth::Exception.
 
 For example:
 
-  eval {  
+  eval {
     $data = WebAuth::base64_decode($buffer);
     ...
   };
@@ -641,6 +642,7 @@ The following constants from webauth.h are available:
   WA_PEC_LOGIN_CANCELED
   WA_PEC_LOGIN_FORCED
   WA_PEC_USER_REJECTED
+  WA_PEC_CREDS_EXPIRED
 
   WA_AES_KEY
   WA_AES_128

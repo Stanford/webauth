@@ -1920,6 +1920,13 @@ mwk_do_login(MWK_REQ_CTXT *rc,
                                              "mwk_do_login", NULL);
         set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
         goto cleanup;
+
+    } else if (status == WA_ERR_CREDS_EXPIRED) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                             "mwk_do_login", NULL);
+        set_errorResponse(rc, WA_PEC_CREDS_EXPIRED, msg, mwk_func, 1);
+        goto cleanup;
+
     } else if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_init_via_password",

@@ -49,6 +49,7 @@ webauth_error_message(int errcode)
     case WA_ERR_LOGIN_FAILED:      return "Login failed (bad username/password";
     case WA_ERR_TOKEN_EXPIRED:     return "Token has expired";
     case WA_ERR_TOKEN_STALE:       return "Token is stale";
+    case WA_ERR_CREDS_EXPIRED:     return "Password has expired";
     default:
         return "unknown error code";
         break;
