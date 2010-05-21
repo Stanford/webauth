@@ -50,6 +50,14 @@ changepw               : set to show this is not our first visit
             <!-- Error: no password submitted. -->
             Error: Enter your password.
           </TMPL_IF>
+          <TMPL_IF NAME=err_newpassword>
+            <!-- Error: at least one of the new password fields was empty. -->
+            Error: Enter your new password twice.
+          </TMPL_IF>
+          <TMPL_IF NAME=err_newpassword_match>
+            <!-- Error: new passwords do not match. -->
+            Error: The two entries for your new password must match.
+          </TMPL_IF>
 
           <TMPL_IF NAME=err_loginfailed>
             <!-- Error: login failed. -->
@@ -73,61 +81,76 @@ changepw               : set to show this is not our first visit
 
     <div class="loginbox" align="center">
       <table border="1" width="70%">
-        <tr>
-          <td><img alt="Login" src="/images/login.png"
-                   width="160" height="160"/></td>
-          <td>
-            <div class="loginform">
-              <form name="pwchange"
-                    action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
-                    method="post" autocomplete="OFF"
-                    enctype="application/x-www-form-urlencoded">
-                <input type="hidden" name="RT"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
-                <input type="hidden" name="ST"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
-                <input type="hidden" name="CPT"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
-                <input type="hidden" name="changepw" value="yes">
-                <TMPL_IF NAME=skip_username>
-                  <input type="hidden" name="username"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=username>">
-                </TMPL_IF>
-                <table>
-                  <TMPL_UNLESS NAME=skip_username>
+        <TMPL_IF NAME=success>
+          <tr>
+            <td><img alt="Confirm" src="/images/confirm.png"
+                     width="160" height="160"/></td>
+            <td>
+              <div class="logintext">
+                <p>You have successfully changed your password.</p>
+                <p><strong>Protect your assets:</strong><br/>
+                   Quit your web browser when you are finished (see below
+                   for more details)</p>
+              </div>
+            </td>
+          </tr>
+        <TMPL_ELSE>
+          <tr>
+            <td><img alt="Login" src="/images/login.png"
+                     width="160" height="160"/></td>
+            <td>
+              <div class="loginform">
+                <form name="pwchange"
+                      action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
+                      method="post" autocomplete="OFF"
+                      enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="RT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                  <input type="hidden" name="ST"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                  <input type="hidden" name="CPT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
+                  <input type="hidden" name="changepw" value="yes">
+                  <TMPL_IF NAME=skip_username>
+                    <input type="hidden" name="username"
+                           value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                  </TMPL_IF>
+                  <table>
+                    <TMPL_UNLESS NAME=skip_username>
+                      <tr>
+                        <td><strong>Username:</strong></td>
+                        <td><input name="username" type="text"
+                                   value="<TMPL_VAR ESCAPE=HTML NAME=username>"
+                                   size="18"><br/></td>
+                      </tr>
+                    </TMPL_UNLESS>
+                    <TMPL_UNLESS NAME=skip_password>
+                      <tr>
+                        <td><strong>Old Password:</strong></td>
+                        <td><input name="password" type="password" size="18"></td>
+                      </tr>
+                    </TMPL_UNLESS>
                     <tr>
-                      <td><strong>Username:</strong></td>
-                      <td><input name="username" type="text"
-                                 value="<TMPL_VAR ESCAPE=HTML NAME=username>"
-                                 size="18"><br/></td>
+                      <td><strong>New Password (enter twice):</strong></td>
+                      <td>
+                          <input name="new_passwd1" type="password" size="18"><br/>
+                          <input name="new_passwd2" type="password" size="18">
+                      </td>
                     </tr>
-                  </TMPL_UNLESS>
-                  <TMPL_UNLESS NAME=skip_password>
                     <tr>
-                      <td><strong>Old Password:</strong></td>
-                      <td><input name="password" type="password" size="18"></td>
+                      <td colspan="2" align="right">
+                        <input type="submit" name="Submit" value="Change Password">
+                      </td>
                     </tr>
-                  </TMPL_UNLESS>
-                  <tr>
-                    <td><strong>New Password (enter twice):</strong></td>
-                    <td>
-                        <input name="new_passwd1" type="password" size="18"><br/>
-                        <input name="new_passwd2" type="password" size="18">
-                    </td>
-                  </tr>
-                  <tr>
-                    <td colspan="2" align="right">
-                      <input type="submit" name="Submit" value="Change Password">
-                    </td>
-                  </tr>
-                </table>
-              </form>
-            </div>
-            <div class="loginlinks">
-              <a href="/help.html">help</a>
-            </div>
-          </td>
-        </tr>
+                  </table>
+                </form>
+              </div>
+              <div class="loginlinks">
+                <a href="/help.html">help</a>
+              </div>
+            </td>
+          </tr>
+        </TMPL_IF>
       </table>
     </div>
 
