@@ -30,7 +30,7 @@ use URI ();
 use URI::QueryParam ();
 
 # These are required only if we are going to check for expiring passwords.
-if ($WebKDC::Config::EXPIRED_PW_SERVER) {
+if ($WebKDC::Config::EXPIRING_PW_SERVER) {
     require Date::Parse;
     require Time::Duration;
     require Net::Remctl;
@@ -337,18 +337,20 @@ sub print_confirm_page {
     # warning.  Skip if using remote_user.
     my $expire_warning = 0;
     if (!$q->cookie ($self->{remuser_cookie})
-        && $WebKDC::Config::EXPIRED_PW_REDIRECT) {
+        && $WebKDC::Config::EXPIRING_PW_URL) {
 
         my $expiring = $self->time_to_pwexpire;
         if (defined $expiring
-            && ((time - $expiring) > $WebKDC::Config::EXPIRED_PW_WARNING)) {
+            && ((time - $expiring) > $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
             $expire_warning = 1;
             $page->param (warn_expire => 1);
             $page->param (expire_date => localtime ($expiring));
             $page->param (expire_time_left => duration ($expiring - time));
             $page->param (pwchange_url
-                          => $WebKDC::Config::EXPIRED_PW_REDIRECT);
+                          => $WebKDC::Config::EXPIRING_PW_URL);
+
+            # FIXMEJCR: Actually create the CPT value and set it.
         }
     }
 
@@ -497,13 +499,6 @@ sub print_pwchange_page {
     $page->param (script_name => $q->script_name);
     $page->param (CPT => $q->param ('CPT'));
 
-    # FIXMEJCR: Set skip_username if the user has been directed here from the
-    #        confirmation page with username set.  Need to decide how to
-    #        handle that later.
-    # (I think this is already fixed by Russ deciding we should just create
-    #  the CPT token on the confirmation page.  Leave the note here for now
-    #  just in case.)
-
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token.
     if ($q->param ('CPT')) {
@@ -512,6 +507,17 @@ sub print_pwchange_page {
     }
 
     # Print out the page.
+    $self->print_headers;
+    print $page->output;
+}
+
+# Print confirmation page after successful password change.
+sub print_pwchange_confirm_page {
+    my ($self) = @_;
+    my $q = $self->{query};
+    my $page = $self->{pages}->{pwchange};
+
+    $page->param (success => 1);
     $self->print_headers;
     print $page->output;
 }
@@ -642,14 +648,14 @@ sub add_changepw_token {
     # Don't bother if the token already is created.
     return if $q->param ('CPT');
 
-    print STDERR "adding a kadmin/changepw cred token for $ENV{REMOTE_USER}\n"
+    print STDERR "adding a kadmin/changepw cred token for $username\n"
         if $self->{debug};
 
     # Create a ticket for kadmin/changepw with the user name and password.
     my ($ticket, $expires);
     eval {
         my $context = krb5_new;
-        krb5_init_via_password ($context, $username, $password, '',
+        krb5_init_via_password ($context, $username, $password, undef,
                                 'kadmin/changepw');
         ($ticket, $expires) = krb5_export_ticket ($context,
                                                   'kadmin/changepw');
@@ -660,10 +666,14 @@ sub add_changepw_token {
         return;
     }
 
+    # Token expires the sooner of when the ticket expires or our time limit.
+    my $expires_limit = time + $CHANGEPW_EXPIRES;
+    $expires = $expires_limit if $expires_limit < $expires;
+
     # Create the token to contain the credential.
     my $token = new WebKDC::CredToken;
     $token->creation_time (time);
-    $token->expiration_time (time + $CHANGEPW_EXPIRES);
+    $token->expiration_time ($expires);
     $token->cred_type ('krb5');
     $token->cred_data ($ticket);
     $token->subject ($username);
@@ -701,7 +711,7 @@ sub change_user_password {
     # Decode the credential token with keyring and token, then verify token
     # validity.
     my $ttl = '';
-    my $token = new WebKDC::CredToken ($cpt, $keyring, '');
+    my $token = new WebKDC::CredToken ($cpt, $keyring, 0);
     if ($token->subject ne $username) {
         my $e = "failed to change password for $ENV{REMOTE_USER}: "
             . "invalid username";
@@ -723,7 +733,7 @@ sub change_user_password {
     eval {
         my $context = &WebAuth::webauth_krb5_new;
         krb5_init_via_cred ($context, $token->cred_data);
-        krb5_change_password ($context, $username, $password)
+        krb5_change_password ($context, $username, $password);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
@@ -743,14 +753,14 @@ sub time_to_pwexpire {
     my $q = $self->{query};
 
     # Return if we've not set an expired password command.
-    return undef unless $WebKDC::Config::EXPIRED_PW_SERVER;
+    return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
 
     # Get the current password expire time from the server.
     my $username = $q->param ('username');
     if ($WebKDC::Config::DEFAULT_REALM && $username !~ /\@/) {
         $username .= '@' . $WebKDC::Config::DEFAULT_REALM;
     }
-    my $result = remctl ($WebKDC::Config::EXPIRED_PW_SERVER, undef, 0,
+    my $result = remctl ($WebKDC::Config::EXPIRING_PW_SERVER, undef, 0,
                          'check_expire', $username, 'pwexpire');
     return undef if $result->error;
 
@@ -762,8 +772,8 @@ sub time_to_pwexpire {
     # warning into the log but not stop page processing.
     return undef unless $expiration;
     if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
-        print STDERR "invalid password expire time: $expiration\n"
-            if $self->{logging};
+        print STDERR "invalid password expire time for $username: "
+            ."$expiration\n" if $self->{logging};
         return undef;
     }
 
@@ -837,7 +847,7 @@ sub test_password_no_post {
     my ($self) = @_;
     my $q = $self->{query};
 
-    return 1 unless $q->param ('password') and $q->request_method ne 'POST';
+    return 1 unless $q->param ('password') && $q->request_method ne 'POST';
 
     if ($self->{pages}->{error}->query (name => 'err_bad_method')) {
         $self->{pages}->{error}->param (err_bad_method => 1);
@@ -1181,10 +1191,8 @@ sub new {
 }
 
 ##############################################################################
-# Cleanup and docs
+# Documentation
 ##############################################################################
-
-END { }       # module clean-up code here (global destructor)
 
 1;
 
