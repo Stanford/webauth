@@ -92,7 +92,7 @@ changepw               : set to show this is not our first visit
                 <TMPL_IF NAME=skip_username>
                   <input type="hidden" name="username"
                          value="<TMPL_VAR ESCAPE=HTML NAME=username>">
-                </TMPL_UNLESS>
+                </TMPL_IF>
                 <table>
                   <TMPL_UNLESS NAME=skip_username>
                     <tr>
@@ -101,13 +101,13 @@ changepw               : set to show this is not our first visit
                                  value="<TMPL_VAR ESCAPE=HTML NAME=username>"
                                  size="18"><br/></td>
                     </tr>
-                  </TMPL_IF>
+                  </TMPL_UNLESS>
                   <TMPL_UNLESS NAME=skip_password>
                     <tr>
                       <td><strong>Old Password:</strong></td>
                       <td><input name="password" type="password" size="18"></td>
                     </tr>
-                  </TMPL_IF>
+                  </TMPL_UNLESS>
                   <tr>
                     <td><strong>New Password (enter twice):</strong></td>
                     <td>
