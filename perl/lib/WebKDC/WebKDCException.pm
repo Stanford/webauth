@@ -98,7 +98,7 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 unless $ref $e;
+    return 0 unless ref $e;
     return 0 if !$e->isa("WebKDC::WebKDCException");
     return @_ ? $e->status() == shift : 1;
 }
