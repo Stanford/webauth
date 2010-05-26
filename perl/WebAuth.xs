@@ -658,7 +658,6 @@ PPCODE:
     }
 }
 
-/* FIXME: Test */
 void
 webauth_krb5_change_password(c,username,pass,...)
 WEBAUTH_KRB5_CTXT *c
@@ -667,12 +666,12 @@ char *pass
 PROTOTYPE: $$$;$
 PPCODE:
 {
+    int s;
     s = webauth_krb5_change_password(c, username, pass);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_change_password", s, c);
     }
 }
-
 
 void
 webauth_krb5_init_via_keytab(c,keytab,server_principal,...)
