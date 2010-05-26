@@ -423,7 +423,7 @@ webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
 int
 webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
                              const char *username,
-                             const char *pass
+                             const char *password
                             )
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
@@ -455,13 +455,13 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
                           (char *) result_string.data);
         if (retval == -1) {
             c->pwchange_err = NULL;
-            c->code = ENOMEM
+            c->code = ENOMEM;
         }
 
         goto done;
     }
-    krb5_free_data_contents(c->context, &result_string);
-    krb5_free_data_contents(c->context, &result_code_string);
+    krb5_free_data_contents(c->ctx, &result_string);
+    krb5_free_data_contents(c->ctx, &result_code_string);
 
 done:
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
