@@ -63,6 +63,7 @@ WEBAUTH_1.0 {
         webauth_krb5_get_principal;
         webauth_krb5_get_realm;
         webauth_krb5_export_ticket;
+        webauth_krb5_change_password;
         webauth_krb5_mk_req;
         webauth_krb5_mk_req_with_data;
         webauth_krb5_rd_req;
