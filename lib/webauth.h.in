@@ -802,8 +802,12 @@ WEBAUTH_API int webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
  * the keytab is NULL.  The TGT will be placed in the specified cache, or a
  * memory cache if cache_name is NULL.
  *
- * If server_princpal is NULL, the first principal in the keytab will be used.
- * Otherwise, the specifed server principal will be used.
+ * If server_principal is NULL, the first principal in the keytab will be
+ # used.  Otherwise, the specifed server principal will be used.
+ *
+ * If get_principal is not NULL, then we acquire credentials for that
+ * principal instead.  The purpose of this is to get credentials for
+ * kadmin/changepw with a user's username and password.
  *
  * server_principal_out will be set to the fully qualified server principal
  * used, unless the keytab is NULL.  If WA_ERR_NONE is returned, then it
@@ -814,6 +818,7 @@ WEBAUTH_API int webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
 WEBAUTH_API int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                                const char *username,
                                                const char *password,
+                                               const char *get_principal,
                                                const char *keytab,
                                                const char *server_principal,
                                                const char *cache_name,

@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     s = webauth_krb5_get_realm(c, &crealm);
     TEST_OK2(WA_ERR_INVALID_CONTEXT, s);
 
-    s = webauth_krb5_init_via_password(c, username, password, 
+    s = webauth_krb5_init_via_password(c, username, password, NULL,
                                        keytab_path, NULL,
                                        NULL, &server_principal);
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     TEST_OK2(WA_ERR_NONE, s);
 
     /*
-    printf("code(%d) mess(%s)\n", 
+    printf("code(%d) mess(%s)\n",
            webauth_krb5_error_code(c),
            webauth_krb5_error_message(c));
     */
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
         s = webauth_krb5_new(&c);
         TEST_OK2(WA_ERR_NONE, s);
         TEST_OK(c != NULL);
-            
+
         s = webauth_krb5_init_via_cred(c, tgt, tgtlen, NULL);
         free(tgt);
         TEST_OK2(WA_ERR_NONE, s);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     s = webauth_krb5_new(&c);
     TEST_OK2(WA_ERR_NONE, s);
     TEST_OK(c != NULL);
-            
+
     s = webauth_krb5_init_via_keytab(c, keytab_path, NULL, NULL);
     TEST_OK2(WA_ERR_NONE, s);
 

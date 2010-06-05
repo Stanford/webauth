@@ -421,18 +421,28 @@ cache (created via one of the calls to krb5_init_via*) from being
 destroyed. This should only be used you need to keep a file-based
 credential cache from being removed.
 
-=item krb5_init_via_password(context, user, password, keytab, server_principal[, cache])
+=item krb5_init_via_password(context, user, password, get_principal, keytab, server_principal[, cache])
 
    ($principal) = krb5_init_via_password($context, $user, $password,
-                                         $keytab, $server_principal[, $cache]);
+                                         $get_principal, $keytab,
+                                         $server_principal[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
 doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
 cache will be used and destroyed when the context is destroyed.
 
-If $server_princpal is undef or "", then the first princpal found in the
+If $server_princpal is undef or "", then the first principal found in the
 keytab will be used.
+
+If $get_principal is definied, then rather than using the principal in the
+keytab, we will get a context for the given principal.  This is currently
+used to get a context for kadmin/changepw with a given username and password,
+in order to then later use that to change the user password.
+
+If $keytab is not defined, then we do not obtain a TGT, but only initialize
+the context without verifying its validity.  This is currently only used in
+conjuction with $get_principal to get credentials for kadmin/changepw.
 
 Returns the server principal used to verify the TGT.
 

@@ -1,4 +1,4 @@
-WEBAUTH_1.0 {
+WEBAUTH_2.0 {
     global:
         webauth_attr_list_new;
         webauth_error_message;

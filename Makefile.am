@@ -45,7 +45,7 @@ lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c \
 	lib/webauthp.h
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(CRYPTO_CPPFLAGS) $(KRB5_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 3:0:2 $(VERSION_LDFLAGS) \
+lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
 	$(CRYPTO_LDFLAGS) $(KRB5_LDFLAGS)
 lib_libwebauth_la_LIBADD = $(CRYPTO_LIBS) $(KRB5_LIBS)
 

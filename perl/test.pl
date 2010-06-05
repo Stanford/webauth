@@ -25,7 +25,7 @@ if ($run_kerb) {
     # user/password to attempt to login as
     $kuser="schemers/test";
     $kpass="xxxxx";
-    # path to keytab file used to verify tgt and also 
+    # path to keytab file used to verify tgt and also
     # used krb5_init_via_keytab and rd_req
     $kkeytab="keytab";
     # service/host to do a krb5_export_ticket only
@@ -217,7 +217,7 @@ if ($run_kerb) {
 	ok($c->isa('WEBAUTH_KRB5_CTXTPtr'));
 	#FIXME my $ctx_princ = WebAuth::krb5_get_principal($c);
 
-	my $sp = WebAuth::krb5_init_via_password($c, $kuser, $kpass, 
+	my $sp = WebAuth::krb5_init_via_password($c, $kuser, $kpass, undef,
 						  $kkeytab, undef);
 
 	my $ctx_princ = WebAuth::krb5_get_principal($c, 1);
@@ -233,7 +233,7 @@ if ($run_kerb) {
 
 	my $request = WebAuth::krb5_mk_req($c, $rprinc);
 
-	my $client_princ = WebAuth::krb5_rd_req($c, $request, $kkeytab, 
+	my $client_princ = WebAuth::krb5_rd_req($c, $request, $kkeytab,
 						 undef, 1);
 	#print "client = ($client_princ)\n";
 

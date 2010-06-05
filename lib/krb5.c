@@ -470,11 +470,13 @@ done:
 /*
  * Obtain a TGT from a user's password, verifying it with the provided keytab
  * and server principal if given.  If no keytab is given, we do not verify
- * the TGT, and server_principal_out is not set.
-*/
+ * the TGT, and server_principal_out is not set.  If get_principal is set,
+ * then we get credentials for that principal rather than the given user.
+ */
 int
 webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
                                const char *username, const char *password,
+                               const char *get_principal,
                                const char *keytab,
                                const char *server_principal,
                                const char *cache_name,
@@ -513,15 +515,22 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
     krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
 #endif
-    krb5_get_init_creds_opt_set_forwardable(&opts, 1);
+
+    if (get_principal == NULL)
+        krb5_get_init_creds_opt_set_forwardable(&opts, 1);
+    else {
+        krb5_get_init_creds_opt_set_forwardable(&opts, 0);
+        krb5_get_init_creds_opt_set_proxiable(&opts, 0);
+        krb5_get_init_creds_opt_set_renew_life(&opts, 0);
+    }
 
     tpassword = strdup(password);
     if (tpassword == NULL)
         return WA_ERR_NO_MEM;
 
     c->code = krb5_get_init_creds_password(c->ctx, &creds, c->princ,
-                                           tpassword, NULL, NULL, 0, NULL,
-                                           &opts);
+                                           tpassword, NULL, NULL, 0,
+                                           get_principal, &opts);
 
     memset(tpassword, 0, strlen(tpassword));
     free(tpassword);

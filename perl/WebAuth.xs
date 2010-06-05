@@ -624,13 +624,14 @@ OUTPUT:
     RETVAL
 
 void
-webauth_krb5_init_via_password(c,name,password,keytab,server_principal,...)
+webauth_krb5_init_via_password(c,name,password,get_principal,keytab,server_principal,...)
 WEBAUTH_KRB5_CTXT *c
 char *name
 char *password
+char *get_principal
 char *keytab
 char *server_principal
-PROTOTYPE: $$$$$;$
+PROTOTYPE: $$$$$$;$
 PPCODE:
 {
     char *cred, *server_princ_out;
@@ -643,10 +644,13 @@ PPCODE:
 
     if (server_principal && *server_principal == '\0')
        server_principal = NULL;
+    if (get_principal && *get_principal == '\0')
+       get_principal = NULL;
 
     s = webauth_krb5_init_via_password(c, name, password,
                                        keytab, server_principal,
-                                       cred, &server_princ_out);
+                                       get_principal, cred,
+                                       &server_princ_out);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_password", s, c);
     } else {
