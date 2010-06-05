@@ -95,7 +95,7 @@ while (my $q = CGI::Fast->new) {
 
     # Check to see if this is our first visit and simply show the change page
     # if so.
-    if (!$weblogin->{query}->param ('username')) {
+    if (!$weblogin->{query}->param ('changepw')) {
         $weblogin->print_pwchange_page;
         next;
     }
