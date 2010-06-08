@@ -341,12 +341,14 @@ sub print_confirm_page {
 
         my $expiring = $self->time_to_pwexpire;
         if (defined $expiring
-            && ((time - $expiring) > $WebKDC::Config::EXPIRING_PW_WARNING)) {
+            && (($expiring - time) < $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
             $expire_warning = 1;
+            my $expire_date = localtime ($expiring);
+            my $countdown = Time::Duration::duration ($expiring - time);
             $page->param (warn_expire => 1);
-            $page->param (expire_date => localtime ($expiring));
-            $page->param (expire_time_left => duration ($expiring - time));
+            $page->param (expire_date => $expire_date);
+            $page->param (expire_time_left => $countdown);
             $page->param (pwchange_url
                           => $WebKDC::Config::EXPIRING_PW_URL);
 
@@ -657,14 +659,14 @@ sub add_changepw_token {
     my ($ticket, $expires);
     eval {
         my $context = krb5_new;
-        krb5_init_via_password ($context, $username, $password, undef,
-                                'kadmin/changepw');
+        krb5_init_via_password ($context, $username, $password,
+                                'kadmin/changepw', undef, undef);
         ($ticket, $expires) = krb5_export_ticket ($context,
                                                   'kadmin/changepw');
     };
     if ($@) {
         print STDERR "failed to create kadmin/changepw credential for"
-            . " $ENV{REMOTE_USER}: $@\n" if $self->{logging};
+            . " $username: $@\n" if $self->{logging};
         return;
     }
 
@@ -696,12 +698,11 @@ sub change_user_password {
     my $q = $self->{query};
     my ($status, $error);
 
-    print STDERR "changing password for $ENV{REMOTE_USER}\n"
-        if $self->{debug};
-
     my $username = $q->param ('username');
     my $password = $q->param ('password');
     my $cpt = $q->param ('CPT');
+
+    print STDERR "changing password for $username\n" if $self->{debug};
 
     my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
@@ -715,17 +716,16 @@ sub change_user_password {
     my $ttl = '';
     my $token = new WebKDC::CredToken ($cpt, $keyring, 0);
     if ($token->subject ne $username) {
-        my $e = "failed to change password for $ENV{REMOTE_USER}: "
-            . "invalid username";
+        my $e = "failed to change password for $username: invalid username";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } elsif ($token->cred_type ne 'krb5') {
-        my $e = "failed to change password for $ENV{REMOTE_USER}: "
+        my $e = "failed to change password for $username: "
             . "invalid credential type";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } elsif ($token->expiration_time > time) {
-        my $e = "failed to change password for $ENV{REMOTE_USER}: "
+        my $e = "failed to change password for $username: "
             . "credential token expired";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
@@ -754,6 +754,11 @@ sub time_to_pwexpire {
     my ($self) = @_;
     my $q = $self->{query};
 
+    # FIXMEJCR: Testing only, since lsdb-dev can't access kadmin by default
+    #           and we haven't pushed the new kadmin-remctl to lsdb.  Easier
+    #           to just feed a value for testing anyway.
+    return '1276291049';
+
     # Return if we've not set an expired password command.
     return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
 
@@ -764,24 +769,24 @@ sub time_to_pwexpire {
 
     # Get the current password expire time from the server.
     my $username = $q->param ('username');
-    my $result = remctl ($WebKDC::Config::EXPIRING_PW_SERVER, undef, 0,
-                         'check_expire', $username, 'pwexpire');
-    return undef if $result->error;
+    #my $result = remctl ($WebKDC::Config::EXPIRING_PW_SERVER, undef, 0,
+    #                     'check_expire', $username, 'pwexpire');
+    #return undef if $result->error;
 
-    my $expiration = $result->stdout;
-    chomp $expiration;
+    #my $expiration = $result->stdout;
+    #chomp $expiration;
 
     # Empty string should mean there is no password expiration date.  An
     # expiration time that doesn't match the format we expect has us put a
     # warning into the log but not stop page processing.
-    return undef unless $expiration;
-    if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
-        print STDERR "invalid password expire time for $username: "
-            ."$expiration\n" if $self->{logging};
-        return undef;
-    }
+    #return undef unless $expiration;
+    #if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
+    #    print STDERR "invalid password expire time for $username: "
+    #        ."$expiration\n" if $self->{logging};
+    #    return undef;
+    #}
 
-    return str2time ($expiration);
+    #return str2time ($expiration);
 }
 
 ##############################################################################
@@ -904,10 +909,9 @@ sub test_pwchange_fields {
     if (!$q->param ('password') && !$q->param ('CPT')) {
         $self->{pages}->{pwchange}->param (err_password => 1);
         $error = 1;
-    }
 
     # Check both for empty new password, and for it to not match itself.
-    if (!$q->param ('new_passwd1') || !$q->param ('new_passwd2')) {
+    } elsif (!$q->param ('new_passwd1') || !$q->param ('new_passwd2')) {
         $self->{pages}->{pwchange}->param (err_newpassword => 1);
         $error = 1;
     } elsif ($q->param ('new_passwd1') ne $q->param ('new_passwd2')) {
