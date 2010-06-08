@@ -647,9 +647,8 @@ PPCODE:
     if (get_principal && *get_principal == '\0')
        get_principal = NULL;
 
-    s = webauth_krb5_init_via_password(c, name, password,
-                                       keytab, server_principal,
-                                       get_principal, cred,
+    s = webauth_krb5_init_via_password(c, name, password, get_principal,
+                                       keytab, server_principal, cred,
                                        &server_princ_out);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_password", s, c);
