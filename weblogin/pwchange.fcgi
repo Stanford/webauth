@@ -99,7 +99,7 @@ while (my $q = CGI::Fast->new) {
     # if so (skipping checks for missing fields).
     if (!$weblogin->{query}->param ('changepw')) {
         $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token, '');
+                                        $req->service_token);
         next;
     }
 
@@ -114,7 +114,8 @@ while (my $q = CGI::Fast->new) {
     # We've successfully changed the password.  Attempt the actual login now.
     if ($status == WK_SUCCESS) {
 
-        # Put the new password into the normal password field.
+        # Get the right script name and password.
+        $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
         my $newpass = $weblogin->{query}->param ('new_passwd1');
         $weblogin->{query}->param ('password', $newpass);
 
@@ -142,7 +143,7 @@ while (my $q = CGI::Fast->new) {
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwweak => 1);
         $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token, '');
+                                        $req->service_token);
 
     # The password change failed for some reason.  Display the password
     # change page again, with the error template variable filled in.
@@ -151,7 +152,7 @@ while (my $q = CGI::Fast->new) {
         $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
         $weblogin->{pages}->{pwchange}->param (err_msg => $error);
         $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token, '');
+                                        $req->service_token);
     }
 
 # Done on each pass through the FastCGI loop.  Clear out template parameters

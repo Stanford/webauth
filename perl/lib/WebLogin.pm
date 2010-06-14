@@ -223,7 +223,7 @@ sub print_login_page {
     my $resp = $self->{response};
     my $page = $self->{pages}->{login};
 
-    $page->param (script_name => $q->script_name);
+    $page->param (script_name => $self->script_name);
     $page->param (username => $self->{lvars}->{username});
     $page->param (RT => $RT);
     $page->param (ST => $ST);
@@ -318,7 +318,7 @@ sub token_rights {
 # login page, filling in all of the various bits of data that the page
 # template needs.
 sub print_confirm_page {
-    my ($self, $reason) = @_;
+    my ($self) = @_;
     my $q = $self->{query};
     my $resp = $self->{response};
     my $page = $self->{pages}->{confirm};
@@ -409,11 +409,7 @@ sub print_confirm_page {
                 $page->param (remuser => 1);
             }
 
-            if (defined $reason && $reason eq 'pwchange') {
-                $page->param (script_name => $WebKDC::Config::LOGIN_URL);
-            } else {
-                $page->param (script_name => $q->script_name);
-            }
+            $page->param (script_name => $self->script_name);
         }
     }
 
@@ -456,7 +452,7 @@ sub redisplay_confirm_page {
     $page->param (return_url => $return_url);
     $page->param (username => $username);
     $page->param (pretty_return_url => $pretty_return_url);
-    $page->param (script_name => $q->script_name);
+    $page->param (script_name => $self->script_name);
     $page->param (show_remuser => 1);
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $page->param (remuser => $remuser);
@@ -499,17 +495,9 @@ sub get_login_cancel_url {
 
 # Print the password change page.
 sub print_pwchange_page {
-    my ($self, $RT, $ST, $reason) = @_;
+    my ($self, $RT, $ST) = @_;
     my $q = $self->{query};
     my $page = $self->{pages}->{pwchange};
-
-    # If we've come here from an expired password, change the script_name
-    # from the login page to the pwchange page.
-    if (defined $reason && $reason eq 'expired') {
-        $page->param (script_name => $WebKDC::Config::EXPIRING_PW_URL);
-    } else {
-        $page->param (script_name => $q->script_name);
-    }
 
     # Get and pass along various field values that remain across attempts.
     my $username = $q->param ('username');
@@ -517,6 +505,7 @@ sub print_pwchange_page {
     $page->param (CPT => $self->{CPT});
     $page->param (RT => $RT);
     $page->param (ST => $ST);
+    $page->param (script_name => $self->script_name);
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token.
@@ -950,7 +939,7 @@ sub test_pwchange_fields {
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page ($req->request_token, $req->service_token, '');
+    $self->print_pwchange_page ($req->request_token, $req->service_token);
     return 0;
 }
 
@@ -1061,11 +1050,11 @@ sub process_response {
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $self->{debug};
 
-    # User's password has expired.
+    # User's password has expired.  Get the CPT and update the script name.
     } elsif ($status == WK_ERR_CREDS_EXPIRED) {
         $self->add_changepw_token;
-        $self->print_pwchange_page ($req->request_token, $req->service_token,
-                                    'expired');
+        $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
+        $self->print_pwchange_page ($req->request_token, $req->service_token);
 
     # Other authentication methods can be used, REMOTE_USER support is
     # requested by cookie, we're not already at the REMOTE_USER-authenticated
@@ -1204,8 +1193,10 @@ sub new {
     # Setting up for later.
     $self->{wpt_cookie} = '';
 
-    # Work around a bug in CGI.
+    # Work around a bug in CGI.  Then copy the script name so that it can
+    # be easily updated when we switch between password and login scripts.
     $self->{query}->{'.script_name'} = $ENV{SCRIPT_NAME};
+    $self->{script_name} = $self->{query}->script_name;
     print STDERR "Script name is ", $self->{query}->script_name, "\n"
         if $self->{debug};
 
