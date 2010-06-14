@@ -318,7 +318,7 @@ sub token_rights {
 # login page, filling in all of the various bits of data that the page
 # template needs.
 sub print_confirm_page {
-    my ($self) = @_;
+    my ($self, $reason) = @_;
     my $q = $self->{query};
     my $resp = $self->{response};
     my $page = $self->{pages}->{confirm};
@@ -334,9 +334,10 @@ sub print_confirm_page {
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
     # Find out if the user is within the window to have a password expiration
-    # warning.  Skip if using remote_user.
+    # warning.  Skip if using remote_user or the user already has a
+    # single-sign-on cookie.
     my $expire_warning = 0;
-    if (!$q->cookie ($self->{remuser_cookie})
+    if (!$q->cookie ($self->{remuser_cookie}) && !$self->{wpt_cookie}
         && $WebKDC::Config::EXPIRING_PW_URL) {
 
         my $expiring = $self->time_to_pwexpire;
@@ -407,7 +408,12 @@ sub print_confirm_page {
             if ($q->cookie ($self->{remuser_cookie})) {
                 $page->param (remuser => 1);
             }
-            $page->param (script_name => $q->script_name);
+
+            if (defined $reason && $reason eq 'pwchange') {
+                $page->param (script_name => $WebKDC::Config::LOGIN_URL);
+            } else {
+                $page->param (script_name => $q->script_name);
+            }
         }
     }
 
@@ -493,35 +499,33 @@ sub get_login_cancel_url {
 
 # Print the password change page.
 sub print_pwchange_page {
-    my ($self) = @_;
+    my ($self, $RT, $ST, $reason) = @_;
     my $q = $self->{query};
     my $page = $self->{pages}->{pwchange};
+
+    # If we've come here from an expired password, change the script_name
+    # from the login page to the pwchange page.
+    if (defined $reason && $reason eq 'expired') {
+        $page->param (script_name => $WebKDC::Config::EXPIRING_PW_URL);
+    } else {
+        $page->param (script_name => $q->script_name);
+    }
 
     # Get and pass along various field values that remain across attempts.
     my $username = $q->param ('username');
     $page->param (username => $username);
-    $page->param (script_name => $q->script_name);
-    $page->param (CPT => $q->param ('CPT'));
+    $page->param (CPT => $self->{CPT});
+    $page->param (RT => $RT);
+    $page->param (ST => $ST);
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token.
-    if ($q->param ('CPT')) {
+    if ($self->{CPT}) {
         $page->param (skip_username => 1);
         $page->param (skip_password => 1);
     }
 
     # Print out the page.
-    $self->print_headers;
-    print $page->output;
-}
-
-# Print confirmation page after successful password change.
-sub print_pwchange_confirm_page {
-    my ($self) = @_;
-    my $q = $self->{query};
-    my $page = $self->{pages}->{pwchange};
-
-    $page->param (success => 1);
     $self->print_headers;
     print $page->output;
 }
@@ -650,7 +654,7 @@ sub add_changepw_token {
     my $password = $q->param ('password');
 
     # Don't bother if the token already is created.
-    return if $q->param ('CPT');
+    return if $self->{CPT};
 
     print STDERR "adding a kadmin/changepw cred token for $username\n"
         if $self->{debug};
@@ -660,7 +664,7 @@ sub add_changepw_token {
     eval {
         my $context = krb5_new;
         krb5_init_via_password ($context, $username, $password,
-                                'kadmin/changepw', undef, undef);
+                                'kadmin/changepw', '', '');
         ($ticket, $expires) = krb5_export_ticket ($context,
                                                   'kadmin/changepw');
     };
@@ -699,8 +703,8 @@ sub change_user_password {
     my ($status, $error);
 
     my $username = $q->param ('username');
-    my $password = $q->param ('password');
-    my $cpt = $q->param ('CPT');
+    my $password = $q->param ('new_passwd1');
+    my $cpt = $self->{CPT};
 
     print STDERR "changing password for $username\n" if $self->{debug};
 
@@ -712,10 +716,32 @@ sub change_user_password {
     }
 
     # Decode the credential token with keyring and token, then verify token
-    # validity.
-    my $ttl = '';
-    my $token = new WebKDC::CredToken ($cpt, $keyring, 0);
-    if ($token->subject ne $username) {
+    # validity.  If we don't yet have a CPT, but do have the user's old
+    # password (ie: they came straight to the change password page), create
+    # one right now.  If there's an error actually decrypting the token, it's
+    # likely expired.  Hide the actual error behind a simpler one for the
+    # user.
+    if (!$cpt && $password) {
+        $self->add_changepw_token;
+        $cpt = $self->{CPT};
+    }
+    my $token;
+    eval {
+        $token = new WebKDC::CredToken (base64_decode ($cpt), $keyring, 0);
+    };
+    if ($@) {
+        $self->{CPT} = '';
+        my $msg = "timeout for $username: please re-enter your current "
+            ."password";
+        my $e = $@;
+        if (ref $e and $e->isa('WebKDC::WebKDCException')) {
+            print STDERR $e->message(), "\n" if $self->{logging};
+            return ($e->status(), $msg);
+        } elsif ($e) {
+            return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $msg);
+        }
+
+    } elsif ($token->subject ne $username) {
         my $e = "failed to change password for $username: invalid username";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
@@ -724,7 +750,7 @@ sub change_user_password {
             . "invalid credential type";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
-    } elsif ($token->expiration_time > time) {
+    } elsif ($token->expiration_time < time) {
         my $e = "failed to change password for $username: "
             . "credential token expired";
         print STDERR $e, "\n" if $self->{logging};
@@ -733,9 +759,9 @@ sub change_user_password {
 
     # Change the password and return any error status plus exception object.
     eval {
-        my $context = &WebAuth::webauth_krb5_new;
+        my $context = krb5_new;
         krb5_init_via_cred ($context, $token->cred_data);
-        krb5_change_password ($context, $username, $password);
+        krb5_change_password ($context, $password);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
@@ -754,11 +780,6 @@ sub time_to_pwexpire {
     my ($self) = @_;
     my $q = $self->{query};
 
-    # FIXMEJCR: Testing only, since lsdb-dev can't access kadmin by default
-    #           and we haven't pushed the new kadmin-remctl to lsdb.  Easier
-    #           to just feed a value for testing anyway.
-    return '1276291049';
-
     # Return if we've not set an expired password command.
     return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
 
@@ -767,26 +788,31 @@ sub time_to_pwexpire {
     # a multi-realm situation, currently.  If/when that changes, we should
     # add the default realm to the principal if none is currently there.
 
-    # Get the current password expire time from the server.
+    # Get the current password expire time from the server.  Save the current
+    # tgt, use the one for password expiration, then restore the old.
     my $username = $q->param ('username');
-    #my $result = remctl ($WebKDC::Config::EXPIRING_PW_SERVER, undef, 0,
-    #                     'check_expire', $username, 'pwexpire');
-    #return undef if $result->error;
+    my $normaltgt = $ENV{KRB5CCNAME};
+    $ENV{KRB5CCNAME} = $WebKDC::Config::EXPIRING_PW_TGT;
+    my $result = Net::Remctl::remctl ($WebKDC::Config::EXPIRING_PW_SERVER,
+                                      0, '', 'kadmin', 'check_expire',
+                                      $username, 'pwexpire');
+    $ENV{KRB5CCNAME} = $normaltgt;
+    return undef if $result->error;
 
-    #my $expiration = $result->stdout;
-    #chomp $expiration;
+    my $expiration = $result->stdout;
+    chomp $expiration;
 
     # Empty string should mean there is no password expiration date.  An
     # expiration time that doesn't match the format we expect has us put a
     # warning into the log but not stop page processing.
-    #return undef unless $expiration;
-    #if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
-    #    print STDERR "invalid password expire time for $username: "
-    #        ."$expiration\n" if $self->{logging};
-    #    return undef;
-    #}
+    return undef unless $expiration;
+    if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
+        print STDERR "invalid password expire time for $username: "
+            ."$expiration\n" if $self->{logging};
+        return undef;
+    }
 
-    #return str2time ($expiration);
+    return Date::Parse::str2time ($expiration);
 }
 
 ##############################################################################
@@ -896,6 +922,7 @@ sub test_request_token {
 sub test_pwchange_fields {
     my ($self) = @_;
     my $q = $self->{query};
+    my $req = $self->{request};
     my $error;
 
     # Even if it's a hidden field and not given to user, this should exist.
@@ -906,7 +933,7 @@ sub test_pwchange_fields {
 
     # For password, we do not require it if we already have a kadmin/changepw
     # token.
-    if (!$q->param ('password') && !$q->param ('CPT')) {
+    if (!$q->param ('password') && !$self->{CPT}) {
         $self->{pages}->{pwchange}->param (err_password => 1);
         $error = 1;
 
@@ -923,7 +950,7 @@ sub test_pwchange_fields {
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page;
+    $self->print_pwchange_page ($req->request_token, $req->service_token, '');
     return 0;
 }
 
@@ -1010,8 +1037,6 @@ sub process_response {
     # Parse the result from the WebKDC and get the login cancel information if
     # any.  (The login cancel stuff is oddly placed here, like it was added as
     # an afterthought, and should probably be handled in a cleaner fashion.)
-    my %params = map { $_ => $q->param ($_) } $q->param;
-    $self->{lvars} = \%params;
     $self->get_login_cancel_url;
     if ($status == WK_SUCCESS && $self->parse_uri) {
         $status = WK_ERR_WEBAUTH_SERVER_ERROR;
@@ -1036,19 +1061,11 @@ sub process_response {
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $self->{debug};
 
-    # User's password has expired.  Create the kadmin/changepw token and
-    # go to the pwchange page.
-    # FIXMEJCR: Why was I setting error?  I should do this differently
+    # User's password has expired.
     } elsif ($status == WK_ERR_CREDS_EXPIRED) {
-
-        $self->{pages}->{pwchange}->param (error => 1);
-        $self->{pages}->{pwchange}->param (skip_username => 1);
-        $self->{pages}->{pwchange}->param (skip_password => 1);
-
         $self->add_changepw_token;
-        $self->{pages}->{pwchange}->param (CPT => $self->{CPT});
-
-        $self->print_pwchange_page;
+        $self->print_pwchange_page ($req->request_token, $req->service_token,
+                                    'expired');
 
     # Other authentication methods can be used, REMOTE_USER support is
     # requested by cookie, we're not already at the REMOTE_USER-authenticated
@@ -1135,7 +1152,6 @@ sub process_response {
         $self->{pages}->{error}->param (err_msg => $errmsg);
         $self->print_error_page;
     }
-
 }
 
 ##############################################################################
@@ -1177,14 +1193,20 @@ sub new {
     $self->{test_cookie} = (exists $settings{test_cookie})
         ? $settings{test_cookie} : $TEST_COOKIE;
 
-    # Setting up for later, this will track parameters.
-    $self->{lvars} = '';
+    # Reload CPT from the query each time so that we can properly empty it
+    # if it has expired.
+    $self->{CPT} = $query->param ('CPT');
+
+    # Track parameters from the pervious request.
+    my %params = map { $_ => $query->param ($_) } $query->param;
+    $self->{lvars} = \%params;
+
+    # Setting up for later.
     $self->{wpt_cookie} = '';
-    $self->{CPT} = '';
 
     # Work around a bug in CGI.
-    $query->{'.script_name'} = $ENV{SCRIPT_NAME};
-    print STDERR "Script name is ", $query->script_name, "\n"
+    $self->{query}->{'.script_name'} = $ENV{SCRIPT_NAME};
+    print STDERR "Script name is ", $self->{query}->script_name, "\n"
         if $self->{debug};
 
     return $self;

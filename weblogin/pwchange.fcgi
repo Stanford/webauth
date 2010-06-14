@@ -39,6 +39,7 @@ our $EXITING = 0;
 # The names of the template pages that we use.  The beginning of the main
 # routine changes the values here to be HTML::Template objects.
 our %PAGES = (pwchange => 'pwchange.tmpl',
+              confirm  => 'confirm.tmpl',
               error    => 'error.tmpl');
 
 ##############################################################################
@@ -84,6 +85,7 @@ $SIG{TERM} = sub { $EXITING = 1 };
 while (my $q = CGI::Fast->new) {
 
     my $weblogin = WebLogin->new ($q, \%PAGES);
+    my $req = $weblogin->{request};
 
     # Cases we might encounter:
     # * Expired password -- login.fcgi creates a changepw cred token and
@@ -94,9 +96,10 @@ while (my $q = CGI::Fast->new) {
     #   and password
 
     # Check to see if this is our first visit and simply show the change page
-    # if so.
+    # if so (skipping checks for missing fields).
     if (!$weblogin->{query}->param ('changepw')) {
-        $weblogin->print_pwchange_page;
+        $weblogin->print_pwchange_page ($req->request_token,
+                                        $req->service_token, '');
         next;
     }
 
@@ -108,9 +111,38 @@ while (my $q = CGI::Fast->new) {
     # Attempt password change via krb5_change_password API
     my ($status, $error) = $weblogin->change_user_password;
 
-    # We've successfully changed the password...
+    # We've successfully changed the password.  Attempt the actual login now.
     if ($status == WK_SUCCESS) {
-        $weblogin->print_pwchange_confirm_page;
+
+        # Put the new password into the normal password field.
+        my $newpass = $weblogin->{query}->param ('new_passwd1');
+        $weblogin->{query}->param ('password', $newpass);
+
+        # Set up all WebKDC parameters, including tokens, proxy tokens, and
+        # REMOTE_USER parameters.
+        my %cart = CGI::Cookie->fetch;
+        $status = $weblogin->setup_kdc_request (%cart);
+
+        # Pass the information along to the WebKDC and get the response.
+        if (!$status) {
+            ($status, $error)
+                = WebKDC::make_request_token_request ($weblogin->{request},
+                                                      $weblogin->{response});
+        }
+
+        # Send the response we got off to the handler, where it can decide
+        # which page to display based on the response.
+        $weblogin->process_response ($status, $error);
+
+    # Heimdal returns this if the password failed strength checking.  Give
+    # an error that's more understandable to users.
+    # FIXME: Should be verified against MIT as well.
+    } elsif ($status == WK_ERR_UNRECOVERABLE_ERROR
+             && $error =~ /\(-1765328343\)/) {
+        $weblogin->{pages}->{pwchange}->param (error => 1);
+        $weblogin->{pages}->{pwchange}->param (err_pwweak => 1);
+        $weblogin->print_pwchange_page ($req->request_token,
+                                        $req->service_token, '');
 
     # The password change failed for some reason.  Display the password
     # change page again, with the error template variable filled in.
@@ -118,7 +150,8 @@ while (my $q = CGI::Fast->new) {
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
         $weblogin->{pages}->{pwchange}->param (err_msg => $error);
-        $weblogin->print_pwchange_page;
+        $weblogin->print_pwchange_page ($req->request_token,
+                                        $req->service_token, '');
     }
 
 # Done on each pass through the FastCGI loop.  Clear out template parameters
