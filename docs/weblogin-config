@@ -260,6 +260,14 @@ Configuration
       If using this option, you must also set $REMUSER_ENABLED (otherwise
       there would be no point).  Default: false.
 
+  $LOGIN_URL
+
+      The URL used to log in to the site.  This is used only with the
+      password change feature, and only when $REMUSER_REDIRECT is also
+      used.  In that case, this is required in order to know which page
+      to direct the form action back to after using the password change
+      page.  Default: not set.
+
   $REALM
 
       Equivalent to setting @REMUSER_REALMS to the single realm set here.
@@ -312,6 +320,12 @@ Configuration
       A server that implements the kadmin-remctl interface for querying
       the time a principal has until password expiration (via the
       check_expire command).  Default: not set.
+
+  $EXPIRING_PW_TGT
+
+      The TGT file used to query against the kadmin-remctl interface used
+      in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
+      outside of webauth.  Default: not set.
 
   $EXPIRING_PW_WARNING
 
