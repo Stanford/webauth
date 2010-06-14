@@ -787,13 +787,13 @@ WEBAUTH_API int webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *context);
 WEBAUTH_API const char *webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context);
 
 /*
- * Change a given username to a new password.  The credential cache to use
- * for the password change is already set up in a given context.
+ * Change the password for a principal.  The credential cache to use for the
+ * password change is already set up in a given context, as is the principal
+ * to change.
  *
  * Returns WA_ERR_NONE or WA_ERR_KRB5.
  */
 WEBAUTH_API int webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
-                                             const char *username,
                                              const char *pass);
 
 /*

@@ -636,8 +636,8 @@ PPCODE:
 {
     char *cred, *server_princ_out;
     int s;
-    if (items==6) {
-        cred = (char *)SvPV(ST(4),PL_na);
+    if (items==7) {
+        cred = (char *)SvPV(ST(5),PL_na);
     } else {
         cred = NULL;
     }
@@ -646,6 +646,8 @@ PPCODE:
        server_principal = NULL;
     if (get_principal && *get_principal == '\0')
        get_principal = NULL;
+    if (keytab && *keytab == '\0')
+       keytab = NULL;
 
     s = webauth_krb5_init_via_password(c, name, password, get_principal,
                                        keytab, server_principal, cred,
@@ -653,24 +655,25 @@ PPCODE:
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_init_via_password", s, c);
     } else {
-        SV *out = sv_newmortal();
-        sv_setpv(out, server_princ_out);
-        EXTEND(SP,1);
-        PUSHs(out);
-        free(server_princ_out);
+        if (get_principal == NULL || keytab != NULL) {
+            SV *out = sv_newmortal();
+            sv_setpv(out, server_princ_out);
+            EXTEND(SP,1);
+            PUSHs(out);
+            free(server_princ_out);
+        }
     }
 }
 
 void
-webauth_krb5_change_password(c,username,pass,...)
+webauth_krb5_change_password(c,pass,...)
 WEBAUTH_KRB5_CTXT *c
-char *username
 char *pass
-PROTOTYPE: $$$;$
+PROTOTYPE: $$;$
 PPCODE:
 {
     int s;
-    s = webauth_krb5_change_password(c, username, pass);
+    s = webauth_krb5_change_password(c, pass);
     if (s != WA_ERR_NONE) {
         webauth_croak("webauth_krb5_change_password", s, c);
     }

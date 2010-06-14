@@ -380,6 +380,7 @@ webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
     c->princ = NULL;
     c->keep_cache = 0;
     c->ctx = NULL;
+    c->pwchange_err = NULL;
     c->code = krb5_init_context(&c->ctx);
     *ctxt = (WEBAUTH_KRB5_CTXT *) c;
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
@@ -418,11 +419,12 @@ webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
 }
 
 /*
- * Change a user's password.
+ * Change a user's password, given context and the new password.  The user
+ * to change should be already in the context, which should also have
+ * credentials for kadmin/changepw in order to perform the change.
  */
 int
 webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
-                             const char *username,
                              const char *password
                             )
 {
@@ -432,16 +434,22 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
     krb5_data result_code_string, result_string;
 
     assert(c != NULL);
-    assert(username != NULL);
     assert(password != NULL);
+
+    memset(&result_code_string, 0, sizeof(krb5_data));
+    memset(&result_string, 0, sizeof(krb5_data));
+
+    char *username = NULL;
+    krb5_unparse_name(c->ctx, c->princ, &username);
 
     /* The actual change. */
     c->code = krb5_set_password_using_ccache(c->ctx, c->cc, (char *) password,
-                                             username, &result_code,
+                                             c->princ, &result_code,
                                              &result_code_string,
                                              &result_string);
 
     /* Everything from here on is just handling diagnostics and output. */
+    fprintf (stderr, "code is %d\n", c->code);
     if (c->code != 0) {
         goto done;
     }
@@ -462,6 +470,7 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
     }
     krb5_free_data_contents(c->ctx, &result_string);
     krb5_free_data_contents(c->ctx, &result_code_string);
+    free(username);
 
 done:
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
@@ -492,6 +501,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     assert(username != NULL);
     assert(password != NULL);
     assert(server_principal_out != NULL);
+    *server_principal_out = NULL;
 
     c->code = krb5_parse_name(c->ctx, username, &c->princ);
 
@@ -530,7 +540,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
     c->code = krb5_get_init_creds_password(c->ctx, &creds, c->princ,
                                            tpassword, NULL, NULL, 0,
-                                           get_principal, &opts);
+                                           (char *) get_principal, &opts);
 
     memset(tpassword, 0, strlen(tpassword));
     free(tpassword);
