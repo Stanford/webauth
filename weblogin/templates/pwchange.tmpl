@@ -20,6 +20,7 @@ err_newpassword        : no new password error
 err_newpassword_match  : new passwords do not match
 err_loginfailed        : username and password were incorrect
 err_rejected           : username not permitted to authenticate
+err_pwweak             : password changed for the password being too weak
 err_pwchange           : actual password change failed (see err_msg for why)
 err_msg                : extra text describing an error
 RT                     : Response Token
@@ -67,6 +68,13 @@ changepw               : set to show this is not our first visit
           <TMPL_IF NAME=err_rejected>
             <!-- Error: user principal rejected. -->
             Error: That username may not authenticate to this service.
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_pwweak>
+            <!-- Error: password was too weak. -->
+            Error: The password given failed strength checking.
+            Please enter a more difficult password not based on a dictionary
+            word.
           </TMPL_IF>
 
           <TMPL_IF NAME=err_pwchange>
