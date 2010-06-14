@@ -199,13 +199,6 @@ WebLogin:
    documentation for how to parse the redirect URL and make the login
    request, returning the return URL.
 
- * Add a password change screen to the standard WebLogin scripts.
-
- * If an attempted password login results in an expired password error,
-   send the user to the password change screen to change their password
-   immediately, and then continue the authenticated access after their
-   password has been changed.
-
  * The error page should return the appropriate HTTP error code instead of
    success.
 
@@ -218,6 +211,14 @@ WebLogin:
 
  * Add a rate limit for WebLogin logins that blocks excessive failed
    password attempts for a specific user.
+
+ * On the password change screen, when the password fails strength 
+   checking in Heimdal, we get a -1765328343 (Message stream modified).
+   Look into that more, as that seems a strange error code.
+
+ * Similarly, we have not tested the similar case for MIT at all.  
+   Worst case, they should only get an error message confusing for users,
+   but someone should check against MIT.
 
 Build System:
 
