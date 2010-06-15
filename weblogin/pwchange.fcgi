@@ -111,29 +111,39 @@ while (my $q = CGI::Fast->new) {
     # Attempt password change via krb5_change_password API
     my ($status, $error) = $weblogin->change_user_password;
 
-    # We've successfully changed the password.  Attempt the actual login now.
+    # We've successfully changed the password.  Depending on if we were sent
+    # by an expired password, either pass along to the normal page or give a
+    # confirm screen.
     if ($status == WK_SUCCESS) {
 
-        # Get the right script name and password.
-        $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
-        my $newpass = $weblogin->{query}->param ('new_passwd1');
-        $weblogin->{query}->param ('password', $newpass);
+        # Expired password -- do the normal login process.
+        if ($weblogin->{query}->param ('expired') == 1) {
 
-        # Set up all WebKDC parameters, including tokens, proxy tokens, and
-        # REMOTE_USER parameters.
-        my %cart = CGI::Cookie->fetch;
-        $status = $weblogin->setup_kdc_request (%cart);
+            # Get the right script name and password.
+            $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
+            my $newpass = $weblogin->{query}->param ('new_passwd1');
+            $weblogin->{query}->param ('password', $newpass);
 
-        # Pass the information along to the WebKDC and get the response.
-        if (!$status) {
-            ($status, $error)
-                = WebKDC::make_request_token_request ($weblogin->{request},
-                                                      $weblogin->{response});
+            # Set up all WebKDC parameters, including tokens, proxy tokens, and
+            # REMOTE_USER parameters.
+            my %cart = CGI::Cookie->fetch;
+            $status = $weblogin->setup_kdc_request (%cart);
+
+            # Pass the information along to the WebKDC and get the response.
+            if (!$status) {
+                ($status, $error)
+                    = WebKDC::make_request_token_request ($weblogin->{request},
+                                                          $weblogin->{response});
+            }
+
+            # Send the response we got off to the handler, where it can decide
+            # which page to display based on the response.
+            $weblogin->process_response ($status, $error);
+
+        # We weren't sent by expired password -- just print a confirm.
+        } else {
+            $weblogin->print_pwchange_confirm_page;
         }
-
-        # Send the response we got off to the handler, where it can decide
-        # which page to display based on the response.
-        $weblogin->process_response ($status, $error);
 
     # Heimdal returns this if the password failed strength checking.  Give
     # an error that's more understandable to users.

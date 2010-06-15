@@ -223,7 +223,7 @@ sub print_login_page {
     my $resp = $self->{response};
     my $page = $self->{pages}->{login};
 
-    $page->param (script_name => $self->script_name);
+    $page->param (script_name => $self->{script_name});
     $page->param (username => $self->{lvars}->{username});
     $page->param (RT => $RT);
     $page->param (ST => $ST);
@@ -409,7 +409,7 @@ sub print_confirm_page {
                 $page->param (remuser => 1);
             }
 
-            $page->param (script_name => $self->script_name);
+            $page->param (script_name => $self->{script_name});
         }
     }
 
@@ -452,7 +452,7 @@ sub redisplay_confirm_page {
     $page->param (return_url => $return_url);
     $page->param (username => $username);
     $page->param (pretty_return_url => $pretty_return_url);
-    $page->param (script_name => $self->script_name);
+    $page->param (script_name => $self->{script_name});
     $page->param (show_remuser => 1);
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $page->param (remuser => $remuser);
@@ -505,7 +505,8 @@ sub print_pwchange_page {
     $page->param (CPT => $self->{CPT});
     $page->param (RT => $RT);
     $page->param (ST => $ST);
-    $page->param (script_name => $self->script_name);
+    $page->param (script_name => $self->{script_name});
+    $page->param (expired => 1) if $q->param ('expired') == 1;
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token.
@@ -515,6 +516,18 @@ sub print_pwchange_page {
     }
 
     # Print out the page.
+    $self->print_headers;
+    print $page->output;
+}
+
+# Print confirmation page after successful password change.  This is only
+# hit when not having been sent here with an expired password.
+sub print_pwchange_confirm_page {
+    my ($self) = @_;
+    my $q = $self->{query};
+    my $page = $self->{pages}->{pwchange};
+
+    $page->param (success => 1);
     $self->print_headers;
     print $page->output;
 }
@@ -1054,6 +1067,7 @@ sub process_response {
     } elsif ($status == WK_ERR_CREDS_EXPIRED) {
         $self->add_changepw_token;
         $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
+        $self->{query}->param ('expired', 1);
         $self->print_pwchange_page ($req->request_token, $req->service_token);
 
     # Other authentication methods can be used, REMOTE_USER support is
@@ -1187,6 +1201,9 @@ sub new {
     $self->{CPT} = $query->param ('CPT');
 
     # Track parameters from the pervious request.
+    # FIXME: We currently load this, but then also use $query->param in many
+    #        places as well.  Standardize on using this, and rename to
+    #        something more descriptive.
     my %params = map { $_ => $query->param ($_) } $query->param;
     $self->{lvars} = \%params;
 
@@ -1236,6 +1253,8 @@ None
 
 =head1 AUTHOR
 
+Roland Schemers <schemers@stanford.edu>
+Russ Allbery <rra@stanford.edu>
 Jon Robertson <jonrober@stanford.edu>
 
 =head1 SEE ALSO

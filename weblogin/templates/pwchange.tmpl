@@ -31,6 +31,7 @@ password               : the old password
 new_passwd1            : the new password (first)
 new_passwd2            : the new password (second)
 changepw               : set to show this is not our first visit
+expired                : set when sent here for expired password login fail
 -->
   </TMPL_IF>
 
@@ -119,6 +120,8 @@ changepw               : set to show this is not our first visit
                   <input type="hidden" name="CPT"
                          value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
                   <input type="hidden" name="changepw" value="yes">
+                  <input type="hidden" name="expired"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=expired>">
                   <TMPL_IF NAME=skip_username>
                     <input type="hidden" name="username"
                            value="<TMPL_VAR ESCAPE=HTML NAME=username>">
