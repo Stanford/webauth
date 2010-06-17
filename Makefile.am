@@ -1,7 +1,7 @@
 # Makefile.am -- Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See README for licensing terms.
 
@@ -16,38 +16,46 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
-	conf/debian/webauth.conf conf/debian/webauth.load		   \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
-	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	   \
-	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml  \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
-	lib/mapfile lib/mkheader lib/webauth.h.in modules/webauth/krb5.c   \
-	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h	   \
-	modules/webauth/util.c modules/webauth/webkdc.c			   \
-	modules/webauthldap/mod_webauthldap.c				   \
-	modules/webauthldap/mod_webauthldap.h modules/webkdc/acl.c	   \
-	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		   \
-	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP \
-	tests/TESTS tests/mod_webauth tools/wa_keyring.pod		   \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		   \
-	weblogin/images/error.xcf weblogin/images/help.xcf		   \
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		     \
+	conf/debian/webauth.conf conf/debian/webauth.load		     \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	     \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			     \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		     \
+	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	     \
+	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml    \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		     \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	     \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth     \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	     \
+	lib/mapfile lib/mkheader lib/webauth.h.in modules/webauth/krb5.c     \
+	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h	     \
+	modules/webauth/util.c modules/webauth/webkdc.c			     \
+	modules/webauthldap/mod_webauthldap.c				     \
+	modules/webauthldap/mod_webauthldap.h modules/webkdc/acl.c	     \
+	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		     \
+	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP   \
+	tests/TESTS tests/data/readme tests/mod_webauth tools/wa_keyring.pod \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		     \
+	weblogin/images/error.xcf weblogin/images/help.xcf		     \
 	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
+noinst_LTLIBRARIES = portable/libportable.la util/libutil.la
+portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
+        portable/krb5.h portable/macros.h portable/stdbool.h		 \
+        portable/system.h
+portable_libportable_la_CPPFLAGS = $(KRB5_CPPFLAGS)
+portable_libportable_la_LIBADD = $(LTLIBOBJS)
+util_libutil_la_SOURCES = util/concat.c util/concat.h util/macros.h	\
+        util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
+
 lib_LTLIBRARIES = lib/libwebauth.la
-lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c \
-	lib/krb5.c lib/misc.c lib/random.c lib/token.c lib/webauth.h \
-	lib/webauthp.h
+lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
+	lib/misc.c lib/random.c lib/token.c lib/webauth.h lib/webauthp.h
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(CRYPTO_CPPFLAGS) $(KRB5_CPPFLAGS)
 lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
 	$(CRYPTO_LDFLAGS) $(KRB5_LDFLAGS)
-lib_libwebauth_la_LIBADD = $(CRYPTO_LIBS) $(KRB5_LIBS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(CRYPTO_LIBS) $(KRB5_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
 tools_wa_keyring_LDADD = lib/libwebauth.la $(CRYPTO_LIBS)
@@ -251,19 +259,18 @@ tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
-tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h
+tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h \
+	tests/tap/kerberos.c tests/tap/kerberos.h
 
 # All of the test programs.
 tests_libwebauth_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_krb5_t_SOURCES = tests/libwebauth/krb5-t.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_krb5_t_LDADD = lib/libwebauth.la
-tests_libwebauth_krb5_tgt_t_SOURCES = tests/libwebauth/krb5-tgt-t.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_krb5_tgt_t_LDADD = lib/libwebauth.la
+tests_libwebauth_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_libwebauth_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.la portable/libportable.la $(KRB5_LIBS)
 tests_libwebauth_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 

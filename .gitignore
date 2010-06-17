@@ -27,6 +27,9 @@
 /perl/webauth_keyring2
 /stamp-h1
 /stamp-h2
+/tests/data/test.keytab
+/tests/data/test.password
+/tests/data/test.principal
 /tests/libwebauth/attrs-t
 /tests/libwebauth/base64-t
 /tests/libwebauth/hex-t

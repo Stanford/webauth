@@ -2,5 +2,7 @@ libwebauth/attrs
 libwebauth/base64
 libwebauth/hex
 libwebauth/key
+libwebauth/krb5
+libwebauth/krb5-tgt
 libwebauth/random
 libwebauth/token

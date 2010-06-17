@@ -6,11 +6,12 @@ dnl    Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
 
-AC_PREREQ([2.63])
+AC_PREREQ([2.64])
 AC_INIT([WebAuth], [3.6.2], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([1.10])
+AM_INIT_AUTOMAKE([1.11 check-news silent-rules -Wall -Werror])
 AM_MAINTAINER_MODE
 
 dnl Store information about the time the package was configured and the person
@@ -134,13 +135,17 @@ if test x"$reduced_depends" != xtrue ; then
 fi
 AC_SUBST([DEPEND_LIBS])
 
-dnl Checks for header files.
-AC_CHECK_HEADERS([netinet/in.h])
-
-dnl Checks for types.
+AC_HEADER_STDBOOL
+AC_CHECK_HEADERS([netinet/in.h sys/bittypes.h syslog.h])
+AC_CHECK_DECLS([snprintf, vsnprintf])
+RRA_C_C99_VAMACROS
+RRA_C_GNU_VAMACROS
+AC_TYPE_LONG_LONG_INT
 AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
+RRA_FUNC_SNPRINTF
+AC_REPLACE_FUNCS([asprintf strlcat strlcpy])
 
 dnl Crank up warnings if using GCC
 if test "$GCC" = "yes" ; then
