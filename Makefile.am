@@ -242,37 +242,30 @@ warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/libwebauth/attrs_test \
-	tests/libwebauth/base64_test tests/libwebauth/hex_test \
-	tests/libwebauth/key_test tests/libwebauth/krb5_test \
-	tests/libwebauth/krb5_tgt_test tests/libwebauth/random_test \
-	tests/libwebauth/token_test
+check_PROGRAMS = tests/runtests tests/libwebauth/attrs-t \
+	tests/libwebauth/base64-t tests/libwebauth/hex-t \
+	tests/libwebauth/key-t tests/libwebauth/krb5-t \
+	tests/libwebauth/krb5-tgt-t tests/libwebauth/random-t \
+	tests/libwebauth/token-t
+tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
+	-DBUILD='"$(abs_top_builddir)/tests"'
+check_LIBRARIES = tests/tap/libtap.a
+tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
+tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h
 
 # All of the test programs.
-tests_libwebauth_attrs_test_SOURCES = tests/libwebauth/attrs_test.c \
+tests_libwebauth_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_krb5_t_SOURCES = tests/libwebauth/krb5-t.c \
 	tests/libwebauth/webauthtest.h
-tests_libwebauth_attrs_test_LDADD = lib/libwebauth.la
-tests_libwebauth_base64_test_SOURCES = tests/libwebauth/base64_test.c \
+tests_libwebauth_krb5_t_LDADD = lib/libwebauth.la
+tests_libwebauth_krb5_tgt_t_SOURCES = tests/libwebauth/krb5-tgt-t.c \
 	tests/libwebauth/webauthtest.h
-tests_libwebauth_base64_test_LDADD = lib/libwebauth.la
-tests_libwebauth_hex_test_SOURCES = tests/libwebauth/hex_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_hex_test_LDADD = lib/libwebauth.la
-tests_libwebauth_key_test_SOURCES = tests/libwebauth/key_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_key_test_LDADD = lib/libwebauth.la
-tests_libwebauth_krb5_test_SOURCES = tests/libwebauth/krb5_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_krb5_test_LDADD = lib/libwebauth.la
-tests_libwebauth_krb5_tgt_test_SOURCES = tests/libwebauth/krb5_tgt_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_krb5_tgt_test_LDADD = lib/libwebauth.la
-tests_libwebauth_random_test_SOURCES = tests/libwebauth/random_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_random_test_LDADD = lib/libwebauth.la
-tests_libwebauth_token_test_SOURCES = tests/libwebauth/token_test.c \
-	tests/libwebauth/webauthtest.h
-tests_libwebauth_token_test_LDADD = lib/libwebauth.la
+tests_libwebauth_krb5_tgt_t_LDADD = lib/libwebauth.la
+tests_libwebauth_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_libwebauth_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS

@@ -26,6 +26,13 @@ WebAuth 3.6.3 (unreleased)
     call specific to a particular API, whereas the former is the term used
     in the Kerberos protocol documentation.  Thanks, Liam Atkinson.
 
+    Update to C TAP Harness 1.3:
+
+    * Support running a single test with tests/runtests -o.
+    * Better reporting of fatal errors in the test suite.
+    * Rewrite of all test cases to use the new TAP library support.
+    * Summarize results at the end of test execution.
+
 WebAuth 3.6.2 (2009-09-10)
 
     SECURITY: When generating the redirect to test for cookie support if
