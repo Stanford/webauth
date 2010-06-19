@@ -26,6 +26,11 @@ WebAuth 3.6.3 (unreleased)
     call specific to a particular API, whereas the former is the term used
     in the Kerberos protocol documentation.  Thanks, Liam Atkinson.
 
+    Update to rra-c-util 2.4:
+
+    * Use --with-krb5 instead of --with-kerberos for Kerberos path.
+    * Add --with-krb5-lib and --with-krb5-include configure flags.
+
     Update to C TAP Harness 1.3:
 
     * Support running a single test with tests/runtests -o.

@@ -115,13 +115,22 @@ if test x"$build_perl" = xtrue ; then
 fi
 
 dnl Checks for libraries.
-if test x"$reduced_depends" != xtrue ; then
-    AC_SEARCH_LIBS([gethostbyname], [nsl])
-    AC_SEARCH_LIBS([socket], [socket], ,
-        [AC_CHECK_LIB([nsl], [socket],
-            [LIBS="-lnsl -lsocket $LIBS"], , [-lsocket])])
-fi
-WEBAUTH_LIB_KRB5
+RRA_LIB_KRB5
+RRA_LIB_KRB5_SWITCH
+AC_CHECK_HEADERS([et/com_err.h])
+AC_CHECK_TYPES([krb5_realm], , , [#include <krb5.h>])
+AC_CHECK_FUNCS([krb5_free_keytab_entry_contents \
+                krb5_get_init_creds_opt_alloc \
+                krb5_get_init_creds_opt_set_default_flags \
+                krb5_principal_get_realm \
+                krb5_unparse_name_flags])
+AC_CHECK_MEMBER([krb5_creds.session],
+    [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
+        [Define if your Kerberos implementation is Heimdal.])],
+    [AC_DEFINE([HAVE_KRB5_MIT], [1],
+        [Define if your Kerberos implementation is MIT.])],
+    [#include <krb5.h>])
+RRA_LIB_KRB5_RESTORE
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 WEBAUTH_LIB_LDAP

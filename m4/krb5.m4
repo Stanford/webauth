@@ -1,144 +1,263 @@
-dnl krb5.m4 -- Find the compiler and linker flags for Kerberos v5.
+dnl Find the compiler and linker flags for Kerberos v5.
 dnl
-dnl Finds the compiler and linker flags and adds them to CPPFLAGS and LIBS.
-dnl Provides --with-kerberos and --enable-reduced-depends configure options to
-dnl control how linking with Kerberos is done.  Uses krb5-config where
-dnl available unless reduced dependencies is requested.  Provides the macro
-dnl WEBAUTH_LIB_KRB5.
+dnl Finds the compiler and linker flags for linking with Kerberos v5
+dnl libraries.  Provides the --with-krb5, --with-krb5-include, and
+dnl --with-krb5-lib configure options to specify non-standard paths to the
+dnl Kerberos libraries.  Uses krb5-config where available unless reduced
+dnl dependencies is requested.
 dnl
-dnl This is a modified version of this standard set of probes to remove
-dnl --enable-static and to set KRB5_LIBS and KRB5_CPPFLAGS instead of
-dnl modifying the main variables.  All of the non-krb5 stuff has been
-dnl stripped out, as has the initial probe for reduced dependencies and some
-dnl other things that we're doing in the main configure script.  Don't just
-dnl blindly replace it with updates from other packages.
+dnl Provides the macro RRA_LIB_KRB5 and sets the substitution variables
+dnl KRB5_CPPFLAGS, KRB5_LDFLAGS, and KRB5_LIBS.  Also provides
+dnl RRA_LIB_KRB5_SWITCH to set CPPFLAGS, LDFLAGS, and LIBS to include the
+dnl Kerberos libraries, saving the current values first, and
+dnl RRA_LIB_KRB5_RESTORE to restore those settings to before the last
+dnl RRA_LIB_KRB5_SWITCH.
+dnl
+dnl Provides the RRA_LIB_KRB5_OPTIONAL macro, which should be used if Kerberos
+dnl support is optional.  This macro will still always set the substitution
+dnl variables, but they'll be empty unless --with-krb5 is given.  Also,
+dnl HAVE_KERBEROS will be defined if --with-krb5 is given and
+dnl $rra_use_kerberos will be set to "true".
+dnl
+dnl Sets the Automake conditional KRB5_USES_COM_ERR saying whether we use
+dnl com_err, since if we're also linking with AFS libraries, we may have to
+dnl change library ordering in that case.
+dnl
+dnl Depends on RRA_ENABLE_REDUCED_DEPENDS and RRA_SET_LDFLAGS.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2004, 2006, 2007, 2008, 2009
+dnl Copyright 2005, 2006, 2007, 2008, 2009
 dnl     Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
 
-dnl Does the appropriate library checks for reduced-dependency krb5 linkage.
-AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5_REDUCED],
-[AC_CHECK_LIB([krb5], [krb5_init_context], [KRB5_LIBS="-lkrb5"],
-    [AC_MSG_ERROR([cannot find usable Kerberos v5 library])])
-AC_CHECK_LIB([com_err], [com_err], [KRB5_LIBS="$KRB5_LIBS -lcom_err"],
-    [AC_MSG_ERROR([cannot find usable com_err library])])])
+dnl Save the current CPPFLAGS, LDFLAGS, and LIBS settings and switch to
+dnl versions that include the Kerberos v5 flags.  Used as a wrapper, with
+dnl RRA_LIB_KRB5_RESTORE, around tests.
+AC_DEFUN([RRA_LIB_KRB5_SWITCH],
+[rra_krb5_save_CPPFLAGS="$CPPFLAGS"
+ rra_krb5_save_LDFLAGS="$LDFLAGS"
+ rra_krb5_save_LIBS="$LIBS"
+ CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
+ LDFLAGS="$KRB5_LDFLAGS $LDFLAGS"
+ LIBS="$KRB5_LIBS $LIBS"])
 
-dnl Does the appropriate library checks for krb5 linkage.  Note that we have
-dnl to check for a different function the second time since the Heimdal and
-dnl MIT libraries have the same name.
-AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5],
-[AC_CHECK_LIB([krb5], [krb5_init_context],
-    [KRB5_LIBS="-lkrb5 -lasn1 -lroken -lcrypto -lcom_err"],
-    [KRB5EXTRA="-lk5crypto -lcom_err"
-     AC_CHECK_LIB([krb5support], [krb5int_getspecific],
-        [KRB5EXTRA="$KRB5EXTRA -lkrb5support"],
-        [AC_SEARCH_LIBS([pthread_setspecific], [pthreads pthread])
+dnl Restore CPPFLAGS, LDFLAGS, and LIBS to their previous values (before
+dnl RRA_LIB_KRB5_SWITCH was called).
+AC_DEFUN([RRA_LIB_KRB5_RESTORE],
+[CPPFLAGS="$rra_krb5_save_CPPFLAGS"
+ LDFLAGS="$rra_krb5_save_LDFLAGS"
+ LIBS="$rra_krb5_save_LIBS"])
+
+dnl Set KRB5_CPPFLAGS and KRB5_LDFLAGS based on rra_krb5_root,
+dnl rra_krb5_libdir, and rra_krb5_includedir.
+AC_DEFUN([_RRA_LIB_KRB5_PATHS],
+[AS_IF([test x"$rra_krb5_libdir" != x],
+    [KRB5_LDFLAGS="-L$rra_krb5_libdir"],
+    [AS_IF([test x"$rra_krb5_root" != x],
+        [RRA_SET_LDFLAGS([KRB5_LDFLAGS], [$rra_krb5_root])])])
+ AS_IF([test x"$rra_krb5_includedir" != x],
+    [KRB5_CPPFLAGS="-I$rra_krb5_includedir"],
+    [AS_IF([test x"$rra_krb5_root" != x],
+        [AS_IF([test x"$rra_krb5_root" != x/usr],
+            [KRB5_CPPFLAGS="-I${rra_krb5_root}/include"])])])])
+
+dnl Does the appropriate library checks for reduced-dependency Kerberos v5
+dnl linkage.  The single argument, if true, says to fail if Kerberos could not
+dnl be found.
+AC_DEFUN([_RRA_LIB_KRB5_REDUCED],
+[RRA_LIB_KRB5_SWITCH
+ AC_CHECK_LIB([krb5], [krb5_init_context], [KRB5_LIBS="-lkrb5"],
+     [AS_IF([test x"$1" = xtrue],
+         [AC_MSG_ERROR([cannot find usable Kerberos v5 library])])])
+ LIBS="$KRB5_LIBS $LIBS"
+ AC_CHECK_FUNCS([krb5_get_error_message],
+     [AC_CHECK_FUNCS([krb5_free_error_message])],
+     [AC_CHECK_FUNCS([krb5_get_error_string], ,
+         [AC_CHECK_FUNCS([krb5_get_err_txt], ,
+             [AC_CHECK_LIB([ksvc], [krb5_svc_get_msg],
+                 [KRB5_LIBS="$KRB5_LIBS -lksvc"
+                  AC_DEFINE([HAVE_KRB5_SVC_GET_MSG], [1])
+                  AC_CHECK_HEADERS([ibm_svc/krb5_svc.h])],
+                 [AC_CHECK_LIB([com_err], [com_err],
+                     [KRB5_LIBS="$KRB5_LIBS -lcom_err"],
+                     [AC_MSG_ERROR([cannot find usable com_err library])])
+                  AC_CHECK_HEADERS([et/com_err.h])])])])])
+ RRA_LIB_KRB5_RESTORE])
+
+dnl Does the appropriate library checks for Kerberos v5 linkage when we don't
+dnl have krb5-config or reduced dependencies.  The single argument, if true,
+dnl says to fail if Kerberos could not be found.
+AC_DEFUN([_RRA_LIB_KRB5_MANUAL],
+[RRA_LIB_KRB5_SWITCH
+ rra_krb5_extra=
+ LIBS=
+ AC_SEARCH_LIBS([res_search], [resolv], ,
+    [AC_SEARCH_LIBS([__res_search], [resolv])])
+ AC_SEARCH_LIBS([gethostbyname], [nsl])
+ AC_SEARCH_LIBS([socket], [socket], ,
+    [AC_CHECK_LIB([nsl], [socket], [LIBS="-lnsl -lsocket $LIBS"], ,
+        [-lsocket])])
+ AC_SEARCH_LIBS([crypt], [crypt])
+ rra_krb5_extra="$LIBS"
+ LIBS="$rra_krb5_save_LIBS"
+ AC_CHECK_LIB([krb5], [krb5_init_context],
+    [KRB5_LIBS="-lkrb5 -lasn1 -lroken -lcrypto -lcom_err $rra_krb5_extra"],
+    [AC_CHECK_LIB([krb5support], [krb5int_getspecific],
+        [rra_krb5_extra="-lkrb5support $rra_krb5_extra"],
+        [AC_CHECK_LIB([pthreads], [pthread_setspecific],
+            [rra_krb5_pthread="-lpthreads"],
+            [AC_CHECK_LIB([pthread], [pthread_setspecific],
+                [rra_krb5_pthread="-lpthread"])])
          AC_CHECK_LIB([krb5support], [krb5int_setspecific],
-            [KRB5EXTRA="$KRB5EXTRA -lkrb5support"])])
+            [rra_krb5_extra="-lkrb5support $rra_krb5_extra $rra_krb5_pthread"],
+            , [$rra_krb5_pthread])])
+     AC_CHECK_LIB([com_err], [error_message],
+        [rra_krb5_extra="-lcom_err $rra_krb5_extra"])
+     AC_CHECK_LIB([ksvc], [krb5_svc_get_msg],
+        [rra_krb5_extra="-lksvc $rra_krb5_extra"])
+     AC_CHECK_LIB([k5crypto], [krb5int_hash_md5],
+        [rra_krb5_extra="-lk5crypto $rra_krb5_extra"])
+     AC_CHECK_LIB([k5profile], [profile_get_values],
+        [rra_krb5_extra="-lk5profile $rra_krb5_extra"])
      AC_CHECK_LIB([krb5], [krb5_cc_default],
-        [KRB5_LIBS="-lkrb5 $KRB5EXTRA"],
-        [AC_MSG_ERROR([cannot find usable Kerberos v5 library])],
-        [$KRB5EXTRA])],
-    [-lasn1 -lroken -lcrypto -lcom_err])])
+        [KRB5_LIBS="-lkrb5 $rra_krb5_extra"],
+        [AS_IF([test x"$1" = xtrue],
+            [AC_MSG_ERROR([cannot find usable Kerberos v5 library])])],
+        [$rra_krb5_extra])],
+    [-lasn1 -lroken -lcrypto -lcom_err $rra_krb5_extra])
+ LIBS="$KRB5_LIBS $LIBS"
+ AC_CHECK_FUNCS([krb5_get_error_message],
+     [AC_CHECK_FUNCS([krb5_free_error_message])],
+     [AC_CHECK_FUNCS([krb5_get_error_string], ,
+         [AC_CHECK_FUNCS([krb5_get_err_txt], ,
+             [AC_CHECK_FUNCS([krb5_svc_get_msg],
+                 [AC_CHECK_HEADERS([ibm_svc/krb5_svc.h])],
+                 [AC_CHECK_HEADERS([et/com_err.h])])])])])
+ RRA_LIB_KRB5_RESTORE])
 
-dnl Additional checks for portability between MIT and Heimdal if krb5
-dnl libraries were requested.
-AC_DEFUN([_WEBAUTH_LIB_KRB5_KRB5_EXTRA],
-[LIBS_save=$LIBS
-LIBS="$KRB5_LIBS $LIBS"
-CPPFLAGS_save=$CPPFLAGS
-CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
-AC_CHECK_HEADERS([et/com_err.h])
-AC_CHECK_TYPES([krb5_realm], , , [#include <krb5.h>])
-AC_CHECK_FUNCS([krb5_free_keytab_entry_contents \
-                krb5_free_error_message \
-                krb5_get_error_message \
-                krb5_get_init_creds_opt_alloc \
-                krb5_get_init_creds_opt_set_default_flags \
-                krb5_principal_get_realm \
-                krb5_unparse_name_flags])
-AC_CHECK_MEMBER([krb5_creds.session],
-    [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
-        [Define if your Kerberos implementation is Heimdal.])],
-    [AC_DEFINE([HAVE_KRB5_MIT], [1],
-        [Define if your Kerberos implementation is MIT.])],
-    [#include <krb5.h>])
-LIBS=$LIBS_save
-CPPFLAGS=$CPPFLAGS_save])
+dnl Sanity-check the results of krb5-config and be sure we can really link a
+dnl Kerberos program.  If that fails, clear KRB5_CPPFLAGS and KRB5_LIBS so
+dnl that we know we don't have usable flags and fall back on the manual
+dnl check.
+AC_DEFUN([_RRA_LIB_KRB5_CHECK],
+[RRA_LIB_KRB5_SWITCH
+ AC_CHECK_FUNC([krb5_init_context],
+    [RRA_LIB_KRB5_RESTORE],
+    [RRA_LIB_KRB5_RESTORE
+     KRB5_CPPFLAGS=
+     KRB5_LIBS=
+     _RRA_LIB_KRB5_PATHS
+     _RRA_LIB_KRB5_MANUAL([$1])])])
 
-dnl The main macro.
-AC_DEFUN([WEBAUTH_LIB_KRB5],
-[LDFLAGS_save=$LDFLAGS
-KRBROOT=
-AC_ARG_WITH([kerberos],
-    AC_HELP_STRING([--with-kerberos=DIR],
-        [Location of Kerberos headers and libraries]),
-    [if test x"$withval" != xno ; then
-        KRBROOT="$withval"
-     fi])
+dnl The core of the library checking, shared between RRA_LIB_KRB5 and
+dnl RRA_LIB_KRB5_OPTIONAL.  The single argument, if "true", says to fail if
+dnl Kerberos could not be found.
+AC_DEFUN([_RRA_LIB_KRB5_INTERNAL],
+[AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
+ AS_IF([test x"$rra_reduced_depends" = xtrue],
+    [_RRA_LIB_KRB5_PATHS
+     _RRA_LIB_KRB5_REDUCED([$1])],
+    [AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
+     AS_IF([test x"$rra_krb5_root" != x && test -z "$KRB5_CONFIG"],
+         [AS_IF([test -x "${rra_krb5_root}/bin/krb5-config"],
+             [KRB5_CONFIG="${rra_krb5_root}/bin/krb5-config"])],
+         [AC_PATH_PROG([KRB5_CONFIG], [krb5-config])])
+     AS_IF([test x"$KRB5_CONFIG" != x && test -x "$KRB5_CONFIG"],
+         [AC_CACHE_CHECK([for krb5 support in krb5-config],
+             [rra_cv_lib_krb5_config],
+             [AS_IF(["$KRB5_CONFIG" 2>&1 | grep krb5 >/dev/null 2>&1],
+                 [rra_cv_lib_krb5_config=yes],
+                 [rra_cv_lib_krb5_config=no])])
+          AS_IF([test x"$rra_cv_lib_krb5_config" = xyes],
+              [KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags krb5 2>/dev/null`
+               KRB5_LIBS=`"$KRB5_CONFIG" --libs krb5 2>/dev/null`],
+              [KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags 2>/dev/null`
+               KRB5_LIBS=`"$KRB5_CONFIG" --libs 2>/dev/null`])
+          KRB5_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's%-I/usr/include ?%%'`
+          _RRA_LIB_KRB5_CHECK([$1])
+          RRA_LIB_KRB5_SWITCH
+          AC_CHECK_FUNCS([krb5_get_error_message],
+              [AC_CHECK_FUNCS([krb5_free_error_message])],
+              [AC_CHECK_FUNCS([krb5_get_error_string], ,
+                  [AC_CHECK_FUNCS([krb5_get_err_txt], ,
+                      [AC_CHECK_FUNCS([krb5_svc_get_msg],
+                          [AC_CHECK_HEADERS([ibm_svc/krb5_svc.h])],
+                          [AC_CHECK_HEADERS([et/com_err.h])])])])])
+          RRA_LIB_KRB5_RESTORE],
+         [_RRA_LIB_KRB5_PATHS
+          _RRA_LIB_KRB5_MANUAL([$1])])])
+ rra_krb5_uses_com_err=false
+ case "$LIBS" in
+ *-lcom_err*)
+     rra_krb5_uses_com_err=true
+     ;;
+ esac
+ AM_CONDITIONAL([KRB5_USES_COM_ERR], [test x"$rra_krb5_uses_com_err" = xtrue])])
 
-dnl Handle the reduced depends case, which is much simpler.
-if test x"$reduced_depends" = xtrue ; then
-    if test x"$KRBROOT" != x ; then
-        if test x"$KRBROOT" != x/usr ; then
-            KRB5_CPPFLAGS="-I$KRBROOT/include"
-        fi
-        LDFLAGS="$LDFLAGS -L$KRBROOT/lib"
-    fi
-    _WEBAUTH_LIB_KRB5_KRB5_REDUCED
-fi
+dnl The main macro for packages with mandatory Kerberos support.
+AC_DEFUN([RRA_LIB_KRB5],
+[rra_krb5_root=
+ rra_krb5_libdir=
+ rra_krb5_includedir=
+ KRB5_CPPFLAGS=
+ KRB5_LDFLAGS=
+ KRB5_LIBS=
+ AC_SUBST([KRB5_CPPFLAGS])
+ AC_SUBST([KRB5_LDFLAGS])
+ AC_SUBST([KRB5_LIBS])
 
-dnl Checking for the neworking libraries shouldn't be necessary for the
-dnl krb5-config case, but apparently it is at least for MIT Kerberos 1.2.
-dnl This will unfortunately mean multiple -lsocket -lnsl references when
-dnl building with current versions of Kerberos, but this shouldn't cause
-dnl any practical problems.
-if test x"$reduced_depends" != xtrue ; then
-    AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
-    if test x"$KRBROOT" != x ; then
-        if test -x "$KRBROOT/bin/krb5-config" ; then
-            KRB5_CONFIG="$KRBROOT/bin/krb5-config"
-        fi
-    else
-        AC_PATH_PROG([KRB5_CONFIG], [krb5-config])
-    fi
+ AC_ARG_WITH([krb5],
+    [AS_HELP_STRING([--with-krb5=DIR],
+        [Location of Kerberos v5 headers and libraries])],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_krb5_root="$withval"])])
+ AC_ARG_WITH([krb5-include],
+    [AS_HELP_STRING([--with-krb5-include=DIR],
+        [Location of Kerberos v5 headers])],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_krb5_includedir="$withval"])])
+ AC_ARG_WITH([krb5-lib],
+    [AS_HELP_STRING([--with-krb5-lib=DIR],
+        [Location of Kerberos v5 libraries])],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_krb5_libdir="$withval"])])
+ _RRA_LIB_KRB5_INTERNAL([true])])
 
-    if test x"$KRB5_CONFIG" != x ; then
-        AC_MSG_CHECKING([for krb5 support in krb5-config])
-        if "$KRB5_CONFIG" | grep krb5 > /dev/null 2>&1 ; then
-            AC_MSG_RESULT([yes])
-            KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags krb5`
-            KRB5_LIBS=`"$KRB5_CONFIG" --libs krb5`
-        else
-            AC_MSG_RESULT([no])
-            KRB5_CPPFLAGS=`"$KRB5_CONFIG" --cflags`
-            KRB5_LIBS=`"$KRB5_CONFIG" --libs`
-        fi
-        KRB5_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's%-I/usr/include ?%%'`
-    else
-        if test x"$KRBROOT" != x ; then
-            if test x"$KRBROOT" != x/usr ; then
-                KRB5_CPPFLAGS="-I$KRBROOT/include"
-            fi
-            LDFLAGS="$LDFLAGS -L$KRBROOT/lib"
-        fi
-        AC_SEARCH_LIBS([res_search], [resolv], ,
-            [AC_SEARCH_LIBS([__res_search], [resolv])])
-        AC_SEARCH_LIBS([crypt], [crypt])
-        _WEBAUTH_LIB_KRB5_KRB5
-    fi
-fi
+dnl The main macro for packages with optional Kerberos support.
+AC_DEFUN([RRA_LIB_KRB5_OPTIONAL],
+[rra_krb5_root=
+ rra_krb5_libdir=
+ rra_krb5_includedir=
+ rra_use_kerberos=
+ KRB5_CPPFLAGS=
+ KRB5_LDFLAGS=
+ KRB5_LIBS=
+ AC_SUBST([KRB5_CPPFLAGS])
+ AC_SUBST([KRB5_LDFLAGS])
+ AC_SUBST([KRB5_LIBS])
 
-dnl Generate the final library list and put it into the standard variables.
-KRB5_LIBS="$LDFLAGS $KRB5_LIBS"
-KRB5_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's/^  *//'`
-KRB5_LDFLAGS=`echo "$LDFLAGS" | sed 's/^  *//'`
-AC_SUBST([KRB5_CPPFLAGS])
-AC_SUBST([KRB5_LIBS])
+ AC_ARG_WITH([krb5],
+    [AS_HELP_STRING([--with-krb5@<:@=DIR@:>@],
+        [Location of Kerberos v5 headers and libraries])],
+    [AS_IF([test x"$withval" = xno],
+        [rra_use_kerberos=false],
+        [AS_IF([test x"$withval" != xyes], [rra_krb5_root="$withval"])
+         rra_use_kerberos=true])])
+ AC_ARG_WITH([krb5-include],
+    [AS_HELP_STRING([--with-krb5-include=DIR],
+        [Location of Kerberos v5 headers])],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_krb5_includedir="$withval"])])
+ AC_ARG_WITH([krb5-lib],
+    [AS_HELP_STRING([--with-krb5-lib=DIR],
+        [Location of Kerberos v5 libraries])],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_krb5_libdir="$withval"])])
 
-dnl Run any extra checks for the desired libraries.
-_WEBAUTH_LIB_KRB5_KRB5_EXTRA
-LDFLAGS=$LDFLAGS_save])
+ AS_IF([test x"$rra_use_kerberos" != xfalse],
+     [AS_IF([test x"$rra_use_kerberos" = xtrue],
+         [_RRA_LIB_KRB5_INTERNAL([true])],
+         [_RRA_LIB_KRB5_INTERNAL([false])])])
+ AS_IF([test x"$KRB5_LIBS" != x],
+    [AC_DEFINE([HAVE_KERBEROS], 1, [Define to enable Kerberos features.])])])
