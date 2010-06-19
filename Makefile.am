@@ -246,8 +246,8 @@ APXS_WARNINGS = -Wc,-g -Wc,-O -Wc,-DDEBUG=1 -Wc,-Wall -Wc,-W \
 	-Wc,-Wnested-externs -Wc,-Werror
 
 warnings:
-	$(MAKE) CFLAGS='$(WARNINGS)'
-	$(MAKE) CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/libwebauth/attrs-t \
