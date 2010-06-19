@@ -156,11 +156,6 @@ AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
 AC_REPLACE_FUNCS([asprintf strlcat strlcpy])
 
-dnl Crank up warnings if using GCC
-if test "$GCC" = "yes" ; then
-    CFLAGS="-Wall $CFLAGS"
-fi
-
 dnl Generate special flags for apxs, which doesn't understand compiler flags.
 dnl We have to do this with KRB5_LIBS and DEPEND_LIBS as well, since Heimdal
 dnl likes to put -pthread into the compiler flags and apxs doesn't understand
