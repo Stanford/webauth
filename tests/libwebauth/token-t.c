@@ -29,7 +29,8 @@ main(void)
     WEBAUTH_KEYRING *ring, *ring2;
     char key_material[WA_AES_128];
     WEBAUTH_ATTR_LIST *ain, *aout;
-    int rlen, len, i, s;
+    size_t rlen, len, i;
+    int s;
     char *token;
     time_t curr;
 

@@ -2,7 +2,8 @@
  * General WebAuth utility functions.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2002, 2009, 2010
+ *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -81,8 +82,8 @@ webauth_info_version(void)
  * Given the length of data, return the length required to store that data
  * encoded in hex.
  */
-int
-webauth_hex_encoded_length(int length)
+size_t
+webauth_hex_encoded_length(size_t length)
 {
     return length * 2;
 }
@@ -93,7 +94,7 @@ webauth_hex_encoded_length(int length)
  * the decoded data.
  */
 int
-webauth_hex_decoded_length(int length, int *out_length)
+webauth_hex_decoded_length(size_t length, size_t *out_length)
 {
     if (length % 2) {
         *out_length = 0;
@@ -112,10 +113,10 @@ webauth_hex_decoded_length(int length, int *out_length)
  * WA_ERR code.
  */
 int
-webauth_hex_encode(char *input, int input_len, char *output, int *output_len,
-                   int max_output_len)
+webauth_hex_encode(char *input, size_t input_len, char *output,
+                   size_t *output_len, size_t max_output_len)
 {
-    int out_len;
+    size_t out_len;
     unsigned char *s;
     unsigned char *d;
 
@@ -144,12 +145,12 @@ webauth_hex_encode(char *input, int input_len, char *output, int *output_len,
  * max_output_len is the size of the buffer.  Returns a WA_ERR code.
  */
 int
-webauth_hex_decode(char *input, int input_len, char *output, int *output_len,
-                   int max_output_len)
+webauth_hex_decode(char *input, size_t input_len, char *output,
+                   size_t *output_len, size_t max_output_len)
 {
     unsigned char *s = (unsigned char *) input;
     unsigned char *d = (unsigned char *) output;
-    int n;
+    size_t n;
 
     assert(input != NULL);
     assert(output != NULL);

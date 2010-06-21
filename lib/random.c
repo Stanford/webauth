@@ -2,7 +2,7 @@
  * Random data generation functions.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2006, 2009
+ * Copyright 2002, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -17,7 +17,7 @@
  * currently a simple wrapper around the OpenSSL function.
  */
 int
-webauth_random_bytes(char *output, int num_bytes)
+webauth_random_bytes(char *output, size_t num_bytes)
 {
     int s;
 
@@ -39,7 +39,7 @@ webauth_random_bytes(char *output, int num_bytes)
  * as webauth_random_bytes.
  */
 int
-webauth_random_key(char *key, int key_len)
+webauth_random_key(char *key, size_t key_len)
 {
     int s;
 

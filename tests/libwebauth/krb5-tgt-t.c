@@ -23,31 +23,31 @@
 #define CHECK(s, c, m) check_status(s, c, m, __FILE__, __LINE__)
 
 
-void
+static void
 check_status(int s, WEBAUTH_KRB5_CTXT *c, const char *message,
-             const char *file, int line)
+             const char *file, unsigned long line)
 {
     if (s == WA_ERR_KRB5 && c != NULL)
-        diag("webauth call failed %s line %d: %s (%d): %s %d\n", file, line,
+        diag("webauth call failed %s line %lu: %s (%d): %s %d\n", file, line,
              webauth_error_message(s), s, webauth_krb5_error_message(c),
              webauth_krb5_error_code(c));
     else if (s != WA_ERR_NONE)
-        diag("webauth call failed %s line %d: %s (%d)\n", file, line,
+        diag("webauth call failed %s line %lu: %s (%d)\n", file, line,
              webauth_error_message(s), s);
     is_int(s, WA_ERR_NONE, "%s", message);
 }
 
    
-void
+static void
 do_export(const char *principal, const char *cache)
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
     char *tgt, *req, *etgt;
-    int tgt_len, req_len, etgt_len;
+    size_t tgt_len, req_len, etgt_len;
     time_t expiration;
     char b64[4192];
-    int b64_len;
+    size_t b64_len;
     FILE *export;
 
     export = fopen("test-cred", "w");
@@ -82,13 +82,13 @@ do_export(const char *principal, const char *cache)
 }
 
 
-void
+static void
 do_import(const char *keytab)
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
     char req[4192], tgt[4192];
-    int req_len, tgt_len, dec_tgt_len;
+    size_t req_len, tgt_len, dec_tgt_len;
     char *dec_tgt;
     char *cprinc;
     char *sprinc;

@@ -29,12 +29,12 @@ main(void)
     int s;
     WEBAUTH_KRB5_CTXT *c;
     char username[BUFSIZ], password[BUFSIZ], principal[BUFSIZ];
-    char *server_principal, *service, *host, *keytab, *path, *server, *p;
+    char *server_principal, *keytab, *path;
     char *cp;
     char *sa;
-    int salen;
+    size_t salen;
     char *tgt, *ticket;
-    int tgtlen, ticketlen;
+    size_t tgtlen, ticketlen;
     time_t expiration;
     char *cprinc = NULL;
     char *crealm = NULL;

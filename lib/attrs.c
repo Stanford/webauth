@@ -2,11 +2,13 @@
  * Functions to manipulate attribute lists.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009
+ * Copyright 2002, 2003, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing term.s
  */
+
+#include <config.h>
 
 #if HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -22,13 +24,14 @@
 #define FLAG_ISSET(flags, flag) (((flags) & (flag)) == (flag))
 #define FLAG_CLEAR(flags, flag) ((flags) &= ~(flag))
 
+
 /*
  * Allocate a new list of attributes sufficient in size to hold
  * initial_capacity elements.  Returns the newly allocated list or NULL on
  * failure.
  */
 WEBAUTH_ATTR_LIST *
-webauth_attr_list_new(int initial_capacity)
+webauth_attr_list_new(size_t initial_capacity)
 {
     WEBAUTH_ATTR_LIST *al;
 
@@ -51,16 +54,16 @@ webauth_attr_list_new(int initial_capacity)
  * out of free entries.
  */
 static
-int next_entry(WEBAUTH_ATTR_LIST *list)
+ssize_t next_entry(WEBAUTH_ATTR_LIST *list)
 {
-    int i = list->num_attrs;
+    size_t i = list->num_attrs;
 
     assert(list != NULL);
     assert(list->attrs != NULL);
 
     if (list->num_attrs == list->capacity) {
-        int new_capacity = list->capacity * 2;
-        int new_size = sizeof(WEBAUTH_ATTR) * new_capacity;
+        size_t new_capacity = list->capacity * 2;
+        size_t new_size = sizeof(WEBAUTH_ATTR) * new_capacity;
         WEBAUTH_ATTR *new_attrs = realloc(list->attrs, new_size);
 
         if (new_attrs == NULL)
@@ -80,9 +83,10 @@ int next_entry(WEBAUTH_ATTR_LIST *list)
  */
 int
 webauth_attr_list_add(WEBAUTH_ATTR_LIST *list, const char *name, void *value,
-                      int length, int flags)
+                      size_t length, unsigned int flags)
 {
-    int i, s;
+    ssize_t i;
+    int s;
     char *buff = NULL;
 
     assert(list != NULL);
@@ -101,7 +105,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list, const char *name, void *value,
         list->attrs[i].name = name;
 
     if (FLAG_ISSET(flags, WA_F_FMT_B64)) {
-        int elen, blen = webauth_base64_encoded_length(length);
+        size_t elen, blen = webauth_base64_encoded_length(length);
 
         buff = malloc(blen);
         if (buff == NULL)
@@ -115,8 +119,8 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list, const char *name, void *value,
         length = elen;
         flags |= WA_F_COPY_VALUE;
     } else if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
-        int elen;
-        int hlen = webauth_hex_encoded_length(length);
+        size_t elen;
+        size_t hlen = webauth_hex_encoded_length(length);
 
         buff = malloc(hlen);
         if (buff == NULL)
@@ -162,7 +166,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list, const char *name, void *value,
  */
 int
 webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list, const char *name,
-                          const char *value, int vlen, int flags)
+                          const char *value, size_t vlen, unsigned int flags)
 {
     assert(value != NULL);
     return webauth_attr_list_add(list, name, (void *) value,
@@ -176,7 +180,7 @@ webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
-                             uint32_t value, int flags)
+                             uint32_t value, unsigned int flags)
 {
     if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
         char buff[32];
@@ -198,7 +202,7 @@ webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list, const char *name,
-                            int32_t value, int flags)
+                            int32_t value, unsigned int flags)
 {
     if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
         char buff[32];
@@ -220,7 +224,7 @@ webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, const char *name,
-                           time_t value, int flags)
+                           time_t value, unsigned int flags)
 {
     return webauth_attr_list_add_uint32(list, name, value, flags);
 }
@@ -232,7 +236,7 @@ webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list, const char *name,
 void
 webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
 {
-    int i;
+    size_t i;
 
     assert(list != NULL);
     assert(list->attrs != NULL);
@@ -253,9 +257,10 @@ webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
  * the index parameter.  Returns a WA_ERR code.
  */
 int
-webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name, int *index)
+webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name,
+                       ssize_t *index)
 {
-    int i;
+    size_t i;
 
     assert(list != NULL);
     assert(name != NULL);
@@ -278,9 +283,10 @@ webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name, int *index)
  */
 int
 webauth_attr_list_get(WEBAUTH_ATTR_LIST *list, const char *name, void **value,
-                      int *value_len, int flags)
+                      size_t *value_len, unsigned int flags)
 {
-    int i, s;
+    ssize_t i;
+    int s;
 
     assert(list != NULL);
     assert(name != NULL);
@@ -346,7 +352,7 @@ webauth_attr_list_get(WEBAUTH_ATTR_LIST *list, const char *name, void **value,
  */
 int
 webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list, const char *name,
-                          char **value, int *value_len, int flags)
+                          char **value, size_t *value_len, unsigned int flags)
 {
     return webauth_attr_list_get(list, name, (void **) value, value_len,
                                  flags);
@@ -359,9 +365,10 @@ webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
-                             uint32_t *value, int flags)
+                             uint32_t *value, unsigned int flags)
 {
-    int s, vlen;
+    int s;
+    size_t vlen;
     void *v;
 
     v = NULL;
@@ -393,7 +400,7 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list, const char *name,
-                            int32_t *value, int flags)
+                            int32_t *value, unsigned int flags)
 {
     return webauth_attr_list_get_uint32(list, name, (uint32_t *) value,
                                         flags);
@@ -406,7 +413,7 @@ webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list, const char *name,
  */
 int
 webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, const char *name,
-                           time_t *value, int flags)
+                           time_t *value, unsigned int flags)
 {
     uint32_t value32;
     int status;
@@ -422,10 +429,10 @@ webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list, const char *name,
  * Given an attribute list, returns the size of buffer required for an
  * encoding of that attribute list.
  */
-int
+size_t
 webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
-    int space, i, len;
+    size_t space, i, len;
     char *p, *v;
 
     assert(list);
@@ -463,9 +470,9 @@ webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list)
  */
 int
 webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list, char *output,
-                     int *output_len, int max_output_len)
+                     size_t *output_len, size_t max_output_len)
 {
-    int i, len, slen, rlen;
+    size_t i, len, slen, rlen;
     char *p, *v, *d;
 
     assert(list != NULL);
@@ -490,7 +497,7 @@ webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list, char *output,
         len = list->attrs[i].length;
 
         /* Escape any VAL_TERM in the value by doubling it. */
-        while (len && (p = memchr(v, VAL_TERM, len))) {
+        while (len != 0 && (p = memchr(v, VAL_TERM, len))) {
             slen = p - v + 1;
             memcpy(d, v, slen);
             d += slen;
@@ -519,9 +526,10 @@ webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list, char *output,
  * process.  Returns a WA_ERR code.
  */
 int
-webauth_attrs_decode(char *buffer, int input_len, WEBAUTH_ATTR_LIST **list)
+webauth_attrs_decode(char *buffer, size_t input_len, WEBAUTH_ATTR_LIST **list)
 {
-    int i, in_val, length, s;
+    size_t i, in_val, length;
+    int s;
     char *p, *d, *name;
     void *value;
 

@@ -27,8 +27,8 @@ main(void)
     char orig_buffer[BUFSIZE];
     char encoded_buffer[BUFSIZE];
     char decoded_buffer[BUFSIZE];
-    int i,j;
-    int elen, rlen, rdlen, dlen;
+    size_t i, j;
+    size_t elen, rlen, rdlen, dlen;
     int s;
 
     plan(7 * 511);

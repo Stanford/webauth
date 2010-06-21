@@ -12,6 +12,10 @@ WebAuth 3.6.3 (unreleased)
     alternate URL to attempt REMOTE_USER authentication in WebLogin.
     Patch from Ian Ward Comfort.
 
+    Change the libwebauth API to use size_t and other data types more
+    correctly instead of always using int.  This will require updates in
+    all calling applications.
+
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 

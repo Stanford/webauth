@@ -2,7 +2,7 @@
  * WebAuth token handling.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009
+ * Copyright 2002, 2003, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -49,10 +49,10 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] =
  * Given an attribute list, calculate the encoded binary length.  The length
  * of the padding needed is stored in plen.
  */
-static int
-binary_encoded_length(const WEBAUTH_ATTR_LIST *list, int *plen)
+static size_t
+binary_encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
 {
-    int len, m;
+    size_t len, m;
 
     len = webauth_attrs_encoded_length(list);
     len += T_NONCE_S + T_HMAC_S;
@@ -75,10 +75,10 @@ binary_encoded_length(const WEBAUTH_ATTR_LIST *list, int *plen)
 /*
  * Returns the encoded length of an attribute list.
  */
-int
+size_t
 webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list)
 {
-    int plen;
+    size_t plen;
 
     assert(list != NULL);
     assert(list->num_attrs);
@@ -98,10 +98,11 @@ webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list)
  */
 int
 webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list, time_t hint,
-                              char *output, int *output_len,
-                              int max_output_len, const WEBAUTH_KEY *key)
+                              char *output, size_t *output_len,
+                              size_t max_output_len, const WEBAUTH_KEY *key)
 {
-    int elen, plen, alen, n, i, s;
+    size_t elen, plen, alen, n, i;
+    int s;
     AES_KEY aes_key;
 
     /* sizeof(currt) MUST equal T_HINT_S. */
@@ -182,8 +183,8 @@ webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list, time_t hint,
  */
 int
 webauth_token_create(const WEBAUTH_ATTR_LIST *list, time_t hint,
-                     char *output, int *output_len,
-                     int max_output_len, const WEBAUTH_KEYRING *ring)
+                     char *output, size_t *output_len,
+                     size_t max_output_len, const WEBAUTH_KEYRING *ring)
 {
     WEBAUTH_KEY *key;
 
@@ -206,10 +207,10 @@ webauth_token_create(const WEBAUTH_ATTR_LIST *list, time_t hint,
  * return the decrypted length in dlen.  Returns a WA_ERR code.
  */
 static int
-decrypt_token(const WEBAUTH_KEY *key, char *input, int elen, int *dlen)
+decrypt_token(const WEBAUTH_KEY *key, char *input, size_t elen, size_t *dlen)
 {
     unsigned char computed_hmac[T_HMAC_S];
-    int plen, i;
+    size_t plen, i;
     AES_KEY aes_key;
 
     if (AES_set_decrypt_key((unsigned char *) key->data, key->length * 8,
@@ -240,7 +241,7 @@ decrypt_token(const WEBAUTH_KEY *key, char *input, int elen, int *dlen)
     if (plen > AES_BLOCK_SIZE || plen > elen)
         return WA_ERR_CORRUPT;
     for (i = 0; i < plen; i++)
-        if (*(input + elen - 1 - i) != plen)
+        if (*((unsigned char *) input + elen - 1 - i) != plen)
             return WA_ERR_CORRUPT;
 
     *dlen = elen - T_ATTR_O - plen;
@@ -252,8 +253,8 @@ decrypt_token(const WEBAUTH_KEY *key, char *input, int elen, int *dlen)
  * Check a token for basic validity.  This only checks the expiration time
  * and, if ttl is not zero, whether the creation time is more than ttl ago.
  */
-int static
-check_token(WEBAUTH_ATTR_LIST *list, int ttl)
+static int
+check_token(WEBAUTH_ATTR_LIST *list, unsigned long ttl)
 {
     int s;
     time_t curr = 0, t;
@@ -276,7 +277,7 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
     if (s == WA_ERR_NONE) {
         if (curr == 0)
             time(&curr);
-        if (t + ttl < curr)
+        if ((time_t) (t + ttl) < curr)
             return WA_ERR_TOKEN_STALE;
     } else if (s != WA_ERR_NOT_FOUND)
         return s;
@@ -293,10 +294,11 @@ check_token(WEBAUTH_ATTR_LIST *list, int ttl)
  * a WA_ERR code.
  */
 int
-webauth_token_parse(char *input, int input_len, int ttl,
+webauth_token_parse(char *input, size_t input_len, unsigned long ttl,
                     const WEBAUTH_KEYRING *ring, WEBAUTH_ATTR_LIST **list)
 {
-    int dlen, s, i;
+    size_t dlen, i;
+    int s;
     WEBAUTH_KEY *hkey;
 
     assert(input != NULL);
@@ -386,10 +388,11 @@ webauth_token_parse(char *input, int input_len, int ttl,
  * WA_ERR code.
  */
 int
-webauth_token_parse_with_key(char *input, int input_len, int ttl,
+webauth_token_parse_with_key(char *input, size_t input_len, unsigned long ttl,
                              const WEBAUTH_KEY *key, WEBAUTH_ATTR_LIST **list)
 {
-    int dlen, s;
+    size_t dlen;
+    int s;
 
     assert(input != NULL);
     assert(list != NULL);

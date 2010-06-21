@@ -6,7 +6,7 @@
  * to make a corresponding change to krb5-mit.c for systems with MIT Kerberos.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2002, 2003, 2006, 2009
+ * Copyright 2002, 2003, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -27,10 +27,11 @@
  */
 static int
 cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
-                      char **output, int *length, time_t *expiration)
+                      char **output, size_t *length, time_t *expiration)
 {
     WEBAUTH_ATTR_LIST *list;
-    int s, length_max;
+    int s;
+    size_t length_max;
 
     assert(c != NULL);
     assert(creds != NULL);
@@ -115,12 +116,12 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
 
     /* Addresses. */
     if (creds->addresses.len > 0) {
-        int i;
+        size_t i;
         char name[32];
         krb5_address *temp;
 
-        s = webauth_attr_list_add_int32(list, CR_NUMADDRS,
-                                        creds->addresses.len, WA_F_NONE);
+        s = webauth_attr_list_add_uint32(list, CR_NUMADDRS,
+                                         creds->addresses.len, WA_F_NONE);
         if (s != WA_ERR_NONE)
             goto cleanup;
         for (i = 0; i < creds->addresses.len; i++) {
@@ -159,11 +160,11 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
 
     /* Auth data. */
     if (creds->authdata.len > 0) {
-        int i;
+        size_t i;
         char name[32];
 
-        s = webauth_attr_list_add_int32(list, CR_NUMAUTHDATA,
-                                        creds->authdata.len, WA_F_NONE);
+        s = webauth_attr_list_add_uint32(list, CR_NUMAUTHDATA,
+                                         creds->authdata.len, WA_F_NONE);
         if (s != WA_ERR_NONE)
             goto cleanup;
         for (i = 0; i < creds->authdata.len; i++) {
@@ -208,10 +209,11 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
  */
 static int
 cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
-                        int input_length, krb5_creds *creds)
+                        size_t input_length, krb5_creds *creds)
 {
     WEBAUTH_ATTR_LIST *list;
-    int s, f;
+    int s;
+    ssize_t f;
     char *buff;
     int temp_int;
     int32_t temp_int32;
@@ -238,8 +240,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     /* Client principal. */
     webauth_attr_list_find(list, CR_CLIENT, &f);
     if (f != -1) {
-        c->code = krb5_parse_name(c->ctx,
-                                  list->attrs[f].value,
+        c->code = krb5_parse_name(c->ctx, list->attrs[f].value,
                                   &creds->client);
         if (c->code != 0) {
             s = WA_ERR_KRB5;
@@ -250,8 +251,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     /* Server principal. */
     webauth_attr_list_find(list, CR_SERVER, &f);
     if (f != -1) {
-        c->code = krb5_parse_name(c->ctx,
-                                  list->attrs[f].value,
+        c->code = krb5_parse_name(c->ctx, list->attrs[f].value,
                                   &creds->server);
         if (c->code != 0) {
             s = WA_ERR_KRB5;
@@ -260,8 +260,8 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     }
 
     /* Keyblock. */
-    s = webauth_attr_list_get_int32(list, CR_KEYBLOCK_ENCTYPE,
-                                    &temp_int32, WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_KEYBLOCK_ENCTYPE, &temp_int32,
+                                    WA_F_NONE);
     creds->session.keytype = temp_int32;
     if (s != WA_ERR_NONE)
         goto cleanup;
@@ -273,23 +273,21 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
         goto cleanup;
 
     /* Times. */
-    s = webauth_attr_list_get_int32(list, CR_AUTHTIME,
-                                    &temp_int32, WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_AUTHTIME, &temp_int32, WA_F_NONE);
     creds->times.authtime = temp_int32;
     if (s != WA_ERR_NONE)
         goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_STARTTIME,
-                                    &temp_int32, WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_STARTTIME, &temp_int32,
+                                    WA_F_NONE);
     creds->times.starttime = temp_int32;
     if (s != WA_ERR_NONE)
         goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_ENDTIME,
-                                    &temp_int32, WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_ENDTIME, &temp_int32, WA_F_NONE);
     creds->times.endtime = temp_int32;
     if (s != WA_ERR_NONE)
         goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_RENEWTILL,
-                                    &temp_int32, WA_F_NONE);
+    s = webauth_attr_list_get_int32(list, CR_RENEWTILL, &temp_int32,
+                                    WA_F_NONE);
     creds->times.renew_till = temp_int32;
     if (s != WA_ERR_NONE)
         goto cleanup;
@@ -308,10 +306,11 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
      */
     webauth_attr_list_find(list, CR_NUMADDRS, &f);
     if (f != -1) {
-        int num = 0, i;
+        uint32_t num = 0;
+        unsigned int i;
         char name[32];
 
-        s = webauth_attr_list_get_int32(list, CR_NUMADDRS, &num, WA_F_NONE);
+        s = webauth_attr_list_get_uint32(list, CR_NUMADDRS, &num, WA_F_NONE);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
@@ -365,10 +364,12 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     /* Auth data. */
     webauth_attr_list_find(list, CR_NUMAUTHDATA, &f);
     if (f != -1) {
-        int num = 0, i;
+        uint32_t num = 0;
+        unsigned int i;
         char name[32];
 
-        s = webauth_attr_list_get_int32(list, CR_NUMAUTHDATA, &num, WA_F_NONE);
+        s = webauth_attr_list_get_uint32(list, CR_NUMAUTHDATA, &num,
+                                         WA_F_NONE);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
@@ -422,9 +423,9 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
 int
 webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
                               const char *server_principal,
-                              char **output, int *length,
-                              char *in_data, int in_length,
-                              char **out_data, int *out_length)
+                              char **output, size_t *length,
+                              char *in_data, size_t in_length,
+                              char **out_data, size_t *out_length)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_auth_context auth;
@@ -447,8 +448,8 @@ webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
     auth = NULL;
-    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ,
-                                    NULL, c->cc, &outbuf);
+    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ, NULL, c->cc,
+                                    &outbuf);
     krb5_free_principal(c->ctx, princ);
 
     if (c->code != 0)
@@ -524,13 +525,13 @@ cleanup:
  */
 int
 webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
-                              const char *req, int length,
+                              const char *req, size_t length,
                               const char *keytab_path,
                               const char *server_principal,
                               char **out_server_principal,
                               char **client_principal,
-                              int local, char *in_data, int in_length,
-                              char **out_data, int *out_length)
+                              int local, char *in_data, size_t in_length,
+                              char **out_data, size_t *out_length)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal server;
@@ -653,7 +654,7 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
  */
 int
 webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
-                        char **tgt, int *tgt_len, time_t *expiration)
+                        char **tgt, size_t *tgt_len, time_t *expiration)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal tgtprinc, client;

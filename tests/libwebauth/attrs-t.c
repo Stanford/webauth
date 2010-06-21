@@ -27,12 +27,14 @@ main(void)
 {
     char *buff;
     WEBAUTH_ATTR_LIST *attrs_in, *attrs_out;
-    int len, i, rlen, s, f;
+    size_t len, i, rlen;
+    int s;
+    ssize_t f;
     unsigned char binary_data[BUFSIZE];
     uint32_t temp_u32;
     int32_t temp_32;
     char *temp_str;
-    int temp_len;
+    size_t temp_len;
 
     plan(116);
 

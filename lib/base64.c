@@ -2,7 +2,7 @@
  * Base64 encoding and decoding.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2006, 2009
+ * Copyright 2002, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -43,8 +43,8 @@ static char basis_64[] =
  * Given the length of data, returns the number of octets required to encode
  * that data into base64.
  */
-int
-webauth_base64_encoded_length(int length)
+size_t
+webauth_base64_encoded_length(size_t length)
 {
     assert(length > 0);
     return ((length + 2) / 3 * 4);
@@ -56,10 +56,10 @@ webauth_base64_encoded_length(int length)
  * for the decoded output in decoded_length.  Returns a WA_ERR code.
  */
 int
-webauth_base64_decoded_length(const char *input, int input_len,
-                              int *decoded_length)
+webauth_base64_decoded_length(const char *input, size_t input_len,
+                              size_t *decoded_length)
 {
-    int out_len;
+    size_t out_len;
 
     assert(input != NULL);
     assert(decoded_length != NULL);
@@ -87,11 +87,11 @@ webauth_base64_decoded_length(const char *input, int input_len,
  * points.  Returns a WA_ERR code.
  */
 int
-webauth_base64_encode(const char *input, int input_len, char *output,
-                      int *output_len, int output_max)
+webauth_base64_encode(const char *input, size_t input_len, char *output,
+                      size_t *output_len, size_t output_max)
 {
     int c1, c2, c3;
-    int out_len = 0;
+    size_t out_len = 0;
 
     assert(input != NULL);
     assert(output != NULL);
@@ -159,15 +159,12 @@ webauth_base64_encode(const char *input, int input_len, char *output,
  * size of the buffer to which output points.  Returns a WA_ERR code.
  */
 int
-webauth_base64_decode(char *input, int input_len, char *output,
-                      int *output_len, int output_max)
+webauth_base64_decode(char *input, size_t input_len, char *output,
+                      size_t *output_len, size_t output_max)
 {
     int c1, c2, c3, c4;
-    int i, j;
-    int out_len = 0;
-
-    i = 0;
-    j = input_len - 4;
+    size_t i, j;
+    size_t out_len = 0;
 
     assert(input != NULL);
     assert(output != NULL);
@@ -177,6 +174,9 @@ webauth_base64_decode(char *input, int input_len, char *output,
 
     if (!(input_len > 0 && (input_len % 4 == 0)))
         return WA_ERR_CORRUPT;
+
+    i = 0;
+    j = input_len - 4;
 
     while (i <= j) {
         c1 = (unsigned char) input[i++];

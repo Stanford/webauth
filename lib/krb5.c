@@ -312,7 +312,7 @@ escape_principal(const char *in, size_t length)
      * We take two passes through the data, one to count the size of the newly
      * allocated string and one to copy it over.
      */
-    for (src = in; (src - in) < length; src++) {
+    for (src = in; (size_t) (src - in) < length; src++) {
         switch (*src) {
         case '/':  case '@':  case '\\': case '\t':
         case '\n': case '\b': case '\0':
@@ -326,7 +326,7 @@ escape_principal(const char *in, size_t length)
     out = malloc(needed + 1);
     if (out == NULL)
         return NULL;
-    for (src = in, dest = out; (src - in) < length; src++) {
+    for (src = in, dest = out; (size_t) (src - in) < length; src++) {
         switch (*src) {
         case '/':
         case '@':
@@ -418,20 +418,21 @@ webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *context)
     }
 }
 
+
 /*
- * Change a user's password, given context and the new password.  The user
- * to change should be already in the context, which should also have
- * credentials for kadmin/changepw in order to perform the change.
+ * Change a user's password, given context and the new password.  The user to
+ * change should be already in the context, which should also have credentials
+ * for kadmin/changepw in order to perform the change.
  */
 int
 webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
-                             const char *password
-                            )
+                             const char *password)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     int result_code;
     int retval;
     krb5_data result_code_string, result_string;
+    char *username = NULL;
 
     assert(c != NULL);
     assert(password != NULL);
@@ -439,7 +440,6 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
     memset(&result_code_string, 0, sizeof(krb5_data));
     memset(&result_string, 0, sizeof(krb5_data));
 
-    char *username = NULL;
     krb5_unparse_name(c->ctx, c->princ, &username);
 
     /* The actual change. */
@@ -450,11 +450,10 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
 
     /* Everything from here on is just handling diagnostics and output. */
     fprintf (stderr, "code is %d\n", c->code);
-    if (c->code != 0) {
+    if (c->code != 0)
         goto done;
-    }
     if (result_code != 0) {
-        retval = asprintf(c->pwchange_err, "password change failed for %s:"
+        retval = asprintf(&c->pwchange_err, "password change failed for %s:"
                           " (%d) %.*s%s%.*s", username, result_code,
                           (int) result_code_string.length,
                           (char *) result_code_string.data,
@@ -465,22 +464,22 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
             c->pwchange_err = NULL;
             c->code = ENOMEM;
         }
-
-        goto done;
     }
-    krb5_free_data_contents(c->ctx, &result_string);
-    krb5_free_data_contents(c->ctx, &result_code_string);
-    free(username);
 
 done:
+    krb5_free_data_contents(c->ctx, &result_string);
+    krb5_free_data_contents(c->ctx, &result_code_string);
+    if (username != NULL)
+        krb5_free_unparsed_name(c->ctx, username);
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
+
 /*
  * Obtain a TGT from a user's password, verifying it with the provided keytab
- * and server principal if given.  If no keytab is given, we do not verify
- * the TGT, and server_principal_out is not set.  If get_principal is set,
- * then we get credentials for that principal rather than the given user.
+ * and server principal if given.  If no keytab is given, we do not verify the
+ * TGT, and server_principal_out is not set.  If get_principal is set, then we
+ * get credentials for that principal rather than the given user.
  */
 int
 webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
@@ -567,7 +566,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
     else {
         if (keytab != NULL)
-            return verify_tgt(c, keytab, server_principal, server_principal_out);
+            return verify_tgt(c, keytab, server_principal,
+                              server_principal_out);
         else
             return WA_ERR_NONE;
     }
@@ -646,7 +646,7 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
  */
 int
 webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context, const char *server_principal,
-                    char **output, int *length)
+                    char **output, size_t *length)
 {
     return webauth_krb5_mk_req_with_data(context, server_principal, output,
                                          length, NULL, 0, NULL, NULL);
@@ -660,9 +660,10 @@ webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context, const char *server_principal,
  * krb5-heimdal.c.
  */
 int
-webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context, const char *req, int length,
-                    const char *keytab_path, const char *server_principal,
-                    char **client_principal, int local)
+webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context, const char *req,
+                    size_t length, const char *keytab_path,
+                    const char *server_principal, char **client_principal,
+                    int local)
 {
     return webauth_krb5_rd_req_with_data(context, req, length, keytab_path,
                                          server_principal, NULL,
@@ -754,7 +755,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
  */
 int
 webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
-                           int cred_len, const char *cache_name)
+                           size_t cred_len, const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
@@ -800,7 +801,8 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
  * Import a credential into an existing ticket cache.
  */
 int
-webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, char *cred, int cred_len)
+webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
+                         size_t cred_len)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds creds;
@@ -830,7 +832,7 @@ webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, char *cred, int cred_len)
 int
 webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
                            char *server_principal, char **ticket,
-                           int *ticket_len, time_t *expiration)
+                           size_t *ticket_len, time_t *expiration)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_creds *credsp, creds;
@@ -893,7 +895,7 @@ webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context, const char *service,
  */
 int
 webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
-                           int canonicalize)
+                           enum webauth_krb5_canon canonicalize)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_error_code tcode;

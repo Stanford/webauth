@@ -31,28 +31,23 @@
 #define BUFSIZE 4096
 #define MAX_ATTRS 128
 
-/*
- * FIXME: this will eventually be the tool that 
- * creates keyring files and keeps them up to date.
- * right now it just creates two keys and lists the keys in the ring.
- *
- */
-
 
 /*
  * GLOBALS
  */
-static char *prog = "wa_keyring";
+static const char *prog = "wa_keyring";
 static int verbose = 0;
-static char *keyring_path = NULL;
+static const char *keyring_path = NULL;
 
-static void croak(int s)
+static void
+croak(int s)
 {
     fprintf(stderr, "%s: error code %d: %s\n", prog, s, webauth_error_message(s));
     exit(1);
 }
 
-static void usage(int exitcode)
+static void
+usage(int exitcode)
 {
     fprintf(stderr, "\n");
     fprintf(stderr, "usage: %s -f {keyring} [add|list|remove] ...\n", prog);
@@ -80,7 +75,8 @@ static int
 seconds(const char *value)
 {
     char temp[32];
-    int mult=0, len;
+    unsigned int mult = 0;
+    size_t len;
     
     len = strlen(value);
     if (len > (sizeof(temp)-1)) {
@@ -116,7 +112,7 @@ seconds(const char *value)
     return atoi(temp) * mult;
 }
 
-char **
+static char **
 read_options(int argc, char **argv)
 {
   prog = argv[0];
@@ -145,7 +141,7 @@ read_options(int argc, char **argv)
   return argv;
 }
 
-void
+static void
 print_time(time_t t)
 {
     struct tm *tm;
@@ -155,11 +151,12 @@ print_time(time_t t)
     printf("%s", buff);
 }
 
-void
-get_fingerprint(WEBAUTH_KEY *key, char *hex, int hex_len)
+static void
+get_fingerprint(WEBAUTH_KEY *key, char *hex, size_t hex_len)
 {
     unsigned char md5[MD5_DIGEST_LENGTH]; 
-    int len, s;
+    size_t len;
+    int s;
 
     MD5_CTX c;
     MD5_Init(&c);
@@ -171,18 +168,19 @@ get_fingerprint(WEBAUTH_KEY *key, char *hex, int hex_len)
     hex[len] = '\0';
 }
 
-void
+static void
 print_fingerprint(WEBAUTH_KEY *key)
 {
     char hex[MD5_DIGEST_LENGTH*2+1];
+
     get_fingerprint(key, hex, sizeof(hex));
     printf("%s", hex);
 }
 
-void
-print_short(WEBAUTH_KEYRING_ENTRY *e, int i)
+static void
+print_short(WEBAUTH_KEYRING_ENTRY *e, size_t i)
 {
-    printf("%2d  ", i);
+    printf("%2lu  ", (unsigned long) i);
     print_time(e->creation_time);
     printf("  ");
     print_time(e->valid_after);
@@ -192,10 +190,10 @@ print_short(WEBAUTH_KEYRING_ENTRY *e, int i)
 }
 
 
-void
-print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
+static void
+print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
 {
-    printf("       Key-Id: %d\n", i);
+    printf("       Key-Id: %lu\n", (unsigned long) i);
     printf("      Created: ");
     print_time(e->creation_time);
     printf("\n");
@@ -246,10 +244,12 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, int i)
   ------------------------------------------------------------
      */
 
-void list_keyring()
+static void
+list_keyring(void)
 {
     WEBAUTH_KEYRING *ring;
-    int s, i;
+    int s;
+    size_t i;
     
     s = webauth_keyring_read_file(keyring_path, &ring);
     if (s != WA_ERR_NONE)
@@ -264,17 +264,16 @@ void list_keyring()
         printf("id  Created              Valid after          Fingerprint\n");
     }
 
-    for (i=0; i < ring->num_entries; i++) {
-        if (verbose) {
+    for (i = 0; i < ring->num_entries; i++)
+        if (verbose)
             print_long(&ring->entries[i], i);
-        } else {
+        else
             print_short(&ring->entries[i], i);
-        }
-    }
     webauth_keyring_free(ring);
 }
 
-void add_key(char *valid_after)
+static void
+add_key(char *valid_after)
 {
     WEBAUTH_KEY *key;
     WEBAUTH_KEYRING *ring;
@@ -310,7 +309,8 @@ void add_key(char *valid_after)
     webauth_keyring_free(ring);
 }
 
-void remove_key(int index)
+static void
+remove_key(int index)
 {
     WEBAUTH_KEYRING *ring;
     int s;
@@ -333,10 +333,12 @@ void remove_key(int index)
 }
 
 
-void gc_keys(char *oldest_valid_after)
+static void
+gc_keys(char *oldest_valid_after)
 {
     WEBAUTH_KEYRING *ring;
-    int s, i, removed;
+    int s, removed;
+    size_t i;
     time_t curr, ovf;
 
     s = webauth_keyring_read_file(keyring_path, &ring);
@@ -349,7 +351,7 @@ void gc_keys(char *oldest_valid_after)
 
     do {
         removed = 0;
-        for (i=0; i < ring->num_entries; i++) {
+        for (i = 0; i < ring->num_entries; i++) {
             if (ring->entries[i].valid_after < ovf) {
                 s = webauth_keyring_remove(ring, i);
                 if (s != WA_ERR_NONE) {
@@ -366,9 +368,10 @@ void gc_keys(char *oldest_valid_after)
     webauth_keyring_free(ring);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
-    char *cmd = NULL;
+    const char *cmd = NULL;
 
     argv = read_options(argc, argv);
 

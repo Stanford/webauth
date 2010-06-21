@@ -8,7 +8,7 @@
  * functions to generate random numbers or new AES keys.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2008, 2009
+ * Copyright 2002, 2003, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -17,6 +17,7 @@
 #ifndef _WEBAUTH_H
 #define _WEBAUTH_H 1
 
+#include <sys/types.h>
 #include <time.h>
 
 #if defined(_WIN32)
@@ -217,9 +218,9 @@ enum webauth_krb5_canon {
  */
 typedef struct {
     const char *name;           /* Name of attribute. */
-    int flags;                  /* flags passed in during add */
+    unsigned int flags;         /* flags passed in during add */
     void *value;                /* Value of attribute (binary data). */
-    int length;                 /* Length of attribute value in bytes. */
+    size_t length;              /* Length of attribute value in bytes. */
     char val_buff[32];          /* Temp buffer to avoid malloc on encoding. */
 } WEBAUTH_ATTR;
 
@@ -229,16 +230,16 @@ typedef struct {
  * correctly.
  */
 typedef struct {
-    int num_attrs;
-    int capacity;
+    size_t num_attrs;
+    size_t capacity;
     WEBAUTH_ATTR *attrs;
 } WEBAUTH_ATTR_LIST;
 
 /* A crypto key for encryption or decryption. */
 typedef struct {
-    int type;
+    unsigned int type;
     char *data;
-    int length;
+    size_t length;
 } WEBAUTH_KEY;
 
 /* An entry in a keyring, holding a WEBAUTH_KEY with timestamps. */
@@ -250,8 +251,8 @@ typedef struct {
 
 /* A keyring, holding encryption keys.  Can be serialized to disk. */
 typedef struct {
-    int num_entries;
-    int capacity;
+    size_t num_entries;
+    size_t capacity;
     WEBAUTH_KEYRING_ENTRY *entries;
 } WEBAUTH_KEYRING;
 
@@ -289,7 +290,7 @@ WEBAUTH_API const char *webauth_info_build(void);
  * Returns the amount of space required to base64-encode data.  Returned
  * length does NOT include room for nul-termination.
  */
-WEBAUTH_API int webauth_base64_encoded_length(int length);
+WEBAUTH_API size_t webauth_base64_encoded_length(size_t length);
 
 /*
  * Amount of space required to base64-decode data.
@@ -305,8 +306,8 @@ WEBAUTH_API int webauth_base64_encoded_length(int length);
  * base64-encoded data.
  */
 WEBAUTH_API int webauth_base64_decoded_length(const char *input,
-                                              int length,
-                                              int *decoded_length);
+                                              size_t length,
+                                              size_t *decoded_length);
 
 /*
  * Base64-encode the given data.
@@ -317,9 +318,9 @@ WEBAUTH_API int webauth_base64_decoded_length(const char *input,
  * Returns WA_ERR_NONE on success, or WA_ERR_NO_ROOM if encoding the provided
  * data would require more space than max_output_len.
  */
-WEBAUTH_API int webauth_base64_encode(const char *input, int input_len,
-                                      char *output, int *output_len,
-                                      int max_output_len);
+WEBAUTH_API int webauth_base64_encode(const char *input, size_t input_len,
+                                      char *output, size_t *output_len,
+                                      size_t max_output_len);
 
 /*
  * Base64-decode the given data.
@@ -330,9 +331,9 @@ WEBAUTH_API int webauth_base64_encode(const char *input, int input_len,
  * data would require more space than max_output_len, or WA_ERR_CORRUPT if
  * input is not valid base64-encoded data.
  */
-WEBAUTH_API int webauth_base64_decode(char *input, int input_len,
-                                      char *output, int *output_len,
-                                      int max_output_len);
+WEBAUTH_API int webauth_base64_decode(char *input, size_t input_len,
+                                      char *output, size_t *output_len,
+                                      size_t max_output_len);
 
 
 /*
@@ -343,7 +344,7 @@ WEBAUTH_API int webauth_base64_decode(char *input, int input_len,
  * Returns the amount of space required to hex encode data of the given
  * length.  Returned length does NOT include room for a null-termination.
  */
-WEBAUTH_API int webauth_hex_encoded_length(int length);
+WEBAUTH_API size_t webauth_hex_encoded_length(size_t length);
 
 /*
  * Returns the amount of space required to decode the hex encoded data of the
@@ -353,7 +354,7 @@ WEBAUTH_API int webauth_hex_encoded_length(int length);
  * Returns WA_ERR_NONE on succes, or WA_ERR_CORRUPT if length is not greater
  * then 0 and a multiple of 2.
  */
-WEBAUTH_API int webauth_hex_decoded_length(int length, int *out_length);
+WEBAUTH_API int webauth_hex_decoded_length(size_t length, size_t *out_length);
 
 /*
  * Hex-encodes the given data.  Does NOT null-terminate.  output can point to
@@ -361,9 +362,9 @@ WEBAUTH_API int webauth_hex_decoded_length(int length, int *out_length);
  *
  * Returns WA_ERR_NONE or WA_ERR_NO_ROOM.
  */
-WEBAUTH_API int webauth_hex_encode(char *input, int input_len,
-                                   char *output, int *output_len,
-                                   int max_output_len);
+WEBAUTH_API int webauth_hex_encode(char *input, size_t input_len,
+                                   char *output, size_t *output_len,
+                                   size_t max_output_len);
 
 /*
  * Hex-decodes the given data.  Does NOT null-terminate.  output can point to
@@ -371,9 +372,9 @@ WEBAUTH_API int webauth_hex_encode(char *input, int input_len,
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, or WA_ERR_CORRUPT.
  */
-WEBAUTH_API int webauth_hex_decode(char *input, int input_len,
-                                   char *output, int *output_length,
-                                   int max_output_len);
+WEBAUTH_API int webauth_hex_decode(char *input, size_t input_len,
+                                   char *output, size_t *output_length,
+                                   size_t max_output_len);
 
 
 /*
@@ -381,7 +382,7 @@ WEBAUTH_API int webauth_hex_decode(char *input, int input_len,
  */
 
 /* Creates a new attribute list, returning it or NULL if no memory. */
-WEBAUTH_API WEBAUTH_ATTR_LIST *webauth_attr_list_new(int initial_capacity);
+WEBAUTH_API WEBAUTH_ATTR_LIST *webauth_attr_list_new(size_t initial_capacity);
 
 /*
  * Adds an attribute to the attribute list, growing the list if need be.  Both
@@ -391,8 +392,8 @@ WEBAUTH_API WEBAUTH_ATTR_LIST *webauth_attr_list_new(int initial_capacity);
  * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
  */
 WEBAUTH_API int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
-                                      const char *name, void *value, int vlen,
-                                      int flags);
+                                      const char *name, void *value,
+                                      size_t vlen, unsigned int flags);
 
 /*
  * Adds an attribute string to the attribute list, growing the list if need
@@ -403,8 +404,8 @@ WEBAUTH_API int webauth_attr_list_add(WEBAUTH_ATTR_LIST *list,
  */
 WEBAUTH_API int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
                                           const char *name,
-                                          const char *value, int vlen,
-                                          int flags);
+                                          const char *value, size_t vlen,
+                                          unsigned int flags);
 
 
 /*
@@ -415,13 +416,15 @@ WEBAUTH_API int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *list,
  */
 WEBAUTH_API int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list,
                                              const char *name,
-                                             uint32_t value, int flags);
+                                             uint32_t value,
+                                             unsigned int flags);
 WEBAUTH_API int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list,
                                             const char *name,
-                                            int32_t value, int flags);
+                                            int32_t value,
+                                            unsigned int flags);
 WEBAUTH_API int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list,
                                            const char *name,
-                                           time_t value, int flags);
+                                           time_t value, unsigned int flags);
 
 /*
  * Retrieve a specific attribute by name.  Stores its value in the value
@@ -437,8 +440,8 @@ WEBAUTH_API int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *list,
 WEBAUTH_API int webauth_attr_list_get(WEBAUTH_ATTR_LIST *list,
                                       const char *name,
                                       void **value,
-                                      int *value_len,
-                                      int flags);
+                                      size_t *value_len,
+                                      unsigned int flags);
 
 /*
  * Retrieve a string attribute by name.  Stores the string in value and the
@@ -450,8 +453,8 @@ WEBAUTH_API int webauth_attr_list_get(WEBAUTH_ATTR_LIST *list,
 WEBAUTH_API int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list,
                                           const char *name,
                                           char **value,
-                                          int *value_len,
-                                          int flags);
+                                          size_t *value_len,
+                                          unsigned int flags);
 
 /*
  * Retrieve a numeric attribute by name, storing it in value.  Takes the same
@@ -462,22 +465,22 @@ WEBAUTH_API int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *list,
 WEBAUTH_API int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list,
                                              const char *name,
                                              uint32_t *value,
-                                             int flags);
+                                             unsigned int flags);
 WEBAUTH_API int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *list,
                                             const char *name,
                                             int32_t *value,
-                                            int flags);
+                                            unsigned int flags);
 WEBAUTH_API int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *list,
                                            const char *name,
                                            time_t *value,
-                                           int flags);
+                                           unsigned int flags);
 
 /*
  * Searches for the named attribute in the list and returns the index in i and
  * WA_ERR_NONE or sets i to -1 and returns WA_ERR_NOT_FOUND.
  */
 WEBAUTH_API int webauth_attr_list_find(WEBAUTH_ATTR_LIST *list,
-                                       const char *name, int *i);
+                                       const char *name, ssize_t *i);
 
 /*
  * Frees the memory associated with an attribute list, including all the
@@ -489,7 +492,7 @@ WEBAUTH_API void webauth_attr_list_free(WEBAUTH_ATTR_LIST *list);
  * Given an array of attributes, returns the amount of space required to
  * encode them.
  */
-WEBAUTH_API int webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
+WEBAUTH_API size_t webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
  * Given an array of attributes, encode them into the buffer.  max_buffer_len
@@ -499,8 +502,8 @@ WEBAUTH_API int webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *list);
  * Returns WA_ERR_NONE or WA_ERR_NO_ROOM.
  */
 WEBAUTH_API int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
-                                     char *output, int *output_len,
-                                     int max_output_len);
+                                     char *output, size_t *output_len,
+                                     size_t max_output_len);
 
 /*
  * Decodes the given buffer into an array of attributes.  The buffer is
@@ -508,7 +511,7 @@ WEBAUTH_API int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *list,
  *
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
-WEBAUTH_API int webauth_attrs_decode(char *buffer, int buffer_len,
+WEBAUTH_API int webauth_attrs_decode(char *buffer, size_t buffer_len,
                                      WEBAUTH_ATTR_LIST **list);
 
 
@@ -525,7 +528,7 @@ WEBAUTH_API int webauth_attrs_decode(char *buffer, int buffer_len,
  *
  * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
-WEBAUTH_API int webauth_random_bytes(char *output, int num_bytes);
+WEBAUTH_API int webauth_random_bytes(char *output, size_t num_bytes);
 
 /*
  * Used to create random bytes suitable for use as a key.  The number of bytes
@@ -534,7 +537,7 @@ WEBAUTH_API int webauth_random_bytes(char *output, int num_bytes);
  *
  * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
-WEBAUTH_API int webauth_random_key(char *key, int key_len);
+WEBAUTH_API int webauth_random_key(char *key, size_t key_len);
 
 
 /*
@@ -549,9 +552,9 @@ WEBAUTH_API int webauth_random_key(char *key, int key_len);
  *
  * Returns a newly allocated key or NULL on error.
  */
-WEBAUTH_API WEBAUTH_KEY *webauth_key_create(int key_type,
+WEBAUTH_API WEBAUTH_KEY *webauth_key_create(unsigned int key_type,
                                             const char *key_material,
-                                            int key_len);
+                                            size_t key_len);
 
 /* Make a copy of a key.  Returns the new key or NULL on error. */
 WEBAUTH_API WEBAUTH_KEY *webauth_key_copy(const WEBAUTH_KEY *key);
@@ -560,7 +563,7 @@ WEBAUTH_API WEBAUTH_KEY *webauth_key_copy(const WEBAUTH_KEY *key);
 WEBAUTH_API void webauth_key_free(WEBAUTH_KEY *key);
 
 /* Create a new keyring, returning the new keyring or NULL on error. */
-WEBAUTH_API WEBAUTH_KEYRING * webauth_keyring_new(int initial_capacity);
+WEBAUTH_API WEBAUTH_KEYRING * webauth_keyring_new(size_t initial_capacity);
 
 /* Free a keyring and any keys in it. */
 WEBAUTH_API void webauth_keyring_free(WEBAUTH_KEYRING *ring);
@@ -582,7 +585,7 @@ WEBAUTH_API int webauth_keyring_add(WEBAUTH_KEYRING *ring,
  *
  * Returns WA_ERR_NONE or WA_ERR_NOT_FOUND.
  */
-WEBAUTH_API int webauth_keyring_remove(WEBAUTH_KEYRING *ring, int index);
+WEBAUTH_API int webauth_keyring_remove(WEBAUTH_KEYRING *ring, size_t index);
 
 /*
  * Given a keyring, return the best key on the ring for either encryption or
@@ -602,7 +605,7 @@ WEBAUTH_API WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *ring,
  * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
  */
 WEBAUTH_API int webauth_keyring_encode(WEBAUTH_KEYRING *ring,
-                                       char **buffer, int *buffer_len);
+                                       char **buffer, size_t *buffer_len);
 
 /*
  * Deecodes a keyring from a buffer.  ring should be freed with
@@ -611,7 +614,7 @@ WEBAUTH_API int webauth_keyring_encode(WEBAUTH_KEYRING *ring,
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or
  * WA_ERR_KEYRING_VERSION.
  */
-WEBAUTH_API int webauth_keyring_decode(char *buffer, int buffer_len,
+WEBAUTH_API int webauth_keyring_decode(char *buffer, size_t buffer_len,
                                        WEBAUTH_KEYRING **ring);
 
 /*
@@ -669,7 +672,7 @@ WEBAUTH_API int webauth_keyring_auto_update(const char *path,
  * Returns the space required to encode and encrypt a token, not including
  * nul-termination.
  */
-WEBAUTH_API int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
+WEBAUTH_API size_t webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
 
 /*
  * Encodes and encrypts attributes into a token, using the key from the
@@ -680,7 +683,8 @@ WEBAUTH_API int webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list);
  */
 WEBAUTH_API int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
                                      time_t hint, char *output,
-                                     int *output_len, int max_output_len,
+                                     size_t *output_len,
+                                     size_t max_output_len,
                                      const WEBAUTH_KEYRING *ring);
 
 /*
@@ -691,8 +695,8 @@ WEBAUTH_API int webauth_token_create(const WEBAUTH_ATTR_LIST *list,
  */
 WEBAUTH_API int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
                                               time_t hint, char *output,
-                                              int *output_len,
-                                              int max_output_len,
+                                              size_t *output_len,
+                                              size_t max_output_len,
                                               const WEBAUTH_KEY *key);
 
 /*
@@ -725,13 +729,15 @@ WEBAUTH_API int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *list,
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC,
  * WA_ERR_BAD_KEY, WA_ERR_TOKEN_EXPIRED, or WA_ERR_TOKEN_STALE.
  */
-WEBAUTH_API int webauth_token_parse(char *input, int input_len, int ttl,
+WEBAUTH_API int webauth_token_parse(char *input, size_t input_len,
+                                    unsigned long ttl,
                                     const WEBAUTH_KEYRING *ring,
                                     WEBAUTH_ATTR_LIST **list);
 
 /* Same as webauth_token_parse but takes a key instead of a keyring. */
-WEBAUTH_API int webauth_token_parse_with_key(char *input, int input_len,
-                                             int ttl, const WEBAUTH_KEY *key,
+WEBAUTH_API int webauth_token_parse_with_key(char *input, size_t input_len,
+                                             unsigned long ttl,
+                                             const WEBAUTH_KEY *key,
                                              WEBAUTH_ATTR_LIST **list);
 
 
@@ -855,7 +861,7 @@ WEBAUTH_API int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE or WA_ERR_KRB5.
  */
 WEBAUTH_API int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
-                                           char *cred, int cred_len,
+                                           char *cred, size_t cred_len,
                                            const char *cache_name);
 
 /*
@@ -867,7 +873,7 @@ WEBAUTH_API int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
 WEBAUTH_API int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
-                                        char **tgt, int *tgt_len,
+                                        char **tgt, size_t *tgt_len,
                                         time_t *expiration);
 
 /*
@@ -878,7 +884,7 @@ WEBAUTH_API int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
 WEBAUTH_API int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context,
-                                         char *cred, int cred_len);
+                                         char *cred, size_t cred_len);
 
 /*
  * Create a service principal (service/hostname.do.main@realm) from a service
@@ -912,7 +918,8 @@ WEBAUTH_API int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, or WA_ERR_KRB5.
  */
 WEBAUTH_API int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context,
-                                           char **principal, int canon);
+                                           char **principal,
+                                           enum webauth_krb5_canon canon);
 
 /*
  * Get the realm from the context.  This should only be called after a
@@ -933,7 +940,7 @@ WEBAUTH_API int webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context,
  */
 WEBAUTH_API int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
                                            char *server_principal,
-                                           char **ticket, int *ticket_len,
+                                           char **ticket, size_t *ticket_len,
                                            time_t *expiration);
 
 /*
@@ -946,7 +953,7 @@ WEBAUTH_API int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
  */
 WEBAUTH_API int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
                                     const char *server_principal,
-                                    char **req, int *length);
+                                    char **req, size_t *length);
 
 /*
  * Calls krb5_rd_req on the specified request and returns the client principal
@@ -965,7 +972,7 @@ WEBAUTH_API int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
  */
 WEBAUTH_API int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
-                                    const char *req, int length,
+                                    const char *req, size_t length,
                                     const char *keytab,
                                     const char *server_principal,
                                     char **client_principal, int local);
@@ -978,10 +985,10 @@ WEBAUTH_API int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *context,
  */
 WEBAUTH_API int webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
                                               const char *server_principal,
-                                              char **req, int *length,
-                                              char *in_data, int in_length,
+                                              char **req, size_t *length,
+                                              char *in_data, size_t in_length,
                                               char **out_data,
-                                              int *out_length);
+                                              size_t *out_length);
 
 /*
  * Similar to webauth_krb5_rd_req, but additionally calls krb5_rd_priv
@@ -990,14 +997,15 @@ WEBAUTH_API int webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
  * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
  */
 WEBAUTH_API int webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
-                                              const char *req, int length,
+                                              const char *req, size_t length,
                                               const char *keytab,
                                               const char *server_principal,
                                               char **out_server_princ,
                                               char **client_principal,
                                               int local, char *in_data,
-                                              int in_length, char **out_data,
-                                              int *out_length);
+                                              size_t in_length,
+                                              char **out_data,
+                                              size_t *out_length);
 
 END_DECLS
 
