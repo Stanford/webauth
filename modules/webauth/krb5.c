@@ -2,7 +2,7 @@
  * Kerberos-related functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2003, 2006, 2009
+ * Copyright 2003, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -10,15 +10,12 @@
 
 #include <modules/webauth/mod_webauth.h>
 
+
 static void
-log_webauth_error(server_rec *s, 
-                       int status, 
-                      WEBAUTH_KRB5_CTXT *ctxt,
-                      const char *mwa_func,
-                      const char *func,
-                      const char *extra)
+log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
+                  const char *mwa_func, const char *func, const char *extra)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL) {
+    if (status == WA_ERR_KRB5 && ctxt != NULL)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
                      mwa_func, func,
@@ -27,7 +24,7 @@ log_webauth_error(server_rec *s,
                      webauth_error_message(status), status,
                      webauth_krb5_error_message(ctxt), 
                      webauth_krb5_error_code(ctxt));
-    } else {
+    else
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                      "mod_webauth: %s: %s%s%s failed: %s (%d)",
                      mwa_func,
@@ -35,8 +32,8 @@ log_webauth_error(server_rec *s,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
                      webauth_error_message(status), status);
-    }
 }
+
 
 /*
  * get a WEBAUTH_KRB5_CTXT
@@ -49,8 +46,7 @@ get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
 
     status = webauth_krb5_new(&ctxt);
     if (status != WA_ERR_NONE) {
-        log_webauth_error(server, 
-                          status, ctxt, mwa_func, "webauth_krb5_new",
+        log_webauth_error(server, status, ctxt, mwa_func, "webauth_krb5_new",
                           NULL);
         if (status == WA_ERR_KRB5)
             webauth_krb5_free(ctxt);
@@ -59,9 +55,9 @@ get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
     return ctxt;
 }
 
-static const char *
-krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
 
+static const char *
+krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, size_t sad_len)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
@@ -69,10 +65,9 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
     const char *mwa_func = "krb5_validate_sad";
     char *kt;
 
-    if (rc->sconf->debug) {
+    if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: called", mwa_func);
-    }
 
     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
     if (ctxt == NULL)
@@ -96,6 +91,7 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, int sad_len)
     return subject;
 }
 
+
 /*
  * called when the request pool gets cleaned up
  */
@@ -115,15 +111,17 @@ cred_cache_destroy(void *data)
     return APR_SUCCESS;
 }
 
+
 /*
  * prepare any krb5 creds
  */
 static int 
-krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
+krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
 {
     const char *mwa_func="krb5_prepare_creds";
     WEBAUTH_KRB5_CTXT *ctxt;
-    int i, status;
+    size_t i;
+    int status;
     char *temp_cred_file;
     apr_file_t *fp;
     apr_status_t astatus;
@@ -173,7 +171,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
 
     webauth_krb5_keep_cred_cache(ctxt);
 
-    for (i=0; i < num_creds; i++) {
+    for (i = 0; i < num_creds; i++) {
         if (strcmp(creds[i]->cred_type, "krb5") == 0) {
             if (rc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
@@ -204,14 +202,16 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, int num_creds)
     return 1;
 }
 
+
 static const char *
 krb5_webkdc_credential(server_rec *server, 
-                      MWA_SCONF *sconf,
+                       MWA_SCONF *sconf,
                        apr_pool_t *pool)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     char *k5_req, *bk5_req;
-    int status, k5_req_len, bk5_req_len;
+    int status;
+    size_t k5_req_len, bk5_req_len;
     static const char *mwa_func = "krb5_webkdc_credential";
     char *kt;
 

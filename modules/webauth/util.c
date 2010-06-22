@@ -2,13 +2,14 @@
  * Utility functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <modules/webauth/mod_webauth.h>
+
 
 /*
  * get a required char* attr from a token, with logging if not present.
@@ -19,9 +20,10 @@ mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
                  const char *name, 
                  request_rec *r, 
                  const char *func,
-                 int *vlen)
+                 size_t *vlen)
 {
-    int status, i;
+    int status;
+    ssize_t i;
 
     status = webauth_attr_list_find(alist, name, &i);
     if (i == -1) {
@@ -35,6 +37,7 @@ mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
 
     return (char*)alist->attrs[i].value;
 }
+
 
 static request_rec *
 get_top(request_rec *r)
@@ -51,6 +54,7 @@ get_top(request_rec *r)
     return mr;
 }
 
+
 /*
  * get note from main request 
  */
@@ -60,6 +64,7 @@ mwa_get_note(request_rec *r, const char *note)
     request_rec *top = get_top(r);
     return apr_table_get(top->notes, note);
 }
+
 
 /*
  * remove note from main request, and return it if it was set, or NULL
@@ -78,6 +83,7 @@ mwa_remove_note(request_rec *r, const char *note)
 
     return (char*)val;
 }
+
 
 /*
  * set note in main request. the prefix should be a string constant. the
@@ -106,6 +112,7 @@ mwa_setn_note(request_rec *r,
 
     apr_table_setn(top->notes, note, val);
 }
+
 
 void
 mwa_log_apr_error(server_rec *server,
@@ -160,6 +167,7 @@ mwa_log_request(request_rec *r, const char *msg)
 #undef LOG_D
 }
 
+
 void
 mwa_log_webauth_error(server_rec *s, 
                        int status, 
@@ -175,6 +183,7 @@ mwa_log_webauth_error(server_rec *s,
                  extra == NULL ? "" : extra,
                  webauth_error_message(status), status);
 }
+
 
 int
 mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
@@ -227,6 +236,7 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
     return status;
 }
 
+
 apr_array_header_t *
 mwa_get_webauth_cookies(request_rec *r)
 {
@@ -263,11 +273,9 @@ mwa_get_webauth_cookies(request_rec *r)
 }
 
 
-
 /*
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
-
 MWA_CRED_TOKEN *
 mwa_parse_cred_token(char *token, 
                      WEBAUTH_KEYRING *ring,
@@ -275,7 +283,8 @@ mwa_parse_cred_token(char *token,
                      MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status;
+    size_t blen;
+    int status;
     const char *tt;
     MWA_CRED_TOKEN ct, *nct;
     const char *mwa_func="mwa_parse_cred_token";
@@ -288,8 +297,6 @@ mwa_parse_cred_token(char *token,
     /* parse the token, TTL is zero because cred-tokens don't have ttl,
      * just expiration
      */
-
-
     if (key != NULL) {
         status = webauth_token_parse_with_key(token, blen, 0, key, &alist);
     } else if (ring != NULL){
@@ -300,7 +307,6 @@ mwa_parse_cred_token(char *token,
                      mwa_func);
         return NULL;
     } 
-        
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
@@ -373,6 +379,7 @@ mwa_parse_cred_token(char *token,
     return nct;
 }
 
+
 /*
  * stores an env variable that will get set in fixups
  */
@@ -381,6 +388,7 @@ mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
     mwa_setn_note(rc->r, "mod_webauth_ENV_", name, "%s", value);
 }
+
 
 static apr_array_header_t *cred_interfaces = NULL;
 
@@ -403,12 +411,13 @@ mwa_register_cred_interface(server_rec *server,
                      interface->type);
 }
 
+
 MWA_CRED_INTERFACE *
 mwa_find_cred_interface(server_rec *server,
                         const char *type)
 {
     if (cred_interfaces != NULL) {
-        int i;
+        size_t i;
         MWA_CRED_INTERFACE **interfaces;
 
         interfaces = (MWA_CRED_INTERFACE **)cred_interfaces->elts;

@@ -307,7 +307,7 @@ typedef struct {
     time_t next_renewal_attempt; /* next time we try to renew */
     time_t last_renewal_attempt; /* time we last tried to renew */
     void *app_state; /* used as "as" attribute in request tokens */
-    int app_state_len;
+    size_t app_state_len;
 } MWA_SERVICE_TOKEN;
 
 /* server conf stuff */
@@ -324,7 +324,7 @@ typedef struct {
     char *keytab_principal;
     char *cred_cache_dir;
     char *st_cache_path;
-    int  debug;
+    int debug;
     int debug_ex;
     int require_ssl;
     int require_ssl_ex;
@@ -413,7 +413,7 @@ typedef struct {
     time_t creation_time;
     time_t expiration_time;
     void *wpt; /* webkdc-proxy-token */
-    int wpt_len;
+    size_t wpt_len;
 } MWA_PROXY_TOKEN;
 
 typedef struct {
@@ -421,7 +421,7 @@ typedef struct {
     const char *cred_server;
     const char *subject;
     void *cred_data; /* this is ready to be blasted to a file */
-    int cred_data_len;
+    size_t cred_data_len;
     time_t creation_time;
     time_t expiration_time;
 } MWA_CRED_TOKEN;
@@ -440,8 +440,8 @@ typedef struct {
 /* used to append a bunch of data together */
 typedef struct {
     char *data;
-    int size;
-    int capacity;
+    size_t size;
+    size_t capacity;
     apr_pool_t *pool;
 } MWA_STRING;
 
@@ -453,13 +453,13 @@ typedef struct {
     /* function to validate subject-authenticator-data */
     const char *(*validate_sad) (MWA_REQ_CTXT *rc, 
                                  void *sad, 
-                                 int sad_len);
+                                 size_t sad_len);
 
     /* function to run through all the cred tokens and prepare any
        cred tokens that are the same as our type for use by CGI */
     int (*prepare_creds)(MWA_REQ_CTXT *rc,
                          MWA_CRED_TOKEN **creds, 
-                         int num_creds);
+                         size_t num_creds);
 
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
@@ -482,7 +482,7 @@ int
 mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                           MWA_PROXY_TOKEN *pt,
                           MWA_WACRED *creds,
-                          int num_creds,
+                          size_t num_creds,
                           apr_array_header_t **acquired_creds);
 
 /* util.c */
@@ -494,7 +494,7 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
 
 char *
 mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, 
-                 request_rec *r, const char *func, int *vlen);
+                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get note from main request 
