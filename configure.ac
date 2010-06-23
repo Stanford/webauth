@@ -187,6 +187,10 @@ case "$host" in
 esac
 AC_SUBST([VERSION_LDFLAGS])
 
+dnl Used to determine whether to add our GCC-specific warning suppression
+dnl flags to the language binding builds.
+AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
+
 dnl Output files.
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h mod-config.h])

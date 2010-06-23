@@ -98,14 +98,14 @@ dist_man_MANS = tools/wa_keyring.1
 # strongly recommended configuration and this is simpler than adding yet
 # another configure option.
 if BUILD_WEBKDC
-weblogindir = $(datadir)/weblogin
-imagedir    = $(weblogindir)/generic/images
-templatedir = $(weblogindir)/generic/templates
-dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
-dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png	\
-	weblogin/images/help.png weblogin/images/login.png		\
+    weblogindir = $(datadir)/weblogin
+    imagedir    = $(weblogindir)/generic/images
+    templatedir = $(weblogindir)/generic/templates
+    dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
+    dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png \
+	weblogin/images/help.png weblogin/images/login.png		    \
 	weblogin/images/logout.png
-dist_template_DATA = weblogin/templates/confirm.tmpl			\
+    dist_template_DATA = weblogin/templates/confirm.tmpl		\
 	weblogin/templates/error.tmpl weblogin/templates/help.html	\
 	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl
 endif
@@ -114,8 +114,17 @@ endif
 BINDINGS =
 BINDINGS_INSTALL =
 if BUILD_PERL
-BINDINGS += perl/WebAuth.o
-BINDINGS_INSTALL += install-data-local-perl
+    BINDINGS += perl/WebAuth.o
+    BINDINGS_INSTALL += install-data-local-perl
+endif
+
+# Suppress some warnings for Perl code because the auto-generated code
+# doesn't pass them.
+if GCC
+    PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
+	-Wno-strict-prototypes
+else
+    PERL_WARNINGS =
 endif
 
 # The following section sets up the Perl module build properly.  Most of the
