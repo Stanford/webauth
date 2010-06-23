@@ -16,28 +16,23 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		     \
-	conf/debian/webauth.conf conf/debian/webauth.load		     \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	     \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			     \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		     \
-	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	     \
-	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml    \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		     \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	     \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth     \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	     \
-	lib/mapfile lib/mkheader lib/webauth.h.in modules/webauth/krb5.c     \
-	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h	     \
-	modules/webauth/util.c modules/webauth/webkdc.c			     \
-	modules/webauthldap/mod_webauthldap.c				     \
-	modules/webauthldap/mod_webauthldap.h modules/webkdc/acl.c	     \
-	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h		     \
-	modules/webkdc/util.c perl/README perl/MANIFEST perl/MANIFEST.SKIP   \
-	tests/TESTS tests/data/readme tests/mod_webauth tools/wa_keyring.pod \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		     \
-	weblogin/images/error.xcf weblogin/images/help.xcf		     \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
+	conf/debian/webauth.conf conf/debian/webauth.load		    \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
+	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	    \
+	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml   \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
+	lib/mapfile lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST \
+	perl/MANIFEST.SKIP tests/TESTS tests/data/readme tests/mod_webauth  \
+	tools/wa_keyring.pod tools/weblogin-passcheck			    \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la util/libutil.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
