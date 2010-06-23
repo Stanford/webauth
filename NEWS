@@ -44,8 +44,11 @@ WebAuth 3.6.3 (unreleased)
 
     Update to rra-c-util 2.4:
 
+    * Use rra-c-util portability layer for libwebauth and wa_keyring.
+    * Use rra-c-util utility library for wa_keyring.
     * Use --with-krb5 instead of --with-kerberos for Kerberos path.
     * Add --with-krb5-lib and --with-krb5-include configure flags.
+    * Much better handling of Kerberos library detection.
 
     Update to C TAP Harness 1.3:
 
