@@ -564,7 +564,9 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
             krb5_authenticator ka;
 
             c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
-            if (c->code == 0) {
+            if (c->code != 0)
+                *client_principal = NULL;
+            else {
                 int local_ok = 0;
                 krb5_principal_data kprinc;
 
@@ -579,8 +581,13 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
                                                     sizeof(lname) - 1,
                                                     lname);
                     if (tcode == 0) {
-                        *client_principal = malloc(strlen(lname)+1);
-                        strcpy(*client_principal, lname);
+                        *client_principal = strdup(lname);
+                        if (*client_principal == NULL) {
+                            krb5_free_authenticator(c->ctx, &ka);
+                            krb5_auth_con_free(c->ctx, auth);
+                            s = WA_ERR_NO_MEM;
+                            goto done;
+                        }
                         local_ok = 1;
                     }
                 }
@@ -623,25 +630,19 @@ webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
 
                 }
                 krb5_free_authenticator(c->ctx, &ka);
-
-            } else {
-                *client_principal = NULL;
             }
             krb5_auth_con_free(c->ctx, auth);
         }
     }
 
+done:
     krb5_kt_close(c->ctx, keytab);
     krb5_free_principal(c->ctx, server);
-
     if (s == WA_ERR_NONE && c->code != 0)
         s = WA_ERR_KRB5;
-
-    if (s != WA_ERR_NONE) {
+    if (s != WA_ERR_NONE)
         if (out_server_principal && *out_server_principal != NULL)
             free(*out_server_principal);
-    }
-
     return s;
 }
 

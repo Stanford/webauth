@@ -909,8 +909,9 @@ webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *context, char **principal,
         tcode = krb5_aname_to_localname(c->ctx, c->princ, sizeof(lname) - 1,
                                         lname);
         if (tcode == 0) {
-            *principal = malloc(strlen(lname) + 1);
-            strcpy(*principal, lname);
+            *principal = strdup(lname);
+            if (*principal == NULL)
+                return WA_ERR_NO_MEM;
             return WA_ERR_NONE;
         }
         /* Fall through. */
