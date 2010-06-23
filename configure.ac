@@ -155,25 +155,6 @@ AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
 AC_REPLACE_FUNCS([asprintf strlcat strlcpy])
 
-dnl Generate special flags for apxs, which doesn't understand compiler flags.
-dnl We have to do this with KRB5_LIBS and DEPEND_LIBS as well, since Heimdal
-dnl likes to put -pthread into the compiler flags and apxs doesn't understand
-dnl it.  Handle -R (runtime search path link option) similarly.
-APXS_CFLAGS=-Wc,`echo "$CFLAGS" | sed 's/ / -Wc,/g'`
-APXS_DEPEND_LIBS=`echo " $DEPEND_LIBS" \
-    | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
-    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
-    | sed 's/ -R/ -Wl,-R/' \
-    | sed 's/ -dynamic/ -Wl,-dynamic/'`
-APXS_KRB5_LIBS=`echo " $KRB5_LIBS" \
-    | sed 's/-pthread/-Wc,-pthread -Wl,-lpthread/' \
-    | sed 's/-pthreads/-Wc,-pthreads -Wl,-lpthreads/' \
-    | sed 's/ -R/ -Wl,-R/' \
-    | sed 's/ -dynamic/ -Wl,-dynamic/'`
-AC_SUBST([APXS_CFLAGS])
-AC_SUBST([APXS_DEPEND_LIBS])
-AC_SUBST([APXS_KRB5_LIBS])
-
 dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
 dnl make sure that all symbols in the library are resolved.  We'd like to do
 dnl this on all platforms, but the syntax is different everywhere and I don't
