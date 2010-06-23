@@ -8,9 +8,13 @@
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
 
+#include <assert.h>
 #include <ctype.h>
+
+#include <lib/webauth.h>
 
 /*
  * Converts a hex digit to a number.   This macro will return non-sensical

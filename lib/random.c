@@ -8,9 +8,14 @@
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
 
+#include <assert.h>
 #include <openssl/rand.h>
+
+#include <lib/webauth.h>
+
 
 /*
  * Generate num_bytes random bytes and store them in output.  This is

@@ -140,7 +140,7 @@ fi
 AC_SUBST([DEPEND_LIBS])
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([netinet/in.h sys/bittypes.h syslog.h])
+AC_CHECK_HEADERS([sys/bittypes.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_FUNCS([setrlimit])
 RRA_C_C99_VAMACROS

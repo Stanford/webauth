@@ -20,25 +20,25 @@
  * probably need to modify both.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2007, 2009
+ * Copyright 2002, 2003, 2006, 2007, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/krb5.h>
+#include <portable/system.h>
 
+#include <assert.h>
 #include <errno.h>
-#include <krb5.h>
 #ifdef HAVE_ET_COM_ERR_H
 # include <et/com_err.h>
 #else
 # include <com_err.h>
 #endif
-#include <stdio.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+
+#include <lib/webauth.h>
 
 typedef struct {
     krb5_context ctx;

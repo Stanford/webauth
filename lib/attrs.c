@@ -9,14 +9,12 @@
  */
 
 #include <config.h>
+#include <portable/system.h>
 
-#if HAVE_NETINET_IN_H
-# include <netinet/in.h>
-#endif
-#include <stdio.h>
-#include <sys/types.h>
+#include <assert.h>
+#include <netinet/in.h>
 
-#include <lib/webauthp.h>
+#include <lib/webauth.h>
 
 #define NAME_TERM '='
 #define VAL_TERM  ';'

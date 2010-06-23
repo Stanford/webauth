@@ -8,17 +8,18 @@
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
 
-#if HAVE_NETINET_IN_H
-# include <netinet/in.h>
-#endif
+#include <assert.h>
+#include <netinet/in.h>
 #include <openssl/aes.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
-#include <sys/types.h>
 #include <time.h>
+
+#include <lib/webauth.h>
 
 /*
  * An ivec to pass to the AES encryption function.  This is always 0 since we

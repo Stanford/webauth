@@ -8,7 +8,12 @@
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
+
+#include <assert.h>
+
+#include <lib/webauth.h>
 
 /* Table for decoding base64.  XX indicates an invalid character. */
 #define XX 127

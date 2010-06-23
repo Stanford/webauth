@@ -8,17 +8,16 @@
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <time.h>
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+
+#include <lib/webauth.h>
 
 /* The version of the keyring file format that we implement. */
 #define KEYRING_VERSION 1
