@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -334,7 +334,7 @@ typedef struct {
     int ssl_redirect_port_ex;
     int extra_redirect;
     int extra_redirect_ex; /* if it was explicitly specified in conf file */
-    char *subject_auth_type;
+    const char *subject_auth_type;
     int strip_url;
     int strip_url_ex; 
     int keyring_auto_update;

@@ -8,7 +8,6 @@
 #ifndef UTIL_MACROS_H
 #define UTIL_MACROS_H 1
 
-#include <config.h>
 #include <portable/macros.h>
 
 /* Used for unused parameters to silence gcc warnings. */

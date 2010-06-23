@@ -50,7 +50,7 @@ lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
 
     apr_status_t astatus;
 
-    if (type < 0 || type >= MWK_MUTEX_MAX) {
+    if (type >= MWK_MUTEX_MAX) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webkdc: lock_mutex: invalid type (%d) ignored",
                      type);
@@ -108,9 +108,9 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
  * given an MWA_STRING, append some new data to it.
  */
 void
-mwk_append_string(MWK_STRING *string, const char *in_data, int in_size)
+mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size)
 {
-    int needed_size;
+    size_t needed_size;
 
     if (in_size == 0)
         in_size = strlen(in_data);
@@ -145,9 +145,10 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
                  const char *name,
                  request_rec *r,
                  const char *func,
-                 int *vlen)
+                 size_t *vlen)
 {
-    int status, i;
+    int status;
+    ssize_t i;
 
     status = webauth_attr_list_find(alist, name, &i);
     if (i == -1) {
@@ -271,7 +272,10 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
      * the keyring file.
      */
     if (geteuid() == 0 /* is superuser */) {
-        chown(sconf->keyring_path, unixd_config.user_id, -1);
+        if (chown(sconf->keyring_path, unixd_config.user_id, -1) < 0)
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
+                         "mod_webkdc: %s: cannot chown keyring: %s",
+                         mwk_func, sconf->keyring_path);
     }
 #endif
     }
@@ -288,7 +292,8 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
     }
 
     if (sconf->debug) {
-        char *msg;
+        const char *msg;
+
         if (kau_status == WA_KAU_NONE)
             msg = "opened";
         else if (kau_status == WA_KAU_CREATE)

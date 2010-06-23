@@ -2,7 +2,7 @@
  * Core WebAuth LDAP Apache module code.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009
+ * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -33,6 +33,7 @@
 #include <ldap.h>
 
 #include <modules/webauthldap/mod_webauthldap.h>
+#include <util/macros.h>
 
 module AP_MODULE_DECLARE_DATA webauthldap_module;
 
@@ -75,10 +76,9 @@ die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * reading the password, etc. In our case it's a no-op. The function signature
  * must comply exactly, but the arguments are discarded in this case.
  */
-int sasl_interact_stub(LDAP *ld,
-                       unsigned flags,
-                       void *defaults,
-                       void *in )
+static int
+sasl_interact_stub(LDAP *ld UNUSED, unsigned flags UNUSED,
+                   void *defaults UNUSED, void *in UNUSED)
 {
     return LDAP_SUCCESS;
 }
@@ -87,7 +87,7 @@ int sasl_interact_stub(LDAP *ld,
  * Standard conf directive parser for strings
  */
 static const char *
-cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
+cfg_str(cmd_parms * cmd, void *mconf UNUSED, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
@@ -140,7 +140,7 @@ cfg_str(cmd_parms * cmd, void *mconf, const char *arg)
  * Standard conf directive parser for flags
  */
 static const char *
-cfg_flag(cmd_parms * cmd, void *mconfig, int flag)
+cfg_flag(cmd_parms * cmd, void *mconfig UNUSED, int flag)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
@@ -205,7 +205,8 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
 }
 
 static const char *
-cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
+cfg_take12(cmd_parms *cmd, void *mconfig UNUSED, const char *w1,
+           const char *w2)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
@@ -268,7 +269,7 @@ static const command_rec cmds[] = {
     SFLAG(CD_Authrule, E_Authrule, CM_Authrule),
 
     DITSTR(CD_Attribs, E_Attribs, CM_Attribs),
-    {NULL}
+    { NULL, { NULL }, NULL, 0, 0, NULL }
 };
 
 #undef SSTR
@@ -283,7 +284,7 @@ static const command_rec cmds[] = {
  * Handler for creating a server conf structure
  */
 static void *
-config_server_create(apr_pool_t * p, server_rec * s) 
+config_server_create(apr_pool_t * p, server_rec * s UNUSED)
 {
     MWAL_SCONF *sconf;
 
@@ -304,7 +305,7 @@ config_server_create(apr_pool_t * p, server_rec * s)
  * Handler for creating a per-directory conf structure
  */
 static void *
-config_dir_create(apr_pool_t * p, char *path) 
+config_dir_create(apr_pool_t * p, char *path UNUSED)
 {
     MWAL_DCONF *dconf;
     dconf = (MWAL_DCONF *) apr_pcalloc(p, sizeof(MWAL_DCONF));
@@ -382,7 +383,7 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
  * Called during server startup to initialize this module.
  */
 static int
-post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
+post_config_hook(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                  apr_pool_t *ptemp, server_rec *s) 
 {
     server_rec *scheck;
@@ -465,7 +466,7 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
  * @param lc main context struct for this module, for passing things around
  * @return new filter string with userid substituted
  */
-char* 
+static char *
 webauthldap_make_filter(MWAL_LDAP_CTXT* lc) 
 {
     apr_pool_t * p = lc->r->pool;
@@ -512,7 +513,7 @@ webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, kerberos error code if not
  */
-int 
+static int
 webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 {
     krb5_context ctx;
@@ -607,65 +608,13 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
 
 /**
- * This will remove duplicates in from a given apr_array of strings, and 
- * return the resulting new array, allocated out of the same pool as the 
- * original array. Comparisons can be either case sensitive or insensitive.
- * @orig the array to remove duplicates from
- * @lowercase true/false flag for comparison and result's case-sensitivity
- * @return the array with no duplicate entries
- */
-apr_array_header_t*
-webauthldap_undup(apr_array_header_t* orig, int lowercase) 
-{
-    char* p;
-    char** pusher, **popper;
-    int i;
-    apr_pool_t* pool;
-    apr_table_t* eliminator;
-    apr_array_header_t* newarray;
-    apr_array_header_t* barr;
-    apr_table_entry_t* belt;
-
-    if (!orig)
-        return NULL;
-
-    if (orig->nelts == 0)
-        return NULL;
-
-    pool = orig->pool;
-    eliminator = apr_table_make(pool, orig->nelts);
-
-    newarray = apr_array_copy(pool, orig);
-    if (!apr_is_empty_array(newarray)) {
-        popper = apr_array_pop(newarray);
-        if (lowercase) {
-            for (p = *popper; *p != '\0'; p++)
-                *p = tolower(*p);
-        }
-        apr_table_set(eliminator, *popper, *popper);
-    }
-
-    barr = (apr_array_header_t*)apr_table_elts(eliminator);
-    belt = (apr_table_entry_t *)barr->elts;
-
-    newarray = apr_array_make(pool,  barr->nelts, sizeof(char*));
-    for (i = 0; i < barr->nelts; ++i) {
-        pusher = apr_array_push(newarray);
-        *pusher = belt[i].key;
-    }
-
-    return newarray;
-}
-
-
-/**
  * This will initialize the main context struct and set up the table of
  * attributes to later put into environment variables.
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
-void
-webauthldap_init(MWAL_LDAP_CTXT* lc) 
+static void
+webauthldap_init(MWAL_LDAP_CTXT* lc)
 {
     int i;
     char** attrib;
@@ -718,7 +667,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
-int
+static int
 webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error) 
 {
     int rc;
@@ -728,7 +677,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
 
     /* Initialize the connection */
     memset(&url, 0, sizeof(url));
-    url.lud_scheme = "ldap";
+    url.lud_scheme = (char *) "ldap";
     url.lud_host = lc->sconf->host;
     url.lud_port = lc->port;
     url.lud_scope = LDAP_SCOPE_DEFAULT;
@@ -823,7 +772,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
-int
+static int
 webauthldap_managedbind(MWAL_LDAP_CTXT* lc) 
 {
     int rc;
@@ -923,7 +872,7 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, managedbind's result if not
  */
-int
+static int
 webauthldap_getcachedconn(MWAL_LDAP_CTXT* lc)
 {
 
@@ -953,7 +902,7 @@ webauthldap_getcachedconn(MWAL_LDAP_CTXT* lc)
  * storage array, it unbinds it.
  * @param lc main context struct for this module, for passing things around
  */
-void
+static void
 webauthldap_returnconn(MWAL_LDAP_CTXT* lc)
 {
 
@@ -1170,7 +1119,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
  * @param val the value of the attribute
  * @return always 1, which means keep going through the table
  */
-int
+static int
 webauthldap_setenv(void* lcp, const char *key, const char *val)
 {
     int i;
@@ -1263,7 +1212,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
  * @param val the value of the attribute
  * @return always 1, which means keep going through the table
  */
-int
+static int
 webauthldap_envnotfound(void* lcp, const char *key, const char *val)
 {
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
@@ -1279,7 +1228,7 @@ webauthldap_envnotfound(void* lcp, const char *key, const char *val)
 
 
 
-int
+static int
 webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc, 
                                 const apr_array_header_t *reqs_arr,
                                 int* needs_further_handling)
@@ -1599,7 +1548,7 @@ auth_checker_hook(request_rec * r)
  * Standard hook registration function 
  */
 static void
-webauthldap_register_hooks(apr_pool_t * p)
+webauthldap_register_hooks(apr_pool_t *p UNUSED)
 {
     /* get this module called after webauth */
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };

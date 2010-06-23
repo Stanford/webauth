@@ -9,6 +9,7 @@
  */
 
 #include <modules/webauth/mod_webauth.h>
+#include <util/macros.h>
 
 module AP_MODULE_DECLARE_DATA webauth_module;
 
@@ -36,7 +37,7 @@ do_redirect(MWA_REQ_CTXT *rc)
  * remove a string from the end of another string
  */
 static void
-strip_end(char *c, char *t)
+strip_end(char *c, const char *t)
 {
     char *p;
     if (c != NULL) {
@@ -267,7 +268,7 @@ mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 static void
 nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
 {
-    size_t i;
+    int i;
     char **p;
     apr_array_header_t *cookies;
 
@@ -511,7 +512,7 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
  * called after config has been loaded in parent process
  */
 static int
-mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
+mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
@@ -553,7 +554,7 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
  * called once per-child
  */
 static void
-mod_webauth_child_init(apr_pool_t *p, server_rec *s)
+mod_webauth_child_init(apr_pool_t *p UNUSED, server_rec *s UNUSED)
 {
     /* nothing for now */
 }
@@ -566,7 +567,7 @@ mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 */
 
 static void *
-config_server_create(apr_pool_t *p, server_rec *s)
+config_server_create(apr_pool_t *p, server_rec *s UNUSED)
 {
     MWA_SCONF *sconf;
 
@@ -586,7 +587,7 @@ config_server_create(apr_pool_t *p, server_rec *s)
 
 
 static void *
-config_dir_create(apr_pool_t *p, char *path)
+config_dir_create(apr_pool_t *p, char *path UNUSED)
 {
     MWA_DCONF *dconf;
 
@@ -892,12 +893,13 @@ handler_hook(request_rec *r)
                  "problem with the keyring file."
                  "</dd>", r);
     } else {
-        int i;
+        unsigned long i;
+
         dd_dir_int("num_entries", sconf->ring->num_entries, r);
-        for (i=0; i < sconf->ring->num_entries; i++) {
-            dd_dir_time(apr_psprintf(r->pool, "entry %d creation time", i),
+        for (i = 0; i < sconf->ring->num_entries; i++) {
+            dd_dir_time(apr_psprintf(r->pool, "entry %lu creation time", i),
                         sconf->ring->entries[i].creation_time, r);
-            dd_dir_time(apr_psprintf(r->pool, "entry %d valid after", i),
+            dd_dir_time(apr_psprintf(r->pool, "entry %lu valid after", i),
                         sconf->ring->entries[i].valid_after, r);
         }
     }
@@ -946,7 +948,7 @@ handler_hook(request_rec *r)
  * return the name of the app cookie
  */
 static const char *
-app_cookie_name()
+app_cookie_name(void)
 {
     return "webauth_at";
 }
@@ -1475,7 +1477,7 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
 }
 
 
-WEBAUTH_KEY *
+static WEBAUTH_KEY *
 get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
@@ -1675,7 +1677,7 @@ handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
     int error_code;
     static const char *mwa_func = "handle_error_token";
-    char *log_message;
+    const char *log_message;
     const char *ec = mwa_get_str_attr(alist, WA_TK_ERROR_CODE,
                                       rc->r, mwa_func, NULL);
     const char *em = mwa_get_str_attr(alist, WA_TK_ERROR_MESSAGE,
@@ -2045,7 +2047,7 @@ ssl_redirect(MWA_REQ_CTXT *rc)
                      redirect_url);
 
     if (strcmp(uri.scheme, "http") == 0) {
-        uri.scheme = "https";
+        uri.scheme = (char *) "https";
         if (rc->sconf->ssl_redirect_port) {
             uri.port_str = apr_psprintf(rc->r->pool, 
                                         "%d", rc->sconf->ssl_redirect_port);
@@ -2080,7 +2082,7 @@ ssl_redirect(MWA_REQ_CTXT *rc)
  * do a Set-Cookie to blank it out. returns NULL on error/expired
  * cookie.
  */
-MWA_CRED_TOKEN *
+static MWA_CRED_TOKEN *
 parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 {
     char *cval;
@@ -2117,7 +2119,7 @@ static void
 add_proxy_type(apr_array_header_t *a, char *type)
 {
    char **ntype;
-   size_t i;
+   int i;
 
    ntype = (char**)a->elts;
    for (i = 0; i < a->nelts; i++)
@@ -2222,8 +2224,7 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
 static int 
 gather_creds(MWA_REQ_CTXT *rc)
 {
-    size_t i;
-    int code;
+    int i, code;
     apr_array_header_t *needed_creds = NULL; /* (MWA_WACRED) */
     apr_array_header_t *needed_proxy_types = NULL; /* (char*) */
     apr_array_header_t *all_proxy_types = NULL; /* (char*) */
@@ -2324,7 +2325,7 @@ gather_creds(MWA_REQ_CTXT *rc)
  * app-token and/or proxy-token cookie, check URL and
  * process the token if present.
  */
-int 
+static int 
 gather_tokens(MWA_REQ_CTXT *rc)
 {
     int code, in_url;
@@ -2537,8 +2538,8 @@ translate_name_hook(request_rec *r)
     char *p, *s, *rp;
     char *wr, *ws;
     MWA_SCONF *sconf;
-    static char *rmagic = WEBAUTHR_MAGIC;
-    static char *smagic = WEBAUTHS_MAGIC;
+    static const char *rmagic = WEBAUTHR_MAGIC;
+    static const char *smagic = WEBAUTHS_MAGIC;
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                              &webauth_module);
@@ -2653,7 +2654,7 @@ fixups_hook(request_rec *r)
 
 
 static int
-seconds(const char *value, char **error_str)
+seconds(const char *value, const char **error_str)
 {
     char temp[32];
     size_t mult, len;
@@ -2697,7 +2698,7 @@ static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
+    const char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF *)mconf;
 
     MWA_SCONF *sconf = (MWA_SCONF *)
@@ -3027,7 +3028,7 @@ static const command_rec cmds[] = {
     DFLAG(SCD_DontCache, SE_DontCache, SCM_DontCache),
     DFLAG(SCD_ForceReload, SE_ForceReload, SCM_ForceReload),
 #endif 
-    { NULL }
+    { NULL, { NULL }, NULL, 0, 0, NULL }
 };
 
 #undef SSTR
@@ -3061,7 +3062,7 @@ static int webauth_access_checker(request_rec *r)
 
 
 static void 
-register_hooks(apr_pool_t *p)
+register_hooks(apr_pool_t *p UNUSED)
 {
     /* get our module called before the basic authentication stuff */
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };

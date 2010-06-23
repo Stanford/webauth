@@ -2,13 +2,14 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <modules/webkdc/mod_webkdc.h>
+#include <util/macros.h>
 
 /* attr list macros to make code easier to read and audit
  * we don't need to check error codes since we are using
@@ -56,7 +57,7 @@
 static const char *
 log_escape(MWK_REQ_CTXT *rc, const char *msg)
 {
-    int len, space, quotes;
+    size_t len, space, quotes;
     const char *p;
     char *d, *q;
 
@@ -64,7 +65,7 @@ log_escape(MWK_REQ_CTXT *rc, const char *msg)
     space = 0;
     quotes = 0;
 
-    for (p=msg; *p; p++) {
+    for (p = msg; *p; p++) {
         len++;
         if (apr_isspace(*p))
             space = 1;
@@ -77,7 +78,7 @@ log_escape(MWK_REQ_CTXT *rc, const char *msg)
     if (quotes == 0 && space == 0)
         return msg;
 
-    d = q = apr_palloc(rc->r->pool, len+3); /* two quotes + \0 */
+    d = q = apr_palloc(rc->r->pool, len + 3); /* two quotes + \0 */
 
     *d++ = '"';
     for (p=msg; *p; p++) {
@@ -132,7 +133,7 @@ generate_errorResponse(MWK_REQ_CTXT *rc)
  */
 static enum mwk_status
 set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
-                  const char*mwk_func, int log)
+                  const char *mwk_func, int log)
 {
     rc->error_code = ec;
     rc->error_message = message;
@@ -149,6 +150,7 @@ static WEBAUTH_ATTR_LIST *
 new_attr_list(MWK_REQ_CTXT *rc, const char *mwk_func)
 {
     WEBAUTH_ATTR_LIST *alist = webauth_attr_list_new(32);
+
     if (alist == NULL) {
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                           "no memory for attr list", mwk_func, 0);
@@ -158,12 +160,12 @@ new_attr_list(MWK_REQ_CTXT *rc, const char *mwk_func)
 
 static enum mwk_status
 make_token(MWK_REQ_CTXT *rc, WEBAUTH_ATTR_LIST *alist, time_t hint,
-           char **out_token, int *out_len,
-           int base64_encode,
+           char **out_token, size_t *out_len, int base64_encode,
            const char *mwk_func)
 {
     char *buffer;
-    int status, elen, olen;
+    int status;
+    size_t elen, olen;
 
     elen = webauth_token_encoded_length(alist);
     buffer = (char*)apr_palloc(rc->r->pool, elen);
@@ -200,12 +202,13 @@ static enum mwk_status
 make_token_with_key(MWK_REQ_CTXT *rc,
                     WEBAUTH_KEY *key,
                     WEBAUTH_ATTR_LIST *alist, time_t hint,
-                    char **out_token, int *out_len,
+                    char **out_token, size_t *out_len,
                     int base64_encode,
                     const char *mwk_func)
 {
     char *buffer;
-    int status, elen, olen;
+    int status;
+    size_t elen, olen;
 
     elen = webauth_token_encoded_length(alist);
     buffer = (char*)apr_palloc(rc->r->pool, elen);
@@ -250,7 +253,7 @@ unknown_element(MWK_REQ_CTXT *rc,
  * concat all the text pieces together and return data, or
  * NULL if an error occured.
  */
-char *
+static char *
 get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
 {
     MWK_STRING string;
@@ -302,7 +305,7 @@ get_attr_value(MWK_REQ_CTXT *rc,apr_xml_elem *e,
  * find an element in the specified element. if required and not found, we
  * log an error and generate an errorResponse.
  */
-apr_xml_elem *
+static apr_xml_elem *
 get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
             const char *name, int required, const char *mwk_func)
 {
@@ -333,7 +336,7 @@ find_proxy_token(MWK_REQ_CTXT *rc,
                  const char *mwk_func,
                  int set_error)
 {
-    int i;
+    size_t i;
     char *msg;
 
     if (strcmp(sub_cred->type, "proxy") == 0) {
@@ -359,7 +362,9 @@ static enum mwk_status
 parse_service_token(MWK_REQ_CTXT *rc, char *token, MWK_SERVICE_TOKEN *st)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, i;
+    size_t blen;
+    ssize_t i;
+    int status;
     const char *tt;
     static const char *mwk_func = "parse_service_token";
     enum mwk_status ms;
@@ -443,7 +448,9 @@ static enum mwk_status
 parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, i;
+    size_t blen;
+    ssize_t i;
+    int status;
     enum mwk_status ms;
     const char *tt;
     static const char *mwk_func = "parse_webkdc_proxy_token";
@@ -566,7 +573,9 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
                      MWK_LOGIN_TOKEN *lt)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, i;
+    size_t blen;
+    ssize_t i;
+    int status;
     enum mwk_status ms;
     const char *tt;
     static const char *mwk_func = "parse_login_token";
@@ -653,7 +662,9 @@ parse_request_token(MWK_REQ_CTXT *rc,
                     int cmd_only)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, i;
+    size_t blen;
+    int status;
+    ssize_t i;
     enum mwk_status ms;
     const char *tt;
     static const char *mwk_func = "parse_xml_request_token";
@@ -793,8 +804,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
 static enum mwk_status
 parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                           MWK_REQUESTER_CREDENTIAL *req_cred,
-                          int expecting_reqToken,
-                          char **req_subject_out)
+                          const char **req_subject_out)
 {
     int status;
     static const char*mwk_func = "parse_requesterCredential";
@@ -881,7 +891,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 static enum mwk_status
 parse_subjectCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                         MWK_SUBJECT_CREDENTIAL *sub_cred,
-                         int *num_proxy_tokens,
+                        size_t *num_proxy_tokens,
                         MWK_RETURNED_PROXY_TOKEN *rptokens)
 {
     static const char*mwk_func = "parse_subjectCredential";
@@ -960,7 +970,8 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
 {
     static const char *mwk_func="create_service_token_from_req";
     char session_key[WA_AES_128];
-    int status, len;
+    int status;
+    size_t len;
     enum mwk_status ms;
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
@@ -1033,7 +1044,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
              MWK_REQUESTER_CREDENTIAL *req_cred,
              MWK_PROXY_TOKEN *sub_pt,
              char **sad,
-             int *sad_len,
+             size_t *sad_len,
              const char *mwk_func)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
@@ -1108,7 +1119,7 @@ create_error_token_from_req(MWK_REQ_CTXT *rc,
     WEBAUTH_ATTR_LIST *alist;
     time_t creation;
     enum mwk_status ms;
-    int tlen;
+    size_t tlen;
 
     alist = new_attr_list(rc, mwk_func);
     if (alist == NULL)
@@ -1137,14 +1148,10 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                          MWK_REQUESTER_CREDENTIAL *req_cred,
                          MWK_SUBJECT_CREDENTIAL *sub_cred,
                          MWK_RETURNED_TOKEN *rtoken,
-                         MWK_REQUEST_INFO *req_info,
-                         int *num_proxy_tokens,
-                         MWK_RETURNED_PROXY_TOKEN *rptokens,
-                         char **subject_out
-                         )
+                         const char **subject_out)
 {
     static const char *mwk_func="create_id_token_from_req";
-    int tlen, sad_len;
+    size_t tlen, sad_len;
     enum mwk_status ms;
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
@@ -1263,7 +1270,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                MWK_RETURNED_TOKEN *rtoken)
 {
     static const char *mwk_func="create_proxy_token_from_req";
-    int tlen, wkdc_len;
+    size_t tlen, wkdc_len;
     enum mwk_status ms;
     time_t creation, expiration;
     WEBAUTH_ATTR_LIST *alist;
@@ -1375,7 +1382,8 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                            MWK_RETURNED_TOKEN *rtoken)
 {
     static const char *mwk_func="create_cred_token_from_req";
-    int tlen,status, ticket_len;
+    size_t tlen, ticket_len;
+    int status;
     time_t creation, expiration, ticket_expiration;
     WEBAUTH_ATTR_LIST *alist;
     apr_xml_elem *credential_type, *server_principal;
@@ -1523,8 +1531,8 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 
 static enum mwk_status
 handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                        char **req_subject_out,
-                        char **subject_out)
+                        const char **req_subject_out,
+                        const char **subject_out)
 {
     apr_xml_elem *child, *tokens, *token;
     static const char *mwk_func="handle_getTokensRequest";
@@ -1535,7 +1543,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
-    int num_tokens, i;
+    size_t num_tokens, i;
 
     MWK_RETURNED_TOKEN rtokens[MAX_TOKENS_RETURNED];
 
@@ -1549,7 +1557,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     /* walk through each child element in <getTokensRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential(rc, child, &req_cred, 1,
+            if (!parse_requesterCredential(rc, child, &req_cred,
                                            req_subject_out))
                 return MWK_ERROR;
             req_cred_parsed = 1;
@@ -1674,8 +1682,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return MWK_ERROR;
 
             if (!create_id_token_from_req(rc, at, &req_cred, &sub_cred,
-                                          &rtokens[num_tokens], NULL,
-                                          NULL, NULL, NULL)) {
+                                          &rtokens[num_tokens], NULL)) {
                 return MWK_ERROR;
             }
         } else if (strcmp(tt, "proxy") == 0) {
@@ -1810,8 +1817,8 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
  * The subject is returned as newly allocated pool memory.
  */
 static int
-get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt, char **subject_out,
-            const char *mwk_func)
+get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
+            const char **subject_out, const char *mwk_func)
 {
     char *subject;
     enum webauth_krb5_canon canonicalize = WA_KRB5_CANON_LOCAL;
@@ -1883,13 +1890,15 @@ mwk_do_login(MWK_REQ_CTXT *rc,
              MWK_LOGIN_TOKEN *lt,
              MWK_SUBJECT_CREDENTIAL *sub_cred,
              MWK_RETURNED_PROXY_TOKEN rtokens[],
-             int *num_rtokens,
-             char **subject_out)
+             size_t *num_rtokens,
+             const char **subject_out)
 {
     static const char*mwk_func = "mwk_do_login";
     WEBAUTH_KRB5_CTXT *ctxt;
-    char *subject, *server_principal;
-    int status, tgt_len, len;
+    const char *subject;
+    char *server_principal;
+    int status;
+    size_t tgt_len, len;
     enum mwk_status ms;
     time_t tgt_expiration, creation;
     char *tgt;
@@ -2071,8 +2080,8 @@ parse_requestInfo(MWK_REQ_CTXT *rc,
 
 static enum mwk_status
 handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                           char **req_subject_out,
-                           char **subject_out)
+                           const char **req_subject_out,
+                           const char **subject_out)
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
@@ -2084,13 +2093,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     MWK_REQUEST_TOKEN req_token;
     int req_cred_parsed = 0;
     int sub_cred_parsed = 0;
-    int i, did_login;
+    size_t i;
+    int did_login;
     int login_ec;
     const char *login_em = NULL;
-    char *req_token_info;
+    const char *req_token_info;
     MWK_RETURNED_TOKEN rtoken;
     MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
-    int num_proxy_tokens = 0;
+    size_t num_proxy_tokens = 0;
 
     *subject_out = "<unknown>";
     *req_subject_out = "<unkknown>";
@@ -2110,7 +2120,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential(rc, child, &req_cred, 0,
+            if (!parse_requesterCredential(rc, child, &req_cred,
                                            req_subject_out))
                 return MWK_ERROR;
             req_cred_parsed = 1;
@@ -2217,9 +2227,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (strcmp(req_token.requested_token_type, "id") == 0) {
         ms = create_id_token_from_req(rc, req_token.u.subject_auth_type,
                                       &req_cred, sub_cred, &rtoken,
-                                      &req_info,
-                                      &num_proxy_tokens,
-                                      rptokens,
                                       subject_out);
         req_token_info = apr_pstrcat(rc->r->pool,
                                      " sa=",
@@ -2363,7 +2370,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
 static enum mwk_status
 handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                               char **subject_out)
+                               const char **subject_out)
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_webkdcProxyTokenRequest";
@@ -2371,7 +2378,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     char *sc_data, *pd_data;
     char *dpd_data, *token_data;
     char *tgt;
-    int sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, status, token_len;
+    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, token_len;
+    int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
     time_t tgt_expiration, creation;
@@ -2606,7 +2614,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 static enum mwk_status
 handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
                                    apr_xml_elem *e,
-                                   char **subject_out)
+                                   const char **subject_out)
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_webkdcProxyTokenInfoRequest";
@@ -2672,7 +2680,8 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
 static int
 parse_request(MWK_REQ_CTXT *rc)
 {
-    int s, num_read;
+    int s;
+    ssize_t num_read;
     char buff[8192];
     apr_xml_parser *xp;
     apr_xml_doc *xd;
@@ -2730,7 +2739,8 @@ parse_request(MWK_REQ_CTXT *rc)
     }
 
     if (strcmp(xd->root->name, "getTokensRequest") == 0) {
-        char *req, *sub;
+        const char *req, *sub;
+
         if (!handle_getTokensRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
@@ -2748,7 +2758,8 @@ parse_request(MWK_REQ_CTXT *rc)
                          );
         }
     } else if (strcmp(xd->root->name, "requestTokenRequest") == 0) {
-        char *req, *sub;
+        const char *req, *sub;
+
         if (!handle_requestTokenRequest(rc, xd->root, &req, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
@@ -2766,7 +2777,8 @@ parse_request(MWK_REQ_CTXT *rc)
                          );
         }
     } else if (strcmp(xd->root->name, "webkdcProxyTokenRequest") == 0) {
-        char *sub;
+        const char *sub;
+
         if (!handle_webkdcProxyTokenRequest(rc, xd->root, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
@@ -2783,7 +2795,8 @@ parse_request(MWK_REQ_CTXT *rc)
                          );
         }
     } else if (strcmp(xd->root->name, "webkdcProxyTokenInfoRequest") == 0) {
-        char *sub;
+        const char *sub;
+
         if (!handle_webkdcProxyTokenInfoRequest(rc, xd->root, &sub)) {
             generate_errorResponse(rc);
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
@@ -2947,7 +2960,7 @@ init_sconf(server_rec *s, MWK_SCONF *bconf, apr_pool_t *ptemp)
  * called after config has been loaded in parent process
  */
 static int
-mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
+mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                 apr_pool_t *ptemp, server_rec *s)
 {
     MWK_SCONF *sconf;
@@ -2985,7 +2998,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog,
  * called once per-child
  */
 static void
-mod_webkdc_child_init(apr_pool_t *p, server_rec *s)
+mod_webkdc_child_init(apr_pool_t *p UNUSED, server_rec *s)
 {
     /* initialize mutexes */
     mwk_init_mutexes(s);
@@ -2998,7 +3011,7 @@ mod_webkdc_child_init(apr_pool_t *p, server_rec *s)
 */
 
 static void *
-config_server_create(apr_pool_t *p, server_rec *s)
+config_server_create(apr_pool_t *p, server_rec *s UNUSED)
 {
     MWK_SCONF *sconf;
 
@@ -3079,11 +3092,11 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 #undef MERGE_PTR
 #undef MERGE_INT
 
-static int
-seconds(const char *value, char **error_str)
+static unsigned long
+seconds(const char *value, const char **error_str)
 {
     char temp[32];
-    int mult, len;
+    unsigned long mult, len;
 
     len = strlen(value);
     if (len > (sizeof(temp)-1)) {
@@ -3120,10 +3133,10 @@ seconds(const char *value, char **error_str)
 }
 
 static const char *
-cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
+cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
+    const char *error_str = NULL;
     char **realm;
 
     MWK_SCONF *sconf = (MWK_SCONF *)
@@ -3174,7 +3187,8 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 }
 
 static const char *
-cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
+cfg_str12(cmd_parms *cmd, void *mconf UNUSED, const char *arg,
+          const char *arg2)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
@@ -3199,7 +3213,7 @@ cfg_str12(cmd_parms *cmd, void *mconf, const char *arg, const char *arg2)
 }
 
 static const char *
-cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
+cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
@@ -3256,14 +3270,14 @@ static const command_rec cmds[] = {
     SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
     ISTR(CD_PermittedRealms, E_PermittedRealms, CM_PermittedRealms),
     ISTR(CD_LocalRealms, E_LocalRealms, CM_LocalRealms),
-    { NULL }
+    { NULL, { NULL }, NULL, 0, 0, NULL }
 };
 
 #undef SSTR
 #undef SFLAG
 
 static void
-register_hooks(apr_pool_t *p)
+register_hooks(apr_pool_t *p UNUSED)
 {
     ap_hook_post_config(mod_webkdc_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(mod_webkdc_child_init, NULL, NULL, APR_HOOK_MIDDLE);

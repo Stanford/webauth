@@ -77,7 +77,7 @@ new_service_token(apr_pool_t *pool,
 }
 
 
-MWA_SERVICE_TOKEN *
+static MWA_SERVICE_TOKEN *
 read_service_token_cache(server_rec *server,
                              MWA_SCONF *sconf, 
                              apr_pool_t *pool)
@@ -97,7 +97,7 @@ read_service_token_cache(server_rec *server,
     void *key;
 
     WEBAUTH_ATTR_LIST *alist;
-    static char *mwa_func = "mwa_read_service_token_cache";
+    static const char *mwa_func = "mwa_read_service_token_cache";
 
     /* check file */
     astatus = apr_file_open(&cache, sconf->st_cache_path,
@@ -356,11 +356,11 @@ append_string(MWA_STRING *string, const char *in_data, size_t in_size)
  * gather up the POST data as it comes back from webkdc
  */
 static size_t
-post_gather(void *in_data, size_t size, size_t nmemb,
-            MWA_STRING *string)
+post_gather(char *in_data, size_t size, size_t nmemb, void *string)
 {
-    size_t real_size = size*nmemb;
-    append_string(string, (char*)in_data, (int)real_size);
+    size_t real_size = size * nmemb;
+
+    append_string(string, in_data, real_size);
     return real_size;
 }
 
@@ -378,7 +378,7 @@ post_to_webkdc(char *post_data, size_t post_data_len,
     CURL *curl;
     CURLcode code;
     char curl_error_buff[CURL_ERROR_SIZE+1];
-    struct curl_slist *headers=NULL;
+    struct curl_slist *headers = NULL;
     MWA_STRING string;
 
     if (post_data_len == 0)
@@ -872,15 +872,15 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
 }
 
 
-char *
-make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
+static char *
+make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
 {
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken;
     size_t tlen, olen;
     int status;
     time_t curr = time(NULL);
-    const char *mwa_func="make_request_token";
+    const char *mwa_func = "make_request_token";
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
@@ -917,8 +917,6 @@ static int
 parse_get_creds_response(apr_xml_doc *xd,
                          MWA_REQ_CTXT *rc,
                          MWA_SERVICE_TOKEN *st,
-                         MWA_WACRED *creds,
-                         int num_creds,
                          apr_array_header_t **acquired_creds)
 {
     apr_xml_elem *e, *tokens, *token;
@@ -1115,6 +1113,5 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                  "mod_webauth: xml doc root(%s)", xd->root->name);
 
-    return parse_get_creds_response(xd, rc, st, creds, num_creds, 
-                                    acquired_creds);
+    return parse_get_creds_response(xd, rc, st, acquired_creds);
 }

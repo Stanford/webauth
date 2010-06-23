@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth LDAP module.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2005, 2006, 2007, 2009
+ * Copyright 2003, 2005, 2006, 2007, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -112,7 +112,7 @@ enum {
 
 /* defaults struct passed to SASL */
 typedef struct {
-    char *mech;
+    const char *mech;
     char *realm;
     char *authcid;
     char *passwd;
@@ -126,11 +126,11 @@ typedef struct {
     char *base;
     char *binddn;           /* not used with the Stanford openldap server */
     int   debug;
-    char *filter_templ;
+    const char *filter_templ;
     int   filter_templ_ex;
     char *host;
     char *keytab;
-    char *port;
+    const char *port;
     int   port_ex;
     char *principal;
     char *privgroupattr;
@@ -177,7 +177,7 @@ typedef struct {
     char*  filter;
     int    port;
 
-    char*  authrule; 	     /* what group or rule was the user authorized on
+    const char*  authrule;    /* what group or rule was the user authorized on
                               */
 
 } MWAL_LDAP_CTXT;

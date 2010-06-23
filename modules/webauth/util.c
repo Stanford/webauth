@@ -220,7 +220,8 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
     }
 
     if (sconf->debug) {
-        char *msg;
+        const char *msg;
+
         if (kau_status == WA_KAU_NONE) 
             msg = "opened";
         else if (kau_status == WA_KAU_CREATE)
@@ -380,16 +381,6 @@ mwa_parse_cred_token(char *token,
 }
 
 
-/*
- * stores an env variable that will get set in fixups
- */
-void
-mwa_fixup_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
-{
-    mwa_setn_note(rc->r, "mod_webauth_ENV_", name, "%s", value);
-}
-
-
 static apr_array_header_t *cred_interfaces = NULL;
 
 void
@@ -417,11 +408,11 @@ mwa_find_cred_interface(server_rec *server,
                         const char *type)
 {
     if (cred_interfaces != NULL) {
-        size_t i;
+        int i;
         MWA_CRED_INTERFACE **interfaces;
 
         interfaces = (MWA_CRED_INTERFACE **)cred_interfaces->elts;
-        for (i=0; i < cred_interfaces->nelts; i++) {
+        for (i = 0; i < cred_interfaces->nelts; i++) {
             if (strcmp(interfaces[i]->type, type) == 0)
                 return interfaces[i];
         }
