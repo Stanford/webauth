@@ -101,9 +101,6 @@ libwebauth:
  * Do proper error handling in the case where random number initialization
    fails.
 
- * webauth_krb5_rd_req_with_data does not check for memory allocation
-   failure properly in all cases.
-
 mod_webauth:
 
  * User request: It would be nice to have a per-directory option to
