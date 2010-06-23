@@ -549,7 +549,7 @@ webauth_attrs_decode(char *buffer, size_t input_len, WEBAUTH_ATTR_LIST **list)
         name = p;
         p++;
         i--;
-        while (i && *p != NAME_TERM) {
+        while (i > 0 && *p != NAME_TERM) {
             p++;
             i--;
         }
@@ -589,7 +589,8 @@ webauth_attrs_decode(char *buffer, size_t input_len, WEBAUTH_ATTR_LIST **list)
          * two separators in a row, that's an escaped separator; copy the
          * separator to the output and continue.
          */
-        while (i-- > 0) {
+        while (i > 0) {
+            i--;
             if (*p != VAL_TERM) {
                 if (d != p)
                     *d = *p;
@@ -617,7 +618,6 @@ webauth_attrs_decode(char *buffer, size_t input_len, WEBAUTH_ATTR_LIST **list)
             p++;
             d++;
         }
-
     }
 
     /*
