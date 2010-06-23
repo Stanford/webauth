@@ -188,14 +188,12 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/libwebauth/attrs-t		   \
-	tests/libwebauth/base64-t tests/libwebauth/hex-t		   \
-	tests/libwebauth/key-t tests/libwebauth/krb5-t			   \
-	tests/libwebauth/krb5-tgt-t tests/libwebauth/random-t		   \
-	tests/libwebauth/token-t tests/portable/asprintf-t		   \
-	tests/portable/snprintf-t tests/portable/strlcat-t		   \
-	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
-	tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	\
+	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		\
+	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-t	\
+	tests/portable/asprintf-t tests/portable/snprintf-t		\
+	tests/portable/strlcat-t tests/portable/strlcpy-t		\
+	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -205,16 +203,16 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/messages.h tests/tap/process.c tests/tap/proces.sh
 
 # All of the test programs.
-tests_libwebauth_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
-tests_libwebauth_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
-tests_libwebauth_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_libwebauth_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
 	tests/portable/asprintf.c
 tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
