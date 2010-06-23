@@ -1,0 +1,28 @@
+This directory contains additional data files needed to run tests.
+
+In order to run the tests, you will need to grant the test processes
+access to modify principals in a test KDC.  This should not be pointed
+at a production KDC!  Then, create the following files:
+
+    test.keytab             Keytab for an authorized user
+    test.principal          Principal of the authorized user
+    test.principal-host     Name of a host principal to test against
+    test.principal-webauth  Name of a webauth principal to test against
+    test.realm              Kerberos realm
+    test.acl                remctld acl file containing the test principal
+    test.password           Username and password of a valid test user, with
+                            username on first line and password on second
+    test.keyring.path       Filename containing path to a server keyring
+
+For test.keyring.path, some tests have us create our own keyring from the
+test.keytab, but one set of tests for login requires running on a working
+WebKDC server, and uses the system keyring.  If this file contains the
+path to the system keyring, use that.  Otherwise, skip the full login
+tests.
+
+The keytab and principal will need admin access to the given Kerberos
+realm in order to create and change the attributes of a particular
+account.
+
+The testing requires Heimdal::Kadm5 and a Heimdal KDC.  Testing against
+MIT Kerberos is currently not supported.
