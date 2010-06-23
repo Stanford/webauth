@@ -508,7 +508,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
     if (cache_name == NULL) {
-        sprintf(ccname, "MEMORY:%p", c);
+        snprintf(ccname, sizeof(ccname), "MEMORY:%p", c);
         cache_name = ccname;
     }
 
@@ -701,7 +701,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
     if (cache_name == NULL) {
-        sprintf(ccname, "MEMORY:%p", c);
+        snprintf(ccname, sizeof(ccname), "MEMORY:%p", c);
         cache_name = ccname;
     }
 
@@ -771,7 +771,7 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
         return s;
 
     if (cache_name == NULL) {
-        sprintf(ccname, "MEMORY:%p", c);
+        snprintf(ccname, sizeof(ccname), "MEMORY:%p", c);
         cache_name = ccname;
     }
 

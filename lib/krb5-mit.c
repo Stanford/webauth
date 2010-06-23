@@ -122,13 +122,13 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
         if (s != WA_ERR_NONE)
             goto cleanup;
         for (i = 0; i < num; i++) {
-            sprintf(name, CR_ADDRTYPE, i);
+            snprintf(name, sizeof(name), CR_ADDRTYPE, i);
             s = webauth_attr_list_add_int32(list, name,
                                             creds->addresses[i]->addrtype,
                                             WA_F_COPY_NAME);
             if (s != WA_ERR_NONE)
                 goto cleanup;
-            sprintf(name, CR_ADDRCONT, i);
+            snprintf(name, sizeof(name), CR_ADDRCONT, i);
             s = webauth_attr_list_add(list, name,
                                       creds->addresses[i]->contents,
                                       creds->addresses[i]->length,
@@ -168,13 +168,13 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
         if (s != WA_ERR_NONE)
             goto cleanup;
         for (i = 0; i < num; i++) {
-            sprintf(name, CR_AUTHDATATYPE, i);
+            snprintf(name, sizeof(name), CR_AUTHDATATYPE, i);
             s = webauth_attr_list_add_int32(list, name,
                                             creds->authdata[i]->ad_type,
                                             WA_F_COPY_NAME);
             if (s != WA_ERR_NONE)
                 goto cleanup;
-            sprintf(name, CR_AUTHDATACONT, i);
+            snprintf(name, sizeof(name), CR_AUTHDATACONT, i);
             s = webauth_attr_list_add(list, name,
                                       creds->authdata[i]->contents,
                                       creds->authdata[i]->length,
@@ -332,13 +332,13 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
                 goto cleanup;
 
             creds->addresses[i]->magic = KV5M_ADDRESS;
-            sprintf(name, CR_ADDRTYPE, i);
+            snprintf(name, sizeof(name), CR_ADDRTYPE, i);
             s = webauth_attr_list_get_int32(list, name,
                                             &creds->addresses[i]->addrtype,
                                             WA_F_NONE);
             if (s != WA_ERR_NONE)
                 goto cleanup;
-            sprintf(name, CR_ADDRCONT, i);
+            snprintf(name, sizeof(name), CR_ADDRCONT, i);
 
             s = webauth_attr_list_get(list, name, &data, &length,
                                       WA_F_COPY_VALUE);
@@ -401,13 +401,13 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
                 goto cleanup;
 
             creds->authdata[i]->magic = KV5M_AUTHDATA;
-            sprintf(name, CR_AUTHDATATYPE, i);
+            snprintf(name, sizeof(name), CR_AUTHDATATYPE, i);
             s = webauth_attr_list_get_int32(list, name,
                                             &creds->authdata[i]->ad_type,
                                             WA_F_NONE);
             if (s != WA_ERR_NONE)
                 goto cleanup;
-            sprintf(name, CR_AUTHDATACONT, i);
+            snprintf(name, sizeof(name), CR_AUTHDATACONT, i);
 
             s = webauth_attr_list_get(list, name, &data, &length,
                                       WA_F_COPY_VALUE);

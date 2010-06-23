@@ -183,7 +183,7 @@ webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
     if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
         char buff[32];
 
-        sprintf(buff, "%lu", (unsigned long) value);
+        snprintf(buff, sizeof(buff), "%lu", (unsigned long) value);
         return webauth_attr_list_add_str(list, name, buff, 0,
                                          flags | WA_F_COPY_VALUE);
     } else {
@@ -205,7 +205,7 @@ webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *list, const char *name,
     if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
         char buff[32];
 
-        sprintf(buff, "%ld", (unsigned long) value);
+        snprintf(buff, sizeof(buff), "%ld", (unsigned long) value);
         return webauth_attr_list_add_str(list, name, buff, 0,
                                          flags | WA_F_COPY_VALUE);
     } else {
