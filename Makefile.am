@@ -151,7 +151,6 @@ install-data-local-perl: perl/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
-CLEANFILES = tests/webauth_keyring tests/webauth_keyring2
 DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
@@ -161,12 +160,6 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 # Also run make clean in the perl directory if needed and clean up the module
 # directories.
 clean-local:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    rm -rf modules/webauth modules/webauthldap modules/webkdc ; \
-	else \
-	    rm -rf modules/*/.libs modules/*/*.la modules/*/*.lo \
-		modules/*/*.slo ; \
-	fi
 	set -e; if [ -f "perl/Makefile" ] ; then \
 	    cd perl && $(MAKE) clean ; \
 	    cd perl && [ ! -f Makefile.old ] || mv Makefile.old Makefile ; \
