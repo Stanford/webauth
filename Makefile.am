@@ -1,17 +1,17 @@
-# Makefile.am -- Automake makefile for WebAuth.
+# Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
-# See README for licensing terms.
+# See LICENSE for licensing terms.
 
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm \
-	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm \
+PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	 \
+	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		 \
 	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm \
-	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm \
+	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	 \
 	perl/lib/WebKDC/XmlElement.pm perl/test.pl perl/typemap
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
@@ -28,19 +28,20 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
 	lib/mapfile lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST \
-	perl/MANIFEST.SKIP tests/TESTS tests/data/readme tests/mod_webauth  \
-	tools/wa_keyring.pod tools/weblogin-passcheck			    \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth  \
+	tests/tap/libtap.sh tests/util/xmalloc-t tools/wa_keyring.pod	    \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
-noinst_LTLIBRARIES = portable/libportable.la util/libutil.la
+noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
         portable/krb5.h portable/macros.h portable/stdbool.h		 \
         portable/system.h
 portable_libportable_la_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
-util_libutil_la_SOURCES = util/concat.c util/concat.h util/macros.h	\
+noinst_LIBRARIES = util/libutil.a
+util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
         util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
 
 lib_LTLIBRARIES = lib/libwebauth.la
@@ -90,7 +91,7 @@ modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
-tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.la \
+tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
 
@@ -156,7 +157,7 @@ DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
-	tests/webauth_keyring tests/webauth_keyring2 tools/wa_keyring.1
+	tools/wa_keyring.1
 
 # Also run make clean in the perl directory if needed and clean up the module
 # directories.
@@ -187,17 +188,21 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/libwebauth/attrs-t \
-	tests/libwebauth/base64-t tests/libwebauth/hex-t \
-	tests/libwebauth/key-t tests/libwebauth/krb5-t \
-	tests/libwebauth/krb5-tgt-t tests/libwebauth/random-t \
-	tests/libwebauth/token-t
+check_PROGRAMS = tests/runtests tests/libwebauth/attrs-t		   \
+	tests/libwebauth/base64-t tests/libwebauth/hex-t		   \
+	tests/libwebauth/key-t tests/libwebauth/krb5-t			   \
+	tests/libwebauth/krb5-tgt-t tests/libwebauth/random-t		   \
+	tests/libwebauth/token-t tests/portable/asprintf-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
+	tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
-tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h \
-	tests/tap/kerberos.c tests/tap/kerberos.h
+tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
+	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
+	tests/tap/messages.h tests/tap/process.c tests/tap/proces.sh
 
 # All of the test programs.
 tests_libwebauth_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
@@ -207,9 +212,26 @@ tests_libwebauth_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_libwebauth_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.la portable/libportable.la $(KRB5_LIBS)
+	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_libwebauth_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_libwebauth_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
+	tests/portable/asprintf.c
+tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_snprintf_t_SOURCES = tests/portable/snprintf-t.c \
+	tests/portable/snprintf.c
+tests_portable_snprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_strlcat_t_SOURCES = tests/portable/strlcat-t.c \
+	tests/portable/strlcat.c
+tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
+	tests/portable/strlcpy.c
+tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_util_concat_t_LDADD = tests/tap/libtap.a util/libutil.a \
+	portable/libportable.la
+tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
+	portable/libportable.la
+tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS

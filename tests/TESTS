@@ -6,3 +6,10 @@ libwebauth/krb5
 libwebauth/krb5-tgt
 libwebauth/random
 libwebauth/token
+portable/asprintf
+portable/snprintf
+portable/strlcat
+portable/strlcpy
+util/concat
+util/messages
+util/xmalloc

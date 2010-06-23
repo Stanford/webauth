@@ -38,6 +38,13 @@
 /tests/libwebauth/krb5-tgt-t
 /tests/libwebauth/random-t
 /tests/libwebauth/token-t
+/tests/portable/asprintf-t
+/tests/portable/snprintf-t
+/tests/portable/strlcat-t
+/tests/portable/strlcpy-t
+/tests/util/concat-t
+/tests/util/messages-t
+/tests/util/xmalloc
 /tests/runtests
 /tests/webauth_keyring
 /tests/webauth_keyring2
