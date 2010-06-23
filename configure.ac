@@ -106,9 +106,6 @@ AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
-dnl Find apxs, which may be in a separate Apache 2.x installation location.
-WEBAUTH_APACHE
-
 dnl Find Perl, used to build the Perl bindings.
 if test x"$build_perl" = xtrue ; then
     AC_PATH_PROG([PERL], [perl])
@@ -131,6 +128,7 @@ AC_CHECK_MEMBER([krb5_creds.session],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
+RRA_LIB_APACHE
 WEBAUTH_LIB_SSL
 WEBAUTH_LIB_CURL
 WEBAUTH_LIB_LDAP

@@ -41,7 +41,7 @@ site, see doc/install-webkdc.
 
  3.  Run configure.  The command will look something like:
 
-         ./configure --with-apache=/usr/local/apache2 \
+         ./configure --with-apxs=/usr/local/apache2/bin/apxs \
              --with-krb5=/usr/local --with-openssl=/usr/local \
              --with-curl=/usr/local --with-ldap=/usr/local
 
@@ -52,13 +52,8 @@ site, see doc/install-webkdc.
      you're using Linux and the packages that come with your Linux
      distribution).
 
-     You can omit --with-apache if the right version of apxs is in your
-     path; otherwise, apxs should be in a bin subdirectory of the path
-     that you give to --with-apache.  If your Apache installation doesn't
-     have a single root directory (if you are, for example, using the
-     Apache package installed from a Linux distribution), you can instead
-     specify the full path to apxs with --with-apxs instead of
-     --with-apache.
+     You can omit --with-apxs if the right version of apxs is in your
+     path.
 
      You may optionally build Perl bindings for libwebauth by passing the
      --enable-perl option to configure.  If you do this, whatever version
@@ -77,13 +72,17 @@ site, see doc/install-webkdc.
          ./configure --help
 
      for information about other available options.  WebAuth's library
-     will by default be installed in /usr/local/lib and its utility
-     programs will be installed in /usr/local/bin; to change those
+     will by default be installed in /usr/local/lib, its utility programs
+     will be installed in /usr/local/bin, and its modules will be
+     installed in /usr/local/lib/apache2/modules.  To change those
      locations, pass the --prefix option to configure with whatever path
-     you want to serve as the installation root.  The install location of
-     the Apache modules will be determined by Apache's apxs utility, and
-     the install location of the Perl modules will be derived from Perl's
-     configuration; neither are affected by --prefix.
+     you want to serve as the installation root.  You can use --libexecdir
+     to set the parent directory of the module installation.  The modules
+     will be installed in an apache2/modules subdirectory of that
+     directory.
+
+     The install location of the Perl modules will be derived from Perl's
+     configuration and is not affected by --prefix.
 
  4.  Build WebAuth by running:
 
@@ -115,7 +114,8 @@ site, see doc/install-webkdc.
      to their httpd.conf file.  For users at other sites, the basic set of
      directives are:
 
-         LoadModule webauth_module modules/mod_webauth.so
+         LoadModule webauth_module \
+             /usr/local/lib/apache2/modules/mod_webauth.so
 
          WebAuthKeyringAutoUpdate on
          WebAuthKeyringKeyLifetime 30d
@@ -263,7 +263,8 @@ site, see doc/install-webkdc.
 
      For users at other sites, the basic set of directives are:
 
-         LoadModule webauthldap_module modules/mod_webauthldap.so
+         LoadModule webauthldap_module \
+             /usr/local/lib/apache2/modules/mod_webauthldap.so
 
          WebAuthLdapHost ldap.example.com
          WebAuthLdapBase dc=example,dc=com
@@ -272,11 +273,11 @@ site, see doc/install-webkdc.
          WebAuthLdapKeytab conf/webauth/keytab
          WebAuthLdapTktCache conf/webauth/krb5cc_ldap
 
-     The first three settings will vary considerably given the name and
-     configuration of your local LDAP server.  For more information on
-     what these attributes do, see the mod_webauthldap manual.  Please
-     note that the WebAuth LDAP module only supports Kerberos v5 GSS-API
-     binds at this time.
+     The first three configuration settings will vary considerably given
+     the name and configuration of your local LDAP server.  For more
+     information on what these attributes do, see the mod_webauthldap
+     manual.  Please note that the WebAuth LDAP module only supports
+     Kerberos v5 GSS-API binds at this time.
 
 14.  At this point, LDAP lookups are available to your web server.  This
      can now be configured.  To restrict access to a given set of pages by

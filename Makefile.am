@@ -57,6 +57,43 @@ lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
 	$(CRYPTO_LDFLAGS) $(KRB5_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(CRYPTO_LIBS) $(KRB5_LIBS)
 
+apachedir = $(libexecdir)/apache2/modules
+apache_LTLIBRARIES =
+if BUILD_WEBAUTH
+    apache_LTLIBRARIES += modules/webauth/mod_webauth.la
+endif
+if BUILD_WEBAUTHLDAP
+    apache_LTLIBRARIES += modules/webauthldap/mod_webauthldap.la
+endif
+if BUILD_WEBKDC
+    apache_LTLIBRARIES += modules/webkdc/mod_webkdc.la
+endif
+
+modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
+	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
+	modules/webauth/util.c modules/webauth/webkdc.c
+modules_webauth_mod_webauth_la_CPPFLAGS = $(APACHE_CPPFLAGS) $(CURL_CPPFLAGS)
+modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \
+	$(APACHE_LDFLAGS) $(CURL_LDFLAGS)
+modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
+	$(CURL_LIBS)
+modules_webauthldap_mod_webauthldap_la_SOURCES = \
+	modules/webauthldap/mod_webauthldap.c \
+	modules/webauthldap/mod_webauthldap.h
+modules_webauthldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
+	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
+modules_webauthldap_mod_webauthldap_la_LDFLAGS = -module -shared \
+	-avoid-version $(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
+modules_webauthldap_mod_webauthldap_la_LIBADD = $(APACHE_LIBS) $(KRB5_LIBS) \
+	$(LDAP_LIBS)
+modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c \
+	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h \
+	modules/webkdc/util.c
+modules_webkdc_mod_webkdc_la_CPPFLAGS = $(APACHE_CPPFLAGS)
+modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
+	$(APACHE_LDFLAGS)
+modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
+
 bin_PROGRAMS = tools/wa_keyring
 tools_wa_keyring_LDADD = lib/libwebauth.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
@@ -106,103 +143,9 @@ perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
 install-data-local-perl: perl/WebAuth.o
 	cd perl && $(MAKE) install DESTDIR=$(DESTDIR)
 
-# These are the source files for the Apache modules for passing to apxs.
-# They are prefixed with $(srcdir) since that's what we want the dependency
-# to be on.  Due to apxs misfeatures, we have to copy them into the build
-# directory before building.  The mod_*.c file must be listed first or apxs
-# will generate the module under the wrong name.
-#
-# Header files aren't included here, since apxs doesn't recognize them as
-# headers and passes them along to the linker.
-MOD_WEBAUTH_FILES = modules/webauth/mod_webauth.c modules/webauth/krb5.c \
-	modules/webauth/util.c modules/webauth/webkdc.c
-MOD_WEBAUTH_FILES_SRC = $(srcdir)/modules/webauth/mod_webauth.c \
-	$(srcdir)/modules/webauth/krb5.c $(srcdir)/modules/webauth/util.c \
-	$(srcdir)/modules/webauth/webkdc.c
-MOD_WEBAUTHLDAP_FILES = modules/webauthldap/mod_webauthldap.c
-MOD_WEBAUTHLDAP_FILES_SRC = $(srcdir)/modules/webauthldap/mod_webauthldap.c
-MOD_WEBKDC_FILES = modules/webkdc/mod_webkdc.c modules/webkdc/acl.c \
-	modules/webkdc/util.c
-MOD_WEBKDC_FILES_SRC = $(srcdir)/modules/webkdc/mod_webkdc.c \
-	$(srcdir)/modules/webkdc/acl.c $(srcdir)/modules/webkdc/util.c
-
-# Automake can't handle apxs directly, so we do the module builds via explicit
-# rules.  Installation is handled by an install-exec-local rule.
-MODULES =
-MODULES_INSTALL =
-
-if BUILD_WEBAUTH
-MODULES += modules/webauth/mod_webauth.la
-MODULES_INSTALL += install-exec-local-webauth
-endif
-
-if BUILD_WEBAUTHLDAP
-MODULES += modules/webauthldap/mod_webauthldap.la
-MODULES_INSTALL += install-exec-local-webauthldap
-endif
-
-if BUILD_WEBKDC
-MOD_WEBKDC = modules/webkdc/mod_webkdc.la
-MOD_WEBKDC_INSTALL = install-exec-local-webkdc
-endif
-
-if BUILD_WEBKDC
-MODULES += modules/webkdc/mod_webkdc.la
-MODULES_INSTALL += install-exec-local-webkdc
-endif
-
-modules/webauth/mod_webauth.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBAUTH_FILES_SRC) modules/webauth/mod_webauth.h
-	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
-	    [ -d modules ] || mkdir modules ; \
-	    [ -d modules/webauth ] || mkdir modules/webauth ; \
-	    for f in $(MOD_WEBAUTH_FILES_SRC) ; do \
-		cp $$f modules/webauth/ ; \
-	    done ; \
-	fi
-	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) \
-	    $(CURL_CPPFLAGS) $(LDFLAGS) $(CURL_LDFLAGS) lib/libwebauth.la \
-	    $(CURL_LIBS) $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBAUTH_FILES)
-
-modules/webauthldap/mod_webauthldap.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBAUTHLDAP_FILES_SRC) \
-		modules/webauthldap/mod_webauthldap.h
-	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
-	    [ -d modules ] || mkdir modules ; \
-	    [ -d modules/webauthldap ] || mkdir modules/webauthldap ; \
-	    for f in $(MOD_WEBAUTHLDAP_FILES_SRC) ; do \
-		cp $$f modules/webauthldap/ ; \
-	    done ; \
-	fi
-	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) \
-	    $(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS) $(LDFLAGS) $(KRB5_LDFLAGS) \
-	    $(LDAP_LDFLAGS) $(APXS_KRB5_LIBS) $(LDAP_LIBS) $(LIBS) \
-	    $(MOD_WEBAUTHLDAP_FILES)
-
-modules/webkdc/mod_webkdc.la: lib/libwebauth.la lib/webauth.h \
-		$(MOD_WEBKDC_FILES_SRC) modules/webkdc/mod_webkdc.h
-	set -e; if [ x"$(srcdir)" != x"$(builddir)" ] ; then \
-	    [ -d modules ] || mkdir modules ; \
-	    [ -d modules/webkdc ] || mkdir modules/webkdc ; \
-	    for f in $(MOD_WEBKDC_FILES_SRC) ; do \
-		cp $$f modules/webkdc/ ; \
-	    done ; \
-	fi
-	$(APXS) -c $(APXS_CFLAGS) -I. -I$(srcdir) $(CPPFLAGS) $(LDFLAGS) \
-	    lib/libwebauth.la $(APXS_DEPEND_LIBS) $(LIBS) $(MOD_WEBKDC_FILES)
-
-install-exec-local-webauth: modules/webauth/mod_webauth.la
-	$(APXS) -i modules/webauth/mod_webauth.la
-
-install-exec-local-webauthldap: modules/webauthldap/mod_webauthldap.la
-	$(APXS) -i modules/webauthldap/mod_webauthldap.la
-
-install-exec-local-webkdc: modules/webkdc/mod_webkdc.la
-	$(APXS) -i modules/webkdc/mod_webkdc.la
-
 # Run the hooks for bindings and Apache modules.
 all-local: $(BINDINGS) $(MODULES)
-install-exec-local: $(BINDINGS_INSTALL) $(MODULES_INSTALL)
+install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = tests/webauth_keyring tests/webauth_keyring2
 DISTCLEANFILES = perl/Makefile lib/webauth.h
@@ -240,10 +183,6 @@ distclean-local:
 WARNINGS = -g -O -DDEBUG=1 -Wall -W -Wendif-labels -Wpointer-arith \
         -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
         -Wmissing-prototypes -Wnested-externs -Werror
-APXS_WARNINGS = -Wc,-g -Wc,-O -Wc,-DDEBUG=1 -Wc,-Wall -Wc,-W \
-	-Wc,-Wendif-labels -Wc,-Wpointer-arith -Wc,-Wbad-function-cast \
-	-Wc,-Wwrite-strings -Wc,-Wstrict-prototypes -Wc,-Wmissing-prototypes \
-	-Wc,-Wnested-externs -Wc,-Werror
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)'

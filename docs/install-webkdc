@@ -60,7 +60,8 @@ that's longer than the HTTP protocol permits.
 
  3.  Add Apache directives for the WebKDC.  The basic set is:
 
-         LoadModule webkdc_module modules/mod_webkdc.so
+         LoadModule webkdc_module \
+             /usr/local/lib/apache2/modules/mod_webkdc.so
          WebKdcServiceTokenLifetime 30d
          WebKdcKeyring conf/webkdc/keyring
          WebKdcKeytab conf/webkdc/keytab
