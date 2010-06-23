@@ -1,6 +1,22 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.6.3 (unreleased)
+WebAuth 3.7.0 (unreleased)
+
+    WebLogin now includes a password change script and associated template
+    to allow users to change their Kerberos password.
+
+    WebLogin now supports password expiration.  If the account password is
+    expired when a user authenticates with a password at the WebLogin
+    login screen, they are redirected to the password change screen,
+    forced to change their password, and then reauthenticated with their
+    new password so that they can continue as normal with their
+    authentication.
+
+    WebLogin can be optionally configured to warn users, via the
+    confirmation screen, if their password is about to expire.  Currently,
+    this warning requires remctl, configuration of a Kerberos ticket
+    cache, and the kadmin-remctl backend running somewhere for that
+    Kerberos realm.
 
     The WebAuth Apache modules are no longer built with apxs, which allows
     a cleaner build and installation process.  However, this means that
@@ -20,6 +36,10 @@ WebAuth 3.6.3 (unreleased)
     Correctly encode RT and ST tokens in the URL when redirecting to an
     alternate URL to attempt REMOTE_USER authentication in WebLogin.
     Patch from Ian Ward Comfort.
+
+    The majority of the WebLogin scripts have been moved into a new
+    WebLogin Perl module, which should make it somewhat easier to further
+    customize the WebLogin interface if desired.
 
     The timestamps output by wa_keyring list now contain dates in the ISO
     format YYYY-MM-DD instead of the US-centric and ambiguous MM/DD/YYYY.
