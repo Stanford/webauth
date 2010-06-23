@@ -397,33 +397,24 @@ int
 webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
 {
     int fd;
-    size_t attr_len;
+    size_t attr_len, length;
     ssize_t written;
-    char *attr_buff;
-    int status, retry;
+    char *attr_buff = NULL;
+    int status;
     char *temp;
 
     assert(ring);
 
-    attr_buff = NULL;
-    temp = NULL;
-    fd = -1;
-
     /* Allocate space for the temporary file.  Add .XXXXXX and a nul. */
-    temp = malloc(strlen(path) + 7 + 1);
+    length = strlen(path) + 7 + 1;
+    temp = malloc(length);
     if (temp == NULL)
         return WA_ERR_NO_MEM;
-
-    retry = 0;
-    fd = -1;
-    while (fd == -1 && retry++ < 10) {
-        sprintf(temp, "%s.XXXXXX", path);
-        mktemp(temp);
-        fd = open(temp, O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0600);
-        if (fd == -1 && errno != EEXIST) {
-            status = WA_ERR_KEYRING_OPENWRITE;
-            goto cleanup;
-        }
+    snprintf(temp, length, "%s.XXXXXX", path);
+    fd = mkstemp(temp);
+    if (fd < 0) {
+        status = WA_ERR_KEYRING_OPENWRITE;
+        goto cleanup;
     }
 
     status = webauth_keyring_encode(ring, &attr_buff, &attr_len);
@@ -454,7 +445,7 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
         free(attr_buff);
 
     /* Should be -1 and closed by now, else an error occured. */
-    if (fd != -1) {
+    if (fd >= 0) {
         close(fd);
         unlink(temp);
     }
