@@ -23,9 +23,6 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
     ["Built by $webauth_user@$webauth_host on $webauth_date"],
     [Define to information about when and by whom the package was built.])
 
-dnl Make sure $prefix is set so that we can use it internally.
-test x"$prefix" = xNONE && prefix="$ac_default_prefix"
-
 dnl If the user requests reduced library dependencies, set a flag that is used
 dnl in all of our library checks.
 reduced_depends=false
