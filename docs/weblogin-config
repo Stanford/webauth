@@ -327,6 +327,21 @@ Configuration
       in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
       outside of webauth.  Default: not set.
 
+  $EXPIRING_PW_PRINC
+
+      The principal of the server used for authentication to the
+      kadmin-remctl interface.  Usually this should be left as the default
+      and not be set, where Net::Remctl will do the correct thing.  However,
+      during the test suite we need to set this to test against a local
+      remctl.  Default: empty string.
+
+  $EXPIRING_PW_PORT
+
+      The remctl port of the server used for authentication to the
+      kadmin-remctl interface.  Usually this should be left as the default
+      and not be set, where Net::Remctl will do the correct thing.  Default:
+      0.
+
   $EXPIRING_PW_WARNING
 
       The time period in seconds that we check against for password

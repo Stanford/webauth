@@ -723,7 +723,7 @@ sub change_user_password {
     # one right now.  If there's an error actually decrypting the token, it's
     # likely expired.  Hide the actual error behind a simpler one for the
     # user.
-    if (!$cpt && $password) {
+    if (!$cpt && $q->param ('password')) {
         $self->add_changepw_token;
         $cpt = $self->{CPT};
     }
@@ -796,9 +796,12 @@ sub time_to_pwexpire {
     my $normaltgt = $ENV{KRB5CCNAME};
     $ENV{KRB5CCNAME} = $WebKDC::Config::EXPIRING_PW_TGT;
     my $result = Net::Remctl::remctl ($WebKDC::Config::EXPIRING_PW_SERVER,
-                                      0, '', 'kadmin', 'check_expire',
+                                      $WebKDC::Config::EXPIRING_PW_PORT,
+                                      $WebKDC::Config::EXPIRING_PW_PRINC,
+                                      'kadmin', 'check_expire',
                                       $username, 'pwexpire');
     $ENV{KRB5CCNAME} = $normaltgt;
+
     return undef if $result->error;
 
     my $expiration = $result->stdout;
@@ -1040,6 +1043,8 @@ sub process_response {
     # any.  (The login cancel stuff is oddly placed here, like it was added as
     # an afterthought, and should probably be handled in a cleaner fashion.)
     $self->get_login_cancel_url;
+
+    # parse_uri returns 1 on failure to parse the return_url.
     if ($status == WK_SUCCESS && $self->parse_uri) {
         $status = WK_ERR_WEBAUTH_SERVER_ERROR;
     }
