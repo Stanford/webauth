@@ -150,7 +150,7 @@ AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp strlcat strlcpy])
 
 dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
 dnl make sure that all symbols in the library are resolved.  We'd like to do

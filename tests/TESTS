@@ -8,6 +8,7 @@ lib/random
 lib/token
 portable/asprintf
 portable/snprintf
+portable/mkstemp
 portable/strlcat
 portable/strlcpy
 util/concat

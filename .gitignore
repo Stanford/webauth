@@ -40,6 +40,7 @@
 /tests/lib/token-t
 /tests/portable/asprintf-t
 /tests/portable/snprintf-t
+/tests/portable/mkstemp-t
 /tests/portable/strlcat-t
 /tests/portable/strlcpy-t
 /tests/util/concat-t
