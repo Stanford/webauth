@@ -107,36 +107,19 @@ krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ, int flags,
 {
     krb5_error_code code;
     krb5_principal copy;
-# ifdef HAVE_KRB5_REALM
-    krb5_realm empty = (char *) "";
-    krb5_realm old_realm;
-# endif
 
     code = krb5_copy_principal(ctx, princ, &copy);
     if (code != 0)
         return code;
-# ifdef HAVE_KRB5_REALM
-    code = krb5_princ_set_realm(ctx, copy, &empty);
+    code = krb5_principal_set_realm(ctx, copy, "");
     if (code != 0)
         return code;
     code = krb5_unparse_name(ctx, copy, name);
-    if (code != 0)
-        return code;
-    code = krb5_princ_set_realm(ctx, copy, old_realm);
     if (code != 0)
         return code;
     code = krb5_free_principal(copy);
     if (code != 0)
         return code;
-# else
-    krb5_free_data_contents(ctx, &copy->realm);
-    krb5_princ_set_realm_length(ctx, copy, 0);
-    krb5_princ_set_realm_data(ctx, copy, NULL);
-    code = krb5_unparse_name(ctx, copy, name);
-    if (code != 0)
-        return code;
-    krb5_free_principal(ctx, copy);
-# endif
     if ((*name)[strlen(*name) - 1] == '@')
         (*name)[strlen(*name) - 1] = '\0';
     return 0;
@@ -187,11 +170,7 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
              * Use tcode from this point on so that we don't lose value of
              * c->code.  FIXME: needs better logging.
              */
-#ifdef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
-            tcode = krb5_free_keytab_entry_contents(c->ctx, &entry);
-#else
             tcode = krb5_kt_free_entry(c->ctx, &entry);
-#endif
         }
         /* FIXME: needs better logging. */
         tcode = krb5_kt_end_seq_get(c->ctx, id, &cursor);
@@ -521,9 +500,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
 
     krb5_get_init_creds_opt_init(&opts);
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
     krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
-#endif
 
     if (get_principal == NULL)
         krb5_get_init_creds_opt_set_forwardable(&opts, 1);
@@ -718,9 +695,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     }
 
     krb5_get_init_creds_opt_init(&opts);
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
     krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
-#endif
 
     c->code = krb5_get_init_creds_keytab(c->ctx, &creds, c->princ, keytab,
                                          0, NULL, &opts);
@@ -937,36 +912,15 @@ int
 webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context, char **realm)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
-    char *raw;
+    const char *raw;
     size_t length;
-#ifdef HAVE_KRB5_REALM
-    krb5_realm *data;
-#else
-    krb5_data *data;
-#endif
 
     if (c->princ == NULL)
         return WA_ERR_INVALID_CONTEXT;
-
-    /*
-     * Extract the realm from the principal.  This works differently in MIT
-     * and Heimdal.
-     */
-#ifdef HAVE_KRB5_REALM
-    data = krb5_princ_realm(c->ctx, c->princ);
-    if (data == NULL)
+    raw = krb5_principal_get_realm(c->ctx, c->princ);
+    if (raw == NULL)
         return WA_ERR_INVALID_CONTEXT;
-    raw = krb5_realm_data(data);
-    length = krb5_realm_length(data);
-#else
-    data = krb5_princ_realm(c->ctx, c->princ);
-    if (data == NULL)
-        return WA_ERR_INVALID_CONTEXT;
-    raw = data->data;
-    length = data->length;
-#endif
-
-    /* Encode and return the realm data. */
+    length = strlen(raw);
     *realm = escape_principal(raw, length);
     return (*realm == NULL) ? WA_ERR_NO_MEM : WA_ERR_NONE;
 }

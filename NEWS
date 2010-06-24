@@ -69,6 +69,7 @@ WebAuth 3.7.0 (unreleased)
     * Use --with-krb5 instead of --with-kerberos for Kerberos path.
     * Add --with-krb5-lib and --with-krb5-include configure flags.
     * Much better handling of Kerberos library detection.
+    * Use Kerberos portability code from rra-c-util.
 
     Update to C TAP Harness 1.3:
 

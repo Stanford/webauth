@@ -33,7 +33,7 @@ main(void)
     char *cp;
     char *sa;
     size_t salen;
-    char *tgt, *ticket;
+    char *tgt, *ticket, *prealm;
     size_t tgtlen, ticketlen;
     time_t expiration;
     char *cprinc = NULL;
@@ -78,7 +78,7 @@ main(void)
     password[strlen(password) - 1] = '\0';
     test_file_path_free(path);
     
-    plan(30);
+    plan(31);
 
     s = webauth_krb5_new(&c);
     is_int(WA_ERR_NONE, s, "Creating a context succeeds");
@@ -105,12 +105,18 @@ main(void)
     s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_NONE);
     is_int(WA_ERR_NONE, s, "No canonicalization");
     ok(strchr(cprinc, '@') != NULL, "...and resulting principal has a realm");
+    s = webauth_krb5_get_realm(c, &crealm);
+    is_int(WA_ERR_NONE, s, "Getting the realm");
+    prealm = strchr(cprinc, '@');
+    if (prealm == NULL)
+        skip("canonicalized principal has no realm");
+    else
+        is_string(prealm + 1, crealm, "...and it matches principal");
     free(cprinc);
+    free(crealm);
     s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_STRIP);
     is_int(WA_ERR_NONE, s, "Strip canonicalization");
     ok(strchr(cprinc, '@') == NULL, "...and resulting principal has no realm");
-    s = webauth_krb5_get_realm(c, &crealm);
-    is_int(WA_ERR_NONE, s, "Getting the realm");
 
     sa = NULL;
     s = webauth_krb5_mk_req(c, server_principal, &sa, &salen);

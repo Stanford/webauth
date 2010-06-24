@@ -33,6 +33,11 @@ BEGIN_DECLS
 /* Default to a hidden visibility for all portability functions. */
 #pragma GCC visibility push(hidden)
 
+/* Heimdal: krb5_xfree, MIT: krb5_free_unparsed_name. */
+#ifdef HAVE_KRB5_XFREE
+# define krb5_free_unparsed_name(c, p) krb5_xfree(p)
+#endif
+
 /*
  * krb5_{get,free}_error_message are the preferred APIs for both current MIT
  * and current Heimdal, but there are tons of older APIs we may have to fall
@@ -63,6 +68,11 @@ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context,
 #define krb5_get_init_creds_opt_set_default_flags(c, p, r, o) /* empty */
 #endif
 
+/* Heimdal: krb5_kt_free_entry, MIT: krb5_free_keytab_entry_contents. */
+#ifndef HAVE_KRB5_KT_FREE_ENTRY
+# define krb5_kt_free_entry(c, e) krb5_free_keytab_entry_contents((c), (e))
+#endif
+
 /*
  * Heimdal provides a nice function that just returns a const char *.  On MIT,
  * there's an accessor macro that returns the krb5_data pointer, wihch
@@ -70,6 +80,16 @@ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context,
  */
 #ifndef HAVE_KRB5_PRINCIPAL_GET_REALM
 const char *krb5_principal_get_realm(krb5_context, krb5_const_principal);
+#endif
+
+/*
+ * Adjust for other MIT versus Heimdal differences for principal data
+ * extraction and manipulation.  The krb5_principal_* functions are all
+ * Heimdal and the other interfaces are MIT.
+ */
+#ifndef HAVE_KRB5_PRINCIPAL_SET_REALM
+# define krb5_principal_set_realm(c, p, r) \
+    krb5_set_principal_realm((c), (p), (r))
 #endif
 
 /* Undo default visibility change. */
