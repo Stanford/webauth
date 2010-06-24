@@ -10,7 +10,7 @@
 use strict;
 use warnings;
 
-use lib 't/lib';
+use lib ('t/lib', 'lib');
 use Util qw (get_userinfo create_keyring);
 
 use CGI;
