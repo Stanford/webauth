@@ -23,6 +23,12 @@
 /perl/WebAuth.c
 /perl/blib/
 /perl/pm_to_blib
+/perl/t/data/test.keytab
+/perl/t/data/test.password
+/perl/t/data/test.principal
+/perl/t/data/test.principal-host
+/perl/t/data/test.principal-webauth
+/perl/t/data/test.realm
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1
