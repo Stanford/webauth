@@ -10,7 +10,7 @@ dnl     Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
 
-AC_DEFUN([WEBAUTH_LIB_SSL],
+AC_DEFUN([RRA_LIB_SSL],
 [AC_ARG_WITH([openssl],
     AC_HELP_STRING([--with-openssl=PATH], [Path to OpenSSL install]),
     [if test x"$withval" != xno && test x"$withval" != xyes ; then

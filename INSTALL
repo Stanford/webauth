@@ -50,7 +50,8 @@ site, see doc/install-webkdc.
      --with-ldap if the packages are installed in locations automatically
      searched by your compiler and linker (which will be the case if
      you're using Linux and the packages that come with your Linux
-     distribution).
+     distribution) or if the relevant configuration scripts for the
+     libraries are found in your path.
 
      You can omit --with-apxs if the right version of apxs is in your
      path.

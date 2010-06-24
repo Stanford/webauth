@@ -109,6 +109,7 @@ if test x"$build_perl" = xtrue ; then
 fi
 
 dnl Checks for libraries.
+RRA_LIB_APACHE
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_HEADERS([et/com_err.h])
@@ -126,9 +127,8 @@ AC_CHECK_MEMBER([krb5_creds.session],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
-RRA_LIB_APACHE
-WEBAUTH_LIB_SSL
-WEBAUTH_LIB_CURL
+RRA_LIB_SSL
+RRA_LIB_CURL
 WEBAUTH_LIB_LDAP
 
 dnl Add in the various dependent libraries if needed.

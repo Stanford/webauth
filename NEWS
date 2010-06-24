@@ -62,6 +62,11 @@ WebAuth 3.7.0 (unreleased)
     call specific to a particular API, whereas the former is the term used
     in the Kerberos protocol documentation.  Thanks, Liam Atkinson.
 
+    The Autoconf probe for the cURL libraries now uses curl-config if
+    available.  The path to curl-config can be overridden by setting the
+    CURL_CONFIG variable on the configure command line or in the
+    environment.
+
     Update to rra-c-util 2.4:
 
     * Use rra-c-util portability layer for libwebauth and wa_keyring.
