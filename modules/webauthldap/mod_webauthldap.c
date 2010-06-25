@@ -638,13 +638,13 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
     /* Whatever else env vars the conf file added. This will override the 
        defaults since apr_table_set is used here, and all names are
-       lowercased. */
+       uppercased. */
     if (lc->dconf->attribs) {
         attribs = apr_array_copy(lc->r->pool, lc->dconf->attribs);
 
         for(i=0; ((attrib = apr_array_pop(attribs)) != NULL); i++) {
             for (p = *attrib; *p != '\0'; p++)
-                *p = tolower(*p);
+                *p = toupper(*p);
             apr_table_set(lc->envvars, *attrib, *attrib);
 
         if (lc->sconf->debug)
@@ -1130,10 +1130,10 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
         return 1;
 
     /* conf directive could have been in different capitalization, 
-       simpler to just lowercase for the comparison */
+       simpler to just uppercase for the comparison */
     newkey = apr_pstrdup(lc->r->pool, key);
     for (p = newkey; *p != '\0'; p++)
-        *p = tolower(*p);
+        *p = toupper(*p);
 
     /* set into the environment only those attributes, which were specified */
     if (!apr_table_get(lc->envvars, newkey))
@@ -1152,11 +1152,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     }
 #endif
 
-    newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", key);
-
-    /* environment var names should be uppercased */
-    for (p = newkey; *p != '\0'; p++)
-        *p = toupper(*p);
+    /* newkey is already uppercased, as environment var names should be */
+    newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", newkey);
 
     existing_val = (char*) apr_table_get(lc->r->subprocess_env, newkey);
 
