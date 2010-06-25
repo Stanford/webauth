@@ -1131,7 +1131,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
 
     /* conf directive could have been in different capitalization, 
        simpler to just lowercase for the comparison */
-    newkey = apr_psprintf(lc->r->pool, key);
+    newkey = apr_pstrdup(lc->r->pool, key);
     for (p = newkey; *p != '\0'; p++)
         *p = tolower(*p);
 
