@@ -65,7 +65,7 @@
 #define FILTER_MATCH "USER"
 
 #define CD_Privgroupattr "WebAuthLdapAuthorizationAttribute"
-#define CM_Privgroupattr "ldap attribute to use for priviledge groups"
+#define CM_Privgroupattr "ldap attribute to use for privilege groups"
 
 #define CD_Attribs "WebAuthLdapAttribute"
 #define CM_Attribs "additional ldap attributes to place into the environment"

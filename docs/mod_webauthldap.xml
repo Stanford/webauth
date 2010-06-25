@@ -32,7 +32,7 @@ LoadModule webauthldap_module modules/mod_webauthldap.so
 
 WebAuthLdapHost ldap.acme.com
 WebAuthLdapBase dc=acme,dc=com
-WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapAuthorizationAttribute privilegeAttribute
 WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 WebAuthLdapTktCache /tmp/webauthldap.tkt
 </pre>
@@ -41,7 +41,7 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 
 <section><title>Using WebAuthLdap Authorization</title>
 
-<p>To restrict access to particular priviledge group(s) place the
+<p>To restrict access to particular privilege group(s) place the
 <code>require privgroup &lt;group name&gt;</code> directives in a
 .htaccess file, a Location block or a Directory block where <code>AuthType
 WebAuth</code> has already been applied.  Multiple directives mean "user
@@ -216,7 +216,7 @@ may be added later.</p>
 </note>
 
 <example><title>Example</title>
-WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapAuthorizationAttribute privilegeAttribute
 </example>
 </usage>
 </directivesynopsis>

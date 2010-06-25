@@ -1349,7 +1349,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
  * auth_check stage, and is only invoked if some require directive was 
  * present at the requested location. This initializes the module, binds to 
  * the ldap server and conducts the search for the user's record. Then it 
- * checks the access validity against the user's priviledge group attributes
+ * checks the access validity against the user's privilege group attributes
  * and sets specified attributes into environment variables.
  * @param r is the apache request record pointer
  * @return the HTTP code in case of an error, HTTP_UNAUTHORIZED is access is
