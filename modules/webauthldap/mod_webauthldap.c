@@ -1119,26 +1119,82 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
 }
 
 /**
+ * This function stores a key-value pair in a request's subprocess_env
+ * table. If the key already exists (as in the case of multi-valued LDAP
+ * attributes), we ensure that a new environment variable is added for the new
+ * value, with the name of the var containing a sequence number at the end. No
+ * particular order of values is guaranteed. If a separator is specified in
+ * the server configuration, we also append that separator, then the new value
+ * to the primary environment variable.
+ */
+static void
+webauthldap_setenv(MWAL_LDAP_CTXT* lc, const char *key, const char *val)
+{
+    int i;
+    const char *numbered_key, *existing_val, *newval;
+
+    existing_val = (char*) apr_table_get(lc->r->subprocess_env, key);
+
+    /* Normal case of single-valued attribute. */
+    if (existing_val == NULL) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                         "webauthldap(%s): setting %s as single valued", 
+                         lc->r->user, key);
+        apr_table_set(lc->r->subprocess_env, key, val);
+    } else {
+        /* Set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH. */
+        numbered_key = apr_psprintf(lc->r->pool, "%s%d", key, 1);
+        if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                             "webauthldap(%s): setting %s", lc->r->user, 
+                             numbered_key);
+            apr_table_set(lc->r->subprocess_env, numbered_key,
+                          existing_val);
+        }
+
+        /* Update WEBAUTH_LDAP_BLAH if separator isn't NULL. */
+        if (lc->sconf->separator != NULL) {
+            newval = apr_psprintf(lc->r->pool, "%s%s%s", existing_val,
+                                  lc->sconf->separator, val);
+            apr_table_set(lc->r->subprocess_env, key, newval);
+        }
+
+        /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
+        for (i=2; i<MAX_ENV_VALUES; i++) {
+            numbered_key = apr_psprintf(lc->r->pool, "%s%d", key, i);
+            if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
+                if (lc->sconf->debug)
+                    ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                                 "webauthldap(%s): setting %s", lc->r->user,
+                                 numbered_key);
+                apr_table_set(lc->r->subprocess_env, numbered_key, val);
+                break;
+            }
+        }
+    }
+}
+
+/**
  * This will be called with every attribute value pair that was received
  * from the LDAP search. Only attributes that were requested through the conf 
  * directives as well as a few default attributes will be placed in 
  * environment variables starting with "WEBAUTH_LDAP_".
  *
- * The single valued attributes go into appropriately named env vars, while
- * multivalued attributes have a env var for each value, with the name of the 
- * var containing a sequence number at the end. No particular order is 
- * guaranteed. In the multivalued case, the env var with the canonical 
- * (unnumbered) name will contain the value we encounter, essentially random.
+ * Multi-valued attributes are stored in numbered variables (and optionally
+ * as a concatenated string in the normal variable, if a separator is set)
+ * by webauthldap_setenv, above.
+ *
  * @param lcp main context struct for this module, for passing things around
  * @param key the attribute name, as supplied by LDAP api
  * @param val the value of the attribute
  * @return always 1, which means keep going through the table
  */
 static int
-webauthldap_setenv(void* lcp, const char *key, const char *val)
+webauthldap_exportattrib(void* lcp, const char *key, const char *val)
 {
-    int i;
-    char *newkey, *numbered_key, *p, *existing_val, *newval;
+    char *newkey, *p;
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
 
     if ((key == NULL) || (val == NULL))
@@ -1170,47 +1226,8 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
     /* newkey is already uppercased, as environment var names should be */
     newkey = apr_psprintf(lc->r->pool, "WEBAUTH_LDAP_%s", newkey);
 
-    existing_val = (char*) apr_table_get(lc->r->subprocess_env, newkey);
-
-    /* Normal case of single-valued attribute. */
-    if (existing_val == NULL) {
-        if (lc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                         "webauthldap(%s): setting %s as single valued", 
-                         lc->r->user, newkey);
-        apr_table_set(lc->r->subprocess_env, newkey, val);
-    } else {
-        /* Set WEBAUTH_LDAP_BLAH1 to be the same as WEBAUTH_LDAP_BLAH. */
-        numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, 1);
-        if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
-            if (lc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                             "webauthldap(%s): setting %s", lc->r->user, 
-                             numbered_key);
-            apr_table_set(lc->r->subprocess_env, numbered_key,
-                          existing_val);
-        }
-
-        /* Update WEBAUTH_LDAP_BLAH if separator isn't NULL. */
-        if (lc->sconf->separator != NULL) {
-            newval = apr_psprintf(lc->r->pool, "%s%s%s", existing_val,
-                                  lc->sconf->separator, val);
-            apr_table_set(lc->r->subprocess_env, newkey, newval);
-        }
-            
-        /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
-        for (i=2; i<MAX_ENV_VALUES; i++) {
-            numbered_key = apr_psprintf(lc->r->pool, "%s%d", newkey, i);
-            if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
-                if (lc->sconf->debug)
-                    ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                                 "webauthldap(%s): setting %s", lc->r->user,
-                                 numbered_key);
-                apr_table_set(lc->r->subprocess_env, numbered_key, val);
-                break;
-            }
-        }
-    }
+    /* Store the value in the environment with an appropriate name */
+    webauthldap_setenv(lc, newkey, val);
 
     return 1; /* means keep going thru all available entries */
 }
@@ -1225,7 +1242,7 @@ webauthldap_setenv(void* lcp, const char *key, const char *val)
  * @return always 1, which means keep going through the table
  */
 static int
-webauthldap_envnotfound(void* lcp, const char *key, const char *val)
+webauthldap_attribnotfound(void* lcp, const char *key, const char *val)
 {
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
 
@@ -1538,9 +1555,9 @@ auth_checker_hook(request_rec * r)
     /* Now set the env vars */
 
     for (i=0; i<lc->numEntries; i++) {
-        apr_table_do(webauthldap_setenv, lc, lc->entries[i], NULL);
+        apr_table_do(webauthldap_exportattrib, lc, lc->entries[i], NULL);
     }
-    apr_table_do(webauthldap_envnotfound, lc, lc->envvars, NULL);
+    apr_table_do(webauthldap_attribnotfound, lc, lc->envvars, NULL);
 
     webauthldap_returnconn(lc);
     apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
