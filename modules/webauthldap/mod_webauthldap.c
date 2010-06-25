@@ -1082,7 +1082,6 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                          "webauthldap(%s): SUCCEEDED comparing %s=%s in %s", 
                          lc->r->user, attr, value, dn);
-	    lc->authrule = value;
             return rc;
         } else if (rc == LDAP_COMPARE_FALSE) {
             if (lc->sconf->debug) {
@@ -1288,6 +1287,8 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                     rc = webauthldap_docompare(lc, w);
                     if (rc == LDAP_COMPARE_TRUE) {
                         authorized = 1;
+                        lc->authrule = apr_psprintf(lc->r->pool, "%s %s",
+                                                    PRIVGROUP_DIRECTIVE, w);
                         break;
                     }
                 }
@@ -1305,6 +1306,8 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                         rc = webauthldap_docompare(lc, w);
                         if (rc == LDAP_COMPARE_TRUE) {
                             authorized = 1;
+                            lc->authrule = apr_psprintf(lc->r->pool, "%s %s",
+                                                        PRIVGROUP_DIRECTIVE, w);
                             *needs_further_handling = 0;
                             break;
                         }

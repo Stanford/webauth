@@ -237,7 +237,7 @@ WebAuthLdapAuthorizationAttribute privilegeAttribute
 <usage>
 <p>By default, this module will put the authorization rule under which the
 user was authorized into the WEBAUTH_LDAPAUTHRULE environment variable.
-The value will be one of "valid-user", "user <em>user</em>", or "group
+The value will be one of "valid-user", "user <em>user</em>", or "privgroup
 <em>privgroup</em>".  You can disable this behavior by setting this
 directive to off.</p>
 
