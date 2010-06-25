@@ -654,6 +654,9 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
         }
     }
     
+    /* Allocate table for cached privgroup results */
+    lc->privgroup_cache = apr_table_make(lc->r->pool, 5);
+
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                      "webauthldap(%s): initialized sucessfully", lc->r->user);
@@ -1067,9 +1070,20 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
 {
     int i, rc;
     char* dn, *attr;
+    const char *cached;
     struct berval bvalue = { 0, NULL };
 
     attr = lc->sconf->privgroupattr;
+
+    /* Return cached result if we've performed this comparison already */
+    if ((cached = apr_table_get(lc->privgroup_cache, value)) != NULL) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                         "webauthldap(%s): cached %s comparing %s=%s",
+                         lc->r->user, cached, attr, value);
+        return strcmp(cached, "TRUE") ? LDAP_COMPARE_FALSE : LDAP_COMPARE_TRUE;
+    }
+
     bvalue.bv_val = value;
     bvalue.bv_len = strlen(bvalue.bv_val);
 
@@ -1082,6 +1096,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                          "webauthldap(%s): SUCCEEDED comparing %s=%s in %s", 
                          lc->r->user, attr, value, dn);
+            apr_table_set(lc->privgroup_cache, value, "TRUE");
             return rc;
         } else if (rc == LDAP_COMPARE_FALSE) {
             if (lc->sconf->debug) {
@@ -1089,6 +1104,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
                              "webauthldap(%s): FALSE comparing %s=%s in %s", 
                              lc->r->user, attr, value, dn);
             }
+            apr_table_set(lc->privgroup_cache, value, "FALSE");
         } else {
             if (lc->sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 

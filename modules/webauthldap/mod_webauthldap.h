@@ -180,6 +180,8 @@ typedef struct {
     const char*  authrule;    /* what group or rule was the user authorized on
                               */
 
+    apr_table_t* privgroup_cache;
+                             /* cached privgroup comparison results */
 } MWAL_LDAP_CTXT;
 
 
