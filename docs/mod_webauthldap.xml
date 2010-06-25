@@ -156,7 +156,9 @@ Stanford users, since WebAuth v2 was never publically released.</p>
 <default>"displayName", "mail"</default>
 <contextlist>
   <context>directory</context>
+  <context>.htaccess</context>
 </contextlist>
+<override>AuthConfig</override>
 
 <usage>
 <p>All attributes indicated by this directive will be looked up in LDAP
