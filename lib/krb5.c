@@ -428,7 +428,6 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
                                              &result_string);
 
     /* Everything from here on is just handling diagnostics and output. */
-    fprintf (stderr, "code is %d\n", c->code);
     if (c->code != 0)
         goto done;
     if (result_code != 0) {
