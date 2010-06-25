@@ -1406,7 +1406,7 @@ auth_checker_hook(request_rec * r)
 
     needs_further_handling = 0;
     /* if we have attributes to set, we need to keep going */
-    if (!apr_is_empty_table((const apr_table_t *)lc->dconf->attribs))
+    if (!apr_is_empty_array((const apr_array_header_t *)lc->dconf->attribs))
         needs_further_handling = 1;
     else if (reqs_arr) {
         reqs = (require_line *)reqs_arr->elts;
