@@ -6,7 +6,6 @@ at a production KDC!  Then, create the following files:
 
     test.keytab                 Keytab for an authorized user
     test.principal              Principal of the authorized user
-    test.principal-host         Name of a host principal to test against
     test.principal-webauth      Name of a webauth principal to test against
     test.realm                  Kerberos realm
     test.password               Username and password of a valid test user,
