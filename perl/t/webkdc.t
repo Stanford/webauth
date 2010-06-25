@@ -10,17 +10,34 @@
 use strict;
 use warnings;
 
-use lib 't/lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo);
-
-use Net::Remctl;
 
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config;
 use WebLogin;
 
-use Test::More tests => 3;
+use Test::More;
+
+# We need remctld and Net::Remctl.
+my $no_remctl = 0;
+my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+$no_remctl = 1 unless $remctld;
+eval { require Net::Remctl };
+$no_remctl = 1 if $@;
+
+# Check for a valid kerberos config.
+if (! -f 't/data/test.keyring.path' || ! -f 't/data/test.password'
+    || ! -f 't/data/test.principal') {
+
+    plan skip_all => 'no kerberos configuration found';
+} elsif ($no_remctl) {
+    plan skip_all => 'Net::Remctl not available';
+} else {
+    plan tests => 3;
+}
 
 #############################################################################
 # Wrapper functions

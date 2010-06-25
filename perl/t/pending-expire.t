@@ -10,18 +10,40 @@
 use strict;
 use warnings;
 
-use lib 'lib';
-use lib 't/lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents remctld_spawn remctld_stop getcreds);
 
 use WebKDC::WebResponse;
-use WebLogin;
 use HTML::Template;
+use CGI;
 
-use Test::More tests => 3;
+# Make sure this value is set before WebLogin is loaded.  Several modules
+# required for this test require having EXPIRING_PW_SERVER set on module
+# load.
+$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost';
+require WebLogin;
+
+use Test::More;
+
+# We need remctld and Net::Remctl.
+my $no_remctl = 0;
+my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+$no_remctl = 1 unless $remctld;
+eval { require Net::Remctl };
+$no_remctl = 1 if $@;
+
+# Check for a valid kerberos config.
+if (! -f 't/data/test.principal') {
+    plan skip_all => 'no kerberos configuration found';
+} elsif ($no_remctl) {
+    plan skip_all => 'Net::Remctl not available';
+} else {
+    plan tests => 3;
+}
 
 # Set up a query with some test data.
-my $query = CGI::Fast->new;
+my $query = CGI->new;
 
 # Fake a weblogin object.
 my $weblogin = {};
@@ -36,13 +58,6 @@ unlink ('krb5cc_test', 'test-acl');
 open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
 print ACL "$principal\n";
 close ACL;
-
-# We need remctld and Net::Remctl.
-my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-skip 'remctld not found', 12 unless $remctld;
-eval { require Net::Remctl };
-skip 'Net::Remctl not available', 12 if $@;
 
 # Now spawn our remctld server and get a ticket cache.
 remctld_spawn ($remctld, $principal, 't/data/test.keytab',

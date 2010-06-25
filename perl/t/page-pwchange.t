@@ -10,9 +10,10 @@
 use strict;
 use warnings;
 
-use lib 'lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 
 use WebLogin;
+use CGI;
 
 use Test::More tests => 44;
 
@@ -25,7 +26,7 @@ my %pages = (pwchange => 'pwchange.tmpl');
 } keys %pages;
 
 # Set up a query with some test data.
-my $query = CGI::Fast->new;
+my $query = CGI->new;
 $query->param ('username', 'testuser');
 $query->param ('expired', 1);
 

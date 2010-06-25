@@ -10,11 +10,13 @@
 use strict;
 use warnings;
 
-use lib 't/lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents create_keyring getcreds);
 
+use WebKDC::Config;
 use WebLogin;
 use HTML::Template;
+use CGI;
 
 use Test::More tests => 36;
 
@@ -26,11 +28,11 @@ my %pages = (confirm  => 'confirm.tmpl',
 %pages = map {
     $_    => HTML::Template->new (filename => $pages{$_},
     cache => 1,
-    path  => $WebKDC::Config::TEMPLATE_PATH)
+    path  => 't/data/templates')
 } keys %pages;
 
 # Set up a query with some test data.
-my $query = CGI::Fast->new;
+my $query = CGI->new;
 
 # Fake a weblogin object.
 my $weblogin = {};
@@ -269,10 +271,12 @@ is ($retval, 1, ' and test_pwchange with all fields correct works');
 $ENV{REMOTE_USER} = 'testuser@testrealm.org';
 $WebKDC::Config::REMUSER_EXPIRES  = 60 * 10;
 @WebKDC::Config::REMUSER_REALMS   = ('testrealm.org', 'win.testrealm.org');
-$WebKDC::Config::WEBKDC_PRINCIPAL = contents ('t/data/test.principal');
 $WebKDC::Config::WEBKDC_KEYTAB    = 't/data/test.keytab';
 $WebKDC::Config::KEYRING_PATH     = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
+
+$WebKDC::Config::WEBKDC_PRINCIPAL = contents ('t/data/test.principal')
+    if -f 't/data/test.principal';
 
 # Get a cache for the given principal.
 my $oldcache = $ENV{KRB5CCNAME};
@@ -280,21 +284,36 @@ $ENV{KRB5CCNAME} = 'krb5cc_test';
 getcreds ('t/data/test.keytab', $WebKDC::Config::WEBKDC_PRINCIPAL);
 $ENV{KRB5CCNAME} = $oldcache;
 
-# add_proxy_token
-$query = new CGI;
-$weblogin = WebLogin->new ($query, \%pages);
-$ENV{KRB5CCNAME} = 'krb5cc_test';
-$weblogin->add_proxy_token;
-$ENV{KRB5CCNAME} = $oldcache;
-my $token = $weblogin->{request}->proxy_cookie ('krb5');
-ok ($token, 'add_proxy_token works');
+# FIXME: Only works when run on a WebKDC.  When fixed it should run like the
+#        test after it does, with a skip for when the test.principal does
+#        not exist.
+#SKIP: {
+TODO: {
+    todo_skip 'test currently only works on a WebKDC', 1;
+    #skip 'kerberos test principal not set up', 1
+    #    unless -f ('t/data/test.principal');
 
-# add_remuser_token
-$query = new CGI;
-$weblogin = WebLogin->new ($query, \%pages);
-$weblogin->add_remuser_token;
-my $token = $weblogin->{request}->proxy_cookie ('remuser');
-ok ($token, 'add_remuser_token works');
+    # add_proxy_token
+    $query = new CGI;
+    $weblogin = WebLogin->new ($query, \%pages);
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
+    $weblogin->add_proxy_token;
+    $ENV{KRB5CCNAME} = $oldcache;
+    my $token = $weblogin->{request}->proxy_cookie ('krb5');
+    ok ($token, 'add_proxy_token works');
+}
+
+SKIP: {
+    skip 'kerberos test principal not set up', 1
+        unless -f ('t/data/test.principal');
+
+    # add_remuser_token
+    $query = new CGI;
+    $weblogin = WebLogin->new ($query, \%pages);
+    $weblogin->add_remuser_token;
+    my $token = $weblogin->{request}->proxy_cookie ('remuser');
+    ok ($token, 'add_remuser_token works');
+}
 
 unlink ($WebKDC::Config::KEYRING_PATH);
 unlink ('krb5cc_test');

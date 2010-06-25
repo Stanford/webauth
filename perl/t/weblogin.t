@@ -10,16 +10,40 @@
 use strict;
 use warnings;
 
-use lib 't/lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
     create_keyring);
 
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config;
-use WebLogin;
 
-use Test::More tests => 253;
+# Make sure this value is set before WebLogin is loaded.  Several modules
+# required for this test require having EXPIRING_PW_SERVER set on module
+# load.
+$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost';
+require WebLogin;
+
+use Test::More;
+
+# Whether we've found a valid kerberos config.
+my $kerberos_config = 0;
+
+# We need remctld and Net::Remctl.
+my $no_remctl = 0;
+my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+$no_remctl = 1 unless $remctld;
+eval { require Net::Remctl };
+$no_remctl = 1 if $@;
+
+# Check for a valid kerberos config.
+if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
+    || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
+    plan skip_all => 'no kerberos configuration found';
+} else {
+    plan tests => 254;
+}
 
 #############################################################################
 # Wrapper functions
@@ -78,12 +102,10 @@ sub process_response_wrapper {
 # Get the username and password to log in with.
 my $fname_passwd = 't/data/test.password';
 my ($user, $pass) = get_userinfo ($fname_passwd) if -f $fname_passwd;
-unless ($user && $pass) {
-    die "no test user configuration\n";
-}
 
 # Miscellaneous config settings.
 $WebKDC::Config::EXPIRING_PW_URL  = '/pwchange';
+$WebKDC::Config::EXPIRING_PW_WARNING = 60 * 60 * 24 * 7;
 $WebKDC::Config::REMUSER_REDIRECT = 0;
 @WebKDC::Config::REMUSER_REALMS   = ();
 $WebKDC::Config::BYPASS_CONFIRM   = '';
@@ -115,13 +137,6 @@ unlink ('krb5cc_test', 'test-acl');
 open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
 print ACL "$principal\n";
 close ACL;
-
-# We need remctld and Net::Remctl.
-my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-skip 'remctld not found', 12 unless $remctld;
-eval { require Net::Remctl };
-skip 'Net::Remctl not available', 12 if $@;
 
 # Now spawn our remctld server and get a ticket cache.
 remctld_spawn ($remctld, $principal, 't/data/test.keytab',
@@ -202,13 +217,17 @@ is ($output[3], 'login_cancel ', ' and login_cancel was not set');
 is ($output[4], 'cancel_url ', ' and cancel_url was not set');
 is ($output[5], 'show_remuser ', ' and show_remuser was not set');
 is ($output[6], 'remuser ', ' and remuser was not set');
-is ($output[7], 'warn_expire 1', ' and warn_expire was set');
-ok ($output[8] =~ /^expire_date \S+/, ' and expire_date was set');
-ok ($output[9] =~ /^expire_time_left \d+/,
-    ' and expire_time_left was set');
-is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
-is ($output[11], 'script_name ', ' and script name was not set');
-ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[7], 'script_name ', ' and script name was not set');
+
+SKIP: {
+    skip 'no remctl setup', 5 if $no_remctl;
+    is ($output[8], 'warn_expire 1', ' and warn_expire was set');
+    ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
+    ok ($output[10] =~ /^expire_time_left \d+/,
+        ' and expire_time_left was set');
+    is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
+    ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+}
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -227,11 +246,11 @@ is ($output[3], 'login_cancel ', ' and login_cancel was not set');
 is ($output[4], 'cancel_url ', ' and cancel_url was not set');
 is ($output[5], 'show_remuser ', ' and show_remuser was not set');
 is ($output[6], 'remuser ', ' and remuser was not set');
-is ($output[7], 'warn_expire ', ' and warn_expire was not set');
-is ($output[8], 'expire_date ', ' and expire_date was not set');
-is ($output[9], 'expire_time_left ', ' and expire_time_left was not set');
-is ($output[10], 'pwchange_url ', ' and pwchange_url was not set');
-is ($output[11], 'script_name ', ' and script name was not set');
+is ($output[7], 'script_name ', ' and script name was not set');
+is ($output[8], 'warn_expire ', ' and warn_expire was not set');
+is ($output[9], 'expire_date ', ' and expire_date was not set');
+is ($output[10], 'expire_time_left ', ' and expire_time_left was not set');
+is ($output[11], 'pwchange_url ', ' and pwchange_url was not set');
 is ($output[12], 'CPT ', ' and CPT was not set');
 
 # FIXME: Testing remuser requires us to fake a cookie, which we'll do in
@@ -255,12 +274,17 @@ is ($output[3], 'login_cancel ', ' and login_cancel was set');
 is ($output[4], 'cancel_url ', ' and cancel_url was set');
 is ($output[5], 'show_remuser 1', ' and show_remuser was set');
 is ($output[6], 'remuser ', ' and remuser was set');
-ok ($output[8] =~ /^expire_date \S+/, ' and expire_date was set');
-ok ($output[9] =~ /^expire_time_left \d+/,
-    ' and expire_time_left was set');
-is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
-is ($output[11], 'script_name /login', ' and script name was set');
-ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[7], 'script_name /login', ' and script name was set');
+
+SKIP: {
+    skip 'no remctl setup', 6 if $no_remctl;
+    is ($output[8], 'warn_expire 1', ' and warn_expire was set');
+    ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
+    ok ($output[10] =~ /^expire_time_left \d+/,
+        ' and expire_time_left was set');
+    is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
+    ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+}
 
 # Bad return URL (set it to be http rather than https).
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);

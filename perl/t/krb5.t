@@ -11,26 +11,40 @@
 
 use strict;
 
-use Test::More tests => 12;
+use Test::More;
 
-use lib 't/lib';
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw(contents get_userinfo);
 
-my ($kservice, $khost, $krservice, $krhost);
+# Check for kerberos config all good.  Default is yes.
+my $kerberos_config = 1;
 
-my $keytab = 't/data/test.keytab';
-my $principal = contents ('t/data/test.principal');
-my $h_principal = contents ('t/data/test.principal-host');
-my $wa_principal = contents ('t/data/test.principal-webauth');
-my ($princ_type, $princ_host) = split (/\//, $principal);
-my ($h_princ_type, $h_princ_host) = split (/\//, $h_principal);
-my ($wa_princ_type, $wa_princ_host) = split (/\//, $wa_principal);
+my ($keytab, $principal, $wa_principal, $princ_type, $princ_host,
+    $wa_princ_type, $wa_princ_host);
+if (-f 't/data/test.keytab' && -f 't/data/test.principal'
+    && -f 't/data/test.principal-webauth') {
+
+    $keytab = 't/data/test.keytab';
+    $principal = contents ('t/data/test.principal');
+    $wa_principal = contents ('t/data/test.principal-webauth');
+    ($princ_type, $princ_host) = split (/\//, $principal);
+    ($wa_princ_type, $wa_princ_host) = split (/\//, $wa_principal);
+} else {
+    $kerberos_config = 0;
+}
 
 # Get the username we need to change, and its current password.
 my $fname_passwd = 't/data/test.password';
 my ($username, $password) = get_userinfo ($fname_passwd) if -f $fname_passwd;
-unless ($username && $password) {
-    die "no test user configuration\n";
+unless ($username && $password && $principal && $wa_principal) {
+    $kerberos_config = 0;
+}
+
+# Skip all tests without a valid kerberos configuration.
+if ($kerberos_config) {
+    plan tests => 11;
+} else {
+    plan skip_all => 'no kerberos configuration found';
 }
 
 # Test actually loading WebAuth module.
@@ -67,12 +81,6 @@ eval {
     ($ticket, $expiration) = WebAuth::krb5_export_ticket ($context, $princ);
 };
 ok (!$@, 'krb5_export_ticket works');
-
-eval {
-    $rprinc = WebAuth::krb5_service_principal ($context, $h_princ_type,
-                                               $h_princ_host);
-};
-ok (!$@, 'krb5_service_principal works');
 
 # Nuke current context and import from tgt we created
 eval {

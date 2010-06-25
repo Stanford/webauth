@@ -10,7 +10,7 @@
 use strict;
 use warnings;
 
-use lib ('t/lib', 'lib');
+use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (get_userinfo create_keyring);
 
 use CGI;
@@ -20,13 +20,22 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use WebLogin;
 use WebKDC ();
 
-use Test::More tests => 7;
+use Test::More;
+
+# Whether we've found a valid kerberos config.
+my $kerberos_config = 0;
 
 # Get the username we need to change, and its current password.
 my $fname_passwd = 't/data/test.password';
 my ($username, $password) = get_userinfo ($fname_passwd) if -f $fname_passwd;
-unless ($username && $password) {
-    die "no Kerberos configuration\n";
+if ($username && $password) {
+    $kerberos_config = 1;
+}
+
+if ($kerberos_config) {
+    plan tests => 7;
+} else {
+    plan skip_all => 'no kerberos configuration found';
 }
 
 # New password to try changing the user to.
@@ -50,6 +59,7 @@ $weblogin->{query}->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
+print "Status: $status\nError: $error\n";
 
 # And undo it.
 $weblogin->{query}->param ('password', $newpassword);

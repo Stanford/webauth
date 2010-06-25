@@ -13,6 +13,7 @@ use strict;
 
 use Test::More;
 
+use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (:const);
 
 BEGIN { plan tests => 38 }

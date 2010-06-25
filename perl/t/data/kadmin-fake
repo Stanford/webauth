@@ -5,12 +5,21 @@
 # This kadmin-fake script is meant to be run by remctld during testing of
 # the pending password expiration time interface.
 
-use lib 't/lib';
-use Util qw (get_userinfo);
-
 use POSIX;
 my ($command, $princ) = @ARGV;
 die "Invalid command $command\n" unless $command eq 'check_expire';
+
+# Copied from t/lib/Util.pm -- including it includes other things that are
+# more annoying to set requirements for.
+sub get_userinfo  {
+    my ($file) = @_;
+    open (FILE, '<', $file) or die "cannot open $file: $!\n";
+    my $username = <FILE>;
+    my $password = <FILE>;
+    close FILE;
+    chomp ($username, $password);
+    return ($username, $password);
+}
 
 my ($user);
 my $fname_passwd = 't/data/test.password';
