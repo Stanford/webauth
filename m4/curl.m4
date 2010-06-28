@@ -98,7 +98,7 @@ AC_DEFUN([RRA_LIB_CURL],
  AC_SUBST([CURL_LIBS])
 
  AC_ARG_WITH([curl],
-    [AS_HELP_STRING([--with-curl@<:@=DIR@:>@],
+    [AS_HELP_STRING([--with-curl=DIR],
         [Location of cURL headers and libraries])],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_curl_root="$withval"])])
