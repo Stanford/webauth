@@ -129,7 +129,7 @@ AC_CHECK_MEMBER([krb5_creds.session],
 RRA_LIB_KRB5_RESTORE
 RRA_LIB_SSL
 RRA_LIB_CURL
-WEBAUTH_LIB_LDAP
+AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
 dnl Add in the various dependent libraries if needed.
 DEPEND_LIBS=
