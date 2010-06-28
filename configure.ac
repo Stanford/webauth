@@ -29,16 +29,6 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
     ["Built by $webauth_user@$webauth_host on $webauth_date"],
     [Define to information about when and by whom the package was built.])
 
-dnl If the user requests reduced library dependencies, set a flag that is used
-dnl in all of our library checks.
-reduced_depends=false
-AC_ARG_ENABLE([reduced-depends],
-    AC_HELP_STRING([--enable-reduced-depends],
-        [Try to minimize shared library dependencies]),
-    [if test x"$enableval" = xyes ; then
-         reduced_depends=true
-     fi])
-
 dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
 build_webkdc=false
 AC_ARG_ENABLE([mod_webkdc],
