@@ -42,22 +42,18 @@ dnl Provide a way to disable building mod_webauth for systems that don't need
 dnl it, like the WebKDC, or for a pure library build.
 build_webauth=true
 AC_ARG_ENABLE([mod_webauth],
-    AC_HELP_STRING([--disable-mod_webauth],
-        [Do not build the WebAuth Apache module]),
-    [if test x"$enableval" = xno ; then
-        build_webauth=false
-     fi])
+    [AC_HELP_STRING([--disable-mod_webauth],
+        [Do not build the WebAuth Apache module])],
+    [AS_IF([test x"$enableval" = xno], [build_webauth=false])])
 AM_CONDITIONAL([BUILD_WEBAUTH], [test x"$build_webauth" = xtrue])
 
 dnl Provide a way to disable building mod_webauthldap for systems that don't
 dnl need the directory integration.
 build_webauthldap=true
 AC_ARG_ENABLE([mod_webauthldap],
-    AC_HELP_STRING([--disable-mod_webauthldap],
-        [Do not build the WebAuth LDAP  module]),
-    [if test x"$enableval" = xno ; then
-        build_webauthldap=false
-     fi])
+    [AC_HELP_STRING([--disable-mod_webauthldap],
+        [Do not build the WebAuth LDAP Apache module])],
+    [AS_IF([test x"$enableval" = xno], [build_webauthldap=false])])
 AM_CONDITIONAL([BUILD_WEBAUTHLDAP], [test x"$build_webauthldap" = xtrue])
 
 dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
@@ -78,25 +74,13 @@ AC_ARG_ENABLE([debug],
 
 dnl Allow the user to indicate that the Perl modules should not be built.
 AC_ARG_ENABLE([perl],
-    AC_HELP_STRING([--enable-perl], [Build Perl bindings]),
-    [if test x"$enableval" = xyes ; then
-        build_perl=true
-     else
-        build_perl=false
-     fi],
-     [if test x"$build_webkdc" = xtrue ; then
-         build_perl=true
-      else
-         build_perl=false
-      fi])
+    [AC_HELP_STRING([--enable-perl], [Build Perl bindings])],
+    [AS_IF([test x"$enableval" = xyes], [build_perl=true],
+        [build_perl=false])],
+    [build_perl="$build_webkdc"])
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
+AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
 
-dnl Find Perl, used to build the Perl bindings.
-if test x"$build_perl" = xtrue ; then
-    AC_PATH_PROG([PERL], [perl])
-fi
-
-dnl Checks for libraries.
 RRA_LIB_APACHE
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
@@ -118,15 +102,6 @@ RRA_LIB_KRB5_RESTORE
 RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
-
-dnl Add in the various dependent libraries if needed.
-DEPEND_LIBS=
-if test x"$reduced_depends" != xtrue ; then
-    DEPEND_LIBS="$CRYPTO_LIBS $KRB5_LIBS"
-    CURL_LIBS="$CURL_LIBS $SSL_LIBS"
-    LDAP_LIBS="$LDAP_LIBS $SSL_LIBS"
-fi
-AC_SUBST([DEPEND_LIBS])
 
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/bittypes.h syslog.h])
@@ -159,17 +134,10 @@ dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
 AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
 
-dnl Output files.
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h mod-config.h])
-if test x"$build_perl" = xtrue ; then
-    AC_CONFIG_FILES([perl/Makefile.PL])
-fi
-
-dnl Generate webauth.h from webauth.h.in.
+AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
 AC_CONFIG_COMMANDS([lib/webauth.h],
     [${srcdir}/lib/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=lib/webauth.h])
-
-dnl Generate config.h.
 AC_OUTPUT
