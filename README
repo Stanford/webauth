@@ -127,6 +127,14 @@ REQUIREMENTS
 
   respectively.
 
+  To bootstrap from a Git checkout, or if you change the Automake files
+  and need to regenerate Makefile.in, you will need Automake 1.11 or
+  later.  For bootstrap or if you change configure.ac or any of the m4
+  files it includes and need to regenerate configure or config.h.in, you
+  will need Autoconf 2.64 or later.  Perl and xml2rfc are also required to
+  generate the manual pages and protocol documentation from a fresh Git
+  checkout.
+
 SUPPORT
 
   New WebAuth releases are announced via the low-volume webauth-announce
