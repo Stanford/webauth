@@ -108,7 +108,6 @@ our %EXPORT_TAGS = (
                                    krb5_init_via_cache
                                    krb5_import_cred
                                    krb5_export_tgt
-                                   krb5_service_principal
                                    krb5_get_principal
                                    krb5_export_ticket
                                    krb5_change_password
@@ -495,14 +494,6 @@ Used to "import" a ticket that was created with krb5_export_*.
 Used to "export" a ticket for the requested server principal. On success,
 both $ticket and $expiration will be set. $ticket is the ticket itself
 (binary data) and $expiration is the expiration time of the ticket.
-
-=item krb5_service_principal(context, service, hostname)
-
-    $principal = krb5_service_principal($context, $service, $hostname);
-
-Used to construct a server principal for use with other calls such as
-krb5_mk_req and krb5_export_ticket. On success $principal will be set
-to the constructed principal, represented as a string.
 
 =item krb5_get_principal(context, 1)
 

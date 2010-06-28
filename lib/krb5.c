@@ -837,27 +837,6 @@ webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
 
 
 /*
- * Given the service and the hostname, generate a fully-qualified principal
- * name in text form and store it in server_principal.
- */
-int
-webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *context, const char *service,
-                               const char *hostname, char **server_principal)
-{
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
-    krb5_principal princ;
-
-    c->code = krb5_sname_to_principal(c->ctx, hostname, service,
-                                      KRB5_NT_SRV_HST, &princ);
-    if (c->code != 0)
-        return WA_ERR_KRB5;
-    c->code = krb5_unparse_name(c->ctx, princ, server_principal);
-    krb5_free_principal(c->ctx, princ);
-    return c->code == 0 ? WA_ERR_NONE : WA_ERR_KRB5;
-}
-
-
-/*
  * Get the principal from a context.
  *
  * Principal canonicalization is controlled by the third argument.  If it's

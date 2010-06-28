@@ -19,8 +19,7 @@ use Util qw(contents get_userinfo);
 # Check for kerberos config all good.  Default is yes.
 my $kerberos_config = 1;
 
-my ($keytab, $principal, $wa_principal, $princ_type, $princ_host,
-    $wa_princ_type, $wa_princ_host);
+my ($keytab, $principal, $wa_principal, $princ_type, $princ_host);
 if (-f 't/data/test.keytab' && -f 't/data/test.principal'
     && -f 't/data/test.principal-webauth') {
 
@@ -28,7 +27,6 @@ if (-f 't/data/test.keytab' && -f 't/data/test.principal'
     $principal = contents ('t/data/test.principal');
     $wa_principal = contents ('t/data/test.principal-webauth');
     ($princ_type, $princ_host) = split (/\//, $principal);
-    ($wa_princ_type, $wa_princ_host) = split (/\//, $wa_principal);
 } else {
     $kerberos_config = 0;
 }
@@ -42,7 +40,7 @@ unless ($username && $password && $principal && $wa_principal) {
 
 # Skip all tests without a valid kerberos configuration.
 if ($kerberos_config) {
-    plan tests => 15;
+    plan tests => 13;
 } else {
     plan skip_all => 'no kerberos configuration found';
 }
@@ -71,24 +69,12 @@ eval { ($tgt, $expiration) = WebAuth::krb5_export_tgt ($context) };
 is ($@, '', 'krb5_init_via_password works');
 ok ($expiration, ' and returns an expiration time');
 
-eval {
-    $princ = WebAuth::krb5_service_principal ($context, $wa_princ_type,
-                                              $wa_princ_host);
-};
-is ($@, '', 'krb5_service_principal works');
-like ($princ, qr,^$wa_princ_type/$wa_princ_host\@,,
-    ' and returns the right principal');
-
 # If our user is in a realm other than our default realm, we can't use the
 # results of service_principal by itself, since it's qualified with the wrong
 # realm.
-my $realm;
-if ($username =~ /\@(\S+)$/) {
-    $realm = $1;
-    $princ =~ s/\@.*/\@$realm/;
-}
 eval {
-    ($ticket, $expiration) = WebAuth::krb5_export_ticket ($context, $princ);
+    ($ticket, $expiration)
+        = WebAuth::krb5_export_ticket ($context, $wa_principal);
 };
 is ($@, '', 'krb5_export_ticket works');
 ok ($ticket, ' and returns a ticket');

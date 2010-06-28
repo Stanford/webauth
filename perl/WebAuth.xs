@@ -747,31 +747,6 @@ webauth_krb5_export_tgt(c)
 
 
 void
-webauth_krb5_service_principal(c, service, hostname)
-    WEBAUTH_KRB5_CTXT *c
-    const char *service
-    const char *hostname
-  PROTOTYPE: $$$
-  PPCODE:
-    int s;
-    char *server_princ = NULL;
-
-    s = webauth_krb5_service_principal(c, service, hostname, &server_princ);
-    if (s == WA_ERR_NONE) {
-        SV *out = sv_newmortal();
-
-        sv_setpv(out, server_princ);
-        EXTEND(SP,1);
-        PUSHs(out);
-        free(server_princ);
-    } else {
-        if (server_princ != NULL)
-            free(server_princ);
-        webauth_croak("webauth_krb5_service_principal", s, c);
-    }
-
-
-void
 webauth_krb5_get_principal(c, local)
     WEBAUTH_KRB5_CTXT *c
     int local

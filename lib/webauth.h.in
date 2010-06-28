@@ -823,18 +823,6 @@ int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **tgt, size_t *tgt_len,
 int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, char *cred, size_t cred_len);
 
 /*
- * Create a service principal (service/hostname.do.main@realm) from a service
- * and hostname.  If service is NULL, "host" is used, and if hostname is NULL,
- * the local hostname is used.  server_principal should be freed when it is no
- * longer needed.
- *
- * Returns WA_ERR_NONE or WA_ERR_KRB5.
- */
-int webauth_krb5_service_principal(WEBAUTH_KRB5_CTXT *, const char *service,
-                                   const char *hostname,
-                                   char **server_principal);
-
-/*
  * Get the string form of the principal from the context.  This should only be
  * called after a succesfull call to webauth_krb5_init_via_*.
  *
