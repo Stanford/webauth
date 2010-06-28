@@ -37,6 +37,9 @@ WebAuth 3.7.0 (unreleased)
     The --enable-mod_webkdc flag is now --enable-webkdc, since it also
     controls installation of the WebLogin scripts and templates.
 
+    The --enable-debug flag has been dropped.  Set CFLAGS on the configure
+    command line if you want to override the default compiler flags.
+
     Catch SIGTERM in the login.fcgi script and only exit once processing
     of the current request has completed.  mod_fastcgi restarts FastCGI
     scripts periodically by killing the old one with SIGTERM, which

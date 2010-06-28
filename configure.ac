@@ -56,22 +56,6 @@ AC_ARG_ENABLE([mod_webauthldap],
     [AS_IF([test x"$enableval" = xno], [build_webauthldap=false])])
 AM_CONDITIONAL([BUILD_WEBAUTHLDAP], [test x"$build_webauthldap" = xtrue])
 
-dnl Set the default compiler flags.  --enable-debug is the default.  If CFLAGS
-dnl is set in the environment, always use it; otherwise, use -g unless
-dnl --disable-debug is given.  If it is, use -O2 -DNDEBUG.
-AC_ARG_ENABLE([debug],
-    AC_HELP_STRING([--disable-debug], [Compile without debugging]),
-    [if test -z "$CFLAGS" ; then
-        if test x"$enableval" != xno ; then
-            CFLAGS=-g
-        else
-            CFLAGS="-O2 -DNDEBUG"
-        fi
-     fi],
-    [if test -z "$CFLAGS" ; then
-        CFLAGS=-g
-     fi])
-
 dnl Allow the user to indicate that the Perl modules should not be built.
 AC_ARG_ENABLE([perl],
     [AC_HELP_STRING([--enable-perl], [Build Perl bindings])],
