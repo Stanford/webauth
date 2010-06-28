@@ -754,7 +754,7 @@ webauth_krb5_service_principal(c, service, hostname)
   PROTOTYPE: $$$
   PPCODE:
     int s;
-    char *server_princ;
+    char *server_princ = NULL;
 
     s = webauth_krb5_service_principal(c, service, hostname, &server_princ);
     if (s == WA_ERR_NONE) {
@@ -765,7 +765,8 @@ webauth_krb5_service_principal(c, service, hostname)
         PUSHs(out);
         free(server_princ);
     } else {
-        free(server_princ);
+        if (server_princ != NULL)
+            free(server_princ);
         webauth_croak("webauth_krb5_service_principal", s, c);
     }
 
@@ -799,7 +800,7 @@ webauth_krb5_export_ticket(c, princ)
     char *princ
   PROTOTYPE: $$
   PPCODE:
-    char *ticket;
+    char *ticket = NULL;
     size_t ticket_len;
     int s;
     time_t expiration;
@@ -815,7 +816,8 @@ webauth_krb5_export_ticket(c, princ)
         PUSHs(out);
         PUSHs(sv_2mortal(newSViv(expiration)));
     } else {
-        free(ticket);
+        if (ticket != NULL)
+            free(ticket);
         webauth_croak("webauth_krb5_export_ticket", s, c);
     }
 
