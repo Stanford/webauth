@@ -54,7 +54,6 @@ AC_DEFUN([RRA_LIB_LDAP],
  rra_ldap_root=
  rra_ldap_libdir=
  rra_ldap_includedir=
- rra_with_ldap=
  LDAP_CPPFLAGS=
  LDAP_LDFLAGS=
  LDAP_LIBS=
@@ -63,12 +62,10 @@ AC_DEFUN([RRA_LIB_LDAP],
  AC_SUBST([LDAP_LIBS])
 
  AC_ARG_WITH([ldap],
-    [AS_HELP_STRING([--with-ldap@<:@=DIR@:>@],
+    [AS_HELP_STRING([--with-ldap=DIR],
         [Location of LDAP headers and libraries])],
     [AS_IF([test x"$withval" = xno],
-        [rra_use_ldap=false],
-        [AS_IF([test x"$withval" != xyes], [rra_ldap_root="$withval"])
-         rra_use_ldap=true])])
+        [rra_ldap_root="$withval"])])
  AC_ARG_WITH([ldap-include],
     [AS_HELP_STRING([--with-ldap-include=DIR],
         [Location of LDAP headers])],
@@ -86,4 +83,5 @@ AC_DEFUN([RRA_LIB_LDAP],
     [AC_CHECK_LIB([lber], [ber_dump], [LDAP_LIBS=-llber])])
  AC_CHECK_LIB([ldap], [ldap_open], [LDAP_LIBS="-lldap $LDAP_LIBS"],
     [AC_MSG_ERROR([cannot find usable LDAP library])],
-    [$LDAP_LIBS])])
+    [$LDAP_LIBS])
+ RRA_LIB_LDAP_RESTORE])
