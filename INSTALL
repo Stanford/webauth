@@ -121,12 +121,12 @@ CONFIGURING THE BUILD
 
     WebAuth's library will by default be installed in /usr/local/lib, its
     utility programs will be installed in /usr/local/bin, and its modules
-    will be installed in /usr/local/lib/apache2/modules.  To change those
-    locations, pass the --prefix option to configure with whatever path
-    you want to serve as the installation root.  You can use --libexecdir
-    to set the parent directory of the module installation.  The modules
-    will be installed in an apache2/modules subdirectory of that
-    directory.
+    will be installed in /usr/local/libexec/apache2/modules.  To change
+    those locations, pass the --prefix option to configure with whatever
+    path you want to serve as the installation root.  You can use
+    --libexecdir to set the parent directory of the module installation.
+    The modules will be installed in an apache2/modules subdirectory of
+    that directory.
 
     The install location of the Perl modules will be derived from Perl's
     configuration and is not affected by --prefix.
