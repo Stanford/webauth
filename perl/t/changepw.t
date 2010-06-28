@@ -33,7 +33,7 @@ if ($username && $password) {
 }
 
 if ($kerberos_config) {
-    plan tests => 7;
+    plan tests => 11;
 } else {
     plan skip_all => 'no kerberos configuration found';
 }
@@ -52,6 +52,11 @@ $weblogin->{logging} = 0;
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
 
+# If the username is fully qualified, set a default realm.
+if ($username =~ /\@(\S+)/) {
+    $WebKDC::Config::DEFAULT_REALM = $1;
+}
+
 # Test a successful password change.
 $weblogin->{query}->param ('username', $username);
 $weblogin->{query}->param ('password', $password);
@@ -59,13 +64,14 @@ $weblogin->{query}->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
-print "Status: $status\nError: $error\n";
+is ($error, undef, ' with no error');
 
 # And undo it.
 $weblogin->{query}->param ('password', $newpassword);
 $weblogin->{query}->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
+is ($error, undef, ' with no error');
 
 # Test going to change_user_password with password but not CPT (should work)
 $weblogin->{CPT} = '';
@@ -76,12 +82,14 @@ $weblogin->{query}->param ('new_passwd1', $newpassword);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS,
     'changing the password with old password but no CPT works');
+is ($error, undef, ' with no error');
 
 # And undo it.
 $weblogin->{query}->param ('password', $newpassword);
 $weblogin->{query}->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
+is ($error, undef, ' with no error');
 
 # Test going to change_user_password no CPT or password (should not work).
 $weblogin->{query} = new CGI;
