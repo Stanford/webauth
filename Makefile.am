@@ -51,7 +51,8 @@ EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(CRYPTO_CPPFLAGS) $(KRB5_CPPFLAGS)
 lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
 	$(CRYPTO_LDFLAGS) $(KRB5_LDFLAGS)
-lib_libwebauth_la_LIBADD = portable/libportable.la $(CRYPTO_LIBS) $(KRB5_LIBS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(CRYPTO_LIBS) \
+	$(KRB5_LIBS) -lcom_err
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =
