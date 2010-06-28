@@ -29,14 +29,13 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_INFO],
     ["Built by $webauth_user@$webauth_host on $webauth_date"],
     [Define to information about when and by whom the package was built.])
 
-dnl By default, we don't build mod_webkdc.  Allow that to be enabled.
+dnl By default, we don't build mod_webkdc or the WebLogin Perl module or code.
+dnl Allow that to be enabled.
 build_webkdc=false
-AC_ARG_ENABLE([mod_webkdc],
-    AC_HELP_STRING([--enable-mod_webkdc],
-        [Build and install the WebKDC Apache module]),
-    [if test x"$enableval" != xno ; then
-        build_webkdc=true
-     fi])
+AC_ARG_ENABLE([webkdc],
+    [AC_HELP_STRING([--enable-webkdc],
+        [Build and install WebLogin and the WebKDC Apache module])],
+    [AS_IF([test x"$enableval" != xno], [build_webkdc=true])])
 AM_CONDITIONAL([BUILD_WEBKDC], [test x"$build_webkdc" = xtrue])
 
 dnl Provide a way to disable building mod_webauth for systems that don't need
