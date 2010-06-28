@@ -2,6 +2,13 @@
 
 WebAuth 3.7.0 (unreleased)
 
+    The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
+    do something closer to its documentation.  Previously, it was
+    documented as containing "group <privgroup>" if the user was
+    authorized by a privgroup directive, but actually contained only the
+    privgroup.  Now, it contains "privgroup <privgroup>" if the user was
+    authorized by a privgroup directive.  Patch from Ian Ward Comfort.
+
     WebLogin now includes a password change script and associated template
     to allow users to change their Kerberos password.
 
