@@ -2,11 +2,11 @@ dnl Find the compiler and linker flags for cURL.
 dnl
 dnl Finds the compiler and linker flags for linking with the cURL library.
 dnl Provides the --with-curl, --with-curl-lib, and --with-curl-include
-dnl configure options to specify non-standard paths to the Kerberos libraries.
+dnl configure options to specify non-standard paths to the cURL libraries.
 dnl Uses curl-config where available.
 dnl
-dnl Provides the macro RRA_LIB_CURL_OPTIONAL and sets the substitution
-dnl variables CURL_CPPFLAGS, CURL_LDFLAGS, and CURL_LIBS.  Also provides
+dnl Provides the macro RRA_LIB_CURL and sets the substitution variables
+dnl CURL_CPPFLAGS, CURL_LDFLAGS, and CURL_LIBS.  Also provides
 dnl RRA_LIB_CURL_SWITCH to set CPPFLAGS, LDFLAGS, and LIBS to include the cURL
 dnl libraries, saving the current values first, and RRA_LIB_CURL_RESTORE to
 dnl restore those settings to before the last RRA_LIB_CURL_SWITCH.
