@@ -665,10 +665,13 @@ sub add_changepw_token {
     my ($ticket, $expires);
     eval {
         my $context = krb5_new;
-        krb5_init_via_password ($context, $username, $password,
-                                'kadmin/changepw', '', '');
-        ($ticket, $expires) = krb5_export_ticket ($context,
-                                                  'kadmin/changepw');
+        my $changepw = 'kadmin/changepw';
+        if ($WebKDC::Config::DEFAULT_REALM) {
+            $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
+        }
+        krb5_init_via_password ($context, $username, $password, $changepw,
+                                '', '');
+        ($ticket, $expires) = krb5_export_ticket ($context, $changepw);
     };
     if ($@) {
         print STDERR "failed to create kadmin/changepw credential for"
