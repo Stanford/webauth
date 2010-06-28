@@ -14,6 +14,12 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.11 check-news silent-rules -Wall -Werror])
 AM_MAINTAINER_MODE
 
+AC_PROG_CC
+AC_USE_SYSTEM_EXTENSIONS
+AM_PROG_CC_C_O
+AC_PROG_INSTALL
+AC_PROG_LIBTOOL
+
 dnl Store information about the time the package was configured and the person
 dnl who configured it into another variable.
 webauth_user=`(whoami || /usr/ucb/whoami || echo UNKNOWN) 2>/dev/null`
@@ -95,13 +101,6 @@ AC_ARG_ENABLE([perl],
          build_perl=false
       fi])
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
-
-dnl Checks for programs.
-AC_PROG_CC
-AC_USE_SYSTEM_EXTENSIONS
-AM_PROG_CC_C_O
-AC_PROG_INSTALL
-AC_PROG_LIBTOOL
 
 dnl Find Perl, used to build the Perl bindings.
 if test x"$build_perl" = xtrue ; then
