@@ -60,12 +60,20 @@ if BUILD_WEBAUTH
     apache_LTLIBRARIES += modules/webauth/mod_webauth.la
 endif
 if BUILD_WEBAUTHLDAP
-    apache_LTLIBRARIES += modules/webauthldap/mod_webauthldap.la
+    apache_LTLIBRARIES += modules/ldap/mod_webauthldap.la
 endif
 if BUILD_WEBKDC
     apache_LTLIBRARIES += modules/webkdc/mod_webkdc.la
 endif
 
+modules_ldap_mod_webauthldap_la_SOURCES = modules/ldap/mod_webauthldap.c \
+	modules/ldap/mod_webauthldap.h
+modules_ldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
+	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
+modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
+	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
+modules_ldap_mod_webauthldap_la_LIBADD = $(APACHE_LIBS) $(KRB5_LIBS) \
+	$(LDAP_LIBS)
 modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
 	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
 	modules/webauth/util.c modules/webauth/webkdc.c
@@ -74,15 +82,6 @@ modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(CURL_LDFLAGS)
 modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
 	$(CURL_LIBS)
-modules_webauthldap_mod_webauthldap_la_SOURCES = \
-	modules/webauthldap/mod_webauthldap.c \
-	modules/webauthldap/mod_webauthldap.h
-modules_webauthldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
-	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
-modules_webauthldap_mod_webauthldap_la_LDFLAGS = -module -shared \
-	-avoid-version $(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
-modules_webauthldap_mod_webauthldap_la_LIBADD = $(APACHE_LIBS) $(KRB5_LIBS) \
-	$(LDAP_LIBS)
 modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c \
 	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h \
 	modules/webkdc/util.c
