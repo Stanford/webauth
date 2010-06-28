@@ -42,7 +42,7 @@ unless ($username && $password && $principal && $wa_principal) {
 
 # Skip all tests without a valid kerberos configuration.
 if ($kerberos_config) {
-    plan tests => 11;
+    plan tests => 15;
 } else {
     plan skip_all => 'no kerberos configuration found';
 }
@@ -61,26 +61,38 @@ eval {
     $sp = WebAuth::krb5_init_via_password($context, $username, $password,
                                           '', $keytab, '');
 };
-print $@, "\n";
+is ($@, '', "krb5_init_via_password didn't thrown an exception");
 ok ($sp, 'krb5_init_via_password works');
 
 eval { $ctx_princ = WebAuth::krb5_get_principal ($context, 1) };
 ok ($ctx_princ, 'krb5_get_principal works');
 
 eval { ($tgt, $expiration) = WebAuth::krb5_export_tgt ($context) };
-ok (!$@, 'krb5_init_via_password works');
+is ($@, '', 'krb5_init_via_password works');
 ok ($expiration, ' and returns an expiration time');
 
 eval {
     $princ = WebAuth::krb5_service_principal ($context, $wa_princ_type,
                                               $wa_princ_host);
 };
-ok (!$@, 'krb5_service_principal works');
+is ($@, '', 'krb5_service_principal works');
+like ($princ, qr,^$wa_princ_type/$wa_princ_host\@,,
+    ' and returns the right principal');
 
+# If our user is in a realm other than our default realm, we can't use the
+# results of service_principal by itself, since it's qualified with the wrong
+# realm.
+my $realm;
+if ($username =~ /\@(\S+)$/) {
+    $realm = $1;
+    $princ =~ s/\@.*/\@$realm/;
+}
 eval {
     ($ticket, $expiration) = WebAuth::krb5_export_ticket ($context, $princ);
 };
-ok (!$@, 'krb5_export_ticket works');
+is ($@, '', 'krb5_export_ticket works');
+ok ($ticket, ' and returns a ticket');
+ok ($expiration, ' and an expiration time');
 
 # Nuke current context and import from tgt we created
 eval {
