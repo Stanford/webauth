@@ -46,7 +46,7 @@ AC_DEFUN([RRA_LIB_APACHE],
  AC_SUBST([APACHE_LIBS])
 
  AC_ARG_WITH([apxs],
-    [AS_HELP_STRING([--with-apxs@<:@=DIR@:>@],
+    [AS_HELP_STRING([--with-apxs=PATH],
         [Path to Apache 2.x apxs program])],
     [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
         [rra_apache_apxs="$withval"])])
