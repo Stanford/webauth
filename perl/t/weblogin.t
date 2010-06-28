@@ -110,6 +110,12 @@ $WebKDC::Config::REMUSER_REDIRECT = 0;
 @WebKDC::Config::REMUSER_REALMS   = ();
 $WebKDC::Config::BYPASS_CONFIRM   = '';
 
+# If the username is fully qualified, set a default realm.
+if ($user =~ /\@(\S+)/) {
+    $WebKDC::Config::DEFAULT_REALM = $1;
+    @WebKDC::Config::REMUSER_REALMS = ($1);
+}
+
 # Load a version of the page templates that just prints out the vars sent.
 my %pages = (pwchange => 'pwchange.tmpl',
              login    => 'login.tmpl',
