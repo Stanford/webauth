@@ -90,7 +90,6 @@ AC_DEFUN([RRA_LIB_CURL],
  rra_curl_root=
  rra_curl_libdir=
  rra_curl_includedir=
- rra_with_curl=
  CURL_CPPFLAGS=
  CURL_LDFLAGS=
  CURL_LIBS=
@@ -101,10 +100,8 @@ AC_DEFUN([RRA_LIB_CURL],
  AC_ARG_WITH([curl],
     [AS_HELP_STRING([--with-curl@<:@=DIR@:>@],
         [Location of cURL headers and libraries])],
-    [AS_IF([test x"$withval" = xno],
-        [rra_use_curl=false],
-        [AS_IF([test x"$withval" != xyes], [rra_curl_root="$withval"])
-         rra_use_curl=true])])
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
+        [rra_curl_root="$withval"])])
  AC_ARG_WITH([curl-include],
     [AS_HELP_STRING([--with-curl-include=DIR],
         [Location of cURL headers])],

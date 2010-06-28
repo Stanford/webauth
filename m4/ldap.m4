@@ -64,7 +64,7 @@ AC_DEFUN([RRA_LIB_LDAP],
  AC_ARG_WITH([ldap],
     [AS_HELP_STRING([--with-ldap=DIR],
         [Location of LDAP headers and libraries])],
-    [AS_IF([test x"$withval" = xno],
+    [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_ldap_root="$withval"])])
  AC_ARG_WITH([ldap-include],
     [AS_HELP_STRING([--with-ldap-include=DIR],
