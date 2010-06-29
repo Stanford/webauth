@@ -139,11 +139,6 @@ mod_webauthldap:
    of WEBAUTH_USER and, for use with mod_auth_kerb, dealing with a
    REMOTE_USER that's qualified with the realm.
 
- * User request: Provide a way of checking the user's entitlements against
-   a list of possible values and export to the environment all matching
-   entitlements, rather than just the first match (like the existing
-   LDAPAUTHRULE support).
-
  * User request: It would be nice to support multiple keytabs and different
    credentials in different virtual hosts so that the server would switch
    credentials and see different data depending on the context.  This would
@@ -157,8 +152,8 @@ mod_webauthldap:
  * Add to mod_webauthldap a way to deny access if a user is a member of a
    particular privgroup.
 
- * Support listing multiple privgroups and attributes on the same line in
-   the mod_webauthldap module using the iterate flag.
+ * Support listing multiple privgroups on the same line in the
+   mod_webauthldap module using the iterate flag.
 
 mod_webkdc:
 
