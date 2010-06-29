@@ -472,7 +472,7 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     char ccname[128];
     char *tpassword;
     krb5_creds creds;
-    krb5_get_init_creds_opt opts;
+    krb5_get_init_creds_opt *opts;
 
     assert(c != NULL);
     assert(username != NULL);
@@ -498,15 +498,17 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
     if (c->code != 0)
         return WA_ERR_KRB5;
 
-    krb5_get_init_creds_opt_init(&opts);
-    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
+    c->code = krb5_get_init_creds_opt_alloc(c->ctx, &opts);
+    if (c->code != 0)
+        return WA_ERR_KRB5;
+    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, opts);
 
     if (get_principal == NULL)
-        krb5_get_init_creds_opt_set_forwardable(&opts, 1);
+        krb5_get_init_creds_opt_set_forwardable(opts, 1);
     else {
-        krb5_get_init_creds_opt_set_forwardable(&opts, 0);
-        krb5_get_init_creds_opt_set_proxiable(&opts, 0);
-        krb5_get_init_creds_opt_set_renew_life(&opts, 0);
+        krb5_get_init_creds_opt_set_forwardable(opts, 0);
+        krb5_get_init_creds_opt_set_proxiable(opts, 0);
+        krb5_get_init_creds_opt_set_renew_life(opts, 0);
     }
 
     tpassword = strdup(password);
@@ -515,8 +517,8 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
     c->code = krb5_get_init_creds_password(c->ctx, &creds, c->princ,
                                            tpassword, NULL, NULL, 0,
-                                           (char *) get_principal, &opts);
-
+                                           (char *) get_principal, opts);
+    krb5_get_init_creds_opt_free(c->ctx, opts);
     memset(tpassword, 0, strlen(tpassword));
     free(tpassword);
 
@@ -661,7 +663,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     char ccname[128];
     krb5_creds creds;
-    krb5_get_init_creds_opt opts;
+    krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
     krb5_error_code tcode;
     int s;
@@ -693,11 +695,16 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
         return WA_ERR_KRB5;
     }
 
-    krb5_get_init_creds_opt_init(&opts);
-    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, &opts);
+    c->code = krb5_get_init_creds_opt_alloc(c->ctx, &opts);
+    if (c->code != 0) {
+        tcode = krb5_kt_close(c->ctx, keytab);
+        return WA_ERR_KRB5;
+    }
+    krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, opts);
 
     c->code = krb5_get_init_creds_keytab(c->ctx, &creds, c->princ, keytab,
-                                         0, NULL, &opts);
+                                         0, NULL, opts);
+    krb5_get_init_creds_opt_free(c->ctx, opts);
 
     /* FIXME: needs better logging. */
     tcode = krb5_kt_close(c->ctx, keytab);

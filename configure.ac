@@ -69,7 +69,8 @@ RRA_LIB_APACHE
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_HEADERS([et/com_err.h])
-AC_CHECK_FUNCS([krb5_get_init_creds_opt_alloc \
+AC_CHECK_FUNCS([krb5_data_free \
+    krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
     krb5_kt_free_entry \
     krb5_principal_get_realm \

@@ -536,7 +536,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_creds creds;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
-    krb5_get_init_creds_opt opts;
+    krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
     krb5_ccache cc;
     krb5_principal princ;
@@ -566,11 +566,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
         if ((code = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
             code = krb5_copy_principal(ctx, entry.principal, &princ);
-#ifdef HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS
-            tcode = krb5_free_keytab_entry_contents(ctx, &entry);
-#else
             tcode = krb5_kt_free_entry(ctx, &entry);
-#endif
         }
         tcode = krb5_kt_end_seq_get(ctx, keytab, &cursor);
     }
@@ -590,13 +586,18 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     }
     
     /* initialize it if necessary */
-    if ((code != krb5_cc_initialize(ctx, cc, princ)) != 0) {
+    if ((code = krb5_cc_initialize(ctx, cc, princ)) != 0) {
         krb5_kt_close(ctx, keytab);
         krb5_free_principal(ctx, princ);
         return code;
     }
     
-    krb5_get_init_creds_opt_init(&opts);
+    if ((code = krb5_get_init_creds_opt_alloc(ctx, &opts)) != 0) {
+        krb5_kt_close(ctx, keytab);
+        krb5_free_principal(ctx, princ);
+        return code;
+    }
+    krb5_get_init_creds_opt_set_default_flags(ctx, "webauth", NULL, opts);
 
     /* get the tgt for this principal */
     code = krb5_get_init_creds_keytab(ctx,
@@ -605,8 +606,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
                                       keytab,
                                       0, /* start_time */
                                       NULL, /* in_tkt_service */
-                                      &opts);
-
+                                      opts);
+    krb5_get_init_creds_opt_free(ctx, opts);
     krb5_kt_close(ctx, keytab);
     krb5_free_principal(ctx, princ);
 
@@ -1308,7 +1309,8 @@ webauthldap_attribnotfound(void* lcp, const char *key, const char *val)
  * @return always 1, which means keep going through the table
  */
 static int
-webauthldap_exportprivgroup(void* lcp, const char *key, const char *val)
+webauthldap_exportprivgroup(void* lcp, const char *key,
+                            const char *val UNUSED)
 {
     char *privgroup;
     MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;

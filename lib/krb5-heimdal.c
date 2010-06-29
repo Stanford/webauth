@@ -215,7 +215,7 @@ cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
     int s;
     ssize_t f;
     char *buff;
-    int temp_int;
+    size_t temp_int;
     int32_t temp_int32;
 
     assert(c != NULL);
@@ -659,7 +659,7 @@ webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
     krb5_principal tgtprinc, client;
-    krb5_realm *client_realm;
+    const char *client_realm;
     krb5_creds creds, tgtq;
     int s;
 
@@ -673,15 +673,15 @@ webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *context,
     if (c->code != 0)
         return WA_ERR_KRB5;
 
-    client_realm = krb5_princ_realm(c->ctx, client);
+    client_realm = krb5_principal_get_realm(c->ctx, client);
     c->code = krb5_build_principal_ext(c->ctx,
                                        &tgtprinc,
-                                       krb5_realm_length(*client_realm),
-                                       krb5_realm_data(*client_realm),
+                                       strlen(client_realm),
+                                       client_realm,
                                        KRB5_TGS_NAME_SIZE,
                                        KRB5_TGS_NAME,
-                                       krb5_realm_length(*client_realm),
-                                       krb5_realm_data(*client_realm),
+                                       strlen(client_realm),
+                                       client_realm,
                                        0);
 
     if (c->code != 0) {

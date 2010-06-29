@@ -33,6 +33,11 @@ BEGIN_DECLS
 /* Default to a hidden visibility for all portability functions. */
 #pragma GCC visibility push(hidden)
 
+/* Heimdal: krb5_data_free, MIT: krb5_free_data_contents. */
+#ifdef HAVE_KRB5_DATA_FREE
+# define krb5_free_data_contents(c, d) krb5_data_free(d)
+#endif
+
 /* Heimdal: krb5_xfree, MIT: krb5_free_unparsed_name. */
 #ifdef HAVE_KRB5_XFREE
 # define krb5_free_unparsed_name(c, p) krb5_xfree(p)
