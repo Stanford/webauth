@@ -38,7 +38,7 @@ WebAuth 3.7.0 (unreleased)
     a cleaner build and installation process.  However, this means that
     the modules are now installed in <libexecdir>/apache2/modules by
     default, where <libexecdir> is specified via the --libexecdir flag to
-    configure and defaults to /usr/local/lib.
+    configure and defaults to /usr/local/libexec.
 
     The --with-apache option has been dropped.  Use --with-apxs to specify
     the full path to apxs if it's not in your PATH.
