@@ -19,6 +19,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
+RRA_LD_VERSION_SCRIPT
 
 dnl Store information about the time the package was configured and the person
 dnl who configured it into another variable.
@@ -100,20 +101,6 @@ AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
 AC_REPLACE_FUNCS([asprintf mkstemp strlcat strlcpy])
-
-dnl If and only if we're on Linux, use a mapfile to do symbol versioning and
-dnl make sure that all symbols in the library are resolved.  We'd like to do
-dnl this on all platforms, but the syntax is different everywhere and I don't
-dnl feel like dealing with the differences.
-case "$host" in
-*-gnu*)
-    VERSION_LDFLAGS='-Wl,--version-script=${srcdir}/lib/mapfile -Wl,-z,defs'
-    ;;
-*)
-    VERSION_LDFLAGS=""
-    ;;
-esac
-AC_SUBST([VERSION_LDFLAGS])
 
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.

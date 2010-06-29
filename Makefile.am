@@ -44,6 +44,12 @@ noinst_LIBRARIES = util/libutil.a
 util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
         util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
 
+if HAVE_LD_VERSION_SCRIPT
+    VERSION_LDFLAGS = -Wl,--version-script=${srcdir}/lib/libwebauth.map
+else
+    VERSION_LDFLAGS = -export-symbols ${srcdir}/lib/libwebauth.sym
+endif
+
 lib_LTLIBRARIES = lib/libwebauth.la
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
 	lib/misc.c lib/random.c lib/token.c lib/webauth.h lib/webauthp.h
