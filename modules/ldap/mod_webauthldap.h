@@ -70,6 +70,9 @@
 #define CD_Attribs "WebAuthLdapAttribute"
 #define CM_Attribs "additional ldap attributes to place into the environment"
 
+#define CD_Privgroups "WebAuthLdapPrivgroup"
+#define CM_Privgroups "additional privilege groups to check membership in"
+
 #define CD_Host "WebAuthLdapHost"
 #define CM_Host "LDAP Host for LDAP lookup"
 
@@ -105,6 +108,7 @@ enum {
     E_Keytab,
     E_Port,
     E_Privgroupattr,
+    E_Privgroups,
     E_Separator,
     E_SSL,
     E_Tktcache
@@ -154,6 +158,7 @@ typedef struct {
 typedef struct {
 
     apr_array_header_t* attribs;
+    apr_array_header_t* privgroups;
 
 } MWAL_DCONF;
 
@@ -169,6 +174,8 @@ typedef struct {
     int numEntries;
 
     apr_table_t* envvars;    /* which attributes to place into environment */
+    apr_table_t* privgroups; /* which privgroups to check and place into
+                                environment */
     int legacymode;
 
     LDAP *ld;
@@ -181,7 +188,9 @@ typedef struct {
                               */
 
     apr_table_t* privgroup_cache;
-                             /* cached privgroup comparison results */
+                             /* cached privgroup comparison results; keys are
+                                privgroup names; values should be "TRUE" or
+                                "FALSE" */
 } MWAL_LDAP_CTXT;
 
 

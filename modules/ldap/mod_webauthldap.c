@@ -181,7 +181,7 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
     MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
-    char** attrib;
+    char** attrib, **privgroup;
 
     switch (e) {
         /* server configs */
@@ -189,9 +189,15 @@ cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
         if (dconf->attribs == NULL) {
             dconf->attribs = apr_array_make(cmd->pool, 5, sizeof(char*));
         }
-
         attrib = apr_array_push(dconf->attribs);
         *attrib = apr_pstrdup(cmd->pool, arg);
+        break;
+    case E_Privgroups:
+        if (dconf->privgroups == NULL) {
+            dconf->privgroups = apr_array_make(cmd->pool, 5, sizeof(char*));
+        }
+        privgroup = apr_array_push(dconf->privgroups);
+        *privgroup = apr_pstrdup(cmd->pool, arg);
         break;
     default:
         error_str =
@@ -269,6 +275,7 @@ static const command_rec cmds[] = {
     SFLAG(CD_Authrule, E_Authrule, CM_Authrule),
 
     DITSTR(CD_Attribs, E_Attribs, CM_Attribs),
+    DITSTR(CD_Privgroups, E_Privgroups, CM_Privgroups),
     { NULL, { NULL }, NULL, 0, 0, NULL }
 };
 
@@ -371,6 +378,15 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     } else {
         /* dups here are OK */
         conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
+    }
+
+    if (bconf->privgroups == NULL) {
+        conf->privgroups = oconf->privgroups;
+    } else if (oconf->privgroups == NULL) {
+        conf->privgroups = bconf->privgroups;
+    } else {
+        /* dups here are OK */
+        conf->privgroups = apr_array_append(p, bconf->privgroups, oconf->privgroups);
     }
 
     return (void *)conf;
@@ -608,8 +624,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
 
 /**
- * This will initialize the main context struct and set up the table of
- * attributes to later put into environment variables.
+ * This will initialize the main context struct and set up the tables of
+ * attributes and privgroups to later put into environment variables.
  * @param lc main context struct for this module, for passing things around
  * @return zero if OK, HTTP_INTERNAL_SERVER_ERROR if not
  */
@@ -618,7 +634,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 {
     int i;
     char** attrib;
-    char *p;
+    char *p, *privgroup;
     apr_array_header_t* attribs;
 
     if (lc->sconf->debug)
@@ -654,6 +670,22 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
         }
     }
     
+    /* Allocate the privgroups table, and populate its keys with the
+       privgroups we've been asked to check and export. We do not care about
+       the values in this table; we're only using it to generate a set of
+       unique privgroup names. */
+    lc->privgroups = apr_table_make(lc->r->pool, 5);
+    if (lc->dconf->privgroups) {
+        for(i=0; i<lc->dconf->privgroups->nelts; i++) {
+            privgroup = ((char **)(lc->dconf->privgroups)->elts)[i];
+            apr_table_set(lc->privgroups, privgroup, "");
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
+                             "webauthldap(%s): conf privgroup to check: %s",
+                             lc->r->user, privgroup);
+        }
+    }
+
     /* Allocate table for cached privgroup results */
     lc->privgroup_cache = apr_table_make(lc->r->pool, 5);
 
@@ -933,8 +965,10 @@ webauthldap_returnconn(MWAL_LDAP_CTXT* lc)
 
 /**
  * This will parse a given ldap entry, placing all attributes and values into
- * the given apr table. It will also copy out the privgroup attributes into a
- * separate table. Duplicates are preserved in both cases.
+ * the given apr table. Duplicates are preserved. It also saves all privilege
+ * groups (discovered as values for the authorization attribute) in our
+ * context struct's privgroup_cache, in order to prevent unnecessary
+ * comparisons on these values later.
  * @param lc main context struct for this module, for passing things around
  * @param entry the given LDAP entry to parse
  * @param attr_table is the table to place the attributes into
@@ -944,7 +978,7 @@ static void
 webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * attr_table)
 {
     char *a, *val, *dn;
-    int i;
+    int i, is_privgroupattr;
     BerElement *ber = NULL;
     struct berval **bvals;
 
@@ -966,11 +1000,15 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
                          "webauthldap(%s): got attrib: %s", lc->r->user, a);
 
+        is_privgroupattr = !strcasecmp(a, lc->sconf->privgroupattr);
+
         if ((bvals = ldap_get_values_len(lc->ld, entry, a)) != NULL) {
             for (i = 0; bvals[i] != NULL; i++) {
                 val = apr_pstrndup(lc->r->pool, (char *)bvals[i]->bv_val,
                                    (apr_size_t) bvals[i]->bv_len);
                 apr_table_add(attr_table, a, val);
+                if (is_privgroupattr)
+                    apr_table_set(lc->privgroup_cache, val, "TRUE");
             }
             ber_bvecfree(bvals);
         }
@@ -1255,6 +1293,32 @@ webauthldap_attribnotfound(void* lcp, const char *key, const char *val)
     return 1; /* means keep going thru all available entries */
 }
 
+/**
+ * This function is called with every privgroup in which we were asked to
+ * check membership. Since we're just using an apr_table_t to ensure
+ * uniqueness of privgroup names, we ignore the value argument.
+ *
+ * Privgroups which compare true are stored in numbered variables (and
+ * optionally as a concatenated string in the normal variable, if a separator
+ * is set) by webauthldap_setenv, above.
+ *
+ * @param lcp main context struct for this module, for passing things around
+ * @param key the privgroup name
+ * @param val the dummy value stored in our privgroups-to-check table
+ * @return always 1, which means keep going through the table
+ */
+static int
+webauthldap_exportprivgroup(void* lcp, const char *key, const char *val)
+{
+    char *privgroup;
+    MWAL_LDAP_CTXT* lc = (MWAL_LDAP_CTXT*) lcp;
+
+    privgroup = apr_pstrdup(lc->r->pool, key);
+    if (webauthldap_docompare(lc, privgroup) == LDAP_COMPARE_TRUE)
+        webauthldap_setenv(lc, "WEBAUTH_LDAPPRIVGROUP", privgroup);
+
+    return 1; /* means keep going thru all available entries */
+}
 
 
 static int
@@ -1438,8 +1502,10 @@ auth_checker_hook(request_rec * r)
     /* See if there is anything for us to do */
 
     needs_further_handling = 0;
-    /* if we have attributes to set, we need to keep going */
-    if (!apr_is_empty_array((const apr_array_header_t *)lc->dconf->attribs))
+    /* if we have attributes to set or privgroups to check, we need to keep
+       going */
+    if (!apr_is_empty_array((const apr_array_header_t *)lc->dconf->attribs) || 
+        !apr_is_empty_array((const apr_array_header_t *)lc->dconf->privgroups))
         needs_further_handling = 1;
     else if (reqs_arr) {
         reqs = (require_line *)reqs_arr->elts;
@@ -1558,6 +1624,10 @@ auth_checker_hook(request_rec * r)
         apr_table_do(webauthldap_exportattrib, lc, lc->entries[i], NULL);
     }
     apr_table_do(webauthldap_attribnotfound, lc, lc->envvars, NULL);
+
+    /* Perform any additional privgroup checks and set those env vars, too */
+
+    apr_table_do(webauthldap_exportprivgroup, lc, lc->privgroups, NULL);
 
     webauthldap_returnconn(lc);
     apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
