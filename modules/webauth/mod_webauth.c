@@ -1533,8 +1533,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
         klen != WA_AES_192 &&
         klen != WA_AES_256) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: get_session_key: invalid key length: %d",
-                     klen);
+                     "mod_webauth: get_session_key: invalid key length: %lu",
+                     (unsigned long) klen);
         goto cleanup;
     }
 

@@ -8,21 +8,20 @@
  * See LICENSE for licensing terms.
  */
 
+#include <mod-config.h>
+#include <portable/krb5.h>
+
 #include "httpd.h"
 #include "http_config.h"
 #include "http_protocol.h"
 #include "ap_config.h"
 #include "apr_signal.h"
 
-#include "mod-config.h"
-
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <unistd.h>
 
 #include <krb5.h>
 #ifdef HAVE_ET_COM_ERR_H

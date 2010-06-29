@@ -38,10 +38,10 @@
  */
 #define A_VERSION       "v"
 #define A_NUM_ENTRIES   "n"
-#define A_CREATION_TIME "ct%d"
-#define A_VALID_AFTER   "va%d"
-#define A_KEY_TYPE      "kt%d"
-#define A_KEY_DATA      "kd%d"
+#define A_CREATION_TIME "ct%lu"
+#define A_VALID_AFTER   "va%lu"
+#define A_KEY_TYPE      "kt%lu"
+#define A_KEY_DATA      "kd%lu"
 
 
 /*
@@ -336,28 +336,28 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring, char **buffer,
         goto cleanup;
 
     for (i = 0; i < ring->num_entries; i++) {
-        snprintf(name, sizeof(name), A_CREATION_TIME, i);
+        snprintf(name, sizeof(name), A_CREATION_TIME, (unsigned long) i);
         status = webauth_attr_list_add_time(alist, name,
                                             ring->entries[i].creation_time,
                                             WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_VALID_AFTER, i);
+        snprintf(name, sizeof(name), A_VALID_AFTER, (unsigned long) i);
         status = webauth_attr_list_add_time(alist, name,
                                             ring->entries[i].valid_after,
                                             WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_KEY_TYPE, i);
+        snprintf(name, sizeof(name), A_KEY_TYPE, (unsigned long) i);
         status = webauth_attr_list_add_uint32(alist, name,
                                               ring->entries[i].key->type,
                                               WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_KEY_DATA, i);
+        snprintf(name, sizeof(name), A_KEY_DATA, (unsigned long) i);
         status = webauth_attr_list_add(alist, name,
                                        ring->entries[i].key->data,
                                        ring->entries[i].key->length,
@@ -509,25 +509,25 @@ webauth_keyring_decode(char *buffer, size_t buffer_len,
         char name[32];
         WEBAUTH_KEY *key;
 
-        snprintf(name, sizeof(name), A_CREATION_TIME, i);
+        snprintf(name, sizeof(name), A_CREATION_TIME, (unsigned long) i);
         s = webauth_attr_list_get_time(alist, name, &creation_time,
                                        WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_VALID_AFTER, i);
+        snprintf(name, sizeof(name), A_VALID_AFTER, (unsigned long) i);
         s = webauth_attr_list_get_time(alist, name, &valid_after,
                                        WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_KEY_TYPE, i);
+        snprintf(name, sizeof(name), A_KEY_TYPE, (unsigned long) i);
         s = webauth_attr_list_get_uint32(alist, name, &key_type,
                                          WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        snprintf(name, sizeof(name), A_KEY_DATA, i);
+        snprintf(name, sizeof(name), A_KEY_DATA, (unsigned long) i);
         s = webauth_attr_list_get(alist, name, (void *) &key_data, &key_len,
                                   WA_F_FMT_HEX);
         if (s != WA_ERR_NONE)

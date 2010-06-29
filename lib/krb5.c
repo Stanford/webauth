@@ -39,6 +39,7 @@
 #endif
 
 #include <lib/webauth.h>
+#include <util/macros.h>
 
 typedef struct {
     krb5_context ctx;
@@ -102,8 +103,8 @@ static krb5_error_code
 #ifndef HAVE_KRB5_UNPARSE_NAME_FLAGS
 #define KRB5_PRINCIPAL_UNPARSE_NO_REALM 1
 static krb5_error_code
-krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ, int flags,
-                        char **name)
+krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ,
+                        int flags UNUSED, char **name)
 {
     krb5_error_code code;
     krb5_principal copy;
@@ -117,9 +118,7 @@ krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ, int flags,
     code = krb5_unparse_name(ctx, copy, name);
     if (code != 0)
         return code;
-    code = krb5_free_principal(copy);
-    if (code != 0)
-        return code;
+    krb5_free_principal(ctx, copy);
     if ((*name)[strlen(*name) - 1] == '@')
         (*name)[strlen(*name) - 1] = '\0';
     return 0;

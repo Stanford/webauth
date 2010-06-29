@@ -72,11 +72,11 @@ AC_CHECK_HEADERS([et/com_err.h])
 AC_CHECK_FUNCS([krb5_data_free \
     krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
-    krb5_kt_free_entry \
     krb5_principal_get_realm \
     krb5_principal_set_realm \
     krb5_unparse_name_flags \
     krb5_xfree])
+AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
         [Define if your Kerberos implementation is Heimdal.])],

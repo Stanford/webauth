@@ -23,7 +23,13 @@
 #ifndef PORTABLE_KRB5_H
 #define PORTABLE_KRB5_H 1
 
-#include <config.h>
+/*
+ * Allow inclusion of config.h to be skipped, since sometimes we have to use a
+ * stripped-down version of config.h with a different name.
+ */
+#ifndef CONFIG_H_INCLUDED
+# include <config.h>
+#endif
 #include <portable/macros.h>
 
 #include <krb5.h>
@@ -73,8 +79,12 @@ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context,
 #define krb5_get_init_creds_opt_set_default_flags(c, p, r, o) /* empty */
 #endif
 
-/* Heimdal: krb5_kt_free_entry, MIT: krb5_free_keytab_entry_contents. */
-#ifndef HAVE_KRB5_KT_FREE_ENTRY
+/*
+ * Heimdal: krb5_kt_free_entry, MIT: krb5_free_keytab_entry_contents.  We
+ * check for the declaration rather than the function since the function is
+ * present in older MIT Kerberos libraries but not prototyped.
+ */
+#if !HAVE_DECL_KRB5_KT_FREE_ENTRY
 # define krb5_kt_free_entry(c, e) krb5_free_keytab_entry_contents((c), (e))
 #endif
 

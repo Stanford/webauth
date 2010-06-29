@@ -1030,7 +1030,7 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     init_string(&cred_tokens, rc->r->pool);
 
     for (i = 0; i < num_creds; i++) {
-        char *id = apr_psprintf(rc->r->pool, "%d", i);
+        char *id = apr_psprintf(rc->r->pool, "%lu", (unsigned long) i);
         append_string(&cred_tokens,
                       apr_pstrcat(rc->r->pool,
                                   "<token type='cred' id='",id,"'>",

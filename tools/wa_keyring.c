@@ -221,7 +221,7 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
         break;
     }
     printf(")\n");
-    printf("   Key-Length: %d bits\n", e->key->length * 8);
+    printf("   Key-Length: %lu bits\n", e->key->length * 8);
     printf("  Fingerprint: ");
     print_fingerprint(e->key);
     printf("\n\n");
@@ -262,7 +262,7 @@ list_keyring(const char *keyring, bool verbose)
         die_webauth(s, "cannot read keyring %s", keyring);
     if (verbose) {
         printf("         Path: %s\n", keyring);
-        printf("     Num-Keys: %d\n\n", ring->num_entries);
+        printf("     Num-Keys: %lu\n\n", (unsigned long) ring->num_entries);
     } else {
         printf("Path: %s\n", keyring);
         printf("\n");
