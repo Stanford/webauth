@@ -221,7 +221,7 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
         break;
     }
     printf(")\n");
-    printf("   Key-Length: %lu bits\n", e->key->length * 8);
+    printf("   Key-Length: %lu bits\n", (unsigned long) e->key->length * 8);
     printf("  Fingerprint: ");
     print_fingerprint(e->key);
     printf("\n\n");
