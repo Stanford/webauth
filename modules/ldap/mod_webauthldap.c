@@ -247,7 +247,7 @@ cfg_take12(cmd_parms *cmd, void *mconfig UNUSED, const char *w1,
   {dir, (cmd_func)cfg_flag,(void*)mconfig, ACCESS_CONF, FLAG, help}
 
 #define DITSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_multistr,(void*)mconfig, OR_AUTHCFG, TAKE1, help}
+  {dir, (cmd_func)cfg_multistr,(void*)mconfig, OR_AUTHCFG, ITERATE, help}
 
 #define SITSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_multistr,(void*)mconfig, RSRC_CONF, TAKE1, help}

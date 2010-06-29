@@ -152,7 +152,7 @@ Stanford users, since WebAuth v2 was never publically released.</p>
 <directivesynopsis>
 <name>WebAuthLdapAttribute</name>
 <description>LDAP attribute to place in the environment</description>
-<syntax>WebAuthLdapAttribute <em>ldap_attribute_name</em></syntax>
+<syntax>WebAuthLdapAttribute <em>attribute</em> [<em>attribute</em>] ...</syntax>
 <default>"displayName", "mail"</default>
 <contextlist>
   <context>directory</context>
@@ -162,9 +162,8 @@ Stanford users, since WebAuth v2 was never publically released.</p>
 
 <usage>
 <p>All attributes indicated by this directive will be looked up in LDAP
-and their values, if found, will be placed into the environment.  Only one
-attribute may be listed per directive, but multiple directives can be
-used.</p>
+and their values, if found, will be placed into the environment.  This
+directive can be used multiple times.</p>
 
 <p>The name of the environment variable is formed by prepending
 WEBAUTH_LDAP_ to the uppercased attribute name.  By default, in the case
