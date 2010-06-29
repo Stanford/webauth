@@ -9,6 +9,15 @@ WebAuth 3.7.0 (unreleased)
     privgroup.  Now, it contains "privgroup <privgroup>" if the user was
     authorized by a privgroup directive.  Patch from Ian Ward Comfort.
 
+    mod_webauthldap supports a new WebAuthLdapPrivgroup directive that
+    names a list of privgroups against which the authenticated user's
+    membership should be checked.  All privgroups listed of which the user
+    is a member will be put into the WEBAUTH_LDAPPRIVGROUP environment
+    variable.  Patch from Ian Ward Comfort.
+
+    The WebAuthLdapAttribute directive can now take multiple attributes on
+    the same line.  Patch from Ian Ward Comfort.
+
     WebLogin now includes a password change script and associated template
     to allow users to change their Kerberos password.
 
