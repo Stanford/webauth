@@ -9,6 +9,11 @@ OVERVIEW
     infrastructure, which is more complex and only has to be done once at
     each site, see doc/install-webkdc.
 
+    If you have installed the Debian or Ubuntu packages, please see
+    /usr/share/doc/libapache2-webauth/README.Debian.gz, which is more
+    complete and specific for using those packages than these
+    instructions.
+
 PREREQUISITES
 
     Make sure that you have all of the required packages installed.
@@ -176,13 +181,7 @@ CONFIGURATION
   Apache Directives
 
     Add Apache directives for WebAuth to your httpd.conf or equivalent
-    file.  Stanford users should simply copy conf/stanford-webauth.conf to
-    their Apache 2.x conf directory and then add the line:
-
-        Include conf/stanford-webauth.conf
-
-    to their httpd.conf file.  For users at other sites, the basic set of
-    directives are:
+    file.  The basic set of directives are:
 
         LoadModule webauth_module \
             /usr/local/lib/apache2/modules/mod_webauth.so
@@ -200,7 +199,8 @@ CONFIGURATION
         WebAuthSSLRedirect on
 
     In all instances above, replace <your-webkdc> with the hostname of the
-    WebKDC server at your site.
+    WebKDC server at your site.  conf/sample-webauth.conf contains a
+    heavily-commented version of these directives.
 
     If you are testing a beta release, please also add:
 
@@ -217,7 +217,7 @@ CONFIGURATION
 
         WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 
-    This is not needed when using Stanford's WebKDC.
+    so that the WebAuth Apache module can verify the WebKDC.
 
   Keytab and Keyring
 
@@ -240,21 +240,9 @@ CONFIGURATION
     Then, install a keytab in <apache-root>/conf/webauth/keytab (or
     elsewhere if you chose to put it somewhere else).  The recommended
     principal name is webauth/<your-system> where <your-system> is the
-    fully qualified, all-lowercase name of your system.  For example, if
-    you were installing WebAuth on a system named app-server at Stanford,
-    the recommended principal name is webauth/app-server.stanford.edu.
-    (Note that at Stanford, other principals may not work.)
-
-    Stanford users can create a WebAuth keytab for a server with:
-
-        wallet -f <apache-root>/conf/webauth/keytab get keytab \
-            webauth/<your-system>.stanford.edu
-
-    replacing <apache-root> and <your-system> as above.  You must already
-    be authenticated as a user, administrator, or admin team member for
-    the system, as set up in NetDB.  For more information, see:
-
-        <https://itservices.stanford.edu/service/kerberos/wallet>
+    fully qualified, all-lowercase name of your system.  How to obtain a
+    keytab will depend on your local site and how your Kerberos KDC is set
+    up.
 
     After installing the keytab, make sure that it is readable by the user
     that the web server runs as.  (It may have been created only readable
@@ -273,12 +261,6 @@ CONFIGURATION
     <http://httpd.apache.org/docs/2.2/ssl/ssl_faq.html#realcert>.  Debian
     users can quickly install a self-signed certificate with the
     apache2-ssl-certificate utility that comes with the Apache package.
-
-    Stanford users, for university applications, can obtain one of the SSL
-    certificates the university has licensed from a certificate vendor.
-    There is a fee to offset the licensing charge.  For more information,
-    see <http://www.stanford.edu/services/ssl/>.  This is only for
-    Stanford users.
 
   Basic Testing
 
@@ -305,18 +287,8 @@ CONFIGURATION
     If you want to have your WebAuth server do LDAP directory queries,
     either to put directory information into environment variables or to
     use LDAP-based privilege groups for access control, you need to
-    configure the mod_webauthldap module.  Stanford users should simply
-    copy conf/stanford-ldap.conf to their Apache 2.x conf directory and
-    then add the line:
-
-        Include conf/stanford-ldap.conf
-
-    to their httpd.conf file.  Stanford users will also need to submit a
-    HelpSU ticket to be added to the ACLs on the directory servers.  See
-    <http://www.stanford.edu/services/directory/access/> for more
-    information.
-
-    For users at other sites, the basic set of directives are:
+    configure the mod_webauthldap module.  The basic set of directives
+    are:
 
         LoadModule webauthldap_module \
             /usr/local/lib/apache2/modules/mod_webauthldap.so
@@ -330,9 +302,9 @@ CONFIGURATION
 
     The first three configuration settings will vary considerably given
     the name and configuration of your local LDAP server.  For more
-    information on what these attributes do, see the mod_webauthldap
-    manual.  Please note that the WebAuth LDAP module only supports
-    Kerberos v5 GSS-API binds at this time.
+    information on what these settings do, see the mod_webauthldap manual.
+    Please note that the WebAuth LDAP module only supports Kerberos v5
+    GSS-API binds at this time.
 
     Once you've added that configuration and restarted Apache, LDAP
     lookups are available to your web server.  This can now be configured.

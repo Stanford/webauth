@@ -1,0 +1,205 @@
+                Stanford WebAuth Installation Instructions
+
+OVERVIEW
+
+    This document describes installation of WebAuth for web server
+    administrators at Stanford University, including Stanford-specific
+    configuration and setup details.  For general installation
+    instructions, see the INSTALL file at the root of the WebAuth
+    distribution.
+
+    If you have trouble with these instructions, please file a HelpSU
+    ticket giving your system name, the operating system it's running, how
+    far you got in these instructions, and exactly what is failing
+    (including error messages and similar information).
+
+COMPILING, TESTING, and INSTALLATION
+
+    Where possible, you should use pre-built WebAuth packages rather than
+    building WebAuth yourself.  The pre-built packages are built with
+    known options and tested for compatibility and functionality with the
+    operating system platforms on which they're built.  They also mean
+    less installation effort.
+
+    For Debian or Ubuntu users, install the libapache2-webauth package.
+    This package is included in the base releases of both Debian and
+    Ubuntu.  Newer versions for Debian may also be available from the
+    backports.org repository; see:
+
+        <http://backports.org/dokuwiki/doku.php?id=instructions>
+
+    for information on how to install packages from backports.org.
+
+    For Red Hat Enterprise users, WebAuth packages are available from our
+    local yum repository.  See:
+
+        <http://www.stanford.edu/services/linux/up2date-yum-repos.html>
+
+    for information on how to configure your system to install packages
+    from Stanford's local repository.  You can also simply download and
+    install the RPMs from the WebAuth distribution page at:
+
+        <http://webauth.stanford.edu/download.html>
+
+    but it's better to use the yum repository if possible since then you
+    can easily install newer versions as they're released.  The package
+    name for Red Hat systems is just webauth.
+
+    For Fedora users and other Red Hat users who cannot use the RHEL
+    packages unmodified, the best approach is probably to start from the
+    source packages available on the WebAuth distribution page and rebuild
+    them for your local system.
+
+    On other platforms, you will need to build and install WebAuth
+    yourself.  Stanford does provide an older version of the WebAuth
+    package and various prerequisites for Solaris, but those builds are
+    for Solaris 8 and are no longer being updated.  If you do need to
+    build WebAuth yourself, follow the general installation instructions
+    up through the INSTALLATION section, and then return to this
+    document.
+
+CONFIGURATION
+
+  Apache Directives
+
+    On Debian or Ubuntu, create /etc/apache2/conf.d/stanford-webauth with
+    the following contents:
+
+        WebAuthLoginURL https://weblogin.stanford.edu/login/
+        WebAuthWebKdcURL https://weblogin.stanford.edu/webkdc-service/
+        WebAuthWebKdcPrincipal service/webkdc@stanford.edu
+
+    and then run a2enmod webauth.  Depending on the Apache version, you
+    may also need to run a2enmod authz_user.  That's all the custom Apache
+    configuration you should need on those platforms.
+
+    On Red Hat Enterprise Linux 4 or 5 (or equivalent) systems, create the
+    file /etc/httpd/conf.d/stanford-webauth.conf with the same contents as
+    given above.
+
+    For other systems, such as systems where one has built Apache and
+    WebAuth by hand, copy conf/stanford-webauth.conf from the WebAuth
+    source tree into your Apache 2.x conf directory and then add the line:
+
+        Include conf/stanford-webauth.conf
+
+    in the Apache httpd.conf file.  This file assumes that the WebAuth
+    module is installed in /usr/local/libexec/apache2/modules.  You will
+    need to change the LoadModule line in that file if it's installed in
+    some other path.  You will also need to ensure that the directory
+    conf/webauth under your Apache root directory exists and is writable
+    by the running web server.  That directory should be writable by the
+    user and group specified in the User and Group directives in your
+    httpd.conf.  This is taken care of for you on Debian, Ubutu, and Red
+    Hat.
+
+  Keytab
+
+    To use the Stanford WebAuth service, you will need to create a keytab
+    for the principal webauth/<system> where <system> is the
+    fully-qualified hostname of the host.  You do this using the wallet
+    program.
+
+    First, install the wallet client on your system.  Instructions for how
+    to do this are at:
+
+        <http://itservices.stanford.edu/service/kerberos/wallet>
+
+    Next, ensure that you are listed in NetDB as the administrator, user,
+    or admin team member for the system on which you're installing
+    WebAuth.  Permissions to download keytabs for systems is controlled by
+    the NetDB data for that system.  (If you are installing WebAuth on a
+    system that's not registered in NetDB, such as an external system used
+    for Stanford purposes, but still want to use the Stanford WebAuth
+    service, file a HelpSU ticket with the name of the system so that a
+    wallet entry can be custom-created for it.)
+
+    Determine the path into which the keytab should be installed on your
+    system.  If you are using the Debian, Ubuntu, or Red Hat packages,
+    this path should be /etc/webauth/keytab.  If you are using your own
+    build of WebAuth, it should be conf/webauth/keytab under your Apache
+    root.  The location is controlled by the WebAuthKeytab directive in
+    the Apache configuration.
+
+    Finally, create the keytab with wallet:
+
+        wallet -f <path> get keytab webauth/<system>
+
+    where <path> is the path as determined above and <system> is the
+    fully-qualified name of the system.
+
+    After installing the keytab, make sure it is readable by the user and
+    group that the web server runs as.  Usually this can be done with:
+
+        chmod 640 <path>
+        chgrp apache <path>
+
+    or whatever group is specified in the Group directive of your Apache
+    configuration.
+
+  SSL Certificate
+
+    An SSL certificate is required to use WebAuth.  Stanford users who
+    need an SSL certificate for university applications can obtain one
+    from the university's SSL certificate vendor.  For more information,
+    see:
+
+        <http://www.stanford.edu/services/ssl/>
+
+    A PTA is required and will be charged the cost of the certificate that
+    the certificate vendor charges Stanford.
+
+    If you do not want to purchase an SSL certificate through this service
+    or are not eligible, see the SSL Certificate section in the regular
+    installation instructions for details on how to create a self-signed
+    certificate.  Or, of course, you can purchase your own certificate
+    separately or use an organization like cacert.org.
+
+  LDAP Configuration
+
+    If you want to do more than determine the user's identity, such as use
+    privgroups (workgroups) to control access to resources or obtain
+    additional information about authenticated users such as their full
+    name and e-mail address, you will need permissions to query the
+    Stanford LDAP servers and additional configuration to enable the
+    mod_webauthldap module.
+
+    First, any access to the LDAP servers (at least for purposes relevant
+    to WebAuth) requires university approval.  There are, at present, no
+    exceptions.  For this approval process, which requires requesting
+    access from each university data owner, see:
+
+        <http://www.stanford.edu/services/directory/access/>
+
+    and follow the sidebar links.  To use workgroups to control access,
+    you generally want the set of permissions called WebAuth General.  The
+    principal for which you should request access is the webauth principal
+    for your system that you created above in the Keytab instructions.
+
+    Once you've been granted access, configure mod_webauthldap.  For
+    Debian and Ubuntu systems, add:
+
+        WebAuthLdapHost ldap.stanford.edu
+        WebAuthLdapBase cn=people,dc=stanford,dc=edu
+        WebAuthLdapAuthorizationAttribute suPrivilegeGroup
+
+    to /etc/apache2/conf.d/stanford-webauth and run a2enmod webauthldap.
+    For Red Hat Enterprise Linux 4 or 5 (or equivalent) systems, add those
+    same lines to /etc/httpd/conf.d/stanford-webauth.conf.
+
+    For other systems, such as systems where one has built Apache and
+    WebAuth by hand, copy conf/stanford-ldap.conf from the WebAuth
+    source tree into your Apache 2.x conf directory and then add the line:
+
+        Include conf/stanford-ldap.conf
+
+    in the Apache httpd.conf file.  This file assumes that the WebAuth
+    module is installed in /usr/local/libexec/apache2/modules.  You will
+    need to change the LoadModule line in that file if it's installed in
+    some other path.  If you have moved the path to the keytab, you will
+    need to also change the WebAuthLdapKeytab directive in this file.
+
+TESTING
+
+    For testing instructions, see the sections Basic Testing and RUNNING
+    THE TEST SUITE in the standard install instructions.
