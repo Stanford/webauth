@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# config.t - Basic tests for WebKDC::Config
+# Basic tests for WebKDC::Config
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University
@@ -8,12 +8,24 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 9;
 
-# Load the config file, after making sure we have the right file.
-use lib 'lib';
-$ENV{WEBKDC_CONFIG} = 't/data/webkdc.conf';
-require WebKDC::Config;
+# Silence warnings since we're not using use.
+package WebKDC::Config;
+our $BYPASS_CONFIRM;
+our $EXPIRING_PW_SERVER;
+our $KEYRING_PATH;
+our $REMUSER_ENABLED;
+our $REMUSER_EXPIRES;
+our $REMUSER_REALMS;
+our $REMUSER_REDIRECT;
+our $TEMPLATE_PATH;
+package main;
+
+BEGIN {
+    $ENV{WEBKDC_CONFIG} = 't/data/webkdc.conf';
+}
+use_ok ('WebKDC::Config');
 
 # Compare the values there to the values we know.
 is ($WebKDC::Config::KEYRING_PATH, 't/data/test.keyring',
@@ -34,4 +46,3 @@ is ($WebKDC::Config::BYPASS_CONFIRM, undef,
     'BYPASS_CONFIRM not set');
 is ($WebKDC::Config::EXPIRING_PW_SERVER, 'localhost',
     'EXPIRING_PW_SERVER correctly set');
-
