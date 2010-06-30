@@ -155,6 +155,36 @@ CONFIGURATION
     certificate.  Or, of course, you can purchase your own certificate
     separately or use an organization like cacert.org.
 
+    If you are using the Debian or Ubuntu Apache packages, you will need
+    to explicitly enable the SSL Apache module with a2enmod ssl.  You will
+    then also need to configure the location of your SSL certificate and
+    key file.  For Debian and Ubuntu, the best location for the
+    certificate is /etc/ssl/certs, and for the key is /etc/ssl/private.
+    Example configuration:
+
+        SSLCertificateFile /etc/ssl/certs/<hostname>.pem
+        SSLCertificateKeyFile /etc/ssl/private/<hostname>.key
+        SSLCipherSuite HIGH:MEDIUM:!ADH:!SSLv2:@STRENGTH
+        SSLProtocol all -SSLv2
+
+    The last two configuration lines disable weak SSL ciphers.  You can
+    use similar configuration directives for other operating systems, but
+    may need to change SSLCertificateFile and SSLCertificateKeyFile.
+
+    See /usr/share/doc/apache2.2-common/README.Debian.gz for more
+    information about configuring SSL on Debian and Ubuntu systems,
+    including how to generate and use self-signed certificates.
+
+    If your certificate came with intermediate CA certificates, you may
+    need to save them on your system (/etc/ssl/certs is recommended for
+    Debian and Ubuntu systems) and configure that file in Apache as well
+    with:
+
+        SSLCertificateChainFile /etc/ssl/certs/<chain-name>.crt
+
+    replacing <chain-name> with something documenting the intermediate CA
+    certificate chain stored in that file.
+
   LDAP Configuration
 
     If you want to do more than determine the user's identity, such as use
