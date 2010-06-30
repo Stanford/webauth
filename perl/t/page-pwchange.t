@@ -35,6 +35,7 @@ my $weblogin = {};
 bless $weblogin, 'WebLogin';
 $weblogin->{query} = $query;
 $weblogin->{pages} = \%pages;
+$weblogin->{test_cookie} = $WebLogin::TEST_COOKIE;
 
 # Move stdout to a string so we can check the page output.
 my ($oldout, $page);

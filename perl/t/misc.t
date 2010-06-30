@@ -20,6 +20,9 @@ use CGI;
 
 use Test::More tests => 36;
 
+# Force a defined order on output.
+$| = 1;
+
 # Load a version of the page templates that just prints out the vars sent.
 my %pages = (confirm  => 'confirm.tmpl',
              pwchange => 'pwchange.tmpl',
@@ -44,6 +47,7 @@ $weblogin->{response} = new WebKDC::WebResponse;
 $weblogin->{request} = new WebKDC::WebRequest;
 $weblogin->{request}->request_token ('TestReqToken');
 $weblogin->{request}->service_token ('TestServiceToken');
+$weblogin->{test_cookie} = $WebLogin::TEST_COOKIE;
 
 #############################################################################
 # token_rights tests
@@ -130,7 +134,7 @@ $retval = WebLogin::test_cookies ($weblogin);
 select STDOUT;
 close PAGE;
 is ($retval, 0, 'test_cookies fails with cookies disabled');
-ok ($page =~ /err_cookies_disabled 1/, ' with the correct error message');
+like ($page, qr/err_cookies_disabled 1/, ' with the correct error message');
 
 # test_cookie without a cookie set, but without the param showing we've
 # already redirected to find a cookie.
