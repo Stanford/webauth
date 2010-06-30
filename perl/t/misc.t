@@ -32,6 +32,7 @@ my %pages = (confirm  => 'confirm.tmpl',
 } keys %pages;
 
 # Set up a query with some test data.
+$ENV{REQUEST_METHOD} = 'GET';
 my $query = CGI->new;
 
 # Fake a weblogin object.
@@ -134,6 +135,7 @@ ok ($page =~ /err_cookies_disabled 1/, ' with the correct error message');
 # test_cookie without a cookie set, but without the param showing we've
 # already redirected to find a cookie.
 # FIXME: We check for POST, which causes a warning.
+$ENV{REQUEST_METHOD} = 'GET';
 $weblogin->{query} = new CGI;
 open (PAGE, '>', \$page) or die "could not open string for writing";
 select PAGE;
@@ -184,6 +186,7 @@ close PAGE;
 is ($retval, 0, ' and fails with only ST set');
 
 # test_pwchange_fields without a username
+$ENV{REQUEST_METHOD} = 'POST';
 $weblogin->{query} = new CGI;
 $weblogin->{query}->param ('username', '');
 $weblogin->{query}->param ('expired', 0);
