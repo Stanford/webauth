@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# page-pwchange.t - Tests for proper output when the pwchange page is printed
+# Tests for proper output when the pwchange page is printed.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

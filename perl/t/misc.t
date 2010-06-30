@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# misc.t - Miscellaneous tests for WebLogin code
+# Miscellaneous tests for WebLogin code.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

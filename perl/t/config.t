@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
-# Basic tests for WebKDC::Config
+# Basic tests for WebKDC::Config.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

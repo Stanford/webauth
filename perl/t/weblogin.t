@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# weblogin.t - Tests for weblogin page handling after login responses
+# Tests for weblogin page handling after login responses.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

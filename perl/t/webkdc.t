@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# webkdc.t - Tests for WebKDC.pm, currently meant only for login tests
+# Tests for WebKDC.pm, currently meant only for login tests.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Test suite for WebAuth Perl bindings for krb5 functions
+# Test suite for WebAuth Perl bindings for krb5 functions.
 #
 # Written by Roland Schemers
 # Updated by Jon Robertson <jonrober@stanford.edu>

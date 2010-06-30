@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# changepw.t - Test the password change functions in WebLogin module.
+# Test the password change functions in WebLogin module.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

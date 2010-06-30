@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# pending-expire.t - Tests for proper handling of the pwexpire remctl checks
+# Tests for proper handling of the pwexpire remctl checks.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2010 Board of Trustees, Leland Stanford Jr. University

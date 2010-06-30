@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# webauth.t - Test suite for miscellaneous WebAuth Perl bindings
+# Test suite for miscellaneous WebAuth Perl bindings.
 #
 # Written by Roland Schemers
 # Rewritten by Jon Robertson <jonrober@stanford.edu>
