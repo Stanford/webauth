@@ -13,15 +13,10 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents remctld_spawn remctld_stop getcreds);
 
+use WebKDC::Config ();
 use WebKDC::WebResponse;
 use HTML::Template;
 use CGI;
-
-# Make sure this value is set before WebLogin is loaded.  Several modules
-# required for this test require having EXPIRING_PW_SERVER set on module
-# load.
-$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost';
-require WebLogin;
 
 use Test::More;
 
@@ -32,6 +27,17 @@ my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
 $no_remctl = 1 unless $remctld;
 eval { require Net::Remctl };
 $no_remctl = 1 if $@;
+
+# Also, other modules that we need for the remctl tests.
+eval { require Date::Parse };
+$no_remctl = 1 if $@;
+eval { require Time::Duration };
+$no_remctl = 1 if $@;
+
+# Now try loading WebLogin, with the expiring password remctl server set if
+# the remctl checks succeeded.
+$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost' unless $no_remctl;
+require WebLogin;
 
 # Check for a valid kerberos config.
 if (! -f 't/data/test.principal') {

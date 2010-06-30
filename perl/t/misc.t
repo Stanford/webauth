@@ -13,7 +13,7 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents create_keyring getcreds);
 
-use WebKDC::Config;
+use WebKDC::Config ();
 use WebLogin;
 use HTML::Template;
 use CGI;
@@ -271,7 +271,6 @@ is ($retval, 1, ' and test_pwchange with all fields correct works');
 $ENV{REMOTE_USER} = 'testuser@testrealm.org';
 $WebKDC::Config::REMUSER_EXPIRES  = 60 * 10;
 @WebKDC::Config::REMUSER_REALMS   = ('testrealm.org', 'win.testrealm.org');
-$WebKDC::Config::WEBKDC_KEYTAB    = 't/data/test.keytab';
 $WebKDC::Config::KEYRING_PATH     = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
 

@@ -19,6 +19,7 @@ use HTML::Template;
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebLogin;
 use WebKDC ();
+use WebKDC::Config ();
 
 use Test::More;
 
