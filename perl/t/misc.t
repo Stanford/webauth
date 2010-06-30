@@ -138,7 +138,6 @@ like ($page, qr/err_cookies_disabled 1/, ' with the correct error message');
 
 # test_cookie without a cookie set, but without the param showing we've
 # already redirected to find a cookie.
-# FIXME: We check for POST, which causes a warning.
 $ENV{REQUEST_METHOD} = 'GET';
 $weblogin->{query} = new CGI;
 open (PAGE, '>', \$page) or die "could not open string for writing";
@@ -174,10 +173,6 @@ $retval = WebLogin::test_request_token ($weblogin);
 select STDOUT;
 close PAGE;
 is ($retval, 0, ' and fails with only RT set');
-
-# FIXME: String of warnings that I can't yet find the source of start here:
-#        Use of uninitialized value $cs in string ne at (eval 18) line 54,
-#        <ACL> line 24.
 
 # test_request_token with only ST
 $weblogin->{query} = new CGI;
