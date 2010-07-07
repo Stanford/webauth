@@ -77,6 +77,8 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
  libwebauth4 (= ${binary:Version})
 Suggests: libkrb5-dev
+Replaces: libwebauth1-dev (<< 3.7.0)
+Breaks: libwebauth1-dev (<< 3.7.0)
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -85,6 +87,21 @@ Description: Development files for WebAuth authentication
  .
  This package contains the symlinks, headers, and static library needed to
  compile and link programs that use libwebauth.
+
+Package: libwebauth1-dev
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: ${misc:Depends}, libwebauth-dev
+Description: Transitional package for WebAuth development files
+ WebAuth is a cookie-based web authentication system built on top of
+ Kerberos.  It relies on a central authentication server that handles all
+ user authentication for a domain and creates user authentication
+ credentials for any web server that needs strong authentication.
+ .
+ This is a transitional package to assist upgrades to the current WebAuth
+ development package.  It can be removed from your system after
+ installation.
 
 Package: libwebkdc-perl
 Section: perl

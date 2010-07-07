@@ -27,7 +27,8 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
     rewriting all the installation rules.
   * Drop the SONAME version from libwebauth-dev.  We'll never need to
     maintain development packages for more than one version of the ABI in
-    Debian at the same time.
+    Debian at the same time.  Add a transitional package to assist with
+    upgrades.
   * Move Perl module dependencies from webauth-weblogin to libwebkdc-perl
     since the supporting modules now load the other required Perl modules.
   * Bump the versioned dependencies from webauth-weblogin and
