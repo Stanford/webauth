@@ -76,6 +76,7 @@ install-stamp: build-stamp
 	done
 	mkdir -p debian/tmp/usr/share/perl5
 	mv debian/tmp/usr/lib/perl5/WebKDC* debian/tmp/usr/share/perl5
+	mv debian/tmp/usr/lib/perl5/WebLogin* debian/tmp/usr/share/perl5
 	install -d debian/tmp/usr/share/webauth/conf
 	install -m 644 tests/mod_webauth/conf/*.conf \
 	    debian/tmp/usr/share/webauth/conf/
