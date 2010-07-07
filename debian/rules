@@ -73,7 +73,6 @@ install-stamp: build-stamp
 	    install -m 644 $$f \
 	        $(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
 	done
-	cd perl && $(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/perl5
 	mv $(CURDIR)/debian/tmp/usr/lib/perl5/WebKDC* \
 	    $(CURDIR)/debian/tmp/usr/share/perl5
