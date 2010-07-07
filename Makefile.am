@@ -8,11 +8,19 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	 \
-	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		 \
-	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm \
-	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	 \
-	perl/lib/WebKDC/XmlElement.pm perl/test.pl perl/typemap
+PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
+	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		    \
+	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm    \
+	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	    \
+	perl/lib/WebKDC/XmlElement.pm perl/lib/WebLogin.pm perl/t/TODO	    \
+	perl/t/changepw.t perl/t/config.t perl/t/data/README		    \
+	perl/t/data/kadmin-fake perl/t/data/kadmin.conf			    \
+	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
+	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
+	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
+	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
+	perl/t/misc.t perl/t/page-pwchange.t perl/t/pending-expire.t	    \
+	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/typemap
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
@@ -21,18 +29,20 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
 	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
 	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
-	conf/stanford-webauth.conf conf/token.acl docs/install-spnego	    \
-	docs/install-webkdc docs/mod_webauth.html.en docs/mod_webauth.xml   \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
+	docs/install-spnego docs/install-stanford docs/install-webkdc	    \
+	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
 	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
 	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
-	lib/mapfile lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST \
-	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth  \
-	tests/tap/libtap.sh tests/util/xmalloc-t tools/wa_keyring.pod	    \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+	lib/libwebauth.map lib/libwebauth.sym lib/mkheader lib/webauth.h.in \
+	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
+	tests/data/README tests/mod_webauth tests/tap/libtap.sh		    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
@@ -52,7 +62,7 @@ endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
-	lib/misc.c lib/random.c lib/token.c lib/webauth.h lib/webauthp.h
+	lib/misc.c lib/random.c lib/token.c lib/webauth.h
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
 lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
@@ -109,13 +119,15 @@ if BUILD_WEBKDC
     weblogindir = $(datadir)/weblogin
     imagedir    = $(weblogindir)/generic/images
     templatedir = $(weblogindir)/generic/templates
-    dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi
+    dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi	\
+	weblogin/pwchange.fcgi
     dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png \
 	weblogin/images/help.png weblogin/images/login.png		    \
 	weblogin/images/logout.png
     dist_template_DATA = weblogin/templates/confirm.tmpl		\
 	weblogin/templates/error.tmpl weblogin/templates/help.html	\
-	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl
+	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl	\
+	weblogin/templates/pwchange.tmpl
 endif
 
 # Build and install the Perl bindings if desired.
@@ -207,7 +219,7 @@ check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
-	tests/tap/messages.h tests/tap/process.c tests/tap/proces.sh
+	tests/tap/messages.h tests/tap/process.c tests/tap/process.h
 
 # All of the test programs.
 tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
