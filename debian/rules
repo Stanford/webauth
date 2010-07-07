@@ -62,7 +62,7 @@ install: install-stamp
 install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	$(MAKE) install DESTDIR=debian/tmp
 	install -d $(CURDIR)/debian/tmp/etc/webauth
 	install -d $(CURDIR)/debian/tmp/etc/webkdc
