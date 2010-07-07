@@ -30,6 +30,11 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
     Debian at the same time.
   * Move Perl module dependencies from webauth-weblogin to libwebkdc-perl
     since the supporting modules now load the other required Perl modules.
+  * Bump the versioned dependencies from webauth-weblogin and
+    libwebkc-perl on libwebauth-perl and in webauth-weblogin on
+    libwebkdc-perl.
+  * Add explicit dependencies on libcrypt-ssleay-perl and liburi-perl to
+    webauth-weblogin and libwebkdc-perl.
 
  -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:32:35 -0700
 
