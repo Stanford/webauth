@@ -25,6 +25,9 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
   * Upstream now no longer uses apxs to install modules, so upstream
     supports DESTDIR and debian/rules can use make install instead of
     rewriting all the installation rules.
+  * Drop the SONAME version from libwebauth-dev.  We'll never need to
+    maintain development packages for more than one version of the ABI in
+    Debian at the same time.
 
  -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:32:35 -0700
 

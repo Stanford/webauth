@@ -68,7 +68,7 @@ Description: Shared libraries for WebAuth authentication
  Perl bindings, and command-line utilities.  It does token encoding and
  decoding and other lower-level parts of the WebAuth protocol.
 
-Package: libwebauth1-dev
+Package: libwebauth-dev
 Section: libdevel
 Priority: extra
 Architecture: any
