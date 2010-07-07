@@ -203,7 +203,7 @@ set_pending_cookie_cb(void *rec, const char *key, const char *value)
     if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0) {
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
         if (rc->sconf->debug)
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webauth: set_pending_cookie_cb: %s", value);
     }
 
@@ -250,7 +250,7 @@ static void
 mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
     if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, rc->r->server,
+        ap_log_error(APLOG_MARK, APLOG_INFO, 0, rc->r->server,
                      "mod_webauth: mwa_setenv: (%s) (%s)",
                      name, value);
     apr_table_setn(rc->r->subprocess_env, name, value);

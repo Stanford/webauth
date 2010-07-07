@@ -78,6 +78,10 @@ WebAuth 3.7.0 (2010-07-07)
     wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
     link it with libcrypto.  Fixes build failures with gold.
 
+    Lower the logging level of mod_webauth messages about setting cookies
+    (to debug) and environment variables (to info, since that's the best
+    way right now to see a trace of authenticated users).
+
     Avoid importing isa from UNIVERSAL in the WebAuth Perl modules.  This
     is deprecated in Perl 5.12 and later.
 
