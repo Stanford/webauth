@@ -35,6 +35,8 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
     libwebkdc-perl.
   * Add explicit dependencies on libcrypt-ssleay-perl and liburi-perl to
     webauth-weblogin and libwebkdc-perl.
+  * Downgrade the libwebauth-dev dependency on libkrb5-dev to Suggests
+    since it's only required for static linking.
   * Update to debhelper compatibility level V7.
     - Add ${misc:Depends} to all dependencies.
     - Use dh_prep instead of dh_clean -k.

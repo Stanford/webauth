@@ -73,7 +73,8 @@ Section: libdevel
 Priority: extra
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- libwebauth4 (= ${binary:Version}), libkrb5-dev
+ libwebauth4 (= ${binary:Version})
+Suggests: libkrb5-dev
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
