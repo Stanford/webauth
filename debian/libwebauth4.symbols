@@ -59,7 +59,6 @@ libwebauth.so.4 libwebauth4 #MINVER#
  webauth_krb5_new@WEBAUTH_2.0 3.7.0
  webauth_krb5_rd_req@WEBAUTH_2.0 3.7.0
  webauth_krb5_rd_req_with_data@WEBAUTH_2.0 3.7.0
- webauth_krb5_service_principal@WEBAUTH_2.0 3.7.0
  webauth_random_bytes@WEBAUTH_2.0 3.7.0
  webauth_random_key@WEBAUTH_2.0 3.7.0
  webauth_token_create@WEBAUTH_2.0 3.7.0
