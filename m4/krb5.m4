@@ -13,6 +13,9 @@ dnl Kerberos libraries, saving the current values first, and
 dnl RRA_LIB_KRB5_RESTORE to restore those settings to before the last
 dnl RRA_LIB_KRB5_SWITCH.
 dnl
+dnl If KRB5_CPPFLAGS, KRB5_LDFLAGS, or KRB5_LIBS are set before calling these
+dnl macros, their values will be added to whatever the macros discover.
+dnl
 dnl Provides the RRA_LIB_KRB5_OPTIONAL macro, which should be used if Kerberos
 dnl support is optional.  This macro will still always set the substitution
 dnl variables, but they'll be empty unless --with-krb5 is given.  Also,
@@ -26,7 +29,7 @@ dnl
 dnl Depends on RRA_ENABLE_REDUCED_DEPENDS and RRA_SET_LDFLAGS.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2005, 2006, 2007, 2008, 2009
+dnl Copyright 2005, 2006, 2007, 2008, 2009, 2010
 dnl     Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
@@ -99,10 +102,11 @@ AC_DEFUN([_RRA_LIB_KRB5_MANUAL],
     [AC_CHECK_LIB([nsl], [socket], [LIBS="-lnsl -lsocket $LIBS"], ,
         [-lsocket])])
  AC_SEARCH_LIBS([crypt], [crypt])
+ AC_SEARCH_LIBS([rk_simple_execve], [roken])
  rra_krb5_extra="$LIBS"
  LIBS="$rra_krb5_save_LIBS"
  AC_CHECK_LIB([krb5], [krb5_init_context],
-    [KRB5_LIBS="-lkrb5 -lasn1 -lroken -lcrypto -lcom_err $rra_krb5_extra"],
+    [KRB5_LIBS="-lkrb5 -lasn1 -lcom_err -lcrypto $rra_krb5_extra"],
     [AC_CHECK_LIB([krb5support], [krb5int_getspecific],
         [rra_krb5_extra="-lkrb5support $rra_krb5_extra"],
         [AC_CHECK_LIB([pthreads], [pthread_setspecific],
@@ -125,7 +129,7 @@ AC_DEFUN([_RRA_LIB_KRB5_MANUAL],
         [AS_IF([test x"$1" = xtrue],
             [AC_MSG_ERROR([cannot find usable Kerberos v5 library])])],
         [$rra_krb5_extra])],
-    [-lasn1 -lroken -lcrypto -lcom_err $rra_krb5_extra])
+    [-lasn1 -lcom_err -lcrypto $rra_krb5_extra])
  LIBS="$KRB5_LIBS $LIBS"
  AC_CHECK_FUNCS([krb5_get_error_message],
      [AC_CHECK_FUNCS([krb5_free_error_message])],
@@ -200,9 +204,6 @@ AC_DEFUN([RRA_LIB_KRB5],
 [rra_krb5_root=
  rra_krb5_libdir=
  rra_krb5_includedir=
- KRB5_CPPFLAGS=
- KRB5_LDFLAGS=
- KRB5_LIBS=
  AC_SUBST([KRB5_CPPFLAGS])
  AC_SUBST([KRB5_LDFLAGS])
  AC_SUBST([KRB5_LIBS])
@@ -230,9 +231,6 @@ AC_DEFUN([RRA_LIB_KRB5_OPTIONAL],
  rra_krb5_libdir=
  rra_krb5_includedir=
  rra_use_kerberos=
- KRB5_CPPFLAGS=
- KRB5_LDFLAGS=
- KRB5_LIBS=
  AC_SUBST([KRB5_CPPFLAGS])
  AC_SUBST([KRB5_LDFLAGS])
  AC_SUBST([KRB5_LIBS])

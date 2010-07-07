@@ -94,16 +94,17 @@ WebAuth 3.7.0 (unreleased)
     CURL_CONFIG variable on the configure command line or in the
     environment.
 
-    Update to rra-c-util 2.4:
+    Update to rra-c-util 2.5:
 
     * Use rra-c-util portability layer for libwebauth and wa_keyring.
     * Use rra-c-util utility library for wa_keyring.
     * Use --with-krb5 instead of --with-kerberos for Kerberos path.
     * Add --with-krb5-lib and --with-krb5-include configure flags.
     * Much better handling of Kerberos library detection.
+    * Avoid deprecated Heimdal Kerberos functions.
     * Use Kerberos portability code from rra-c-util.
 
-    Update to C TAP Harness 1.3:
+    Update to C TAP Harness 1.4:
 
     * Support running a single test with tests/runtests -o.
     * Better reporting of fatal errors in the test suite.
