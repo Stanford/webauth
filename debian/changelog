@@ -38,6 +38,8 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
   * Downgrade the libwebauth-dev dependency on libkrb5-dev to Suggests
     since it's only required for static linking.
   * Update build dependency to libcurl4-openssl-dev.
+  * Add additional build dependencies so that the Perl module test suite
+    can run.
   * Force source format 1.0 for right now to make backporting easier.
   * Update to debhelper compatibility level V7.
     - Add ${misc:Depends} to all dependencies.
