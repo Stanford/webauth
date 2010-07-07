@@ -40,6 +40,7 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
   * Update to debhelper compatibility level V7.
     - Add ${misc:Depends} to all dependencies.
     - Use dh_prep instead of dh_clean -k.
+  * Update standards version to 3.9.0 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:32:35 -0700
 

@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>> 7), apache2-threaded-dev (>= 2.2),
  libcurl3-openssl-dev, libkrb5-dev, libldap2-dev, libssl-dev, perl
-Standards-Version: 3.8.3
+Standards-Version: 3.9.0
 Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
