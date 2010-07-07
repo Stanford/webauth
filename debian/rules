@@ -64,6 +64,7 @@ install-stamp: build-stamp
 	dh_testroot
 	dh_prep
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	chmod a+x debian/tmp/usr/share/weblogin/*.fcgi
 	install -d debian/tmp/etc/webauth
 	install -d debian/tmp/etc/webkdc
 	install -m 644 conf/token.acl debian/tmp/etc/webkdc/
