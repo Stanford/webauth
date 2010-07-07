@@ -128,8 +128,8 @@ Description: Command-line utilities for WebAuth authentication
 
 Package: webauth-weblogin
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libcrypt-ssleay-perl,
- libwebauth-perl (>= 3.7.0), libwebkdc-perl (>= 3.7.0)
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 3.7.0),
+ libwebkdc-perl (>= 3.7.0)
 Recommends: httpd-cgi
 Suggests: libapache2-mod-auth-kerb, libnet-remctl-perl
 Description: Central login server for WebAuth authentication
