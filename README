@@ -117,7 +117,7 @@ REQUIREMENTS
 
       HTML::Template
       libwww (LWP)
-      Crypt::SSLeay (for LWP https support)
+      IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
       URI
       XML::Parser
 

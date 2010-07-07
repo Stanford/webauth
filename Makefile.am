@@ -61,6 +61,7 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
+nodist_include_HEADERS = lib/webauth.h
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
 	lib/misc.c lib/random.c lib/token.c lib/webauth.h
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
