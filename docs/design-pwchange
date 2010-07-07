@@ -1,0 +1,170 @@
+                     WebAuth Design: Password Change
+                Written by Russ Allbery <rra@stanford.edu>
+
+Introduction
+
+  This document lays out the design for adding password change support to
+  WebAuth via the WebLogin and the WebKDC.  It summarizes the additional
+  components required and the modifications needed for existing
+  components.
+
+  The goal of this work is to provide user password change (when they know
+  their existing password) alongside the WebLogin interface on the grounds
+  that password change should be co-located with the point of
+  authentication.  This password change service will then be used to
+  support password expiration by prompting for password change when a user
+  password is expired and then allowing them to continue through the
+  WebLogin protocol interaction after completing that password change.
+  Finally, a mechanism for checking the expiration of a password and
+  providing the user with advance notification of expiring passwords will
+  be described.
+
+Password Change Interface
+
+  The password change screen should be an additional page with a separate
+  template for local UI customization, with the following elements:
+
+  * Prompt for the user's username, suppressed if the user has already
+    authenticated with an expired password (see below) or if they're
+    referred to the password change page from the confirmation page with
+    the username already set (see below).
+
+  * Prompt for the user's current password, suppressed if the user has
+    already authenticated with an expired password (see below).
+
+  * Two prompts for the user's new password, repeated to ensure that the
+    password is entered properly.
+
+  If the user goes directly to this page, they should be prompted for
+  their username and current password.  In this case, the page should be
+  repeatedly shown for as long as there are errors, with the error message
+  set, until the user successfully changes their password, after which
+  they should be shown a success page.  The success page should be another
+  separate page template.
+
+  However, this password change process should also support redirecting
+  the user to this page after an attempted login via the main WebLogin
+  interface, if the password used is expired.  In this case, the page flow
+  should be as follows:
+
+  1. User enters their username and password into the WebLogin login
+     screen as normal, but the authentication fails because the password
+     is expired.
+
+  2. WebLogin page uses the user's current username and password to
+     acquire a service ticket for the kadmin/changepw principal in the
+     realm for which the user was attempting login.
+
+  3. WebLogin presents the password change page to the user with the
+     username and current password suppressed and a hidden form field set
+     with the username and an encrypted token containing the user's
+     kadmin/changepw credentials.  The RT and ST tokens from the initial
+     WebLogin interaction should also be preserved in hidden fields.  This
+     should be in the form of a WebAuth credential token.
+
+  4. User enters a new password on the password change page.  Password
+     change is attempted via the krb5_change_password API until
+     successful, repeatedly displaying the page as necessary with the
+     error template variable filled in if password change fails.  This
+     password change is done with the credentials retrieved from the
+     credential token.
+
+  5. After successful password change, the password change page then
+     repeats the WebKDC login interaction using the saved username and the
+     new password and the RT and ST tokens.  If successful, it proceeds as
+     normal to the confirmation page or redirect to the WAS.  On failure,
+     it proceeds as normal for a login failure through the main WebLogin
+     page.
+
+  In this case, the password change screen should also present an
+  informational message telling the user that their password has expired
+  and they must change it before continuing.
+
+Password Expiration Warning Interface
+
+  Rather than surprising users when their password has actually expired
+  (and possibly affecting other applications first that don't support
+  changing of expired passwords), it's desirable to present to the user a
+  warning when their password is about to expire.  This warning will be
+  added to the WebLogin confirmation screen, which will be displayed in
+  this case even if it's normally suppressed.
+
+  There does not appear to be a standard Kerberos API to determine whether
+  a password is about to expire, so we will use a remctl interface for
+  this purpose.  The remctl interface will be:
+
+      kadmin check_expire <user>
+
+  and will return the password expiration date for that user in UTC in the
+  ISO 8601 format (YYYY-MM-DD HH:MM:SSZ, where the trailing Z is the
+  literal character Z, representing the time zone).  How far in advance to
+  display a warning to the user will be configurable and default to one
+  week.  Checking of expiration will be enabled by setting in the WebLogin
+  configuration the server on which this remctl interface is running.
+
+  If the expiration date is within the check interval, the confirmation
+  page will be forced even if it's disabled, and a message will be added
+  to the confirmation page telling the user that their password will be
+  expiring, giving both how long (in days and hours if it's close) before
+  the password will expire and the date and time when the password will
+  expire (probably converted to the local time zone).  Only the interval
+  and time should be template parameters; the rest should be handled
+  inside the template.
+
+  If the password is expiring soon, this message should also include a
+  link to the password change page, filling in the username with whatever
+  username the user used to authenticate.  This link should open the
+  password change page in a separate window so that the user can continue
+  to their destination without interfering with the password change.
+  Ideally, we should find a way in this situation to tell the user that
+  they need to still continue to their destination within five minutes or
+  they'll have to reauthenticate through WebAuth.
+
+  To save load on the expiration checking interface, we should probably
+  only check for password expiration when the user authenticates with
+  username and password, not when they are authenticated via REMOTE_USER
+  or with a single sign-on cookie.
+
+Implementation Notes
+
+  In order to support continuing with the user's authentication after
+  successfully changing their password without forcing extra trips through
+  WebLogin pages, the page receiving the post for the password change will
+  need to also know how to do the regular WebLogin interaction.  However,
+  to support unprompted password change, the password change page should
+  be available via a different URL.  While there are various ways to
+  handle this, maximum flexibility in URL design argues for making that
+  password change page a separate script.
+
+  Therefore, one of the first steps in implementation should be to put the
+  password change logic and page building into a Perl module.  This is a
+  good opportunity to do the same thing for the WebLogin code, moving
+  towards the Perl best practice of putting as much code as possible into
+  modules and keeping scripts to wrappers around a Perl module.
+
+  Creating the credentials token to hold the kadmin/changepw credentials
+  may require some work on the WebAuth and WebKDC::Token Perl modules to
+  ensure that the appropriate interfaces are exposed to create those
+  tokens (not yet evaluated).  To create the credentials token, the
+  WebLogin module will require access to a keyring.  This should be
+  configurable, but normally will be the same as the WebKDC keyring.
+
+  The Authen::Krb5 module does not provide the change_password API.  It
+  would probably be easier to add that API to libwebauth and then to the
+  WebAuth Perl module instead of maintaining a local fork of the
+  Authen::Krb5 module.  Example code for how to call that API is available
+  in the pam-krb5 package and in the krb5-sync package.
+
+  The necessary API for checking expiration time will need to be added to
+  the kadmin-remctl package.  A dependency on Date::Parse and Net::Remctl
+  will be required in the WebLogin code to support password expiration
+  warning.  This dependency should only be required if that feature is
+  enabled (in other words, defer loading of the modules until confirming
+  that feature is wanted).
+
+  All relevant documentation should be updated with this change.  One
+  advantage of moving more of the WebLogin code into modules is that those
+  modules can then get POD documentation.  The existing WebAuth and WebKDC
+  modules could also use better POD documentation.  The new WebLogin
+  configuration options and page flow should be added to the relevant
+  files in docs.

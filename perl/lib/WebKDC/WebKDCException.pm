@@ -13,8 +13,6 @@ use warnings;
 
 use WebAuth;
 
-use UNIVERSAL qw(isa);
-
 use overload '""' => \&to_string;
 
 BEGIN {
@@ -32,6 +30,7 @@ BEGIN {
 		      WK_ERR_WEBAUTH_SERVER_ERROR
 		      WK_ERR_LOGIN_FORCED
 		      WK_ERR_USER_REJECTED
+		      WK_ERR_CREDS_EXPIRED
 		      );
     @EXPORT_OK   = ();
 }
@@ -46,6 +45,7 @@ sub WK_ERR_REQUEST_TOKEN_STALE         () {4;}
 sub WK_ERR_WEBAUTH_SERVER_ERROR        () {5;}
 sub WK_ERR_LOGIN_FORCED                () {6;}
 sub WK_ERR_USER_REJECTED               () {7;}
+sub WK_ERR_CREDS_EXPIRED               () {8;}
 
 our @ErrorNames = qw(SUCCESS
 		     USER_AND_PASS_REQUIRED
@@ -98,7 +98,8 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebKDC::WebKDCException");
+    return 0 unless ref $e;
+    return 0 if !$e->isa("WebKDC::WebKDCException");
     return @_ ? $e->status() == shift : 1;
 }
 
@@ -116,7 +117,7 @@ WebKDC::WebKDCException - exceptions for WebKDC
   use WebKDC;
   use WebKDC::WebKDCException;
 
-  eval {  
+  eval {
     ...
     WebKDC::request_token_request($req, $resp);
     ...
@@ -147,6 +148,7 @@ The following constants are exported:
   WK_ERR_WEBAUTH_SERVER_ERROR
   WK_ERR_LOGIN_FORCED
   WK_ERR_USER_REJECTED
+  WK_ERR_CREDS_EXPIRED
 
 =over 4
 
@@ -200,6 +202,11 @@ should be called again with that data.
 This status code indicates that the authenticated principal was rejected
 by the WebKDC configuration (usually because WebKdcPermittedRealms was set
 and the realm of the principal wasn't in that list).
+
+=item WK_ERR_CREDS_EXPIRED
+
+This status code indicates that the principal we attempted to authenticate
+to has an expired password.
 
 =back
 

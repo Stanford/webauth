@@ -1,32 +1,62 @@
-dnl apache.m4 -- Find the root of the Apache installation.
+dnl Find the compiler and linker flags for Apache modules.
 dnl
-dnl Defines the macro WEBAUTH_APACHE, which allows the user to specify the
-dnl root of the Apache installation and defines the output variable APXS to
-dnl point to the full path to apxs.  Also sets the APACHE_ROOT output variable
-dnl to the root of the Apache installation.  If the --with-apache option isn't
-dnl given, apxs2 and apxs is searched for on the user's path (unless
-dnl --with-apxs is given) and /usr/local/apache2 is used as the Apache root.
+dnl Finds the compiler and linker flags for building an Apache module.
+dnl Provides the --with-apxs configure option to specify the path of the apxs
+dnl utility, or searches for it on the user's PATH.
+dnl
+dnl Provides the macro RRA_LIB_APACHE and sets the substitution variables
+dnl APACHE_CPPFLAGS, APACHE_LDFLAGS, and APACHE_LIBS.  Also provides
+dnl RRA_LIB_APACHE_SWITCH to set CPPFLAGS, LDFLAGS, and LIBS to include the
+dnl Apache libraries, saving the current values first, and
+dnl RRA_LIB_APACHE_RESTORE to restore those settings to before the last
+dnl RRA_LIB_APACHE_SWITCH.  The configure script will exit with an error if
+dnl apxs could not be found or does not support the desired options.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2004, 2006, 2009
-dnl     Board of Trustees, Leland Stanford Jr. University
+dnl Copyright 2010 Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See LICENSE for licensing terms.
 
-AC_DEFUN([WEBAUTH_APACHE],
-[APACHE_ROOT=/usr/local/apache2
-AC_ARG_WITH([apache],
-    AC_HELP_STRING([--with-apache=PATH], [Path to Apache 2.x install]),
-    [if test x"$withval" != xno && test x"$withval" != xyes ; then
-        APACHE_ROOT=$withval
-     fi])
-AC_ARG_WITH([apxs],
-    AC_HELP_STRING([--with-apxs=PATH], [Path to Apache 2.x apxs script]),
-    [if test x"$withval" != xno && test x"$withval" != xyes ; then
-        APXS=$withval
-        AC_SUBST(APXS)
-     else
-        AC_PATH_PROGS([APXS], [apxs2 apxs], [apxs], [$APACHE_ROOT/bin:$PATH])
-     fi],
-    [AC_PATH_PROGS([APXS], [apxs2 apxs], [apxs], [$APACHE_ROOT/bin:$PATH])])
-AC_SUBST(APACHE_ROOT)])
+dnl Save the current CPPFLAGS, LDFLAGS, and LIBS settings and switch to
+dnl versions that include the Apache flags.  Used as a wrapper, with
+dnl RRA_LIB_APACHE_RESTORE, around tests.
+AC_DEFUN([RRA_LIB_APACHE_SWITCH],
+[rra_apache_save_CPPFLAGS="$CPPFLAGS"
+ rra_apache_save_LDFLAGS="$LDFLAGS"
+ rra_apache_save_LIBS="$LIBS"
+ CPPFLAGS="$APACHE_CPPFLAGS $CPPFLAGS"
+ LDFLAGS="$APACHE_LDFLAGS $LDFLAGS"
+ LIBS="$APACHE_LIBS $LIBS"])
+
+dnl Restore CPPFLAGS, LDFLAGS, and LIBS to their previous values (before
+dnl RRA_LIB_APACHE_SWITCH was called).
+AC_DEFUN([RRA_LIB_APACHE_RESTORE],
+[CPPFLAGS="$rra_apache_save_CPPFLAGS"
+ LDFLAGS="$rra_apache_save_LDFLAGS"
+ LIBS="$rra_apache_save_LIBS"])
+
+dnl The main macro for determining the flags for Apache modules.
+AC_DEFUN([RRA_LIB_APACHE],
+[rra_apache_apxs=
+ APACHE_CPPFLAGS=
+ APACHE_LDFLAGS=
+ APACHE_LIBS=
+ AC_SUBST([APACHE_CPPFLAGS])
+ AC_SUBST([APACHE_LDFLAGS])
+ AC_SUBST([APACHE_LIBS])
+
+ AC_ARG_WITH([apxs],
+    [AS_HELP_STRING([--with-apxs=PATH],
+        [Path to Apache 2.x apxs program])],
+    [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
+        [rra_apache_apxs="$withval"])])
+ AS_IF([test -z "$rra_apache_apxs"],
+    [AC_PATH_PROGS([rra_apache_apxs], [apxs2 apxs], [false])
+     AS_IF([test x"$rra_apache_apxs" = xfalse],
+        [AC_MSG_ERROR([cannot find usable apxs program])])])
+ APACHE_CPPFLAGS=`"$rra_apache_apxs" -q CFLAGS 2>/dev/null`
+ rra_apache_includedir=`"$rra_apache_apxs" -q INCLUDEDIR 2>/dev/null`
+ AS_IF([test -z "$rra_apache_includedir"],
+    [AC_MSG_ERROR([apxs -q INCLUDEDIR failed or returned no value])])
+ APACHE_CPPFLAGS="$APACHE_CPPFLAGS -I$rra_apache_includedir"
+ APACHE_LDFLAGS=`"$rra_apache_apxs" -q LDFLAGS_SHLIB 2>/dev/null`])

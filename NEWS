@@ -1,5 +1,116 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.0 (2010-07-07)
+
+    The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
+    do something closer to its documentation.  Previously, it was
+    documented as containing "group <privgroup>" if the user was
+    authorized by a privgroup directive, but actually contained only the
+    privgroup.  Now, it contains "privgroup <privgroup>" if the user was
+    authorized by a privgroup directive.  Patch from Ian Ward Comfort.
+
+    mod_webauthldap supports a new WebAuthLdapPrivgroup directive that
+    names a list of privgroups against which the authenticated user's
+    membership should be checked.  All privgroups listed of which the user
+    is a member will be put into the WEBAUTH_LDAPPRIVGROUP environment
+    variable.  Patch from Ian Ward Comfort.
+
+    The WebAuthLdapAttribute directive can now take multiple attributes on
+    the same line.  Patch from Ian Ward Comfort.
+
+    WebLogin now includes a password change script and associated template
+    to allow users to change their Kerberos password.
+
+    WebLogin now supports password expiration.  If the account password is
+    expired when a user authenticates with a password at the WebLogin
+    login screen, they are redirected to the password change screen,
+    forced to change their password, and then reauthenticated with their
+    new password so that they can continue as normal with their
+    authentication.
+
+    WebLogin can be optionally configured to warn users, via the
+    confirmation screen, if their password is about to expire.  Currently,
+    this warning requires remctl, configuration of a Kerberos ticket
+    cache, and the kadmin-remctl backend running somewhere for that
+    Kerberos realm.
+
+    The WebAuth Apache modules are no longer built with apxs, which allows
+    a cleaner build and installation process.  However, this means that
+    the modules are now installed in <libexecdir>/apache2/modules by
+    default, where <libexecdir> is specified via the --libexecdir flag to
+    configure and defaults to /usr/local/libexec.
+
+    The --with-apache option has been dropped.  Use --with-apxs to specify
+    the full path to apxs if it's not in your PATH.
+
+    The --enable-mod_webkdc flag is now --enable-webkdc, since it also
+    controls installation of the WebLogin scripts and templates.
+
+    The --enable-debug flag has been dropped.  Set CFLAGS on the configure
+    command line if you want to override the default compiler flags.
+
+    Catch SIGTERM in the login.fcgi script and only exit once processing
+    of the current request has completed.  mod_fastcgi restarts FastCGI
+    scripts periodically by killing the old one with SIGTERM, which
+    previously could result in internal server errors handed back to the
+    client if the script was killed in the middle of processing a request.
+
+    Correctly encode RT and ST tokens in the URL when redirecting to an
+    alternate URL to attempt REMOTE_USER authentication in WebLogin.
+    Patch from Ian Ward Comfort.
+
+    The majority of the WebLogin scripts have been moved into a new
+    WebLogin Perl module, which should make it somewhat easier to further
+    customize the WebLogin interface if desired.
+
+    The timestamps output by wa_keyring list now contain dates in the ISO
+    format YYYY-MM-DD instead of the US-centric and ambiguous MM/DD/YYYY.
+
+    Removed the webauth_krb5_service_principal function from libwebauth
+    and from the WebAuth Perl module.  This function's API was
+    fundamentally flawed since it did not handle realms, and it was not
+    used anywhere in the WebAuth code.
+
+    Change the libwebauth API to use size_t and other data types more
+    correctly instead of always using int.  This will require updates in
+    all calling applications.
+
+    wa_keyring calls the OpenSSL MD5 functions directly, so explicitly
+    link it with libcrypto.  Fixes build failures with gold.
+
+    Avoid importing isa from UNIVERSAL in the WebAuth Perl modules.  This
+    is deprecated in Perl 5.12 and later.
+
+    Mention setting $KEYRING_PATH in docs/install-spnego and expand the
+    documentation in docs/weblogin-config.
+
+    Changed terminology in the WebAuth protocol specification to refer to
+    a KRB_AP_REQ rather than the results of krb5_mk_req.  The latter is a
+    call specific to a particular API, whereas the former is the term used
+    in the Kerberos protocol documentation.  Thanks, Liam Atkinson.
+
+    The Autoconf probe for the cURL libraries now uses curl-config if
+    available.  The path to curl-config can be overridden by setting the
+    CURL_CONFIG variable on the configure command line or in the
+    environment.
+
+    Update to rra-c-util 2.5:
+
+    * Use rra-c-util portability layer for libwebauth and wa_keyring.
+    * Use rra-c-util utility library for wa_keyring.
+    * Use --with-krb5 instead of --with-kerberos for Kerberos path.
+    * Add --with-krb5-lib and --with-krb5-include configure flags.
+    * Much better handling of Kerberos library detection.
+    * Avoid deprecated Heimdal Kerberos functions.
+    * Use Kerberos portability code from rra-c-util.
+
+    Update to C TAP Harness 1.4:
+
+    * Support running a single test with tests/runtests -o.
+    * Better reporting of fatal errors in the test suite.
+    * Rewrite of all test cases to use the new TAP library support.
+    * Summarize results at the end of test execution.
+
 WebAuth 3.6.2 (2009-09-10)
 
     SECURITY: When generating the redirect to test for cookie support if

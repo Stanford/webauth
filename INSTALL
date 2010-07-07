@@ -1,311 +1,396 @@
                     WebAuth Installation Instructions
 
-These installation instructions are for the typical WebAuth user who wants
-to set up a web server with content protected by WebAuth and take
-advantage of an existing site WebAuth infrastructure (including a login
-server and WebKDC).  For details on how to install the site
-infrastructure, which is more complex and only has to be done once at each
-site, see doc/install-webkdc.
+OVERVIEW
 
- 1.  Make sure that you have all of the required packages installed.
-     WebAuth is implemented as Apache 2.x modules, and therefore requires
-     an installation of Apache 2.0.43 or later built with SSL and dynamic
-     modules.  It also requires MIT Kerberos v5, cURL, and OpenSSL 0.9.7
-     or later (for AES support).  See README for more version dependencies.
+    These installation instructions are for the typical WebAuth user who
+    wants to set up a web server with content protected by WebAuth and
+    take advantage of an existing site WebAuth infrastructure (including a
+    login server and WebKDC).  For details on how to install the site
+    infrastructure, which is more complex and only has to be done once at
+    each site, see doc/install-webkdc.
 
-     In order to build the LDAP module, Cyrus SASL 2.x and OpenLDAP are
-     also required.
+    If you have installed the Debian or Ubuntu packages, please see
+    /usr/share/doc/libapache2-webauth/README.Debian.gz, which is more
+    complete and specific for using those packages than these
+    instructions.
+
+PREREQUISITES
+
+    Make sure that you have all of the required packages installed.
+    WebAuth is implemented as Apache 2.x modules, and therefore requires
+    an installation of Apache 2.0.43 or later built with SSL and dynamic
+    modules.  It also requires Kerberos, cURL, and OpenSSL 0.9.7 or later
+    (for AES support).  See README for more version dependencies.
+
+    In order to build the LDAP module, Cyrus SASL 2.x and OpenLDAP are
+    also required.
 
-     Note that all of these packages should be installed on local disk.
-     We do not recommend using libraries installed on shared file systems
-     such as AFS, since the reliability of your web server will then be
-     tied to the availability of that remote file system.  The required
-     libraries aren't large, particularly given the average size of modern
-     disks.
+    Note that all of these packages should be installed on local disk.  We
+    do not recommend using libraries installed on shared file systems such
+    as AFS, since the reliability of your web server will then be tied to
+    the availability of that remote file system.  The required libraries
+    aren't large, particularly given the average size of modern disks.
+
+    If you build your own Apache 2.x server, you'll want to use a
+    configure invocation like:
+
+        ./configure --enable-so --enable-ssl --with-ssl=/usr/local
+
+    (changing the last if your OpenSSL is installed somewhere else).  Any
+    pre-packaged Apache server should be built this way.
 
-     When building Apache 2.x, you'll want to use a configure invocation
-     like:
+    If you are building a Git clone of the WebAuth distribution (as
+    opposed to a packaged release, which already includes the generated
+    configure script), cd to the top of the source tree and run:
 
-         ./configure --enable-so --enable-ssl --with-ssl=/usr/local
+        ./autogen
 
-     (changing the last if your OpenSSL is installed somewhere else).
+    to generate the configure script.  Autoconf 2.64 and Automake 1.11 or
+    later are required, Perl is required to generate the man pages, and
+    xml2rfc is required to build the protocol documentation.
 
- 2.  If you are building a Git clone of the WebAuth distribution (as
-     opposed to a packaged release, which already includes the generated
-     configure script), cd to the top of the source tree and run:
+CONFIGURING THE BUILD
 
-         ./autogen
+    Run configure.  The command will look something like:
 
-     to generate the configure script.  Autoconf 2.63 and Automake 1.10 or
-     later are required.
+        ./configure --with-apxs=/usr/local/apache2/bin/apxs \
+            --with-openssl=/usr/local --with-ldap=/usr/local
 
- 3.  Run configure.  The command will look something like:
+    configure will detect various things about your system and will
+    generate the makefiles and include files required to build WebAuth.
 
-         ./configure --with-apache=/usr/local/apache2 \
-             --with-kerberos=/usr/local --with-openssl=/usr/local \
-             --with-curl=/usr/local --with-ldap=/usr/local
+    Adjust the paths to match where you have installed those packages.
+    You can omit --with-openssl and --with-ldap if the packages are
+    installed in locations automatically searched by your compiler and
+    linker (which will be the case if you're using Linux and the packages
+    that come with your Linux distribution).
 
-     Adjust the paths to match where you have installed those packages.
-     You can omit --with-kerberos, --with-openssl, --with-curl, and
-     --with-ldap if the packages are installed in locations automatically
-     searched by your compiler and linker (which will be the case if
-     you're using Linux and the packages that come with your Linux
-     distribution).
+    You can omit --with-apxs if the right version of apxs is in your path.
 
-     You can omit --with-apache if the right version of apxs is in your
-     path; otherwise, apxs should be in a bin subdirectory of the path
-     that you give to --with-apache.  If your Apache installation doesn't
-     have a single root directory (if you are, for example, using the
-     Apache package installed from a Linux distribution), you can instead
-     specify the full path to apxs with --with-apxs instead of
-     --with-apache.
+    Normally, configure will use krb5-config to determine the flags to use
+    to compile with your Kerberos GSS-API libraries.  If krb5-config isn't
+    found, it will look for the standard Kerberos libraries in locations
+    already searched by your compiler.  If the krb5-config script first in
+    your path is not the one corresponding to the Kerberos libraries you
+    want to use or if your Kerberos libraries and includes aren't in a
+    location searched by default by your compiler, you need to specify
+    --with-krb5=PATH:
 
-     You may optionally build Perl bindings for libwebauth by passing the
-     --enable-perl option to configure.  If you do this, whatever version
-     of Perl is found first on your path will be used to build the Perl
-     bindings.  You can override this check by setting the environment
-     variable PERL to the full path of the Perl binary that you want to
-     use.
+        ./configure --with-krb5=/usr/local
 
-     configure will detect various things about your system and will
-     generate the makefiles and include files required to build WebAuth.
+    You can also individually set the paths to the include directory and
+    the library directory with --with-krb5-include and --with-krb5-lib.
+    You may need to do this if Autoconf can't figure out whether to use
+    lib, lib32, or lib64 on your platform.  Note that these settings
+    aren't used if a krb5-config script is found.
 
-     To change the compiler, set the environment variable CC before
-     running configure.  Similarly, you can set CFLAGS to whatever
-     compiler flags you wish to build WebAuth with.  See
+    To specify a particular krb5-config script to use, either set the
+    KRB5_CONFIG environment variable or pass it to configure like:
 
-         ./configure --help
+        ./configure KRB5_CONFIG=/path/to/krb5-config
 
-     for information about other available options.  WebAuth's library
-     will by default be installed in /usr/local/lib and its utility
-     programs will be installed in /usr/local/bin; to change those
-     locations, pass the --prefix option to configure with whatever path
-     you want to serve as the installation root.  The install location of
-     the Apache modules will be determined by Apache's apxs utility, and
-     the install location of the Perl modules will be derived from Perl's
-     configuration; neither are affected by --prefix.
+    To not use krb5-config and force library probing even if there is a
+    krb5-config script on your path, set KRB5_CONFIG to a nonexistent
+    path:
 
- 4.  Build WebAuth by running:
+        ./configure KRB5_CONFIG=/nonexistent
 
-         make
+    Similarly, normally configure will use curl-config to determine the
+    flags to use to compile with cURL.  If curl-config isn't found, it
+    will look for the standard cURL library in the locations already
+    searched by your compiler.  If the curl-config script first in your
+    path is not the one corresponding to the cURL libraries you want to
+    use or if your cURL libraries and includes aren't in a location
+    searched by default by your compiler, you need to specify
+    --with-curl or --with-curl-libs and --with-curl-include as above.
+    Similarly, you can pass CURL_CONFIG to the configure script to change
+    which curl-config script is used.
 
-     You can then also run:
+    You may optionally build Perl bindings for libwebauth by passing the
+    --enable-perl option to configure.  If you do this, whatever version
+    of Perl is found first on your path will be used to build the Perl
+    bindings.  You can override this check by setting the environment
+    variable PERL to the full path of the Perl binary that you want to
+    use.
 
-         make check
+    Pass --enable-silent-rules to configure for a quieter build (similar
+    to the Linux kernel).
 
-     to have WebAuth build and run some internal consistency checks to
-     make sure that the library functions are working correctly.
+    To change the compiler, set the environment variable CC before
+    running configure.  Similarly, you can set CFLAGS to whatever
+    compiler flags you wish to build WebAuth with.  See:
 
- 5.  Install WebAuth with:
+        ./configure --help
 
-         make install
+    for information about other available options.
 
-     This will install the shared library, use apxs to install the Apache
-     modules, and install the Perl bindings as a Perl module.  At this
-     point, the software is available but will not be used.  Without
-     additional configuration changes to your server, WebAuth is not
-     active and will not protect any web pages.
+    WebAuth's library will by default be installed in /usr/local/lib, its
+    utility programs will be installed in /usr/local/bin, and its modules
+    will be installed in /usr/local/libexec/apache2/modules.  To change
+    those locations, pass the --prefix option to configure with whatever
+    path you want to serve as the installation root.  You can use
+    --libexecdir to set the parent directory of the module installation.
+    The modules will be installed in an apache2/modules subdirectory of
+    that directory.
 
- 6.  Add Apache directives for WebAuth to your httpd.conf or equivalent
-     file.  Stanford users should simply copy conf/stanford-webauth.conf
-     to their Apache 2.x conf directory and then add the line:
+    The install location of the Perl modules will be derived from Perl's
+    configuration and is not affected by --prefix.
 
-         Include conf/stanford-webauth.conf
+COMPILING AND TESTING
 
-     to their httpd.conf file.  For users at other sites, the basic set of
-     directives are:
+    Build WebAuth by running:
 
-         LoadModule webauth_module modules/mod_webauth.so
+        make
 
-         WebAuthKeyringAutoUpdate on
-         WebAuthKeyringKeyLifetime 30d
+    You can then also run:
 
-         WebAuthLoginURL "https://<your-webkdc>/login/"
-         WebAuthWebKdcURL "https://<your-webkdc>/webkdc-service/"
-         WebAuthWebKdcPrincipal service/webkdc
-         WebAuthKeyring conf/webauth/keyring
-         WebAuthKeytab conf/webauth/keytab
-         WebAuthServiceTokenCache conf/webauth/service_token.cache
+        make check
 
-         WebAuthSSLRedirect on
+    to have WebAuth build and run some internal consistency checks to make
+    sure that the library functions are working correctly.  In order to do
+    more than limited tests of the low-level routines, you should first
+    create a keytab for testing use containing the key for a principal in
+    your local realm.  See tests/data/README for instructions on what to
+    create and where to place the files.  If you are building the Perl
+    bindings and modules, see perl/t/data/README for instructions about
+    further configuration required to test the WebAuth Perl bindings and
+    WebLogin code.
 
-     In all instances above, replace <your-webkdc> with the hostname of
-     the WebKDC server at your site.
+    If a test case fails, please run the that individual test case with
+    verbose output using:
 
-     If you are testing a beta release, please also add:
-
-         WebAuthDebug on
-         LogLevel debug  # change your existing setting to debug
+        tests/runtests -o <name-of-test>
 
-     so that your server will generate more complete logs if anything goes
-     wrong.  This may also be useful if this is the first time you've
-     installed a WebAuth v3 server.
+    and send the WebAuth maintainers the output when reporting the
+    problem.
 
-     Also, if you are using a self-signed certificate with your WebKDC,
-     you'll need to copy it to a local file (like conf/webauth/webkdc.cert)
-     and add the following directive:
+INSTALLATION
 
-         WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
+    Install WebAuth with:
 
-     This is not needed when using Stanford's WebKDC.
+        make install
 
- 7.  Make sure that the conf/webauth directory exists:
+    This will install the shared library, the Apache modules, and
+    optionally the the Perl bindings and WebLogin code as a Perl module.
+    At this point, the software is available but will not be used.
+    Without additional configuration changes to your server, WebAuth is
+    not active and will not protect any web pages.
 
-         cd <apache-root>
-         mkdir -p conf/webauth
-
-     where <apache-root> is the root of your Apache 2.x installation.
-     This directory must be writable by the running web server (and by the
-     child servers, not just the main server), so if you have User and
-     Group directives in your httpd.conf, <apache-root>/conf/webauth
-     should be writable by that user and group.
+CONFIGURATION
 
-     You can put these files somewhere else if you wish.  Just change
-     WebAuthKeyring and WebAuthKeytab in your Apache configuration.  Only
-     the keyring directory needs to be writable by the Apache process.
-     The keytab just needs to be readable.
+  Apache Directives
 
- 8.  Install a keytab in <apache-root>/conf/webauth/keytab.  The
-     recommended principal name is webauth/<your-system> where
-     <your-system> is the fully qualified, all-lowercase name of your
-     system.  For example, if you were installing WebAuth on a system
-     named app-server at Stanford, the recommended principal name is
-     webauth/app-server.stanford.edu.  (Note that at Stanford, other
-     principals may not work.)
+    Add Apache directives for WebAuth to your httpd.conf or equivalent
+    file.  The basic set of directives are:
 
-     Stanford users can create a WebAuth keytab for a server with:
+        LoadModule webauth_module \
+            /usr/local/lib/apache2/modules/mod_webauth.so
 
-         wallet -f <apache-root>/conf/webauth/keytab get keytab \
-             webauth/<your-system>.stanford.edu
+        WebAuthKeyringAutoUpdate on
+        WebAuthKeyringKeyLifetime 30d
 
-     replacing <apache-root> and <your-system> as above.  You must already
-     be authenticated as a user, administrator, or admin team member for
-     the system, as set up in NetDB.  For more information, see:
+        WebAuthLoginURL "https://<your-webkdc>/login/"
+        WebAuthWebKdcURL "https://<your-webkdc>/webkdc-service/"
+        WebAuthWebKdcPrincipal service/webkdc
+        WebAuthKeyring conf/webauth/keyring
+        WebAuthKeytab conf/webauth/keytab
+        WebAuthServiceTokenCache conf/webauth/service_token.cache
 
-         http://www.stanford.edu/services/kerberos/sysadmin/wallet.html
+        WebAuthSSLRedirect on
 
-     After installing the keytab, make sure that it is readable by the
-     user that the web server runs as.  (It may have been created only
-     readable by root.)
+    In all instances above, replace <your-webkdc> with the hostname of the
+    WebKDC server at your site.  conf/sample-webauth.conf contains a
+    heavily-commented version of these directives.
 
- 9.  Install an SSL certificate for your system, either a self-signed
-     certificate or one signed by whatever certificate authority you
-     normally use.  All access to WebAuth-protected web pages must be
-     through SSL to preserve the security of the WebAuth authentication
-     tokens.
+    If you are testing a beta release, please also add:
 
-     If you have not installed an SSL certificate before, there are
-     instructions available as part of the mod_ssl FAQ.  See
-     <http://httpd.apache.org/docs-2.2/ssl/ssl_faq.html#realcert>.  Debian
-     users can quickly install a self-signed certificate with the
-     apache2-ssl-certificate utility that comes with the Apache package.
+        WebAuthDebug on
+        LogLevel debug  # change your existing setting to debug
 
-     Stanford users, for university applications, can obtain one of the
-     SSL certificates the university has licensed from a certificate
-     vendor.  There is a fee to offset the licensing charge.  For more
-     information, see <http://www.stanford.edu/services/ssl/>.  This is
-     only for Stanford users.
+    so that your server will generate more complete logs if anything goes
+    wrong.  This may also be useful if this is the first time you've
+    installed a WebAuth server.
 
-10.  Restart the server to pick up the configuration changes, and check
-     your error log for any errors indicating a problem with the WebAuth
-     installation.  If you are using the default Apache 2.x setup, be
-     sure to start Apache with apachectl startssl to enable SSL.
-
-11.  At this point, WebAuth is available to your web server and will be
-     initialized when your server starts, but is not as yet being used to
-     protect any web pages.  This can now be configured.  For the most
-     basic use of WebAuth, just requiring a valid user login to view a
-     portion of the web pages served out by the server, add the lines:
-
-         AuthType WebAuth
-         require valid-user
-
-     to the <Directory> block for the portion of your web site that you
-     wish to protect.  (To restrict access by privilege group, see the
-     instructions below on setting up the LDAP module.)
-
-12.  You can now test WebAuth if you wish (and if this is the first time
-     that you've set up WebAuth, it's recommended).  WebAuth comes with a
-     set of test pages that you can use to configure your installation
-     with various different configuration options.
-
-     To install this test suite, copy (recursively) the files in
-     tests/mod_webauth/conf into your Apache configuration directory and
-     the files in tests/mod_webauth/htdocs under your Apache document
-     root.
-
-     Now, edit your httpd.conf file and add the line:
-
-         Include conf/webauth-tests.conf
-
-     and make sure that the basic WebAuth configuration directives are in
-     your httpd.conf file as described above, or uncomment them in the
-     webauth-tests.conf file.
-
-     After restarting Apache, you should now be able to go to the URL
-     https://<your-server>/tests/, where <your-server> is the name of your
-     web server, to see the test suite.  Documentation on how to walk
-     through all of the tests can be found in doc/test-plan.
-
-13.  If you want to have your WebAuth server do LDAP directory queries,
-     either to put directory information into environment variables or to
-     use LDAP-based privilege groups for access control, you need to
-     configure the mod_webauthldap module.  Stanford users should simply
-     copy conf/stanford-ldap.conf to their Apache 2.x conf directory and
-     then add the line:
-
-         Include conf/stanford-ldap.conf
-
-     to their httpd.conf file.  Stanford users will also need to submit a
-     HelpSU ticket to be added to the ACLs on the directory servers.  See
-     <http://www.stanford.edu/services/directory/access/> for more
-     information.
-
-     For users at other sites, the basic set of directives are:
-
-         LoadModule webauthldap_module modules/mod_webauthldap.so
-
-         WebAuthLdapHost ldap.example.com
-         WebAuthLdapBase dc=example,dc=com
-         WebAuthLdapAuthorizationAttribute privilegegroup
-
-         WebAuthLdapKeytab conf/webauth/keytab
-         WebAuthLdapTktCache conf/webauth/krb5cc_ldap
-
-     The first three settings will vary considerably given the name and
-     configuration of your local LDAP server.  For more information on
-     what these attributes do, see the mod_webauthldap manual.  Please
-     note that the WebAuth LDAP module only supports Kerberos v5 GSS-API
-     binds at this time.
-
-14.  At this point, LDAP lookups are available to your web server.  This
-     can now be configured.  To restrict access to a given set of pages by
-     membership in a privilege group, add the lines:
-
-         AuthType WebAuth
-         require privgroup example:staff
-
-     to the <Directory> or <Location> block for the portion of your web
-     site that you wish to protect.  example:staff is whatever privilege
-     group you want to use.
-
-     To put various directory attributes related to the current
-     authenticated user into the environment, additionally add lines like:
-
-         WebAuthLdapAttribute displayName
-         WebAuthLdapAttribute mail
-
-     to the <Directory> or <Location> block.  The attributes can be any
-     attributes your server has access to read, and the corresponding
-     values from your LDAP server will be put into environment variables
-     of the form WEBAUTH_LDAP_<attribute>, or in this case into the
-     variables WEBAUTH_LDAP_DISPLAYNAME and WEBAUTH_LDAP_MAIL.
-
-15.  Congratulations!  You have a working WebAuth server.  You can now add
-     AuthType WebAuth and require valid-user (or require lines for
-     particular users, or for groups containing user identities as
-     returned by WebAuth) to protect the content served by your web
-     server, and make use of the REMOTE_USER or WEBAUTH_USER environment
-     variables in your CGI scripts.  You can also use require privgroup
-     directives and request directory attributes if you have configured
-     the LDAP module as well.
+    Also, if you are using a self-signed certificate with your WebKDC,
+    you'll need to copy it to a local file (like conf/webauth/webkdc.cert)
+    and add the following directive:
+
+        WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
+
+    so that the WebAuth Apache module can verify the WebKDC.
+
+  Keytab and Keyring
+
+    Make sure that the conf/webauth directory exists:
+
+        cd <apache-root>
+        mkdir -p conf/webauth
+
+    where <apache-root> is the root of your Apache 2.x installation.  This
+    directory must be writable by the running web server (and by the child
+    servers, not just the main server), so if you have User and Group
+    directives in your httpd.conf, <apache-root>/conf/webauth should be
+    writable by that user and group.
+
+    You can put these files somewhere else if you wish.  Just change
+    WebAuthKeyring and WebAuthKeytab in your Apache configuration.  Only
+    the keyring directory needs to be writable by the Apache process.  The
+    keytab just needs to be readable.
+
+    Then, install a keytab in <apache-root>/conf/webauth/keytab (or
+    elsewhere if you chose to put it somewhere else).  The recommended
+    principal name is webauth/<your-system> where <your-system> is the
+    fully qualified, all-lowercase name of your system.  How to obtain a
+    keytab will depend on your local site and how your Kerberos KDC is set
+    up.
+
+    After installing the keytab, make sure that it is readable by the user
+    that the web server runs as.  (It may have been created only readable
+    by root.)
+
+  SSL Certificate
+
+    Install an SSL certificate for your system, either a self-signed
+    certificate or one signed by whatever certificate authority you
+    normally use.  All access to WebAuth-protected web pages must be
+    through SSL to preserve the security of the WebAuth authentication
+    tokens.
+
+    If you have not installed an SSL certificate before, there are
+    instructions available as part of the mod_ssl FAQ.  See
+    <http://httpd.apache.org/docs/2.2/ssl/ssl_faq.html#realcert>.  Debian
+    users can quickly install a self-signed certificate with the
+    apache2-ssl-certificate utility that comes with the Apache package.
+
+    If you are using the Debian or Ubuntu Apache packages, you will need
+    to explicitly enable the SSL Apache module with a2enmod ssl.  You will
+    then also need to configure the location of your SSL certificate and
+    key file.  For Debian and Ubuntu, the best location for the
+    certificate is /etc/ssl/certs, and for the key is /etc/ssl/private.
+    Example configuration:
+
+        SSLCertificateFile /etc/ssl/certs/<hostname>.pem
+        SSLCertificateKeyFile /etc/ssl/private/<hostname>.key
+        SSLCipherSuite HIGH:MEDIUM:!ADH:!SSLv2:@STRENGTH
+        SSLProtocol all -SSLv2
+
+    The last two configuration lines disable weak SSL ciphers.  You can
+    use similar configuration directives for other operating systems, but
+    may need to change SSLCertificateFile and SSLCertificateKeyFile.
+
+    See /usr/share/doc/apache2.2-common/README.Debian.gz for more
+    information about configuring SSL on Debian and Ubuntu systems,
+    including how to generate and use self-signed certificates.
+
+    If your certificate came with intermediate CA certificates, you may
+    need to save them on your system (/etc/ssl/certs is recommended for
+    Debian and Ubuntu systems) and configure that file in Apache as well
+    with:
+
+        SSLCertificateChainFile /etc/ssl/certs/<chain-name>.crt
+
+    replacing <chain-name> with something documenting the intermediate CA
+    certificate chain stored in that file.
+
+  Basic Testing
+
+    Restart the server to pick up the configuration changes, and check
+    your error log for any errors indicating a problem with the WebAuth
+    installation.  If you are using the default Apache 2.x setup, be sure
+    to start Apache with apachectl startssl to enable SSL.
+
+    At this point, WebAuth is available to your web server and will be
+    initialized when your server starts, but is not as yet being used to
+    protect any web pages.  This can now be configured.  For the most
+    basic use of WebAuth, just requiring a valid user login to view a
+    portion of the web pages served out by the server, add the lines:
+
+        AuthType WebAuth
+        require valid-user
+
+    to the <Directory> block for the portion of your web site that you
+    wish to protect.  (To restrict access by privilege group, see the
+    instructions below on setting up the LDAP module.)
+
+  LDAP Configuration
+
+    If you want to have your WebAuth server do LDAP directory queries,
+    either to put directory information into environment variables or to
+    use LDAP-based privilege groups for access control, you need to
+    configure the mod_webauthldap module.  The basic set of directives
+    are:
+
+        LoadModule webauthldap_module \
+            /usr/local/lib/apache2/modules/mod_webauthldap.so
+
+        WebAuthLdapHost ldap.example.com
+        WebAuthLdapBase dc=example,dc=com
+        WebAuthLdapAuthorizationAttribute privilegegroup
+
+        WebAuthLdapKeytab conf/webauth/keytab
+        WebAuthLdapTktCache conf/webauth/krb5cc_ldap
+
+    The first three configuration settings will vary considerably given
+    the name and configuration of your local LDAP server.  For more
+    information on what these settings do, see the mod_webauthldap manual.
+    Please note that the WebAuth LDAP module only supports Kerberos v5
+    GSS-API binds at this time.
+
+    Once you've added that configuration and restarted Apache, LDAP
+    lookups are available to your web server.  This can now be configured.
+    To restrict access to a given set of pages by membership in a
+    privilege group, add the lines:
+
+        AuthType WebAuth
+        require privgroup example:staff
+
+    to the <Directory> or <Location> block for the portion of your web
+    site that you wish to protect.  example:staff is whatever privilege
+    group you want to use.
+
+    To put various directory attributes related to the current
+    authenticated user into the environment, additionally add lines like:
+
+        WebAuthLdapAttribute displayName
+        WebAuthLdapAttribute mail
+
+    to the <Directory> or <Location> block.  The attributes can be any
+    attributes your server has access to read, and the corresponding
+    values from your LDAP server will be put into environment variables of
+    the form WEBAUTH_LDAP_<attribute>, or in this case into the variables
+    WEBAUTH_LDAP_DISPLAYNAME and WEBAUTH_LDAP_MAIL.
+
+RUNNING THE TEST SUITE
+
+    You can now test WebAuth if you wish (and if this is the first time
+    that you've set up WebAuth, it's recommended).  WebAuth comes with a
+    set of test pages that you can use to configure your installation with
+    various different configuration options.
+
+    To install this test suite, copy (recursively) the files in
+    tests/mod_webauth/conf into your Apache configuration directory and
+    the files in tests/mod_webauth/htdocs under your Apache document root.
+
+    Now, edit your httpd.conf file and add the line:
+
+        Include conf/webauth-tests.conf
+
+    and make sure that the basic WebAuth configuration directives are in
+    your httpd.conf file as described above, or uncomment them in the
+    webauth-tests.conf file.
+
+    After restarting Apache, you should now be able to go to the URL
+    https://<your-server>/tests/, where <your-server> is the name of your
+    web server, to see the test suite.  Documentation on how to walk
+    through all of the tests can be found in doc/test-plan.
+
+CONCLUSION
+
+    Congratulations!  You have a working WebAuth server.  You can now add
+    AuthType WebAuth and require valid-user (or require lines for
+    particular users, or for groups containing user identities as returned
+    by WebAuth) to protect the content served by your web server, and make
+    use of the REMOTE_USER or WEBAUTH_USER environment variables in your
+    CGI scripts.  You can also use require privgroup directives and
+    request directory attributes if you have configured the LDAP module as
+    well.

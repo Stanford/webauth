@@ -2,23 +2,22 @@
  * Handling of keys and keyrings.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2009
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010
  *    Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <lib/webauthp.h>
+#include <config.h>
+#include <portable/system.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <time.h>
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+
+#include <lib/webauth.h>
 
 /* The version of the keyring file format that we implement. */
 #define KEYRING_VERSION 1
@@ -39,10 +38,10 @@
  */
 #define A_VERSION       "v"
 #define A_NUM_ENTRIES   "n"
-#define A_CREATION_TIME "ct%d"
-#define A_VALID_AFTER   "va%d"
-#define A_KEY_TYPE      "kt%d"
-#define A_KEY_DATA      "kd%d"
+#define A_CREATION_TIME "ct%lu"
+#define A_VALID_AFTER   "va%lu"
+#define A_KEY_TYPE      "kt%lu"
+#define A_KEY_DATA      "kd%lu"
 
 
 /*
@@ -52,7 +51,7 @@
  * NULL on failure to allocate memory.
  */
 WEBAUTH_KEY *
-webauth_key_create(int type, const char *key, int len)
+webauth_key_create(unsigned int type, const char *key, size_t len)
 {
     WEBAUTH_KEY *k;
 
@@ -125,7 +124,7 @@ webauth_key_free(WEBAUTH_KEY *key)
  * to allocate memory.
  */
 WEBAUTH_KEYRING *
-webauth_keyring_new(int initial_capacity)
+webauth_keyring_new(size_t initial_capacity)
 {
     WEBAUTH_KEYRING *ring;
 
@@ -157,7 +156,7 @@ webauth_keyring_new(int initial_capacity)
 void
 webauth_keyring_free(WEBAUTH_KEYRING *ring)
 {
-    int i;
+    size_t i;
 
     assert(ring);
 
@@ -181,8 +180,8 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring, time_t creation_time,
     assert(key);
 
     if (ring->num_entries == ring->capacity) {
-        int new_capacity = ring->capacity *2;
-        int new_size = sizeof(WEBAUTH_KEYRING_ENTRY) * new_capacity;
+        size_t new_capacity = ring->capacity * 2;
+        size_t new_size = sizeof(WEBAUTH_KEYRING_ENTRY) * new_capacity;
         WEBAUTH_KEYRING_ENTRY *new_entries = realloc(ring->entries, new_size);
 
         if (new_entries == NULL)
@@ -215,13 +214,13 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring, time_t creation_time,
  * code.
  */
 int
-webauth_keyring_remove(WEBAUTH_KEYRING *ring, int index)
+webauth_keyring_remove(WEBAUTH_KEYRING *ring, size_t index)
 {
-    int i;
+    size_t i;
 
     assert(ring);
 
-    if (index < 0 || index >= ring->num_entries)
+    if (index >= ring->num_entries)
         return WA_ERR_NOT_FOUND;
     webauth_key_free(ring->entries[index].key);
     for (i = index+1; i < ring->num_entries; i++)
@@ -244,7 +243,7 @@ WEBAUTH_KEY *
 webauth_keyring_best_key(const WEBAUTH_KEYRING *ring, int encryption,
                          time_t hint)
 {
-    int i;
+    size_t i;
     time_t curr;
     WEBAUTH_KEYRING_ENTRY *b, *e;
 
@@ -278,19 +277,19 @@ webauth_keyring_best_key(const WEBAUTH_KEYRING *ring, int encryption,
 /*
  * Helper function to read the entirety of a file descriptor, continuing after
  * partial reads or syscall interruptions from signals.  Takes the same
- * arguments and returns the same value as the read system call (except with
- * slightly different data types).
+ * arguments and returns the same value as the read system call.
  */
-static int
-read_fully(int fd, char *buff, int n)
+static ssize_t
+read_fully(int fd, char *buff, size_t n)
 {
-    int tot = 0, num_read;
+    size_t tot = 0;
+    ssize_t num_read;
 
     while (tot != n) {
         num_read = read(fd, buff + tot, n - tot);
         if (num_read < 0) {
             if (errno != EINTR)
-                return tot;
+                return num_read;
         } else
             tot += num_read;
     }
@@ -305,9 +304,10 @@ read_fully(int fd, char *buff, int n)
  * buffer_len.  Returns an WA_ERR code.
  */
 int
-webauth_keyring_encode(WEBAUTH_KEYRING *ring, char **buffer, int *buffer_len)
+webauth_keyring_encode(WEBAUTH_KEYRING *ring, char **buffer,
+                       size_t *buffer_len)
 {
-    int i, attr_len;
+    size_t i, attr_len;
     WEBAUTH_ATTR_LIST *alist;
     int status;
     char name[32];
@@ -319,46 +319,45 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring, char **buffer, int *buffer_len)
     *buffer = NULL;
     alist = NULL;
 
-    alist = webauth_attr_list_new(ring->num_entries*5+2);
+    alist = webauth_attr_list_new(ring->num_entries * 5 + 2);
     if (alist == NULL) {
         status = WA_ERR_NO_MEM;
         goto cleanup;
     }
 
-    status = webauth_attr_list_add_uint32(alist, A_VERSION,
-                                          KEYRING_VERSION, WA_F_FMT_STR);
-    if (status != WA_ERR_NONE)
-        goto cleanup;
-
-    status = webauth_attr_list_add_uint32(alist, A_NUM_ENTRIES,
-                                          ring->num_entries,
+    status = webauth_attr_list_add_uint32(alist, A_VERSION, KEYRING_VERSION,
                                           WA_F_FMT_STR);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
-    for (i=0; i < ring->num_entries; i++) {
-        sprintf(name, A_CREATION_TIME, i);
+    status = webauth_attr_list_add_uint32(alist, A_NUM_ENTRIES,
+                                          ring->num_entries, WA_F_FMT_STR);
+    if (status != WA_ERR_NONE)
+        goto cleanup;
+
+    for (i = 0; i < ring->num_entries; i++) {
+        snprintf(name, sizeof(name), A_CREATION_TIME, (unsigned long) i);
         status = webauth_attr_list_add_time(alist, name,
                                             ring->entries[i].creation_time,
                                             WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_VALID_AFTER, i);
+        snprintf(name, sizeof(name), A_VALID_AFTER, (unsigned long) i);
         status = webauth_attr_list_add_time(alist, name,
                                             ring->entries[i].valid_after,
                                             WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_KEY_TYPE, i);
+        snprintf(name, sizeof(name), A_KEY_TYPE, (unsigned long) i);
         status = webauth_attr_list_add_uint32(alist, name,
                                               ring->entries[i].key->type,
                                               WA_F_COPY_NAME | WA_F_FMT_STR);
         if (status != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_KEY_DATA, i);
+        snprintf(name, sizeof(name), A_KEY_DATA, (unsigned long) i);
         status = webauth_attr_list_add(alist, name,
                                        ring->entries[i].key->data,
                                        ring->entries[i].key->length,
@@ -397,39 +396,33 @@ webauth_keyring_encode(WEBAUTH_KEYRING *ring, char **buffer, int *buffer_len)
 int
 webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
 {
-    int fd, attr_len;
-    char *attr_buff;
-    int status, retry;
+    int fd;
+    size_t attr_len, length;
+    ssize_t written;
+    char *attr_buff = NULL;
+    int status;
     char *temp;
 
     assert(ring);
 
-    attr_buff = NULL;
-    temp = NULL;
-    fd = -1;
-
     /* Allocate space for the temporary file.  Add .XXXXXX and a nul. */
-    temp = malloc(strlen(path) + 7 + 1);
+    length = strlen(path) + 7 + 1;
+    temp = malloc(length);
     if (temp == NULL)
         return WA_ERR_NO_MEM;
-
-    retry = 0;
-    fd = -1;
-    while (fd == -1 && retry++ < 10) {
-        sprintf(temp, "%s.XXXXXX", path);
-        mktemp(temp);
-        fd = open(temp, O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0600);
-        if (fd == -1 && errno != EEXIST) {
-            status = WA_ERR_KEYRING_OPENWRITE;
-            goto cleanup;
-        }
+    snprintf(temp, length, "%s.XXXXXX", path);
+    fd = mkstemp(temp);
+    if (fd < 0) {
+        status = WA_ERR_KEYRING_OPENWRITE;
+        goto cleanup;
     }
 
     status = webauth_keyring_encode(ring, &attr_buff, &attr_len);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
-    if (write(fd, attr_buff, attr_len) != attr_len) {
+    written = write(fd, attr_buff, attr_len);
+    if (written < 0 || (size_t) written != attr_len) {
         status = WA_ERR_KEYRING_WRITE;
         goto cleanup;
     }
@@ -452,7 +445,7 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
         free(attr_buff);
 
     /* Should be -1 and closed by now, else an error occured. */
-    if (fd != -1) {
+    if (fd >= 0) {
         close(fd);
         unlink(temp);
     }
@@ -469,13 +462,15 @@ webauth_keyring_write_file(WEBAUTH_KEYRING *ring, const char *path)
  * that in the ring argument.  Returns a WA_ERR code.
  */
 int
-webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
+webauth_keyring_decode(char *buffer, size_t buffer_len,
+                       WEBAUTH_KEYRING **ring)
 {
-    int i, s;
+    size_t i;
+    int s;
     uint32_t version, num_entries;
     WEBAUTH_ATTR_LIST *alist;
     char *key_data;
-    int key_len;
+    size_t key_len;
 
     assert(buffer);
     assert(ring);
@@ -496,8 +491,8 @@ webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
         goto cleanup;
     }
 
-    s = webauth_attr_list_get_uint32(alist, A_NUM_ENTRIES,
-                                     &num_entries, WA_F_FMT_STR);
+    s = webauth_attr_list_get_uint32(alist, A_NUM_ENTRIES, &num_entries,
+                                     WA_F_FMT_STR);
     if (s != WA_ERR_NONE)
         goto cleanup;
 
@@ -514,25 +509,25 @@ webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
         char name[32];
         WEBAUTH_KEY *key;
 
-        sprintf(name, A_CREATION_TIME, i);
+        snprintf(name, sizeof(name), A_CREATION_TIME, (unsigned long) i);
         s = webauth_attr_list_get_time(alist, name, &creation_time,
                                        WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_VALID_AFTER, i);
+        snprintf(name, sizeof(name), A_VALID_AFTER, (unsigned long) i);
         s = webauth_attr_list_get_time(alist, name, &valid_after,
                                        WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_KEY_TYPE, i);
+        snprintf(name, sizeof(name), A_KEY_TYPE, (unsigned long) i);
         s = webauth_attr_list_get_uint32(alist, name, &key_type,
                                          WA_F_FMT_STR);
         if (s != WA_ERR_NONE)
             goto cleanup;
 
-        sprintf(name, A_KEY_DATA, i);
+        snprintf(name, sizeof(name), A_KEY_DATA, (unsigned long) i);
         s = webauth_attr_list_get(alist, name, (void *) &key_data, &key_len,
                                   WA_F_FMT_HEX);
         if (s != WA_ERR_NONE)
@@ -544,8 +539,7 @@ webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
             goto cleanup;
         }
 
-        webauth_keyring_add(*ring, (time_t) creation_time,
-                            (time_t) valid_after, key);
+        webauth_keyring_add(*ring, creation_time, valid_after, key);
         webauth_key_free(key);
     }
 
@@ -567,7 +561,10 @@ webauth_keyring_decode(char *buffer, int buffer_len, WEBAUTH_KEYRING **ring)
 int
 webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
 {
-    int fd, n, len, s;
+    int fd;
+    ssize_t n;
+    size_t len;
+    int s;
     struct stat sbuf;
     char *buff;
 
@@ -603,7 +600,7 @@ webauth_keyring_read_file(const char *path, WEBAUTH_KEYRING **ring)
         goto cleanup;
     }
     n = read_fully(fd, buff, len);
-    if (n != len) {
+    if (n < 0 || (size_t) n != len) {
         s = WA_ERR_KEYRING_READ;
         goto cleanup;
     }
@@ -676,7 +673,8 @@ check_ring(const char *path, int lifetime, WEBAUTH_KEYRING *ring,
 {
     time_t curr;
     WEBAUTH_KEY *key;
-    int s, i;
+    int s;
+    size_t i;
     char key_material[WA_AES_128];
 
     time(&curr);

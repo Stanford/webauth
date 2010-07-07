@@ -1,0 +1,8 @@
+# token.acl -- testing version
+
+# Anyone with a krb5 webauth/*@testrealm.org principal can get an id token.
+krb5:webauth/*@testrealm.org id
+
+# Specific servers with other tokens
+krb5:webauth/test1.testrealm.org@testrealm.org cred krb5 afs/testrealm.org
+krb5:webauth/test2.testrealm.org@testrealm.org cred krb5 afs/testrealm.org

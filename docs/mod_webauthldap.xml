@@ -32,7 +32,7 @@ LoadModule webauthldap_module modules/mod_webauthldap.so
 
 WebAuthLdapHost ldap.acme.com
 WebAuthLdapBase dc=acme,dc=com
-WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapAuthorizationAttribute privilegeAttribute
 WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 WebAuthLdapTktCache /tmp/webauthldap.tkt
 </pre>
@@ -41,7 +41,7 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 
 <section><title>Using WebAuthLdap Authorization</title>
 
-<p>To restrict access to particular priviledge group(s) place the
+<p>To restrict access to particular privilege group(s) place the
 <code>require privgroup &lt;group name&gt;</code> directives in a
 .htaccess file, a Location block or a Directory block where <code>AuthType
 WebAuth</code> has already been applied.  Multiple directives mean "user
@@ -95,6 +95,19 @@ be changed by setting the
 case WEBAUTH_LDAP_ATTRIBUTENAME will be set to the concatenation of all
 returned values, separated by that separator.</p>
 
+<p>The <a href="#webauthldapprivgroup">WebAuthLdapPrivgroup</a> directive
+is also available to test a user's membership in an authorization group,
+while still allowing users who are not members of that group to access a
+resource.  If the user is a member of the group, the group's name is set in
+the environment variable WEBAUTH_LDAPPRIVGROUP.  As with attributes, if the
+user is found to be a member of multiple groups, those group names are
+stored in variables named WEBAUTH_LDAPPRIVGROUP1, WEBAUTH_LDAPPRIVGROUP2
+and so on, with one of the groups, picked at random, in the usual
+WEBAUTH_LDAPPRIVGROUP variable -- unless <a href="#webauthldapseparator">
+WebAuthLdapSeparator</a> is set, in which case WEBAUTH_LDAPPRIVGROUP
+contains the concatenation of all those groups, separated by that
+separator.</p>
+
 <example><title>Example</title>
 <pre>
 &lt;Location /private/&gt;
@@ -103,6 +116,8 @@ returned values, separated by that separator.</p>
   WebAuthLdapAttribute displayName
   WebAuthLdapAttribute description
   WebAuthLdapAttribute telephoneNumber
+  WebAuthLdapPrivgroup stanford:faculty
+  WebAuthLdapPrivgroup stanford:student
 &lt;/Location&gt;
 </pre>
 </example>
@@ -152,17 +167,18 @@ Stanford users, since WebAuth v2 was never publically released.</p>
 <directivesynopsis>
 <name>WebAuthLdapAttribute</name>
 <description>LDAP attribute to place in the environment</description>
-<syntax>WebAuthLdapAttribute <em>ldap_attribute_name</em></syntax>
+<syntax>WebAuthLdapAttribute <em>attribute</em> [<em>attribute</em>] ...</syntax>
 <default>"displayName", "mail"</default>
 <contextlist>
   <context>directory</context>
+  <context>.htaccess</context>
 </contextlist>
+<override>AuthConfig</override>
 
 <usage>
 <p>All attributes indicated by this directive will be looked up in LDAP
-and their values, if found, will be placed into the environment.  Only one
-attribute may be listed per directive, but multiple directives can be
-used.</p>
+and their values, if found, will be placed into the environment.  This
+directive can be used multiple times.</p>
 
 <p>The name of the environment variable is formed by prepending
 WEBAUTH_LDAP_ to the uppercased attribute name.  By default, in the case
@@ -216,7 +232,7 @@ may be added later.</p>
 </note>
 
 <example><title>Example</title>
-WebAuthLdapAuthorizationAttribute priviledgeAttribute
+WebAuthLdapAuthorizationAttribute privilegeAttribute
 </example>
 </usage>
 </directivesynopsis>
@@ -235,7 +251,7 @@ WebAuthLdapAuthorizationAttribute priviledgeAttribute
 <usage>
 <p>By default, this module will put the authorization rule under which the
 user was authorized into the WEBAUTH_LDAPAUTHRULE environment variable.
-The value will be one of "valid-user", "user <em>user</em>", or "group
+The value will be one of "valid-user", "user <em>user</em>", or "privgroup
 <em>privgroup</em>".  You can disable this behavior by setting this
 directive to off.</p>
 
@@ -421,8 +437,48 @@ WebAuthLdapPort 389
 
 
 <directivesynopsis>
+<name>WebAuthLdapPrivgroup</name>
+<description>Authorization group in which to test user's membership</description>
+<syntax>WebAuthLdapPrivgroup <em>privgroup</em> [<em>privgroup</em>] ...</syntax>
+<default>none</default>
+<contextlist>
+  <context>directory</context>
+  <context>.htaccess</context>
+</contextlist>
+<override>AuthConfig</override>
+
+<usage>
+<p>The user's membership will be tested in the authorization group
+specified with this directive.  If the user is a member of the group, the
+name of the group is placed in the environment variable
+WEBAUTH_LDAPPRIVGROUP.</p>
+
+<p>This directive can be used multiple times.  If the user is found to be a
+member of multiple groups, the WEBAUTH_LDAPPRIVGROUP variable will contain the
+name of one group, selected at random, and the names of all the groups will be
+stored in the variables WEBAUTH_LDAPPRIVGROUP1, WEBAUTH_LDAPPRIVGROUP2, and so
+on, in no particular order.  To override this behavior, see <a
+href="#webauthldapseparator">WebAuthLdapSeparator</a>.</p>
+
+<p>(Also see the <a href="#webauthldapauthorizationattribute">
+WebAuthLdapAuthorizationAttribute</a> directive for a caveat about how
+authorization groups must be defined in LDAP.)</p>
+
+<example><title>Example</title>
+&lt;Location /webapp/&gt;<br />
+AuthType WebAuth<br />
+Require valid-user<br />
+WebAuthLdapPrivgroup stanford:staff<br />
+WebAuthLdapPrivgroup stanford:faculty stanford:student<br />
+&lt;/Location&gt;<br/>
+</example>
+</usage>
+</directivesynopsis>
+
+
+<directivesynopsis>
 <name>WebAuthLdapSeparator</name>
-<description>Separator for multi-valued attributes</description>
+<description>Separator for multi-valued attributes and privgroups</description>
 <syntax>WebAuthLdapSeparator <em>separator</em></syntax>
 <default>none</default>
 <contextlist>
@@ -431,16 +487,27 @@ WebAuthLdapPort 389
 </contextlist>
 
 <usage>
-<p>If set, overrides the default handling of multi-valued attributes.
-Normally, one value chosen at random will go into the base
+<p>If set, overrides the default handling of multi-valued attributes and
+privgroups. Normally, one value chosen at random will go into the base
 WEBAUTH_LDAP_ATTRIBUTE environment variable and then all of the attributes
 will go into separate environment variables formed by appending a number
 to that basic name.  When this attribute is set, the individual numbered
 variables will still be set, but the unnumbered WEBAUTH_LDAP_ATTRIBUTE
 variable will be set to the concatenation of all of the values found,
-separated by the given separator string.  Nothing special will be done to
-any occurrances of the separator string in the values, so pick a separator
-that doesn't occur in the values you're working with.</p>
+separated by the given separator string.</p>
+
+<p>Similarly, if multiple authorization groups are tested with
+<a href="#webauthldapprivgroup">WebAuthLdapPrivgroup</a>, one of the
+user's groups is normally chosen at random to go into the variable
+WEBAUTH_LDAPPRIVGROUP.  When a separator is specified, the numbered
+variables WEBAUTH_LDAPPRIVGROUP1, WEBAUTH_LDAPPRIVGROUP2, and so on are
+still set, but the base variable WEBAUTH_LDAPPRIVGROUP will be set to the
+concatention of all the user's verified groups, separated by the specified
+string.</p>
+
+<p>In all cases, nothing special will be done to any occurrences of the
+separator string in the values, so pick a separator that doesn't occur in
+the values you're working with.</p>
 
 <example><title>Example</title>
 WebAuthLdapSeparator |

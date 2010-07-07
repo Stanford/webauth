@@ -24,7 +24,7 @@ Building Module Documentation
       cd apache-docs/manual
       svn co http://svn.apache.org/repos/asf/httpd/docs-build/trunk build
       cd build
-      JAVA_HOME=/usr/lib/j2re1.4-sun  # (whatever your java home is)
+      JAVA_HOME=/usr/lib/jvm/default-java  # (whatever your java home is)
       export JAVA_HOME
       cp /path/to/webauth3/doc/mod_*.xml* ../mod/
       ./build.sh
@@ -50,25 +50,21 @@ Making a Release
       "Release <version>".
 
    2. Check out a copy of the WebAuth tree, run ./autogen (making sure to
-      use Autoconf 2.63, Automake 1.10, and Libtool 2.x or later
+      use Autoconf 2.64, Automake 1.11, and Libtool 2.x or later
       versions), and run ./configure with whatever options are needed to
       get it to finish.
 
    3. Run make distcheck.  This will generate a .tar.gz file containing
-      the source distribution.
+      the source distribution and run through the test suite.
 
-   4. Unpack the tar file into a fresh directory and configure and build
-      that copy of the source to make sure that it compiles.  Run make
-      check and make sure that it passes its test suite.
-
-   5. Optionally, install this release on one server and run through the
+   4. Optionally, install this release on one server and run through the
       full test suite.  This may have already been done as part of the
       preparation for the release.  If one needs to wait for a bit before
       releasing at this point, don't forget to go back and update the date
       in NEWS and re-run make dist to generate the final tarballs when the
       release is actually ready.
 
-   6. Sign the .tar.gz file with the WebAuth signing key:
+   5. Sign the .tar.gz file with the WebAuth signing key:
 
         $ gpg --detach-sign --armor -u webauth-team@lists <dist>.tar.gz
 
@@ -76,12 +72,12 @@ Making a Release
       the signing key if you need to do this part and don't already have
       it.
 
-   7. Copy the resulting .tar.gz and .tar.gz.asc files into the dist
+   6. Copy the resulting .tar.gz and .tar.gz.asc files into the dist
       subdirectory of the WebAuth web site.  Also generate a file named
       <dist>.tar.gz.md5 containing the MD5 checksum of the *.tar.gz file
       and put that in the dist subdirectory.
 
-   8. Based on the NEWS file, write up a release announcement.  Convert
+   7. Based on the NEWS file, write up a release announcement.  Convert
       that announcement to thread and put it in the news subdirectory of
       the WebAuth web site.  The naming convention for release
       announcements is <version>-announce.th where <version> is the
@@ -91,12 +87,12 @@ Making a Release
       Add a short news entry to the main page and also to the index.th
       file in the news directory.
 
-   9. Update the MD5 checksum and the links in download.th to correspond
+   8. Update the MD5 checksum and the links in download.th to correspond
       to the current release.
 
-  10. Post the release announcement to the appropriate newsgroups and
+   9. Post the release announcement to the appropriate newsgroups and
       mailing lists.
 
-  11. Going back to the checked-out tree that you used to generate the
+  10. Going back to the checked-out tree that you used to generate the
       release, tag the release point with git tag -s release/<version> and
       a tag comment of "Release <version>".
