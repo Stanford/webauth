@@ -79,11 +79,19 @@ REQUIREMENTS
 
   Apache must be built with --enable-ssl and --enable-so.  Either Apache
   2.0 or Apache 2.2 should work without difficulty.  WebAuth uses apxs to
-  build its Apache modules.  Heimdal 0.6 may work, but has not been
-  well-tested.  Heimdal 0.7 has been used more extensively.
+  determine the required build flags for Apache modules.  Heimdal 0.6 may
+  work, but has not been well-tested.  Heimdal 0.7 and later have been
+  tested more extensively.
 
   The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
   but are no longer tested with versions earlier than 5.10.
+
+  For all dependency libraries, be aware that primary testing is done on
+  Debian testing and Debian stable with the versions of the libraries
+  currently available there at the time of the release.  Using
+  substantially older libraries may require some portability fixes since
+  those builds are not frequently checked, but such fixes (and bug
+  reports) are definitely welcome.
 
   For the end user, WebAuth requires that the user's browser be able to
   handle cookies of moderate length (up to 1KB) and URLs of a similar
@@ -95,7 +103,7 @@ REQUIREMENTS
   WebAuth is written in C and requires a C compiler and a standard make
   program to build.  It does not (at least intentionally) use any special
   make features.  WebAuth also requires Perl 5.6.1 or later for the
-  weblogin server; Perl is not required for the basic WebAuth module.
+  WebLogin server; Perl is not required for the basic WebAuth module.
 
   WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).  It
   has been lightly tested on Solaris and Mac OS X, and earlier releases
