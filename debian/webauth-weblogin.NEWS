@@ -1,3 +1,11 @@
+webauth-weblogin (3.7.0-1) unstable; urgency=low
+
+  The default help.html page is in /usr/share/weblogin/generic/templates
+  instead of /usr/share/weblogin/generic.  If you reference it in your
+  Apache configuration, you will need to change the path.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:44:56 -0700
+
 webauth-weblogin (3.6.2-1) unstable; urgency=high
 
   Versions of the webauth-weblogin package between 3.5.5 and 3.6.1,

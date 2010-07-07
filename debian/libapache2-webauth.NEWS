@@ -1,3 +1,12 @@
+libapache2-webauth (3.7.0-1) unstable; urgency=low
+
+  Users of mod_webauthldap should note that WebAuthLdapAuthRule's behavior
+  has changed.  Previously, it put just the bare name of the privgroup
+  authorizing the user into its environment variable.  Now, it puts the
+  string "privgroup <privgroup>" instead.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:46:40 -0700
+
 libapache2-webauth (3.5.3-2) unstable; urgency=low
 
   As of this release, the WebAuth module is built for Apache 2.2 rather

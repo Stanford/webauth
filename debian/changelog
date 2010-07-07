@@ -1,3 +1,33 @@
+webauth (3.7.0-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - WebAuthLdapAuthRule in mod_webauthldap now sets environment
+      variables to the value "privgroup <privgroup>" rather than the
+      previous behavior of just "<privgroup>".
+    - New WebAuthLdapPrivgroup directive for mod_webauthldap which probes
+      user's membership in multiple privgroups and sets an environment
+      variable to the list of those they're in.
+    - WebAuthLdapAttribute can now take multiple attributes on one line.
+    - WebLogin includes a password change script and template.
+    - WebLogin now supports password expiration handling.
+    - WebLogin may be configured to warn users of expiring passwords.
+    - WebLogin catches SIGTERM in login.fcgi and finishes the current
+      request, fixing some problems with unclean shutdown when FastCGI
+      restarts the running scripts.
+    - WebLogin correctly encodes RT and ST in the URL when redirecting to
+      an alternate URL when attempting REMOTE_USER authentication.
+    - wa_keyring now uses ISO format for timestamps.
+    - Various changes and cleanup to the WebAuth library API.
+    - Link wa_keyring with libcrypto properly.  (Closes: #556674)
+    - Avoid importing isa from UNIVERSAL.  (Closes: #578632)
+  * The default help.html file is now installed into
+    /usr/share/weblogin/generic/templates instead of one level higher.
+  * Upstream now no longer uses apxs to install modules, so upstream
+    supports DESTDIR and debian/rules can use make install instead of
+    rewriting all the installation rules.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:32:35 -0700
+
 webauth (3.6.2-2) unstable; urgency=low
 
   * Set DESTDIR instead of PREFIX when installing the Perl modules.  Perl

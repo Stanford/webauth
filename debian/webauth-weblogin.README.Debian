@@ -51,7 +51,7 @@ or wherever you put local Apache configuration:
     ScriptAlias /login "/usr/share/weblogin/login.fcgi"
     ScriptAlias /logout "/usr/share/weblogin/logout.fcgi"
 
-    Alias /help.html "/usr/share/weblogin/generic/help.html"
+    Alias /help.html "/usr/share/weblogin/generic/templates/help.html"
     Alias /images/ "/usr/share/weblogin/generic/images/"
 
 (If you put this in sites-available, you then need to enable the site with
@@ -155,4 +155,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:18 2006
+ -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 14:42:45 -0700

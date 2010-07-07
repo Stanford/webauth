@@ -31,8 +31,8 @@ endif
 
 configure-stamp:
 	dh_testdir
-	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr \
-	    --mandir=\$${prefix}/share/man --enable-mod_webkdc \
+	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --libexecdir=/usr/lib \
+	    --mandir=\$${prefix}/share/man --enable-webkdc \
 	    --enable-perl --with-apxs=/usr/bin/apxs2 \
 	    --enable-reduced-depends $(SYSTEM)
 	touch $@
@@ -58,34 +58,12 @@ clean:
 	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
-# Unfortunately, we have to manually install since upstream uses apxs -i,
-# which doesn't handle DESTDIR.
 install: install-stamp
 install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean -k
-	mkdir -p $(CURDIR)/debian/tmp/usr/lib/apache2/modules
-	./libtool --mode=install install -m 644 lib/libwebauth.la \
-	    $(CURDIR)/debian/tmp/usr/lib/
-	mkdir -p $(CURDIR)/debian/tmp/usr/include
-	install -m 644 lib/webauth.h $(CURDIR)/debian/tmp/usr/include/
-	mkdir -p $(CURDIR)/debian/tmp/usr/bin
-	./libtool --mode=install install -m 755 tools/wa_keyring \
-	    $(CURDIR)/debian/tmp/usr/bin/
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
-	install -m 644 tools/wa_keyring.1 \
-	    $(CURDIR)/debian/tmp/usr/share/man/man1/
-	./libtool --mode=install install -m 644 \
-	    modules/webauth/mod_webauth.la \
-	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	./libtool --mode=install install -m 644 \
-	    modules/webauthldap/mod_webauthldap.la \
-	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	./libtool --mode=install install -m 644 \
-	    modules/webkdc/mod_webkdc.la \
-	    $(CURDIR)/debian/tmp/usr/lib/apache2/modules/
-	rm $(CURDIR)/debian/tmp/usr/lib/apache2/modules/*.la
+	$(MAKE) install DESTDIR=debian/tmp
 	install -d $(CURDIR)/debian/tmp/etc/webauth
 	install -d $(CURDIR)/debian/tmp/etc/webkdc
 	install -m 644 conf/token.acl $(CURDIR)/debian/tmp/etc/webkdc/
@@ -99,22 +77,6 @@ install-stamp: build-stamp
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/perl5
 	mv $(CURDIR)/debian/tmp/usr/lib/perl5/WebKDC* \
 	    $(CURDIR)/debian/tmp/usr/share/perl5
-	install -d $(CURDIR)/debian/tmp/usr/share/weblogin
-	set -e; cd weblogin && for f in login.fcgi logout.fcgi ; do \
-	    install -m 755 $$f $(CURDIR)/debian/tmp/usr/share/weblogin/$$f ; \
-	done
-	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/templates
-	set -e; cd weblogin && for f in templates/*.tmpl ; do \
-	    install -m 644 $$f \
-	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
-	done
-	install -m 644 weblogin/templates/help.html \
-	    $(CURDIR)/debian/tmp/usr/share/weblogin/generic/help.html
-	install -d $(CURDIR)/debian/tmp/usr/share/weblogin/generic/images
-	set -e; cd weblogin && for f in images/*.png ; do \
-	    install -m 644 $$f \
-	        $(CURDIR)/debian/tmp/usr/share/weblogin/generic/$$f ; \
-	done
 	install -d $(CURDIR)/debian/tmp/usr/share/webauth/conf
 	install -m 644 tests/mod_webauth/conf/*.conf \
 	    $(CURDIR)/debian/tmp/usr/share/webauth/conf/
@@ -160,7 +122,7 @@ binary-arch: install-stamp
 	dh_strip
 	dh_compress
 	dh_perl
-	dh_makeshlibs -V 'libwebauth1 (>= 3.6.0)'
+	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol
