@@ -107,7 +107,7 @@ dnl flags to the language binding builds.
 AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_HEADERS([config.h mod-config.h])
+AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
 AC_CONFIG_COMMANDS([lib/webauth.h],
     [${srcdir}/lib/mkheader ${srcdir}/${filename}.in ${filename}],

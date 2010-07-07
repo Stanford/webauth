@@ -8,7 +8,7 @@
  * See LICENSE for licensing terms.
  */
 
-#include <mod-config.h>
+#include <modules/mod-config.h>
 #include <portable/krb5.h>
 
 #include "httpd.h"

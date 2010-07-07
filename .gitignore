@@ -16,7 +16,8 @@
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
-/mod-config.h
+/modules/mod-config.h
+/modules/stamp-h2
 /perl/MANIFEST.bak
 /perl/Makefile.PL
 /perl/Makefile.old
@@ -32,7 +33,6 @@
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1
-/stamp-h2
 /tests/data/test.keytab
 /tests/data/test.password
 /tests/data/test.principal
