@@ -691,7 +691,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                     "webauthldap(%s): initialized sucessfully", lc->r->user);
+                     "webauthldap(%s): initialized successfully", lc->r->user);
 }
 
 
@@ -895,7 +895,7 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, 
-                     "webauthldap(%s): bound sucessfully to %s", lc->r->user, 
+                     "webauthldap(%s): bound successfully to %s", lc->r->user, 
                      lc->sconf->host);
 
     return 0;
