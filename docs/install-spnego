@@ -80,6 +80,12 @@ Configuration
   REMOTE_USER to the full principal name.  It should be your local default
   realm.
 
+  You will also need to set $KEYRING_PATH if your WebKDC keyring is not
+  located in ../conf/webkdc/keyring relative to your server root.  For
+  example, if you are using the Debian or Ubuntu packages, you will need:
+
+      $KEYRING_PATH = "/var/lib/webkdc/keyring";
+
   Now, when the user hits /login with a browser, the server will attempt
   to do an SPNEGO authentication.  If the browser supports it, that
   authentication information will be passed on to the WebLogin script in

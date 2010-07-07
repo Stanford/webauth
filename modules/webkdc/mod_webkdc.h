@@ -11,7 +11,7 @@
 #ifndef MOD_WEBKDC_H
 #define MOD_WEBKDC_H
 
-#include "mod-config.h"
+#include <modules/mod-config.h>
 
 #include "httpd.h"
 #include "http_config.h"
@@ -164,11 +164,11 @@ typedef struct {
 
 /* interesting stuff from a parsed webkdc-proxy-token */
 typedef struct {
-    char *proxy_type;
+    const char *proxy_type;
     char *proxy_subject;
-    char *subject;
+    const char *subject;
     void *proxy_data;
-    int proxy_data_len;
+    size_t proxy_data_len;
     time_t expiration;
     time_t creation;
 } MWK_PROXY_TOKEN;
@@ -183,9 +183,9 @@ typedef struct {
 typedef struct {
     char *cmd;
     void *app_state;
-    int app_state_len;
+    size_t app_state_len;
     char *return_url;
-    char *request_options;
+    const char *request_options;
     char *requested_token_type;
     union {
         /* when requested_token_type is 'id' */
@@ -207,10 +207,10 @@ typedef struct {
 
 /* used to represent <subjectCredential> */
 typedef struct {
-    char *type; /* proxy|login */
+    const char *type; /* proxy|login */
     union {
         struct {
-            int num_proxy_tokens;
+            size_t num_proxy_tokens;
             MWK_PROXY_TOKEN pt[MAX_PROXY_TOKENS_ACCEPTED];
         } proxy;
         MWK_LOGIN_TOKEN lt;
@@ -238,8 +238,8 @@ typedef struct {
 /* used to append a bunch of data together */
 typedef struct {
     char *data;
-    int size;
-    int capacity;
+    size_t size;
+    size_t capacity;
     apr_pool_t *pool;
 } MWK_STRING;
 
@@ -307,7 +307,7 @@ mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
 
 char *
 mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
-                 request_rec *r, const char *func, int *vlen);
+                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get a WEBAUTH_KRB5_CTXT, log errors
@@ -347,7 +347,7 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool);
  * given an MWK_STRING, append some new data to it.
  */
 void
-mwk_append_string(MWK_STRING *string, const char *in_data, int in_size);
+mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size);
 
 int
 mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf);

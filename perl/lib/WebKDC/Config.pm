@@ -11,7 +11,7 @@ package WebKDC::Config;
 use strict;
 use warnings;
 
-my $conf = "/etc/webkdc/webkdc.conf";
+my $conf = $ENV{WEBKDC_CONFIG} || '/etc/webkdc/webkdc.conf';
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";
 our $TEMPLATE_PATH = "/usr/local/share/weblogin/generic/templates";
@@ -25,6 +25,13 @@ our $REMUSER_REDIRECT;
 our @SHIBBOLETH_IDPS;
 our $TOKEN_ACL;
 our $WEBKDC_PRINCIPAL;
+our $LOGIN_URL;
+our $EXPIRING_PW_SERVER;
+our $EXPIRING_PW_WARNING;
+our $EXPIRING_PW_URL;
+our $EXPIRING_PW_TGT;
+our $EXPIRING_PW_PRINC = '';
+our $EXPIRING_PW_PORT  = 0;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;

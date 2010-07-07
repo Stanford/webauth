@@ -1,0 +1,10 @@
+This directory contains data used by WebAuth's test suite.  To enable
+tests for the WebAuth Kerberos functionality, create a Kerberos keytab and
+put it in this directory as test.keytab.  Then, create a file named
+test.principal and in it put the principal name corresponding to the key
+in the keytab on a single line ending with a newline.  Finally, create a
+file named test.password that contains two lines.  The first line should
+be a test principal and the second line should be the password for that
+principal.  The newline is not taken to be part of the password.
+
+The presence of these two files will enable the Kerberos tests.

@@ -25,106 +25,107 @@ our @ISA = qw(Exporter DynaLoader);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use WebAuth ':all';
+# This allows declaration        use WebAuth ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = (
-		    'attrs' => [ qw(attrs_encode attrs_decode) ],
-		    'base64' => [ qw(base64_encode base64_decode) ],
-		    'const' => [ qw(WA_ERR_NONE
-				    WA_ERR_NO_ROOM
-				    WA_ERR_CORRUPT
-				    WA_ERR_NO_MEM
-				    WA_ERR_BAD_HMAC
-				    WA_ERR_RAND_FAILURE
-				    WA_ERR_BAD_KEY
-				    WA_ERR_KEYRING_OPENWRITE
-				    WA_ERR_KEYRING_WRITE
-				    WA_ERR_KEYRING_OPENREAD
-				    WA_ERR_KEYRING_READ
-				    WA_ERR_KEYRING_VERISON
-				    WA_ERR_NOT_FOUND
-				    WA_ERR_KRB5
-				    WA_ERR_INVALID_CONTEXT
-				    WA_ERR_LOGIN_FAILED
-				    WA_ERR_TOKEN_EXPIRED
-				    WA_ERR_TOKEN_STALE
-				    WA_PEC_SERVICE_TOKEN_EXPIRED
-				    WA_PEC_SERVICE_TOKEN_INVALID
-				    WA_PEC_PROXY_TOKEN_EXPIRED
-				    WA_PEC_PROXY_TOKEN_INVALID
-				    WA_PEC_INVALID_REQUEST
-				    WA_PEC_UNAUTHORIZED
-				    WA_PEC_SERVER_FAILURE
-				    WA_PEC_REQUEST_TOKEN_STALE
-				    WA_PEC_REQUEST_TOKEN_INVALID
-				    WA_PEC_GET_CRED_FAILURE
-				    WA_PEC_REQUESTER_KRB5_CRED_INVALID
-				    WA_PEC_LOGIN_TOKEN_STALE
-				    WA_PEC_LOGIN_TOKEN_INVALID
-				    WA_PEC_LOGIN_FAILED
-				    WA_PEC_PROXY_TOKEN_REQUIRED
-				    WA_PEC_LOGIN_CANCELED
-				    WA_PEC_LOGIN_FORCED
-				    WA_PEC_USER_REJECTED
-				    WA_AES_KEY
-				    WA_AES_128
-				    WA_AES_192
-				    WA_AES_256
-				    WA_TK_APP_STATE
-				    WA_TK_COMMAND
-				    WA_TK_CRED_DATA
-				    WA_TK_CRED_SERVER
-				    WA_TK_CRED_TYPE
-				    WA_TK_CREATION_TIME
-				    WA_TK_ERROR_CODE
-				    WA_TK_ERROR_MESSAGE
-				    WA_TK_EXPIRATION_TIME
-				    WA_TK_SESSION_KEY
-				    WA_TK_LASTUSED_TIME
-				    WA_TK_PASSWORD
-				    WA_TK_PROXY_TYPE
-				    WA_TK_PROXY_DATA
-				    WA_TK_PROXY_SUBJECT
-				    WA_TK_REQUEST_OPTIONS
-				    WA_TK_REQUESTED_TOKEN_TYPE
-				    WA_TK_RETURN_URL
-				    WA_TK_SUBJECT
-				    WA_TK_SUBJECT_AUTH
-				    WA_TK_SUBJECT_AUTH_DATA
-				    WA_TK_TOKEN_TYPE
-				    WA_TK_USERNAME
-				    WA_TK_WEBKDC_TOKEN
-				    )],
-		    'hex' => [ qw(hex_encode hex_decode) ],
-		    'key' => [ qw(key_create keyring_read_file
-				  keyring_writefile keyring_new
-				  keyring_add) ],
-		    'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
-				   krb5_init_via_password
-				   krb5_init_via_keytab
-				   krb5_init_via_cred
-				   krb5_init_via_cache
-				   krb5_import_cred
-				   krb5_export_tgt
-				   krb5_service_principal
-				   krb5_get_principal
-				   krb5_export_ticket
-				   krb5_mk_req krb5_rd_req
-				   krb5_keep_cred_cache)],
-		    'random' => [ qw(random_bytes random_key) ],
-		    'token' => [ qw(token_create token_parse) ],
-		    );
+                    'attrs' => [ qw(attrs_encode attrs_decode) ],
+                    'base64' => [ qw(base64_encode base64_decode) ],
+                    'const' => [ qw(WA_ERR_NONE
+                                    WA_ERR_NO_ROOM
+                                    WA_ERR_CORRUPT
+                                    WA_ERR_NO_MEM
+                                    WA_ERR_BAD_HMAC
+                                    WA_ERR_RAND_FAILURE
+                                    WA_ERR_BAD_KEY
+                                    WA_ERR_KEYRING_OPENWRITE
+                                    WA_ERR_KEYRING_WRITE
+                                    WA_ERR_KEYRING_OPENREAD
+                                    WA_ERR_KEYRING_READ
+                                    WA_ERR_KEYRING_VERISON
+                                    WA_ERR_NOT_FOUND
+                                    WA_ERR_KRB5
+                                    WA_ERR_INVALID_CONTEXT
+                                    WA_ERR_LOGIN_FAILED
+                                    WA_ERR_TOKEN_EXPIRED
+                                    WA_ERR_TOKEN_STALE
+                                    WA_PEC_SERVICE_TOKEN_EXPIRED
+                                    WA_PEC_SERVICE_TOKEN_INVALID
+                                    WA_PEC_PROXY_TOKEN_EXPIRED
+                                    WA_PEC_PROXY_TOKEN_INVALID
+                                    WA_PEC_INVALID_REQUEST
+                                    WA_PEC_UNAUTHORIZED
+                                    WA_PEC_SERVER_FAILURE
+                                    WA_PEC_REQUEST_TOKEN_STALE
+                                    WA_PEC_REQUEST_TOKEN_INVALID
+                                    WA_PEC_GET_CRED_FAILURE
+                                    WA_PEC_REQUESTER_KRB5_CRED_INVALID
+                                    WA_PEC_LOGIN_TOKEN_STALE
+                                    WA_PEC_LOGIN_TOKEN_INVALID
+                                    WA_PEC_LOGIN_FAILED
+                                    WA_PEC_PROXY_TOKEN_REQUIRED
+                                    WA_PEC_LOGIN_CANCELED
+                                    WA_PEC_LOGIN_FORCED
+                                    WA_PEC_USER_REJECTED
+                                    WA_PEC_CREDS_EXPIRED
+                                    WA_AES_KEY
+                                    WA_AES_128
+                                    WA_AES_192
+                                    WA_AES_256
+                                    WA_TK_APP_STATE
+                                    WA_TK_COMMAND
+                                    WA_TK_CRED_DATA
+                                    WA_TK_CRED_SERVER
+                                    WA_TK_CRED_TYPE
+                                    WA_TK_CREATION_TIME
+                                    WA_TK_ERROR_CODE
+                                    WA_TK_ERROR_MESSAGE
+                                    WA_TK_EXPIRATION_TIME
+                                    WA_TK_SESSION_KEY
+                                    WA_TK_LASTUSED_TIME
+                                    WA_TK_PASSWORD
+                                    WA_TK_PROXY_TYPE
+                                    WA_TK_PROXY_DATA
+                                    WA_TK_PROXY_SUBJECT
+                                    WA_TK_REQUEST_OPTIONS
+                                    WA_TK_REQUESTED_TOKEN_TYPE
+                                    WA_TK_RETURN_URL
+                                    WA_TK_SUBJECT
+                                    WA_TK_SUBJECT_AUTH
+                                    WA_TK_SUBJECT_AUTH_DATA
+                                    WA_TK_TOKEN_TYPE
+                                    WA_TK_USERNAME
+                                    WA_TK_WEBKDC_TOKEN
+                                    )],
+                    'hex' => [ qw(hex_encode hex_decode) ],
+                    'key' => [ qw(key_create keyring_read_file
+                                  keyring_writefile keyring_new
+                                  keyring_add) ],
+                    'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
+                                   krb5_init_via_password
+                                   krb5_init_via_keytab
+                                   krb5_init_via_cred
+                                   krb5_init_via_cache
+                                   krb5_import_cred
+                                   krb5_export_tgt
+                                   krb5_get_principal
+                                   krb5_export_ticket
+                                   krb5_change_password
+                                   krb5_mk_req krb5_rd_req
+                                   krb5_keep_cred_cache)],
+                    'random' => [ qw(random_bytes random_key) ],
+                    'token' => [ qw(token_create token_parse) ],
+                    );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
-		   @{ $EXPORT_TAGS{'base64'} },
-		   @{ $EXPORT_TAGS{'const'} },
-		   @{ $EXPORT_TAGS{'hex'} },
-		   @{ $EXPORT_TAGS{'key'} },
-		   @{ $EXPORT_TAGS{'krb5'} },
-		   @{ $EXPORT_TAGS{'random'} },
-		   @{ $EXPORT_TAGS{'token'} },
-		   );
+                   @{ $EXPORT_TAGS{'base64'} },
+                   @{ $EXPORT_TAGS{'const'} },
+                   @{ $EXPORT_TAGS{'hex'} },
+                   @{ $EXPORT_TAGS{'key'} },
+                   @{ $EXPORT_TAGS{'krb5'} },
+                   @{ $EXPORT_TAGS{'random'} },
+                   @{ $EXPORT_TAGS{'token'} },
+                   );
 
 our @EXPORT = qw ();
 our $VERSION = '1.01';
@@ -141,7 +142,6 @@ use warnings;
 use WebAuth;
 
 use overload '""' => \&to_string;
-use UNIVERSAL qw(isa);
 
 BEGIN {
     use Exporter   ();
@@ -167,8 +167,8 @@ our @EXPORT_OK;
 #    $self->{'status'} = $s;
 #    $self->{'detail'} = $detail;
 #    if (defined($kc) && $s == WebAuth::WA_ERR_KRB5) {
-#	$self->{'krb5_ec'} = WebAuth::krb5_error_message($kc);
-#	$self->{'krb5_em'} = WebAuth::krb5_error_code($kc);
+#        $self->{'krb5_ec'} = WebAuth::krb5_error_message($kc);
+#        $self->{'krb5_em'} = WebAuth::krb5_error_code($kc);
 #    }
 #    return $self;
 #}
@@ -207,15 +207,15 @@ sub verbose_message {
     my $msg = WebAuth::error_message($s);
     my $detail = $self->{'detail'};
     if (defined($detail)) {
-	$msg = "WebAuth::Exception $detail: $msg";
+        $msg = "WebAuth::Exception $detail: $msg";
     }
     if ($s == &WebAuth::WA_ERR_KRB5) {
-	my $kec = $self->{'krb5_ec'};
-	my $kem = $self->{'krb5_em'};
-	$msg .= ": $kem ($kec)";
+        my $kec = $self->{'krb5_ec'};
+        my $kem = $self->{'krb5_em'};
+        $msg .= ": $kem ($kec)";
     }
     if (defined($line)) {
-	$msg .= " at $file line $line";
+        $msg .= " at $file line $line";
     }
     return $msg;
 }
@@ -227,7 +227,8 @@ sub to_string {
 
 sub match {
     my $e = shift;
-    return 0 if !isa($e, "WebAuth::Exception");
+    return 0 unless ref $e;
+    return 0 if !$e->isa("WebAuth::Exception");
     return @_ ? $e->status() == shift : 1;
 }
 
@@ -243,17 +244,17 @@ WebAuth - Perl extension for WebAuth (version 3)
 
   use WebAuth;
 
-  eval {  
+  eval {
     $key = WebAuth::random_key(WebAuth::WA_AES_128);
     ...
   };
   if (WebAuth::Exception::match($@)) {
-    # handle exception 
+    # handle exception
   }
 
 =head1 DESCRIPTION
 
-WebAuth is a low-level Perl interface into the WebAuth C API. 
+WebAuth is a low-level Perl interface into the WebAuth C API.
 Some functions have been made more Perl-like, though no attempt
 has been made to create an object-oriented interface to the WebAuth library.
 
@@ -329,7 +330,7 @@ hash table get converted to strings if they aren't already.
 
  $attrs = attrs_decode($input);
 
-attr decodes the $input string and returns the result in $attrs as 
+attr decodes the $input string and returns the result in $attrs as
 a reference to a hash, or croaks in case of an error.
 
 =item random_bytes(length)
@@ -355,7 +356,7 @@ WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
  $key = key_create($type, $key_material);
 
 Creates a reference to a WEBAUTH_KEYPtr object, or undef
-on error. $type must be WA_AES_KEY, and $key_material must 
+on error. $type must be WA_AES_KEY, and $key_material must
 be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
@@ -391,18 +392,18 @@ Reads a keyring from a file and returns it in $ring on success.
 
   $token = token_create($attrs, $hint, $key_or_ring);
 
-Takes as input $attrs (which must be a reference to a hash) and 
-$key_or_ring (created with keyring_new or key_create) and returns 
+Takes as input $attrs (which must be a reference to a hash) and
+$key_or_ring (created with keyring_new or key_create) and returns
 the encrypted token. If hint is 0, the current time will be used.
 
-The values in the $attrs hash table get converted to strings if they 
+The values in the $attrs hash table get converted to strings if they
 aren't already.
 
 =item token_parse(token, ttl, key_or_ring)
 
   $attrs = token_parse($token, $ttl, $key_or_ring);
 
-Takes as input an encrypted token and a key_or_ring (created with 
+Takes as input an encrypted token and a key_or_ring (created with
 keyring_new or key_create) and returns the attributes.
 
 =item krb5_new()
@@ -416,22 +417,32 @@ Creates a new WEBAUTH_KRB5_CTXT reference in $context.
   krb5_keep_cred_cache($context);
 
 If called before $context is no longer in use, prevents the credential
-cache (created via one of the calls to krb5_init_via*) from being 
+cache (created via one of the calls to krb5_init_via*) from being
 destroyed. This should only be used you need to keep a file-based
 credential cache from being removed.
 
-=item krb5_init_via_password(context, user, password, keytab, server_principal[, cache])
+=item krb5_init_via_password(context, user, password, get_principal, keytab, server_principal[, cache])
 
-   ($principal) = krb5_init_via_password($context, $user, $password, 
-                                         $keytab, $server_principal[, $cache]);
+   ($principal) = krb5_init_via_password($context, $user, $password,
+                                         $get_principal, $keytab,
+                                         $server_principal[, $cache]);
 
 Initializes a context using the specified username/password to obtain
 a TGT. The TGT will be verified using the principal in the keytab by
 doing a krb5_mk_req/krb5_rd_req. If $cache is not specified, a memory
-cache will be used and destroyed when the context is destroyed. 
+cache will be used and destroyed when the context is destroyed.
 
-If $server_princpal is undef or "", then the first princpal found in the
+If $server_princpal is undef or "", then the first principal found in the
 keytab will be used.
+
+If $get_principal is definied, then rather than using the principal in the
+keytab, we will get a context for the given principal.  This is currently
+used to get a context for kadmin/changepw with a given username and password,
+in order to then later use that to change the user password.
+
+If $keytab is not defined, then we do not obtain a TGT, but only initialize
+the context without verifying its validity.  This is currently only used in
+conjuction with $get_principal to get credentials for kadmin/changepw.
 
 Returns the server principal used to verify the TGT.
 
@@ -450,7 +461,7 @@ keytab will be used.
 
    krb5_init_via_cache($context, "/tmp/krb5cc_foo");
 
-Initializes a context using the specified ticket cache. If $cache is not 
+Initializes a context using the specified ticket cache. If $cache is not
 specified, the default kerberos ticket cache is used.
 
 =item krb5_init_via_cred(context, cred[, cache])
@@ -484,21 +495,13 @@ Used to "export" a ticket for the requested server principal. On success,
 both $ticket and $expiration will be set. $ticket is the ticket itself
 (binary data) and $expiration is the expiration time of the ticket.
 
-=item krb5_service_principal(context, service, hostname)
-
-    $principal = krb5_service_principal($context, $service, $hostname);
-
-Used to construct a server principal for use with other calls such as
-krb5_mk_req and krb5_export_ticket. On success $principal will be set
-to the constructed principal, represented as a string.
-
 =item krb5_get_principal(context, 1)
 
     $principal = krb5_getprincipal($context, 1);
 
 Used to get the principal associated with the context. Should only be
-called after a successful call to krb5_init_via*. If local is 1, then 
-krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+called after a successful call to krb5_init_via*. If local is 1, then
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname
 returns an error then the fully-qualified principal name is returned.
 
 =item krb5_mk_req(context, principal[,data])
@@ -512,19 +515,27 @@ returned as $edata.
 
 =item krb5_rd_req(context, request, keytab, server_principal, local[, edata])
 
-   ($principal[, $data]) 
-      = krb5_rd_req($context, $request, $keytab, 
+   ($principal[, $data])
+      = krb5_rd_req($context, $request, $keytab,
                               $server_princpal, 1[, $edata]);
 
 Used to read a request created with krb5_mk_req. On success $principal
-will be set to the client principal in the request. If local is 1, then 
-krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname 
+will be set to the client principal in the request. If local is 1, then
+krb5_aname_to_localname is called on the principal. If krb5_aname_to_localname
 returns an error then the fully-qualified principal name is returned.
 
-If $server_princpal is undef or "", then the first princpal found in the
+If $server_princpal is undef or "", then the first principal found in the
 keytab will be used.
 
 If $edata is passed in, it is decrypted with krb5_rd_priv.
+
+=item krb5_change_password(context, password)
+
+    krb5_change_password($context, $password);
+
+Used to change a principal to a new password.  Requires a context with a
+kadmin/changepw credential already formed from that user's current principal
+name and password.
 
 =back
 
@@ -535,7 +546,7 @@ wrong happens. These exceptions will be of type WebAuth::Exception.
 
 For example:
 
-  eval {  
+  eval {
     $data = WebAuth::base64_decode($buffer);
     ...
   };
@@ -641,6 +652,7 @@ The following constants from webauth.h are available:
   WA_PEC_LOGIN_CANCELED
   WA_PEC_LOGIN_FORCED
   WA_PEC_USER_REJECTED
+  WA_PEC_CREDS_EXPIRED
 
   WA_AES_KEY
   WA_AES_128

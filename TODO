@@ -37,6 +37,9 @@ Protocol:
 
  * Use a better key for the HMAC than the encryption key of the token.
 
+ * Redo the WebKDC XML protocol to look more like a modern web services
+   interface.
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -98,9 +101,6 @@ libwebauth:
  * Do proper error handling in the case where random number initialization
    fails.
 
- * webauth_krb5_rd_req_with_data does not check for memory allocation
-   failure properly in all cases.
-
 mod_webauth:
 
  * User request: It would be nice to have a per-directory option to
@@ -132,18 +132,37 @@ mod_webauth:
 
 mod_webauthldap:
 
- * User request: Provide a way of checking the user's entitlements against
-   a list of possible values and export to the environment all matching
-   entitlements, rather than just the first match (like the existing
-   LDAPAUTHRULE support).
+ * User request: There's no inherent reason why mod_webauthldap needs to
+   be limited to working with mod_webauth.  Allow additional auth types to
+   be processed, or remove auth-type restrictions entirely and just rely
+   on require privgroup.  This will also require using REMOTE_USER instead
+   of WEBAUTH_USER and, for use with mod_auth_kerb, dealing with a
+   REMOTE_USER that's qualified with the realm.
+
+ * User request: It would be nice to support multiple keytabs and different
+   credentials in different virtual hosts so that the server would switch
+   credentials and see different data depending on the context.  This would
+   require a significant reworking of the internals.
+
+ * Currently, WebAuthLdapKeytab is defined to be acceptable in virtual
+   hosts.  A caution should be added that it's not reasonable to define
+   multiple keytabs, since the implementation currently only supports one
+   set of authentication credentials.
 
  * Add to mod_webauthldap a way to deny access if a user is a member of a
    particular privgroup.
 
- * Support listing multiple privgroups and attributes on the same line in
-   the mod_webauthldap module using the iterate flag.
+ * Support listing multiple privgroups on the same line in the
+   mod_webauthldap module using the iterate flag.
 
 mod_webkdc:
+
+ * Return from a password login any additional information provided by
+   the KDC, such as upcoming password expiration information.
+
+ * Ensure there is a proper return from a password login for an expired
+   password so that it can be recognized and acted on by the WebLogin
+   server.
 
  * A better error message when one talks to the WebKDC directly with a
    browser would be nice.  The current message is rather baffling, and it
@@ -158,10 +177,40 @@ mod_webkdc:
  * Support an "any" option for WebKdcPermittedRealms so that the default
    can be explicitly set (possibly overriding an earlier explicit list).
 
+ * Improve logging for better metrics analysis.  More clearly indicate
+   success versus failure, log clearly whether authentication was via
+   username/password or via a single sign-on cookie, and find a way to
+   differentiate between trusted Apache authentication and single sign-on.
+
 WebLogin:
+
+ * Display a message if the password prompt is forced in order to get a
+   TGT for credential delegation to the destination site.
+
+ * Add a web services interface for the WebLogin login process and
+   documentation for how to parse the redirect URL and make the login
+   request, returning the return URL.
 
  * The error page should return the appropriate HTTP error code instead of
    success.
+
+ * Incorporate the Stanford advanced settings page into the included
+   WebLogin scripts, used to set the cookie saying to use Negotiate-Auth.
+
+ * Add a replay cache for WebLogin interactions, possibly using memcached,
+   so that one cannot use the browser back button to reply a password
+   login after the previous user has logged out.
+
+ * Add a rate limit for WebLogin logins that blocks excessive failed
+   password attempts for a specific user.
+
+ * On the password change screen, when the password fails strength 
+   checking in Heimdal, we get a -1765328343 (Message stream modified).
+   Look into that more, as that seems a strange error code.
+
+ * Similarly, we have not tested the similar case for MIT at all.  
+   Worst case, they should only get an error message confusing for users,
+   but someone should check against MIT.
 
 Build System:
 

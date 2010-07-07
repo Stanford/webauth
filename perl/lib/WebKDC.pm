@@ -10,7 +10,6 @@ package WebKDC;
 
 use strict;
 use warnings;
-use UNIVERSAL qw(isa);
 
 use LWP::UserAgent;
 
@@ -65,6 +64,7 @@ our %pec_mapping = (
 	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
 	     &WA_PEC_LOGIN_FORCED  => WK_ERR_LOGIN_FORCED,
 	     &WA_PEC_USER_REJECTED  => WK_ERR_USER_REJECTED,
+	     &WA_PEC_CREDS_EXPIRED  => WK_ERR_CREDS_EXPIRED,
 	     );
 
 sub get_keyring {
@@ -100,7 +100,7 @@ sub make_proxy_token_request($$) {
     };
 
     my $e = $@;
-    if (isa($e, 'WebKDC::WebKDCException')) {
+    if (ref $e and $e->isa('WebKDC::WebKDCException')) {
         return ($e->status(), $e);
     } elsif ($e) {
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
@@ -112,14 +112,14 @@ sub make_proxy_token_request($$) {
 # takes a WebKDC::WebRequest and WebKDC::WebResponse
 sub make_request_token_request($$) {
     my ($req, $resp) = @_;
-    
+
     eval {
 	WebKDC::request_token_request($req, $resp);
       };
 
     my $e = $@;
 
-    if (isa($e, "WebKDC::WebKDCException")) {
+    if (ref $e and $e->isa("WebKDC::WebKDCException")) {
 	return ($e->status(), $e);
     } elsif ($e) {
 	return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
@@ -196,7 +196,7 @@ sub request_token_request($$) {
     my $root;
 
     $webkdc_doc->start('requestTokenRequest');
-    $webkdc_doc->start('requesterCredential', 
+    $webkdc_doc->start('requesterCredential',
 		       {'type' => 'service'},
 		       $service_token)->end;
     $webkdc_doc->start('subjectCredential');
@@ -213,7 +213,7 @@ sub request_token_request($$) {
 	# FIXME: DEBUGGING!
 	#print STDERR $login_token;
 
-	my $login_token_str = 
+	my $login_token_str =
 	    base64_encode($login_token->to_token(get_keyring()));
 
 	$webkdc_doc->start('loginToken',  undef, $login_token_str)->end;
@@ -221,8 +221,8 @@ sub request_token_request($$) {
     } elsif (defined($proxy_cookies)) {
 	$webkdc_doc->current->attr('type','proxy');
 	while (my($type,$token) = each(%{$proxy_cookies})) {
-	    $webkdc_doc->start('proxyToken',  
-			       {"type" => $type}, 
+	    $webkdc_doc->start('proxyToken',
+			       {"type" => $type},
 			       $token)->end;
 	}
     } else {
@@ -266,7 +266,7 @@ sub request_token_request($$) {
     $http_req->content($webkdc_doc->root->to_string());
 
     my $http_res = $ua->request($http_req);
-    
+
     if (!$http_res->is_success) {
 	# FIXME: get more details out of $http_res
 	print STDERR "post failed\n";
@@ -301,10 +301,10 @@ sub request_token_request($$) {
 		}
 	    }
 	}
-	die new WebKDC::WebKDCException($wk_err, 
+	die new WebKDC::WebKDCException($wk_err,
 					"WebKDC error: $error_message ".
 					"($error_code)", $error_code);
-					
+
     } elsif ($root->name() eq 'requestTokenResponse') {
 	my $return_url = get_child_value($root, 'returnUrl', 0);
 	my $requester_sub = get_child_value($root, 'requesterSubject', 0);
@@ -332,14 +332,14 @@ sub request_token_request($$) {
 	$wresp->response_token_type($returned_token_type);
 	$wresp->requester_subject($requester_sub);
 	$wresp->app_state($app_state) if defined($app_state);
-	$wresp->login_canceled_token($login_canceled_token) 
+	$wresp->login_canceled_token($login_canceled_token)
 	    if defined($login_canceled_token);
 	$wresp->subject($subject) if defined($subject);
 
 	if ($error_code) {
-	    my $wk_err = $pec_mapping{$error_code} || 
+	    my $wk_err = $pec_mapping{$error_code} ||
 		WK_ERR_UNRECOVERABLE_ERROR;
-	    die new WebKDC::WebKDCException($wk_err, 
+	    die new WebKDC::WebKDCException($wk_err,
 					    "Login error: $error_message ".
 					    "($error_code)", $error_code);
 	}
@@ -369,7 +369,7 @@ WebKDC - functions to support the WebKDC
   use WebKDC::WebRequest;
   use WebKDC::WebResponse;
 
-  my ($status, $exception) = 
+  my ($status, $exception) =
          WebKDC::make_request_token_request($req, $resp);
 
 =head1 DESCRIPTION
@@ -408,7 +408,7 @@ following fashion:
   # i.e., enumerate through all cookies that start with webauth_wpt
   # and put them into a hash:
   # $cookies = { "webauth_wpt_krb5" => $cookie_value }
-   
+
   $req->proxy_cookies($cookies);
 
   # $req_token_str and $service_token_str would normally get

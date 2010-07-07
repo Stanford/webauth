@@ -2,7 +2,7 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
@@ -15,10 +15,10 @@
 # define CURLOPT_WRITEDATA CURLOPT_FILE
 #endif
 
+
 /*
  * make a copy of the service token into the given pool
  */
-
 static MWA_SERVICE_TOKEN *
 copy_service_token(apr_pool_t *pool,
                    MWA_SERVICE_TOKEN *orig)
@@ -45,13 +45,14 @@ copy_service_token(apr_pool_t *pool,
     return copy;
 }
 
+
 static MWA_SERVICE_TOKEN *
 new_service_token(apr_pool_t *pool,
                   int key_type, 
                   const char *kdata,
-                  int kd_len,
+                  size_t kd_len,
                   const char *tdata,
-                  int td_len,
+                  size_t td_len,
                   time_t expires,
                   time_t created,
                   time_t last_renewal_attempt,
@@ -75,7 +76,8 @@ new_service_token(apr_pool_t *pool,
     return token;
 }
 
-MWA_SERVICE_TOKEN *
+
+static MWA_SERVICE_TOKEN *
 read_service_token_cache(server_rec *server,
                              MWA_SCONF *sconf, 
                              apr_pool_t *pool)
@@ -85,7 +87,8 @@ read_service_token_cache(server_rec *server,
     apr_finfo_t finfo;
     char *buffer;
     apr_status_t astatus;
-    int status, tlen, klen;
+    int status;
+    size_t tlen, klen;
     size_t num_read;
     int s_expires, s_token, s_lra, s_kt, s_key, s_nra, s_created;
     time_t expires, lra, nra, created;
@@ -94,7 +97,7 @@ read_service_token_cache(server_rec *server,
     void *key;
 
     WEBAUTH_ATTR_LIST *alist;
-    static char *mwa_func = "mwa_read_service_token_cache";
+    static const char *mwa_func = "mwa_read_service_token_cache";
 
     /* check file */
     astatus = apr_file_open(&cache, sconf->st_cache_path,
@@ -184,6 +187,7 @@ read_service_token_cache(server_rec *server,
     return token;
 }
 
+
 static int
 write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
                           apr_pool_t *pool, MWA_SERVICE_TOKEN *token)
@@ -191,16 +195,15 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     apr_file_t *cache;
     char *buffer;
     apr_status_t astatus;
-    int status, buff_len, ebuff_len, ok;
+    int status, ok;
+    size_t buff_len, ebuff_len;
     size_t bytes_written;
     char *templ;
     WEBAUTH_ATTR_LIST *alist;
     static const char *mwa_func = "write_service_token_cache";
 
     /* store new cache in a temp file, and move over if everything ok */
-
     templ = apr_pstrcat(pool, sconf->st_cache_path, "XXXXXX", NULL);
-
     astatus = apr_file_mktemp(&cache, templ, 
                               APR_WRITE|APR_CREATE|
                               APR_TRUNCATE |APR_FILE_NOCLEANUP,
@@ -303,6 +306,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     return ok;
 }
 
+
 #define CHUNK_SIZE 4096
 
 /*
@@ -314,17 +318,19 @@ static void init_string(MWA_STRING *string, apr_pool_t *pool)
     string->pool = pool;
 }
 
+
 /*
  * given an MWA_STRING, append some new data to it.
  */
-static void append_string(MWA_STRING *string, const char *in_data, int in_size)
+static void
+append_string(MWA_STRING *string, const char *in_data, size_t in_size)
 {
-    int needed_size;
+    size_t needed_size;
 
     if (in_size == 0)
         in_size = strlen(in_data);
 
-    needed_size = string->size+in_size;
+    needed_size = string->size + in_size;
 
     if (string->data == NULL || needed_size > string->capacity) {
         char *new_data;
@@ -345,17 +351,19 @@ static void append_string(MWA_STRING *string, const char *in_data, int in_size)
     string->data[string->size] = '\0';
 }
 
+
 /*
  * gather up the POST data as it comes back from webkdc
  */
 static size_t
-post_gather(void *in_data, size_t size, size_t nmemb,
-            MWA_STRING *string)
+post_gather(char *in_data, size_t size, size_t nmemb, void *string)
 {
-    size_t real_size = size*nmemb;
-    append_string(string, (char*)in_data, (int)real_size);
+    size_t real_size = size * nmemb;
+
+    append_string(string, in_data, real_size);
     return real_size;
 }
+
 
 /*
  * post some xml to the webkdc and return response
@@ -363,14 +371,14 @@ post_gather(void *in_data, size_t size, size_t nmemb,
  * FIXME: need to think about retry/timeout policy
  */
 static char *
-post_to_webkdc(char *post_data, int post_data_len, 
+post_to_webkdc(char *post_data, size_t post_data_len, 
                server_rec *server, MWA_SCONF *sconf,
                apr_pool_t *pool)
 {
     CURL *curl;
     CURLcode code;
     char curl_error_buff[CURL_ERROR_SIZE+1];
-    struct curl_slist *headers=NULL;
+    struct curl_slist *headers = NULL;
     MWA_STRING string;
 
     if (post_data_len == 0)
@@ -441,6 +449,7 @@ post_to_webkdc(char *post_data, int post_data_len,
     return string.data;
 }
 
+
 /*
  * concat all the text pieces together and return data
  */
@@ -460,6 +469,7 @@ get_elem_text(apr_pool_t *pool, apr_xml_elem *e, const char *def)
         return def;
     }
 }
+
 
 /*
  * parse and log errorResponse from WebKDC
@@ -493,6 +503,7 @@ log_error_response(apr_xml_elem *e,
 
 }
 
+
 static MWA_SERVICE_TOKEN *
 parse_service_token_response(apr_xml_doc *xd,
                              server_rec *server,
@@ -501,7 +512,7 @@ parse_service_token_response(apr_xml_doc *xd,
 {
     MWA_SERVICE_TOKEN *st;
     apr_xml_elem *e, *sib;
-    int bskey_len;
+    size_t bskey_len;
     char *bskey;
     time_t first_renewal_attempt, expiration;
     static const char *mwa_func = "parse_service_token_response";
@@ -592,6 +603,7 @@ parse_service_token_response(apr_xml_doc *xd,
     return st;
 }
 
+
 /*
  * request a service token from the WebKDC
  */
@@ -670,6 +682,7 @@ request_service_token(server_rec *server,
     return parse_service_token_response(xd, server, pool, curr);
 }
 
+
 /*
  * generate our app-state blob once and re-use it
  */
@@ -678,7 +691,8 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
               MWA_SERVICE_TOKEN *token, time_t curr)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     void *as;
 
     status = WA_ERR_NONE;
@@ -723,12 +737,12 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
     return;
 }
 
+
 /*
  * create a pool for the service token and copy the new 
  * token into it. If the old_service_token is set, then destroy
  * its pool.
  */
-
 static void
 set_service_token(MWA_SERVICE_TOKEN *new_token,
                   MWA_SCONF *sconf)
@@ -745,6 +759,7 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
     }
 
 }
+
 
 /*
  * this function returns a service-token to use.
@@ -857,15 +872,15 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
 }
 
 
-char *
-make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
+static char *
+make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
 {
     WEBAUTH_ATTR_LIST *alist;
-
     char *token, *btoken;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     time_t curr = time(NULL);
-    const char *mwa_func="make_request_token";
+    const char *mwa_func = "make_request_token";
 
     alist = webauth_attr_list_new(10);
     if (alist == NULL) {
@@ -898,13 +913,10 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, char *cmd)
 }
 
 
-
 static int
 parse_get_creds_response(apr_xml_doc *xd,
                          MWA_REQ_CTXT *rc,
                          MWA_SERVICE_TOKEN *st,
-                         MWA_WACRED *creds,
-                         int num_creds,
                          apr_array_header_t **acquired_creds)
 {
     apr_xml_elem *e, *tokens, *token;
@@ -982,6 +994,7 @@ parse_get_creds_response(apr_xml_doc *xd,
     return 1;
 }
 
+
 /*
  * request a service token from the WebKDC
  */
@@ -989,13 +1002,13 @@ int
 mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                           MWA_PROXY_TOKEN *pt,
                           MWA_WACRED *creds,
-                          int num_creds,
+                          size_t num_creds,
                           apr_array_header_t **acquired_creds)
 {
     apr_xml_parser *xp;
     apr_xml_doc *xd;
     char *xml_request, *xml_response, *b64_pt;
-    int i;
+    size_t i;
     static const char *mwa_func = "mwa_get_creds_from_webkdc";
     apr_status_t astatus;
     MWA_SERVICE_TOKEN *st;
@@ -1016,8 +1029,8 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     /* now build up all the cred tokens we need */
     init_string(&cred_tokens, rc->r->pool);
 
-    for (i=0; i < num_creds; i++) {
-        char *id = apr_psprintf(rc->r->pool, "%d", i);
+    for (i = 0; i < num_creds; i++) {
+        char *id = apr_psprintf(rc->r->pool, "%lu", (unsigned long) i);
         append_string(&cred_tokens,
                       apr_pstrcat(rc->r->pool,
                                   "<token type='cred' id='",id,"'>",
@@ -1100,6 +1113,5 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
                  "mod_webauth: xml doc root(%s)", xd->root->name);
 
-    return parse_get_creds_response(xd, rc, st, creds, num_creds, 
-                                    acquired_creds);
+    return parse_get_creds_response(xd, rc, st, acquired_creds);
 }

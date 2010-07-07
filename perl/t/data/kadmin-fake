@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+#
+# Fake kadmin-remctl implementation.
+#
+# This kadmin-fake script is meant to be run by remctld during testing of
+# the pending password expiration time interface.
+
+use POSIX;
+my ($command, $princ) = @ARGV;
+die "Invalid command $command\n" unless $command eq 'check_expire';
+
+# Copied from t/lib/Util.pm -- including it includes other things that are
+# more annoying to set requirements for.
+sub get_userinfo  {
+    my ($file) = @_;
+    open (FILE, '<', $file) or die "cannot open $file: $!\n";
+    my $username = <FILE>;
+    my $password = <FILE>;
+    close FILE;
+    chomp ($username, $password);
+    return ($username, $password);
+}
+
+my ($user);
+my $fname_passwd = 't/data/test.password';
+($user) = get_userinfo ($fname_passwd) if -f $fname_passwd;
+$user = '' unless defined $user;
+
+# The configured testuser gets a time tomorrow for inside the warning period.
+if ($princ eq $user) {
+    print strftime ("%F %TZ", localtime (time + 60 * 60 * 24)), "\n";
+
+# testuser1 gets a time tomorrow for inside the warning period.
+} elsif ($princ eq 'testuser1') {
+    print strftime ("%F %TZ", localtime (time + 60 * 60 * 24)), "\n";
+
+# testuser2 gets a time next year, outside of the warning period.
+} elsif ($princ eq 'testuser2') {
+    print strftime ("%F %TZ", localtime (time + 60 * 60 * 24 * 356)), "\n";
+
+# Anyone else has no password expiration.
+} else {
+    print "\n";
+}

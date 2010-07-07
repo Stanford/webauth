@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <http-equiv="pragma" content="no-cache">
+    <title>WebAuth Password Change</title>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  </head>
+
+  <TMPL_IF NAME=notdefined>
+<!--
+This is the template for the WebAuth password change page.  This page is
+called from pwchange.fcgi script on the weblogin server.  It displays a form
+asking the user for username, current password, and two prompts for the
+new password (for confirmation).  Variables used:
+
+error                  : some error occurred
+err_username           : no username error
+err_password           : no old password error
+err_newpassword        : no new password error
+err_newpassword_match  : new passwords do not match
+err_loginfailed        : username and password were incorrect
+err_rejected           : username not permitted to authenticate
+err_pwweak             : password changed for the password being too weak
+err_pwchange           : actual password change failed (see err_msg for why)
+err_msg                : extra text describing an error
+RT                     : Response Token
+ST                     : Service Token
+CPT                    : kadmin/changepw Token
+username               : the username
+password               : the old password
+new_passwd1            : the new password (first)
+new_passwd2            : the new password (second)
+changepw               : set to show this is not our first visit
+expired                : set when sent here for expired password login fail
+-->
+  </TMPL_IF>
+
+  <body onload="document.pwchange.username.focus();">
+    <h1 align="center">WebAuth Password Change</h1>
+    <TMPL_IF NAME=error>
+      <div class="error" align="center">
+        <p><strong>
+          <TMPL_IF NAME=err_username>
+            <!-- Error: no username submitted. -->
+            <TMPL_IF NAME=err_password>
+              Error: Enter your username and password.
+            <TMPL_ELSE>
+              Error: Enter your username.
+            </TMPL_IF>
+          </TMPL_IF>
+          <TMPL_IF NAME=err_password>
+            <!-- Error: no password submitted. -->
+            Error: Enter your password.
+          </TMPL_IF>
+          <TMPL_IF NAME=err_newpassword>
+            <!-- Error: at least one of the new password fields was empty. -->
+            Error: Enter your new password twice.
+          </TMPL_IF>
+          <TMPL_IF NAME=err_newpassword_match>
+            <!-- Error: new passwords do not match. -->
+            Error: The two entries for your new password must match.
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_loginfailed>
+            <!-- Error: login failed. -->
+            Error: You entered an incorrect username or password (or both).
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_rejected>
+            <!-- Error: user principal rejected. -->
+            Error: That username may not authenticate to this service.
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_pwweak>
+            <!-- Error: password was too weak. -->
+            Error: The password given failed strength checking.
+            Please enter a more difficult password not based on a dictionary
+            word.
+          </TMPL_IF>
+
+          <TMPL_IF NAME=err_pwchange>
+            <!-- Error: password change attempted, failed. -->
+            Error: Password change failed: <TMPL_VAR name=err_msg>.
+          </TMPL_IF>
+
+        </strong></p>
+        <p>Click <a href="/help.html">help</a> for assistance.</p>
+      </div>
+    </TMPL_IF>
+
+    <div class="loginbox" align="center">
+      <table border="1" width="70%">
+        <TMPL_IF NAME=success>
+          <tr>
+            <td><img alt="Confirm" src="/images/confirm.png"
+                     width="160" height="160"/></td>
+            <td>
+              <div class="logintext">
+                <p>You have successfully changed your password.</p>
+                <p><strong>Protect your assets:</strong><br/>
+                   Quit your web browser when you are finished (see below
+                   for more details)</p>
+              </div>
+            </td>
+          </tr>
+        <TMPL_ELSE>
+          <tr>
+            <td><img alt="Login" src="/images/login.png"
+                     width="160" height="160"/></td>
+            <td>
+              <div class="loginform">
+                <form name="pwchange"
+                      action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
+                      method="post" autocomplete="OFF"
+                      enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="RT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                  <input type="hidden" name="ST"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                  <input type="hidden" name="CPT"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
+                  <input type="hidden" name="changepw" value="yes">
+                  <input type="hidden" name="expired"
+                         value="<TMPL_VAR ESCAPE=HTML NAME=expired>">
+                  <TMPL_IF NAME=skip_username>
+                    <input type="hidden" name="username"
+                           value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                  </TMPL_IF>
+                  <table>
+                    <TMPL_UNLESS NAME=skip_username>
+                      <tr>
+                        <td><strong>Username:</strong></td>
+                        <td><input name="username" type="text"
+                                   value="<TMPL_VAR ESCAPE=HTML NAME=username>"
+                                   size="18"><br/></td>
+                      </tr>
+                    </TMPL_UNLESS>
+                    <TMPL_UNLESS NAME=skip_password>
+                      <tr>
+                        <td><strong>Old Password:</strong></td>
+                        <td><input name="password" type="password" size="18"></td>
+                      </tr>
+                    </TMPL_UNLESS>
+                    <tr>
+                      <td><strong>New Password (enter twice):</strong></td>
+                      <td>
+                          <input name="new_passwd1" type="password" size="18"><br/>
+                          <input name="new_passwd2" type="password" size="18">
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="2" align="right">
+                        <input type="submit" name="Submit" value="Change Password">
+                      </td>
+                    </tr>
+                  </table>
+                </form>
+              </div>
+              <div class="loginlinks">
+                <a href="/help.html">help</a>
+              </div>
+            </td>
+          </tr>
+        </TMPL_IF>
+      </table>
+    </div>
+
+    <div class="trailer">
+      <h2>Caution:</h2>
+
+      <p>Never enter your WebAuth username and password on a web page
+      unless the page is a page directly served by the WebAuth login
+      server.</p>
+    </div>
+  </body>
+</html>

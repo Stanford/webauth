@@ -2,15 +2,17 @@
  * Core WebAuth Apache module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <modules/webauth/mod_webauth.h>
+#include <util/macros.h>
 
 module AP_MODULE_DECLARE_DATA webauth_module;
+
 
 static void
 dont_cache(MWA_REQ_CTXT *rc)
@@ -22,6 +24,7 @@ dont_cache(MWA_REQ_CTXT *rc)
                    "no-cache, no-store");
 }
 
+
 static int
 do_redirect(MWA_REQ_CTXT *rc)
 {
@@ -29,11 +32,12 @@ do_redirect(MWA_REQ_CTXT *rc)
     return HTTP_MOVED_TEMPORARILY;
 }
 
+
 /*
  * remove a string from the end of another string
  */
 static void
-strip_end(char *c, char *t)
+strip_end(char *c, const char *t)
 {
     char *p;
     if (c != NULL) {
@@ -42,6 +46,7 @@ strip_end(char *c, char *t)
             *p = '\0';
     }
 }
+
 
 /*
  * return 1 if current request is "https"
@@ -62,13 +67,14 @@ is_https(request_rec *r)
     return (scheme != NULL) && strcmp(scheme, "https") == 0;
 }
 
+
 /* remove any webauth_* cookies and tokens from Referer
    before proxying the request */
 static void
 strip_webauth_info(MWA_REQ_CTXT *rc)
 {
     char *c;
-    int cookie_start, copy;
+    size_t cookie_start, copy;
     char *d, *s;
     const char *mwa_func = "strip_webauth_cookies";
 
@@ -121,6 +127,7 @@ strip_webauth_info(MWA_REQ_CTXT *rc)
     }
 }
 
+
 /*
  * find a cookie in the Cookie header and return its value, otherwise
  * return NULL.
@@ -160,6 +167,7 @@ find_cookie(MWA_REQ_CTXT *rc, const char *name)
     return cval;
 }
 
+
 /*
  * nuke a cooke by directly updating r->err_headers_out. If
  * if_set is true, then only nuke the cookie if its set.
@@ -184,6 +192,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
     apr_table_addn(rc->r->err_headers_out, "Set-Cookie", cookie);
 }
 
+
 /*
  * add set cookie header
  */
@@ -201,6 +210,7 @@ set_pending_cookie_cb(void *rec, const char *key, const char *value)
     return 1;
 }
 
+
 /* see if we have to update our cookies and save them in err_headers_out
  * so the always gets sent.
  */
@@ -214,6 +224,7 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
         t = rc->r->notes;
     apr_table_do(set_pending_cookie_cb, rc, t, NULL);
 }
+
 
 /*
  * stores a cookie that will get set in fixups
@@ -229,6 +240,7 @@ fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
                   value,
                   is_https(rc->r) ? "secure" : "");
 }
+
 
 /*
  * set environment variables in the subprocess_env table.
@@ -249,6 +261,7 @@ mwa_setenv(MWA_REQ_CTXT *rc, const char *name, const char *value)
     }
 }
 
+
 /*
  * enumerate through all webauth_ cookies and nuke them.
  */
@@ -266,8 +279,9 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
 
     p = (char**)cookies->elts;
 
-    for (i=0; i < cookies->nelts; i++) {
+    for (i = 0; i < cookies->nelts; i++) {
         char *val;
+
         val = ap_strchr(p[i], '=');
         if (val) {
             *val++ = '\0';
@@ -279,6 +293,7 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
         }
     }
 }
+
 
 /* FIXME: should we pass some query paramters along with
  *        failure_redirect to indicate what failure occured? 
@@ -317,6 +332,7 @@ failure_redirect(MWA_REQ_CTXT *rc)
     return do_redirect(rc);
 }
 
+
 static int
 login_canceled_redirect(MWA_REQ_CTXT *rc)
 {
@@ -348,6 +364,7 @@ login_canceled_redirect(MWA_REQ_CTXT *rc)
     return do_redirect(rc);
 }
 
+
 static int 
 die(const char *message, server_rec *s)
 {
@@ -358,6 +375,7 @@ die(const char *message, server_rec *s)
     printf("mod_webauth: fatal error: %s", message);
     exit(1);
 }
+
 
 static void 
 die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
@@ -375,6 +393,7 @@ die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
     }
     die(msg, s);
 }
+
 
 /*
  * called on restarts
@@ -422,6 +441,7 @@ mod_webauth_cleanup(void *data)
     }
     return APR_SUCCESS;
 }
+
 
 /*
  * check server conf directives for server,
@@ -487,11 +507,12 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
 
 }
 
+
 /*
  * called after config has been loaded in parent process
  */
 static int
-mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
+mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                  apr_pool_t *ptemp, server_rec *s)
 {
     MWA_SCONF *sconf;
@@ -528,14 +549,16 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog,
     return OK;
 }
 
+
 /*
  * called once per-child
  */
 static void
-mod_webauth_child_init(apr_pool_t *p, server_rec *s)
+mod_webauth_child_init(apr_pool_t *p UNUSED, server_rec *s UNUSED)
 {
     /* nothing for now */
 }
+
 
 /*
 **
@@ -544,7 +567,7 @@ mod_webauth_child_init(apr_pool_t *p, server_rec *s)
 */
 
 static void *
-config_server_create(apr_pool_t *p, server_rec *s)
+config_server_create(apr_pool_t *p, server_rec *s UNUSED)
 {
     MWA_SCONF *sconf;
 
@@ -562,8 +585,9 @@ config_server_create(apr_pool_t *p, server_rec *s)
     return (void *)sconf;
 }
 
+
 static void *
-config_dir_create(apr_pool_t *p, char *path)
+config_dir_create(apr_pool_t *p, char *path UNUSED)
 {
     MWA_DCONF *dconf;
 
@@ -581,6 +605,7 @@ config_dir_create(apr_pool_t *p, char *path)
 
 #define MERGE_INT(field) \
     conf->field = oconf->field ? oconf->field : bconf->field
+
 
 static void *
 config_server_merge(apr_pool_t *p, void *basev, void *overv)
@@ -643,6 +668,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
     return (void *)conf;
 }
 
+
 static void *
 config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 {
@@ -704,6 +730,7 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 #undef MERGE_PTR
 #undef MERGE_INT
 
+
 static const char *
 status_check_access(const char *path, apr_int32_t flag, request_rec *r)
 {
@@ -722,6 +749,7 @@ status_check_access(const char *path, apr_int32_t flag, request_rec *r)
     }
 }
 
+
 static void
 dt_str(const char *n, const char *v, request_rec *r) 
 {
@@ -729,6 +757,7 @@ dt_str(const char *n, const char *v, request_rec *r)
                /*"<tt>%s</tt></dt>\n", n, v);*/
                "<font size=\"+1\"><tt>%s</tt></font></dt>\n", n, v);
 }
+
 
 static void
 dd_dir_str(const char *n, const char *v, request_rec *r) 
@@ -742,6 +771,7 @@ dd_dir_str(const char *n, const char *v, request_rec *r)
                ap_escape_html(r->pool, n),
                ap_escape_html(r->pool, v));
 }
+
 
 static void
 dd_dir_int(const char *n, int v, request_rec *r) 
@@ -863,12 +893,13 @@ handler_hook(request_rec *r)
                  "problem with the keyring file."
                  "</dd>", r);
     } else {
-        int i;
+        unsigned long i;
+
         dd_dir_int("num_entries", sconf->ring->num_entries, r);
-        for (i=0; i < sconf->ring->num_entries; i++) {
-            dd_dir_time(apr_psprintf(r->pool, "entry %d creation time", i),
+        for (i = 0; i < sconf->ring->num_entries; i++) {
+            dd_dir_time(apr_psprintf(r->pool, "entry %lu creation time", i),
                         sconf->ring->entries[i].creation_time, r);
-            dd_dir_time(apr_psprintf(r->pool, "entry %d valid after", i),
+            dd_dir_time(apr_psprintf(r->pool, "entry %lu valid after", i),
                         sconf->ring->entries[i].valid_after, r);
         }
     }
@@ -917,10 +948,11 @@ handler_hook(request_rec *r)
  * return the name of the app cookie
  */
 static const char *
-app_cookie_name()
+app_cookie_name(void)
 {
     return "webauth_at";
 }
+
 
 /*
  * given the proxy_type return the cookie name to use 
@@ -930,6 +962,7 @@ proxy_cookie_name(const char *proxy_type, MWA_REQ_CTXT *rc)
 {
     return apr_pstrcat(rc->r->pool, "webauth_pt_", proxy_type, NULL);
 }
+
 
 /*
  * given the proxy_type return the cookie name to use 
@@ -957,6 +990,7 @@ cred_cookie_name(const char *cred_type,
                        cred_server, NULL);
 }
 
+
 /*
  * create a proxy-token cookie.
  */
@@ -964,13 +998,14 @@ static int
 make_proxy_cookie(const char *proxy_type,
                   const char *subject, 
                   void *wpt,
-                  int wpt_len,
+                  size_t wpt_len,
                   time_t expiration_time, 
                   MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     const char *mwa_func="make_proxy_cookie";
     time_t creation_time;
 
@@ -1035,7 +1070,8 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
 {
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     const char *mwa_func="make_cred_cookie";
     time_t creation_time;
 
@@ -1084,6 +1120,7 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     return 1;
 }
 
+
 /*
  * create/update an app-token cookie. If creation_time is 0 it means
  * we are creating an app-token, otherwise we are updating an
@@ -1091,14 +1128,15 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
  */
 static int
 make_app_cookie(const char *subject, 
-               time_t creation_time,
-               time_t expiration_time, 
-               time_t last_used_time,
-               MWA_REQ_CTXT *rc)
+                time_t creation_time,
+                time_t expiration_time, 
+                time_t last_used_time,
+                MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     char *token, *btoken;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     const char *mwa_func = "make_app_cookie";
 
     status = WA_ERR_NONE;
@@ -1157,11 +1195,11 @@ make_app_cookie(const char *subject,
     return 1;
 }
 
+
 /*
  * checks last-use-time in token, returns 0 if expired, 1 if ok.
  * potentially updates app-token and cookie
  */
-
 static int
 app_token_maint(MWA_REQ_CTXT *rc)
 {
@@ -1212,16 +1250,17 @@ app_token_maint(MWA_REQ_CTXT *rc)
     return 1;
 }
 
+
 /*
  * parse an app-token, store in rc->at. 
  * return 0 on failure, 1 on success
  */
-
 static int
 parse_app_token(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status;
+    size_t blen;
+    int status;
     const char *tt;
     char *sub;
     int result = 0;
@@ -1316,16 +1355,17 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
     }
 }
 
+
 /*
  * parse a proxy-token from a cookie. 
  * return pointer to it on success, NULL on failure.
  */
-
 static MWA_PROXY_TOKEN *
 parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status;
+    size_t blen;
+    int status;
     const char *tt;
     MWA_PROXY_TOKEN pt, *npt;
     const char *mwa_func="parse_proxy_token";
@@ -1436,13 +1476,16 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
     return pt;
 }
 
-WEBAUTH_KEY *
+
+static WEBAUTH_KEY *
 get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
     WEBAUTH_KEY *key;
     const char *tt;
-    int status, i , klen, blen;
+    size_t klen, blen;
+    int status;
+    ssize_t i;
     const char *mwa_func = "get_session_key";
 
     ap_unescape_url(token);
@@ -1490,8 +1533,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
         klen != WA_AES_192 &&
         klen != WA_AES_256) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: get_session_key: invalid key length: %d",
-                     klen);
+                     "mod_webauth: get_session_key: invalid key length: %lu",
+                     (unsigned long) klen);
         goto cleanup;
     }
 
@@ -1506,11 +1549,13 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     return key;
 }
 
+
 static int
 handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
     const char *subject;
-    int status, i;
+    int status;
+    ssize_t i;
     const char *sa;
     const char *mwa_func="handle_id_token";
 
@@ -1576,7 +1621,8 @@ handle_proxy_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
     char *sub, *pt;
     void *wpt;
-    int status, wpt_len;
+    int status;
+    size_t wpt_len;
     time_t expiration_time;
     const char *mwa_func="handle_proxy_token";
 
@@ -1625,12 +1671,13 @@ handle_proxy_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
         make_app_cookie(sub, 0, expiration_time, 0, rc);
 }
 
+
 static int
 handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 {
     int error_code;
     static const char *mwa_func = "handle_error_token";
-    char *log_message;
+    const char *log_message;
     const char *ec = mwa_get_str_attr(alist, WA_TK_ERROR_CODE,
                                       rc->r, mwa_func, NULL);
     const char *em = mwa_get_str_attr(alist, WA_TK_ERROR_MESSAGE,
@@ -1670,15 +1717,16 @@ handle_error_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 
 }
 
+
 /*
  * return OK or an HTTP_* code.
  */
-
 static int 
 parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
-    int blen, status, code;
+    size_t blen;
+    int status, code;
     const char *token_type;
     static const char *mwa_func = "parse_returned_token";
 
@@ -1733,6 +1781,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     return code;
 }
 
+
 /*
  * check to see if we got passed WEBAUTHR and WEBAUTHS, and if so
  * attempt to parse and fill in rc->subject. If we return OK,
@@ -1778,6 +1827,7 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
     return OK;
 }
 
+
 static char *
 make_return_url(MWA_REQ_CTXT *rc, 
                 int check_dconf_return_url)
@@ -1820,7 +1870,8 @@ make_return_url(MWA_REQ_CTXT *rc,
     }
 
     return uri;
- }
+}
+
 
 static int
 redirect_request_token(MWA_REQ_CTXT *rc)
@@ -1829,7 +1880,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     WEBAUTH_ATTR_LIST *alist;
     char *redirect_url, *return_url;
     char *token, *btoken;
-    int tlen, olen, status;
+    size_t tlen, olen;
+    int status;
     time_t curr = time(NULL);
     const char *mwa_func="redirect_request_token";
 
@@ -1995,7 +2047,7 @@ ssl_redirect(MWA_REQ_CTXT *rc)
                      redirect_url);
 
     if (strcmp(uri.scheme, "http") == 0) {
-        uri.scheme = "https";
+        uri.scheme = (char *) "https";
         if (rc->sconf->ssl_redirect_port) {
             uri.port_str = apr_psprintf(rc->r->pool, 
                                         "%d", rc->sconf->ssl_redirect_port);
@@ -2030,7 +2082,7 @@ ssl_redirect(MWA_REQ_CTXT *rc)
  * do a Set-Cookie to blank it out. returns NULL on error/expired
  * cookie.
  */
-MWA_CRED_TOKEN *
+static MWA_CRED_TOKEN *
 parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 {
     char *cval;
@@ -2059,6 +2111,7 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
     return ct;
 }
 
+
 /*
  * add a proxy type to the array if it isn't present.
  */
@@ -2069,13 +2122,13 @@ add_proxy_type(apr_array_header_t *a, char *type)
    int i;
 
    ntype = (char**)a->elts;
-   for (i=0; i<a->nelts; i++) {
+   for (i = 0; i < a->nelts; i++)
        if (strcmp(ntype[0], type) == 0)
            return;
-   }
    ntype = apr_array_push(a);
    *ntype = type;
 }
+
 
 /*
  * take all the creds for the given proxy_type and
@@ -2084,7 +2137,7 @@ add_proxy_type(apr_array_header_t *a, char *type)
  */
 static int 
 prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
-              MWA_CRED_TOKEN **creds, int num_creds)
+              MWA_CRED_TOKEN **creds, size_t num_creds)
 {
     const char *mwa_func="prepare_creds";
 
@@ -2101,6 +2154,7 @@ prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
     }
 }
 
+
 /*
  * acquire all the creds of the specified proxy_type. this
  * means making requests to the webkdc. If we don't have
@@ -2109,7 +2163,7 @@ prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
  */
 static int 
 acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
-              MWA_WACRED *creds, int num_creds,
+              MWA_WACRED *creds, size_t num_creds,
               apr_array_header_t **acquired_creds)
 {
     const char *mwa_func="acquire_creds";
@@ -2162,6 +2216,7 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
     return OK;
 }
 
+
 /*
  * use_creds is on, so we need to gather creds (from cookies and/or
  * webkdc, redirecting if we don't have a proxy-token)
@@ -2180,7 +2235,7 @@ gather_creds(MWA_REQ_CTXT *rc)
  
     cred = (MWA_WACRED*) rc->dconf->creds->elts;
     
-    for (i=0; i < rc->dconf->creds->nelts; i++) {
+    for (i = 0; i < rc->dconf->creds->nelts; i++) {
         if (cred[i].service) {
 
             if (all_proxy_types == NULL)
@@ -2264,13 +2319,13 @@ gather_creds(MWA_REQ_CTXT *rc)
     return OK;
 }
 
+
 /*
  * go through cookies first. If we don't have a valid 
  * app-token and/or proxy-token cookie, check URL and
  * process the token if present.
- * 
  */
-int 
+static int 
 gather_tokens(MWA_REQ_CTXT *rc)
 {
     int code, in_url;
@@ -2313,6 +2368,7 @@ gather_tokens(MWA_REQ_CTXT *rc)
 
     return OK;
 }
+
 
 static int
 check_user_id_hook(request_rec *r)
@@ -2453,6 +2509,7 @@ check_user_id_hook(request_rec *r)
     return OK;
 }
 
+
 /*
  * this hook will attempt to find the returned-token and the
  * state-token in the URL (r->the_request). If we find them and stash them in 
@@ -2481,8 +2538,8 @@ translate_name_hook(request_rec *r)
     char *p, *s, *rp;
     char *wr, *ws;
     MWA_SCONF *sconf;
-    static char *rmagic = WEBAUTHR_MAGIC;
-    static char *smagic = WEBAUTHS_MAGIC;
+    static const char *rmagic = WEBAUTHR_MAGIC;
+    static const char *smagic = WEBAUTHS_MAGIC;
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                              &webauth_module);
@@ -2571,6 +2628,7 @@ translate_name_hook(request_rec *r)
     return DECLINED;
 }
 
+
 static int 
 fixups_hook(request_rec *r)
 {
@@ -2596,13 +2654,13 @@ fixups_hook(request_rec *r)
 
 
 static int
-seconds(const char *value, char **error_str)
+seconds(const char *value, const char **error_str)
 {
     char temp[32];
-    int mult, len;
+    size_t mult, len;
     
     len = strlen(value);
-    if (len > (sizeof(temp)-1)) {
+    if (len > (sizeof(temp) - 1)) {
         *error_str = "error: value too long!";
         return 0;
     }
@@ -2635,11 +2693,12 @@ seconds(const char *value, char **error_str)
     return atoi(temp) * mult;
 }
 
+
 static const char *
 cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
+    const char *error_str = NULL;
     MWA_DCONF *dconf = (MWA_DCONF *)mconf;
 
     MWA_SCONF *sconf = (MWA_SCONF *)
@@ -2749,6 +2808,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     return error_str;
 }
 
+
 static const char *
 cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
@@ -2844,6 +2904,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
     }
     return error_str;
 }
+
 
 static const char *
 cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
@@ -2967,7 +3028,7 @@ static const command_rec cmds[] = {
     DFLAG(SCD_DontCache, SE_DontCache, SCM_DontCache),
     DFLAG(SCD_ForceReload, SE_ForceReload, SCM_ForceReload),
 #endif 
-    { NULL }
+    { NULL, { NULL }, NULL, 0, 0, NULL }
 };
 
 #undef SSTR
@@ -2980,6 +3041,7 @@ static const command_rec cmds[] = {
 #undef ADSTR
 #undef ADFLAG
 #undef ADTAKE12
+
 
 #if 0
 static int webauth_auth_checker(request_rec *r)
@@ -2998,8 +3060,9 @@ static int webauth_access_checker(request_rec *r)
 }
 #endif 
 
+
 static void 
-register_hooks(apr_pool_t *p)
+register_hooks(apr_pool_t *p UNUSED)
 {
     /* get our module called before the basic authentication stuff */
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
@@ -3020,6 +3083,7 @@ register_hooks(apr_pool_t *p)
     ap_hook_handler(handler_hook, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_fixups(fixups_hook, NULL,NULL,APR_HOOK_MIDDLE);
 }
+
 
 /* Dispatch list for API hooks */
 module AP_MODULE_DECLARE_DATA webauth_module = {

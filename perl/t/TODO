@@ -1,0 +1,16 @@
+TODO file for pending tests
+
+* We currently don't have a clean way to do any tests that rely on cookies.
+  CGI.pm doesn't offer the capability to set up a fake cookie like we can
+  for parameters.  The long term fix for this will be to abstract out the
+  WebLogin code, load more things into the WebLogin object itself (such as
+  the cookies), and then only read from that object.  That way we can set
+  the object's idea of what the cookies were and test from there.  There
+  are many spots in the test files marked with FIXME for where a test
+  should be added for after this is done.
+
+* webkdc.t is currently only a stub, not yet complete.  It will require
+  a test environment set up on a live WebKDC in order to work, until we
+  have a chance to move more of the WebKDC code into a module that Perl
+  can access.
+

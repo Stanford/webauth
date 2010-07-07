@@ -191,9 +191,9 @@ Schemers & Allbery                                              [Page 3]
    requires this for security reasons).
 
    The WAS can also choose to either trust the WebKDC to vouch for the
-   identity of a user, or it can request the WebKDC use an
-   authenticator, such as a Kerberos V5 service request (krb5_mk_req)
-   that it can verify using its own Kerberos V5 keys.
+   identity of a user, or it can request the WebKDC use an authenticator
+   such as a Kerberos V5 service request (KRB_AP_REQ) that it can verify
+   using its own Kerberos V5 keys.
 
 1.1.1.  User-Agent (UA)
 
@@ -399,13 +399,13 @@ Schemers & Allbery                                              [Page 7]
    needed.  For this purpose, we use Kerberos V5 and TLS/SSL to
    bootstrap and get the session keys.  The WAS that needs a session key
    will post an XML message to the WebKDC requesting a service token.
-   This message contains the result of krb5_mk_req call for the WebKDC's
-   server principal, which the WebKDC uses to authenticate the server
-   making the request.  The WebKDC will then send back the service token
-   and a copy the session key that is also encrypted (in the WebKDC's
-   key) inside of the service token.  The WAS will need both to make
-   future requests to the WebKDC.  The whole transaction itself is
-   protected with TLS or SSL.
+   This message contains a KRB_AP_REQ for the WebKDC's server principal,
+   which the WebKDC uses to authenticate the server making the request.
+   The WebKDC will then send back the service token and a copy the
+   session key that is also encrypted (in the WebKDC's key) inside of
+   the service token.  The WAS will need both to make future requests to
+   the WebKDC.  The whole transaction itself is protected with TLS or
+   SSL.
 
    There are no long term keys stored on the WebKDC itself other its own
    private key.  Once the WAS obtains the service token and session key,
@@ -622,8 +622,8 @@ Schemers & Allbery                                             [Page 11]
 
    1.   The WAS connects directly to the WebKDC and requests a service
         token and session key to use for further requests.  It includes
-        in this request the results of krb5_mk_req for the WebKDC's
-        service principal, using the WAS's private Kerberos key.
+        in this request a KRB_AP_REQ for the WebKDC's service principal,
+        using the WAS's private Kerberos key.
 
    2.   The WebKDC authenticates the WAS server via Kerberos V5 and
         returns the webkdc-service token and corresponding session key.
@@ -690,8 +690,10 @@ Schemers & Allbery                                             [Page 12]
         ensure it is fresh.  It will then look at the subject
         authenticator-type in the token to see if it needs to verify the
         subject.  If the authenticator-type is krb5, it uses its
-        Kerberos keytab to verify the identity of the subject.  The
-        subject will, in this case, be the result of a krb5_mk_req call.
+        Kerberos keytab to verify the identity of the subject.  In this
+        case, the token will include a KRB_AP_REQ for the Kerberos
+        identity of the WAS in the subject authenticator data field of
+        the id token.
 
         After verifying the subject if desired, the WAS creates an app
         token based on the id token and puts it into a cookie to
@@ -715,8 +717,6 @@ Schemers & Allbery                                             [Page 12]
    are destroyed when the browser is closed.  This allows the user to
    easily log out by closing the browser before the tokens in the
    cookies expire.
-
-
 
 
 
@@ -2033,9 +2033,9 @@ Schemers & Allbery                                             [Page 36]
        provided.
 
    sad (binary)
-       Subject authenticator data.  If the sa is krb5, this is the
-       output of krb5_mk_req using the same Kerberos V5 principal as the
-       webkdc-service token's subject.
+       Subject authenticator data.  If the sa is krb5, this is a
+       KRB_AP_REQ for the same Kerberos V5 principal as the webkdc-
+       service token's subject.
 
    t (string)
        The token type.  Currently recognized token types are webkdc-
@@ -2210,10 +2210,10 @@ Schemers & Allbery                                             [Page 39]
    All attributes are AES-encrypted in the webkdc-service token session
    key.
 
-   If "at" is krb5, then "sad" (subject authenticator data) is the
-   result of a call to krb5_mk_req for the WAS service principal (as
-   determined from the subject of the webkdc-service token) using the
-   user's TGT from a krb5 webkdc-procy token.
+   If "at" is krb5, then "sad" (subject authenticator data) is a
+   KRB_AP_REQ for the WAS service principal (as determined from the
+   subject of the webkdc-service token) using the user's TGT from a krb5
+   webkdc-procy token.
 
    If at is webkdc, we are trusting the webkdc and "s" contains the
    authenticated user's identity (generally as a Kerberos V5 principal
@@ -2694,9 +2694,9 @@ Schemers & Allbery                                             [Page 48]
        <requestToken> so that the WebLogin component can make decisions
        based on whether the WAS requested an id token or a proxy token.
 
-
-
-
+   2.13 (2010-05-15, rra)
+       Replace all mentions of krb5_mk_req with KRB_AP_REQ, which is the
+       correct protocol term for the results of a krb5_mk_req call.
 
 
 
