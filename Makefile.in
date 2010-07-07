@@ -25,6 +25,7 @@
 
 
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -135,7 +136,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 	"$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" \
-	"$(DESTDIR)$(weblogindir)"
+	"$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(apache_LTLIBRARIES) $(lib_LTLIBRARIES) \
 	$(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
@@ -353,6 +354,7 @@ am__dist_template_DATA_DIST = weblogin/templates/confirm.tmpl \
 am__dist_weblogin_DATA_DIST = weblogin/login.fcgi weblogin/logout.fcgi \
 	weblogin/pwchange.fcgi
 DATA = $(dist_image_DATA) $(dist_template_DATA) $(dist_weblogin_DATA)
+HEADERS = $(nodist_include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -555,6 +557,7 @@ util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
 @HAVE_LD_VERSION_SCRIPT_FALSE@VERSION_LDFLAGS = -export-symbols ${srcdir}/lib/libwebauth.sym
 @HAVE_LD_VERSION_SCRIPT_TRUE@VERSION_LDFLAGS = -Wl,--version-script=${srcdir}/lib/libwebauth.map
 lib_LTLIBRARIES = lib/libwebauth.la
+nodist_include_HEADERS = lib/webauth.h
 lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
 	lib/misc.c lib/random.c lib/token.c lib/webauth.h
 
@@ -1650,6 +1653,26 @@ uninstall-dist_webloginDATA:
 	test -n "$$files" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(weblogindir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(weblogindir)" && rm -f $$files
+install-nodist_includeHEADERS: $(nodist_include_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(includedir)" || $(MKDIR_P) "$(DESTDIR)$(includedir)"
+	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
+	done
+
+uninstall-nodist_includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(includedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(includedir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -1874,11 +1897,11 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) check-local
 check: check-am
 all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(MANS) \
-		$(DATA) config.h all-local
+		$(DATA) $(HEADERS) config.h all-local
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(weblogindir)"; do \
+	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1962,7 +1985,7 @@ info-am:
 
 install-data-am: install-apacheLTLIBRARIES install-dist_imageDATA \
 	install-dist_templateDATA install-dist_webloginDATA \
-	install-man
+	install-man install-nodist_includeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -2014,7 +2037,7 @@ ps-am:
 uninstall-am: uninstall-apacheLTLIBRARIES uninstall-binPROGRAMS \
 	uninstall-dist_imageDATA uninstall-dist_templateDATA \
 	uninstall-dist_webloginDATA uninstall-libLTLIBRARIES \
-	uninstall-man
+	uninstall-man uninstall-nodist_includeHEADERS
 
 uninstall-man: uninstall-man1
 
@@ -2036,15 +2059,17 @@ uninstall-man: uninstall-man1
 	install-dist_webloginDATA install-dvi install-dvi-am \
 	install-exec install-exec-am install-exec-local install-html \
 	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-man1 install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	install-libLTLIBRARIES install-man install-man1 \
+	install-nodist_includeHEADERS install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-apacheLTLIBRARIES \
 	uninstall-binPROGRAMS uninstall-dist_imageDATA \
 	uninstall-dist_templateDATA uninstall-dist_webloginDATA \
-	uninstall-libLTLIBRARIES uninstall-man uninstall-man1
+	uninstall-libLTLIBRARIES uninstall-man uninstall-man1 \
+	uninstall-nodist_includeHEADERS
 
 
 # The following section sets up the Perl module build properly.  Most of the

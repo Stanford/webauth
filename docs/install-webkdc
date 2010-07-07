@@ -35,7 +35,7 @@ that's longer than the HTTP protocol permits.
 
          HTML::Template
          libwww (LWP)
-         Crypt::SSLeay (for LWP https support)
+         Crypt::SSLeay -or- IO::Socket::SSL (for LWP https support)
          URI
          XML::Parser
 

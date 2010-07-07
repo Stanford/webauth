@@ -424,7 +424,7 @@ following fashion:
   # the browser
 
   if ($status == WK_SUCCESS) {
-     # ok, request succesful
+     # ok, request successful
   } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
            || $status == WK_LOGIN_FORCED) {
      # prompt for user/pass
