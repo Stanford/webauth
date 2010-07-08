@@ -311,9 +311,11 @@ Configuration
   $EXPIRING_PW_URL
 
       The location for the password redirect form, used to redirect users
-      with expiring passwords to update those passwords.  If this is not set,
-      then the check to see if the user's password is expiring soon is
-      disabled.  Default: not set.
+      with expiring or expired passwords to update those passwords.  If
+      this is not set, then the check to see if the user's password is
+      expiring soon is disabled and expired passwords will result in an
+      error message rather than a password change dialog.  Default: not
+      set.
 
   $EXPIRING_PW_SERVER
 

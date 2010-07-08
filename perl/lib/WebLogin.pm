@@ -1071,8 +1071,10 @@ sub process_response {
         print STDERR "WebKDC::make_request_token_request sucess\n"
             if $self->{debug};
 
-    # User's password has expired.  Get the CPT and update the script name.
-    } elsif ($status == WK_ERR_CREDS_EXPIRED) {
+    # User's password has expired and we have somewhere to send them to get it
+    # changed.  Get the CPT and update the script name.
+    } elsif ($status == WK_ERR_CREDS_EXPIRED
+             && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
         $self->add_changepw_token;
         $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
         $self->{query}->param ('expired', 1);
@@ -1146,6 +1148,11 @@ sub process_response {
         # User took too long to login and the original request token is stale.
         } elsif ($status == WK_ERR_REQUEST_TOKEN_STALE) {
             $errmsg = "you took too long to login.";
+
+        # User's password has expired and we don't have anywhere to send them
+        # to change it.
+        } elsif ($status == WK_ERR_CREDS_EXPIRED) {
+            $errmsg = "your password has expired.";
 
         # Like WK_ERR_UNRECOVERABLE_ERROR, but indicates the error most likely
         # is due to the webauth server making the request, so stop but display
