@@ -46,10 +46,11 @@ expired                : set when sent here for expired password login fail
             <TMPL_ELSE>
               Error: Enter your username.
             </TMPL_IF>
-          </TMPL_IF>
-          <TMPL_IF NAME=err_password>
-            <!-- Error: no password submitted. -->
-            Error: Enter your password.
+          <TMPL_ELSE>
+            <TMPL_IF NAME=err_password>
+              <!-- Error: no password submitted. -->
+              Error: Enter your password.
+            </TMPL_IF>
           </TMPL_IF>
           <TMPL_IF NAME=err_newpassword>
             <!-- Error: at least one of the new password fields was empty. -->
