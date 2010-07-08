@@ -20,6 +20,7 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
     - Various changes and cleanup to the WebAuth library API.
     - Link wa_keyring with libcrypto properly.  (Closes: #556674)
     - Avoid importing isa from UNIVERSAL.  (Closes: #578632)
+    - Lower the log level of some mod_webauth diagnostics.
   * The default help.html file is now installed into
     /usr/share/weblogin/generic/templates instead of one level higher.
   * Upstream now no longer uses apxs to install modules, so upstream
