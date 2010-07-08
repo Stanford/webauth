@@ -1,4 +1,4 @@
-webauth (3.7.0-1) UNRELEASED; urgency=low
+webauth (3.7.0-1) unstable; urgency=low
 
   * New upstream release.
     - WebAuthLdapAuthRule in mod_webauthldap now sets environment
@@ -52,7 +52,7 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
     - Use dh_prep instead of dh_clean -k.
   * Update standards version to 3.9.0 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Wed, 07 Jul 2010 14:32:35 -0700
+ -- Russ Allbery <rra@debian.org>  Thu, 08 Jul 2010 15:52:26 -0700
 
 webauth (3.6.2-2) unstable; urgency=low
 
