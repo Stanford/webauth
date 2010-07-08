@@ -107,20 +107,14 @@ krb5_unparse_name_flags(krb5_context ctx, krb5_principal princ,
                         int flags UNUSED, char **name)
 {
     krb5_error_code code;
-    krb5_principal copy;
+    char *realm;
 
-    code = krb5_copy_principal(ctx, princ, &copy);
+    code = krb5_unparse_name(ctx, princ, name);
     if (code != 0)
         return code;
-    code = krb5_principal_set_realm(ctx, copy, "");
-    if (code != 0)
-        return code;
-    code = krb5_unparse_name(ctx, copy, name);
-    if (code != 0)
-        return code;
-    krb5_free_principal(ctx, copy);
-    if ((*name)[strlen(*name) - 1] == '@')
-        (*name)[strlen(*name) - 1] = '\0';
+    realm = strchr(*name, '@');
+    if (realm != NULL)
+        *realm = '\0';
     return 0;
 }
 #endif
