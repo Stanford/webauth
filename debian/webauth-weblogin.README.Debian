@@ -61,9 +61,21 @@ a2ensite.)
 The ScriptAlias and Alias directives can, of course, be changed if you
 want the Weblogin server to live at a different URL (although note that
 the default templates expect /help.html and /images to work and may need
-to be modified otherwise).  The pwchange configuration is optional and
-only needed if you want users to be able to go to a URL on your WebLogin
-server to change their passwords.
+to be modified otherwise).  The pwchange configuration is optional, but
+without it WebLogin will not be able to correctly handle expired passwords
+and will instead just not allow users with expired passwords to
+authenticate.
+
+Add the URL for the pwchange script, if you configured one, to
+/etc/webkdc/webkdc.conf.  If you used the recommended URL configured
+above, the line to add is:
+
+    $EXPIRING_PW_URL = '/pwchange';
+
+If you used a different URL, change the value of the setting.  The host
+and scheme of the URL should be omitted and should be the same as the
+login URL, since otherwise browsers will reject the cross-site POST for
+security reasons.
 
 If you used something other than /webkdc-service as the URL to the WebKDC,
 you will need to modify the $URL setting in /etc/webkdc/webkdc.conf to
@@ -158,4 +170,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 17:20:15 -0700
+ -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 18:00:16 -0700
