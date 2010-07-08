@@ -38,6 +38,9 @@ webauth (3.7.0-1) UNRELEASED; urgency=low
   * Add an explicit dependency on liburi-perl to libwebkdc-perl.
   * Fix Perl dependencies in webauth-weblogin and webauth-tests.
   * Add a Suggests of libapache2-mod-php5 to webauth-tests.
+  * Add Suggests of libtimedate-perl, libtime-duration-perl, and
+    libnet-remctl-perl to libwebkdc-perl, required for now for expiring
+    password warning support.
   * Downgrade the libwebauth-dev dependency on libkrb5-dev to Suggests
     since it's only required for static linking.
   * Update build dependency to libcurl4-openssl-dev.
