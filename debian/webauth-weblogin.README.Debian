@@ -50,6 +50,7 @@ or wherever you put local Apache configuration:
     </Directory>
     ScriptAlias /login "/usr/share/weblogin/login.fcgi"
     ScriptAlias /logout "/usr/share/weblogin/logout.fcgi"
+    ScriptAlias /pwchange "/usr/share/weblogin/pwchange.fcgi"
 
     Alias /help.html "/usr/share/weblogin/generic/templates/help.html"
     Alias /images/ "/usr/share/weblogin/generic/images/"
@@ -60,7 +61,9 @@ a2ensite.)
 The ScriptAlias and Alias directives can, of course, be changed if you
 want the Weblogin server to live at a different URL (although note that
 the default templates expect /help.html and /images to work and may need
-to be modified otherwise).
+to be modified otherwise).  The pwchange configuration is optional and
+only needed if you want users to be able to go to a URL on your WebLogin
+server to change their passwords.
 
 If you used something other than /webkdc-service as the URL to the WebKDC,
 you will need to modify the $URL setting in /etc/webkdc/webkdc.conf to
@@ -155,4 +158,4 @@ add the line:
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 14:42:45 -0700
+ -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 17:20:15 -0700
