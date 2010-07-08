@@ -23,15 +23,14 @@ can be fairly large, and the combination of WebKDC cookies, WebAuth proxy
 cookies, credential cookies, and id cookies can result in a Cookie header
 that's longer than the HTTP protocol permits.
 
- 1.  Follow the standard WebAuth installation instructions as given in the
-     INSTALL file at the top of the source tree, but also pass the flags
-     --enable-mod_webkdc, --disable-mod_webauth, and
-     --disable-mod_webauthldap to ./configure.  This will install only the
-     WebKDC module, and it will also install the Perl bindings (into the
-     site_perl directory for the first version of Perl found on your
-     path).
+ 1. Follow the standard WebAuth installation instructions as given in the
+    INSTALL file at the top of the source tree, but also pass the flags
+    --enable-webkdc, --disable-mod_webauth, and --disable-mod_webauthldap
+    to ./configure.  This will install only the WebKDC module, and it will
+    also install the Perl bindings (into the site_perl directory for the
+    first version of Perl found on your path).
 
- 2.  You'll need to install the following Perl modules from CPAN:
+ 2. You'll need to install the following Perl modules from CPAN:
 
          HTML::Template
          libwww (LWP)
@@ -39,123 +38,127 @@ that's longer than the HTTP protocol permits.
          URI
          XML::Parser
 
-     You'll probably also want to install and configure mod_fastcgi as
-     well, though it's not a requirement.  If you decide to install it,
-     you'll need to configure it like so:
+    You'll probably also want to install and configure mod_fastcgi as
+    well, though it's not a requirement.  If you decide to install it,
+    you'll need to configure it like so:
 
-         FastCGIConfig -initial-env LD_LIBRARY_PATH
-         LoadModule fastcgi_module modules/mod_fastcgi.so
-         <Directory "/usr/local/share/weblogin">
-             AllowOverride All
-             Options Indexes FollowSymlinks +ExecCGI
-             AddHandler fastcgi-script .fcgi
-             Order allow,deny
-             Allow from all
-         </Directory>
+        FastCGIConfig -initial-env LD_LIBRARY_PATH
+        LoadModule fastcgi_module modules/mod_fastcgi.so
+        <Directory "/usr/local/share/weblogin">
+            AllowOverride All
+            Options Indexes FollowSymlinks +ExecCGI
+            AddHandler fastcgi-script .fcgi
+            Order allow,deny
+            Allow from all
+        </Directory>
 
-     This assumes the WebLogin scripts and templates are installed into
-     /usr/local/share/weblogin, which is the default installation
-     location.  You can put them anywhere; just adjust the path above and
-     the paths in Apache configuration options below accordingly.
+    This assumes the WebLogin scripts and templates are installed into
+    /usr/local/share/weblogin, which is the default installation location.
+    You can put them anywhere; just adjust the path above and the paths in
+    Apache configuration options below accordingly.
 
- 3.  Add Apache directives for the WebKDC.  The basic set is:
+ 3. Add Apache directives for the WebKDC.  The basic set is:
 
-         LoadModule webkdc_module \
-             /usr/local/lib/apache2/modules/mod_webkdc.so
-         WebKdcServiceTokenLifetime 30d
-         WebKdcKeyring conf/webkdc/keyring
-         WebKdcKeytab conf/webkdc/keytab
-         WebKdcTokenAcl conf/webkdc/token.acl
+        LoadModule webkdc_module \
+            /usr/local/lib/apache2/modules/mod_webkdc.so
+        WebKdcServiceTokenLifetime 30d
+        WebKdcKeyring conf/webkdc/keyring
+        WebKdcKeytab conf/webkdc/keytab
+        WebKdcTokenAcl conf/webkdc/token.acl
 
-     If you are testing a beta release, please also add:
+    If you are testing a beta release, please also add:
 
-         WebKdcDebug on
+        WebKdcDebug on
 
-     so that your server will generate more complete logs if anything goes
-     wrong.  This may also be useful if this is the first time you've
-     installed a WebKdc.  You'll also want to set LogLevel to debug:
+    so that your server will generate more complete logs if anything goes
+    wrong.  This may also be useful if this is the first time you've
+    installed a WebKdc.  You'll also want to set LogLevel to debug:
 
-         LogLevel debug
+        LogLevel debug
      
- 4.  Set up a script aliases to run the login CGI service by adding the
-     following lines to your Apache configuration:
+ 4. Set up a script aliases to run the login, logout, and pwchange CGI
+    services by adding the following lines to your Apache configuration:
 
-         ScriptAlias /login "/usr/local/share/weblogin/login.fcgi"
-         ScriptAlias /logout "/usr/local/share/weblogin/logout.fcgi"
-         Alias /images "/usr/local/share/weblogin/generic/images/"
-         Alias /help.html \
-             "/usr/local/share/weblogin/generic/templates/help.html"
+        ScriptAlias /login "/usr/local/share/weblogin/login.fcgi"
+        ScriptAlias /logout "/usr/local/share/weblogin/logout.fcgi"
+        ScriptAlias /pwchange "/usr/local/share/weblogin/pwchange.fcgi"
+        Alias /images "/usr/local/share/weblogin/generic/images/"
+        Alias /help.html \
+            "/usr/local/share/weblogin/generic/templates/help.html"
 
-     You may want to add the first two only inside a VirtualHost block
-     that requires SSL to ensure that they are only accessible over SSL.
+    You may want to add the first three only inside a VirtualHost block
+    that requires SSL to ensure that they are only accessible over SSL.
+    The pwchange service is optional and only needed if you want users to
+    be able to go to a page on your WebLogin server to change their
+    current password.
 
- 5.  Set up a <VirtualHost> directive using SSL for the WebKDC service.
-     Inside that directive, set a handler for the URL /webkdc-service.  In
-     other words, use a configuration block like:
+ 5. Set up a <VirtualHost> directive using SSL for the WebKDC service.
+    Inside that directive, set a handler for the URL /webkdc-service.  In
+    other words, use a configuration block like:
 
-         <VirtualHost _default_:443>
-            SSLEngine on
-            ...
-            <Location /webkdc-service>
-               SetHandler webkdc
-            </Location>
-            ...
-         </VirtualHost>
+        <VirtualHost _default_:443>
+           SSLEngine on
+           ...
+           <Location /webkdc-service>
+              SetHandler webkdc
+           </Location>
+           ...
+        </VirtualHost>
 
- 6.  Create the conf/webkdc directory.
+ 6. Create the conf/webkdc directory.
 
-         cd <apache-root>
-         mkdir -p conf/webkdc
+        cd <apache-root>
+        mkdir -p conf/webkdc
 
- 7.  Install the WebKDC files used by the login server, the portion that
-     runs on the regular SSL port.  cd to the root of the WebAuth source
-     tree and then run:
+ 7. Install the WebKDC files used by the login server, the portion that
+    runs on the regular SSL port.  cd to the root of the WebAuth source
+    tree and then run:
 
-         make install
+        make install
 
-     This will install Perl modules into the site_perl directory of
-     whatever Perl was found by configure.
+    This will install Perl modules into the site_perl directory of
+    whatever Perl was found by configure.
 
- 8.  If the path and URL in <site-perl>/WebKDC/Config.pm are not correct
-     for your site (see docs/weblogin-config for the defaults), create
-     /etc/webkdc/webkdc.conf and in it put lines like:
+ 8. If the path and URL in <site-perl>/WebKDC/Config.pm are not correct
+    for your site (see docs/weblogin-config for the defaults), create
+    /etc/webkdc/webkdc.conf and in it put lines like:
 
-         $KEYRING_PATH = "../conf/webkdc/keyring";
-         $URL = "https://localhost/webkdc-service/";
+        $KEYRING_PATH = "../conf/webkdc/keyring";
+        $URL = "https://localhost/webkdc-service/";
 
-     changing the values to what is appropriate for your site.  If you
-     follow the default recommendations on where to place the keyring and
-     CGI scripts, you shouldn't have to change anything.  There are other
-     settings you can change; see doc/weblogin-config for all the details.
+    changing the values to what is appropriate for your site.  If you
+    follow the default recommendations on where to place the keyring and
+    CGI scripts, you shouldn't have to change anything.  There are other
+    settings you can change; see doc/weblogin-config for all the details.
 
- 9.  Install a keytab for the WebKDC.  This keytab must be for the same
-     identity as is mentioned in the WebAuthWebKdcPrincipal configuration
-     option in the Apache configuration of individual WebAuth servers.
-     The keytab should for the identity service/webkdc, and should be
-     installed in <apache-root>/conf/webkdc/keytab or in whatever path the
-     Apache configuration option WebKdcKeyring references.
+ 9. Install a keytab for the WebKDC.  This keytab must be for the same
+    identity as is mentioned in the WebAuthWebKdcPrincipal configuration
+    option in the Apache configuration of individual WebAuth servers.  The
+    keytab should for the identity service/webkdc, and should be installed
+    in <apache-root>/conf/webkdc/keytab or in whatever path the Apache
+    configuration option WebKdcKeyring references.
 
-     (Note that you can use some other identity if you prefer, as this is
-     part of the WebAuth module configuration.  You'll just then have to
-     configure all of your systems using the WebAuth module to use
-     whatever other identity you chose.)
+    (Note that you can use some other identity if you prefer, as this is
+    part of the WebAuth module configuration.  You'll just then have to
+    configure all of your systems using the WebAuth module to use whatever
+    other identity you chose.)
 
-10.  Create a file named token.acl in <apache-root>/conf/webkdc.  This
-     file specifies which tokens various server identities are allowed to
-     create.  There is an example file in conf/token.acl, so for an
-     initial configuration, do:
+10. Create a file named token.acl in <apache-root>/conf/webkdc.  This file
+    specifies which tokens various server identities are allowed to
+    create.  There is an example file in conf/token.acl, so for an initial
+    configuration, do:
 
-         cp conf/token.acl <apache-root>/conf/webkdc/
+        cp conf/token.acl <apache-root>/conf/webkdc/
 
-     uncomment the first line, and change the ACL pattern to match your
-     realm.  This will allow any server with a webauth/* keytab to get an
-     id token (which identifies a user but conveys no other privileges).
-     This is a good place to start.  See the mod_webkdc manual for more.
+    uncomment the first line, and change the ACL pattern to match your
+    realm.  This will allow any server with a webauth/* keytab to get an
+    id token (which identifies a user but conveys no other privileges).
+    This is a good place to start.  See the mod_webkdc manual for more.
 
-11.  Restart the Apache web server.  You should now have a working WebKDC
-     and login server, which you can point a WebAuth server at.  You will
-     need to install a regular WebAuth server following the instructions
-     in INSTALL to be able to test your WebKDC.
+11. Restart the Apache web server.  You should now have a working WebKDC
+    and login server, which you can point a WebAuth server at.  You will
+    need to install a regular WebAuth server following the instructions in
+    INSTALL to be able to test your WebKDC.
 
 If you want to use let clients use SPNEGO to authenticate to the WebLogin
 front-end with fallback to standard password authentication, see the
