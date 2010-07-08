@@ -5,6 +5,12 @@ Each site running WebAuth only needs one WebKDC for the entire site, so
 normally users do not need to follow these steps.  They are here only for
 site WebAuth administrators.
 
+If you have installed the Debian or Ubuntu packages, please see
+/usr/share/doc/libapache2-webkdc/README.Debian.gz and
+/usr/share/doc/webauth-weblogin/README.Debian.gz instead of these
+instructions.  They are more complete and specific for people using those
+packages.
+
 It is important to always keep in mind that the security of the entire
 WebAuth system depends on the security of the WebKDC.  A compromise of the
 WebKDC system would allow an attacker to steal usernames and passwords for
