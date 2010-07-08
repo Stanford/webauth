@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.7.0 (2010-07-07)
+WebAuth 3.7.0 (2010-07-08)
 
     The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
     do something closer to its documentation.  Previously, it was
