@@ -88,9 +88,9 @@ that's longer than the HTTP protocol permits.
 
     You may want to add the first three only inside a VirtualHost block
     that requires SSL to ensure that they are only accessible over SSL.
-    The pwchange service is optional and only needed if you want users to
-    be able to go to a page on your WebLogin server to change their
-    current password.
+    The pwchange service is optional, without it WebLogin will not be able
+    to correctly handle expired passwords and will instead just not allow
+    users with expired passwords to authenticate.
 
  5. Set up a <VirtualHost> directive using SSL for the WebKDC service.
     Inside that directive, set a handler for the URL /webkdc-service.  In
@@ -119,17 +119,30 @@ that's longer than the HTTP protocol permits.
     This will install Perl modules into the site_perl directory of
     whatever Perl was found by configure.
 
- 8. If the path and URL in <site-perl>/WebKDC/Config.pm are not correct
-    for your site (see docs/weblogin-config for the defaults), create
-    /etc/webkdc/webkdc.conf and in it put lines like:
+ 8. If you want to support changing expired passwords and you configured a
+    URL for pwchange.fcgi above, create /etc/webkdc/webkdc.conf and put a
+    line like:
+
+        $EXPIRING_PW_URL = "/pwchange";
+
+    in it, where the URL should be the URL you configured to point to the
+    pwchange.fcgi script.  It shouldn't include the scheme or hostname
+    since browsers dislike POST to a URL that's fully-qualified for
+    security reasons.
+
+    Also, if the path and URL in <site-perl>/WebKDC/Config.pm are not
+    correct for your site (see docs/weblogin-config for the defaults), you
+    will also need to create an /etc/webkdc/webkdc.conf for that if you
+    haven't already and, in it, put lines like:
 
         $KEYRING_PATH = "../conf/webkdc/keyring";
         $URL = "https://localhost/webkdc-service/";
 
     changing the values to what is appropriate for your site.  If you
     follow the default recommendations on where to place the keyring and
-    CGI scripts, you shouldn't have to change anything.  There are other
-    settings you can change; see doc/weblogin-config for all the details.
+    CGI scripts, you shouldn't have to change anything other than the
+    $EXPIRING_PW_URL setting.  There are other settings you can change;
+    see doc/weblogin-config for all the details.
 
  9. Install a keytab for the WebKDC.  This keytab must be for the same
     identity as is mentioned in the WebAuthWebKdcPrincipal configuration
