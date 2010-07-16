@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.1 (unreleased)
+
+    Make mod_webkdc behavior match the documentation by changing the
+    default WebKdcProxyTokenLifetime to be the lifetime of the underlying
+    Kerberos credential.  Previously, the default was ten hours.
+
 WebAuth 3.7.0 (2010-07-08)
 
     The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
