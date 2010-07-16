@@ -6,6 +6,10 @@ WebAuth 3.7.1 (unreleased)
     default WebKdcProxyTokenLifetime to be the lifetime of the underlying
     Kerberos credential.  Previously, the default was ten hours.
 
+    When probing for Apache module build flags, call apr-config --includes
+    and add it to the preprocessor flags.  Fixes build failures on Red Hat
+    Enterprise Linux 4 and 5.
+
 WebAuth 3.7.0 (2010-07-08)
 
     The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
