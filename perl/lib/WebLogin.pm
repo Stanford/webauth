@@ -957,7 +957,7 @@ sub test_pwchange_fields {
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page ($req->request_token, $req->service_token);
+    $self->print_pwchange_page ($q->param ('RT'), $q->param ('ST'));
     return 0;
 }
 
