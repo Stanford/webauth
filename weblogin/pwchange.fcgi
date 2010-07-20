@@ -110,7 +110,6 @@ while (my $q = CGI::Fast->new) {
 
     # Attempt password change via krb5_change_password API
     my ($status, $error) = $weblogin->change_user_password;
-    warn "Status: $status";
 
     # We've successfully changed the password.  Depending on if we were sent
     # by an expired password, either pass along to the normal page or give a
@@ -119,7 +118,6 @@ while (my $q = CGI::Fast->new) {
 
         # Expired password -- do the normal login process.
         if ($weblogin->{query}->param ('expired') == 1) {
-            warn "Trying to log in again.";
 
             # Get the right script name and password.
             $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
@@ -130,11 +128,9 @@ while (my $q = CGI::Fast->new) {
             # REMOTE_USER parameters.
             my %cart = CGI::Cookie->fetch;
             $status = $weblogin->setup_kdc_request (%cart);
-            warn "Status2: $status";
 
             # Pass the information along to the WebKDC and get the response.
             if (!$status) {
-                warn "Status3: $status";
                 ($status, $error)
                     = WebKDC::make_request_token_request ($weblogin->{request},
                                                           $weblogin->{response});
