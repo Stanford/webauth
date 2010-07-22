@@ -2,6 +2,14 @@
 
 WebAuth 3.7.1 (unreleased)
 
+    Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.
+    If set, a user who is changing their password due to either an expired
+    password or by following the prompt to change a password that's
+    expiring soon is required to re-enter their current password on the
+    same screen as the new password, even if they had just authenticated
+    with the old password.  This may be required by site security policy
+    and is enabled by default.
+
     Make mod_webkdc behavior match the documentation by changing the
     default WebKdcProxyTokenLifetime to be the lifetime of the underlying
     Kerberos credential.  Previously, the default was ten hours.
