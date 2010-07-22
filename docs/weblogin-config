@@ -351,6 +351,16 @@ Configuration
       number of seconds should bring up a warning on the login confirmation
       screen.  Default: not set.
 
+  $EXPIRING_PW_RESEND_PASSWORD
+
+      Whether or not to require the user to retype their password after
+      having their login fail for an expired password and being prompted to
+      change their password.  When this is not set, we will create a CPW
+      token from the initial failure using the old password already entered
+      during the login attempt.  When this is set, we will instead require
+      that the user retype their password at the same time they enter their
+      new password.  Default: 1 (require the users to resend password).
+
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
   by the WebLogin scripts where appropriate.

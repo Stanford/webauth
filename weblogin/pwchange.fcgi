@@ -152,8 +152,8 @@ while (my $q = CGI::Fast->new) {
              && $error =~ /\(-1765328343\)/) {
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwweak => 1);
-        $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token);
+        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
+                                        $weblogin->{query}->param ('ST'));
 
     # The password change failed for some reason.  Display the password
     # change page again, with the error template variable filled in.
@@ -161,8 +161,8 @@ while (my $q = CGI::Fast->new) {
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
         $weblogin->{pages}->{pwchange}->param (err_msg => $error);
-        $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token);
+        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
+                                        $weblogin->{query}->param ('ST'));
     }
 
 # Done on each pass through the FastCGI loop.  Clear out template parameters

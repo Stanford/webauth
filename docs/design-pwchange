@@ -51,25 +51,24 @@ Password Change Interface
      screen as normal, but the authentication fails because the password
      is expired.
 
-  2. WebLogin page uses the user's current username and password to
-     acquire a service ticket for the kadmin/changepw principal in the
-     realm for which the user was attempting login.
+  2. WebLogin presents the password change page to the user with the
+     username suppressed and a hidden form field set with the username.
+     The RT and ST tokens from the initial WebLogin interaction should
+     also be preserved in hidden fields.  The user should be prompted
+     again for their old password as well as twice for the new password
+     (in other words, only the username field should be suppressed).
 
-  3. WebLogin presents the password change page to the user with the
-     username and current password suppressed and a hidden form field set
-     with the username and an encrypted token containing the user's
-     kadmin/changepw credentials.  The RT and ST tokens from the initial
-     WebLogin interaction should also be preserved in hidden fields.  This
-     should be in the form of a WebAuth credential token.
+  3. User enters the old and new passwords on the password change page.
+     Tickets for kadmin/changepw are acquired using the old password and
+     then password change is attempted via the krb5_change_password API
+     until successful, repeatedly displaying the page as necessary with
+     the error template variable filled in if ticket acquisition or
+     password change fails.  There does not need to be any timeout on this
+     process, but the user won't be able to continue on to the destination
+     web site (in step 4 below) if they take more than the lifetime of the
+     initial request token.
 
-  4. User enters a new password on the password change page.  Password
-     change is attempted via the krb5_change_password API until
-     successful, repeatedly displaying the page as necessary with the
-     error template variable filled in if password change fails.  This
-     password change is done with the credentials retrieved from the
-     credential token.
-
-  5. After successful password change, the password change page then
+  4. After successful password change, the password change page then
      repeats the WebKDC login interaction using the saved username and the
      new password and the RT and ST tokens.  If successful, it proceeds as
      normal to the confirmation page or redirect to the WAS.  On failure,
@@ -141,13 +140,6 @@ Implementation Notes
   good opportunity to do the same thing for the WebLogin code, moving
   towards the Perl best practice of putting as much code as possible into
   modules and keeping scripts to wrappers around a Perl module.
-
-  Creating the credentials token to hold the kadmin/changepw credentials
-  may require some work on the WebAuth and WebKDC::Token Perl modules to
-  ensure that the appropriate interfaces are exposed to create those
-  tokens (not yet evaluated).  To create the credentials token, the
-  WebLogin module will require access to a keyring.  This should be
-  configurable, but normally will be the same as the WebKDC keyring.
 
   The Authen::Krb5 module does not provide the change_password API.  It
   would probably be easier to add that API to libwebauth and then to the

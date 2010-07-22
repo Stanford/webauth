@@ -1,5 +1,23 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.1 (2010-07-22)
+
+    Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.
+    If set, a user who is changing their password due to either an expired
+    password or by following the prompt to change a password that's
+    expiring soon is required to re-enter their current password on the
+    same screen as the new password, even if they had just authenticated
+    with the old password.  This may be required by site security policy
+    and is enabled by default.
+
+    Make mod_webkdc behavior match the documentation by changing the
+    default WebKdcProxyTokenLifetime to be the lifetime of the underlying
+    Kerberos credential.  Previously, the default was ten hours.
+
+    When probing for Apache module build flags, call apr-config --includes
+    and add it to the preprocessor flags.  Fixes build failures on Red Hat
+    Enterprise Linux 4 and 5.
+
 WebAuth 3.7.0 (2010-07-08)
 
     The WebAuthLdapAuthRule directive in mod_webauthldap has been fixed to
