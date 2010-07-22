@@ -59,4 +59,8 @@ AC_DEFUN([RRA_LIB_APACHE],
  AS_IF([test -z "$rra_apache_includedir"],
     [AC_MSG_ERROR([apxs -q INCLUDEDIR failed or returned no value])])
  APACHE_CPPFLAGS="$APACHE_CPPFLAGS -I$rra_apache_includedir"
+ AC_ARG_VAR([APR_CONFIG], [Path to apr-1-config or apr-config])
+ AC_PATH_PROGS([APR_CONFIG], [apr-1-config apr-config], [false])
+ AS_IF([test x"$APR_CONFIG" != xfalse],
+     [APACHE_CPPFLAGS="$APACHE_CPPFLAGS "`"$APR_CONFIG" --includes`])
  APACHE_LDFLAGS=`"$rra_apache_apxs" -q LDFLAGS_SHLIB 2>/dev/null`])

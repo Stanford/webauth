@@ -736,8 +736,7 @@ sub change_user_password {
     };
     if ($@) {
         $self->{CPT} = '';
-        my $msg = "timeout for $username: please re-enter your current "
-            ."password";
+        my $msg = "please re-enter your current password";
         my $e = $@;
         if (ref $e and $e->isa('WebKDC::WebKDCException')) {
             print STDERR $e->message(), "\n" if $self->{logging};
@@ -958,7 +957,7 @@ sub test_pwchange_fields {
 
     # Mark us as having had an error and print the page again.
     $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page ($req->request_token, $req->service_token);
+    $self->print_pwchange_page ($q->param ('RT'), $q->param ('ST'));
     return 0;
 }
 
@@ -1072,10 +1071,14 @@ sub process_response {
             if $self->{debug};
 
     # User's password has expired and we have somewhere to send them to get it
-    # changed.  Get the CPT and update the script name.
+    # changed.  Get the CPT (unless we require resending the password) and
+    # update the script name.
     } elsif ($status == WK_ERR_CREDS_EXPIRED
              && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
-        $self->add_changepw_token;
+
+        $self->add_changepw_token
+            unless $WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD;
+
         $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
         $self->{query}->param ('expired', 1);
         $self->print_pwchange_page ($req->request_token, $req->service_token);

@@ -32,6 +32,7 @@ our $EXPIRING_PW_URL;
 our $EXPIRING_PW_TGT;
 our $EXPIRING_PW_PRINC = '';
 our $EXPIRING_PW_PORT  = 0;
+our $EXPIRING_PW_RESEND_PASSWORD = 1;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;

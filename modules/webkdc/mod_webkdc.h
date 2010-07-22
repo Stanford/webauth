@@ -70,7 +70,7 @@
 
 #define CD_ProxyTokenLifetime "WebKdcProxyTokenLifetime"
 #define CM_ProxyTokenLifetime "lifetime of webdc-proxy-tokens"
-#define DF_ProxyTokenLifetime (60*60*10)
+#define DF_ProxyTokenLifetime 0
 
 #define CD_ServiceTokenLifetime "WebKdcServiceTokenLifetime"
 #define CM_ServiceTokenLifetime "lifetime of webkdc-service-tokens"
