@@ -353,9 +353,15 @@ sub print_confirm_page {
             $page->param (pwchange_url
                           => $WebKDC::Config::EXPIRING_PW_URL);
 
-            # Create and set the kadmin/changepw token.
-            $self->add_changepw_token;
-            $page->param (CPT => $self->{CPT});
+            # Create and set the kadmin/changepw token (unless we require the
+            # user re-enter).
+            if (!$WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD) {
+                $self->add_changepw_token;
+                $page->param (CPT => $self->{CPT});
+            } else {
+                $self->{pages}->{confirm}->param (skip_username => 1);
+            }
+
         }
     }
 
@@ -506,13 +512,17 @@ sub print_pwchange_page {
     $page->param (RT => $RT);
     $page->param (ST => $ST);
     $page->param (script_name => $self->{script_name});
-    $page->param (expired => 1) if $q->param ('expired') == 1;
+    $page->param (expired => 1)
+        if defined $q->param ('expired') && $q->param ('expired') == 1;
 
     # We don't need the user information if they have already acquired a
-    # kadmin/changepw token.
+    # kadmin/changepw token, or at previous request to skip the username.
     if ($self->{CPT}) {
         $page->param (skip_username => 1);
         $page->param (skip_password => 1);
+    } elsif (defined $q->param ('skip_username')
+             && $q->param ('skip_username') == 1) {
+        $page->param (skip_username => 1);
     }
 
     # Print out the page.
@@ -1076,8 +1086,11 @@ sub process_response {
     } elsif ($status == WK_ERR_CREDS_EXPIRED
              && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
 
-        $self->add_changepw_token
-            unless $WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD;
+        if (!$WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD) {
+            $self->add_changepw_token;
+        } else {
+            $self->{pages}->{pwchange}->param (skip_username => 1);
+        }
 
         $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
         $self->{query}->param ('expired', 1);
