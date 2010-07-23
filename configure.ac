@@ -77,6 +77,8 @@ AC_CHECK_FUNCS([krb5_data_free \
     krb5_principal_set_realm \
     krb5_unparse_name_flags \
     krb5_xfree])
+AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
+    [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
 AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],

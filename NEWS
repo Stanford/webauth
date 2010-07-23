@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.2 (unreleased)
+
+    Add portability code for old MIT Kerberos and Heimdal libraries
+    without krb5_get_init_creds_opt_free.
+
 WebAuth 3.7.1 (2010-07-23)
 
     Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.
