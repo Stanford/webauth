@@ -81,7 +81,7 @@ expired                : set when sent here for expired password login fail
 
           <TMPL_IF NAME=err_pwchange>
             <!-- Error: password change attempted, failed. -->
-            Error: Password change failed: <TMPL_VAR name=err_msg>.
+            Error: <TMPL_VAR name=err_msg>.
           </TMPL_IF>
 
         </strong></p>

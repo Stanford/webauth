@@ -10,6 +10,8 @@ WebAuth 3.7.1 (2010-07-22)
     with the old password.  This may be required by site security policy
     and is enabled by default.
 
+    Improve error reporting in WebLogin when password change fails.
+
     Make mod_webkdc behavior match the documentation by changing the
     default WebKdcProxyTokenLifetime to be the lifetime of the underlying
     Kerberos credential.  Previously, the default was ten hours.
