@@ -25,6 +25,7 @@ err_msg                : extra text describing an error
 RT                     : Response Token
 ST                     : Service Token
 CPT                    : kadmin/changepw Token
+skip_username          : suppress display of an entry box for the username
 username               : the username
 password               : the old password
 new_passwd1            : the new password (first)
@@ -80,7 +81,7 @@ expired                : set when sent here for expired password login fail
 
           <TMPL_IF NAME=err_pwchange>
             <!-- Error: password change attempted, failed. -->
-            Error: Password change failed: <TMPL_VAR name=err_msg>.
+            Error: <TMPL_VAR name=err_msg>.
           </TMPL_IF>
 
         </strong></p>
@@ -125,6 +126,7 @@ expired                : set when sent here for expired password login fail
                   <TMPL_IF NAME=skip_username>
                     <input type="hidden" name="username"
                            value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                    <input type="hidden" name="skip_username" value="1">
                   </TMPL_IF>
                   <table>
                     <TMPL_UNLESS NAME=skip_username>
