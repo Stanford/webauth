@@ -513,7 +513,7 @@ sub print_pwchange_page {
     $page->param (ST => $ST);
     $page->param (script_name => $self->{script_name});
     $page->param (expired => 1)
-        if defined $q->param ('expired') && $q->param ('expired') == 1;
+        if (defined ($q->param ('expired')) && $q->param ('expired') == 1);
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token, or at previous request to skip the username.
