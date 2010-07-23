@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.7.1 (2010-07-22)
+WebAuth 3.7.1 (2010-07-23)
 
     Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.
     If set, a user who is changing their password due to either an expired
