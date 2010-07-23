@@ -7,8 +7,9 @@ webauth (3.7.1-1) unstable; urgency=low
     - The default proxy token lifetime is now the lifetime of the
       underlying Kerberos credential, matching the documentation, instead
       of ten hours.
+    - Improve error reporting in WebLogin for password change failures.
 
- -- Russ Allbery <rra@debian.org>  Thu, 22 Jul 2010 15:13:37 -0700
+ -- Russ Allbery <rra@debian.org>  Fri, 23 Jul 2010 12:51:43 -0700
 
 webauth (3.7.0-1) unstable; urgency=low
 
