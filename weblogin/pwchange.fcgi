@@ -117,7 +117,8 @@ while (my $q = CGI::Fast->new) {
     if ($status == WK_SUCCESS) {
 
         # Expired password -- do the normal login process.
-        if ($weblogin->{query}->param ('expired') == 1) {
+        if ($weblogin->{query}->param ('expired')
+            and $weblogin->{query}->param ('expired') == 1) {
 
             # Get the right script name and password.
             $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
@@ -145,11 +146,18 @@ while (my $q = CGI::Fast->new) {
             $weblogin->print_pwchange_confirm_page;
         }
 
+    # Check if the user's old password was wrong.
+    } elsif ($status == WK_ERR_LOGIN_FAILED) {
+        $weblogin->{pages}->{pwchange}->param (error => 1);
+        $weblogin->{pages}->{pwchange}->param (err_loginfailed => 1);
+        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
+                                        $weblogin->{query}->param ('ST'));
+
     # Heimdal returns this if the password failed strength checking.  Give
     # an error that's more understandable to users.
     # FIXME: Should be verified against MIT as well.
     } elsif ($status == WK_ERR_UNRECOVERABLE_ERROR
-             && $error =~ /\(-1765328343\)/) {
+             && $error =~ /Message stream modified/) {
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwweak => 1);
         $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
@@ -158,6 +166,7 @@ while (my $q = CGI::Fast->new) {
     # The password change failed for some reason.  Display the password
     # change page again, with the error template variable filled in.
     } else {
+        $error =~ s/^password change failed for \S+: \(\d+\) //;
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
         $weblogin->{pages}->{pwchange}->param (err_msg => $error);

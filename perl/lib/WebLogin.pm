@@ -513,7 +513,7 @@ sub print_pwchange_page {
     $page->param (ST => $ST);
     $page->param (script_name => $self->{script_name});
     $page->param (expired => 1)
-        if defined $q->param ('expired') && $q->param ('expired') == 1;
+        if ($q->param ('expired') and $q->param ('expired') == 1);
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token, or at previous request to skip the username.
@@ -658,7 +658,8 @@ sub add_remuser_token {
 # Password change functions
 ##############################################################################
 
-# Create a kadmin/changepw token using the username and password.
+# Create a kadmin/changepw token using the username and password.  Returns
+# true on success and false on failure.
 sub add_changepw_token {
     my ($self) = @_;
     my $q = $self->{query};
@@ -666,7 +667,7 @@ sub add_changepw_token {
     my $password = $q->param ('password');
 
     # Don't bother if the token already is created.
-    return if $self->{CPT};
+    return 1 if $self->{CPT};
 
     print STDERR "adding a kadmin/changepw cred token for $username\n"
         if $self->{debug};
@@ -709,6 +710,7 @@ sub add_changepw_token {
         return;
     }
     $self->{CPT} = base64_encode ($token->to_token ($keyring));
+    return 1;
 }
 
 # Attempt to change the user password using the changepw token.
@@ -737,7 +739,10 @@ sub change_user_password {
     # likely expired.  Hide the actual error behind a simpler one for the
     # user.
     if (!$cpt && $q->param ('password')) {
-        $self->add_changepw_token;
+        unless ($self->add_changepw_token) {
+            return (WK_ERR_LOGIN_FAILED,
+                    'cannot acquire passord change credentials');
+        }
         $cpt = $self->{CPT};
     }
     my $token;
@@ -746,11 +751,19 @@ sub change_user_password {
     };
     if ($@) {
         $self->{CPT} = '';
-        my $msg = "please re-enter your current password";
+        my $msg = "internal error";
         my $e = $@;
         if (ref $e and $e->isa('WebKDC::WebKDCException')) {
             print STDERR $e->message(), "\n" if $self->{logging};
             return ($e->status(), $msg);
+        } elsif (ref $e and $e->isa('WebAuth::Exception')) {
+            print STDERR "WebAuth exception $e->{detail} $e->{status}\n"
+                if $self->{logging};
+            if ($e->{status} == WA_ERR_TOKEN_EXPIRED) {
+                $msg = "failed to change password for $username:"
+                    . " timed out, re-enter old password";
+            }
+            return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $msg);
         } elsif ($e) {
             return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $msg);
         }
@@ -764,11 +777,6 @@ sub change_user_password {
             . "invalid credential type";
         print STDERR $e, "\n" if $self->{logging};
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
-    } elsif ($token->expiration_time < time) {
-        my $e = "failed to change password for $username: "
-            . "credential token expired";
-        print STDERR $e, "\n" if $self->{logging};
-        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     }
 
     # Change the password and return any error status plus exception object.
@@ -780,6 +788,8 @@ sub change_user_password {
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
         return ($e->status(), $e->message());
+    } elsif (ref $e and $e->isa('WebAuth::Exception')) {
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e->{krb5_em});
     } elsif ($e) {
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } else {

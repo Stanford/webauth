@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.7.1 (2010-07-22)
+WebAuth 3.7.1 (2010-07-23)
 
     Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.
     If set, a user who is changing their password due to either an expired
@@ -9,6 +9,8 @@ WebAuth 3.7.1 (2010-07-22)
     same screen as the new password, even if they had just authenticated
     with the old password.  This may be required by site security policy
     and is enabled by default.
+
+    Improve error reporting in WebLogin when password change fails.
 
     Make mod_webkdc behavior match the documentation by changing the
     default WebKdcProxyTokenLifetime to be the lifetime of the underlying

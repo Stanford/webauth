@@ -424,6 +424,7 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
     if (c->code != 0)
         goto done;
     if (result_code != 0) {
+        c->code = result_code;
         retval = asprintf(&c->pwchange_err, "password change failed for %s:"
                           " (%d) %.*s%s%.*s", username, result_code,
                           (int) result_code_string.length,
