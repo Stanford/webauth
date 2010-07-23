@@ -117,7 +117,8 @@ while (my $q = CGI::Fast->new) {
     if ($status == WK_SUCCESS) {
 
         # Expired password -- do the normal login process.
-        if ($weblogin->{query}->param ('expired') == 1) {
+        if ($weblogin->{query}->param ('expired')
+            and $weblogin->{query}->param ('expired') == 1) {
 
             # Get the right script name and password.
             $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
