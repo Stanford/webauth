@@ -108,6 +108,15 @@ dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
 AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
 
+dnl Used when linking the Perl module.  Normally link against all the
+dnl dependencies that libwebauth may need, but don't do so if
+dnl --enable-reduced-depends was specified.
+AS_IF([test x"$rra_reduced_depends" = xtrue],
+    [DEPEND_LIBS=],
+    [DEPEND_LIBS="$KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
+     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS"])
+AC_SUBST([DEPEND_LIBS])
+
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
