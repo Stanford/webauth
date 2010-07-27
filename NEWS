@@ -2,6 +2,11 @@
 
 WebAuth 3.7.2 (unreleased)
 
+    mod_webkdc now returns a user rejected error instead of a generic
+    Kerberos error for attempted authentications to expired accounts or
+    accounts set to disallow authentication, allowing WebLogin to display
+    a rejected user error message rather than a generic failure message.
+
     Add portability code for old MIT Kerberos and Heimdal libraries
     without krb5_get_init_creds_opt_free.
 
