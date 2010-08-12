@@ -125,10 +125,12 @@ REQUIREMENTS
   WebLogin interface, but is not required.
 
   For optional WebLogin support for warning users of expired passwords,
-  the Net::Remctl Perl module is required and the local Kerberos realm
-  must provide the remctl interface from the kadmin-remctl package for the
-  WebLogin script to query.  You can obtain Net::Remctl and kadmin-remctl
-  from:
+  the Date::Parse, Time::Duration, and Net::Remctl Perl modules are
+  required and the local Kerberos realm must provide the remctl interface
+  from the kadmin-remctl package for the WebLogin script to query.
+  Date::Parse and Time::Duration are available from CPAN (Date::Parse in
+  the TimeDate distribution).  You can obtain Net::Remctl and
+  kadmin-remctl from:
 
       http://www.eyrie.org/~eagle/software/remctl/
       http://www.eyrie.org/~eagle/software/kadmin-remctl/
