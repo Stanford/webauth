@@ -1896,7 +1896,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     static const char*mwk_func = "mwk_do_login";
     WEBAUTH_KRB5_CTXT *ctxt;
     const char *subject;
-    char *server_principal;
+    char *server_principal, *temp;
     int status;
     size_t tgt_len, len;
     enum mwk_status ms;
@@ -1937,18 +1937,24 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         set_errorResponse(rc, WA_PEC_CREDS_EXPIRED, msg, mwk_func, 1);
         goto cleanup;
 
+    } else if (status == WA_ERR_USER_REJECTED) {
+        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                                              "mwk_do_login", NULL);
+        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
+        goto cleanup;
+
     } else if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_init_via_password",
                                               NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
         goto cleanup;
-    } else {
-        /* copy server_principal to request pool */
-        char *temp = apr_pstrcat(rc->r->pool, "krb5:", server_principal, NULL);
-        free(server_principal);
-        server_principal = temp;
     }
+
+    /* copy server_principal to request pool */
+    temp = apr_pstrcat(rc->r->pool, "krb5:", server_principal, NULL);
+    free(server_principal);
+    server_principal = temp;
 
     /* Check if the realm of the authenticated principal is permitted. */
     if (realm_permitted(rc, ctxt, mwk_func) != MWK_OK)

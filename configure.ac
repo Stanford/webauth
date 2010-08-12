@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [3.7.1], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [3.7.2], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -77,6 +77,8 @@ AC_CHECK_FUNCS([krb5_data_free \
     krb5_principal_set_realm \
     krb5_unparse_name_flags \
     krb5_xfree])
+AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
+    [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
 AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
@@ -105,6 +107,15 @@ AC_REPLACE_FUNCS([asprintf mkstemp strlcat strlcpy])
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
 AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
+
+dnl Used when linking the Perl module.  Normally link against all the
+dnl dependencies that libwebauth may need, but don't do so if
+dnl --enable-reduced-depends was specified.
+AS_IF([test x"$rra_reduced_depends" = xtrue],
+    [DEPEND_LIBS=],
+    [DEPEND_LIBS="$KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
+     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS"])
+AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])

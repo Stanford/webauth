@@ -1,0 +1,131 @@
+#!/usr/bin/perl -w
+#
+# Test suite for wa_keyring.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+
+use Test::More;
+eval { require Date::Parse };
+plan skip_all => 'Date::Parse required for testing wa_keyring' if $@;
+eval { require IPC::Run };
+plan skip_all => 'IPC::Run required for testing wa_keyring' if $@;
+
+plan tests => 68;
+
+# Run wa_keyring with the given arguments and return the exit status, standard
+# output, and standard error as a list.
+sub wa_keyring {
+    my ($out, $err);
+    IPC::Run::run ([ "$ENV{BUILD}/../tools/wa_keyring", @_ ],
+                   \undef, \$out, \$err);
+    my $status = $?;
+    return ($status, $out, $err);
+}
+
+# Test basic operations.
+my ($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '0s');
+is ($status, 0, 'wa_keyring add 0s succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded');
+is ($err, '', '...with no errors');
+my @out = split ('\n', $out);
+is ($out[0], 'Path: keyring', '...and correct path');
+is (scalar (@out), 4, '...and length of output');
+my ($id, $created, $valid, $fingerprint) = split ('  ', $out[3]);
+is ($id, ' 0', '...and correct key ID');
+is ($created, $valid, '...and created equals valid after');
+is (length ($fingerprint), 32, '...and correct fingerprint length');
+ok ((time - Date::Parse::str2time ($created)) < 10,
+    '...and correct created date');
+($status, $out, $err) = wa_keyring ('-v', '-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded');
+is ($err, '', '...with no errors');
+@out = split ('\n', $out);
+like ($out[0], qr/^\s*Path: keyring$/, '...and correct path');
+like ($out[1], qr/^\s*Num-Keys: 1$/, '...and correct key count');
+like ($out[3], qr/^\s*Key-Id: 0$/, '...and correct key ID');
+like ($out[4], qr/^\s*Created: \Q$created\E$/, '...and correct creation date');
+like ($out[5], qr/^\s*Valid-After: \Q$valid\E$/, '...and correct valid after');
+like ($out[6], qr/^\s*Key-Type: 1 \(AES\)$/, '...and correct key type');
+like ($out[7], qr/^\s*Key-Length: 128 bits$/, '...and correct key length');
+like ($out[8], qr/^\s*Fingerprint: \Q$fingerprint\E$/,
+      '...and correct fingerprint');
+is (scalar (@out), 9, '...and correct output length');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'remove', '0');
+is ($status, 0, 'wa_keyring remove 0 succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded after remove');
+is ($err, '', '...with no errors');
+@out = split ('\n', $out);
+is (scalar (@out), 3, '...and correct output length');
+
+# Test garbage collection.
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '-2w');
+is ($status, 0, 'wa_keyring add -2w succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '-2d');
+is ($status, 0, 'wa_keyring add -2d succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '1h');
+is ($status, 0, 'wa_keyring add 1h succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '120m');
+is ($status, 0, 'wa_keyring add 120m succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'add', '10800s');
+is ($status, 0, 'wa_keyring add 10800s succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded after adds');
+is ($err, '', '...with no errors');
+@out = split ('\n', $out);
+is (scalar (@out) - 3, 5, '...and has the correct number of keys');
+splice (@out, 0, 3);
+my $i = 0;
+for my $offset (-60 * 60 * 24 * 7 * 2,
+                -60 * 60 * 24 * 2,
+                 60 * 60 * 1,
+                 60 * 120,
+                 10800) {
+    ($id, $created, $valid, $fingerprint) = split ('  ', $out[$i]);
+    ok (Date::Parse::str2time ($created) - time < 10,
+        "...and key $i has the correct created time");
+    ok (Date::Parse::str2time ($valid) - $offset - time < 10,
+        "...and key $i has the correct valid time");
+    $i++;
+}
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'gc', '-1w');
+is ($status, 0, 'wa_keyring gc -1w succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded after gc');
+is ($err, '', '...with no errors');
+@out = split ('\n', $out);
+is (scalar (@out) - 3, 4, '...and has the correct number of keys');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'gc', '0s');
+is ($status, 0, 'wa_keyring gc 0s succeeded');
+is ($out, '', '...with no output');
+is ($err, '', '...and no errors');
+($status, $out, $err) = wa_keyring ('-f', 'keyring', 'list');
+is ($status, 0, 'wa_keyring list succeeded after gc');
+is ($err, '', '...with no errors');
+@out = split ('\n', $out);
+is (scalar (@out) - 3, 3, '...and has the correct number of keys');
+
+# Clean up.
+unlink 'keyring';

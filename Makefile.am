@@ -39,10 +39,10 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/libwebauth.map lib/libwebauth.sym lib/mkheader lib/webauth.h.in \
 	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
 	tests/data/README tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
