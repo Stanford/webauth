@@ -2,6 +2,13 @@
 
 WebAuth 3.7.2 (unreleased)
 
+    Fix wa_keyring option parsing problems introduced in 3.7.0.  Correctly
+    count arguments so that commands are recognized correctly and do not
+    require -- before commands with negative time offsets, like "gc -90d".
+
+    Fix uninitialized variable that caused wa_keyring to randomly default
+    to verbose mode for list.
+
     mod_webkdc now returns a user rejected error instead of a generic
     Kerberos error for attempted authentications to expired accounts or
     accounts set to disallow authentication, allowing WebLogin to display
