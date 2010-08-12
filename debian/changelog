@@ -2,6 +2,7 @@ webauth (3.7.1-2) unstable; urgency=low
 
   * Apply upstream deltas:
     - [49ad22d2] Fix wa_keyring option parsing and verbose mode bugs
+  * Update standards version to 3.9.1 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Thu, 12 Aug 2010 15:37:53 -0700
 
