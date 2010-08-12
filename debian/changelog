@@ -1,3 +1,15 @@
+webauth (3.7.2-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix wa_keyring option parsing problems introduced in 3.7.0.
+    - Fix uninitalized variable causing wa_keyring to randomly default to
+      verbose mode.
+    - mod_webkdc now returns user rejected instead of a generic Kerberos
+      error for attempted authentications to expired or disabled
+      accounts, improving the error message displayed by WebLogin.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 12 Aug 2010 15:25:28 -0700
+
 webauth (3.7.1-1) unstable; urgency=low
 
   * New upstream release.
