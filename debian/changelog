@@ -9,8 +9,9 @@ webauth (3.7.2-1) experimental; urgency=low
       accounts, improving the error message displayed by WebLogin.
   * Add build dependencies on libipc-run-perl and libtimedate-perl to
     enable wa_keyring tests.
+  * Update standards version to 3.9.1 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Thu, 12 Aug 2010 15:27:12 -0700
+ -- Russ Allbery <rra@debian.org>  Thu, 12 Aug 2010 15:31:18 -0700
 
 webauth (3.7.1-1) unstable; urgency=low
 
