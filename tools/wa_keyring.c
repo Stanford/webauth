@@ -372,7 +372,7 @@ int
 main(int argc, char **argv)
 {
     int option;
-    bool verbose;
+    bool verbose = false;
     unsigned long id;
     long offset;
     char *end;
@@ -380,7 +380,13 @@ main(int argc, char **argv)
     const char *command = "list";
 
     message_program_name = argv[0];
-    while ((option = getopt(argc, argv, "f:hv")) != EOF) {
+
+    /*
+     * The + tells GNU getopt to stop option parsing at the first non-argument
+     * rather than proceeding on to find options anywhere.  This allows easier
+     * specification of negative time offsets.
+     */
+    while ((option = getopt(argc, argv, "+f:hv")) != EOF) {
         switch (option) {
         case 'f':
             keyring = optarg;
@@ -391,6 +397,8 @@ main(int argc, char **argv)
         case 'v':
             verbose = true;
             break;
+        case '+':
+            fprintf(stderr, "%s: invalid option -- +\n", argv[0]);
         default:
             usage(1);
             break;
@@ -402,6 +410,7 @@ main(int argc, char **argv)
         usage(1);
     if (argc > 0) {
         command = argv[0];
+        argc--;
         argv++;
     }
 
