@@ -281,9 +281,11 @@ $WebKDC::Config::WEBKDC_PRINCIPAL = contents ('t/data/test.principal')
 
 # Get a cache for the given principal.
 my $oldcache = $ENV{KRB5CCNAME};
-$ENV{KRB5CCNAME} = 'krb5cc_test';
-getcreds ('t/data/test.keytab', $WebKDC::Config::WEBKDC_PRINCIPAL);
-$ENV{KRB5CCNAME} = $oldcache;
+if (defined $WebKDC::Config::WEBKDC_PRINCIPAL) {
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
+    getcreds ('t/data/test.keytab', $WebKDC::Config::WEBKDC_PRINCIPAL);
+    $ENV{KRB5CCNAME} = $oldcache;
+}
 
 # FIXME: Only works when run on a WebKDC.  When fixed it should run like the
 #        test after it does, with a skip for when the test.principal does

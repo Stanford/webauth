@@ -518,15 +518,18 @@ webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *context,
 
     if (c->code != 0) {
         switch (c->code) {
-            case KRB5KRB_AP_ERR_BAD_INTEGRITY:
-            case KRB5KDC_ERR_PREAUTH_FAILED:
-            case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
-                return WA_ERR_LOGIN_FAILED;
-            case KRB5KDC_ERR_KEY_EXP:
-                return WA_ERR_CREDS_EXPIRED;
-            default:
-                /* FIXME: needs better logging. */
-                return WA_ERR_KRB5;
+        case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+        case KRB5KDC_ERR_PREAUTH_FAILED:
+        case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+            return WA_ERR_LOGIN_FAILED;
+        case KRB5KDC_ERR_KEY_EXP:
+            return WA_ERR_CREDS_EXPIRED;
+        case KRB5KDC_ERR_POLICY:
+        case KRB5KDC_ERR_NAME_EXP:
+            return WA_ERR_USER_REJECTED;
+        default:
+            /* FIXME: needs better logging. */
+            return WA_ERR_KRB5;
         }
 
     }

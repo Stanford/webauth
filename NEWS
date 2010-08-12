@@ -1,5 +1,26 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.2 (2010-08-12)
+
+    Fix wa_keyring option parsing problems introduced in 3.7.0.  Correctly
+    count arguments so that commands are recognized correctly and do not
+    require -- before commands with negative time offsets, like "gc -90d".
+
+    Fix uninitialized variable that caused wa_keyring to randomly default
+    to verbose mode for list.
+
+    mod_webkdc now returns a user rejected error instead of a generic
+    Kerberos error for attempted authentications to expired accounts or
+    accounts set to disallow authentication, allowing WebLogin to display
+    a rejected user error message rather than a generic failure message.
+
+    Add portability code for old MIT Kerberos and Heimdal libraries
+    without krb5_get_init_creds_opt_free.
+
+    Fix build problems with with Perl module (only built when the WebKDC
+    is enabled) on platforms where all shared libraries need to be linked
+    with explicitly.
+
 WebAuth 3.7.1 (2010-07-23)
 
     Add new WebLogin configuration parameter $EXPIRING_PW_RESEND_PASSWORD.

@@ -67,12 +67,13 @@ typedef enum {
     WA_ERR_KEYRING_READ,     /* Unable to read key ring file. */
     WA_ERR_KEYRING_VERSION,  /* Bad keyring version. */
     WA_ERR_NOT_FOUND,        /* Item not found while searching. */
-    WA_ERR_KRB5,             /* A Kerberos5 error occured. */
+    WA_ERR_KRB5,             /* A Kerberos error occured. */
     WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function. */
     WA_ERR_LOGIN_FAILED,     /* Bad username/password. */
     WA_ERR_TOKEN_EXPIRED,    /* Token has expired. */
     WA_ERR_TOKEN_STALE,      /* Token is stale. */
     WA_ERR_CREDS_EXPIRED,    /* Password has expired. */
+    WA_ERR_USER_REJECTED,    /* User not permitted to authenticate. */
 
     /* Update webauth_error_message when adding more codes. */
 
