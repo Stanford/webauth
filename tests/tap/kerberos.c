@@ -23,33 +23,6 @@
 
 
 /*
- * Given the partial path to a file, look under BUILD and then SOURCE for the
- * file and return the full path to the file in newly-allocated memory.
- * Returns NULL if the file doesn't exist.
- */
-static char *
-find_file(const char *file)
-{
-    char *base;
-    char *path = NULL;
-    const char *envs[] = { "BUILD", "SOURCE", NULL };
-    int i;
-
-    for (i = 0; envs[i] != NULL; i++) {
-        base = getenv(envs[i]);
-        if (base == NULL)
-            continue;
-        path = concatpath(base, file);
-        if (access(path, R_OK) == 0)
-            break;
-        free(path);
-        path = NULL;
-    }
-    return path;
-}
-
-
-/*
  * Obtain Kerberos tickets for the principal specified in test.principal using
  * the keytab specified in test.keytab, both of which are presumed to be in
  * tests/data in either the build or the source tree.
@@ -78,7 +51,7 @@ kerberos_setup(void)
     krb5_creds creds;
 
     /* Read the principal name and find the keytab file. */
-    path = find_file("data/test.principal");
+    path = test_file_path("data/test.principal");
     if (path == NULL)
         return NULL;
     file = fopen(path, "r");
@@ -95,7 +68,7 @@ kerberos_setup(void)
         bail("no newline in %s", path);
     free(path);
     principal[strlen(principal) - 1] = '\0';
-    path = find_file("data/test.keytab");
+    path = test_file_path("data/test.keytab");
     if (path == NULL)
         return NULL;
 
