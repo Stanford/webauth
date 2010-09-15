@@ -130,6 +130,10 @@ mod_webauth:
    them.  This works around a bug in IE 7 where bar.com cookies are sent
    to foo.bar.com as well as the foo.bar.com cookies.
 
+ * Support setting request headers in addition to or instead of environment
+   variables, which will help when using proxy_http to, for example, a
+   Tomcat server.
+
 mod_webauthldap:
 
  * User request: There's no inherent reason why mod_webauthldap needs to
@@ -154,6 +158,10 @@ mod_webauthldap:
 
  * Support listing multiple privgroups on the same line in the
    mod_webauthldap module using the iterate flag.
+
+ * Support setting request headers in addition to or instead of environment
+   variables, which will help when using proxy_http to, for example, a
+   Tomcat server.
 
 mod_webkdc:
 
