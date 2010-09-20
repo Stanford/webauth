@@ -147,7 +147,7 @@ test_strerror(int status, const char *output, int error,
 
     full_output = concat(output, ": ", strerror(error), "\n", (char *) NULL);
     xasprintf(&name, "strerror %lu", testnum / 3 + 1);
-    is_function_output(function, status, full_output, name);
+    is_function_output(function, status, full_output, "%s", name);
     free(full_output);
     free(name);
 }

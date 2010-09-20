@@ -11,6 +11,11 @@ WebAuth 3.7.3 (unreleased)
     The WebAuth library also installs a pkg-config configuration file for
     the use of software that wants to link against it.
 
+    Update to rra-c-util 2.7:
+
+    * Look for krb5-config in /usr/kerberos/bin after the user's PATH.
+    * Update utility library and test suite for newer GCC warnings.
+
 WebAuth 3.7.2 (2010-08-12)
 
     Fix wa_keyring option parsing problems introduced in 3.7.0.  Correctly

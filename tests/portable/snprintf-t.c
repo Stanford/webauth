@@ -2,7 +2,7 @@
  * snprintf test suite.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
  * Copyright (c) 2004, 2005, 2006
  *     by Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
@@ -15,6 +15,12 @@
 #include <portable/system.h>
 
 #include <tests/tap/basic.h>
+
+/*
+ * Disable the requirement that format strings be literals.  We need variable
+ * formats for easy testing.
+ */
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
 /*
  * Intentionally don't add the printf attribute here since we pass a
@@ -86,7 +92,7 @@ static unsigned long long ullong_nums[] = {
 
 
 static void
-test_format(bool truncate, const char *expected, int count,
+test_format(bool trunc, const char *expected, int count,
             const char *format, ...)
 {
     char buf[128];
@@ -94,7 +100,7 @@ test_format(bool truncate, const char *expected, int count,
     va_list args;
 
     va_start(args, format);
-    result = test_vsnprintf(buf, truncate ? 32 : sizeof(buf), format, args);
+    result = test_vsnprintf(buf, trunc ? 32 : sizeof(buf), format, args);
     va_end(args);
     is_string(expected, buf, "format %s, wanted %s", format, expected);
     is_int(count, result, "...and output length correct");
