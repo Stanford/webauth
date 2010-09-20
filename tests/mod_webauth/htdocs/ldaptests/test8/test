@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+#
+# Written by Russ Allbery
+# Copyright 2003, 2010 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+my $AUTHRULE = $ENV{'WEBAUTH_LDAPAUTHRULE'};
+
+require '../util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title(4, "legacy directives");
+
+print<<EOS;
+
+You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
+<br>
+This tests the WebAuth 2.x compatibility directive, <b>AuthType
+StanfordAuth</b>, with retrieval of e-mail address, display name, and
+univid.  If your directory entry has the mail, displayname, and
+suunivid attributes and the web server has access to read them, you
+should see SU_AUTH_DIRMAIL, SU_AUTH_DIRNAME, and SU_AUTH_UNIVID filled
+in below.
+<br>
+EOS
+
+&unauth_return_links;
+
+&dump_stuff;
+
+print "</html>";
+
