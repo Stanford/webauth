@@ -1252,11 +1252,11 @@ webauthldap_exportattrib(void* lcp, const char *key, const char *val)
     apr_table_set(lc->envvars, newkey, "placed in env vars");
 
 #ifndef NO_STANFORD_SUPPORT
-    if (!strcmp(newkey, "mail") && lc->legacymode) {
+    if (strcasecmp(newkey, "MAIL") == 0 && lc->legacymode) {
         apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRMAIL", val);
-    } else if (!strcmp(newkey, "displayname") && lc->legacymode) {
+    } else if (strcasecmp(newkey, "DISPLAYNAME") == 0 && lc->legacymode) {
         apr_table_set(lc->r->subprocess_env, "SU_AUTH_DIRNAME", val);
-    } else if (!strcmp(newkey, "suunivid") && lc->legacymode) {
+    } else if (strcasecmp(newkey, "SUUNIVID") == 0 && lc->legacymode) {
         apr_table_set(lc->r->subprocess_env, "SU_AUTH_UNIVID", val);
     }
 #endif
