@@ -24,25 +24,26 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
-	conf/debian/webauth.conf conf/debian/webauth.load		    \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
-	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
-	docs/install-spnego docs/install-stanford docs/install-webkdc	    \
-	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
-	lib/libwebauth.map lib/libwebauth.sym lib/mkheader lib/webauth.h.in \
-	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/data/README tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
+	conf/debian/webauth.conf conf/debian/webauth.load		   \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	   \
+	docs/install-spnego docs/install-stanford docs/install-webkdc	   \
+	docs/mod_webauth.html.en docs/mod_webauth.xml			   \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
+	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	   \
+	lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST		   \
+	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
+	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
+	tools/wa_keyring.pod tools/weblogin-passcheck			   \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
+	weblogin/images/help.xcf weblogin/images/login.xcf		   \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
@@ -111,6 +112,21 @@ bin_PROGRAMS = tools/wa_keyring
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
+
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = lib/libwebauth.pc
+
+lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
+	sed -e 's,[@]prefix[@],$(prefix),g' \
+	    -e 's,[@]exec_prefix[@],$(exec_prefix),g' \
+	    -e 's,[@]includedir[@],$(includedir),g' \
+	    -e 's,[@]libdir[@],$(libdir),g' \
+	    -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+	    -e 's,[@]KRB5_LDFLAGS[@],$(KRB5_LDFLAGS),g' \
+	    -e 's,[@]KRB5_LIBS[@],$(KRB5_LIBS),g' \
+	    -e 's,[@]CRYPTO_LDFLAGS[@],$(CRYPTO_LDFLAGS),g' \
+	    -e 's,[@]CRYPTO_LIBS[@],$(CRYPTO_LIBS),g' \
+	    $(srcdir)/lib/libwebauth.pc.in > $@
 
 # Only install the WebLogin script and configuration if configured to build
 # and install mod_webkdc.  These don't have to go together, but that's the

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+libdir=@libdir@
+
+Name: WebAuth
+Description: Ssite-wide web authentication system
+URL: http://webauth.stanford.edu/
+Version: @PACKAGE_VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lwebauth
+Libs.private: @KRB5_LDFLAGS@ @KRB5_LIBS@ @CRYPTO_LDFLAGS@ @CRYPTO_LIBS@
