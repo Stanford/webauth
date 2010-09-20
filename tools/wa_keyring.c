@@ -314,7 +314,7 @@ add_key(const char *keyring, long valid_after)
  * remove.
  */
 static void
-remove_key(const char *keyring, unsigned long index)
+remove_key(const char *keyring, unsigned long n)
 {
     WEBAUTH_KEYRING *ring;
     int s;
@@ -322,9 +322,9 @@ remove_key(const char *keyring, unsigned long index)
     s = webauth_keyring_read_file(keyring, &ring);
     if (s != WA_ERR_NONE)
         die_webauth(s, "cannot read keyring %s", keyring);
-    s = webauth_keyring_remove(ring, index);
+    s = webauth_keyring_remove(ring, n);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot remove key %lu from keyring", index);
+        die_webauth(s, "cannot remove key %lu from keyring", n);
     s = webauth_keyring_write_file(ring, keyring);
     if (s != WA_ERR_NONE)
         die_webauth(s, "cannot write keyring to %s", keyring);

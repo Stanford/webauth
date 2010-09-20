@@ -2321,7 +2321,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     if (ap_strstr(req_token.request_options, "lc")) {
         MWK_RETURNED_TOKEN lc_token;
-        enum mwk_status ms;
+
         memset(&lc_token, 0, sizeof(lc_token));
         ms = create_error_token_from_req(rc,
                                          WA_PEC_LOGIN_CANCELED,
