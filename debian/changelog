@@ -1,3 +1,11 @@
+webauth (3.7.3-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix LDAP attribute retrieval for WebAuth 2.x compatibility.
+    - libwebauth now provides a pkg-config configuration file.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 20 Sep 2010 17:07:48 -0700
+
 webauth (3.7.2-1) experimental; urgency=low
 
   * New upstream release.
