@@ -321,10 +321,10 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     char *key = apr_pstrcat(rc->r->pool, "id;", subject, NULL);
     apr_hash_index_t *hi;
     void *p;
-    int access;
+    int allowed;
     MWK_ACL *acl;
 
-    access = 0;
+    allowed = 0;
 
     mwk_lock_mutex(rc, MWK_MUTEX_TOKENACL); /****** LOCKING! ************/
 
@@ -335,7 +335,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     /* check non-wild first */
     p = apr_hash_get(acl->entries, key, APR_HASH_KEY_STRING);
     if (p != NULL) {
-        access = 1;
+        allowed = 1;
         goto done;
     }
 
@@ -349,7 +349,7 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
         hkey = vhkey;
         if (strncmp(hkey, "id;", 3) == 0) {
             if (ap_strcmp_match(subject, hkey+3) == 0) {
-                access = 1;
+                allowed = 1;
                 goto done;
             }
         }
@@ -361,10 +361,10 @@ mwk_has_id_access(MWK_REQ_CTXT *rc,
     if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_id_access: %s => %d",
-                     subject, access);
+                     subject, allowed);
     }
 
-    return access;
+    return allowed;
 }
 
 int
@@ -375,10 +375,10 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     apr_hash_index_t *hi;
     void *p;
     char *prefix, *key;
-    int plen, access;
+    int plen, allowed;
     MWK_ACL *acl;
 
-    access = 0;
+    allowed = 0;
 
     mwk_lock_mutex(rc, MWK_MUTEX_TOKENACL); /****** LOCKING! ************/
 
@@ -392,7 +392,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     /* check non-wild first */
     p = apr_hash_get(acl->entries, key, APR_HASH_KEY_STRING);
     if (p != NULL) {
-        access = 1;
+        allowed = 1;
         goto done;
     }
 
@@ -408,7 +408,7 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
         hkey = vhkey;
         if (strncmp(hkey, prefix, plen) == 0) {
             if (ap_strcmp_match(subject, hkey+plen) == 0) {
-                access = 1;
+                allowed = 1;
                 goto done;
             }
         }
@@ -420,10 +420,10 @@ mwk_has_proxy_access(MWK_REQ_CTXT *rc,
     if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_proxy_access: %s, %s => %d",
-                     subject, proxy_type, access);
+                     subject, proxy_type, allowed);
     }
 
-    return access;
+    return allowed;
 }
 
 int
@@ -436,10 +436,10 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     void *va;
     apr_array_header_t *a;
     char *prefix, *key;
-    int plen, i, access;
+    int plen, i, allowed;
     MWK_ACL *acl;
 
-    access = 0;
+    allowed = 0;
 
     mwk_lock_mutex(rc, MWK_MUTEX_TOKENACL); /****** LOCKING! ************/
 
@@ -456,7 +456,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
         char **p = (char**)a->elts;
         for (i=0; i < a->nelts; i++) {
             if (strcmp(p[i], cred) == 0) {
-                access = 1;
+                allowed = 1;
                 goto done;
             }
         }
@@ -478,7 +478,7 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
                 char **p = (char **) a->elts;
                 for (i = 0; i < a->nelts; i++) {
                     if (strcmp(p[i], cred) == 0) {
-                        access = 1;
+                        allowed = 1;
                         goto done;
                     }
                 }
@@ -492,10 +492,10 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
     if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_has_cred_access: %s, %s, %s => %d",
-                     subject, cred_type, cred, access);
+                     subject, cred_type, cred, allowed);
     }
 
-    return access;
+    return allowed;
 }
 
 
@@ -504,16 +504,16 @@ mwk_can_use_proxy_token(MWK_REQ_CTXT *rc,
                         const char *subject,
                         const char *proxy_subject)
 {
-    int access;
+    int allowed;
 
-    access = (strcmp(subject, proxy_subject) == 0) ||
+    allowed = (strcmp(subject, proxy_subject) == 0) ||
         (strncmp(proxy_subject, "WEBKDC:", 7) == 0);
 
    if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webkdc: mwk_can_use_proxy_token: %s, %s, => %d",
-                     subject, proxy_subject, access);
+                     subject, proxy_subject, allowed);
     }
 
-    return access;
+    return allowed;
 }

@@ -24,25 +24,26 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
-	conf/debian/webauth.conf conf/debian/webauth.load		    \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
-	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
-	docs/install-spnego docs/install-stanford docs/install-webkdc	    \
-	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
-	lib/libwebauth.map lib/libwebauth.sym lib/mkheader lib/webauth.h.in \
-	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/data/README tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
+	conf/debian/webauth.conf conf/debian/webauth.load		   \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	   \
+	docs/install-spnego docs/install-stanford docs/install-webkdc	   \
+	docs/mod_webauth.html.en docs/mod_webauth.xml			   \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
+	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	   \
+	lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST		   \
+	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
+	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
+	tools/wa_keyring.pod tools/weblogin-passcheck			   \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
+	weblogin/images/help.xcf weblogin/images/login.xcf		   \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
@@ -89,8 +90,8 @@ modules_ldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
 	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
 modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
-modules_ldap_mod_webauthldap_la_LIBADD = $(APACHE_LIBS) $(KRB5_LIBS) \
-	$(LDAP_LIBS)
+modules_ldap_mod_webauthldap_la_LIBADD = portable/libportable.la \
+	$(APACHE_LIBS) $(KRB5_LIBS) $(LDAP_LIBS)
 modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
 	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
 	modules/webauth/util.c modules/webauth/webkdc.c
@@ -111,6 +112,21 @@ bin_PROGRAMS = tools/wa_keyring
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
+
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = lib/libwebauth.pc
+
+lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
+	sed -e 's,[@]prefix[@],$(prefix),g' \
+	    -e 's,[@]exec_prefix[@],$(exec_prefix),g' \
+	    -e 's,[@]includedir[@],$(includedir),g' \
+	    -e 's,[@]libdir[@],$(libdir),g' \
+	    -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+	    -e 's,[@]KRB5_LDFLAGS[@],$(KRB5_LDFLAGS),g' \
+	    -e 's,[@]KRB5_LIBS[@],$(KRB5_LIBS),g' \
+	    -e 's,[@]CRYPTO_LDFLAGS[@],$(CRYPTO_LDFLAGS),g' \
+	    -e 's,[@]CRYPTO_LIBS[@],$(CRYPTO_LIBS),g' \
+	    $(srcdir)/lib/libwebauth.pc.in > $@
 
 # Only install the WebLogin script and configuration if configured to build
 # and install mod_webkdc.  These don't have to go together, but that's the
@@ -172,6 +188,7 @@ install-data-local-perl: perl/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
+CLEANFILES = lib/libwebauth.pc
 DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
@@ -196,11 +213,16 @@ distclean-local:
 	fi
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
-# without optimization turned on, and add -DDEBUG=1 so we'll also compile all
-# debugging code and test it.
-WARNINGS = -g -O -DDEBUG=1 -Wall -W -Wendif-labels -Wpointer-arith \
-        -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
-        -Wmissing-prototypes -Wnested-externs -Werror
+# without optimization turned on.  Desirable warnings that can't be turned
+# on due to other problems:
+#
+#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
+#
+# Last checked against gcc 4.4 (2010-08-15).
+WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
+	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
+	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
+	-Wmissing-prototypes -Wnested-externs -Werror
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
