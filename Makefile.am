@@ -188,6 +188,7 @@ install-data-local-perl: perl/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
+CLEANFILES = lib/libwebauth.pc
 DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
