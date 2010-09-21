@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.7.3 (unreleased)
+WebAuth 3.7.3 (2010-09-20)
 
     Explicitly link the mod_webauthldap module with the portability glue
     library, fixing a build failure on Red Hat Enterprise 4 x86_64.
