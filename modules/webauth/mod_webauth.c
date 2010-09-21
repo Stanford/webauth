@@ -2204,10 +2204,12 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
     } else {
         /* need to construct new cookies for newly gathered creds */
         if (*acquired_creds) {
-            MWA_CRED_TOKEN **creds = (MWA_CRED_TOKEN**)(*acquired_creds)->elts;
-            int i, num_creds = (*acquired_creds)->nelts;
-            for (i=0; i < num_creds; i++) {
-                make_cred_cookie(creds[i], rc);
+            MWA_CRED_TOKEN **new_creds
+                = (MWA_CRED_TOKEN**)(*acquired_creds)->elts;
+            int i, num_new_creds = (*acquired_creds)->nelts;
+
+            for (i = 0; i < num_new_creds; i++) {
+                make_cred_cookie(new_creds[i], rc);
             }
         }
     }
@@ -2302,11 +2304,11 @@ gather_creds(MWA_REQ_CTXT *rc)
 
     if (all_proxy_types != NULL && gathered_creds != NULL) {
         char **proxy = (char**)all_proxy_types->elts;
-        MWA_CRED_TOKEN **cred = (MWA_CRED_TOKEN**) gathered_creds->elts;
+        MWA_CRED_TOKEN **new_cred = (MWA_CRED_TOKEN**) gathered_creds->elts;
 
         /* foreach proxy type, process the creds */
         for (i=0; i < all_proxy_types->nelts; i++) {
-            if (!prepare_creds(rc, proxy[i], cred, gathered_creds->nelts)) {
+            if (!prepare_creds(rc, proxy[i], new_cred, gathered_creds->nelts)) {
                 /* FIXME: similar as case where we can't get
                    creds from the webkdc. prepare_creds will log
                    any errors. For now, we continue and let the

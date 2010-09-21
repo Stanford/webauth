@@ -136,7 +136,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
 	"$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" \
-	"$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(pkgconfigdir)" \
+	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(apache_LTLIBRARIES) $(lib_LTLIBRARIES) \
 	$(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
@@ -154,7 +155,8 @@ lib_libwebauth_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(lib_libwebauth_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-modules_ldap_mod_webauthldap_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+modules_ldap_mod_webauthldap_la_DEPENDENCIES =  \
+	portable/libportable.la $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_modules_ldap_mod_webauthldap_la_OBJECTS = modules/ldap/modules_ldap_mod_webauthldap_la-mod_webauthldap.lo
 modules_ldap_mod_webauthldap_la_OBJECTS =  \
@@ -353,7 +355,8 @@ am__dist_template_DATA_DIST = weblogin/templates/confirm.tmpl \
 	weblogin/templates/pwchange.tmpl
 am__dist_weblogin_DATA_DIST = weblogin/login.fcgi weblogin/logout.fcgi \
 	weblogin/pwchange.fcgi
-DATA = $(dist_image_DATA) $(dist_template_DATA) $(dist_weblogin_DATA)
+DATA = $(dist_image_DATA) $(dist_template_DATA) $(dist_weblogin_DATA) \
+	$(nodist_pkgconfig_DATA)
 HEADERS = $(nodist_include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -525,25 +528,26 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
-	conf/debian/webauth.conf conf/debian/webauth.load		    \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
-	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
-	docs/install-spnego docs/install-stanford docs/install-webkdc	    \
-	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
-	lib/libwebauth.map lib/libwebauth.sym lib/mkheader lib/webauth.h.in \
-	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/data/README tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
+	conf/debian/webauth.conf conf/debian/webauth.load		   \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	   \
+	docs/install-spnego docs/install-stanford docs/install-webkdc	   \
+	docs/mod_webauth.html.en docs/mod_webauth.xml			   \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
+	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	   \
+	lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST		   \
+	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
+	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
+	tools/wa_keyring.pod tools/weblogin-passcheck			   \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
+	weblogin/images/help.xcf weblogin/images/login.xcf		   \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
@@ -582,8 +586,8 @@ modules_ldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
 modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
 
-modules_ldap_mod_webauthldap_la_LIBADD = $(APACHE_LIBS) $(KRB5_LIBS) \
-	$(LDAP_LIBS)
+modules_ldap_mod_webauthldap_la_LIBADD = portable/libportable.la \
+	$(APACHE_LIBS) $(KRB5_LIBS) $(LDAP_LIBS)
 
 modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
 	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
@@ -609,6 +613,8 @@ tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 
 dist_man_MANS = tools/wa_keyring.1
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = lib/libwebauth.pc
 
 # Only install the WebLogin script and configuration if configured to build
 # and install mod_webkdc.  These don't have to go together, but that's the
@@ -640,6 +646,7 @@ BINDINGS_INSTALL = $(am__append_5)
 @GCC_TRUE@PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
 @GCC_TRUE@	-Wno-strict-prototypes
 
+CLEANFILES = lib/libwebauth.pc
 DISTCLEANFILES = perl/Makefile lib/webauth.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
@@ -648,11 +655,16 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
-# without optimization turned on, and add -DDEBUG=1 so we'll also compile all
-# debugging code and test it.
-WARNINGS = -g -O -DDEBUG=1 -Wall -W -Wendif-labels -Wpointer-arith \
-        -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
-        -Wmissing-prototypes -Wnested-externs -Werror
+# without optimization turned on.  Desirable warnings that can't be turned
+# on due to other problems:
+#
+#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
+#
+# Last checked against gcc 4.4 (2010-08-15).
+WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
+	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
+	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
+	-Wmissing-prototypes -Wnested-externs -Werror
 
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
@@ -1655,6 +1667,26 @@ uninstall-dist_webloginDATA:
 	test -n "$$files" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(weblogindir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(weblogindir)" && rm -f $$files
+install-nodist_pkgconfigDATA: $(nodist_pkgconfig_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgconfigdir)" || $(MKDIR_P) "$(DESTDIR)$(pkgconfigdir)"
+	@list='$(nodist_pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgconfigdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgconfigdir)" || exit $$?; \
+	done
+
+uninstall-nodist_pkgconfigDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(nodist_pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(pkgconfigdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(pkgconfigdir)" && rm -f $$files
 install-nodist_includeHEADERS: $(nodist_include_HEADERS)
 	@$(NORMAL_INSTALL)
 	test -z "$(includedir)" || $(MKDIR_P) "$(DESTDIR)$(includedir)"
@@ -1903,7 +1935,7 @@ all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(MANS) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1925,6 +1957,7 @@ mostlyclean-generic:
 	-test -z "$(LTLIBOBJS)" || rm -f $(LTLIBOBJS)
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -1987,7 +2020,8 @@ info-am:
 
 install-data-am: install-apacheLTLIBRARIES install-dist_imageDATA \
 	install-dist_templateDATA install-dist_webloginDATA \
-	install-man install-nodist_includeHEADERS
+	install-man install-nodist_includeHEADERS \
+	install-nodist_pkgconfigDATA
 
 install-dvi: install-dvi-am
 
@@ -2039,7 +2073,8 @@ ps-am:
 uninstall-am: uninstall-apacheLTLIBRARIES uninstall-binPROGRAMS \
 	uninstall-dist_imageDATA uninstall-dist_templateDATA \
 	uninstall-dist_webloginDATA uninstall-libLTLIBRARIES \
-	uninstall-man uninstall-nodist_includeHEADERS
+	uninstall-man uninstall-nodist_includeHEADERS \
+	uninstall-nodist_pkgconfigDATA
 
 uninstall-man: uninstall-man1
 
@@ -2062,17 +2097,30 @@ uninstall-man: uninstall-man1
 	install-exec install-exec-am install-exec-local install-html \
 	install-html-am install-info install-info-am \
 	install-libLTLIBRARIES install-man install-man1 \
-	install-nodist_includeHEADERS install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-apacheLTLIBRARIES \
-	uninstall-binPROGRAMS uninstall-dist_imageDATA \
-	uninstall-dist_templateDATA uninstall-dist_webloginDATA \
-	uninstall-libLTLIBRARIES uninstall-man uninstall-man1 \
-	uninstall-nodist_includeHEADERS
+	install-nodist_includeHEADERS install-nodist_pkgconfigDATA \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-apacheLTLIBRARIES uninstall-binPROGRAMS \
+	uninstall-dist_imageDATA uninstall-dist_templateDATA \
+	uninstall-dist_webloginDATA uninstall-libLTLIBRARIES \
+	uninstall-man uninstall-man1 uninstall-nodist_includeHEADERS \
+	uninstall-nodist_pkgconfigDATA
 
+
+lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
+	sed -e 's,[@]prefix[@],$(prefix),g' \
+	    -e 's,[@]exec_prefix[@],$(exec_prefix),g' \
+	    -e 's,[@]includedir[@],$(includedir),g' \
+	    -e 's,[@]libdir[@],$(libdir),g' \
+	    -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
+	    -e 's,[@]KRB5_LDFLAGS[@],$(KRB5_LDFLAGS),g' \
+	    -e 's,[@]KRB5_LIBS[@],$(KRB5_LIBS),g' \
+	    -e 's,[@]CRYPTO_LDFLAGS[@],$(CRYPTO_LDFLAGS),g' \
+	    -e 's,[@]CRYPTO_LIBS[@],$(CRYPTO_LIBS),g' \
+	    $(srcdir)/lib/libwebauth.pc.in > $@
 
 # The following section sets up the Perl module build properly.  Most of the
 # complexity is here to handle building outside of the source directory, in

@@ -214,17 +214,17 @@ webauth_keyring_add(WEBAUTH_KEYRING *ring, time_t creation_time,
  * code.
  */
 int
-webauth_keyring_remove(WEBAUTH_KEYRING *ring, size_t index)
+webauth_keyring_remove(WEBAUTH_KEYRING *ring, size_t n)
 {
     size_t i;
 
     assert(ring);
 
-    if (index >= ring->num_entries)
+    if (n >= ring->num_entries)
         return WA_ERR_NOT_FOUND;
-    webauth_key_free(ring->entries[index].key);
-    for (i = index+1; i < ring->num_entries; i++)
-        ring->entries[i-1] = ring->entries[i];
+    webauth_key_free(ring->entries[n].key);
+    for (i = n + 1; i < ring->num_entries; i++)
+        ring->entries[i - 1] = ring->entries[i];
     ring->num_entries--;
     return WA_ERR_NONE;
 }

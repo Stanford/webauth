@@ -140,17 +140,19 @@ they contain a colon.</p>
 </pre>
 </example>
 
-<p>If you wish to have the legacy SU_AUTH_DIRNAME and SU_AUTH_DIRMAIL
-variables set, you need to use the new WebAuthLdapAttribute directives
-explicitly.  If you dont want to go through and change numerous .htaccess
-files, you can set the WebAuthLdapAttribute directive on some top location
-above all the .htaccess files and they wil be inherited down.</p>
+<p>If you wish to have the legacy SU_AUTH_DIRNAME, SU_AUTH_DIRMAIL, or
+SU_AUTH_UNIVID variables set, you need to use the new WebAuthLdapAttribute
+directives explicitly.  If you don't want to go through and change
+numerous .htaccess files, you can set the WebAuthLdapAttribute directive
+on some top location above all the .htaccess files, and they wil be
+inherited.</p>
 
-<example><title>With Name and Mail variables:</title>
+<example><title>With name, mail, and univid variables:</title>
 <pre>
 &lt;Location /top/&gt;
   WebAuthLdapAttribute mail
   WebAuthLdapAttribute displayName
+  WebAuthLdapAttribute suUnivid
 &lt;/Location&gt;
 
 # .htaccess file in /top/mydir can remain like this:

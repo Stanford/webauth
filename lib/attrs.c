@@ -252,11 +252,11 @@ webauth_attr_list_free(WEBAUTH_ATTR_LIST *list)
 
 /*
  * Find a particular attribute in an attribute list and store its index in
- * the index parameter.  Returns a WA_ERR code.
+ * the n parameter.  Returns a WA_ERR code.
  */
 int
 webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name,
-                       ssize_t *index)
+                       ssize_t *n)
 {
     size_t i;
 
@@ -266,10 +266,10 @@ webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name,
 
     for (i = 0; i < list->num_attrs; i++)
         if (strcmp(list->attrs[i].name, name) == 0) {
-            *index = i;
+            *n = i;
             return WA_ERR_NONE;
         }
-    *index = -1;
+    *n = -1;
     return WA_ERR_NOT_FOUND;
 }
 
