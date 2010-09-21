@@ -1,3 +1,4 @@
 usr/include
 usr/lib/libwebauth.a
 usr/lib/libwebauth.so
+usr/lib/pkgconfig/libwebauth.pc
