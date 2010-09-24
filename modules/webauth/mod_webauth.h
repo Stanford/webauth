@@ -11,6 +11,8 @@
 #ifndef MOD_WEBAUTH_H
 #define MOD_WEBAUTH_H
 
+#include <modules/mod-config.h>
+
 #include "httpd.h"
 #include "http_config.h"
 #include "http_log.h"

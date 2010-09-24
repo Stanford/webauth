@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.4 (unreleased)
+
+    Export the defines to enable system extensions to the module config
+    header as well.  Fixes build problems with APR on Red Hat Enterprise
+    Linux 5, which requires _GNU_SOURCE be defined before including APR
+    headers to define off64_t.
+
 WebAuth 3.7.3 (2010-09-20)
 
     Explicitly link the mod_webauthldap module with the portability glue
