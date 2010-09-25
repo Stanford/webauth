@@ -51,12 +51,8 @@ COMPILING, TESTING, and INSTALLATION
     them for your local system.
 
     On other platforms, you will need to build and install WebAuth
-    yourself.  Stanford does provide an older version of the WebAuth
-    package and various prerequisites for Solaris, but those builds are
-    for Solaris 8 and are no longer being updated.  If you do need to
-    build WebAuth yourself, follow the general installation instructions
-    up through the INSTALLATION section, and then return to this
-    document.
+    yourself.  Follow the general installation instructions up through the
+    INSTALLATION section, and then return to this document.
 
 CONFIGURATION
 
