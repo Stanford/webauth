@@ -4,7 +4,7 @@ includedir=@includedir@
 libdir=@libdir@
 
 Name: WebAuth
-Description: Ssite-wide web authentication system
+Description: Site-wide web authentication system
 URL: http://webauth.stanford.edu/
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
