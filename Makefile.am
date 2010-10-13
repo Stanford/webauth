@@ -117,15 +117,15 @@ pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = lib/libwebauth.pc
 
 lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
-	sed -e 's,[@]prefix[@],$(prefix),g' \
-	    -e 's,[@]exec_prefix[@],$(exec_prefix),g' \
-	    -e 's,[@]includedir[@],$(includedir),g' \
-	    -e 's,[@]libdir[@],$(libdir),g' \
-	    -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
-	    -e 's,[@]KRB5_LDFLAGS[@],$(KRB5_LDFLAGS),g' \
-	    -e 's,[@]KRB5_LIBS[@],$(KRB5_LIBS),g' \
-	    -e 's,[@]CRYPTO_LDFLAGS[@],$(CRYPTO_LDFLAGS),g' \
-	    -e 's,[@]CRYPTO_LIBS[@],$(CRYPTO_LIBS),g' \
+	sed -e 's![@]prefix[@]!$(prefix)!g' \
+	    -e 's![@]exec_prefix[@]!$(exec_prefix)!g' \
+	    -e 's![@]includedir[@]!$(includedir)!g' \
+	    -e 's![@]libdir[@]!$(libdir)!g' \
+	    -e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
+	    -e 's![@]KRB5_LDFLAGS[@]!$(KRB5_LDFLAGS)!g' \
+	    -e 's![@]KRB5_LIBS[@]!$(KRB5_LIBS)!g' \
+	    -e 's![@]CRYPTO_LDFLAGS[@]!$(CRYPTO_LDFLAGS)!g' \
+	    -e 's![@]CRYPTO_LIBS[@]!$(CRYPTO_LIBS)!g' \
 	    $(srcdir)/lib/libwebauth.pc.in > $@
 
 # Only install the WebLogin script and configuration if configured to build

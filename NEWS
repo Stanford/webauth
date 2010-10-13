@@ -7,6 +7,9 @@ WebAuth 3.7.4 (unreleased)
     Linux 5, which requires _GNU_SOURCE be defined before including APR
     headers to define off64_t.
 
+    Avoid problems with generating the pkg-config configuration file when
+    the Kerberos linker flags contain commas.
+
 WebAuth 3.7.3 (2010-09-20)
 
     Explicitly link the mod_webauthldap module with the portability glue
