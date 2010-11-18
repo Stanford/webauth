@@ -2,6 +2,10 @@
 
 WebAuth 3.7.4 (unreleased)
 
+    Fix compilation error in libwebauth if assert() calls are enabled and
+    the local C library doesn't define an index function.  Fixes
+    compilation problems on Solaris 10.
+
     Export the defines to enable system extensions to the module config
     header as well.  Fixes build problems with APR on Red Hat Enterprise
     Linux 5, which requires _GNU_SOURCE be defined before including APR
