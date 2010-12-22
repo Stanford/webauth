@@ -200,29 +200,39 @@ static int
 set_pending_cookie_cb(void *rec, const char *key, const char *value)
 {
     MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
+
     if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0) {
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webauth: set_pending_cookie_cb: %s", value);
     }
-
     return 1;
 }
 
 
-/* see if we have to update our cookies and save them in err_headers_out
- * so the always gets sent.
+/*
+ * Pending cookies that we're going to send are stored as notes inside the
+ * main request and then converted into outgoing headers during fixups.  This
+ * function converts the notes to headers and is called during fixups.
  */
 static void
 set_pending_cookies(MWA_REQ_CTXT *rc) 
 {
     apr_table_t *t;
+
     if (rc->r->main != NULL)
         t = rc->r->main->notes;
     else 
         t = rc->r->notes;
-    apr_table_do(set_pending_cookie_cb, rc, t, NULL);
+
+    /*
+     * If there is no notes table, assume we have no cookies to set.  This
+     * reportedly can happen with Solaris 10 x86 with at least some versions
+     * of Apache.
+     */
+    if (t != NULL)
+        apr_table_do(set_pending_cookie_cb, rc, t, NULL);
 }
 
 
@@ -2631,21 +2641,30 @@ translate_name_hook(request_rec *r)
 }
 
 
+/*
+ * Hook into fixups to ensure that all WebAuth cookies are set properly.  If
+ * we're doing logout, we'll also ensure that the headers saying not to cache
+ * the response are set properly.
+ */
 static int 
 fixups_hook(request_rec *r)
 {
     MWA_REQ_CTXT rc;
 
     memset(&rc, 0, sizeof(rc));
-
     rc.r = r;
-    rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
-                                                 &webauth_module);
+    rc.sconf = (MWA_SCONF *)
+        ap_get_module_config(r->server->module_config, &webauth_module);
 
-    rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                                &webauth_module);
-
-    if (rc.dconf->do_logout) {
+    /*
+     * Reportedly with Solaris 10 x86 and some versions of Apache,
+     * r->per_dir_config may not always be set.  If it isn't set, assume that
+     * we're not doing logout.
+     */
+    if (r->per_dir_config != NULL)
+        rc.dconf = (MWA_DCONF *)
+            ap_get_module_config(r->per_dir_config, &webauth_module);
+    if (rc.dconf != NULL && rc.dconf->do_logout) {
         nuke_all_webauth_cookies(&rc);
         dont_cache(&rc);
     } else {

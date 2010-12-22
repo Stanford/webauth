@@ -18,6 +18,11 @@ WebAuth 3.7.4 (unreleased)
     older than 3.6.1 and therefore missing the request token type in the
     repsonse.
 
+    Be more defensive in mod_webauth against an Apache request struct that
+    doesn't have the notes table or per-directory configuration filled in,
+    which reportedly happened under an Apache version on Solaris 10 x86.
+    Based on a patch by Gary Buhrmaster.
+
     Update to C TAP Harness 1.6:
 
     * Fix compliation of runtests with more aggressive warnings.
