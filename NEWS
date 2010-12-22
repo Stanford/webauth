@@ -14,6 +14,10 @@ WebAuth 3.7.4 (unreleased)
     Avoid problems with generating the pkg-config configuration file when
     the Kerberos linker flags contain commas.
 
+    Print a clearer warning in WebLogin when used with a mod_webkdc
+    older than 3.6.1 and therefore missing the request token type in the
+    repsonse.
+
     Update to C TAP Harness 1.6:
 
     * Fix compliation of runtests with more aggressive warnings.

@@ -328,6 +328,14 @@ sub print_confirm_page {
     my $lc = $resp->login_canceled_token;
     my $token_type = $resp->response_token_type;
 
+    # The code to return the response token type was added in WebAuth 3.6.1.
+    # Provide a useful error message if the mod_webkdc is older than that.
+    unless (defined $token_type) {
+        warn 'token type not present in WebKDC response; mod_webkdc on the'
+            . " WebKDC may be older than 3.6.1\n";
+        $token_type = '';
+    }
+
     # FIXME: This looks like it generates extra, unnecessary semicolons, but
     # should be checked against the parser in the WebAuth module.
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
