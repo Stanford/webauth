@@ -228,8 +228,7 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
 
     /*
      * If there is no notes table, assume we have no cookies to set.  This
-     * reportedly can happen with Solaris 10 x86 with at least some versions
-     * of Apache.
+     * reportedly can happen with Solaris 10 x86's included Apache (2.0.63).
      */
     if (t != NULL)
         apr_table_do(set_pending_cookie_cb, rc, t, NULL);
@@ -2657,9 +2656,9 @@ fixups_hook(request_rec *r)
         ap_get_module_config(r->server->module_config, &webauth_module);
 
     /*
-     * Reportedly with Solaris 10 x86 and some versions of Apache,
-     * r->per_dir_config may not always be set.  If it isn't set, assume that
-     * we're not doing logout.
+     * Reportedly with Solaris 10 x86's included Apache (2.0.63),
+     * r->per_dir_config may not always be set.  If it isn't set, assume
+     * that we're not doing logout.
      */
     if (r->per_dir_config != NULL)
         rc.dconf = (MWA_DCONF *)

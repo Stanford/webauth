@@ -20,7 +20,7 @@ WebAuth 3.7.4 (unreleased)
 
     Be more defensive in mod_webauth against an Apache request struct that
     doesn't have the notes table or per-directory configuration filled in,
-    which reportedly happened under an Apache version on Solaris 10 x86.
+    which seems to happen under the Apache included with Solaris 10 x86.
     Based on a patch by Gary Buhrmaster.
 
     Update to C TAP Harness 1.6:
