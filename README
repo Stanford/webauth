@@ -66,7 +66,7 @@ REQUIREMENTS
 
   WebAuth requires the following additional packages:
 
-      Apache 2 version 2.0.43 or later (2.0.46 or later recommended)
+      Apache 2 version 2.0.43 or later (2.2 or later recommended)
       OpenSSL 0.9.7 or later
       MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
         -or- Heimdal Kerberos (tested with 0.7 or later)
@@ -78,10 +78,11 @@ REQUIREMENTS
       OpenLDAP 2.x (tested with 2.1.17 and later)
 
   Apache must be built with --enable-ssl and --enable-so.  Either Apache
-  2.0 or Apache 2.2 should work without difficulty.  WebAuth uses apxs to
-  determine the required build flags for Apache modules.  Heimdal 0.6 may
-  work, but has not been well-tested.  Heimdal 0.7 and later have been
-  tested more extensively.
+  2.0 or Apache 2.2 should work, but there have been reports of problems
+  with the Apache 2.0 that comes with Solaris 10 x86, so Apache 2.2 is
+  recommended.  WebAuth uses apxs to determine the required build flags
+  for Apache modules.  Heimdal 0.6 may work, but has not been well-tested.
+  Heimdal 0.7 and later have been tested more extensively.
 
   The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
   but are no longer tested with versions earlier than 5.10.
