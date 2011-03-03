@@ -1,3 +1,9 @@
+webauth (3.7.3-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 02 Mar 2011 16:48:17 -0800
+
 webauth (3.7.3-1) experimental; urgency=low
 
   * New upstream release.
