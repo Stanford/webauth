@@ -18,6 +18,9 @@ WebAuth 3.7.4 (unreleased)
     older than 3.6.1 and therefore missing the request token type in the
     repsonse.
 
+    Document the pt and sa key/value pairs in WebKDC logs in the
+    mod_webkdc manual.
+
     Be more defensive in mod_webauth against an Apache request struct that
     doesn't have the notes table or per-directory configuration filled in,
     which seems to happen under the Apache included with Solaris 10 x86.
