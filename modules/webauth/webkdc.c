@@ -48,7 +48,7 @@ copy_service_token(apr_pool_t *pool,
 
 static MWA_SERVICE_TOKEN *
 new_service_token(apr_pool_t *pool,
-                  int key_type, 
+                  int key_type,
                   const char *kdata,
                   size_t kd_len,
                   const char *tdata,
@@ -79,7 +79,7 @@ new_service_token(apr_pool_t *pool,
 
 static MWA_SERVICE_TOKEN *
 read_service_token_cache(server_rec *server,
-                             MWA_SCONF *sconf, 
+                             MWA_SCONF *sconf,
                              apr_pool_t *pool)
 {
     MWA_SERVICE_TOKEN *token;
@@ -133,7 +133,7 @@ read_service_token_cache(server_rec *server,
     }
 
     if (finfo.size == 0) {
-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server,
                      "mod_webauth: %s: service token cache is zero length: %s",
                      mwa_func, sconf->st_cache_path);
         return NULL;
@@ -142,13 +142,13 @@ read_service_token_cache(server_rec *server,
     status = webauth_attrs_decode(buffer, finfo.size, &alist);
 
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, "mwa_func", 
-                              "webauth_attrs_decode", 
+        mwa_log_webauth_error(server, status, "mwa_func",
+                              "webauth_attrs_decode",
                               sconf->st_cache_path);
         return NULL;
     }
 
-    s_expires = webauth_attr_list_get_time(alist, "expires", &expires, 
+    s_expires = webauth_attr_list_get_time(alist, "expires", &expires,
                                            WA_F_FMT_STR);
 
     s_created = webauth_attr_list_get_time(alist, "created", &created,
@@ -156,9 +156,9 @@ read_service_token_cache(server_rec *server,
 
     s_token = webauth_attr_list_get_str(alist, "token", &tok, &tlen,
                                         WA_F_NONE);
-    s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt", 
+    s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt",
                                        &lra, WA_F_FMT_STR);
-    s_nra = webauth_attr_list_get_time(alist, "next_renewal_attempt", 
+    s_nra = webauth_attr_list_get_time(alist, "next_renewal_attempt",
                                        &nra, WA_F_FMT_STR);
     s_kt = webauth_attr_list_get_uint32(alist, "key_type", &key_type,
                                         WA_F_FMT_STR);
@@ -168,7 +168,7 @@ read_service_token_cache(server_rec *server,
         (s_lra != WA_ERR_NONE) || (s_kt != WA_ERR_NONE) ||
         (s_nra != WA_ERR_NONE) || (s_created != WA_ERR_NONE) ||
         (s_key != WA_ERR_NONE)) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                      "mod_webauth: %s: attr_list_get failed for: %s%s%s%s%s%s%s",
                      mwa_func,
                      (s_expires != WA_ERR_NONE) ? "expires" : "",
@@ -204,7 +204,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
 
     /* store new cache in a temp file, and move over if everything ok */
     templ = apr_pstrcat(pool, sconf->st_cache_path, "XXXXXX", NULL);
-    astatus = apr_file_mktemp(&cache, templ, 
+    astatus = apr_file_mktemp(&cache, templ,
                               APR_WRITE|APR_CREATE|
                               APR_TRUNCATE |APR_FILE_NOCLEANUP,
                               pool);
@@ -222,19 +222,19 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     webauth_attr_list_add_str(alist, "token", (char *) token->token, 0,
                               WA_F_NONE);
 
-    webauth_attr_list_add_uint32(alist, "key_type", 
+    webauth_attr_list_add_uint32(alist, "key_type",
                                  token->key.type, WA_F_FMT_STR);
 
-    webauth_attr_list_add_time(alist, "expires", 
+    webauth_attr_list_add_time(alist, "expires",
                                  token->expires, WA_F_FMT_STR);
 
-    webauth_attr_list_add_time(alist, "created", 
+    webauth_attr_list_add_time(alist, "created",
                                  token->created, WA_F_FMT_STR);
 
-    webauth_attr_list_add_time(alist, "last_renewal_attempt", 
+    webauth_attr_list_add_time(alist, "last_renewal_attempt",
                                  token->last_renewal_attempt, WA_F_FMT_STR);
 
-    webauth_attr_list_add_time(alist, "next_renewal_attempt", 
+    webauth_attr_list_add_time(alist, "next_renewal_attempt",
                                  token->next_renewal_attempt, WA_F_FMT_STR);
 
     webauth_attr_list_add(alist, "key", token->key.data,
@@ -297,7 +297,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     } else {
         /* not ok, nuke it */
         astatus = apr_file_remove(templ, pool);
-        if (astatus != APR_SUCCESS) {        
+        if (astatus != APR_SUCCESS) {
             mwa_log_apr_error(server, astatus, mwa_func, "apr_file_rename",
                               templ, sconf->st_cache_path);
         }
@@ -341,7 +341,7 @@ append_string(MWA_STRING *string, const char *in_data, size_t in_size)
 
         if (string->data != NULL) {
             memcpy(new_data, string->data, string->size);
-        } 
+        }
         /* don't have to free existing data since it from a pool */
         string->data = new_data;
     }
@@ -371,7 +371,7 @@ post_gather(char *in_data, size_t size, size_t nmemb, void *string)
  * FIXME: need to think about retry/timeout policy
  */
 static char *
-post_to_webkdc(char *post_data, size_t post_data_len, 
+post_to_webkdc(char *post_data, size_t post_data_len,
                server_rec *server, MWA_SCONF *sconf,
                apr_pool_t *pool)
 {
@@ -420,19 +420,19 @@ post_to_webkdc(char *post_data, size_t post_data_len,
     init_string(&string, pool);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &string);
     headers = curl_slist_append(headers, "Content-Type: text/xml");
- 
+
     /* data to post */
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
- 
+
     /* set the size of the postfields data */
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, post_data_len);
- 
+
     /* pass our list of custom made headers */
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
- 
+
     curl_error_buff[0] = '\0';
     code = curl_easy_perform(curl); /* post away! */
- 
+
     curl_slist_free_all(headers); /* free the header list */
 
     if (code != CURLE_OK) {
@@ -490,13 +490,13 @@ log_error_response(apr_xml_elem *e,
         } else if (strcmp(sib->name, "errorMessage") == 0) {
             error_message = get_elem_text(pool, sib, error_message);
         } else {
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server, 
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server,
                          "mod_webauth: log_error_response: "
                          "ignoring unknown element in <errorResponse>: <%s>",
                          sib->name);
         }
     }
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                  "mod_webauth: %s: errorResponse from webkdc: errorCode(%s) "
                  "errorMessage(%s)",
                  mwa_func, error_code, error_message);
@@ -517,15 +517,15 @@ parse_service_token_response(apr_xml_doc *xd,
     time_t first_renewal_attempt, expiration;
     static const char *mwa_func = "parse_service_token_response";
     const char *expires, *session_key, *token_data;
-    
+
     e = xd->root;
 
     if (strcmp(e->name, "errorResponse") == 0) {
         log_error_response(e, mwa_func, server, pool);
         return NULL;
     } else if (strcmp(e->name, "getTokensResponse") != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                     "mod_webauth: %s: unknown response(%s)", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: %s: unknown response(%s)",
                      mwa_func, e->name);
         return NULL;
     }
@@ -533,16 +533,16 @@ parse_service_token_response(apr_xml_doc *xd,
     /* parse it already */
     e = e->first_child;
     if (!e || strcmp(e->name, "tokens") != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                     "mod_webauth: %s: can't find <tokens>", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: %s: can't find <tokens>",
                      mwa_func);
         return NULL;
     }
 
     e = e->first_child;
     if (!e || strcmp(e->name, "token") != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                     "mod_webauth: %s: can't find <token>", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: %s: can't find <token>",
                      mwa_func);
         return NULL;
     }
@@ -557,7 +557,7 @@ parse_service_token_response(apr_xml_doc *xd,
         } else if (strcmp(sib->name, "tokenData") == 0) {
             token_data = get_elem_text(pool, sib, NULL);
         } else {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                          "mod_webauth: %s: "
                          "ignoring unknown element in <token>: <%s>",
                          mwa_func, sib->name);
@@ -565,10 +565,10 @@ parse_service_token_response(apr_xml_doc *xd,
     }
 
     if ((session_key == NULL) || (expires == NULL) || (token_data == NULL)) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                      "mod_webauth: %s: "
                      "missing %s%s%s",
-                     mwa_func, 
+                     mwa_func,
                      session_key == NULL ? "<sessionKey> " : "",
                      expires == NULL ? "<expires> " : "",
                      token_data == NULL ? "<tokenData> " : "");
@@ -578,7 +578,7 @@ parse_service_token_response(apr_xml_doc *xd,
     bskey = apr_palloc(pool, apr_base64_decode_len(session_key));
     bskey_len = apr_base64_decode(bskey, session_key);
 
-    /* 
+    /*
      * FIXME: initial next_renewal_attempt time is hardcoded to when the token
      * has reached 90% of its lifetime. Might want to make this a config
      * option at some point (though no good reason I can think of to
@@ -587,7 +587,7 @@ parse_service_token_response(apr_xml_doc *xd,
 
     expiration = (time_t) atoi(expires);
 
-    first_renewal_attempt = 
+    first_renewal_attempt =
         curr + ((expiration - curr) * START_RENEWAL_ATTEMPT_PERCENT);
 
     st = new_service_token(pool,
@@ -608,7 +608,7 @@ parse_service_token_response(apr_xml_doc *xd,
  * request a service token from the WebKDC
  */
 static MWA_SERVICE_TOKEN *
-request_service_token(server_rec *server, 
+request_service_token(server_rec *server,
                       MWA_SCONF *sconf,
                       apr_pool_t *pool,
                       time_t curr)
@@ -623,7 +623,7 @@ request_service_token(server_rec *server,
 
     /* FIXME: this is currently hardcoded to krb5, but should be a directive */
     mci = mwa_find_cred_interface(server, "krb5");
-    if (mci == NULL) 
+    if (mci == NULL)
         return NULL;
 
     bk5_req = mci->webkdc_credential(server, sconf, pool);
@@ -631,7 +631,7 @@ request_service_token(server_rec *server,
     if (bk5_req == NULL)
         return NULL;
 
-    xml_request = apr_pstrcat(pool, 
+    xml_request = apr_pstrcat(pool,
                               "<getTokensRequest>"
                               "<requesterCredential type='krb5'>",
                               bk5_req,
@@ -641,7 +641,7 @@ request_service_token(server_rec *server,
                               NULL);
 
     if (sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
                      "mod_webauth: xml_request(%s)", xml_request);
     }
 
@@ -651,14 +651,14 @@ request_service_token(server_rec *server,
         return 0;
 
     if (sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, server,
                      "mod_webauth: xml_response(%s)", xml_response);
     }
-    
+
     xp = apr_xml_parser_create(pool);
     if (xp == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
-                     "mod_webauth: %s: apr_xml_parser_create failed", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: %s: apr_xml_parser_create failed",
                      mwa_func);
         return 0;
     }
@@ -670,9 +670,9 @@ request_service_token(server_rec *server,
 
     if (astatus != APR_SUCCESS) {
         char errbuff[1024];
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                      "mod_webauth: %s: "
-                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+                     "apr_xml_parser_{feed,done} failed: %s (%d)",
                      mwa_func,
                      apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
                      astatus);
@@ -698,7 +698,7 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
     status = WA_ERR_NONE;
 
     token->app_state = NULL;
-    token->app_state_len = 0;   
+    token->app_state_len = 0;
 
     alist = webauth_attr_list_new(10);
 
@@ -709,9 +709,9 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
         return;
     }
 
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0, 
+    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0,
                               WA_F_NONE);
-    webauth_attr_list_add(alist, WA_TK_SESSION_KEY, 
+    webauth_attr_list_add(alist, WA_TK_SESSION_KEY,
                           token->key.data, token->key.length, WA_F_NONE);
     webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
                                token->expires, WA_F_NONE);
@@ -739,7 +739,7 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
 
 
 /*
- * create a pool for the service token and copy the new 
+ * create a pool for the service token and copy the new
  * token into it. If the old_service_token is set, then destroy
  * its pool.
  */
@@ -763,7 +763,7 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
 
 /*
  * this function returns a service-token to use.
- * 
+ *
  * it looks in memory first, then the service token cache, then makes
  * a request if all else fails.
  *
@@ -773,11 +773,11 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
  *
  */
 MWA_SERVICE_TOKEN *
-mwa_get_service_token(server_rec *server, MWA_SCONF *sconf, 
+mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
                       apr_pool_t *pool, int local_cache_only)
 {
     MWA_SERVICE_TOKEN *token;
-    time_t curr = time(NULL); 
+    time_t curr = time(NULL);
     static const char *mwa_func = "mwa_get_service_token";
     apr_thread_mutex_lock(sconf->mutex); /****** LOCKING! ************/
 
@@ -832,14 +832,14 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
                      "token from webkdc",
                      mwa_func);
 
-        /* couldn't get a new one, lets update renewal_attempt times 
+        /* couldn't get a new one, lets update renewal_attempt times
          * if we have a current token.
          */
         if (sconf->service_token != NULL) {
 
             /* update {last,next}_renewal_attempt */
             sconf->service_token->last_renewal_attempt = curr;
-            sconf->service_token->next_renewal_attempt = 
+            sconf->service_token->next_renewal_attempt =
                 curr+TOKEN_RETRY_INTERVAL;
             write_service_token_cache(server, sconf, pool,
                                       sconf->service_token);
@@ -923,15 +923,15 @@ parse_get_creds_response(apr_xml_doc *xd,
     static const char *mwa_func = "parse_service_token_response";
     char *token_data;
     MWA_CRED_TOKEN *ct;
-    
+
     e = xd->root;
 
     if (strcmp(e->name, "errorResponse") == 0) {
         log_error_response(e, mwa_func, rc->r->server, rc->r->pool);
         return 0;
     } else if (strcmp(e->name, "getTokensResponse") != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: %s: unknown response(%s)", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: unknown response(%s)",
                      mwa_func, e->name);
         return 0;
     }
@@ -939,15 +939,15 @@ parse_get_creds_response(apr_xml_doc *xd,
     /* parse it already */
     tokens = e->first_child;
     if (!tokens || strcmp(tokens->name, "tokens") != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: %s: can't find <tokens>", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: can't find <tokens>",
                      mwa_func);
         return 0;
     }
 
     for (token = tokens->first_child; token; token = token->next) {
         if (!token || strcmp(token->name, "token") != 0) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: %s: "
                          "ignoring unknown element in <tokens>: <%s>",
                          mwa_func, token->name);
@@ -960,7 +960,7 @@ parse_get_creds_response(apr_xml_doc *xd,
             if (strcmp(e->name, "tokenData") == 0) {
                 token_data = (char*)get_elem_text(rc->r->pool, e, NULL);
             } else {
-                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                              "mod_webauth: %s: "
                              "ignoring unknown element in <token>: <%s>",
                              mwa_func, e->name);
@@ -968,7 +968,7 @@ parse_get_creds_response(apr_xml_doc *xd,
         }
 
         if (token_data == NULL) {
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: %s: "
                          "missing <tokenData>",
                          mwa_func);
@@ -979,12 +979,12 @@ parse_get_creds_response(apr_xml_doc *xd,
         ct = mwa_parse_cred_token(token_data, NULL, &st->key, rc);
         if (ct != NULL) {
             MWA_CRED_TOKEN **nct;
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: %s: "
                          "parsed %s %s",
                          mwa_func, ct->cred_type, ct->cred_server);
 
-            if (*acquired_creds == NULL) 
+            if (*acquired_creds == NULL)
                 *acquired_creds = apr_array_make(rc->r->pool, 2,
                                                  sizeof(MWA_CRED_TOKEN*));
             nct = apr_array_push(*acquired_creds);
@@ -1048,12 +1048,12 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     }
 
     /* base64 encode the webkdc-proxy-token */
-    b64_pt = (char*) apr_palloc(rc->r->pool, 
+    b64_pt = (char*) apr_palloc(rc->r->pool,
                                 apr_base64_encode_len(pt->wpt_len));
     apr_base64_encode(b64_pt, pt->wpt, pt->wpt_len);
 
     /* build the actual request */
-    xml_request = apr_pstrcat(rc->r->pool, 
+    xml_request = apr_pstrcat(rc->r->pool,
                               "<getTokensRequest>"
                               "<requesterCredential type='service'>",
                               st->token, /* b64'd, don't need to quote */
@@ -1072,24 +1072,24 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                               "</getTokensRequest>",
                               NULL);
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: xml_request(%s)", xml_request);
 
 
-    xml_response = post_to_webkdc(xml_request, 0, 
+    xml_response = post_to_webkdc(xml_request, 0,
                                   rc->r->server, rc->sconf, rc->r->pool);
 
     if (xml_response == NULL)
         return 0;
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: xml_response(%s)", xml_response);
 
-    
+
     xp = apr_xml_parser_create(rc->r->pool);
     if (xp == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
-                     "mod_webauth: %s: apr_xml_parser_create failed", 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: apr_xml_parser_create failed",
                      mwa_func);
         return 0;
     }
@@ -1101,16 +1101,16 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
 
     if (astatus != APR_SUCCESS) {
         char errbuff[1024];
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: "
-                     "apr_xml_parser_{feed,done} failed: %s (%d)", 
+                     "apr_xml_parser_{feed,done} failed: %s (%d)",
                      mwa_func,
                      apr_xml_parser_geterror(xp, errbuff, sizeof(errbuff)),
                      astatus);
         return 0;
     }
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                  "mod_webauth: xml doc root(%s)", xd->root->name);
 
     return parse_get_creds_response(xd, rc, st, acquired_creds);

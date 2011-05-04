@@ -22,7 +22,7 @@ log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
                      webauth_error_message(status), status,
-                     webauth_krb5_error_message(ctxt), 
+                     webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
     else
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
@@ -74,7 +74,7 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, size_t sad_len)
         return NULL;
 
     kt = apr_pstrcat(rc->r->pool, "FILE:", rc->sconf->keytab_path, NULL);
-    
+
     status = webauth_krb5_rd_req(ctxt, sad, sad_len, kt,
                                  rc->sconf->keytab_principal,
                                  &principal, 1);
@@ -99,13 +99,13 @@ static apr_status_t
 cred_cache_destroy(void *data)
 {
     char *path = (char*)data;
-    /* 
+    /*
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
                  "mod_webauth: cleanup cred: %s", path);
     */
     if (unlink(path) == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)", 
+                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)",
                      path, errno);
     }
     return APR_SUCCESS;
@@ -115,7 +115,7 @@ cred_cache_destroy(void *data)
 /*
  * prepare any krb5 creds
  */
-static int 
+static int
 krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
 {
     const char *mwa_func="krb5_prepare_creds";
@@ -128,12 +128,12 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
 
     if (rc->sconf->cred_cache_dir == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: cred_cache_dir is not set (%s)", 
+                     "mod_webauth: %s: cred_cache_dir is not set (%s)",
                      mwa_func, CM_CredCacheDir);
         return 0;
     }
 
-    astatus = apr_filepath_merge(&temp_cred_file, 
+    astatus = apr_filepath_merge(&temp_cred_file,
                                  rc->sconf->cred_cache_dir,
                                  "temp.krb5.XXXXXX",
                                  0,
@@ -143,7 +143,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
                               APR_CREATE|APR_READ|APR_WRITE|APR_EXCL,
                               rc->r->pool);
     if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
+        mwa_log_apr_error(rc->r->server, astatus, mwa_func,
                           "apr_file_mktemp", temp_cred_file, NULL);
         return 0;
     }
@@ -151,7 +151,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
     /* we close it here, and register a pool cleanup handler */
     astatus = apr_file_close(fp);
     if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(rc->r->server, astatus, mwa_func, 
+        mwa_log_apr_error(rc->r->server, astatus, mwa_func,
                           "apr_file_close", temp_cred_file, NULL);
         return 0;
     }
@@ -159,10 +159,10 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
     apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
                               cred_cache_destroy,
                               apr_pool_cleanup_null);
-    
+
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                     "mod_webauth: %s: temp_cred_file mktemp(%s)", 
+                     "mod_webauth: %s: temp_cred_file mktemp(%s)",
                      mwa_func, temp_cred_file);
 
     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
@@ -176,7 +176,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
             if (rc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webauth: %s: prepare (%s) for (%s)",
-                             mwa_func, creds[i]->cred_server, 
+                             mwa_func, creds[i]->cred_server,
                              creds[i]->subject);
             if (i == 0) {
                 status = webauth_krb5_init_via_cred(ctxt,
@@ -189,7 +189,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
                                                   creds[i]->cred_data_len);
             }
             if (status != WA_ERR_NONE)
-                log_webauth_error(rc->r->server, 
+                log_webauth_error(rc->r->server,
                                   status, ctxt, mwa_func,
                                   i == 0 ? "webauth_krb5_init_via_cred" :
                                   "webauth_krb5_import_cred", NULL);
@@ -204,7 +204,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
 
 
 static const char *
-krb5_webkdc_credential(server_rec *server, 
+krb5_webkdc_credential(server_rec *server,
                        MWA_SCONF *sconf,
                        apr_pool_t *pool)
 {
@@ -221,7 +221,7 @@ krb5_webkdc_credential(server_rec *server,
 
     kt = apr_pstrcat(pool, "FILE:", sconf->keytab_path, NULL);
 
-    status = webauth_krb5_init_via_keytab(ctxt, kt, 
+    status = webauth_krb5_init_via_keytab(ctxt, kt,
                                           sconf->keytab_principal, NULL);
     if (status != WA_ERR_NONE) {
         log_webauth_error(server, status, ctxt, mwa_func,
@@ -230,7 +230,7 @@ krb5_webkdc_credential(server_rec *server,
         return 0;
     }
 
-    status = webauth_krb5_mk_req(ctxt, sconf->webkdc_principal, 
+    status = webauth_krb5_mk_req(ctxt, sconf->webkdc_principal,
                                  &k5_req, &k5_req_len);
 
     if (status != WA_ERR_NONE) {

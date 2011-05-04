@@ -16,9 +16,9 @@
  * returns value or NULL on error,
  */
 char *
-mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, 
-                 const char *name, 
-                 request_rec *r, 
+mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
+                 const char *name,
+                 request_rec *r,
                  const char *func,
                  size_t *vlen)
 {
@@ -32,7 +32,7 @@ mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
                      func, name);
         return NULL;
     }
-    if (vlen) 
+    if (vlen)
         *vlen = alist->attrs[i].length;
 
     return (char*)alist->attrs[i].value;
@@ -56,7 +56,7 @@ get_top(request_rec *r)
 
 
 /*
- * get note from main request 
+ * get note from main request
  */
 const char *
 mwa_get_note(request_rec *r, const char *note)
@@ -123,7 +123,7 @@ mwa_log_apr_error(server_rec *server,
                   const char *path2)
 {
     char errbuff[512];
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, 
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                  "mod_webauth: %s: %s (%s%s%s): %s (%d)",
                  mwa_func,
                  ap_func,
@@ -138,7 +138,7 @@ mwa_log_apr_error(server_rec *server,
 /*
  * log interesting stuff from the request
  */
-void 
+void
 mwa_log_request(request_rec *r, const char *msg)
 {
 #define LOG_S(a,b) ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server, \
@@ -169,8 +169,8 @@ mwa_log_request(request_rec *r, const char *msg)
 
 
 void
-mwa_log_webauth_error(server_rec *s, 
-                       int status, 
+mwa_log_webauth_error(server_rec *s,
+                       int status,
                       const char *mwa_func,
                       const char *func,
                       const char *extra)
@@ -194,7 +194,7 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 
     static const char *mwa_func = "mwa_cache_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path, 
+    status = webauth_keyring_auto_update(sconf->keyring_path,
                                          sconf->keyring_auto_update,
                                          sconf->keyring_auto_update ?
                                          sconf->keyring_key_lifetime :
@@ -204,13 +204,13 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
                                          &update_status);
 
     if (status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, mwa_func, 
+            mwa_log_webauth_error(serv, status, mwa_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
     }
 
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, mwa_func, 
+            mwa_log_webauth_error(serv, status, mwa_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
             /* complain even more */
@@ -222,7 +222,7 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
     if (sconf->debug) {
         const char *msg;
 
-        if (kau_status == WA_KAU_NONE) 
+        if (kau_status == WA_KAU_NONE)
             msg = "opened";
         else if (kau_status == WA_KAU_CREATE)
             msg = "create";
@@ -278,9 +278,9 @@ mwa_get_webauth_cookies(request_rec *r)
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
 MWA_CRED_TOKEN *
-mwa_parse_cred_token(char *token, 
+mwa_parse_cred_token(char *token,
                      WEBAUTH_KEYRING *ring,
-                     WEBAUTH_KEY *key, 
+                     WEBAUTH_KEY *key,
                      MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
@@ -307,7 +307,7 @@ mwa_parse_cred_token(char *token,
                      "mod_webauth: %s: callled with NULL key and ring!",
                      mwa_func);
         return NULL;
-    } 
+    }
 
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
@@ -326,7 +326,7 @@ mwa_parse_cred_token(char *token,
 
     /* pull out subject */
     ct.subject = mwa_get_str_attr(alist, WA_TK_SUBJECT, rc->r, mwa_func, NULL);
-    
+
     if (ct.subject == NULL) {
         goto cleanup;
     }
@@ -352,7 +352,7 @@ mwa_parse_cred_token(char *token,
                                &ct.expiration_time, WA_F_NONE);
 
     status = webauth_attr_list_get(alist, WA_TK_CRED_DATA,
-                                   &ct.cred_data, 
+                                   &ct.cred_data,
                                    &ct.cred_data_len, WA_F_NONE);
 
     if (status != WA_ERR_NONE) {
@@ -371,7 +371,7 @@ mwa_parse_cred_token(char *token,
     nct->subject = apr_pstrdup(rc->r->pool, ct.subject);
     nct->creation_time = ct.creation_time;
     nct->expiration_time = ct.expiration_time;
-    nct->cred_data = 
+    nct->cred_data =
         apr_pstrmemdup(rc->r->pool, ct.cred_data, ct.cred_data_len);
     nct->cred_data_len = ct.cred_data_len;
 
