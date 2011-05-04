@@ -808,7 +808,6 @@ dd_dir_time(const char *n, time_t t, request_rec *r)
 static int
 handler_hook(request_rec *r)
 {
-    MWA_DCONF *dconf;
     MWA_SCONF *sconf;
     MWA_SERVICE_TOKEN *st;
 
@@ -819,9 +818,6 @@ handler_hook(request_rec *r)
     r->allowed |= (AP_METHOD_BIT << M_GET);
     if (r->method_number != M_GET)
         return DECLINED;
-
-    dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
-                                                &webauth_module);
 
     sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
                                                 &webauth_module);
@@ -1085,7 +1081,6 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
     size_t tlen, olen;
     int status;
     const char *mwa_func="make_cred_cookie";
-    time_t creation_time;
 
     status = WA_ERR_NONE;
 
@@ -1096,8 +1091,6 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
                      mwa_func);
         return 0;
     }
-
-    creation_time = time(NULL);
 
     SET_TOKEN_TYPE(WA_TT_CRED);
     SET_CRED_TYPE(ct->cred_type);
@@ -1803,10 +1796,8 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 static int
 check_url(MWA_REQ_CTXT *rc, int *in_url)
 {
-    char *subject, *wr, *ws;
+    char *wr, *ws;
     WEBAUTH_KEY *key = NULL;
-
-    subject = NULL;
 
     wr = mwa_remove_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {

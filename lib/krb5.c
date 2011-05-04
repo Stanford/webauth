@@ -133,7 +133,6 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
     krb5_keytab id;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
-    krb5_error_code tcode;
 
     assert(c != NULL);
     assert(keytab_path != NULL);
@@ -151,7 +150,7 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
         c->code = krb5_kt_start_seq_get(c->ctx, id, &cursor);
         if (c->code != 0) {
             /* FIXME: needs better logging. */
-            tcode = krb5_kt_close(c->ctx, id);
+            krb5_kt_close(c->ctx, id);
             return WA_ERR_KRB5;
         }
 
@@ -159,14 +158,11 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
         if (c->code == 0) {
             c->code = krb5_copy_principal(c->ctx, entry.principal,
                                           out_principal);
-            /*
-             * Use tcode from this point on so that we don't lose value of
-             * c->code.  FIXME: needs better logging.
-             */
-            tcode = krb5_kt_free_entry(c->ctx, &entry);
+            /* FIXME: needs better logging. */
+            krb5_kt_free_entry(c->ctx, &entry);
         }
         /* FIXME: needs better logging. */
-        tcode = krb5_kt_end_seq_get(c->ctx, id, &cursor);
+        krb5_kt_end_seq_get(c->ctx, id, &cursor);
     }
 
     if (c->code == 0) {
@@ -174,7 +170,7 @@ open_keytab(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
         return WA_ERR_NONE;
     } else {
         *id_out = NULL;
-        tcode = krb5_kt_close(c->ctx, id);
+        krb5_kt_close(c->ctx, id);
         return WA_ERR_KRB5;
     }
 }
@@ -662,7 +658,6 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     krb5_creds creds;
     krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
-    krb5_error_code tcode;
     int s;
 
     assert(c != NULL);
@@ -682,19 +677,19 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
 
     c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
     if (c->code != 0) {
-        tcode = krb5_kt_close(c->ctx, keytab);
+        krb5_kt_close(c->ctx, keytab);
         return WA_ERR_KRB5;
     }
 
     c->code = krb5_cc_initialize(c->ctx, c->cc, c->princ);
     if (c->code != 0) {
-        tcode = krb5_kt_close(c->ctx, keytab);
+        krb5_kt_close(c->ctx, keytab);
         return WA_ERR_KRB5;
     }
 
     c->code = krb5_get_init_creds_opt_alloc(c->ctx, &opts);
     if (c->code != 0) {
-        tcode = krb5_kt_close(c->ctx, keytab);
+        krb5_kt_close(c->ctx, keytab);
         return WA_ERR_KRB5;
     }
     krb5_get_init_creds_opt_set_default_flags(c->ctx, "webauth", NULL, opts);
@@ -704,7 +699,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
     krb5_get_init_creds_opt_free(c->ctx, opts);
 
     /* FIXME: needs better logging. */
-    tcode = krb5_kt_close(c->ctx, keytab);
+    krb5_kt_close(c->ctx, keytab);
 
     if (c->code != 0) {
         switch (c->code) {

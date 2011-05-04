@@ -540,7 +540,6 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_ccache cc;
     krb5_principal princ;
     krb5_error_code code;
-    krb5_error_code tcode;
     char *kt, *cc_path;
 
     kt = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->keytab, NULL);
@@ -559,19 +558,19 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
         code = krb5_parse_name(ctx, lc->sconf->principal, &princ);
     } else {
         if ((code = krb5_kt_start_seq_get(ctx, keytab, &cursor)) != 0) {
-            tcode = krb5_kt_close(ctx, keytab);
+            krb5_kt_close(ctx, keytab);
             return code;
         }
 
         if ((code = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
             code = krb5_copy_principal(ctx, entry.principal, &princ);
-            tcode = krb5_kt_free_entry(ctx, &entry);
+            krb5_kt_free_entry(ctx, &entry);
         }
-        tcode = krb5_kt_end_seq_get(ctx, keytab, &cursor);
+        krb5_kt_end_seq_get(ctx, keytab, &cursor);
     }
 
     if (code != 0) {
-        tcode = krb5_kt_close(ctx, keytab);
+        krb5_kt_close(ctx, keytab);
         krb5_free_principal(ctx, princ);
         return code;
     }
