@@ -41,6 +41,10 @@ WebAuth 3.7.4 (unreleased)
     which seems to happen under the Apache included with Solaris 10 x86.
     Based on a patch by Gary Buhrmaster.
 
+    Update to rra-c-util 3.4:
+
+    * Update warning flags for GCC 4.6.1.
+
     Update to C TAP Harness 1.6:
 
     * Fix compliation of runtests with more aggressive warnings.
