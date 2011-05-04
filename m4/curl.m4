@@ -15,9 +15,12 @@ dnl Depends on RRA_SET_LDFLAGS and RRA_ENABLE_REDUCED_DEPENDS and may depend
 dnl on RRA_LIB_SSL.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+dnl Copyright 2010
+dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
-dnl See LICENSE for licensing terms.
+dnl This file is free software; the authors give unlimited permission to copy
+dnl and/or distribute it, with or without modifications, as long as this
+dnl notice is preserved.
 
 dnl Save the current CPPFLAGS, LDFLAGS, and LIBS settings and switch to
 dnl versions that include the cURL flags.  Used as a wrapper, with

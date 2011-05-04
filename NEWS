@@ -43,6 +43,9 @@ WebAuth 3.7.4 (unreleased)
 
     Update to rra-c-util 3.4:
 
+    * Fix broken GCC attribute markers causing compilation problems.
+    * Kerberos library probing fixes without transitive shared libraries.
+    * Fix Autoconf warnings when probing for AIX's bundled Kerberos.
     * Update warning flags for GCC 4.6.1.
 
     Update to C TAP Harness 1.6:
