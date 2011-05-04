@@ -687,31 +687,34 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     bconf = (MWA_DCONF*) basev;
     oconf = (MWA_DCONF*) overv;
 
-    conf->force_login = oconf->force_login_ex ? 
-        oconf->force_login : bconf->force_login;
-    conf->force_login_ex = oconf->force_login_ex || bconf->force_login_ex;
-
-    conf->use_creds = oconf->use_creds_ex ? 
-        oconf->use_creds : bconf->use_creds;
-    conf->use_creds_ex = oconf->use_creds_ex || bconf->use_creds_ex;
-
     conf->do_logout = oconf->do_logout_ex ? 
         oconf->do_logout : bconf->do_logout;
     conf->do_logout_ex = oconf->do_logout_ex || bconf->do_logout_ex;
+
+    conf->dont_cache = oconf->dont_cache_ex ? 
+        oconf->dont_cache : bconf->dont_cache;
+    conf->dont_cache_ex = oconf->dont_cache_ex || bconf->dont_cache_ex;
 
     conf->extra_redirect = oconf->extra_redirect_ex ?
         oconf->extra_redirect : bconf->extra_redirect;
     conf->extra_redirect_ex = oconf->extra_redirect_ex || 
         bconf->extra_redirect_ex;
 
+    conf->force_login = oconf->force_login_ex ? 
+        oconf->force_login : bconf->force_login;
+    conf->force_login_ex = oconf->force_login_ex || bconf->force_login_ex;
+
+    conf->optional = oconf->optional_ex ? oconf->optional : bconf->optional;
+    conf->optional_ex = oconf->optional_ex || bconf->optional_ex;
+
     conf->ssl_return = oconf->ssl_return_ex ?
         oconf->ssl_return : bconf->ssl_return;
     conf->ssl_return_ex = oconf->ssl_return_ex || 
         bconf->ssl_return_ex;
 
-    conf->dont_cache = oconf->dont_cache_ex ? 
-        oconf->dont_cache : bconf->dont_cache;
-    conf->dont_cache_ex = oconf->dont_cache_ex || bconf->dont_cache_ex;
+    conf->use_creds = oconf->use_creds_ex ?
+        oconf->use_creds : bconf->use_creds;
+    conf->use_creds_ex = oconf->use_creds_ex || bconf->use_creds_ex;
 
     MERGE_INT(app_token_lifetime);
     MERGE_INT(inactive_expire);
@@ -2353,9 +2356,17 @@ gather_tokens(MWA_REQ_CTXT *rc)
          cookie, parse_app_token_cookie will set it up to be expired. */
         parse_app_token_cookie(rc);
 
-        /* if its still NULL, time for a redirect */
-        if (rc->at.subject == NULL)
-            return redirect_request_token(rc);
+        /*
+         * If its still NULL, we normally redirect to the WebLogin server.
+         * However, if WebAuthOptional is set in the Apache configuration, we
+         * instead return OK without setting REMOTE_USER.
+         */
+        if (rc->at.subject == NULL) {
+            if (rc->dconf->optional)
+                return OK;
+            else
+                return redirect_request_token(rc);
+        }
     }
 
     /* check if the WEBAUTHR crap was in the URL and we are configured
@@ -2443,10 +2454,16 @@ check_user_id_hook(request_rec *r)
                          rc.at.subject);
     }
 
+    /* If WebAuth is optional and the user isn't authenticated, we're done. */
+    if (rc.at.subject == NULL && rc.dconf->optional)
+        return OK;
+
+    /*
+     * This should never get called, since if WebAuth is not optional,
+     * gather_tokens should set us up for a redirect and not return OK.  We
+     * put this here as a safety net.
+     */
     if (rc.at.subject == NULL) {
-        /* this should never get called, since gather_tokens should
-         * set us up for a redirect. we put this here as a safety net.
-         */
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
                      "mod_webauth: check_user_id_hook subject still NULL!");
         return HTTP_UNAUTHORIZED;
@@ -2872,29 +2889,33 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
             }
             break;
         /* start of dconfigs */
-        case E_SSLReturn:
-            dconf->ssl_return = flag;
-            dconf->ssl_return_ex = 1;
-            break;
         case E_DoLogout:
             dconf->do_logout = flag;
             dconf->do_logout_ex = 1;
+            break;
+        case E_DontCache:
+            dconf->dont_cache = flag;
+            dconf->dont_cache_ex = 1;
             break;
         case E_ForceLogin:
             dconf->force_login = flag;
             dconf->force_login_ex = 1;
             break;
-        case E_UseCreds:
-            dconf->use_creds = flag;
-            dconf->use_creds_ex = 1;
+        case E_Optional:
+            dconf->optional = flag;
+            dconf->optional_ex = 1;
+            break;
+        case E_SSLReturn:
+            dconf->ssl_return = flag;
+            dconf->ssl_return_ex = 1;
             break;
         case E_StripURL:
             sconf->strip_url = flag;
             sconf->strip_url_ex = 1;
             break;
-        case E_DontCache:
-            dconf->dont_cache = flag;
-            dconf->dont_cache_ex = 1;
+        case E_UseCreds:
+            dconf->use_creds = flag;
+            dconf->use_creds_ex = 1;
             break;
 #ifndef NO_STANFORD_SUPPORT
         case SE_DoConfirm:
@@ -3033,6 +3054,7 @@ static const command_rec cmds[] = {
 
     /* directory or .htaccess if override auth config */
     DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
+    DFLAG(CD_Optional, E_Optional, CM_Optional),
     DFLAG(CD_SSLReturn, E_SSLReturn, CM_SSLReturn),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     DSTR(CD_PostReturnURL, E_PostReturnURL, CM_PostReturnURL),

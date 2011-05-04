@@ -2,6 +2,21 @@
 
 WebAuth 3.7.4 (unreleased)
 
+    WebAuth now supports a new Apache configuration directive,
+    WebAuthOptional, which can be used in directories and .htaccess files.
+    If set to on, unauthenticated users are not redirected to WebLogin and
+    are instead allowed access to the protected resource, but without any
+    REMOTE_USER or related environment variables set.  However, if the
+    user was previously authenticated to that server, their authentication
+    information will be present in the environment as normal.  This is
+    intended for use with dynamic content, such as embedded PHP or CGI
+    scripts, that will inspect REMOTE_USER and decide what content to show
+    based on the authentication status.  Normally, unauthenticated users
+    would also be shown a login link to a URL protected by WebAuth without
+    this directive so that they can authenticate if desired.  This feature
+    is sometimes referred to as "passive authentication" or "lazy
+    sessions."  Based on work by niklas.
+
     Fix compilation error in libwebauth if assert() calls are enabled and
     the local C library doesn't define an index function.  Fixes
     compilation problems on Solaris 10.

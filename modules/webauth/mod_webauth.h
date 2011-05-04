@@ -181,6 +181,9 @@
 #define CD_DontCache "WebAuthDontCache"
 #define CM_DontCache "sets Expires header to current date"
 
+#define CD_Optional "WebAuthOptional"
+#define CM_Optional "authentication is optional, user will not be redirected"
+
 #ifndef NO_STANFORD_SUPPORT
 
 /* Stanford WebAuth 2.5 compat */
@@ -270,6 +273,7 @@ enum {
     E_LastUseUpdateInterval,
     E_LoginURL,
     E_LoginCanceledURL,
+    E_Optional,
     E_PostReturnURL,
     E_ReturnURL,
     E_RequireSSL,
@@ -358,24 +362,26 @@ typedef struct {
     int app_token_lifetime;
     int inactive_expire;
     int last_use_update_interval;
-    int force_login;
-    int force_login_ex;
-    int use_creds;
-    int use_creds_ex;
     int do_logout;
     int do_logout_ex;
+    int dont_cache;
+    int dont_cache_ex;
+    int extra_redirect;
+    int extra_redirect_ex;
+    int force_login;
+    int force_login_ex;
+    int optional;
+    int optional_ex;
     int ssl_return;
     int ssl_return_ex;
+    int use_creds;
+    int use_creds_ex;
     char *return_url;
     char *post_return_url;
     char *failure_url;
     char *login_canceled_url;
-    int extra_redirect;
-    int extra_redirect_ex; /* if it was explicitly specified in conf file */
     char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
-    int dont_cache;
-    int dont_cache_ex;
 #ifndef NO_STANFORD_SUPPORT
     char *su_authgroups;
 #endif
