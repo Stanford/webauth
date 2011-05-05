@@ -1,1 +1,3 @@
-usr/share/webauth
+tests/mod_webauth/conf/*.conf           usr/share/webauth/conf
+tests/mod_webauth/htdocs/ldaptests      usr/share/webauth/htdocs
+tests/mod_webauth/htdocs/tests          usr/share/webauth/htdocs

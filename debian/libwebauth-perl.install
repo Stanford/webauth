@@ -1,2 +1,2 @@
-usr/lib/perl5
-usr/share/man/man3/WebAuth.3pm
+debian/tmp/usr/lib/perl5                        usr/lib
+debian/tmp/usr/share/man/man3/WebAuth.3pm       usr/share/man/man3

@@ -4,3 +4,4 @@ docs/install-spnego
 docs/weblogin-config
 docs/weblogin-cookies
 docs/weblogin-flow
+tools/weblogin-passcheck

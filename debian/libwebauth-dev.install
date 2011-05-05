@@ -1,4 +1,4 @@
-usr/include
-usr/lib/libwebauth.a
-usr/lib/libwebauth.so
-usr/lib/pkgconfig/libwebauth.pc
+debian/tmp/usr/include/*                        usr/include
+debian/tmp/usr/lib/libwebauth.a                 usr/lib
+debian/tmp/usr/lib/libwebauth.so                usr/lib
+debian/tmp/usr/lib/pkgconfig/libwebauth.pc      usr/lib/pkgconfig

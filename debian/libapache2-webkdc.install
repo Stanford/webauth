@@ -1,4 +1,5 @@
-etc/apache2/mods-available/webkdc.conf
-etc/apache2/mods-available/webkdc.load
-etc/webkdc/token.acl
-usr/lib/apache2/modules/mod_webkdc.so
+conf/debian/webkdc.conf         etc/apache2/mods-available
+conf/debian/webkdc.load         etc/apache2/mods-available
+conf/token.acl                  etc/webkdc
+
+debian/tmp/usr/lib/apache2/modules/mod_webkdc.so usr/lib/apache2/modules

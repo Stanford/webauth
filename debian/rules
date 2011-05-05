@@ -1,134 +1,24 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# GNU copyright 1997 to 1999 by Joey Hess.
-# Further updates by Russ Allbery <rra@debian.org>
-
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
-# This has to be exported for some magic to work later.
-export DH_OPTIONS
-
-# Tell Autoconf the correct system types.
-DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
-    SYSTEM = --build $(DEB_HOST_GNU_TYPE)
-else
-    SYSTEM = --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
-endif
 
 ifndef PERL
     PERL = /usr/bin/perl
 endif
 
-CFLAGS = -Wall -g
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-    CFLAGS += -O0
-else
-    CFLAGS += -O2
-endif
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-webkdc --enable-perl \
+	    --with-apxs=/usr/bin/apxs2 --enable-reduced-depends
 
-configure-stamp:
-	dh_testdir
-	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --libexecdir=/usr/lib \
-	    --mandir=\$${prefix}/share/man --enable-webkdc \
-	    --enable-perl --with-apxs=/usr/bin/apxs2 \
-	    --enable-reduced-depends $(SYSTEM)
-	touch $@
-
-# Rebuild the Perl module to pick up the correct installation paths.
-build: build-arch build-indep
-build-arch: build-stamp
-build-indep: build-stamp
-build-stamp: configure-stamp
-	dh_testdir
-	$(MAKE)
+override_dh_auto_build:
+	dh_auto_build
 	cd perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
 	cd perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
-ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	$(MAKE) check
-endif
-	touch $@
 
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f configure-stamp build-stamp install-stamp
-	[ ! -f Makefile ] || $(MAKE) distclean
-	dh_clean
-
-install: install-stamp
-install-stamp: build-stamp
-	dh_testdir
-	dh_testroot
-	dh_prep
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+override_dh_auto_install:
+	dh_auto_install
 	chmod a+x debian/tmp/usr/share/weblogin/*.fcgi
-	install -d debian/tmp/etc/webauth
-	install -d debian/tmp/etc/webkdc
-	install -m 644 conf/token.acl debian/tmp/etc/webkdc/
-	install -m 644 debian/webkdc.conf debian/tmp/etc/webkdc/
-	install -d debian/tmp/etc/apache2/mods-available
-	set -e; cd conf/debian && for f in *.conf *.load ; do \
-	    install -m 644 $$f \
-		$(CURDIR)/debian/tmp/etc/apache2/mods-available/$$f ; \
-	done
 	mkdir -p debian/tmp/usr/share/perl5
 	mv debian/tmp/usr/lib/perl5/WebKDC* debian/tmp/usr/share/perl5
 	mv debian/tmp/usr/lib/perl5/WebLogin* debian/tmp/usr/share/perl5
-	install -d debian/tmp/usr/share/webauth/conf
-	install -m 644 tests/mod_webauth/conf/*.conf \
-	    debian/tmp/usr/share/webauth/conf/
-	install -d debian/tmp/usr/share/webauth/htdocs
-	cp -r tests/mod_webauth/htdocs/tests \
-	    debian/tmp/usr/share/webauth/htdocs/
-	cp -r tests/mod_webauth/htdocs/ldaptests \
-	    debian/tmp/usr/share/webauth/htdocs/
-	touch $@
 
-# Build the architecture-independent packages.
-binary-indep: DH_OPTIONS=-i
-binary-indep: install-stamp
-	dh_testdir
-	dh_testroot
+override_dh_installchangelogs:
 	dh_installchangelogs NEWS
-	dh_installdocs
-	dh_installexamples
-	dh_install --sourcedir=debian/tmp
-	install -m 755 tools/weblogin-passcheck \
-	    debian/webauth-weblogin/usr/share/doc/webauth-weblogin/
-	dh_link
-	dh_compress
-	dh_fixperms
-	dh_perl
-	dh_installdeb
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-# Build the architecture-dependent packages.
-binary-arch: DH_OPTIONS=-a
-binary-arch: install-stamp
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs NEWS
-	dh_installdocs
-	dh_installexamples
-	dh_install --sourcedir=debian/tmp
-	dh_installman
-	dh_link
-	dh_fixperms
-	dh_strip
-	dh_compress
-	dh_perl
-	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-arch binary-indep
-.PHONY: binary binary-arch binary-indep build build-arch build-indep clean
-.PHONY: install
