@@ -19,8 +19,10 @@ PREREQUISITES
     Make sure that you have all of the required packages installed.
     WebAuth is implemented as Apache 2.x modules, and therefore requires
     an installation of Apache 2.0.43 or later built with SSL and dynamic
-    modules.  It also requires Kerberos, cURL, and OpenSSL 0.9.7 or later
-    (for AES support).  See README for more version dependencies.
+    modules.  There are reports of problems with Apache 2.0.x as shipped
+    with Solaris 10 x86, so Apache 2.2 or later is recommended.  It also
+    requires Kerberos, cURL, and OpenSSL 0.9.7 or later (for AES support).
+    See README for more version dependencies.
 
     In order to build the LDAP module, Cyrus SASL 2.x and OpenLDAP are
     also required.

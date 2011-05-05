@@ -3,7 +3,8 @@
 # Utility functions for mod_webauth tests.
 #
 # Written by Roland Schemers
-# Copyright 2003 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2003
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

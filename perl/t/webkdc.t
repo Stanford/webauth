@@ -3,7 +3,8 @@
 # Tests for WebKDC.pm, currently meant only for login tests.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2010
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

@@ -9,7 +9,7 @@
  *
  * Written by Roland Schemers
  * Copyright 2002, 2003, 2008, 2009, 2010
- *     Board of Trustees, Leland Stanford Jr. University
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */

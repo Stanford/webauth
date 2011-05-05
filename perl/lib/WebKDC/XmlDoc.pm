@@ -1,7 +1,8 @@
 # Manipulate a document composed of WebKDC::XmlElement objects.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2002, 2009
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

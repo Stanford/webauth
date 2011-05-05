@@ -57,6 +57,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthlogincanceledurl">WebAuthLoginCanceledURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthoptional">WebAuthOptional</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthpostreturnurl">WebAuthPostReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
@@ -1152,6 +1153,47 @@ WebAuthLoginURL https://webkdc.stanford.edu/login/
 
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthOptional" id="WebAuthOptional">WebAuthOptional</a> <a name="webauthoptional" id="webauthoptional">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to require the use to authenticate</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthOptional on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+    <p>
+      Normally, if an unauthenticated user attempts to access a directory
+      protected by WebAuth, they will be redirected to the WebLogin server
+      to authenticate.  This directive allows that authentication to be
+      deferred.  If this option is set to on, an unauthenticated user will
+      still be permitted access to the protected resource (even with
+      <code>require valid-user</code> in effect), unless they're
+      prohibited by some other authorization rule.  Unauthenticated users
+      will not have the REMOTE_USER, WEBAUTH_USER, or AUTH_TYPE
+      environment variables set.  If the user has already authenticated,
+      then all the environment variables will be set as normal.
+    </p>
+
+    <p>
+      This directive is normally used to protect CGI scripts or other
+      dynamic content that will then inspect the REMOTE_USER environment
+      variable and show different content based on whether the user has
+      authenticated or not.  Generally, such content will include a login
+      link to a page protected by WebAuth with
+      <code>WebAuthOptional</code> set to off, so that the user can
+      authenticate if they wish.  After that authentication, subsequent
+      visits to content with <code>WebAuthOptional</code> set to on will
+      have authentication information available in the environment.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebAuthOptional on
+    </code></p></div>
+  
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthPostReturnURL" id="WebAuthPostReturnURL">WebAuthPostReturnURL</a> <a name="webauthpostreturnurl" id="webauthpostreturnurl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating during a POST
@@ -1602,6 +1644,6 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 2009 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2011 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

@@ -1,13 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010
-dnl    Board of Trustees, Leland Stanford Jr. University
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011
+dnl    The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [3.7.3], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [3.7.4], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -79,7 +79,7 @@ AC_CHECK_FUNCS([krb5_data_free \
     krb5_xfree])
 AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
     [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
-AC_CHECK_DECLS([krb5_kt_free_entry])
+AC_CHECK_DECLS([krb5_kt_free_entry], [], [], [#include <krb5.h>])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
         [Define if your Kerberos implementation is Heimdal.])],

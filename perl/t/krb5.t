@@ -5,7 +5,7 @@
 # Written by Roland Schemers
 # Updated by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2002, 2003, 2005, 2009, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

@@ -10,7 +10,8 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -153,20 +154,13 @@ while (my $q = CGI::Fast->new) {
         $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
                                         $weblogin->{query}->param ('ST'));
 
-    # Heimdal returns this if the password failed strength checking.  Give
-    # an error that's more understandable to users.
-    # FIXME: Should be verified against MIT as well.
-    } elsif ($status == WK_ERR_UNRECOVERABLE_ERROR
-             && $error =~ /Message stream modified/) {
-        $weblogin->{pages}->{pwchange}->param (error => 1);
-        $weblogin->{pages}->{pwchange}->param (err_pwweak => 1);
-        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
-                                        $weblogin->{query}->param ('ST'));
-
-    # The password change failed for some reason.  Display the password
-    # change page again, with the error template variable filled in.
+    # The password change failed for some reason.  Display the password change
+    # page again, with the error template variable filled in.  Heimdal, when
+    # using an external password strength checking program, adds a prefix to
+    # the error message that users don't care about, so strip that out.
     } else {
         $error =~ s/^password change failed for \S+: \(\d+\) //;
+        $error =~ s/External password quality program failed: //;
         $weblogin->{pages}->{pwchange}->param (error => 1);
         $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
         $weblogin->{pages}->{pwchange}->param (err_msg => $error);
