@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 3.7.4 (unreleased)
+WebAuth 3.7.4 (2011-05-05)
 
     WebAuth now supports a new Apache configuration directive,
     WebAuthOptional, which can be used in directories and .htaccess files.
