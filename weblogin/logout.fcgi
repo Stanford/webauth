@@ -9,7 +9,8 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jeanmarie Lucker <jlucker@stanford.edu>
-# Copyright 2002, 2003, 2004 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2002, 2003, 2004
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

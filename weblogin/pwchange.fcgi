@@ -10,7 +10,8 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2011 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

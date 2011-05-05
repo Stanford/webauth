@@ -3,7 +3,8 @@
 # Utility functions for the mod_webauthldap test suite.
 #
 # Written by Anton Ushakov
-# Copyright 2003 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2003
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
