@@ -151,7 +151,7 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
     ssize_t i;
 
     status = webauth_attr_list_find(alist, name, &i);
-    if (i == -1) {
+    if (status != WA_ERR_NONE || i == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webkdc: %s: can't find attr(%s) in attr list",
                      func, name);
