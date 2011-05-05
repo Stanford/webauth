@@ -1,3 +1,20 @@
+webauth (3.7.4-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - New Apache directive WebAuthOptional, which does not force the user
+      to authenticate if they're not already authenticated but adds the
+      authentication information to the environment if they are.  Intended
+      for use with dynamic content that can manage optional authentication
+      through an explicit login link.
+    - Work around an MIT Kerberos library bug in error reporting from
+      password change and remove the previous cruder workaround that
+      mapped Kerberos errors to password strength warnings.
+    - More robust generation of the pkg-config configuration file.
+    - Clearer warning from WebLogin when paired with an old WebKDC.
+    - Document the pt and sa key/value pairs in WebKDC logging.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 05 May 2011 14:59:33 -0700
+
 webauth (3.7.3-2) unstable; urgency=low
 
   * Upload to unstable.
