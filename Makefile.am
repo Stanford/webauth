@@ -159,7 +159,7 @@ endif
 # doesn't pass them.
 if GCC
     PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
-	-Wno-strict-prototypes
+	-Wno-strict-prototypes -Wno-redundant-decls
 else
     PERL_WARNINGS =
 endif
