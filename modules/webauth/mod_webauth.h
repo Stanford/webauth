@@ -2,14 +2,16 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010
- *     Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
 #ifndef MOD_WEBAUTH_H
 #define MOD_WEBAUTH_H
+
+#include <modules/mod-config.h>
 
 #include "httpd.h"
 #include "http_config.h"
@@ -43,13 +45,13 @@
 
 #include <lib/webauth.h>
 
-/* how long to wait between trying for a new token when 
+/* how long to wait between trying for a new token when
  * a renewal attempt fails
  */
 #define TOKEN_RETRY_INTERVAL  600
 
-/* 
- * how long into the tokens lifetime do we attempt our first revnewal 
+/*
+ * how long into the tokens lifetime do we attempt our first revnewal
  */
 #define START_RENEWAL_ATTEMPT_PERCENT (0.90)
 
@@ -179,6 +181,9 @@
 #define CD_DontCache "WebAuthDontCache"
 #define CM_DontCache "sets Expires header to current date"
 
+#define CD_Optional "WebAuthOptional"
+#define CM_Optional "authentication is optional, user will not be redirected"
+
 #ifndef NO_STANFORD_SUPPORT
 
 /* Stanford WebAuth 2.5 compat */
@@ -209,7 +214,7 @@
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
 
-/* attr list macros to make code easier to read and audit 
+/* attr list macros to make code easier to read and audit
  * we don't need to check error codes since we are using
  * WA_F_NONE, which doesn't allocate any memory.
  */
@@ -268,6 +273,7 @@ enum {
     E_LastUseUpdateInterval,
     E_LoginURL,
     E_LoginCanceledURL,
+    E_Optional,
     E_PostReturnURL,
     E_ReturnURL,
     E_RequireSSL,
@@ -336,13 +342,13 @@ typedef struct {
     int extra_redirect_ex; /* if it was explicitly specified in conf file */
     const char *subject_auth_type;
     int strip_url;
-    int strip_url_ex; 
+    int strip_url_ex;
     int keyring_auto_update;
     int keyring_auto_update_ex;
     int keyring_key_lifetime;
     int keyring_key_lifetime_ex;
     int subject_auth_type_ex;
-    int token_max_ttl; 
+    int token_max_ttl;
     int token_max_ttl_ex;
     /* stuff we need to clean up on restarts and what not */
     WEBAUTH_KEYRING *ring; /* our keyring */
@@ -356,24 +362,26 @@ typedef struct {
     int app_token_lifetime;
     int inactive_expire;
     int last_use_update_interval;
-    int force_login;
-    int force_login_ex;
-    int use_creds;
-    int use_creds_ex;
     int do_logout;
     int do_logout_ex;
+    int dont_cache;
+    int dont_cache_ex;
+    int extra_redirect;
+    int extra_redirect_ex;
+    int force_login;
+    int force_login_ex;
+    int optional;
+    int optional_ex;
     int ssl_return;
     int ssl_return_ex;
+    int use_creds;
+    int use_creds_ex;
     char *return_url;
     char *post_return_url;
     char *failure_url;
     char *login_canceled_url;
-    int extra_redirect;
-    int extra_redirect_ex; /* if it was explicitly specified in conf file */
     char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
-    int dont_cache;
-    int dont_cache_ex;
 #ifndef NO_STANFORD_SUPPORT
     char *su_authgroups;
 #endif
@@ -451,19 +459,19 @@ typedef struct {
     const char *type;
 
     /* function to validate subject-authenticator-data */
-    const char *(*validate_sad) (MWA_REQ_CTXT *rc, 
-                                 void *sad, 
+    const char *(*validate_sad) (MWA_REQ_CTXT *rc,
+                                 void *sad,
                                  size_t sad_len);
 
     /* function to run through all the cred tokens and prepare any
        cred tokens that are the same as our type for use by CGI */
     int (*prepare_creds)(MWA_REQ_CTXT *rc,
-                         MWA_CRED_TOKEN **creds, 
+                         MWA_CRED_TOKEN **creds,
                          size_t num_creds);
 
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
-    const char *(*webkdc_credential)(server_rec *server, 
+    const char *(*webkdc_credential)(server_rec *server,
                                      MWA_SCONF *sconf,
                                      apr_pool_t *pool);
 
@@ -473,7 +481,7 @@ typedef struct {
 /* webkdc.c */
 
 MWA_SERVICE_TOKEN *
-mwa_get_service_token(server_rec *server, 
+mwa_get_service_token(server_rec *server,
                       MWA_SCONF *sconf, apr_pool_t *pool,
                       int local_cache_only);
 
@@ -493,11 +501,11 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
  */
 
 char *
-mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, 
+mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
                  request_rec *r, const char *func, size_t *vlen);
 
 /*
- * get note from main request 
+ * get note from main request
  */
 const char *
 mwa_get_note(request_rec *r, const char *note);
@@ -526,15 +534,15 @@ mwa_setn_note(request_rec *r,
 /*
  * log interesting stuff from the request
  */
-void 
+void
 mwa_log_request(request_rec *r, const char *msg);
 
 /*
  * log a webauth-related error
  */
 void
-mwa_log_webauth_error(server_rec *r, 
-                      int status, 
+mwa_log_webauth_error(server_rec *r,
+                      int status,
                       const char *mwa_func,
                       const char *func,
                       const char *extra);
@@ -545,7 +553,7 @@ mwa_log_webauth_error(server_rec *r,
 int
 mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf);
 
-/* 
+/*
  * get all cookies that start with webauth_
  */
 apr_array_header_t *
@@ -556,12 +564,12 @@ mwa_get_webauth_cookies(request_rec *r);
  * if ring is non-null use it, otherwise log an error and return NULL.
  */
 MWA_CRED_TOKEN *
-mwa_parse_cred_token(char *token, 
+mwa_parse_cred_token(char *token,
                      WEBAUTH_KEYRING *ring,
-                     WEBAUTH_KEY *key, 
+                     WEBAUTH_KEY *key,
                      MWA_REQ_CTXT *rc);
 
-void 
+void
 mwa_log_apr_error(server_rec *server,
                   apr_status_t astatus,
                   const char *mwa_func,

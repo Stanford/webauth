@@ -226,6 +226,25 @@ key=value.  The possible keys are:</p>
     type depending on what the WebAuth server asked for.</p>
 </dd>
 
+<dt>pt</dt>
+<dd><p>For tokens of type <code>proxy</code>, this will contain the proxy
+    token type.  Currently, the only supported proxy token type is
+    <code>krb5</code>, which can be used by the WebAuth Application Server
+    to request Kerberos v5 credentials on behalf of the user from the
+    WebKDC.</p>
+</dd>
+
+<dt>sa</dt>
+<dd><p>The requested subject authenticator type for a
+    <code>requestToken</code> operation.  If the WebAuth Application Server
+    requests an id token, this will indicate the type of id token it is
+    requesting.  Possible values are <code>webkdc</code>, which provides
+    the user's identity but no additional information, or
+    <code>krb5</code>, which provides a Kerberos authenticator for the user
+    that can be verified by the WebAuth Application Server's Kerberos
+    key.</p>
+</dd>
+
 <dt>server</dt>
 <dd><p>For <code>getTokens</code> and <code>requestToken</code>, this will
     contain the identifier of the requesting server (in the case of
@@ -761,6 +780,6 @@ WebKdcTokenMaxTTL 10m
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 2009 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2011 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>

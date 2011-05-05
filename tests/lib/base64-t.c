@@ -4,7 +4,7 @@
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
  * Copyright 2002, 2003, 2006, 2009, 2010
- *     Board of Trustees, Leland Stanford Jr. University
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */

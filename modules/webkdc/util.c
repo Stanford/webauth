@@ -2,8 +2,8 @@
  * Utility functions for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2009
- *     Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2002, 2003, 2009, 2011
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
@@ -151,7 +151,7 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
     ssize_t i;
 
     status = webauth_attr_list_find(alist, name, &i);
-    if (i == -1) {
+    if (status != WA_ERR_NONE || i == -1) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
                      "mod_webkdc: %s: can't find attr(%s) in attr list",
                      func, name);

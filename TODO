@@ -220,6 +220,10 @@ WebLogin:
    Worst case, they should only get an error message confusing for users,
    but someone should check against MIT.
 
+ * Separate the two functions of @REMUSER_REALMS so that people can
+   configure a set of realms to be stripped separately from a set of
+   realms that are permitted.
+
 Build System:
 
  * Compile the WebAuth version into the modules rather than getting the

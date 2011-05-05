@@ -2,13 +2,16 @@
  * snprintf test suite.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
- * Copyright (c) 2004, 2005, 2006
- *     by Internet Systems Consortium, Inc. ("ISC")
- * Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
- *     2002, 2003 by The Internet Software Consortium and Rich Salz
+ * Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006
+ *     Russ Allbery <rra@stanford.edu>
+ * Copyright 2009, 2010
+ *     The Board of Trustees of the Leland Stanford Junior University
+ * Copyright 1995 Patrick Powell
+ * Copyright 2001 Hrvoje Niksic
  *
- * See LICENSE for licensing terms.
+ * This code is based on code written by Patrick Powell (papowell@astart.com)
+ * It may be used for any purpose as long as this notice remains intact
+ * on all source code distributions
  */
 
 #include <config.h>
@@ -110,7 +113,7 @@ test_format(bool trunc, const char *expected, int count,
 int
 main(void)
 {
-    int n, i, count;
+    int i, count;
     unsigned int j;
     long lcount;
     char lgbuf[128];
@@ -153,7 +156,6 @@ main(void)
     is_int(31, lcount, "correct output from long %%ln");
     test_format(true, "(null)", 6, "%s", NULL);
 
-    n = 26;
     for (i = 0; fp_formats[i] != NULL; i++)
         for (j = 0; j < ARRAY_SIZE(fp_nums); j++) {
             count = sprintf(lgbuf, fp_formats[i], fp_nums[j]);

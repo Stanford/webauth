@@ -1577,4 +1577,47 @@ WebAuthStripURL off
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+  <name>WebAuthOptional</name>
+  <description>Whether or not to require the use to authenticate</description>
+  <syntax>WebAuthOptional on|off</syntax>
+  <default>off</default>
+  <contextlist>
+    <context>directory</context>
+    <context>.htaccess</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      Normally, if an unauthenticated user attempts to access a directory
+      protected by WebAuth, they will be redirected to the WebLogin server
+      to authenticate.  This directive allows that authentication to be
+      deferred.  If this option is set to on, an unauthenticated user will
+      still be permitted access to the protected resource (even with
+      <code>require valid-user</code> in effect), unless they're
+      prohibited by some other authorization rule.  Unauthenticated users
+      will not have the REMOTE_USER, WEBAUTH_USER, or AUTH_TYPE
+      environment variables set.  If the user has already authenticated,
+      then all the environment variables will be set as normal.
+    </p>
+
+    <p>
+      This directive is normally used to protect CGI scripts or other
+      dynamic content that will then inspect the REMOTE_USER environment
+      variable and show different content based on whether the user has
+      authenticated or not.  Generally, such content will include a login
+      link to a page protected by WebAuth with
+      <code>WebAuthOptional</code> set to off, so that the user can
+      authenticate if they wish.  After that authentication, subsequent
+      visits to content with <code>WebAuthOptional</code> set to on will
+      have authentication information available in the environment.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebAuthOptional on
+    </example>
+  </usage>
+</directivesynopsis>
+
 </modulesynopsis>

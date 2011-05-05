@@ -1,5 +1,71 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.7.4 (2011-05-05)
+
+    WebAuth now supports a new Apache configuration directive,
+    WebAuthOptional, which can be used in directories and .htaccess files.
+    If set to on, unauthenticated users are not redirected to WebLogin and
+    are instead allowed access to the protected resource, but without any
+    REMOTE_USER or related environment variables set.  However, if the
+    user was previously authenticated to that server, their authentication
+    information will be present in the environment as normal.  This is
+    intended for use with dynamic content, such as embedded PHP or CGI
+    scripts, that will inspect REMOTE_USER and decide what content to show
+    based on the authentication status.  Normally, unauthenticated users
+    would also be shown a login link to a URL protected by WebAuth without
+    this directive so that they can authenticate if desired.  This feature
+    is sometimes referred to as "passive authentication" or "lazy
+    sessions."  Based on work by niklas.
+
+    Previous versions of WebLogin interpreted a "message stream modified"
+    error on password change as a failure of strength checking because
+    that error was incorrectly returned by MIT Kerberos for password
+    strength checking errors with a Heimdal KDC.  This turned out to be a
+    bug in MIT Kerberos, which is now avoided by using a different library
+    API call that doesn't have that bug.  This workaround has now been
+    removed, so the error reporting from WebLogin on password change will
+    now be more accurate.
+
+    Fix compilation error in libwebauth if assert() calls are enabled and
+    the local C library doesn't define an index function.  Fixes
+    compilation problems on Solaris 10.
+
+    Fix an Autoconf probe for the Heimdal Kerberos implementation.
+
+    Export the defines to enable system extensions to the module config
+    header as well.  Fixes build problems with APR on Red Hat Enterprise
+    Linux 5, which requires _GNU_SOURCE be defined before including APR
+    headers to define off64_t.
+
+    Avoid problems with generating the pkg-config configuration file when
+    the Kerberos linker flags contain commas.
+
+    Print a clearer warning in WebLogin when used with a mod_webkdc
+    older than 3.6.1 and therefore missing the request token type in the
+    repsonse.
+
+    Document the pt and sa key/value pairs in WebKDC logs in the
+    mod_webkdc manual.
+
+    Be more defensive in mod_webauth against an Apache request struct that
+    doesn't have the notes table or per-directory configuration filled in,
+    which seems to happen under the Apache included with Solaris 10 x86.
+    Based on a patch by Gary Buhrmaster.
+
+    Update to rra-c-util 3.4:
+
+    * Fix broken GCC attribute markers causing compilation problems.
+    * Kerberos library probing fixes without transitive shared libraries.
+    * Fix Autoconf warnings when probing for AIX's bundled Kerberos.
+    * Update warning flags for GCC 4.6.1.
+
+    Update to C TAP Harness 1.7:
+
+    * Fix compliation of runtests with more aggressive warnings.
+    * Add a more complete usage message and a -h command-line flag.
+    * Flush stderr before printing output from tests.
+    * Better handle running shell tests without BUILD and SOURCE set.
+
 WebAuth 3.7.3 (2010-09-20)
 
     Explicitly link the mod_webauthldap module with the portability glue

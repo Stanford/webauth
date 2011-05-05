@@ -1,7 +1,8 @@
 # Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -117,15 +118,15 @@ pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = lib/libwebauth.pc
 
 lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
-	sed -e 's,[@]prefix[@],$(prefix),g' \
-	    -e 's,[@]exec_prefix[@],$(exec_prefix),g' \
-	    -e 's,[@]includedir[@],$(includedir),g' \
-	    -e 's,[@]libdir[@],$(libdir),g' \
-	    -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g' \
-	    -e 's,[@]KRB5_LDFLAGS[@],$(KRB5_LDFLAGS),g' \
-	    -e 's,[@]KRB5_LIBS[@],$(KRB5_LIBS),g' \
-	    -e 's,[@]CRYPTO_LDFLAGS[@],$(CRYPTO_LDFLAGS),g' \
-	    -e 's,[@]CRYPTO_LIBS[@],$(CRYPTO_LIBS),g' \
+	sed -e 's![@]prefix[@]!$(prefix)!g' \
+	    -e 's![@]exec_prefix[@]!$(exec_prefix)!g' \
+	    -e 's![@]includedir[@]!$(includedir)!g' \
+	    -e 's![@]libdir[@]!$(libdir)!g' \
+	    -e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
+	    -e 's![@]KRB5_LDFLAGS[@]!$(KRB5_LDFLAGS)!g' \
+	    -e 's![@]KRB5_LIBS[@]!$(KRB5_LIBS)!g' \
+	    -e 's![@]CRYPTO_LDFLAGS[@]!$(CRYPTO_LDFLAGS)!g' \
+	    -e 's![@]CRYPTO_LIBS[@]!$(CRYPTO_LIBS)!g' \
 	    $(srcdir)/lib/libwebauth.pc.in > $@
 
 # Only install the WebLogin script and configuration if configured to build
@@ -159,7 +160,7 @@ endif
 # doesn't pass them.
 if GCC
     PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
-	-Wno-strict-prototypes
+	-Wno-strict-prototypes -Wno-redundant-decls
 else
     PERL_WARNINGS =
 endif
@@ -216,13 +217,14 @@ distclean-local:
 # without optimization turned on.  Desirable warnings that can't be turned
 # on due to other problems:
 #
-#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
+#     -Wconversion	http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.4 (2010-08-15).
-WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
-	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
-	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
-	-Wmissing-prototypes -Wnested-externs -Werror
+# Last checked against gcc 4.6.1 (2011-05-04).
+WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self	\
+	-Wswitch-enum -Wdeclaration-after-statement -Wshadow		\
+	-Wpointer-arith -Wbad-function-cast -Wwrite-strings		\
+	-Wjump-misses-init -Wlogical-op -Wstrict-prototypes		\
+	-Wmissing-prototypes -Wredundant-decls -Wnested-externs -Werror
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)'

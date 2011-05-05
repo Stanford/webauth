@@ -6,7 +6,7 @@
 #
 # Written by Roland Schemers
 # Copyright 2003, 2005, 2008, 2009
-#     Board of Trustees, Leland Stanford Jr. University
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

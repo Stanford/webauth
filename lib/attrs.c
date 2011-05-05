@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Copyright 2002, 2003, 2006, 2009, 2010
- *     Board of Trustees, Leland Stanford Jr. University
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing term.s
  */
@@ -262,7 +262,7 @@ webauth_attr_list_find(WEBAUTH_ATTR_LIST *list, const char *name,
 
     assert(list != NULL);
     assert(name != NULL);
-    assert(index != NULL);
+    assert(n != NULL);
 
     for (i = 0; i < list->num_attrs; i++)
         if (strcmp(list->attrs[i].name, name) == 0) {
