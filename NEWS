@@ -17,6 +17,15 @@ WebAuth 3.7.4 (unreleased)
     is sometimes referred to as "passive authentication" or "lazy
     sessions."  Based on work by niklas.
 
+    Previous versions of WebLogin interpreted a "message stream modified"
+    error on password change as a failure of strength checking because
+    that error was incorrectly returned by MIT Kerberos for password
+    strength checking errors with a Heimdal KDC.  This turned out to be a
+    bug in MIT Kerberos, which is now avoided by using a different library
+    API call that doesn't have that bug.  This workaround has now been
+    removed, so the error reporting from WebLogin on password change will
+    now be more accurate.
+
     Fix compilation error in libwebauth if assert() calls are enabled and
     the local C library doesn't define an index function.  Fixes
     compilation problems on Solaris 10.

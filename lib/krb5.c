@@ -401,20 +401,51 @@ webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *context,
     int retval;
     krb5_data result_code_string, result_string;
     char *username = NULL;
+#if HAVE_KRB5_MIT
+    krb5_creds in, *out = NULL;
+#endif
 
     assert(c != NULL);
     assert(password != NULL);
 
     memset(&result_code_string, 0, sizeof(krb5_data));
     memset(&result_string, 0, sizeof(krb5_data));
+    if (c->pwchange_err != NULL) {
+        free(c->pwchange_err);
+        c->pwchange_err = NULL;
+    }
 
     krb5_unparse_name(c->ctx, c->princ, &username);
 
-    /* The actual change. */
+    /*
+     * The actual change.  MIT Kerberos up to at least 1.9 has a bug in the
+     * set_password implementation that causes it to misparse replies that are
+     * larger than 256 bytes and return an incorrect error code, so for MIT
+     * Kerberos we use the old change_password API instead.
+     */
+#if HAVE_KRB5_MIT
+    memset(&in, 0, sizeof(in));
+    c->code = krb5_copy_principal(c->ctx, c->princ, &in.client);
+    if (c->code != 0)
+        goto done;
+    c->code = krb5_build_principal(c->ctx, &in.server,
+                                   krb5_princ_realm(c->ctx, c->princ)->length,
+                                   krb5_princ_realm(c->ctx, c->princ)->data,
+                                   "kadmin", "changepw", NULL);
+    if (c->code != 0)
+        goto done;
+    c->code = krb5_get_credentials(c->ctx, 0, c->cc, &in, &out);
+    if (c->code != 0)
+        goto done;
+    c->code = krb5_change_password(c->ctx, out, (char *) password,
+                                   &result_code, &result_code_string,
+                                   &result_string);
+#else
     c->code = krb5_set_password_using_ccache(c->ctx, c->cc, (char *) password,
                                              c->princ, &result_code,
                                              &result_code_string,
                                              &result_string);
+#endif /* !HAVE_KRB5_MIT */
 
     /* Everything from here on is just handling diagnostics and output. */
     if (c->code != 0)
@@ -439,6 +470,11 @@ done:
     krb5_free_data_contents(c->ctx, &result_code_string);
     if (username != NULL)
         krb5_free_unparsed_name(c->ctx, username);
+#if HAVE_KRB5_MIT
+    krb5_free_cred_contents(c->ctx, &in);
+    if (out != NULL)
+        krb5_free_creds(c->ctx, out);
+#endif
     return (c->code == 0) ? WA_ERR_NONE : WA_ERR_KRB5;
 }
 
@@ -605,6 +641,8 @@ webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)
         krb5_free_principal(c->ctx, c->princ);
     if (c->ctx != NULL)
         krb5_free_context(c->ctx);
+    if (c->pwchange_err != NULL)
+        free(c->pwchange_err);
     free(context);
     return WA_ERR_NONE;
 }
