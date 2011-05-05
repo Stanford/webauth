@@ -1,23 +1,44 @@
 /*
  * Some utility routines for writing tests.
  *
- * Herein are a variety of utility routines for writing tests.  All routines
- * of the form ok() or is*() take a test number and some number of appropriate
- * arguments, check to be sure the results match the expected output using the
- * arguments, and print out something appropriate for that test number.  Other
- * utility routines help in constructing more complex tests, skipping tests,
- * or setting up the TAP output format.
+ * Here are a variety of utility routines for writing tests compatible with
+ * the TAP protocol.  All routines of the form ok() or is*() take a test
+ * number and some number of appropriate arguments, check to be sure the
+ * results match the expected output using the arguments, and print out
+ * something appropriate for that test number.  Other utility routines help in
+ * constructing more complex tests, skipping tests, or setting up the TAP
+ * output format.
+ *
+ * This file is part of C TAP Harness.  The current version plus supporting
+ * documentation is at <http://www.eyrie.org/~eagle/software/c-tap-harness/>.
  *
  * Copyright 2009, 2010 Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2008
- *     Board of Trustees, Leland Stanford Jr. University
- * Copyright (c) 2004, 2005, 2006
- *     by Internet Systems Consortium, Inc. ("ISC")
- * Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
- *     2002, 2003 by The Internet Software Consortium and Rich Salz
+ * Copyright 2001, 2002, 2004, 2005, 2006, 2007, 2008
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
- * See LICENSE for licensing terms.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
+
+/* Required for isnan() and isinf(). */
+#ifndef _XOPEN_SOURCE
+# define _XOPEN_SOURCE 600
+#endif
 
 #include <errno.h>
 #include <math.h>
@@ -67,6 +88,7 @@ finish(void)
 
     if (_planned == 0 && !_lazy)
         return;
+    fflush(stderr);
     if (_process != 0 && getpid() == _process) {
         if (_lazy) {
             printf("1..%lu\n", highest);
@@ -99,6 +121,7 @@ plan(unsigned long count)
     if (setvbuf(stdout, NULL, _IOLBF, BUFSIZ) != 0)
         fprintf(stderr, "# cannot set stdout to line buffered: %s\n",
                 strerror(errno));
+    fflush(stderr);
     printf("1..%lu\n", count);
     testnum = 1;
     _planned = count;
@@ -131,6 +154,7 @@ plan_lazy(void)
 void
 skip_all(const char *format, ...)
 {
+    fflush(stderr);
     printf("1..0 # skip");
     if (format != NULL) {
         va_list args;
@@ -163,6 +187,7 @@ print_desc(const char *format, va_list args)
 void
 ok(int success, const char *format, ...)
 {
+    fflush(stderr);
     printf("%sok %lu", success ? "" : "not ", testnum++);
     if (!success)
         _failed++;
@@ -183,6 +208,7 @@ ok(int success, const char *format, ...)
 void
 okv(int success, const char *format, va_list args)
 {
+    fflush(stderr);
     printf("%sok %lu", success ? "" : "not ", testnum++);
     if (!success)
         _failed++;
@@ -198,6 +224,7 @@ okv(int success, const char *format, va_list args)
 void
 skip(const char *reason, ...)
 {
+    fflush(stderr);
     printf("ok %lu # skip", testnum++);
     if (reason != NULL) {
         va_list args;
@@ -219,6 +246,7 @@ ok_block(unsigned long count, int status, const char *format, ...)
 {
     unsigned long i;
 
+    fflush(stderr);
     for (i = 0; i < count; i++) {
         printf("%sok %lu", status ? "" : "not ", testnum++);
         if (!status)
@@ -243,6 +271,7 @@ skip_block(unsigned long count, const char *reason, ...)
 {
     unsigned long i;
 
+    fflush(stderr);
     for (i = 0; i < count; i++) {
         printf("ok %lu # skip", testnum++);
         if (reason != NULL) {
@@ -265,6 +294,7 @@ skip_block(unsigned long count, const char *reason, ...)
 void
 is_int(long wanted, long seen, const char *format, ...)
 {
+    fflush(stderr);
     if (wanted == seen)
         printf("ok %lu", testnum++);
     else {
@@ -294,6 +324,7 @@ is_string(const char *wanted, const char *seen, const char *format, ...)
         wanted = "(null)";
     if (seen == NULL)
         seen = "(null)";
+    fflush(stderr);
     if (strcmp(wanted, seen) == 0)
         printf("ok %lu", testnum++);
     else {
@@ -319,6 +350,7 @@ is_string(const char *wanted, const char *seen, const char *format, ...)
 void
 is_double(double wanted, double seen, double epsilon, const char *format, ...)
 {
+    fflush(stderr);
     if ((isnan(wanted) && isnan(seen))
         || (isinf(wanted) && isinf(seen) && wanted == seen)
         || fabs(wanted - seen) <= epsilon)
@@ -346,6 +378,7 @@ is_double(double wanted, double seen, double epsilon, const char *format, ...)
 void
 is_hex(unsigned long wanted, unsigned long seen, const char *format, ...)
 {
+    fflush(stderr);
     if (wanted == seen)
         printf("ok %lu", testnum++);
     else {
@@ -373,6 +406,7 @@ bail(const char *format, ...)
 {
     va_list args;
 
+    fflush(stderr);
     fflush(stdout);
     printf("Bail out! ");
     va_start(args, format);
@@ -392,6 +426,7 @@ sysbail(const char *format, ...)
     va_list args;
     int oerrno = errno;
 
+    fflush(stderr);
     fflush(stdout);
     printf("Bail out! ");
     va_start(args, format);
@@ -410,6 +445,7 @@ diag(const char *format, ...)
 {
     va_list args;
 
+    fflush(stderr);
     fflush(stdout);
     printf("# ");
     va_start(args, format);
@@ -428,6 +464,7 @@ sysdiag(const char *format, ...)
     va_list args;
     int oerrno = errno;
 
+    fflush(stderr);
     fflush(stdout);
     printf("# ");
     va_start(args, format);

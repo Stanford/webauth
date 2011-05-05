@@ -48,9 +48,12 @@ WebAuth 3.7.4 (unreleased)
     * Fix Autoconf warnings when probing for AIX's bundled Kerberos.
     * Update warning flags for GCC 4.6.1.
 
-    Update to C TAP Harness 1.6:
+    Update to C TAP Harness 1.7:
 
     * Fix compliation of runtests with more aggressive warnings.
+    * Add a more complete usage message and a -h command-line flag.
+    * Flush stderr before printing output from tests.
+    * Better handle running shell tests without BUILD and SOURCE set.
 
 WebAuth 3.7.3 (2010-09-20)
 
