@@ -15,6 +15,10 @@ webauth (3.7.4-1) UNRELEASED; urgency=low
   * Update to debhelper compatibility level V8.
     - Use debhelper rule minimization with overrides.
     - Do more work in *.install files and less work in debian/rules.
+  * Switch to 3.0 (quilt) source format.  Force a single Debian patch and
+    include a custom patch header explaining that it is a rollup of any
+    fixes cherry-picked from upstream and breaking those patches out
+    separately would be work for no gain.
 
  -- Russ Allbery <rra@debian.org>  Thu, 05 May 2011 14:59:33 -0700
 
