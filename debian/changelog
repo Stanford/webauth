@@ -19,6 +19,7 @@ webauth (3.7.4-1) UNRELEASED; urgency=low
     include a custom patch header explaining that it is a rollup of any
     fixes cherry-picked from upstream and breaking those patches out
     separately would be work for no gain.
+  * Update standards version to 3.9.2 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Thu, 05 May 2011 14:59:33 -0700
 
