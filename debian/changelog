@@ -9,6 +9,8 @@ webauth (3.7.4-1) unstable; urgency=low
     - Work around an MIT Kerberos library bug in error reporting from
       password change and remove the previous cruder workaround that
       mapped Kerberos errors to password strength warnings.
+    - Suppress certificate validation for the WebKDC in WebLogin if the
+      WebKDC URL is localhost, required by libwww-perl 5.837 or later.
     - More robust generation of the pkg-config configuration file.
     - Clearer warning from WebLogin when paired with an old WebKDC.
     - Document the pt and sa key/value pairs in WebKDC logging.
@@ -23,7 +25,7 @@ webauth (3.7.4-1) unstable; urgency=low
     separately would be work for no gain.
   * Update standards version to 3.9.2 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Wed, 11 May 2011 15:04:26 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 11 May 2011 15:26:32 -0700
 
 webauth (3.7.3-2) unstable; urgency=low
 
