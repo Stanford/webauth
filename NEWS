@@ -26,6 +26,12 @@ WebAuth 3.7.4 (2011-05-11)
     removed, so the error reporting from WebLogin on password change will
     now be more accurate.
 
+    Disable TLS certificate verification in WebLogin if the WebKDC URL is
+    at localhost, since the presented certificate will generally not be a
+    localhost certificate.  This fixes an incompatibility with libwww-perl
+    versions later than 5.837, which changed the default value for
+    certificate validation.
+
     Fix compilation error in libwebauth if assert() calls are enabled and
     the local C library doesn't define an index function.  Fixes
     compilation problems on Solaris 10.
