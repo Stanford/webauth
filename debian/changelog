@@ -12,6 +12,8 @@ webauth (3.7.4-1) UNRELEASED; urgency=low
     - More robust generation of the pkg-config configuration file.
     - Clearer warning from WebLogin when paired with an old WebKDC.
     - Document the pt and sa key/value pairs in WebKDC logging.
+  * Drop the transitional libwebauth1-dev package, required to smooth
+    upgrades from lenny.  squeeze released with libwebauth-dev.
   * Update to debhelper compatibility level V8.
     - Use debhelper rule minimization with overrides.
     - Do more work in *.install files and less work in debian/rules.
