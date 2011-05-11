@@ -4,6 +4,9 @@ ifndef PERL
     PERL = /usr/bin/perl
 endif
 
+%:
+	dh $@
+
 override_dh_auto_configure:
 	dh_auto_configure -- --enable-webkdc --enable-perl \
 	    --with-apxs=/usr/bin/apxs2 --enable-reduced-depends
