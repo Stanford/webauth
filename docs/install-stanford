@@ -24,11 +24,11 @@ COMPILING, TESTING, and INSTALLATION
     For Debian or Ubuntu users, install the libapache2-webauth package.
     This package is included in the base releases of both Debian and
     Ubuntu.  Newer versions for Debian may also be available from the
-    backports.org repository; see:
+    backports.debian.org repository; see:
 
-        <http://backports.org/dokuwiki/doku.php?id=instructions>
+        <http://backports.debian.org/Instructions/>
 
-    for information on how to install packages from backports.org.
+    for information on how to install packages from backports.debian.org.
 
     For Red Hat Enterprise users, WebAuth packages are available from our
     local yum repository.  See:
