@@ -1,4 +1,4 @@
-webauth (3.7.4-1) UNRELEASED; urgency=low
+webauth (3.7.4-1) unstable; urgency=low
 
   * New upstream release.
     - New Apache directive WebAuthOptional, which does not force the user
@@ -23,7 +23,7 @@ webauth (3.7.4-1) UNRELEASED; urgency=low
     separately would be work for no gain.
   * Update standards version to 3.9.2 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Thu, 05 May 2011 14:59:33 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 11 May 2011 15:04:26 -0700
 
 webauth (3.7.3-2) unstable; urgency=low
 
