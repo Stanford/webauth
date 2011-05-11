@@ -11,7 +11,7 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -42,6 +42,14 @@ our %PAGES = (login    => 'login.tmpl',
               confirm  => 'confirm.tmpl',
               pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
+
+# If the WebKDC is localhost, disable LWP certificate verification.  The
+# WebKDC will have a certificate matching its public name, which will never
+# match localhost, and we should be able to trust the server when connecting
+# directly to localhost.
+if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
+    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+}
 
 ##############################################################################
 # Debugging
