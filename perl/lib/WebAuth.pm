@@ -442,7 +442,7 @@ in order to then later use that to change the user password.
 
 If $keytab is not defined, then we do not obtain a TGT, but only initialize
 the context without verifying its validity.  This is currently only used in
-conjuction with $get_principal to get credentials for kadmin/changepw.
+conjunction with $get_principal to get credentials for kadmin/changepw.
 
 Returns the server principal used to verify the TGT.
 
