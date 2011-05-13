@@ -11,25 +11,24 @@
 #include <modules/mod-config.h>
 #include <portable/krb5.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_protocol.h"
-#include "ap_config.h"
-#include "apr_signal.h"
-
 #include <errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <krb5.h>
 #ifdef HAVE_ET_COM_ERR_H
 # include <et/com_err.h>
 #else
 # include <com_err.h>
 #endif
+#include <krb5.h>
 #include <ldap.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <httpd.h>
+#include <http_config.h>
+#include <http_protocol.h>
+#include <ap_config.h>
+#include <apr_signal.h>
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
