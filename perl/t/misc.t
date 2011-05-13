@@ -187,7 +187,7 @@ is ($retval, 0, ' and fails with only ST set');
 
 # test_pwchange_fields without a username
 $ENV{REQUEST_METHOD} = 'POST';
-$weblogin->{query} = new CGI;
+$weblogin->{query} = CGI->new ({ });
 $weblogin->{query}->param ('username', '');
 $weblogin->{query}->param ('expired', 0);
 open (PAGE, '>', \$page) or die "could not open string for writing";
@@ -312,7 +312,7 @@ SKIP: {
         unless -f ('t/data/test.principal');
 
     # add_remuser_token
-    $query = new CGI;
+    $query = CGI->new ({ });
     $weblogin = WebLogin->new ($query, \%pages);
     $weblogin->add_remuser_token;
     my $token = $weblogin->{request}->proxy_cookie ('remuser');
