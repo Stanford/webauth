@@ -24,11 +24,27 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <apr.h>
+#include <apr_base64.h>
+#include <apr_errno.h>
+#include <apr_file_info.h>
+#include <apr_file_io.h>
+#include <apr_lib.h>
+#include <apr_pools.h>
+#include <apr_signal.h>
+#include <apr_strings.h>
+#include <apr_tables.h>
+#include <apr_thread_mutex.h>
+#include <apr_xml.h>
+
+/* httpd.h must be included before http_config.h. */
+#include <ap_config.h>
 #include <httpd.h>
 #include <http_config.h>
+#include <http_core.h>
+#include <http_log.h>
 #include <http_protocol.h>
-#include <ap_config.h>
-#include <apr_signal.h>
+#include <http_request.h>
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
