@@ -8,16 +8,35 @@
  * See LICENSE for licensing terms.
  */
 
+#include <modules/mod-config.h>
 
-/*
- * utility stuff
- */
+#include <stdlib.h>
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
+#include <apr_errno.h>
+#include <apr_pools.h>
+#include <apr_strings.h>
+#include <apr_thread_mutex.h>
+#include <http_log.h>
+
+#include <lib/webauth.h>
 #include <modules/webkdc/mod_webkdc.h>
 
-/* initiaized in child */
+/* Initiaized in child. */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];
 
+/* The increment used for resizing an MWK_STRING. */
+#define CHUNK_SIZE 4096
+
+
+/*
+ * Initialize our mutexes.  This is stubbed out if we don't have threads.
+ */
 void
 mwk_init_mutexes(server_rec *s)
 {
@@ -33,8 +52,7 @@ mwk_init_mutexes(server_rec *s)
         if (astatus != APR_SUCCESS) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
                          "mod_webkdc: mwk_init_mutex: "
-                         "apr_thread_mutex_create(%d): %s (%d)",
-                         i,
+                         "apr_thread_mutex_create(%d): %s (%d)", i,
                          apr_strerror(astatus, errbuff, sizeof(errbuff)),
                          astatus);
             mwk_mutex[i] = NULL;
@@ -43,11 +61,20 @@ mwk_init_mutexes(server_rec *s)
 #endif
 }
 
+
+/*
+ * Lock or unlock a mutex.  The type is the mutex to lock or unlock, and the
+ * last parameter says whether to lock it (if true) or unlock it (if false).
+ * This is stubbed out if there are no threads.  This is the underlying
+ * routine beneath the public functions to lock and unlock mutexes.
+ *
+ * FIXME: Currently, if this fails, we log an error but then continue on and
+ * hope there is no problem.  We should probably fail harder.
+ */
 static void
 lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
 {
 #if APR_HAS_THREADS
-
     apr_status_t astatus;
 
     if (type >= MWK_MUTEX_MAX) {
@@ -56,13 +83,11 @@ lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
                      type);
         return;
     }
-
     if (mwk_mutex[type] != NULL) {
         if (lock)
             astatus = apr_thread_mutex_lock(mwk_mutex[type]);
         else
             astatus = apr_thread_mutex_unlock(mwk_mutex[type]);
-
         if (astatus != APR_SUCCESS) {
             char errbuff[512];
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -76,24 +101,34 @@ lock_or_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type, int lock)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webkdc: lock_mutex: mutex(%d) is NULL", type);
         /* FIXME: now what? */
-        }
+    }
 #endif
 }
 
+
+/*
+ * Lock a mutex.  Takes the type of the mutex.
+ */
 void
 mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type)
 {
     lock_or_unlock_mutex(rc, type, 1);
 }
 
+
+/*
+ * Unlock a mutex.  Takes the type of the mutex.
+ */
 void
 mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type)
 {
     lock_or_unlock_mutex(rc, type, 0);
 }
 
+
 /*
- *
+ * Given an APR pool, initialize an MWK_STRING structure and set its pool to
+ * use that pool.
  */
 void
 mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
@@ -102,10 +137,12 @@ mwk_init_string(MWK_STRING *string, apr_pool_t *pool)
     string->pool = pool;
 }
 
-#define CHUNK_SIZE 4096
 
 /*
- * given an MWA_STRING, append some new data to it.
+ * Given an MWA_STRING, append some new data to it.  The size of the data is
+ * optional; if not given, it will be determined via strlen on in_data.  If
+ * in_size is given, in_data may contain embedded nuls.  However, the string
+ * is always nul-terminated.
  */
 void
 mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size)
@@ -114,38 +151,35 @@ mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size)
 
     if (in_size == 0)
         in_size = strlen(in_data);
-
-    needed_size = string->size+in_size;
+    needed_size = string->size + in_size;
 
     if (string->data == NULL || needed_size > string->capacity) {
         char *new_data;
-        while (string->capacity < needed_size+1)
+
+        while (string->capacity < needed_size + 1)
             string->capacity += CHUNK_SIZE;
-
         new_data = apr_palloc(string->pool, string->capacity);
-
-        if (string->data != NULL) {
+        if (string->data != NULL)
             memcpy(new_data, string->data, string->size);
-        }
-        /* don't have to free existing data since it from a pool */
+
+        /* We don't have to free existing data since it from a pool. */
         string->data = new_data;
     }
     memcpy(string->data+string->size, in_data, in_size);
     string->size = needed_size;
-    /* always null-terminate, we have space becase of the +1 above */
+
+    /* Always nul-terminate.  We have space becase of the +1 above. */
     string->data[string->size] = '\0';
 }
 
+
 /*
- * get a required char* attr from a token, with logging if not present.
- * returns value or NULL on error,
+ * Get a required string attribute from a token, with logging if not present.
+ * Returns value or NULL on error,
  */
 char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
-                 const char *name,
-                 request_rec *r,
-                 const char *func,
-                 size_t *vlen)
+mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, request_rec *r,
+                 const char *func, size_t *vlen)
 {
     int status;
     ssize_t i;
@@ -159,12 +193,13 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist,
     }
     if (vlen)
         *vlen = alist->attrs[i].length;
-
-    return (char*)alist->attrs[i].value;
+    return (char *) alist->attrs[i].value;
 }
 
+
 /*
- * get a WEBAUTH_KRB5_CTXT
+ * Get a WEBAUTH_KRB5_CTXT, with logging if it fails.  Return NULL if the call
+ * fails for some reason.
  */
 WEBAUTH_KRB5_CTXT *
 mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
@@ -184,113 +219,106 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
 }
 
 
+/*
+ * Return the error message from an error return from libwebauth.  Either
+ * returns the Kerberos error or the general WebAuth error.  Takes the request
+ * struct, the status return from libwebauth, the Kerberos context, the name
+ * of the function in which the error occurred, and any extra data that should
+ * be added to the message.
+ */
 char *
-mwk_webauth_error_message(request_rec *r,
-                          int status,
-                          WEBAUTH_KRB5_CTXT *ctxt,
-                          const char *webauth_func,
-                          const char *extra)
+mwk_webauth_error_message(request_rec *r, int status, WEBAUTH_KRB5_CTXT *ctxt,
+                          const char *webauth_func, const char *extra)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL) {
-        return apr_psprintf(r->pool,
-                            "%s%s%s error: %s (%d): %s %d",
+    if (status == WA_ERR_KRB5 && ctxt != NULL)
+        return apr_psprintf(r->pool, "%s%s%s error: %s (%d): %s %d",
                             webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
                             webauth_error_message(status), status,
                             webauth_krb5_error_message(ctxt),
                             webauth_krb5_error_code(ctxt));
-    } else {
-        return apr_psprintf(r->pool,
-                            "%s%s%s error: %s (%d)",
-                            webauth_func,
+    else
+        return apr_psprintf(r->pool, "%s%s%s error: %s (%d)", webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
                             webauth_error_message(status), status);
-    }
 }
 
+
+/*
+ * The same as mwk_webauth_error_message, except that it just logs the message
+ * rather than returning it.
+ */
 void
-mwk_log_webauth_error(server_rec *serv,
-                      int status,
-                      WEBAUTH_KRB5_CTXT *ctxt,
-                      const char *mwk_func,
-                      const char *func,
+mwk_log_webauth_error(server_rec *serv, int status, WEBAUTH_KRB5_CTXT *ctxt,
+                      const char *mwk_func, const char *func,
                       const char *extra)
 {
 
-    if (status == WA_ERR_KRB5 && ctxt != NULL) {
+    if (status == WA_ERR_KRB5 && ctxt != NULL)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                 "mod_webkdc: %s:%s%s%s failed: %s (%d): %s %d",
-                     mwk_func,
-                     func,
+                     "mod_webkdc: %s:%s%s%s failed: %s (%d): %s %d",
+                     mwk_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
                      webauth_error_message(status), status,
                      webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
-    } else {
+    else
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                     "mod_webkdc: %s:%s%s%s failed: %s (%d)",
-                     mwk_func,
-                     func,
+                     "mod_webkdc: %s:%s%s%s failed: %s (%d)", mwk_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
                      webauth_error_message(status), status);
-    }
 }
 
 
+/*
+ * Update the keyring for the WebKDC server, returning a WebAuth keyring
+ * status code and logging the results.  This also takes care of setting
+ * ownership permissions for the keyring.
+ */
 int
 mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 {
     int status;
     WEBAUTH_KAU_STATUS kau_status;
     WEBAUTH_ERR update_status;
-
     static const char *mwk_func = "mwk_init_keyring";
 
     status = webauth_keyring_auto_update(sconf->keyring_path,
-                                         sconf->keyring_auto_update,
-                                         sconf->keyring_auto_update ?
-                                         sconf->keyring_key_lifetime :
-                                         0,
-                                         &sconf->ring,
-                                         &kau_status,
-                                         &update_status);
-
+                 sconf->keyring_auto_update,
+                 sconf->keyring_auto_update ? sconf->keyring_key_lifetime : 0,
+                 &sconf->ring, &kau_status, &update_status);
     if (status != WA_ERR_NONE) {
-            mwk_log_webauth_error(serv, status, NULL,
-                                  mwk_func,
-                                  "webauth_keyring_auto_update",
-                                  sconf->keyring_path);
+        mwk_log_webauth_error(serv, status, NULL, mwk_func,
+                              "webauth_keyring_auto_update",
+                              sconf->keyring_path);
     } else {
-        /* #if taken from ssl_scache_dbm.c */
-#if !defined(OS2) && !defined(WIN32) && !defined(BEOS) && !defined(NETWARE)
-    /*
-     * We have to make sure the Apache child processes have access to
-     * the keyring file.
-     */
-    if (geteuid() == 0 /* is superuser */) {
-        if (chown(sconf->keyring_path, unixd_config.user_id, -1) < 0)
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
-                         "mod_webkdc: %s: cannot chown keyring: %s",
-                         mwk_func, sconf->keyring_path);
+        /*
+         * We have to make sure the Apache child processes have access to the
+         * keyring file.
+         */
+        if (geteuid() == 0)
+            if (chown(sconf->keyring_path, unixd_config.user_id, -1) < 0)
+                ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
+                             "mod_webkdc: %s: cannot chown keyring: %s",
+                             mwk_func, sconf->keyring_path);
     }
-#endif
-    }
-
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
-            mwk_log_webauth_error(serv, status, NULL,
-                                  mwk_func,
+            mwk_log_webauth_error(serv, status, NULL, mwk_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
-            /* complain even more */
             ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
                          "mod_webkdc: %s: couldn't update ring: %s",
                          mwk_func, sconf->keyring_path);
     }
 
+    /*
+     * If debugging is enabled, log a message every time we update the
+     * keyring.
+     */
     if (sconf->debug) {
         const char *msg;
 
