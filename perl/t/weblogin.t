@@ -165,7 +165,7 @@ $WebKDC::Config::EXPIRING_PW_PRINC = $principal;
 unlink ('t/data/test.keyring');
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
-my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
 my $random = WebAuth::random_key (WebAuth::WA_AES_128);

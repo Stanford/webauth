@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009
+# Copyright 2003, 2005, 2008, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -98,9 +98,7 @@ our %EXPORT_TAGS = (
                                     WA_TK_WEBKDC_TOKEN
                                     )],
                     'hex' => [ qw(hex_encode hex_decode) ],
-                    'key' => [ qw(key_create keyring_read_file
-                                  keyring_writefile keyring_new
-                                  keyring_add) ],
+                    'key' => [ qw(key_create) ],
                     'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
                                    krb5_init_via_password
                                    krb5_init_via_keytab
@@ -128,7 +126,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
                    );
 
 our @EXPORT = qw ();
-our $VERSION = '1.01';
+our $VERSION = '2.00';
 
 bootstrap WebAuth $VERSION;
 
@@ -148,7 +146,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 2.00;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -254,14 +252,18 @@ WebAuth - Perl extension for WebAuth (version 3)
 
 =head1 DESCRIPTION
 
-WebAuth is a low-level Perl interface into the WebAuth C API.
-Some functions have been made more Perl-like, though no attempt
-has been made to create an object-oriented interface to the WebAuth library.
+WebAuth is a low-level Perl interface into the WebAuth C API.  Some
+functions have been made more Perl-like, and there is some partial work on
+changing the API to be object-oriented.
 
-All functions have the potential to croak with a WebAuth::Exception object,
-so an eval block should be placed around calls to WebAuth functions
-if you intend to recover from errors. See the WebAuth::Exception section
-for more information.
+All functions have the potential to croak with a WebAuth::Exception
+object, so an eval block should be placed around calls to WebAuth
+functions if you intend to recover from errors.  See the
+WebAuth::Exception section for more information.
+
+Nearly all of the functionality is directly in the WebAuth namespace for
+right now.  The exceptions are WebAuth::Exception, WebAuth::Keyring, and
+WebAuth::KeyringEntry objects, described in L</SUBCLASSES> below.
 
 =head1 EXPORT
 
@@ -272,7 +274,7 @@ available:
   base64    the base64_* functions
   const     the wA_* constants
   hex       the hex_* functions
-  key       the key_* and keyring_* functions
+  key       the key_* functions
   krb5      the krb5_* functions
   random    the random_* functions
   token     the token_* functions
@@ -539,7 +541,9 @@ name and password.
 
 =back
 
-=head1 WebAuth::Exception
+=head1 SUBCLASSES
+
+=head2 WebAuth::Exception
 
 The various WebAuth functions can all throw exceptions if something
 wrong happens. These exceptions will be of type WebAuth::Exception.
@@ -608,6 +612,116 @@ error code and error message if status is WA_ERR_KRB5.
 
 The verbose_message method is also called if the exception is
 used as a string.
+
+=back
+
+=head2 WebAuth::Keyring
+
+This Perl class represents a keyring, which is a set of WebAuth keys with
+associated creation times and times after which they become valid.  These
+keyrings can be read from and stored to files on disk and are used by
+WebAuth Application Servers and WebKDCs to store their encryption keys.
+
+=head3 Class Methods
+
+=over 4
+
+=item new([CAPACITY])
+
+Create a new keyring with initial capacity CAPACITY.  The default initial
+capacity is 1 if none is given.  Keyrings automatically resize to hold
+more keys when necessary, so the capacity is only for efficiency if one
+knows in advance roughly how many keys there will be.  Returns a new
+WebAuth::Keyring object or throws a WebAuth::Exception.
+
+=item read_file(FILE)
+
+Reads a keyring from the file FILE.  The created keyring object will have
+no association with the file after being created; it won't automatically
+be saved, or updated when the file changes.  Returns a new
+WebAuth::Keyring object or throws a WebAuth::Exception.
+
+=back
+
+=head3 Instance Methods
+
+As with other WebAuth module functions, failures are signalled by throwing
+WebAuth::Exception rather than by return status.
+
+=over 4
+
+=item add(CREATION, VALID_AFTER, KEY)
+
+Add a new KEY to the keyring with CREATION as the creation time and
+VALID_AFTER as the valid after time.  Both of the times should be in
+seconds since epoch, and the key must be a valid WebAuth key, such as is
+returned by WebAuth::webauth_random_key().  Keys will not used for
+encryption until after their valid after time, which provides an
+opportunity to synchronize the keyring between multiple systems before the
+keys are used.
+
+=item best_key(ENCRYPTION, HINT)
+
+Returns the best key available in the keyring for a particular purpose and
+time.  ENCRYPTION is a boolean and should be true if the key will be used
+for encryption and false if it will be used for decryption.  For
+decryption keys when ENCRYPTION is false, HINT is the timestamp of the
+data that will be decrypted.
+
+If ENCRYPTION is true, this method will return the valid key in the
+keyring that was created most recently, since this is the best key to use
+for encryption going forward.  If ENCRYPTION is false, this method will
+return the key most likely to have been used to encrypt something at the
+time HINT, where HINT is given in seconds since epoch.
+
+=item capacity()
+
+Returns the capacity of the keyring (the total number of keys it can hold
+without being resized).  This is not usually interesting since keyrings
+will automatically resize if necessary.  It is used mostly for testing.
+
+=item entries()
+
+In a scalar context, returns the number of entries in the keyring.  In an
+array context, returns a list of keyring entries as WebAuth::KeyringEntry
+objects.
+
+=item remove(INDEX)
+
+Removes the INDEX entry in the keyring.  The keyring will then be
+compacted, so all subsequent entries in the keyring will have their index
+decreased by one.  If you are removing multiple entries from a keyring,
+you should therefore remove them from the end of the keyring (the highest
+INDEX number) first.
+
+=item write_file(FILE)
+
+Writes the keyring out to FILE in the format suitable for later reading by
+read_file().
+
+=back
+
+=head2 WebAuth::KeyringEntry
+
+This object is only used as the return value from the entries() method of
+WebAuth::Keyring.  It's a read-only object that has the following methods:
+
+=head3 Instance Methods
+
+=over 4
+
+=item creation()
+
+Returns the creation time of the key in seconds since epoch.
+
+=item key()
+
+Returns the key of this entry.  This will be an opaque object that can be
+passed into other WebAuth module functions that take a key.
+
+=item valid_after()
+
+Returns the valid after time of the key in seconds since epoch.
 
 =back
 
@@ -686,10 +800,7 @@ The following constants from webauth.h are available:
 
 =head1 AUTHOR
 
-Roland Schemers (schemers@stanford.edu)
-
-=head1 SEE ALSO
-
-L<perl>.
+Roland Schemers, Jon Robertson <jonrober@stanford.edu>, and Russ Allbery
+<rra@stanford.edu>.
 
 =cut

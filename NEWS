@@ -1,5 +1,16 @@
                        User-Visible WebAuth Changes
 
+WebAuth 3.8.0 (unreleased)
+
+    The keyring manipulation functions of the WebAuth Perl module have
+    been rewritten to be object-oriented, introducing new WebAuth::Keyring
+    and WebAuth::KeyringEntry objects.  Perl code using the WebAuth module
+    to manipulate keyrings will have to be modified, since several
+    functions were removed in favor of the new interface.  Methods to
+    remove a key from a keyring, get the timestamps and keys associated
+    with keyring entries, and choose the best key from a keyring have been
+    added.
+
 WebAuth 3.7.4 (2011-05-11)
 
     WebAuth now supports a new Apache configuration directive,

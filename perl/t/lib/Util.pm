@@ -123,10 +123,10 @@ sub create_keyring {
 
     my $key = WebAuth::key_create (WebAuth::WA_AES_KEY,
                                    WebAuth::random_key (WebAuth::WA_AES_128));
-    my $ring = WebAuth::keyring_new (32);
+    my $ring = WebAuth::Keyring->new (32);
     my $curr = time();
-    WebAuth::keyring_add ($ring, $curr, $curr, $key);
-    WebAuth::keyring_write_file ($ring, $fname);
+    $ring->add ($curr, $curr, $key);
+    $ring->write_file ($fname);
 }
 
 ##############################################################################
