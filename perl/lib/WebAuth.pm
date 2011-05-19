@@ -565,49 +565,49 @@ For example:
 
 =item match($exception[, $status])
 
-  This class function (not a method) returns true if the given
-  $exception is a WebAuth::Exception. If $status is specified, then
-  $exception->status() will also be compared to $status.
+This class function (not a method) returns true if the given
+$exception is a WebAuth::Exception. If $status is specified, then
+$exception->status() will also be compared to $status.
 
 =item status()
 
-  This method returns the WebAuth status code for the exception,
-  which will be one of the WA_ERR_* codes.
+This method returns the WebAuth status code for the exception,
+which will be one of the WA_ERR_* codes.
 
 =item error_message()
 
-  This method returns the WebAuth error message for the status code,
-  using the WebAuth::error_message function.
+This method returns the WebAuth error message for the status code,
+using the WebAuth::error_message function.
 
 =item detail_message()
 
-  This method returns the "detail" message in the exception. The detail
-  message is additional information created with the exception when
-  it is raised, and is usually the name of the WebAuth C function that
-  raised the exception.
+This method returns the "detail" message in the exception. The detail
+message is additional information created with the exception when
+it is raised, and is usually the name of the WebAuth C function that
+raised the exception.
 
 =item krb5_error_code()
 
-  If the status of the exception is WA_ERR_KRB5, then this function
-  will return the Kerberos V5 error code that caused the exception.
-  There are currently no constants defined for these error codes.
+If the status of the exception is WA_ERR_KRB5, then this function
+will return the Kerberos V5 error code that caused the exception.
+There are currently no constants defined for these error codes.
 
 =item krb5_error_message()
 
-  If the status of the exception is WA_ERR_KRB5, then this function
-  will return the Kerberos V5 error message corresponding to the
-  krb5_error_code.
+If the status of the exception is WA_ERR_KRB5, then this function
+will return the Kerberos V5 error message corresponding to the
+krb5_error_code.
 
 =item verbose_message()
 
-  This method returns a verbose error message, which consists
-  of all information available in the exception, including the
-  status code, error message, line number and file, and any detail
-  message in the exception. It also will include the kerberos
-  error code and error message if status is WA_ERR_KRB5.
+This method returns a verbose error message, which consists
+of all information available in the exception, including the
+status code, error message, line number and file, and any detail
+message in the exception. It also will include the kerberos
+error code and error message if status is WA_ERR_KRB5.
 
-  The verbose_message method is also called if the exception is
-  used as a string.
+The verbose_message method is also called if the exception is
+used as a string.
 
 =back
 
