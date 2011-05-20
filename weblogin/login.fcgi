@@ -27,7 +27,7 @@ use strict;
 use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
-use HTML::Template ();
+use Template ();
 use WebLogin ();
 use WebKDC ();
 use WebKDC::Config ();
@@ -37,7 +37,7 @@ use WebKDC::Config ();
 our $EXITING = 0;
 
 # The names of the template pages that we use.  The beginning of the main
-# routine changes the values here to be HTML::Template objects.
+# routine changes the values here to be Template Toolkit objects.
 our %PAGES = (login    => 'login.tmpl',
               confirm  => 'confirm.tmpl',
               pwchange => 'pwchange.tmpl',
@@ -76,14 +76,20 @@ sub dump_stuff {
 # Main routine
 ##############################################################################
 
-# Pre-compile our templates.  When running under FastCGI, this results in a
-# significant speedup, since loading and compiling the templates is a bit
-# time-consuming.
-%PAGES = map {
-    $_ => HTML::Template->new (filename => $PAGES{$_},
-                               cache    => 1,
-                               path     => $WebKDC::Config::TEMPLATE_PATH)
-} keys %PAGES;
+# Set up a template object, along with caching options to compile the
+# templates to Perl code and recheck for updates in the source files every
+# minute.
+my $template = Template->new ({
+                               STAT_TTL     => 60,
+                               COMPILE_DIR  =>
+                                   $WebKDC::Config::TEMPLATE_COMPILE_PATH,
+                               COMPILE_EXT  => '.ttc',
+                               INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
+                               });
+
+# Map the pages to the structure Weblogin will expect, with filename and
+# hash to be filled in with parameters.
+%PAGES = map { $_ => { filename => $PAGES{$_}, params => {}, } } keys %PAGES;
 
 # Exit safely if we get a SIGTERM.
 $SIG{TERM} = sub { $EXITING = 1 };
@@ -93,7 +99,7 @@ $SIG{TERM} = sub { $EXITING = 1 };
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
 
-    my $weblogin = WebLogin->new ($q, \%PAGES);
+    my $weblogin = WebLogin->new ($q, $template, \%PAGES);
     my ($status, $error);
 
     # If we already have return_url in the query, we're at the confirmation
@@ -128,13 +134,9 @@ while (my $q = CGI::Fast->new) {
     $weblogin->process_response ($status, $error);
 
 
-# Done on each pass through the FastCGI loop.  Clear out template parameters
-# for all of the pages for the next run and restart the script if its
+# Done on each pass through the FastCGI loop.  Restart the script if its
 # modification time has changed.
 } continue {
     exit if $EXITING;
-    for (keys %PAGES) {
-        $PAGES{$_}->clear_params;
-    }
     exit if -M $ENV{SCRIPT_FILENAME} < 0;
 }

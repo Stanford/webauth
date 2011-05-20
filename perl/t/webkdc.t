@@ -48,9 +48,6 @@ if (! -f 't/data/test.keyring.path' || ! -f 't/data/test.password'
 # and again.
 sub init_weblogin {
     my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
-    for (keys %{$pages}) {
-        $pages->{$_}->clear_params;
-    }
 
     my $query = CGI->new;
     $query->param ('username', $username);
@@ -58,7 +55,8 @@ sub init_weblogin {
     $query->param ('ST', $st_base64);
     $query->param ('RT', $rt_base64);
 
-    my $weblogin = WebLogin->new ($query, $pages);
+    # Load the weblogin object, with undefined template (we don't do output).
+    my $weblogin = WebLogin->new ($query, undef, $pages);
     $weblogin->{debug} = 0;
     $weblogin->{logging} = 0;
     $weblogin->{script_name} = '/login';

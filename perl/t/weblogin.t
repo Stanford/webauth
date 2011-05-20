@@ -19,7 +19,10 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config;
 
+use File::Path qw (rmtree);
 use Test::More;
+
+mkdir ('./t/tmp');
 
 # Whether we've found a valid kerberos config.
 my $kerberos_config = 0;
@@ -59,9 +62,6 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
 # and again.
 sub init_weblogin {
     my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
-    for (keys %{$pages}) {
-        $pages->{$_}->clear_params;
-    }
 
     my $query = CGI->new;
     $query->param ('username', $username);
@@ -69,7 +69,13 @@ sub init_weblogin {
     $query->param ('ST', $st_base64);
     $query->param ('RT', $rt_base64);
 
-    my $weblogin = WebLogin->new ($query, $pages);
+    my $template = Template->new ({
+                                   COMPILE_DIR  => 't/tmp/ttc',
+                                   COMPILE_EXT  => '.ttc',
+                                   INCLUDE_PATH => 't/data/templates',
+                                  });
+
+    my $weblogin = WebLogin->new ($query, $template, $pages);
     $weblogin->{debug} = 0;
     $weblogin->{logging} = 0;
     $weblogin->{script_name} = '/login';
@@ -77,6 +83,7 @@ sub init_weblogin {
     # Normally set during WebKDC::request_token_request.
     $weblogin->{response}->return_url ('https://test.example.org/');
     $weblogin->{response}->subject ($username);
+    $weblogin->{response}->requester_subject ('webauth/test3.testrealm.org@testrealm.org');
     $weblogin->{response}->response_token ('TestResponse');
     $weblogin->{response}->response_token_type ('id');
 
@@ -128,11 +135,7 @@ my %pages = (pwchange => 'pwchange.tmpl',
              login    => 'login.tmpl',
              confirm  => 'confirm.tmpl',
              error    => 'error.tmpl');
-%pages = map {
-    $_    => HTML::Template->new (filename => $pages{$_},
-    cache => 1,
-    path  => 't/data/templates')
-} keys %pages;
+%pages = map { $_ => { filename => $pages{$_}, params => {}, } } keys %pages;
 
 # Set up various ENV variables later used for logging.
 $ENV{SERVER_ADDR} = 'localhost';
@@ -652,3 +655,4 @@ is ($output[6], 'script_name ', ' and script_name was not set');
 
 remctld_stop;
 unlink ('krb5cc_test', 'test-acl', 't/data/test.keyring');
+rmtree ('./t/tmp');

@@ -16,7 +16,6 @@ use Util qw (contents remctld_spawn remctld_stop getcreds);
 
 use WebKDC::Config ();
 use WebKDC::WebResponse;
-use HTML::Template;
 use CGI;
 
 use Test::More;

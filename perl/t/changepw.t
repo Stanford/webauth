@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (get_userinfo create_keyring);
 
 use CGI;
-use HTML::Template;
+use Template;
 
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebLogin;

@@ -116,9 +116,9 @@ REQUIREMENTS
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
 
-      HTML::Template
       libwww (LWP)
       IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
+      Template (Template Toolkit)
       URI
       XML::Parser
 

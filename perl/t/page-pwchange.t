@@ -15,16 +15,21 @@ use lib ('t/lib', 'lib', 'blib/arch');
 
 use WebLogin;
 use CGI;
+use Template;
 
+use File::Path qw (rmtree);
 use Test::More tests => 44;
+
+mkdir ('./t/tmp');
 
 # Load a version of the page templates that just prints out the vars sent.
 my %pages = (pwchange => 'pwchange.tmpl');
-%pages = map {
-    $_    => HTML::Template->new (filename => $pages{$_},
-    cache => 1,
-    path  => 't/data/templates')
-} keys %pages;
+%pages = map { $_ => { filename => $pages{$_}, params => undef } } keys %pages;
+my $template = Template->new ({
+                               COMPILE_DIR  => 't/tmp/ttc',
+                               COMPILE_EXT  => '.ttc',
+                               INCLUDE_PATH => 't/data/templates',
+                               });
 
 # Set up a query with some test data.
 my $query = CGI->new;
@@ -35,6 +40,7 @@ $query->param ('expired', 1);
 my $weblogin = {};
 bless $weblogin, 'WebLogin';
 $weblogin->{query} = $query;
+$weblogin->{template} = $template;
 $weblogin->{pages} = \%pages;
 $weblogin->{test_cookie} = $WebLogin::TEST_COOKIE;
 
@@ -111,3 +117,5 @@ is ($output[17], 'changepw ', ' and changepw was not set');
 is ($output[18], 'expired 1', ' and expired was set');
 is ($output[19], 'skip_username 1', ' and skip_username was set');
 is ($output[20], 'skip_password 1', ' and skip_password was set');
+
+rmtree ('./t/tmp');

@@ -16,24 +16,28 @@ use Util qw (contents create_keyring getcreds);
 
 use WebKDC::Config ();
 use WebLogin;
-use HTML::Template;
+use Template;
 use CGI;
 
+use File::Path qw (rmtree);
 use Test::More tests => 36;
 
 # Force a defined order on output.
 $| = 1;
+
+mkdir ('./t/tmp');
 
 # Load a version of the page templates that just prints out the vars sent.
 my %pages = (confirm  => 'confirm.tmpl',
              pwchange => 'pwchange.tmpl',
              error    => 'error.tmpl',
             );
-%pages = map {
-    $_    => HTML::Template->new (filename => $pages{$_},
-    cache => 1,
-    path  => 't/data/templates')
-} keys %pages;
+%pages = map { $_ => { filename => $pages{$_}, params => {}, } } keys %pages;
+my $template = Template->new ({
+                               COMPILE_DIR  => 't/tmp/ttc',
+                               COMPILE_EXT  => '.ttc',
+                               INCLUDE_PATH => 't/data/templates',
+                               });
 
 # Set up a query with some test data.
 $ENV{REQUEST_METHOD} = 'GET';
@@ -44,6 +48,7 @@ my $weblogin = {};
 bless $weblogin, 'WebLogin';
 $weblogin->{query} = $query;
 $weblogin->{pages} = \%pages;
+$weblogin->{template} = $template;
 $weblogin->{response} = new WebKDC::WebResponse;
 $weblogin->{request} = new WebKDC::WebRequest;
 $weblogin->{request}->request_token ('TestReqToken');
@@ -299,7 +304,7 @@ TODO: {
 
     # add_proxy_token
     $query = new CGI;
-    $weblogin = WebLogin->new ($query, \%pages);
+    $weblogin = WebLogin->new ($query, $template, \%pages);
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     $weblogin->add_proxy_token;
     $ENV{KRB5CCNAME} = $oldcache;
@@ -313,7 +318,7 @@ SKIP: {
 
     # add_remuser_token
     $query = CGI->new ({ });
-    $weblogin = WebLogin->new ($query, \%pages);
+    $weblogin = WebLogin->new ($query, $template, \%pages);
     $weblogin->add_remuser_token;
     my $token = $weblogin->{request}->proxy_cookie ('remuser');
     ok ($token, 'add_remuser_token works');
@@ -321,3 +326,5 @@ SKIP: {
 
 unlink ($WebKDC::Config::KEYRING_PATH);
 unlink ('krb5cc_test');
+rmtree ('./t/tmp');
+

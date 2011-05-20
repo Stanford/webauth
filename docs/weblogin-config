@@ -17,11 +17,11 @@ Introduction
 Templates
 
   WebLogin uses a set of template HTML pages to display the login, logout,
-  confirmation, and error pages.  Internally, it uses the HTML::Template
-  Perl module to process these templates.  For detailed information about
-  the supported syntax, install that module and then run:
+  confirmation, and error pages.  Internally, it uses the Template Perl
+  module to process these templates.  For detailed information about the
+  supported syntax, install that module and then run:
 
-      perldoc HTML::Template
+      perldoc Template
 
   You can probably figure out the details you need by looking at the
   existing templates, though.  WebLogin doesn't use any advanced features.
@@ -31,9 +31,9 @@ Templates
   functional and simple, but not particularly pretty.
 
   There are four templates used by the weblogin scripts.  They must
-  support the following HTML::Template variables, which means that all of
+  support the following Template variables, which means that all of
   these variables must be mentioned in the templates even if you don't
-  want to use them (otherwise, HTML::Template will throw errors).
+  want to use them (otherwise, Template will throw errors).
 
   The primary two templates are:
 
@@ -86,7 +86,7 @@ Templates
 
   A different template is used when the user doesn't have cookies enabled
   or in the event of some other WebKDC error.  It takes the following
-  HTML::Template variables:
+  Template variables:
 
   error.tmpl
 
@@ -149,6 +149,13 @@ Configuration
       "/usr/local/share/weblogin/generic/templates" (which works for the
       default installation paths).
 
+  $TEMPLATE_COMPILE_PATH
+
+      The path to the directory that Template Toolkit will use to
+      create compiled versions of the template for speed.  Default:
+      "/usr/local/share/weblogin/generic/templates/ttc" (which works for
+      the default installation paths).
+
   $URL
 
       URL to use to contact the WebKDC.  This should always point to
@@ -157,6 +164,14 @@ Configuration
       paranoid is nice.  Default: "https://localhost/webkdc-service/".
       You generally only want to change the local part of the URL, and
       then only if you want to use a non-standard URL for the WebKDC.
+
+  $FATAL_PAGE
+
+      In case of an error in trying to generate a page from a template,
+      we will print out a 500 page.  If this is not set, we simply die
+      with an error for logs and let Apache handle the page.  If this
+      is set, we load the file given as an error page and display it on
+      template errors.
 
   $BYPASS_CONFIRM
 

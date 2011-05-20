@@ -5,7 +5,7 @@
     <title>WebAuth Login</title>
   </head>
 
-  <TMPL_IF NAME=notdefined>
+  [% IF notdefined %]
 <!--
 This is the template for the WebAuth login page.  This page is called from
 login.fcgi script on the weblogin server.  It displays a form asking the
@@ -28,58 +28,55 @@ show_remuser           : show a button for REMOTE_USER authentication
 remuser_failed         : REMOTE_USER authentication was tried and failed
 remuser_url            : where to send the user for REMOTE_USER auth
 -->
-  </TMPL_IF>
+  [% END %]
 
   <body onload="document.login.username.focus();">
     <h1 align="center">WebAuth Login</h1>
-    <TMPL_IF NAME=error>
+    [% IF error %]
       <div class="error" align="center">
         <p><strong>
-          <TMPL_IF NAME=err_missinginput>
+          [% IF err_missinginput %]
             <!-- This is just the combination of err_username and
                  err_password if you want only one error message.  We
                  don't use it. -->
-          </TMPL_IF>
-          <TMPL_IF NAME=err_username>
+          [% END %]
+          [% IF err_username && err_password %]
+            <!-- Error: no username or password submitted. -->
+            Error: Enter your username and password.
+          [% ELSIF err_username %]
             <!-- Error: no username submitted. -->
-            <TMPL_IF NAME=err_password>
-              Error: Enter your username and password.
-            <TMPL_ELSE>
-              Error: Enter your username.
-            </TMPL_IF>
-          <TMPL_ELSE>
-            <TMPL_IF NAME=err_password>
-              <!-- Error: no password submitted. -->
-              Error: Enter your password.
-            </TMPL_IF>
-          </TMPL_IF>
+            Error: Enter your username.
+          [% ELSIF err_password %]
+            <!-- Error: no password submitted. -->
+            Error: Enter your password.
+          [% END %]
 
-          <TMPL_IF NAME=err_loginfailed>
+          [% IF err_loginfailed %]
             <!-- Error: login failed. -->
             Error: You entered an incorrect username or password (or both).
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_rejected>
+          [% IF err_rejected %]
             <!-- Error: user principal rejected. -->
             Error: That username may not authenticate to this service.
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_forced>
+          [% IF err_forced %]
             <!-- Not really an error, forced login. -->
             This web site requires that you log in with username and
             password.
-          </TMPL_IF>
+          [% END %]
         </strong></p>
         <p>Click <a href="/help.html">help</a> for assistance.</p>
       </div>
-    </TMPL_IF>
+    [% END %]
 
-    <TMPL_IF NAME=remuser_failed>
+    [% IF remuser_failed %]
       <div class="error" align="center">
         <p><strong>Error: Apache authentication was tried and
         failed.</strong></p>
       </div>
-    </TMPL_IF>
+    [% END %]
 
     <div class="loginbox" align="center">
       <table border="1" width="70%">
@@ -89,21 +86,21 @@ remuser_url            : where to send the user for REMOTE_USER auth
           <td>
             <div class="loginform">
               <form name="login"
-                    action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
+                    action="[% script_name FILTER html %]"
                     method="post" autocomplete="OFF"
                     enctype="application/x-www-form-urlencoded">
                 <input type="hidden" name="RT"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                       value="[% RT FILTER html %]">
                 <input type="hidden" name="ST"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                       value="[% ST FILTER html %]">
                 <input type="hidden" name="LC"
-                       value="<TMPL_VAR ESCAPE=HTML NAME=LC>">
+                       value="[% LC FILTER html %]">
                 <input type="hidden" name="login" value="yes">
                 <table>
                   <tr>
                     <td><strong>Username:</strong></td>
                     <td><input name="username" type="text"
-                               value="<TMPL_VAR ESCAPE=HTML NAME=username>"
+                               value="[% username FILTER html %]"
                                size="18"><br/></td>
                   </tr>
                   <tr>
@@ -120,17 +117,17 @@ remuser_url            : where to send the user for REMOTE_USER auth
             </div>
             <div class="loginlinks">
               <a href="/help.html">help</a>
-              <TMPL_IF NAME=login_cancel>
+              [% IF login_cancel %]
                 <!-- The WebAuth Server has a cancel url.-->
-                <a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">cancel</a>
-              </TMPL_IF>
+                <a href="[% cancel_url FILTER html %]">cancel</a>
+              [% END %]
             </div>
           </td>
         </tr>
       </table>
     </div>
 
-    <TMPL_IF NAME=show_remuser>
+    [% IF show_remuser %]
       <div class="remuserbox" align="center">
         <table border="1" width="70%">
           <tr>
@@ -140,19 +137,19 @@ remuser_url            : where to send the user for REMOTE_USER auth
                 Apache authentication:
               </td>
               <td>
-                <form action="<TMPL_VAR ESCAPE=HTML NAME=remuser_url>"
+                <form action="[% remuser_url FILTER html %]"
                       method="get">
                   <input type="hidden" name="RT"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                         value="[% RT FILTER html %]">
                   <input type="hidden" name="ST"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                         value="[% ST FILTER html %]">
                   <input type="submit" name="Submit" value="remuser">
                 </form>
               </td>
             </tr>
         </table>
       </div>
-    </TMPL_IF>
+    [% END %]
 
     <div class="trailer">
       <h2>Caution:</h2>

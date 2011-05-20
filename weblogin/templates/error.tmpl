@@ -5,7 +5,7 @@
     <title>WebAuth Error</title>
   </head>
 
-  <TMPL_IF NAME=notdefined>
+  [% IF notdefined %]
 <!--
 This is the template for the WebAuth error page.  It is displayed whenever
 the login.fcgi script on the weblogin server encounters an error.
@@ -17,7 +17,7 @@ err_no_request_token   : no request token (user went straight to weblogin)
 err_webkdc             : the WebKDC returned an error
 err_msg                : error message from WebKDC
 -->
-  </TMPL_IF>
+  [% END %]
 
   <body>
     <h1 align="center">WebAuth Error</h1>
@@ -31,7 +31,7 @@ err_msg                : error message from WebKDC
               <p><strong>An error has occurred</strong></p>
 
               <!-- Error: browser submitted login page via GET -->
-              <TMPL_IF NAME=err_bad_method>
+              [% IF err_bad_method %]
                 <p>Error: Login form not properly submitted.</p>
                 <p>Your browser has improperly submitted the login form
                    via GET instead of POST, which risks exposing your
@@ -39,10 +39,10 @@ err_msg                : error message from WebKDC
                    you visit.  Please check that your browser is not
                    misconfigured and you do not use browser plugins that
                    override proper form handling.</p>
-              </TMPL_IF>
+              [% END %]
 
               <!-- Error: cookies disabled in web browser -->
-              <TMPL_IF NAME=err_cookies_disabled>
+              [% IF err_cookies_disabled %]
                 <p>Error: You must enable cookies on your web browser.</p>
                 <p>You have just tried to access a web service that is
                    protected by WebAuth.  However, WebAuth is unable to
@@ -50,23 +50,23 @@ err_msg                : error message from WebKDC
                    has cookies disabled.</p>
                 <p>WebAuth depends on cookies to communicate with your web
                    service.  Please enable cookies in your web browser.<p>
-              </TMPL_IF>
+              [% END %]
 
               <!-- Error: no response token -->
-              <TMPL_IF NAME=err_no_request_token>
+              [% IF err_no_request_token %]
                 <p>Error: The URL given is incomplete.</p>
-              </TMPL_IF>
+              [% END %]
 
               <!-- Error: missing data when redisplaying the confirm page -->
-              <TMPL_IF NAME=err_confirm>
+              [% IF err_confirm %]
                 <p>Error: Necessary form data was missing.</p>
                 <p>You have probably accessed a stale cached page by
                    mistake.</p>
-              </TMPL_IF>
+              [% END %]
 
-              <TMPL_IF NAME=err_webkdc>
-                <p>Error: <TMPL_VAR ESCAPE=HTML NAME=err_msg></p>
-              </TMPL_IF>
+              [% IF err_webkdc %]
+                <p>Error: [% err_msg FILTER html %]</p>
+              [% END %]
 
               <p>To try again, please return to the preceding web page
               (or you may need to start your request for this web
