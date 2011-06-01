@@ -22,6 +22,8 @@
 #include <apr_pools.h>
 #include <apr_strings.h>
 #include <apr_thread_mutex.h>
+#include <ap_config.h>
+#include <httpd.h>
 #include <http_log.h>
 
 #include <lib/webauth.h>
