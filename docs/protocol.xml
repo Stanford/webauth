@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='June' year='2009' />
+    <date month='June' year='2011' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1487,7 +1487,7 @@
         <t>The following is an exhaustive list of the attribute names used
         in tokens.  All time values are 32-bit values stored in network
         byte order and are the number of seconds since 1970-01-01 00:00:00
-        UTC.
+        UTC.  All binary integers are 32-bit values in network byte order.
           <list style='hanging' hangIndent='4'>
             <t hangText='as (binary)'>
             <vspace blankLines='0'/>Optional data included in the request
@@ -1535,8 +1535,25 @@
             <t hangText='et (binary time)'>
             <vspace blankLines='0'/>Expiration time of the token.</t>
 
+            <t hangText='ia (string)'>
+            <vspace blankLines='0'/>The list of authentication factors
+            used by the authenticated user to get initial credentials from
+            the local authentication system, or the initial authentication
+            factors that are required by this WAS for a successful
+            authentication.  This is a list of factor codes separated by
+            commas.  For the list of registered factor names, see <xref
+            target='factors' />.</t>
+
             <t hangText='k (binary)'>
             <vspace blankLines='0'/>AES session key.</t>
+
+            <t hangText='loa (binary unsigned integer)'>
+            <vspace blankLines='0'/>A site-defined numeric Level of
+            Assurance code for the assurance level of this authentication
+            of this user, or the assurance level required for a successful
+            authentication to this site.  Higher values indicate a
+            stronger level of assurance; otherwise, the meaning of the
+            codes is site-defined.</t>
 
             <t hangText='lt (binary time)'>
             <vspace blankLines='0'/>Last-used time.  If this attribute is
@@ -1565,7 +1582,7 @@
 
             <t hangText='ro (string)'>
             <vspace blankLines='0'/>Comma-separated list of request
-            options.  Currently, the following options are supported: lc,
+            options.  Currently, the following options are supported:  lc,
             to return an error code to the application if login is
             cancelled; and fa, to force interactive authentication even if
             the user has a webkdc-proxy token.</t>
@@ -1600,6 +1617,14 @@
             is krb5, this is a KRB_AP_REQ for the same Kerberos V5
             principal as the webkdc-service token's subject.</t>
 
+            <t hangText='san (string)'>
+            <vspace blankLines='0'/>The list of authentication factors
+            used by the authenticated user for session authentication, or
+            the session authentication factors that are required by this
+            WAS for a successful authentication.  This is a list of factor
+            codes separated by commas.  For the list of registered factor
+            names, see <xref target='factors' />.</t>
+
             <t hangText='t (string)'>
             <vspace blankLines='0'/>The token type.  Currently recognized
             token types are webkdc-service, webkdc-proxy, req, error, id,
@@ -1615,6 +1640,74 @@
             token.</t>
           </list>
         </t>
+      </section>
+
+      <section anchor='factors' title='Authentication Factors'>
+        <t>The ia and san attributes contain a comma-separated list of
+        authentication factors.  The following are the standardized factor
+        names to use and their meaning.  All of these codes are valid for
+        both initial authentication and session authentication factor
+        lists except where noted.
+          <list style='hanging' hangIndent='4'>
+            <t hangText='c (cookie)'>
+            <vspace blankLines='0'/>Only used for session authentication
+            factors, this indicates that the user authenticated this
+            session by presenting a cookie containing a webkdc-proxy token
+            (rather than, for example, providing a password or other
+            credentials).</t>
+
+            <t hangText='p (password)'>
+            <vspace blankLines='0'/>Traditional password
+            authentication.</t>
+
+            <t hangText='k (Kerberos)'>
+            <vspace blankLines='0'/>Only used for session authentication
+            factors, this indicates that the user authenticated this
+            session using a Kerberos authentication (generally via
+            Negotiate-Auth, but possibly via other methods).</t>
+
+            <t hangText='m (multifactor)'>
+            <vspace blankLines='0'/>Multiple independent authentication
+            factors were used.  The exact requirements for this are
+            site-defined, but traditionally means password plus OTP, or
+            password plus X.509, or an X.509 authentication from a smart
+            card requiring a PIN.</t>
+
+            <t hangText='o (OTP)'>
+            <vspace blankLines='0'/>Some one-time password method was used
+            for authentication.  This factor code is often used in
+            combination with one of the o# codes defined below.</t>
+
+            <t hangText='o# (OTP)'>
+            <vspace blankLines='0'/>The one-time password method numbered
+            # was used.  The meaning of the numbers is site-defined, but
+            the numbers should be integers starting with 1 and higher
+            numbers should indicate a stronger OTP method.</t>
+
+            <t hangText='rm (random multifactor'>
+            <vspace blankLines='0'/>The user was subject to a random chance
+            of being challenged with a requirement for a multifactor
+            authentication method and happened not to be challenged.  If
+            the user had been challenged, either authentication would have
+            failed or the m authentication factor would be used instead.
+            The chance of the challenge is site-defined.</t>
+
+            <t hangText='u (unknown)'>
+            <vspace blankLines='0'/>The authentication method is not
+            known.  THis may be used, for example, when the user
+            authenticates to the WebLogin component of the WebKDC using
+            some authentication mechanism handled external to the WebLogin
+            server and no information about that method is available.</t>
+
+            <t hangText='x (X.509)'>
+            <vspace blankLines='0'/>X.509 authentication was used.
+            Whether this is via a smart card is site-defined.</t>
+          </list>
+        </t>
+
+        <t>Sites may define and use their own factor codes, but they risk
+        conflict with future standardized codes unless they coordinate
+        that use with this list.</t>
       </section>
 
       <section anchor='tokenspecific' title='Specific Token Encoding'>
@@ -1663,6 +1756,8 @@
   pd={proxy-data}
   ct={creation-date}
   et={expiration-date}
+  [ia={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -1769,6 +1864,9 @@
   sad={result-of-krb5-mk-req-for-webauth/hostname}
   ct={creation-time}
   et={expiration-time}
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -1880,6 +1978,9 @@
   [s={username}]
   [k=session-key]
   [lt={last-use-time}]
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -2174,7 +2275,7 @@
           webkdcProxyTokenInfo commands.  Added requestInfo to
           requestToken command for S/Ident support.</t>
 
-          <t hangText='2.00 (2006-01-02, rra)'>
+          <t hangText='2.0.0 (2006-01-02, rra)'>
           <vspace blankLines='0'/>Rewritten in XML and substantially
           edited, clarified, and reworked.  Added &lt;remoteUser> to
           &lt;requestInfo> and clarified that &lt;requestInfo> must be
@@ -2184,32 +2285,38 @@
           may not have a webkdc-proxy token with other forms of
           authentication.</t>
 
-          <t hangText='2.01 (2006-01-23, rra)'>
+          <t hangText='2.0.1 (2006-01-23, rra)'>
           <vspace blankLines='0'/>Move the document history into an
           appendix.  Document the magic WEBKDC prefix to proxy
           subjects.</t>
 
-          <t hangText='2.10 (2006-02-17, rra)'>
+          <t hangText='2.1.0 (2006-02-17, rra)'>
           <vspace blankLines='0'/>Add a specification for the encoding of
           Kerberos credentials in tokens.  Specify the size of
           timestamps.</t>
 
-          <t hangText='2.11 (2008-03-14, rra)'>
+          <t hangText='2.1.1 (2008-03-14, rra)'>
           <vspace blankLines='0'/>Add error code 18, indicating that the
           WebKDC did not permit the user's principal to authenticate.  Fix
           typo in the webkdcProxyTokenInfoRequest example.  Fix XML
           formatting issues.</t>
 
-          <t hangText='2.12 (2009-06-24, rra)'>
+          <t hangText='2.1.2 (2009-06-24, rra)'>
           <vspace blankLines='0'/>Add requestedTokenType to the XML
           returned in response to &lt;requestToken> so that the WebLogin
           component can make decisions based on whether the WAS requested
           an id token or a proxy token.</t>
 
-          <t hangText='2.13 (2010-05-15, rra)'>
+          <t hangText='2.1.3 (2010-05-15, rra)'>
           <vspace blankLines='0'/>Replace all mentions of krb5_mk_req with
           KRB_AP_REQ, which is the correct protocol term for the results
           of a krb5_mk_req call.</t>
+
+          <t hangText='3.0.0 (2011-06-01, rra)'>
+          <vspace blankLines='0'/>Add ia, san, and loa attributes to
+          various tokens to store authentication factor information and
+          level of assurance.  Document the factor codes for
+          authentication factors.</t>
         </list>
       </t>
     </section>
