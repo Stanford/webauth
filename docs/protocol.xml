@@ -378,7 +378,7 @@
           without any authentication cookies.  In other words, there is no
           app token or proxy token in the UA cookie jar.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -386,34 +386,34 @@
   1.                     WAS ---------> WebKDC
 
                          return session key, webkdc-service token
-  2.                     WAS &lt;--------- WebKDC
+  2.                     WAS <--------- WebKDC
 
       request resource
   3.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for id token
-  4.  &lt;----------------- WAS
+  4.  <----------------- WAS
 
       pass along request token
   5.  -------------------------------> WebKDC
 
       login form sent back
-  6.  &lt;------------------------------- WebKDC
+  6.  <------------------------------- WebKDC
 
       post login form with user authentication (password)
   7.  -------------------------------> WebKDC
 
       confirmation page sent back, link contains id token
-  8.  &lt;------------------------------- WebKDC
+  8.  <------------------------------- WebKDC
 
       re-request resource (with returned id token in URL)
   9.  -----------------> WAS
 
       set the app token cookie, response from app
-  10. &lt;----------------- WAS
+  10. <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>The first and second steps normally happen when the
           WAS is first started or when its previous service token expire
@@ -526,7 +526,7 @@
           WebAuth-protected resource and already has an app token in a
           cookie.  This will be the most common case.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -534,10 +534,10 @@
   1.  -----------------> WAS
 
       response
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
         </figure>
 
         <t>
@@ -565,7 +565,7 @@
           webkdc-proxy token to authenticate the user without having to
           prompt them for their password again.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -573,22 +573,22 @@
   1.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for id token
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
       pass along request token
   3.  -------------------------------> WebKDC
 
       confirmation page sent back, link contains id token
-  4.  &lt;------------------------------- WebKDC
+  4.  <------------------------------- WebKDC
 
       re-request resource (with returned id token in URL)
   5.  -----------------> WAS
 
       set the app token cookie, response from app
-  6.  &lt;----------------- WAS
+  6.  <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>This assumes the WAS has already established a
           session key with the WebKDC, as previously
@@ -642,7 +642,7 @@
           authentication and then everything else will proceed as
           below.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS                WebKDC
   ---------------------------------------------------------------
@@ -650,13 +650,13 @@
   1.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for proxy token
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
       pass along request token
   3.  ------------------------------------> WebKDC
 
       confirmation page sent back, contains proxy token
-  4.  &lt;------------------------------------ WebKDC
+  4.  <------------------------------------ WebKDC
 
       re-request resource (with returned proxy token in URL)
   5.  -----------------> WAS
@@ -665,12 +665,12 @@
   6.                     WAS -------------> WebKDC
 
                              returns credential token
-  7.                     WAS &lt;------------- WebKDC
+  7.                     WAS <------------- WebKDC
 
       set the app token cookie, response from app
-  8.  &lt;----------------- WAS
+  8.  <----------------- WAS
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>This assumes the WAS has already established a
           session key with the WebKDC, as previously
@@ -855,18 +855,18 @@
 
         <figure>
           <preamble>For example, this is valid:</preamble>
-          <artwork>
-  &lt;requestToken>{base64-webkdc-service-token}&lt;/requestToken>
-          </artwork>
+          <artwork><![CDATA[
+  <requestToken>{base64-webkdc-service-token}</requestToken>
+]]></artwork>
         </figure>
 
         <figure>
           <preamble>while this is not:</preamble>
-          <artwork>
-  &lt;requestToken>
+          <artwork><![CDATA[
+  <requestToken>
       {base64-webkdc-service-token}
-  &lt;/requestToken>
-          </artwork>
+  </requestToken>
+]]></artwork>
         </figure>
 
         <t>The spec uses whitespace in the following examples for
@@ -875,41 +875,41 @@
 
         <figure>
           <preamble>The command request format is:</preamble>
-          <artwork>
-  &lt;xxxxRequest>
-    &lt;!-- optional, no default -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;!-- optional, default is 1 -->
-    &lt;protocolVersion>1&lt;/protocolVersion>
-    &lt;!-- rest depends on command -->
-  &lt;/xxxxRequest>
-          </artwork>
+          <artwork><![CDATA[
+  <xxxxRequest>
+    <!-- optional, no default -->
+    <messageId>{message-id}</messageId>
+    <!-- optional, default is 1 -->
+    <protocolVersion>1</protocolVersion>
+    <!-- rest depends on command -->
+  </xxxxRequest>
+]]></artwork>
           <postamble>where xxxx is the type of request.</postamble>
         </figure>
 
         <figure>
           <preamble>The command response format on success is:</preamble>
-          <artwork>
-  &lt;xxxxResponse>
-    &lt;!-- only if present in request -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;!-- rest depends on command -->
-  &lt;/xxxxResponse>
-          </artwork>
+          <artwork><![CDATA[
+  <xxxxResponse>
+    <!-- only if present in request -->
+    <messageId>{message-id}</messageId>
+    <!-- rest depends on command -->
+  </xxxxResponse>
+]]></artwork>
           <postamble>where xxxx is the type of request being responded
           to.</postamble>
         </figure>
 
         <figure>
           <preamble>The command response format on failure is:</preamble>
-          <artwork>
-  &lt;errorResponse>
-     &lt;!-- only if present in request -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;errorCode>{numeric}&lt;errorCode>
-    &lt;errorMessage>{message}&lt;errorMessage>
-  &lt;/errorResponse>
-          </artwork>
+          <artwork><![CDATA[
+  <errorResponse>
+     <!-- only if present in request -->
+    <messageId>{message-id}</messageId>
+    <errorCode>{numeric}<errorCode>
+    <errorMessage>{message}<errorMessage>
+  </errorResponse>
+]]></artwork>
           <postamble>where xxxx is the type of request being responded
           to.</postamble>
         </figure>
@@ -1022,56 +1022,56 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-    &lt;requesterCredential type="service|krb5">
-       &lt;!-- for type="service" -->
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service|krb5">
+       <!-- for type="service" -->
         {base64-webkdc-service-token}
-       &lt;!-- for type="krb5" -->
+       <!-- for type="krb5" -->
         {base64-krb5-mk-req-data}
-    &lt;/requesterCredential>
+    </requesterCredential>
 
-    &lt;!-- not present when only requesting a webkdc-service token -->
-    &lt;subjectCredential type="proxy">
-       &lt;proxyToken>{base64-webkdc-proxy-token}&lt;/proxyToken>
-       &lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here -->
-    &lt;/subjectCredential>
+    <!-- not present when only requesting a webkdc-service token -->
+    <subjectCredential type="proxy">
+       <proxyToken>{base64-webkdc-proxy-token}</proxyToken>
+       <!-- additional <proxyToken>...</proxyToken> here -->
+    </subjectCredential>
 
-    &lt;!-- present when requestCredential is of type="service" -->
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+    <!-- present when requestCredential is of type="service" -->
+    <requestToken>{base64-request-token}</requestToken>
 
-    &lt;tokens>
-      &lt;token type="id|proxy|service|cred" id="{id-for-response}">
-        &lt;!-- for type="id" -->
-         &lt;!-- optional, default is krb5 -->
-         &lt;authenticator type="krb5|webkdc"/>
-        &lt;!-- for type="proxy" -->
-         &lt;proxyType>krb5&lt;/proxyType>
-        &lt;!-- for type="cred" -->
-         &lt;credentialType>krb5&lt;/credentialType>
-         &lt;serverPrincipal>{krb5-service}&lt;/serverPrincipal>
-      &lt;/token>
-      &lt;!-- additional &lt;token>...&lt;/token> requests go here -->
-    &lt;/tokens>
-  &lt;/getTokensRequest>
+    <tokens>
+      <token type="id|proxy|service|cred" id="{id-for-response}">
+        <!-- for type="id" -->
+         <!-- optional, default is krb5 -->
+         <authenticator type="krb5|webkdc"/>
+        <!-- for type="proxy" -->
+         <proxyType>krb5</proxyType>
+        <!-- for type="cred" -->
+         <credentialType>krb5</credentialType>
+         <serverPrincipal>{krb5-service}</serverPrincipal>
+      </token>
+      <!-- additional <token>...</token> requests go here -->
+    </tokens>
+  </getTokensRequest>
             </artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
             <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="{id-from-request}">
-        &lt;tokenData>{base64}&lt;/tokenData>
-        &lt;!-- for type="service" -->
-         &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-         &lt;expires>{expiration-time}&lt;/expires>
-      &lt;/token>
-      &lt;!-- additional &lt;token>...&lt;/token> responses go here -->
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+  <getTokensResponse>
+    <tokens>
+      <token id="{id-from-request}">
+        <tokenData>{base64}</tokenData>
+        <!-- for type="service" -->
+         <sessionKey>{base64-session-key}</sessionKey>
+         <expires>{expiration-time}</expires>
+      </token>
+      <!-- additional <token>...</token> responses go here -->
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1102,83 +1102,83 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;requestTokenRequest>
+            <artwork><![CDATA[
+  <requestTokenRequest>
 
-    &lt;requesterCredential type="service">
+    <requesterCredential type="service">
       {base64-webkdc-service-token}
-    &lt;/requesterCredential>
+    </requesterCredential>
 
-    &lt;subjectCredential type="proxy|login">
-      &lt;!-- for type="proxy" -->
-       &lt;!-- need to pass in all the existing proxy-tokens, since
+    <subjectCredential type="proxy|login">
+      <!-- for type="proxy" -->
+       <!-- need to pass in all the existing proxy-tokens, since
             we (the web front-end) don't know which we might need -->
-       &lt;proxyToken>...&lt;/proxyToken>
-       &lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here -->
-      &lt;!-- for type="login" -->
-       &lt;loginToken>...&lt;/loginToken>
-    &lt;/subjectCredential>
+       <proxyToken>...</proxyToken>
+       <!-- additional <proxyToken>...</proxyToken> here -->
+      <!-- for type="login" -->
+       <loginToken>...</loginToken>
+    </subjectCredential>
 
-    &lt;!-- request token from WAS -->
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+    <!-- request token from WAS -->
+    <requestToken>{base64-request-token}</requestToken>
 
-    &lt;!-- request info from front-end, for logging purposes -->
-    &lt;requestInfo>
-      &lt;remoteUser>xxxx&lt;/remoteUser>
-      &lt;!-- if one of these is provided, all must be -->
-       &lt;localIpAddr>n.n.n.n&lt;/localIpAddr>
-       &lt;localIpPort>nnnn&lt;/localIpPort>
-       &lt;remoteIpAddr>n.n.n.n&lt;/remoteIpAddr>
-       &lt;remoteIpPort>nnnn&lt;/remoteIport>
-    &lt;/requestInfo>
+    <!-- request info from front-end, for logging purposes -->
+    <requestInfo>
+      <remoteUser>xxxx</remoteUser>
+      <!-- if one of these is provided, all must be -->
+       <localIpAddr>n.n.n.n</localIpAddr>
+       <localIpPort>nnnn</localIpPort>
+       <remoteIpAddr>n.n.n.n</remoteIpAddr>
+       <remoteIpPort>nnnn</remoteIport>
+    </requestInfo>
 
-  &lt;/requestTokenRequest>
-            </artwork>
+  </requestTokenRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
-  &lt;requestTokenResponse>
+            <artwork><![CDATA[
+  <requestTokenResponse>
 
-    &lt;!-- loginErrorCode will be set in a requestTokenResponse if
+    <!-- loginErrorCode will be set in a requestTokenResponse if
          there was an error related to logging in  -->
-    &lt;loginErrorCode>{numeric}&lt;loginErrorCode>
-    &lt;loginErrorMessage>{message}&lt;loginErrorMessage>
+    <loginErrorCode>{numeric}<loginErrorCode>
+    <loginErrorMessage>{message}<loginErrorMessage>
 
-    &lt;!-- any updated/new proxy tokens created, only passed back
+    <!-- any updated/new proxy tokens created, only passed back
          if subjectCredential was type="login"  -->
-    &lt;proxyTokens>
-      &lt;proxyToken type="...">{base64-proxy-token}&lt;/proxyToken>
-    &lt;/proxyTokens>
+    <proxyTokens>
+      <proxyToken type="...">{base64-proxy-token}</proxyToken>
+    </proxyTokens>
 
-    &lt;!-- the url to return to the user to -->
-    &lt;returnUrl>...&lt;/returnUrl>
+    <!-- the url to return to the user to -->
+    <returnUrl>...</returnUrl>
 
-    &lt;!-- subject inside of service-token used to make request -->
-    &lt;requesterSubject>...&lt;/requesterSubject>
+    <!-- subject inside of service-token used to make request -->
+    <requesterSubject>...</requesterSubject>
 
-    &lt;!-- subject from subjectCredential -->
-    &lt;subject>...&lt;/subject>
+    <!-- subject from subjectCredential -->
+    <subject>...</subject>
 
-    &lt;!-- requestedToken will either be an error, id, or proxy token.
-         not set if &lt;loginErrorCode> is set. -->
-    &lt;requestedToken>{base64-token}&lt;/requestedToken>
+    <!-- requestedToken will either be an error, id, or proxy token.
+         not set if <loginErrorCode> is set. -->
+    <requestedToken>{base64-token}</requestedToken>
 
-    &lt;!-- requestedTokenType will be the type of requestedToken,
-         one of error, id, or proxy.  not set if &lt;LoginErrorCode> is
+    <!-- requestedTokenType will be the type of requestedToken,
+         one of error, id, or proxy.  not set if <LoginErrorCode> is
          set. -->
-    &lt;requestedTokenType>error|id|proxy&lt;/requestedToken>
+    <requestedTokenType>error|id|proxy</requestedToken>
 
-    &lt;!-- set if request token request options has "lc" -->
-    &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
+    <!-- set if request token request options has "lc" -->
+    <loginCanceledToken>{base64-error-token}</loginCanceledToken>
 
-    &lt;!-- app state is the opaque app state passed in the
+    <!-- app state is the opaque app state passed in the
          request token that we hand back to WAS -->
-    &lt;appState>{base64-state}&lt;/appState>
+    <appState>{base64-state}</appState>
 
-  &lt;/requestTokenResponse>
-            </artwork>
+  </requestTokenResponse>
+]]></artwork>
           </figure>
 
           <t>If any non-login-related errors occur, an &lt;errorResponse>
@@ -1248,35 +1248,35 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenRequest>
+            <artwork><![CDATA[
+  <webkdcProxyTokenRequest>
 
-    &lt;subjectCredential type="krb5">
-      &lt;!-- for type="krb5" -->
+    <subjectCredential type="krb5">
+      <!-- for type="krb5" -->
       {base64-krb5-mk-req-data}
-    &lt;/subjectCredential>
+    </subjectCredential>
 
-    &lt;proxyData>
-      &lt;!-- for subjectCredential type="krb5" -->
+    <proxyData>
+      <!-- for subjectCredential type="krb5" -->
       {base64-krb5-mk-priv-on-tgt}
-    &lt;/proxyData>
+    </proxyData>
 
-  &lt;/webkdcProxyTokenRequest>
-            </artwork>
+  </webkdcProxyTokenRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenResponse>
+            <artwork><![CDATA[
+  <webkdcProxyTokenResponse>
 
-    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
+    <webkdcProxyToken>{base64-proxy-token}</webkdcProxyToken>
 
-    &lt;!-- subject from subjectCredential -->
-    &lt;subject>...&lt;/subject>
+    <!-- subject from subjectCredential -->
+    <subject>...</subject>
 
-  &lt;/webkdcProxyTokenResponse>
-            </artwork>
+  </webkdcProxyTokenResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1289,23 +1289,23 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenInfoRequest>
-    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
-  &lt;/webkdcProxyTokenInfoRequest>
-            </artwork>
+            <artwork><![CDATA[
+  <webkdcProxyTokenInfoRequest>
+    <webkdcProxyToken>{base64-proxy-token}</webkdcProxyToken>
+  </webkdcProxyTokenInfoRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>the response message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenInfoResponse>
-    &lt;subject>...&lt;/subject>
-    &lt;proxyType>...&lt;/proxyType>
-    &lt;creationTime>...&lt;/creationTime>
-    &lt;expirationTime>...&lt;/expirationTime>
-  &lt;/webkdcProxyTokenInfoResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <webkdcProxyTokenInfoResponse>
+    <subject>...</subject>
+    <proxyType>...</proxyType>
+    <creationTime>...</creationTime>
+    <expirationTime>...</expirationTime>
+  </webkdcProxyTokenInfoResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1337,31 +1337,31 @@
 
           <figure>
             <preamble>The request:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-     &lt;requesterCredential type="krb5">
+            <artwork><![CDATA[
+  <getTokensRequest>
+     <requesterCredential type="krb5">
         {base64-krb5-mk-req-data}
-     &lt;/requesterCredential>
-     &lt;tokens>
-       &lt;token type="service" id="0"/>
-     &lt;/tokens>
-  &lt;/getTokensRequest>
-            </artwork>
+     </requesterCredential>
+     <tokens>
+       <token type="service" id="0"/>
+     </tokens>
+  </getTokensRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response:</preamble>
-            <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="0">
-        &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-        &lt;expires>{expiration-time}&lt;/expires>
-        &lt;tokenData>{base64}&lt;/tokenData>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="0">
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
+        <tokenData>{base64}</tokenData>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
         </section>
 
@@ -1374,38 +1374,38 @@
 
           <figure>
             <preamble>The request:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-    &lt;requesterCredential type="service">
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service">
       {base64-webkdc-service-token}
-    &lt;/requesterCredential>
+    </requesterCredential>
 
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+    <requestToken>{base64-request-token}</requestToken>
 
-    &lt;subjectCredential type="proxy">
+    <subjectCredential type="proxy">
       {webkdc-proxy-token}
-    &lt;/subjectCredential>
-    &lt;tokens>
-      &lt;token type="credential" id="0"/>
-        &lt;credentialType>krb5&lt;/credentialType>
-        &lt;serverPrincipal>service/ldap@stanford.edu&lt;/serverPrincipal>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensRequest>
-            </artwork>
+    </subjectCredential>
+    <tokens>
+      <token type="credential" id="0"/>
+        <credentialType>krb5</credentialType>
+        <serverPrincipal>service/ldap@stanford.edu</serverPrincipal>
+      </token>
+    </tokens>
+  </getTokensRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response:</preamble>
-            <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="0">
-        &lt;tokenData>{base64}&lt;/tokenData>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="0">
+        <tokenData>{base64}</tokenData>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
 
           <t>The WebKDC will verify that the webkdc-proxy token was
