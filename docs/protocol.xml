@@ -958,8 +958,8 @@
               required to fulfill the request but was not present in the
               request.</t>
 
-              <t hangText='16'>The user hit the cancel button during the
-              login process.</t>
+              <t hangText='16'>The user selected cancel during the login
+              process.</t>
 
               <t hangText='17'>The WAS server requested a forced login in
               the request token, so obtaining the id or proxy token via
@@ -967,6 +967,29 @@
 
               <t hangText='18'>The user's principal was not permitted to
               authenticate to the WebKDC.</t>
+
+              <t hangText='19'>The WAS server requested multifactor
+              authentication, so obtaining the id or proxy token via only
+              a webkdc-proxy token or only a login token is not
+              allowed.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
+              authentication, but this user is not capable of multifactor
+              authentication for some reason (such as not being known to
+              the underlying multifactor authentication system or not
+              having a strong enough second factor configured).</t>
+
+              <t hangText='21'>The user is not permitted to log in at this
+              time for security reasons.  This may be due to such factors
+              as the originating IP address or repeated login failures.
+              This code indicates a temporary failure, not a permanent
+              login failure (which is indicated by code 14).</t>
+
+              <t hangText='22'>The WAS server requested a Level of
+              Assurance in the authentication that cannot be obtained for
+              this user (perhaps because the user doesn't have a strong
+              enough authentication method configured or hasn't associated
+              the account with proof of identity).</t>
             </list>
           </t>
         </section>
@@ -1125,6 +1148,13 @@
     <loginErrorCode>{numeric}<loginErrorCode>
     <loginErrorMessage>{message}<loginErrorMessage>
 
+    <!-- set in combination with a loginErrorCode of 19 if
+         multifactor authentication is required -->
+    <multifactorRequired>
+      <factor>{factor-code}</factor>
+      <!-- repeat for each factor code required by the WAS -->
+    </multifactorRequired>
+
     <!-- any updated/new proxy tokens created, only passed back
          if subjectCredential was type="login"  -->
     <proxyTokens>
@@ -1155,6 +1185,16 @@
     <!-- app state is the opaque app state passed in the
          request token that we hand back to WAS -->
     <appState>{base64-state}</appState>
+
+    <!-- optional, included if the user's login history should be
+         displayed (if, for example, it was suspicious) -->
+    <loginHistory>
+      <!-- the timestamp information is optional -->
+      <loginLocation ip="{ip-address}" time="{timestamp}">
+        {hostname}
+      </loginLocation>
+      <!-- repeat for site-defined length of login history -->
+    </loginHistory>
 
   </requestTokenResponse>
 ]]></artwork>
@@ -1193,6 +1233,36 @@
               authenticate to the WebKDC.  The web front-end may re-prompt
               for another username and password or just display an
               error.</t>
+
+              <t hangText='19'>The WAS server requested multifactor
+              authentication.  The web front-end should prompt the user
+              for their second factor based on the
+              &lt;multifactorRequired> attribute and then attempt
+              authentication again, including any returned proxy tokens
+              from this attempt.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
+              authentication, but this user is not capable of multifactor
+              authentication for some reason (such as not being known to
+              the underlying multifactor authentication system or not
+              having a strong enough second factor configured).  The web
+              front end should display an error page explaining that the
+              user cannot authenticate to this site without configuring
+              multifactor.  The required second factor options will be
+              given in the &lt;multifactorRequired> attribute.</t>
+
+              <t hangText='21'>The user is not permitted to log in at this
+              time for security reasons.  This may be due to such factors
+              as the originating IP address or repeated login failures.
+              The web front-end should display an error message to the
+              user.</t>
+
+              <t hangText='22'>The WAS server requested a Level of
+              Assurance in the authentication that cannot be obtained for
+              this user (perhaps because the user doesn't have a strong
+              enough authentication method configured or hasn't associated
+              the account with proof of identity).  The web front-end
+              should display an error message to the user.</t>
             </list>
           </t>
 
@@ -1542,6 +1612,10 @@
             attribute is used to implement timing out of unused but still
             unexpired app tokens.</t>
 
+            <t hangText='otp (string)'>
+            <vspace blankLines='0'/>User's one-time password code, in a
+            login token.</t>
+
             <t hangText='p (string)'>
             <vspace blankLines='0'/>User's password, in a login token.</t>
 
@@ -1807,7 +1881,8 @@
 
         <section anchor='tokenerror' title='error Token Encoding'>
           <t>An error token is sent from the WebKDC as a response to a
-          request token when an error occurs.</t>
+          request token when an error occurs.  It may be returned to the
+          WAS as the response token if the user canceled login.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1926,21 +2001,23 @@
 
         <section anchor='tokenlogin' title='login Token Encoding'>
           <t>A login token is used by the WebLogin component of the WebKDC
-          to communicate a username and password to the rest of the
-          WebKDC when it needs to authenticate a user.</t>
+          to communicate a username and password or one-time-password code
+          to the rest of the WebKDC when it needs to authenticate a
+          user.</t>
 
           <figure>
             <preamble>Token format:</preamble>
             <artwork>
   t=login
   ct={creation-time}
-  p={password}
   u={username}
+  [p={password}]
+  [otp={one-time-password-code}]
             </artwork>
           </figure>
 
           <t>All attributes are AES-encrypted in the WebKDC's private
-          key.</t>
+          key.  One of p or otp must be provided.</t>
         </section>
 
         <section anchor='tokenapp' title='app Token Encoding'>
@@ -2291,13 +2368,16 @@
           KRB_AP_REQ, which is the correct protocol term for the results
           of a krb5_mk_req call.</t>
 
-          <t hangText='3.0.0 (2011-06-01, rra)'>
+          <t hangText='3.0.0 (2011-06-06, rra)'>
           <vspace blankLines='0'/>Add ia, san, and loa attributes to
           various tokens to store authentication factor information and
           level of assurance.  Document the factor codes for
           authentication factors.  Remove &lt;messageId> and
           &lt;protocolVersion> from the XML specification; neither were
-          ever implemented.</t>
+          ever implemented.  Add additional error codes for multifactor
+          and Level of Assurance support.  Add &lt;multifactorRequired>
+          and &lt;loginHistory> to &lt;requestTokenResponse> and the otp
+          attribute to the login token.</t>
         </list>
       </t>
     </section>
