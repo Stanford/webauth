@@ -877,10 +877,6 @@
           <preamble>The command request format is:</preamble>
           <artwork><![CDATA[
   <xxxxRequest>
-    <!-- optional, no default -->
-    <messageId>{message-id}</messageId>
-    <!-- optional, default is 1 -->
-    <protocolVersion>1</protocolVersion>
     <!-- rest depends on command -->
   </xxxxRequest>
 ]]></artwork>
@@ -891,8 +887,6 @@
           <preamble>The command response format on success is:</preamble>
           <artwork><![CDATA[
   <xxxxResponse>
-    <!-- only if present in request -->
-    <messageId>{message-id}</messageId>
     <!-- rest depends on command -->
   </xxxxResponse>
 ]]></artwork>
@@ -904,32 +898,15 @@
           <preamble>The command response format on failure is:</preamble>
           <artwork><![CDATA[
   <errorResponse>
-     <!-- only if present in request -->
-    <messageId>{message-id}</messageId>
     <errorCode>{numeric}<errorCode>
     <errorMessage>{message}<errorMessage>
   </errorResponse>
 ]]></artwork>
-          <postamble>where xxxx is the type of request being responded
-          to.</postamble>
         </figure>
       </section>
 
       <section anchor='xmlcommon' title='Common XML Elements'>
         <t>The following elements are common to all commands.</t>
-
-        <section anchor='xmlmsgid' title='&lt;messageId&gt;'>
-          <t>If a request message contains a &lt;messageId> element, then
-          the value of this element MUST be returned in the response
-          message corresponding to the request.</t>
-        </section>
-
-        <section anchor='xmlvers' title='&lt;protocolVersion&gt;'>
-          <t>This is an optional string that specifies the version of the
-          protocol in use.  The default value if not specified is 1.
-          Currently, the only supported protocol is version 1.  Using any
-          other value MUST return an error.</t>
-        </section>
 
         <section anchor='xmlerrorcode' title='&lt;errorCode&gt;'>
           <t>This is a numeric error code for an errorResponse message.
@@ -1054,12 +1031,12 @@
       <!-- additional <token>...</token> requests go here -->
     </tokens>
   </getTokensRequest>
-            </artwork>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
+            <artwork><![CDATA[
   <getTokensResponse>
     <tokens>
       <token id="{id-from-request}">
@@ -1111,12 +1088,13 @@
 
     <subjectCredential type="proxy|login">
       <!-- for type="proxy" -->
-       <!-- need to pass in all the existing proxy-tokens, since
-            we (the web front-end) don't know which we might need -->
-       <proxyToken>...</proxyToken>
-       <!-- additional <proxyToken>...</proxyToken> here -->
+      <!-- need to pass in all the existing proxy-tokens, since
+           we (the web front-end) don't know which we might need -->
+      <proxyToken>...</proxyToken>
+      <!-- additional <proxyToken>...</proxyToken> here -->
+
       <!-- for type="login" -->
-       <loginToken>...</loginToken>
+      <loginToken>...</loginToken>
     </subjectCredential>
 
     <!-- request token from WAS -->
@@ -1125,11 +1103,12 @@
     <!-- request info from front-end, for logging purposes -->
     <requestInfo>
       <remoteUser>xxxx</remoteUser>
+
       <!-- if one of these is provided, all must be -->
-       <localIpAddr>n.n.n.n</localIpAddr>
-       <localIpPort>nnnn</localIpPort>
-       <remoteIpAddr>n.n.n.n</remoteIpAddr>
-       <remoteIpPort>nnnn</remoteIport>
+      <localIpAddr>n.n.n.n</localIpAddr>
+      <localIpPort>nnnn</localIpPort>
+      <remoteIpAddr>n.n.n.n</remoteIpAddr>
+      <remoteIpPort>nnnn</remoteIport>
     </requestInfo>
 
   </requestTokenRequest>
@@ -2316,7 +2295,9 @@
           <vspace blankLines='0'/>Add ia, san, and loa attributes to
           various tokens to store authentication factor information and
           level of assurance.  Document the factor codes for
-          authentication factors.</t>
+          authentication factors.  Remove &lt;messageId> and
+          &lt;protocolVersion> from the XML specification; neither were
+          ever implemented.</t>
         </list>
       </t>
     </section>
