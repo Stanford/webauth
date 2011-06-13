@@ -968,24 +968,26 @@
               <t hangText='18'>The user's principal was not permitted to
               authenticate to the WebKDC.</t>
 
-              <t hangText='19'>The WAS server requested multifactor
+              <t hangText='19'>The user's password has expired.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
               authentication, so obtaining the id or proxy token via only
               a webkdc-proxy token or only a login token is not
               allowed.</t>
 
-              <t hangText='20'>The WAS server requested multifactor
+              <t hangText='21'>The WAS server requested multifactor
               authentication, but this user is not capable of multifactor
               authentication for some reason (such as not being known to
               the underlying multifactor authentication system or not
               having a strong enough second factor configured).</t>
 
-              <t hangText='21'>The user is not permitted to log in at this
+              <t hangText='22'>The user is not permitted to log in at this
               time for security reasons.  This may be due to such factors
               as the originating IP address or repeated login failures.
               This code indicates a temporary failure, not a permanent
               login failure (which is indicated by code 14).</t>
 
-              <t hangText='22'>The WAS server requested a Level of
+              <t hangText='23'>The WAS server requested a Level of
               Assurance in the authentication that cannot be obtained for
               this user (perhaps because the user doesn't have a strong
               enough authentication method configured or hasn't associated
@@ -1234,14 +1236,18 @@
               for another username and password or just display an
               error.</t>
 
-              <t hangText='19'>The WAS server requested multifactor
+              <t hangText='19'>The user's password has expired.  The web
+              front-end may prompt the user to change it and then
+              reattempt authentication.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
               authentication.  The web front-end should prompt the user
               for their second factor based on the
               &lt;multifactorRequired> attribute and then attempt
               authentication again, including any returned proxy tokens
               from this attempt.</t>
 
-              <t hangText='20'>The WAS server requested multifactor
+              <t hangText='21'>The WAS server requested multifactor
               authentication, but this user is not capable of multifactor
               authentication for some reason (such as not being known to
               the underlying multifactor authentication system or not
@@ -1251,13 +1257,13 @@
               multifactor.  The required second factor options will be
               given in the &lt;multifactorRequired> attribute.</t>
 
-              <t hangText='21'>The user is not permitted to log in at this
+              <t hangText='22'>The user is not permitted to log in at this
               time for security reasons.  This may be due to such factors
               as the originating IP address or repeated login failures.
               The web front-end should display an error message to the
               user.</t>
 
-              <t hangText='22'>The WAS server requested a Level of
+              <t hangText='23'>The WAS server requested a Level of
               Assurance in the authentication that cannot be obtained for
               this user (perhaps because the user doesn't have a strong
               enough authentication method configured or hasn't associated
