@@ -1858,6 +1858,9 @@
   sa=krb5|webkdc
   # for rt=proxy
   pt=krb5
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
