@@ -8,7 +8,7 @@
  * functions to generate random numbers or new AES keys.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2008, 2009, 2010
+ * Copyright 2002, 2003, 2008, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -100,6 +100,10 @@ typedef enum {
     WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
     WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
     WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
+    WA_PEC_MULTIFACTOR_REQUIRED        = 20, /* Multifactor login required */
+    WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
+    WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
+    WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
 } WEBAUTH_ET_ERR;
 
 /*

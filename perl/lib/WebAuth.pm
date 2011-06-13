@@ -68,6 +68,10 @@ our %EXPORT_TAGS = (
                                     WA_PEC_LOGIN_FORCED
                                     WA_PEC_USER_REJECTED
                                     WA_PEC_CREDS_EXPIRED
+                                    WA_PEC_MULTIFACTOR_REQUIRED
+                                    WA_PEC_MULTIFACTOR_UNAVAILABLE
+                                    WA_PEC_LOGIN_REJECTED
+                                    WA_PEC_LOA_UNAVAILABLE
                                     WA_AES_KEY
                                     WA_AES_128
                                     WA_AES_192
@@ -767,6 +771,10 @@ The following constants from webauth.h are available:
   WA_PEC_LOGIN_FORCED
   WA_PEC_USER_REJECTED
   WA_PEC_CREDS_EXPIRED
+  WA_PEC_MULTIFACTOR_REQUIRED
+  WA_PEC_MULTIFACTOR_UNAVAILABLE
+  WA_PEC_LOGIN_REJECTED
+  WA_PEC_LOA_UNAVAILABLE
 
   WA_AES_KEY
   WA_AES_128
