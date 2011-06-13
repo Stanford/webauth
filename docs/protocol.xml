@@ -1690,13 +1690,13 @@
             proxy, cred, and app.  Used by a server to ensure that a token
             is being used for the correct purpose.</t>
 
-            <t hangText='wt (binary)'>
-            <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
-            that is being included inside another token.</t>
-
             <t hangText='u (string)'>
             <vspace blankLines='0'/>The user's username in a login
             token.</t>
+
+            <t hangText='wt (binary)'>
+            <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
+            that is being included inside another token.</t>
           </list>
         </t>
       </section>
@@ -1714,10 +1714,6 @@
             session by presenting a cookie containing a webkdc-proxy token
             (rather than, for example, providing a password or other
             credentials).</t>
-
-            <t hangText='p (password)'>
-            <vspace blankLines='0'/>Traditional password
-            authentication.</t>
 
             <t hangText='k (Kerberos)'>
             <vspace blankLines='0'/>Only used for session authentication
@@ -1742,6 +1738,10 @@
             # was used.  The meaning of the numbers is site-defined, but
             the numbers should be integers starting with 1 and higher
             numbers should indicate a stronger OTP method.</t>
+
+            <t hangText='p (password)'>
+            <vspace blankLines='0'/>Traditional password
+            authentication.</t>
 
             <t hangText='rm (random multifactor'>
             <vspace blankLines='0'/>The user was subject to a random chance
