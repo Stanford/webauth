@@ -85,18 +85,22 @@ our %EXPORT_TAGS = (
                                     WA_TK_ERROR_CODE
                                     WA_TK_ERROR_MESSAGE
                                     WA_TK_EXPIRATION_TIME
+                                    WA_TK_INITIAL_FACTORS
                                     WA_TK_SESSION_KEY
+                                    WA_TK_LOA
                                     WA_TK_LASTUSED_TIME
+                                    WA_TK_OTP
                                     WA_TK_PASSWORD
-                                    WA_TK_PROXY_TYPE
                                     WA_TK_PROXY_DATA
                                     WA_TK_PROXY_SUBJECT
+                                    WA_TK_PROXY_TYPE
                                     WA_TK_REQUEST_OPTIONS
                                     WA_TK_REQUESTED_TOKEN_TYPE
                                     WA_TK_RETURN_URL
                                     WA_TK_SUBJECT
                                     WA_TK_SUBJECT_AUTH
                                     WA_TK_SUBJECT_AUTH_DATA
+                                    WA_TK_SESSION_FACTORS
                                     WA_TK_TOKEN_TYPE
                                     WA_TK_USERNAME
                                     WA_TK_WEBKDC_TOKEN
@@ -790,18 +794,22 @@ The following constants from webauth.h are available:
   WA_TK_ERROR_CODE
   WA_TK_ERROR_MESSAGE
   WA_TK_EXPIRATION_TIME
+  WA_TK_INITIAL_FACTORS
   WA_TK_SESSION_KEY
+  WA_TK_LOA
   WA_TK_LASTUSED_TIME
+  WA_TK_OTP
   WA_TK_PASSWORD
-  WA_TK_PROXY_TYPE
   WA_TK_PROXY_DATA
   WA_TK_PROXY_SUBJECT
+  WA_TK_PROXY_TYPE
   WA_TK_REQUEST_OPTIONS
   WA_TK_REQUESTED_TOKEN_TYPE
   WA_TK_RETURN_URL
   WA_TK_SUBJECT
   WA_TK_SUBJECT_AUTH
   WA_TK_SUBJECT_AUTH_DATA
+  WA_TK_SESSION_FACTORS
   WA_TK_TOKEN_TYPE
   WA_TK_USERNAME
   WA_TK_WEBKDC_TOKEN
