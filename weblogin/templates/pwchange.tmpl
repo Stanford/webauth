@@ -111,6 +111,7 @@ expired                : set when sent here for expired password login fail
                       action="[% script_name FILTER html %]"
                       method="post" autocomplete="OFF"
                       enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="rm" value="pwchange">
                   <input type="hidden" name="RT"
                          value="[% RT FILTER html %]">
                   <input type="hidden" name="ST"

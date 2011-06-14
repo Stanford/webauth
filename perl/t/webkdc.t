@@ -56,10 +56,11 @@ sub init_weblogin {
     $query->param ('RT', $rt_base64);
 
     # Load the weblogin object, with undefined template (we don't do output).
-    my $weblogin = WebLogin->new ($query, undef, $pages);
-    $weblogin->{debug} = 0;
-    $weblogin->{logging} = 0;
-    $weblogin->{script_name} = '/login';
+    my $weblogin = WebLogin->new (PARAMS => { pages => $pages });
+    $weblogin->param ('debug', 0);
+    $weblogin->param ('logging', 0);
+    $weblogin->param ('script_name', '/login');
+    $weblogin->query ($query);
 
     # Normally set during WebKDC::request_token_request.
     $weblogin->{response}->return_url ('https://test.example.org/');

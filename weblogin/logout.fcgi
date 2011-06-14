@@ -18,50 +18,25 @@ use strict;
 
 use CGI::Cookie ();
 use CGI::Fast ();
-use Template ();
 use WebKDC::Config ();
+use WebLogin ();
 
 # The name of the template to use for logout.
-our $TEMPLATE = 'logout.tmpl';
-
-# Set up a template object, along with caching options to compile the
-# templates to Perl code and recheck for updates in the source files every
-# minute.
-my $template = Template->new ({
-                               STAT_TTL     => 60,
-                               COMPILE_DIR  =>
-                                   $WebKDC::Config::TEMPLATE_COMPILE_PATH,
-                               COMPILE_EXT  => '.ttc',
-                               INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
-                               });
+our %PAGES = (login    => 'login.tmpl',
+              logout   => 'logout.tmpl',
+              confirm  => 'confirm.tmpl',
+              pwchange => 'pwchange.tmpl',
+              error    => 'error.tmpl');
 
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
 while (my $q = new CGI::Fast) {
-    my %cookies = fetch CGI::Cookie;
-    my $ca;
-    my %params;
-
-    # Locate any webauth_wpt cookies and blow them away, by setting the same
-    # cookie again with a null value and an expiration date in the past.
-    for my $key (sort keys %cookies) {
-        if ($key =~ /^webauth_wpt/) {
-            my ($name) = split ('=', $cookies{$key});
-            push (@$ca, $q->cookie(-name => $name, -value => '',
-                                   -expires => '-1d', -secure => 1));
-         }
-    }
-    if ($ca) {
-        $params{cookies_flag} = 1;
-        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache, no-store',
-                          -cookie => $ca);
-    } else {
-        print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                          -Cache_Control => 'no-cache, no-store');
-    }
-    $template->process ($TEMPLATE, \%params);
+    # Could try $weblogin->start_mode ('logout'); if following doesn't work.
+    $q->param ('rm', 'logout') unless defined $q->param ('rm');
+    my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
+                                  QUERY  => $q);
+    $weblogin->run;
 
 # Done on each pass through the FastCGI loop.  Restart the script if its
 # modification time has changed.

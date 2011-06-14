@@ -27,7 +27,6 @@ use strict;
 use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
-use Template ();
 use WebLogin ();
 use WebKDC ();
 use WebKDC::Config ();
@@ -39,6 +38,7 @@ our $EXITING = 0;
 # The names of the template pages that we use.  The beginning of the main
 # routine changes the values here to be Template Toolkit objects.
 our %PAGES = (login    => 'login.tmpl',
+              logout   => 'logout.tmpl',
               confirm  => 'confirm.tmpl',
               pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
@@ -52,44 +52,8 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 }
 
 ##############################################################################
-# Debugging
-##############################################################################
-
-# Dump as much information as possible about the environment and input to
-# standard output.  Not currently used anywhere, just left in here for use
-# with debugging.
-sub dump_stuff {
-    my ($var, $val);
-    foreach $var (sort keys %ENV) {
-        $val = $ENV{$var};
-        $val =~ s|\n|\\n|g;
-        $val =~ s|\"|\\\"|g;
-        print "${var}=\"${val}\"\n";
-    }
-    print "\n";
-    print "\n";
-    local $_;
-    print "INPUT: $_" while <STDIN>;
-}
-
-##############################################################################
 # Main routine
 ##############################################################################
-
-# Set up a template object, along with caching options to compile the
-# templates to Perl code and recheck for updates in the source files every
-# minute.
-my $template = Template->new ({
-                               STAT_TTL     => 60,
-                               COMPILE_DIR  =>
-                                   $WebKDC::Config::TEMPLATE_COMPILE_PATH,
-                               COMPILE_EXT  => '.ttc',
-                               INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
-                               });
-
-# Map the pages to the structure Weblogin will expect, with filename and
-# hash to be filled in with parameters.
-%PAGES = map { $_ => { filename => $PAGES{$_}, params => {}, } } keys %PAGES;
 
 # Exit safely if we get a SIGTERM.
 $SIG{TERM} = sub { $EXITING = 1 };
@@ -99,40 +63,9 @@ $SIG{TERM} = sub { $EXITING = 1 };
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
 
-    my $weblogin = WebLogin->new ($q, $template, \%PAGES);
-    my ($status, $error);
-
-    # If we already have return_url in the query, we're at the confirmation
-    # page and the user has changed the REMOTE_USER configuration.  Set or
-    # clear the cookie and then redisplay the confirmation page.
-    if (defined $q->param ('return_url')) {
-        $weblogin->redisplay_confirm_page ();
-        next;
-    }
-
-    # Test for lack of a request token, cookies not being enabled, or sending
-    # passwords over a non-POST method.  If found, these will internally
-    # handle the error pages, so we stop processing this request.
-    next unless $weblogin->test_request_token ();
-    next unless $weblogin->test_cookies ();
-    next unless $weblogin->test_password_no_post ();
-
-    # Set up all WebKDC parameters, including tokens, proxy tokens, and
-    # REMOTE_USER parameters.
-    my %cart = CGI::Cookie->fetch;
-    $status = $weblogin->setup_kdc_request (%cart);
-
-    # Pass the information along to the WebKDC and get the response.
-    if (!$status) {
-        ($status, $error)
-            = WebKDC::make_request_token_request ($weblogin->{request},
-                                                  $weblogin->{response});
-    }
-
-    # Send the response we got off to the handler, where it can decide which
-    # page to display based on the response.
-    $weblogin->process_response ($status, $error);
-
+    my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
+                                  QUERY  => $q);
+    $weblogin->run;
 
 # Done on each pass through the FastCGI loop.  Restart the script if its
 # modification time has changed.

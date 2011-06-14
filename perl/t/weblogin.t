@@ -19,10 +19,20 @@ use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config;
 
+use CGI::Cookie;
 use File::Path qw (rmtree);
 use Test::More;
 
 mkdir ('./t/tmp');
+
+# Override the WebKDC package in order to put in our own version of a function
+# for testing.
+our ($TEST_STATUS, $TEST_ERROR);
+package WebKDC;
+sub make_request_token_request ($$) {
+    return ($TEST_STATUS, $TEST_ERROR);
+}
+package main;
 
 # Whether we've found a valid kerberos config.
 my $kerberos_config = 0;
@@ -54,6 +64,9 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     plan tests => 254;
 }
 
+# Set our method to not have password tests complain.
+$ENV{REQUEST_METHOD} = 'POST';
+
 #############################################################################
 # Wrapper functions
 #############################################################################
@@ -69,16 +82,14 @@ sub init_weblogin {
     $query->param ('ST', $st_base64);
     $query->param ('RT', $rt_base64);
 
-    my $template = Template->new ({
-                                   COMPILE_DIR  => 't/tmp/ttc',
-                                   COMPILE_EXT  => '.ttc',
-                                   INCLUDE_PATH => 't/data/templates',
-                                  });
+    $WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
+    $WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
 
-    my $weblogin = WebLogin->new ($query, $template, $pages);
-    $weblogin->{debug} = 0;
-    $weblogin->{logging} = 0;
-    $weblogin->{script_name} = '/login';
+    my $weblogin = WebLogin->new (PARAMS => { pages => $pages });
+    $weblogin->param ('debug', 0);
+    $weblogin->param ('logging', 0);
+    $weblogin->param ('script_name', '/login');
+    $weblogin->query ($query);
 
     # Normally set during WebKDC::request_token_request.
     $weblogin->{response}->return_url ('https://test.example.org/');
@@ -90,22 +101,15 @@ sub init_weblogin {
     return $weblogin;
 }
 
-# Wrapper around WebLogin::process_response to grab the page output into a
-# string and return that output.  To make all the process_response tests
-# look cleaner.
-sub process_response_wrapper {
+# Wrapper around WebLogin::index to grab the page output into a string and
+# return that output.  To make all the index runmode tests look cleaner.
+sub index_wrapper {
     my ($weblogin, $status, $error) = @_;
-    my $page = '';
-    open (PAGE, '>', \$page) or die "could not open string for writing";
-    select PAGE;
-    $weblogin->process_response ($status, $error);
-    select STDOUT;
-    close PAGE;
-    my @output = split (/[\r\n]+/, $page);
 
-    # Remove the HTML header from the output.
-    shift @output while ($output[0] =~ /^\S+: /);
-    return @output;
+    $TEST_STATUS = $status;
+    $TEST_ERROR = $error;
+    my $page = $weblogin->index;
+    return split (/[\r\n]+/, $$page);
 }
 
 #############################################################################
@@ -131,11 +135,10 @@ if ($user =~ /\@(\S+)/) {
 }
 
 # Load a version of the page templates that just prints out the vars sent.
-my %pages = (pwchange => 'pwchange.tmpl',
+my %PAGES = (pwchange => 'pwchange.tmpl',
              login    => 'login.tmpl',
              confirm  => 'confirm.tmpl',
              error    => 'error.tmpl');
-%pages = map { $_ => { filename => $pages{$_}, params => {}, } } keys %pages;
 
 # Set up various ENV variables later used for logging.
 $ENV{SERVER_ADDR} = 'localhost';
@@ -193,10 +196,10 @@ my $rt_base64 = base64_encode ($rt->to_token ($key));
 #############################################################################
 
 # Create the weblogin object and make sure it looks as it should.
-my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
+my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok ($weblogin, 'getting Weblogin object works');
-is ($weblogin->{debug}, 0, ' and debug is not set');
-is ($weblogin->{logging}, 0, ' and logging is not set');
+is ($weblogin->param ('debug'), 0, ' and debug is not set');
+is ($weblogin->param ('logging'), 0, ' and logging is not set');
 ok (defined $weblogin->{request}, ' and we got a WebRequest');
 ok (defined $weblogin->{response}, ' and we got a WebResponse');
 
@@ -218,10 +221,9 @@ is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
    ' and REMOTE_USER set');
 
 # Success with user having a pending password change.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
-my @output = process_response_wrapper ($weblogin, $status, $error);
+my @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page with pending password expiration was printed');
 is ($output[0], "username $user", ' and username was set');
 is ($output[1],
@@ -247,10 +249,9 @@ SKIP: {
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
-                           \%pages);
-$status = $weblogin->setup_kdc_request;
+                           \%PAGES);
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page was printed');
 is ($output[0], "username testuser3", ' and username was set');
 is ($output[1],
@@ -272,12 +273,11 @@ is ($output[12], 'CPT ', ' and CPT was not set');
 # FIXME: Testing remuser requires us to fake a cookie, which we'll do in
 #        a later revision.
 # Successful password, with showing the checkbox for REMOTE_USER.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 $WebKDC::Config::REMUSER_REDIRECT = '/login-spnego';
 $ENV{REMOTE_USER} = $user;
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 $WebKDC::Config::REMUSER_REDIRECT = '';
 ok (@output, 'success page with remuser redirect checkbox was printed');
 is ($output[0], "username $user", ' and username was set');
@@ -303,11 +303,10 @@ SKIP: {
 }
 
 # Bad return URL (set it to be http rather than https).
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 $weblogin->{response}->return_url ('test.example.org/');
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for bad return URL');
 is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
@@ -322,10 +321,9 @@ is ($output[5], 'err_confirm ', ' and err_confirm was not set');
 is ($output[6], 'script_name ', ' and script_name was not set');
 
 # Expired password.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_CREDS_EXPIRED, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page with remuser redirect checkbox was printed');
 is ($output[0], 'error ', ' and error was not set');
 is ($output[1], 'err_username ', ' and err_username was not set');
@@ -358,24 +356,22 @@ is ($output[21], 'script_name /pwchange', ' and script_name was set');
 # REMOTE_USER and failed).  Redirect to the REMOTE_USER URL.
 #($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 #$ENV{REMOTE_USER} = '';
-#$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-#$status = $weblogin->setup_kdc_request;
-#$weblogin->{query}->cookie ($self->{remuser_cookie}, 'foo');
-#$weblogin->{is_error} = 0;
-#$weblogin->{query}->param ('login', 0);
+#$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+#$weblogin->query->cookie ($self->{remuser_cookie}, 'foo');
+#$weblogin->param ('is_error', 0);
+#$weblogin->query->param ('login', 0);
 #$WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
-#@output = process_response_wrapper ($weblogin, $status, $error);
+#@output = index_wrapper ($weblogin, $status, $error);
 # Check print_remuser_redirect.
 
 # The user didn't already ask for REMOTE_USER.  However, we just need
 # authentication (not forced login) and we haven't already tried
 # REMOTE_USER and failed, so give them the login screen with the choice.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
-$weblogin->{is_error} = 0;
+$weblogin->param ('is_error', 0);
 $WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with choice for REMOTE_USER');
 is ($output[0], 'error ', ' and error was not set');
 is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
@@ -398,12 +394,11 @@ is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Test failed login with remuser_redirect set, and the flag that shows
 # we were called as an error handler set.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
-$weblogin->{is_error} = 1;
-@output = process_response_wrapper ($weblogin, $status, $error);
+$weblogin->param ('is_error', 1);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, as error handler');
 is ($output[0], 'error ', ' and error was not set');
@@ -426,12 +421,11 @@ is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Test failed login with remuser_redirect set, and the flag that shows
 # we were called as an error handler not set.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
-$weblogin->{is_error} = 0;
-@output = process_response_wrapper ($weblogin, $status, $error);
+$weblogin->param ('is_error', 0);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, not as error handler');
 is ($output[0], 'error ', ' and error was not set');
@@ -454,11 +448,10 @@ is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
 is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Test the same error case without remuser_redirect at all.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 is ($output[0], 'error ', ' and error was not set');
@@ -480,10 +473,9 @@ is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
 is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Login has failed for some reason, print the login page again.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_LOGIN_FAILED, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_LOGIN_FAILED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 is ($output[0], 'error ', ' and error was not set');
@@ -505,10 +497,9 @@ is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
 is ($output[16], 'script_name /login', ' and script_name was set');
 
 # User rejected for some reason, print the login page again.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_USER_REJECTED, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_REJECTED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 is ($output[0], 'error ', ' and error was not set');
@@ -531,10 +522,9 @@ is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Logins were forced but neither wpt_cookie is set nor is the
 # remuser_cookie set.  Just show the login page normally.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_LOGIN_FORCED, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, neither '
     .'wpt_cookie nor remuser_cookie set');
@@ -559,11 +549,12 @@ is ($output[16], 'script_name /login', ' and script_name was set');
 
 # Logins were forced, and the wpt_cookie is set (we've already got a
 # SSO).  Warn the user about forced login.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
-$weblogin->{wpt_cookie} = 1;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$weblogin->param ('wpt_cookie', 1);
+my $cookie = CGI::Cookie->new (-name => 'webauth_wpt', -value => 'test');
+$ENV{HTTP_COOKIE} = "$cookie";
 ($status, $error) = (WebKDC::WK_ERR_LOGIN_FORCED, '');
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, wpt_cookie set');
 is ($output[0], 'error 1', ' and error was set');
@@ -589,20 +580,18 @@ is ($output[16], 'script_name /login', ' and script_name was set');
 # Logins were forced, and the remuser_cookie is set, which means the
 # user hasn't logged in yet but wants to try using REMUSER.  Since login
 # is forced, warn the user about forced login.
-#$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-#$status = $weblogin->setup_kdc_request;
+#$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 #($status, $error) = (WebKDC::WK_ERR_LOGIN_FORCED, '');
-#$weblogin->query->cookie ($weblogin->{remuser_cookie}, 1);
+#$weblogin->query->cookie ($weblogin->param ('remuser_cookie'), 1);
 #$WebKDC::Config::REMUSER_REDIRECT = '';
-#@output = process_response_wrapper ($weblogin, $status, $error);
+#@output = index_wrapper ($weblogin, $status, $error);
 # Check print_login_page (forced_login = 1)
 
 # Unrecoverable error - check the error page.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, 'unrecoverable');
 my $errmsg = 'unrecoverable error occured. Try again later.';
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for unrecoverable error');
 is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
@@ -616,11 +605,10 @@ is ($output[6], 'script_name ', ' and script_name was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
 
 # Token is stale - check the error page.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_REQUEST_TOKEN_STALE, 'stale');
 $errmsg = 'you took too long to login.';
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for stale token error');
 is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
@@ -634,13 +622,12 @@ is ($output[6], 'script_name ', ' and script_name was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
 
 # Unrecoverable WebAuth server error - check the error page.
-$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
-$status = $weblogin->setup_kdc_request;
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_WEBAUTH_SERVER_ERROR, 'webautherr');
 $errmsg = 'there is most likely a configuration problem with'
     . ' the server that redirected you. Please contact its'
     . ' administrator';
-@output = process_response_wrapper ($weblogin, $status, $error);
+@output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for unrecoverable webauth server error');
 is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',

@@ -20,7 +20,6 @@ err_forced             : web site requires username/password login
 err_rejected           : username not permitted to authenticate
 RT                     : Response Token
 ST                     : Service Token
-LC                     : Login Cancel Token
 username               : the username
 login_cancel           : a cancel URL was specified
 cancel_url             : the specified cancel URL
@@ -89,12 +88,11 @@ remuser_url            : where to send the user for REMOTE_USER auth
                     action="[% script_name FILTER html %]"
                     method="post" autocomplete="OFF"
                     enctype="application/x-www-form-urlencoded">
+                <input type="hidden" name="rm" value="index">
                 <input type="hidden" name="RT"
                        value="[% RT FILTER html %]">
                 <input type="hidden" name="ST"
                        value="[% ST FILTER html %]">
-                <input type="hidden" name="LC"
-                       value="[% LC FILTER html %]">
                 <input type="hidden" name="login" value="yes">
                 <table>
                   <tr>
@@ -139,6 +137,7 @@ remuser_url            : where to send the user for REMOTE_USER auth
               <td>
                 <form action="[% remuser_url FILTER html %]"
                       method="get">
+                  <input type="hidden" name="rm" value="index">
                   <input type="hidden" name="RT"
                          value="[% RT FILTER html %]">
                   <input type="hidden" name="ST"
