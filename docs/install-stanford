@@ -61,7 +61,7 @@ CONFIGURATION
     On Debian or Ubuntu, create /etc/apache2/conf.d/stanford-webauth with
     the following contents:
 
-        WebAuthLoginURL https://weblogin.stanford.edu/login/
+        WebAuthLoginURL  https://weblogin.stanford.edu/login/
         WebAuthWebKdcURL https://weblogin.stanford.edu/webkdc-service/
         WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 
@@ -158,7 +158,7 @@ CONFIGURATION
     certificate is /etc/ssl/certs, and for the key is /etc/ssl/private.
     Example configuration:
 
-        SSLCertificateFile /etc/ssl/certs/<hostname>.pem
+        SSLCertificateFile    /etc/ssl/certs/<hostname>.pem
         SSLCertificateKeyFile /etc/ssl/private/<hostname>.key
         SSLCipherSuite HIGH:MEDIUM:!ADH:!SSLv2:@STRENGTH
         SSLProtocol all -SSLv2
@@ -166,6 +166,9 @@ CONFIGURATION
     The last two configuration lines disable weak SSL ciphers.  You can
     use similar configuration directives for other operating systems, but
     may need to change SSLCertificateFile and SSLCertificateKeyFile.
+    Depending on what instructions you use to generate the certificate,
+    the file extension may be .crt instead of .pem.  Conventions vary on
+    how to name the public key file.
 
     See /usr/share/doc/apache2.2-common/README.Debian.gz for more
     information about configuring SSL on Debian and Ubuntu systems,
@@ -176,10 +179,11 @@ CONFIGURATION
     Debian and Ubuntu systems) and configure that file in Apache as well
     with:
 
-        SSLCertificateChainFile /etc/ssl/certs/<chain-name>.crt
+        SSLCertificateChainFile /etc/ssl/certs/<chain-name>.pem
 
     replacing <chain-name> with something documenting the intermediate CA
-    certificate chain stored in that file.
+    certificate chain stored in that file.  As above, this may end in .crt
+    instead of .pem; Apache won't care.
 
   LDAP Configuration
 
