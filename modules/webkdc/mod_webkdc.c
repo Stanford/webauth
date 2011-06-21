@@ -2,7 +2,7 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -11,43 +11,46 @@
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 
-/* attr list macros to make code easier to read and audit
- * we don't need to check error codes since we are using
- * WA_F_NONE, which doesn't allocate any memory.
+/*
+ * Attribute list macros to make code easier to read and audit.  We don't need
+ * to check error codes since we are using WA_F_NONE, which doesn't allocate
+ * any memory.
  */
-
-#define ADD_STR(name,value) \
+#define ADD_STR(name, value) \
        webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-
-#define ADD_PTR(name,value, len) \
+#define ADD_PTR(name, value, len) \
        webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-
-#define ADD_TIME(name,value) \
+#define ADD_TIME(name, value) \
        webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
+#define ADD_UINT(name, value) \
+       webauth_attr_list_add_uint32(alist, name, value, WA_F_NONE)
 
+/* Attribute list macros for each token component the WebKDC may create. */
 #define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
 #define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
 #define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CRED_SERVER(type)        ADD_STR(WA_TK_CRED_SERVER, type)
+#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
 #define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
 #define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
 #define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
-#define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
+#define SET_INITIAL_FACTORS(list)    ADD_STR(WA_TK_INITIAL_FACTORS, list)
+#define SET_SESSION_KEY(key, len)    ADD_PTR(WA_TK_SESSION_KEY, key, len)
+#define SET_LOA(loa)                 ADD_UINT(WA_TK_LOA, loa)
 #define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
-#define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
+#define SET_PROXY_DATA(data, len)    ADD_PTR(WA_TK_PROXY_DATA, data, len)
 #define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
+#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
 #define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
 #define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
 #define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
 #define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
 #define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
-#define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
+#define SET_SUBJECT_AUTH_DATA(d, l)  ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
+#define SET_SESSION_FACTORS(list)    ADD_STR(WA_TK_SESSION_FACTORS, list)
 #define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
-#define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
+#define SET_WEBKDC_TOKEN(d, l)       ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
 
 
 /*
@@ -552,6 +555,23 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
     if (status != WA_ERR_NONE) {
         set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
                           "missing creation", mwk_func, 1);
+        goto cleanup;
+    }
+
+    /* pull out initial factor list (optional) */
+    status = webauth_attr_list_find(alist, WA_TK_INITIAL_FACTORS, &i);
+    if (i == -1)
+        pt->factors = NULL;
+    else
+        pt->factors = apr_pstrdup(rc->r->pool, alist->attrs[i].value);
+
+    /* pull out Level of Assurance (optional) */
+    pt->loa = 0;
+    status = webauth_attr_list_get_uint32(alist, WA_TK_LOA, &pt->loa,
+                                          WA_F_NONE);
+    if (status != WA_ERR_NONE && status != WA_ERR_NOT_FOUND) {
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
+                          "cannot parse level of assurance", mwk_func, 1);
         goto cleanup;
     }
 
@@ -1153,7 +1173,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     static const char *mwk_func="create_id_token_from_req";
     size_t tlen, sad_len;
     enum mwk_status ms;
-    time_t creation, expiration;
+    time_t creation;
     WEBAUTH_ATTR_LIST *alist;
     MWK_PROXY_TOKEN *sub_pt;
     char *sad;
@@ -1232,17 +1252,22 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
         return MWK_ERROR;
 
     time(&creation);
-    /* expiration comes from expiration of proxy-token */
-    expiration = sub_pt->expiration;
 
+    /*
+     * Expiration, initial credentials, and level of assurance come from the
+     * corresponding fields of the proxy-token.
+     */
     SET_TOKEN_TYPE(WA_TT_ID);
     SET_SUBJECT_AUTH(auth_type);
     SET_SUBJECT(sub_pt->subject);
-    if (sad != NULL) {
+    if (sad != NULL)
         SET_SUBJECT_AUTH_DATA(sad, sad_len);
-    }
     SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
+    SET_EXPIRATION_TIME(sub_pt->expiration);
+    if (sub_pt->factors != NULL)
+        SET_INITIAL_FACTORS(sub_pt->factors);
+    if (sub_pt->loa > 0)
+        SET_LOA(sub_pt->loa);
 
     ms = make_token_with_key(rc, &req_cred->u.st.key,
                              alist, creation,
@@ -2000,6 +2025,13 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     time(&creation);
 
+    /*
+     * FIXME: We only support password authentication right now, so we
+     * hard-code the factors.  This will change once we add multifactor
+     * support.
+     */
+    pt->factors = apr_pstrdup(rc->r->pool, "p");
+
     /* if ProxyTokenLifetime is non-zero, use the min of it
        and the tgt, else just use the tgt  */
     if (rc->sconf->proxy_token_lifetime) {
@@ -2020,6 +2052,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     SET_PROXY_DATA(tgt, tgt_len);
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(pt->expiration);
+    SET_INITIAL_FACTORS(pt->factors);
 
     ms = make_token(rc, alist, creation,
                     (char**)&rtokens[0].token_data, &len, 1, mwk_func);

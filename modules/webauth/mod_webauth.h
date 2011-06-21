@@ -67,6 +67,9 @@
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
+#define ENV_WEBAUTH_FACTORS_INITIAL "WEBAUTH_FACTORS_INITIAL"
+#define ENV_WEBAUTH_FACTORS_SESSION "WEBAUTH_FACTORS_SESSION"
+#define ENV_WEBAUTH_LOA "WEBAUTH_LOA"
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* defines for config directives */
@@ -214,41 +217,44 @@
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
 
-/* attr list macros to make code easier to read and audit
- * we don't need to check error codes since we are using
- * WA_F_NONE, which doesn't allocate any memory.
+/*
+ * Attribute list macros to make code easier to read and audit.  We don't need
+ * to check error codes since we are using WA_F_NONE, which doesn't allocate
+ * any memory.
  */
-
 #define ADD_STR(name,value) \
        webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-
 #define ADD_PTR(name,value, len) \
        webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-
 #define ADD_TIME(name,value) \
        webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
+#define ADD_UINT(name, value) \
+       webauth_attr_list_add_uint32(alist, name, value, WA_F_NONE)
 
+/* Attribute list macros for each token component mod_webauth may create. */
 #define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
 #define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
 #define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CRED_SERVER(server)      ADD_STR(WA_TK_CRED_SERVER, server)
+#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
 #define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
 #define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
 #define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
+#define SET_INITIAL_FACTORS(list)    ADD_STR(WA_TK_INITIAL_FACTORS, list)
 #define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
+#define SET_LOA(loa)                 ADD_UINT(WA_TK_LOA, loa)
 #define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
 #define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
 #define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
+#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
 #define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
 #define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
 #define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
 #define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
 #define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
 #define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
+#define SET_SESSION_FACTORS(list)    ADD_STR(WA_TK_SESSION_FACTORS, list)
 #define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
 #define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
 
@@ -413,6 +419,9 @@ typedef struct {
     time_t creation_time;
     time_t expiration_time;
     time_t last_used_time;
+    const char *initial_factors;
+    const char *session_factors;
+    uint32_t loa;
 } MWA_APP_TOKEN;
 
 typedef struct {

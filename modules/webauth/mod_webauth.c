@@ -1136,6 +1136,9 @@ make_app_cookie(const char *subject,
                 time_t creation_time,
                 time_t expiration_time,
                 time_t last_used_time,
+                const char *initial_factors,
+                const char *session_factors,
+                uint32_t loa,
                 MWA_REQ_CTXT *rc)
 {
     WEBAUTH_ATTR_LIST *alist;
@@ -1167,10 +1170,14 @@ make_app_cookie(const char *subject,
     SET_SUBJECT(subject);
     SET_EXPIRATION_TIME(expiration_time);
     SET_CREATION_TIME(creation_time);
-
-    if (last_used_time) {
+    if (last_used_time)
         SET_LASTUSED_TIME(last_used_time);
-    }
+    if (initial_factors != NULL)
+        SET_INITIAL_FACTORS(initial_factors);
+    if (session_factors != NULL)
+        SET_SESSION_FACTORS(session_factors);
+    if (loa > 0)
+        SET_LOA(loa);
 
     tlen = webauth_token_encoded_length(alist);
     token = apr_palloc(rc->r->pool, tlen);
@@ -1197,6 +1204,9 @@ make_app_cookie(const char *subject,
     rc->at.last_used_time = last_used_time;
     rc->at.creation_time = creation_time;
     rc->at.expiration_time = expiration_time;
+    rc->at.initial_factors = initial_factors;
+    rc->at.session_factors = session_factors;
+    rc->at.loa = loa;
     return 1;
 }
 
@@ -1249,9 +1259,13 @@ app_token_maint(MWA_REQ_CTXT *rc)
 
     /* FIXME: hum, if this fails, should we expire cookie? */
     make_app_cookie(rc->at.subject,
-                   rc->at.creation_time,
-                   rc->at.expiration_time,
-                   rc->at.last_used_time, rc);
+                    rc->at.creation_time,
+                    rc->at.expiration_time,
+                    rc->at.last_used_time,
+                    rc->at.initial_factors,
+                    rc->at.session_factors,
+                    rc->at.loa,
+                    rc);
     return 1;
 }
 
@@ -1267,7 +1281,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     size_t blen;
     int status;
     const char *tt;
-    char *sub;
+    char *sub, *p;
     int result = 0;
     const char *mwa_func = "parse_app_token";
 
@@ -1308,6 +1322,15 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     }
 
     rc->at.subject = apr_pstrdup(rc->r->pool, sub);
+
+    /* Pull out factor and LoA information. */
+    p = mwa_get_str_attr(alist, WA_TK_INITIAL_FACTORS, rc->r, mwa_func, NULL);
+    if (p != NULL)
+        rc->at.initial_factors = apr_pstrdup(rc->r->pool, p);
+    p = mwa_get_str_attr(alist, WA_TK_SESSION_FACTORS, rc->r, mwa_func, NULL);
+    if (p != NULL)
+        rc->at.session_factors = apr_pstrdup(rc->r->pool, p);
+    webauth_attr_list_get_uint32(alist, WA_TK_LOA, &rc->at.loa, WA_F_NONE);
 
     /* get the times here, as token_maint might update last_used_time */
     webauth_attr_list_get_time(alist, WA_TK_LASTUSED_TIME,
@@ -1594,6 +1617,8 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
 
     if (subject != NULL) {
         time_t expiration_time;
+        const char *initial_factors, *session_factors;
+        uint32_t loa = 0;
 
         /* wheeee! create an app-token! */
 
@@ -1613,7 +1638,14 @@ handle_id_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
                          "mod_webauth: %s: got subject(%s) from id token",
                          mwa_func,subject);
 
-        make_app_cookie(subject, 0, expiration_time, 0, rc);
+        initial_factors = mwa_get_str_attr(alist, WA_TK_INITIAL_FACTORS,
+                                           rc->r, mwa_func, NULL);
+        session_factors = mwa_get_str_attr(alist, WA_TK_SESSION_FACTORS,
+                                           rc->r, mwa_func, NULL);
+        webauth_attr_list_get_uint32(alist, WA_TK_LOA, &loa, WA_F_NONE);
+
+        make_app_cookie(subject, 0, expiration_time, 0, initial_factors,
+                        session_factors, loa, rc);
     } else {
         /* everyone else should have logged something, right? */
     }
@@ -1673,7 +1705,7 @@ handle_proxy_token(WEBAUTH_ATTR_LIST *alist, MWA_REQ_CTXT *rc)
        request an id-token from the WebKDC, assuming the proxy-type
        is also krb5 */
     return make_proxy_cookie(pt, sub, wpt, wpt_len, expiration_time,rc) &&
-        make_app_cookie(sub, 0, expiration_time, 0, rc);
+        make_app_cookie(sub, 0, expiration_time, 0, NULL, NULL, 0, rc);
 }
 
 
@@ -2387,7 +2419,7 @@ static int
 check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
-    char *wte, *wtc, *wtlu;
+    char *wte, *wtc, *wtlu, *wif, *wsf, *wloa;
     MWA_REQ_CTXT rc;
 
     memset(&rc, 0, sizeof(rc));
@@ -2472,12 +2504,16 @@ check_user_id_hook(request_rec *r)
 
     wte = rc.at.expiration_time ?
         apr_psprintf(rc.r->pool, "%d", (int)rc.at.expiration_time) : NULL;
-
     wtc = rc.at.creation_time ?
         apr_psprintf(rc.r->pool, "%d", (int)rc.at.creation_time) : NULL;
-
     wtlu = rc.at.last_used_time ?
         apr_psprintf(rc.r->pool, "%d", (int)rc.at.last_used_time) : NULL;
+    wif = rc.at.initial_factors != NULL ?
+        apr_pstrdup(rc.r->pool, rc.at.initial_factors) : NULL;
+    wsf = rc.at.session_factors != NULL ?
+        apr_pstrdup(rc.r->pool, rc.at.session_factors) : NULL;
+    wloa = rc.at.loa > 0 ?
+        apr_psprintf(rc.r->pool, "%lu", (unsigned long) rc.at.loa) : NULL;
 
     mwa_setenv(&rc, ENV_WEBAUTH_USER, rc.at.subject);
     if (wte != NULL)
@@ -2486,6 +2522,12 @@ check_user_id_hook(request_rec *r)
         mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
     if (wtlu != NULL)
         mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
+    if (wif != NULL)
+        mwa_setenv(&rc, ENV_WEBAUTH_FACTORS_INITIAL, wif);
+    if (wsf != NULL)
+        mwa_setenv(&rc, ENV_WEBAUTH_FACTORS_SESSION, wsf);
+    if (wloa != NULL)
+        mwa_setenv(&rc, ENV_WEBAUTH_LOA, wloa);
 
     if (rc.dconf->dont_cache_ex && rc.dconf->dont_cache)
         dont_cache(&rc);

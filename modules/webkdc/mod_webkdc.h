@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -171,6 +171,8 @@ typedef struct {
     size_t proxy_data_len;
     time_t expiration;
     time_t creation;
+    const char *factors;
+    uint32_t loa;
 } MWK_PROXY_TOKEN;
 
 /* interesting stuff from a parsed login-token */
