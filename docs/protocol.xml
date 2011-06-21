@@ -1028,9 +1028,9 @@
   <getTokensRequest>
     <requesterCredential type="service|krb5">
        <!-- for type="service" -->
-        {base64-webkdc-service-token}
+       {base64-webkdc-service-token}
        <!-- for type="krb5" -->
-        {base64-krb5-mk-req-data}
+       {base64-krb5-mk-req-data}
     </requesterCredential>
 
     <!-- not present when only requesting a webkdc-service token -->
@@ -1045,13 +1045,15 @@
     <tokens>
       <token type="id|proxy|service|cred" id="{id-for-response}">
         <!-- for type="id" -->
-         <!-- optional, default is krb5 -->
-         <authenticator type="krb5|webkdc"/>
+        <!-- optional, default is krb5 -->
+        <authenticator type="krb5|webkdc"/>
+
         <!-- for type="proxy" -->
-         <proxyType>krb5</proxyType>
+        <proxyType>krb5</proxyType>
+
         <!-- for type="cred" -->
-         <credentialType>krb5</credentialType>
-         <serverPrincipal>{krb5-service}</serverPrincipal>
+        <credentialType>krb5</credentialType>
+        <serverPrincipal>{krb5-service}</serverPrincipal>
       </token>
       <!-- additional <token>...</token> requests go here -->
     </tokens>
@@ -1066,9 +1068,10 @@
     <tokens>
       <token id="{id-from-request}">
         <tokenData>{base64}</tokenData>
+
         <!-- for type="service" -->
-         <sessionKey>{base64-session-key}</sessionKey>
-         <expires>{expiration-time}</expires>
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
       </token>
       <!-- additional <token>...</token> responses go here -->
     </tokens>
@@ -1135,7 +1138,6 @@
       <remoteIpAddr>n.n.n.n</remoteIpAddr>
       <remoteIpPort>nnnn</remoteIport>
     </requestInfo>
-
   </requestTokenRequest>
 ]]></artwork>
           </figure>
@@ -1155,6 +1157,8 @@
     <multifactorRequired>
       <factor>{factor-code}</factor>
       <!-- repeat for each factor code required by the WAS -->
+      <!-- present if user has configured a multifactor method -->
+      <configuredFactor>{factor-code}</configuredFactor>
     </multifactorRequired>
 
     <!-- any updated/new proxy tokens created, only passed back
@@ -1197,7 +1201,6 @@
       </loginLocation>
       <!-- repeat for site-defined length of login history -->
     </loginHistory>
-
   </requestTokenResponse>
 ]]></artwork>
           </figure>
@@ -1305,7 +1308,6 @@
             <preamble>The request message is:</preamble>
             <artwork><![CDATA[
   <webkdcProxyTokenRequest>
-
     <subjectCredential type="krb5">
       <!-- for type="krb5" -->
       {base64-krb5-mk-req-data}
@@ -1315,7 +1317,6 @@
       <!-- for subjectCredential type="krb5" -->
       {base64-krb5-mk-priv-on-tgt}
     </proxyData>
-
   </webkdcProxyTokenRequest>
 ]]></artwork>
           </figure>
@@ -1324,12 +1325,10 @@
             <preamble>The response message is:</preamble>
             <artwork><![CDATA[
   <webkdcProxyTokenResponse>
-
     <webkdcProxyToken>{base64-proxy-token}</webkdcProxyToken>
 
     <!-- subject from subjectCredential -->
     <subject>...</subject>
-
   </webkdcProxyTokenResponse>
 ]]></artwork>
           </figure>
@@ -1603,12 +1602,14 @@
             <vspace blankLines='0'/>AES session key.</t>
 
             <t hangText='loa (binary unsigned integer)'>
-            <vspace blankLines='0'/>A site-defined numeric Level of
-            Assurance code for the assurance level of this authentication
-            of this user, or the assurance level required for a successful
-            authentication to this site.  Higher values indicate a
-            stronger level of assurance; otherwise, the meaning of the
-            codes is site-defined.</t>
+            <vspace blankLines='0'/>A non-zero site-defined numeric Level
+            of Assurance code for the assurance level of this
+            authentication of this user, or the assurance level required
+            for a successful authentication to this site.  Higher values
+            indicate a stronger level of assurance; otherwise, the meaning
+            of the codes is site-defined.  The value of 0 is reserved to
+            indicate that no level of assurance has been determined, and
+            will not appear in tokens.</t>
 
             <t hangText='lt (binary time)'>
             <vspace blankLines='0'/>Last-used time.  If this attribute is
