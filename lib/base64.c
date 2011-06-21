@@ -13,7 +13,7 @@
 
 #include <assert.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 /* Table for decoding base64.  XX indicates an invalid character. */
 #define XX 127

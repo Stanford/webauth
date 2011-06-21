@@ -9,8 +9,8 @@
 /configure
 /docs/protocol.html
 /docs/protocol.txt
+/include/webauth.h
 /lib/libwebauth.pc
-/lib/webauth.h
 /libtool
 /m4/libtool.m4
 /m4/ltoptions.m4

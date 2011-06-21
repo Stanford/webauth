@@ -16,9 +16,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
+#include <webauth.h>
 
 #define CHECK(s, c, m) check_status(s, c, m, __FILE__, __LINE__)
 

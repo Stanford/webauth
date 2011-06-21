@@ -26,8 +26,8 @@
 #include <httpd.h>
 #include <http_log.h>
 
-#include <lib/webauth.h>
 #include <modules/webkdc/mod_webkdc.h>
+#include <webauth.h>
 
 /* Initiaized in child. */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];

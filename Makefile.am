@@ -37,8 +37,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
-	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	   \
-	lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST		   \
+	include/mkheader include/webauth.h.in lib/libwebauth.map	   \
+	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST  \
 	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
 	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
 	tools/wa_keyring.pod tools/weblogin-passcheck			   \
@@ -46,11 +46,16 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	weblogin/images/help.xcf weblogin/images/login.xcf		   \
 	weblogin/images/logout.xcf $(PERL_FILES)
 
+# WebAuth library include files are in include.  Add this to CPPFLAGS for
+# everything we build.  Remember, when overriding CPPFLAGS for specific
+# build objects, to include AM_CPPFLAGS.
+AM_CPPFLAGS = -I$(srcdir)/include
+
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
         portable/krb5.h portable/macros.h portable/stdbool.h		 \
         portable/system.h
-portable_libportable_la_CPPFLAGS = $(KRB5_CPPFLAGS)
+portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
 noinst_LIBRARIES = util/libutil.a
 util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
@@ -63,11 +68,11 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
-nodist_include_HEADERS = lib/webauth.h
-lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
-	lib/misc.c lib/random.c lib/token.c lib/webauth.h
+nodist_include_HEADERS = include/webauth.h
+lib_libwebauth_la_SOURCES = include/webauth.h lib/attrs.c lib/base64.c	\
+	lib/key.c lib/krb5.c lib/misc.c lib/random.c lib/token.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
 lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
 	$(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(KRB5_LIBS) -lcom_err \
@@ -87,7 +92,7 @@ endif
 
 modules_ldap_mod_webauthldap_la_SOURCES = modules/ldap/mod_webauthldap.c \
 	modules/ldap/mod_webauthldap.h
-modules_ldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
+modules_ldap_mod_webauthldap_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
 	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
 modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
@@ -96,7 +101,8 @@ modules_ldap_mod_webauthldap_la_LIBADD = portable/libportable.la \
 modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
 	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
 	modules/webauth/util.c modules/webauth/webkdc.c
-modules_webauth_mod_webauth_la_CPPFLAGS = $(APACHE_CPPFLAGS) $(CURL_CPPFLAGS)
+modules_webauth_mod_webauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
+	$(CURL_CPPFLAGS)
 modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(CURL_LDFLAGS)
 modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
@@ -104,7 +110,7 @@ modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
 modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c \
 	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h \
 	modules/webkdc/util.c
-modules_webkdc_mod_webkdc_la_CPPFLAGS = $(APACHE_CPPFLAGS)
+modules_webkdc_mod_webkdc_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS)
 modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS)
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
@@ -191,7 +197,7 @@ all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = lib/libwebauth.pc
-DISTCLEANFILES = perl/Makefile lib/webauth.h
+DISTCLEANFILES = include/webauth.h perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \

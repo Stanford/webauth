@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 /*
  * Converts a hex digit to a number.   This macro will return non-sensical

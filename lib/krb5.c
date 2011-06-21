@@ -38,8 +38,8 @@
 # include <com_err.h>
 #endif
 
-#include <lib/webauth.h>
 #include <util/macros.h>
+#include <webauth.h>
 
 typedef struct {
     krb5_context ctx;

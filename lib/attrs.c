@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <netinet/in.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 #define NAME_TERM '='
 #define VAL_TERM  ';'

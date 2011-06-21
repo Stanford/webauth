@@ -44,7 +44,7 @@
 # include <unistd.h>
 #endif
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 /* defines for config directives */
 

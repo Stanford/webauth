@@ -19,7 +19,7 @@
 #include <openssl/hmac.h>
 #include <time.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 /*
  * An ivec to pass to the AES encryption function.  This is always 0 since we

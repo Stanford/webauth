@@ -16,9 +16,9 @@
 #include <errno.h>
 #include <openssl/md5.h>
 
-#include <lib/webauth.h>
 #include <util/messages.h>
 #include <util/xmalloc.h>
+#include <webauth.h>
 
 /* Usage message. */
 static const char usage_message[] = "\

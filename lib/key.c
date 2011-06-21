@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
 
 /* The version of the keyring file format that we implement. */
 #define KEYRING_VERSION 1

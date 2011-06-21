@@ -17,8 +17,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
+#include <webauth.h>
 
 #define BUFSIZE 4096
 #define MAX_ATTRS 128

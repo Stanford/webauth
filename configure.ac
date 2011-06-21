@@ -120,7 +120,7 @@ AC_SUBST([DEPEND_LIBS])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
-AC_CONFIG_COMMANDS([lib/webauth.h],
-    [${srcdir}/lib/mkheader ${srcdir}/${filename}.in ${filename}],
-    [filename=lib/webauth.h])
+AC_CONFIG_COMMANDS([include/webauth.h],
+    [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
+    [filename=include/webauth.h])
 AC_OUTPUT
