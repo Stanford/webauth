@@ -427,7 +427,7 @@ int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *, const char *name,
  * either of those previous flags, return a copy of the value rather than a
  * pointer into the attribute.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get(WEBAUTH_ATTR_LIST *, const char *name, void **value,
                           size_t *value_len, unsigned int flags);
@@ -437,7 +437,7 @@ int webauth_attr_list_get(WEBAUTH_ATTR_LIST *, const char *name, void **value,
  * length of the string in value_len.  Takes the same flags as
  * webauth_attr_list_get.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *, const char *name,
                               char **value, size_t *value_len,
@@ -447,7 +447,7 @@ int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *, const char *name,
  * Retrieve a numeric attribute by name, storing it in value.  Takes the same
  * flags as webauth_attr_list_get, but WA_F_COPY_VALUE is meaningless.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *, const char *name,
                                  uint32_t *value, unsigned int flags);
