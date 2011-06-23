@@ -198,8 +198,10 @@ webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
     input = apr_pstrdup(ctx->pool, encoded);
     length = apr_base64_decode(input, input);
     status = webauth_token_parse(input, length, 0, keyring, &alist);
-    if (status != WA_ERR_NONE)
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "bad application token");
         return status;
+    }
     status = webauth_attr_list_get_str(alist, WA_TK_TOKEN_TYPE, &type,
                                        &length, WA_F_NONE);
     if (status != WA_ERR_NONE) {

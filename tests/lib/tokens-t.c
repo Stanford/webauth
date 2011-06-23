@@ -30,6 +30,8 @@ read_token(const char *filename)
     size_t length;
 
     path = test_file_path(filename);
+    if (path == NULL)
+        bail("cannot find test file %s", filename);
     token = fopen(path, "r");
     if (token == NULL)
         sysbail("cannot open %s", path);
@@ -52,7 +54,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
 
-    plan(8);
+    plan(10);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -85,6 +87,15 @@ main(void)
         is_int(1308777900, app->creation, "...creation");
         is_int(2147483600, app->expiration, "...expiration");
     }
+    free(token);
+
+    /* Test error cases for app tokens. */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
+    is_string("bad application token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
 
     /* Clean up. */
     webauth_context_free(ctx);
