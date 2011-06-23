@@ -9,7 +9,7 @@
 /configure
 /docs/protocol.html
 /docs/protocol.txt
-/include/webauth.h
+/include/webauth/defines.h
 /lib/libwebauth.pc
 /libtool
 /m4/libtool.m4
@@ -45,6 +45,7 @@
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
 /tests/lib/token-t
+/tests/lib/tokens-t
 /tests/portable/asprintf-t
 /tests/portable/snprintf-t
 /tests/portable/mkstemp-t

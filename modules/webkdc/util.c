@@ -28,6 +28,7 @@
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>
+#include <webauth/basic.h>
 
 /* Initiaized in child. */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];
@@ -237,14 +238,14 @@ mwk_webauth_error_message(request_rec *r, int status, WEBAUTH_KRB5_CTXT *ctxt,
                             webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
-                            webauth_error_message(status), status,
+                            webauth_error_message(NULL, status), status,
                             webauth_krb5_error_message(ctxt),
                             webauth_krb5_error_code(ctxt));
     else
         return apr_psprintf(r->pool, "%s%s%s error: %s (%d)", webauth_func,
                             extra == NULL ? "" : " ",
                             extra == NULL ? "" : extra,
-                            webauth_error_message(status), status);
+                            webauth_error_message(NULL, status), status);
 }
 
 
@@ -264,7 +265,7 @@ mwk_log_webauth_error(server_rec *serv, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      mwk_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status,
+                     webauth_error_message(NULL, status), status,
                      webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
     else
@@ -272,7 +273,7 @@ mwk_log_webauth_error(server_rec *serv, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      "mod_webkdc: %s:%s%s%s failed: %s (%d)", mwk_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status);
+                     webauth_error_message(NULL, status), status);
 }
 
 
@@ -286,7 +287,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 {
     int status;
     WEBAUTH_KAU_STATUS kau_status;
-    WEBAUTH_ERR update_status;
+    int update_status;
     static const char *mwk_func = "mwk_init_keyring";
 
     status = webauth_keyring_auto_update(sconf->keyring_path,

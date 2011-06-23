@@ -33,64 +33,16 @@
 #ifndef WEBAUTH_H
 #define WEBAUTH_H 1
 
+#include <webauth/defines.h>
+
 #include <sys/types.h>
 #include <time.h>
-
-@WEBAUTH_INT32_MAGIC@
-
-/*
- * BEGIN_DECLS is used at the beginning of declarations so that C++
- * compilers don't mangle their names.  END_DECLS is used at the end.
- */
-#undef BEGIN_DECLS
-#undef END_DECLS
-#ifdef __cplusplus
-# define BEGIN_DECLS    extern "C" {
-# define END_DECLS      }
-#else
-# define BEGIN_DECLS    /* empty */
-# define END_DECLS      /* empty */
-#endif
 
 BEGIN_DECLS
 
 /*
  * ERROR AND STATUS CODES
  */
-
-/*
- * libwebauth error codes.
- *
- * Many libwebauth functions return an error status, or 0 on success.  For
- * those functions, the error codes are chosen from the following enum.
- *
- * Use webauth_error_message(code) to get the corresponding error message.
- */
-typedef enum {
-    WA_ERR_NONE = 0,         /* No error occured. */
-    WA_ERR_NO_ROOM,          /* Supplied buffer too small. */
-    WA_ERR_CORRUPT,          /* Data is incorrectly formatted. */
-    WA_ERR_NO_MEM,           /* No memory. */
-    WA_ERR_BAD_HMAC,         /* HMAC check failed. */
-    WA_ERR_RAND_FAILURE,     /* Unable to get random data. */
-    WA_ERR_BAD_KEY,          /* Unable to use key. */
-    WA_ERR_KEYRING_OPENWRITE,/* Unable to open key ring for writing. */
-    WA_ERR_KEYRING_WRITE,    /* Unable to write to key ring. */
-    WA_ERR_KEYRING_OPENREAD, /* Unable to open key ring for reading. */
-    WA_ERR_KEYRING_READ,     /* Unable to read key ring file. */
-    WA_ERR_KEYRING_VERSION,  /* Bad keyring version. */
-    WA_ERR_NOT_FOUND,        /* Item not found while searching. */
-    WA_ERR_KRB5,             /* A Kerberos error occured. */
-    WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function. */
-    WA_ERR_LOGIN_FAILED,     /* Bad username/password. */
-    WA_ERR_TOKEN_EXPIRED,    /* Token has expired. */
-    WA_ERR_TOKEN_STALE,      /* Token is stale. */
-    WA_ERR_CREDS_EXPIRED,    /* Password has expired. */
-    WA_ERR_USER_REJECTED,    /* User not permitted to authenticate. */
-
-    /* Update webauth_error_message when adding more codes. */
-
-} WEBAUTH_ERR;
 
 /*
  * Protocol error codes (PEC) for error-token and XML messages.  These numbers
@@ -279,12 +231,6 @@ typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
 /*
  * INFORMATIONAL FUNCTIONS
  */
-
-/*
- * Returns the error message for the specified error code or "unknown error
- * code" if there is none.
- */
-const char *webauth_error_message(int errcode);
 
 /* Returns the package name and version number, separated by a space. */
 const char *webauth_info_version(void);
@@ -648,7 +594,7 @@ int webauth_keyring_read_file(const char *, WEBAUTH_KEYRING **);
 int webauth_keyring_auto_update(const char *path, int create, int lifetime,
                                 WEBAUTH_KEYRING **ring,
                                 WEBAUTH_KAU_STATUS *kau_status,
-                                WEBAUTH_ERR *update_status);
+                                int *update_status);
 
 /*
  * TOKEN MANIPULATION

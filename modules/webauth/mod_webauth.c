@@ -10,6 +10,7 @@
 
 #include <modules/webauth/mod_webauth.h>
 #include <util/macros.h>
+#include <webauth/basic.h>
 
 module AP_MODULE_DECLARE_DATA webauth_module;
 

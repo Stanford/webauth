@@ -9,6 +9,7 @@
  */
 
 #include <modules/webauth/mod_webauth.h>
+#include <webauth/basic.h>
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA
@@ -249,7 +250,7 @@ write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
                      "mod_webauth: %s: webauth_attrs_encode failed: %s (%d)",
-                     mwa_func, webauth_error_message(status), status);
+                     mwa_func, webauth_error_message(NULL, status), status);
         goto cleanup;
     }
 

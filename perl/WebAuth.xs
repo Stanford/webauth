@@ -25,6 +25,7 @@
 #include <XSUB.h>
 
 #include <webauth.h>
+#include <webauth/basic.h>
 
 /*
  * These typedefs are needed for xsubpp to work its magic with type
@@ -167,7 +168,7 @@ webauth_error_message(status)
     int status
   PROTOTYPE: $
   CODE:
-    RETVAL = (char*) webauth_error_message(status);
+    RETVAL = (char*) webauth_error_message(NULL, status);
   OUTPUT:
     RETVAL
 

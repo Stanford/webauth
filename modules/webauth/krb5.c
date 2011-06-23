@@ -2,13 +2,14 @@
  * Kerberos-related functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2003, 2006, 2009, 2010
+ * Copyright 2003, 2006, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <modules/webauth/mod_webauth.h>
+#include <webauth/basic.h>
 
 
 static void
@@ -21,7 +22,7 @@ log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      mwa_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status,
+                     webauth_error_message(NULL, status), status,
                      webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
     else
@@ -31,7 +32,7 @@ log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status);
+                     webauth_error_message(NULL, status), status);
 }
 
 

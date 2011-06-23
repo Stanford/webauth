@@ -19,6 +19,7 @@
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
 #include <webauth.h>
+#include <webauth/basic.h>
 
 #define CHECK(s, c, m) check_status(s, c, m, __FILE__, __LINE__)
 
@@ -29,11 +30,11 @@ check_status(int s, WEBAUTH_KRB5_CTXT *c, const char *message,
 {
     if (s == WA_ERR_KRB5 && c != NULL)
         diag("webauth call failed %s line %lu: %s (%d): %s %d\n", file, line,
-             webauth_error_message(s), s, webauth_krb5_error_message(c),
+             webauth_error_message(NULL, s), s, webauth_krb5_error_message(c),
              webauth_krb5_error_code(c));
     else if (s != WA_ERR_NONE)
         diag("webauth call failed %s line %lu: %s (%d)\n", file, line,
-             webauth_error_message(s), s);
+             webauth_error_message(NULL, s), s);
     is_int(s, WA_ERR_NONE, "%s", message);
 }
 

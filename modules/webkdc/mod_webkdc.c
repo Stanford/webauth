@@ -10,6 +10,7 @@
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
+#include <webauth/basic.h>
 
 /*
  * Attribute list macros to make code easier to read and audit.  We don't need

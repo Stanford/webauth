@@ -37,7 +37,7 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
-	include/mkheader include/webauth.h.in lib/libwebauth.map	   \
+	include/mkheader include/webauth/defines.h.in lib/libwebauth.map   \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST  \
 	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
 	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
@@ -46,9 +46,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 	weblogin/images/help.xcf weblogin/images/login.xcf		   \
 	weblogin/images/logout.xcf $(PERL_FILES)
 
-# WebAuth library include files are in include.  Add this to CPPFLAGS for
-# everything we build.  Remember, when overriding CPPFLAGS for specific
-# build objects, to include AM_CPPFLAGS.
+# WebAuth library include files are in include.  Remember, when overriding
+# CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
 AM_CPPFLAGS = -I$(srcdir)/include
 
 noinst_LTLIBRARIES = portable/libportable.la
@@ -68,15 +67,20 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
-nodist_include_HEADERS = include/webauth.h
+include_HEADERS = include/webauth.h
+webauthincludedir = $(includedir)/webauth
+webauthinclude_HEADERS = include/webauth/basic.h include/webauth/tokens.h
+nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = include/webauth.h lib/attrs.c lib/base64.c	\
-	lib/key.c lib/krb5.c lib/misc.c lib/random.c lib/token.c
+	lib/context.c lib/key.c lib/krb5.c lib/misc.c lib/random.c	\
+	lib/token.c lib/tokens.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
-	$(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
-lib_libwebauth_la_LIBADD = portable/libportable.la $(KRB5_LIBS) -lcom_err \
-	$(CRYPTO_LIBS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS) \
+	$(APRUTIL_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 5:0:0 $(VERSION_LDFLAGS) \
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS) \
+	$(APRUTIL_LIBS) $(KRB5_LIBS) -lcom_err $(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =
@@ -129,6 +133,8 @@ lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
 	    -e 's![@]includedir[@]!$(includedir)!g' \
 	    -e 's![@]libdir[@]!$(libdir)!g' \
 	    -e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
+	    -e 's![@]APR_LDFLAGS[@]!$(APR_LDFLAGS)!g' \
+	    -e 's![@]APR_LIBS[@]!$(APR_LIBS)!g' \
 	    -e 's![@]KRB5_LDFLAGS[@]!$(KRB5_LDFLAGS)!g' \
 	    -e 's![@]KRB5_LIBS[@]!$(KRB5_LIBS)!g' \
 	    -e 's![@]CRYPTO_LDFLAGS[@]!$(CRYPTO_LDFLAGS)!g' \
@@ -197,7 +203,7 @@ all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = lib/libwebauth.pc
-DISTCLEANFILES = include/webauth.h perl/Makefile
+DISTCLEANFILES = include/webauth/defines.h perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
@@ -238,13 +244,13 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
-	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		   \
-	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-t	   \
-	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
-	tests/portable/snprintf-t tests/portable/strlcat-t		   \
-	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
-	tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	\
+	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		\
+	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-t	\
+	tests/lib/tokens-t tests/portable/asprintf-t			\
+	tests/portable/mkstemp-t tests/portable/snprintf-t		\
+	tests/portable/strlcat-t tests/portable/strlcpy-t		\
+	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -264,6 +270,7 @@ tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_tokens_t_LDADD = tests/tap/libtap.a lib/libwebauth.la util/libutil.a
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
 	tests/portable/asprintf.c
 tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la

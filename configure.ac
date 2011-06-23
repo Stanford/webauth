@@ -67,6 +67,8 @@ AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
 AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
 
 RRA_LIB_APACHE
+RRA_LIB_APR
+RRA_LIB_APRUTIL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_HEADERS([et/com_err.h])
@@ -120,7 +122,7 @@ AC_SUBST([DEPEND_LIBS])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
-AC_CONFIG_COMMANDS([include/webauth.h],
+AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
-    [filename=include/webauth.h])
+    [filename=include/webauth/defines.h])
 AC_OUTPUT

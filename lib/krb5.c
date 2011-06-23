@@ -40,6 +40,7 @@
 
 #include <util/macros.h>
 #include <webauth.h>
+#include <webauth/basic.h>
 
 typedef struct {
     krb5_context ctx;

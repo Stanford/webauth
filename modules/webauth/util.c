@@ -9,6 +9,7 @@
  */
 
 #include <modules/webauth/mod_webauth.h>
+#include <webauth/basic.h>
 
 
 /*
@@ -181,7 +182,7 @@ mwa_log_webauth_error(server_rec *s,
                  func,
                  extra == NULL ? "" : " ",
                  extra == NULL ? "" : extra,
-                 webauth_error_message(status), status);
+                 webauth_error_message(NULL, status), status);
 }
 
 
@@ -190,7 +191,7 @@ mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
 {
     int status;
     WEBAUTH_KAU_STATUS kau_status;
-    WEBAUTH_ERR update_status;
+    int update_status;
 
     static const char *mwa_func = "mwa_cache_keyring";
 

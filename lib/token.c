@@ -20,6 +20,7 @@
 #include <time.h>
 
 #include <webauth.h>
+#include <webauth/basic.h>
 
 /*
  * An ivec to pass to the AES encryption function.  This is always 0 since we
