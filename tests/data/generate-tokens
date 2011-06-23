@@ -1,0 +1,77 @@
+#!/usr/bin/perl
+#
+# This script is not run automatically by the build process or by the test
+# suite.  It's here as an example for how to generate the test tokens using
+# the WebKDC::Token Perl modules.  It will regenerate all the tokens that are
+# currently used for testing or, if given a command-line argument, generate
+# only that token.
+#
+# Since each time a token is generated, it uses new random data and therefore
+# changes, this script should not normally be run.  It will change all of the
+# test tokens.  For regular testing, we want to use static tokens generated
+# previously with earlier known-good versions to ensure that no new symmetric
+# bugs have been introduced.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2011
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use WebAuth ();
+use WebKDC::Token ();
+
+# Path to the keyring used to generate the tokens.  We assume this script is
+# being run from the test data directory.
+our $KEYRING = 'keyring';
+
+# Syntax: File name is key, value is the module to use and then a hash of
+# pairs of method name and value to call.
+our %TOKENS =
+    (
+     'app-ok' => [ 'WebKDC::AppToken',
+                   { subject         => 'testuser',
+                     lastused_time   => 1308777930,
+                     initial_factors => 'p',
+                     session_factors => 'c',
+                     loa             => 1,
+                     creation_time   => 1308777900,
+                     expiration_time => 2147483600 }
+                 ],
+    );
+
+# Get the tokens to create from the command line, if any.
+my %generate = map { $_ => 1 } @ARGV;
+
+# Load the keyring.
+my $keyring = WebAuth::Keyring->read_file ($KEYRING);
+
+# Generate the tokens that we can generate from the hash.
+for my $file (sort keys %TOKENS) {
+    next if (%generate and not $generate{$file});
+    my ($class, $data) = @{ $TOKENS{$file} };
+    my $token = $class->new;
+    for my $method (sort keys %$data) {
+        $token->$method ($data->{$method});
+    }
+    open (TOKEN, '>', "tokens/$file")
+        or die "cannot create tokens/$file: $!\n";
+    print TOKEN WebAuth::base64_encode ($token->to_token ($keyring)), "\n";
+    close TOKEN;
+}
+
+# Generate some additional tokens that cannot be generated directly.
+for my $file (sort grep { /-ok$/ } keys %TOKENS) {
+    my $corrupt = $file;
+    $corrupt =~ s/-ok/-bad-hmac/;
+    next if (%generate and not $generate{$corrupt});
+    open (OK, '<', "tokens/$file")
+        or die "cannot open tokens/$file: $!\n";
+    my $token = <OK>;
+    close OK;
+    $token =~ s/^(.{109})./$1 . 'o'/e;
+    open (BAD, '>', "tokens/$corrupt")
+        or die "cannot create tokens/$corrupt: $!\n";
+    print BAD $token;
+    close BAD;
+}
