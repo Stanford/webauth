@@ -41,6 +41,7 @@ our %ta_desc =
      &WA_TK_APP_STATE            => 'app-state',
      &WA_TK_COMMAND              => 'command',
      &WA_TK_CRED_DATA            => 'cred-data',
+     &WA_TK_CRED_SERVER          => 'cred-server',
      &WA_TK_CRED_TYPE            => 'cred-type',
      &WA_TK_CREATION_TIME        => 'creation-time',
      &WA_TK_ERROR_CODE           => 'error-code',
@@ -583,7 +584,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -604,6 +605,12 @@ sub cred_type {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_CRED_TYPE} = shift if @_;
     return $self->{'attrs'}{&WA_TK_CRED_TYPE};
+}
+
+sub cred_server {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_CRED_SERVER} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_CRED_SERVER};
 }
 
 sub cred_data {
@@ -1190,6 +1197,7 @@ The WebKDC::CredToken object is used to represent WebAuth cred-tokens.
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
   $token->cred_type([$new_value])
+  $token->cred_subject([$new_value])
   $token->cred_data([$new_value])
   $token->subject([$new_value])
 

@@ -54,7 +54,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
 
-    plan(22);
+    plan(24);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -125,6 +125,13 @@ main(void)
     is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode app-expired");
     is_string("bad application token: token has expired",
               webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/cred-ok");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode cred-ok as app token");
+    is_string("wrong token type cred while decoding app token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
     free(token);
 
     /* Clean up. */

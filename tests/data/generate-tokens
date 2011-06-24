@@ -50,6 +50,14 @@ our %TOKENS =
                           creation_time   => 1308777900,
                           expiration_time => 2147483600 }
                       ],
+     'cred-ok'     => [ 'WebKDC::CredToken',
+                        { subject         => 'testuser',
+                          cred_type       => 'krb5',
+                          cred_server     => 'webauth/example.com@EXAMPLE.COM',
+                          cred_data       => "some\0cred;da;;ta",
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
     );
 
 # Get the tokens to create from the command line, if any.
