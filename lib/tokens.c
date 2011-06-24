@@ -116,7 +116,10 @@ decode_string(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
         *value = NULL;
         if (status == WA_ERR_NOT_FOUND && !required)
             return WA_ERR_NONE;
+        if (status == WA_ERR_NOT_FOUND)
+            status = WA_ERR_CORRUPT;
         webauth_error_set(ctx, status, "decoding attribute %s failed", attr);
+        return status;
     }
     output = apr_palloc(ctx->pool, len + 1);
     memcpy(output, v, len);
@@ -144,7 +147,10 @@ decode_time(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
         *value = 0;
         if (status == WA_ERR_NOT_FOUND && !required)
             return WA_ERR_NONE;
+        if (status == WA_ERR_NOT_FOUND)
+            status = WA_ERR_CORRUPT;
         webauth_error_set(ctx, status, "decoding attribute %s failed", attr);
+        return status;
     }
     return status;
 }
@@ -170,7 +176,10 @@ decode_uint(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
         *value = 0;
         if (status == WA_ERR_NOT_FOUND && !required)
             return WA_ERR_NONE;
+        if (status == WA_ERR_NOT_FOUND)
+            status = WA_ERR_CORRUPT;
         webauth_error_set(ctx, status, "decoding attribute %s failed", attr);
+        return status;
     }
     *value = v;
     return status;

@@ -54,7 +54,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
 
-    plan(10);
+    plan(14);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -94,6 +94,18 @@ main(void)
     status = webauth_token_decode_app(ctx, token, ring, &app);
     is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
     is_string("bad application token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-empty");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-expired");
+    is_string("decoding attribute s failed: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-expired");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode app-expired");
+    is_string("bad application token: token has expired",
               webauth_error_message(ctx, status), "...with correct error");
     free(token);
 

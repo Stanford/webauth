@@ -29,15 +29,23 @@ our $KEYRING = 'keyring';
 # pairs of method name and value to call.
 our %TOKENS =
     (
-     'app-ok' => [ 'WebKDC::AppToken',
-                   { subject         => 'testuser',
-                     lastused_time   => 1308777930,
-                     initial_factors => 'p',
-                     session_factors => 'c',
-                     loa             => 1,
-                     creation_time   => 1308777900,
-                     expiration_time => 2147483600 }
-                 ],
+     'app-empty'   => [ 'WebKDC::AppToken',
+                        { expiration_time => 2147483600 }
+                      ],
+     'app-expired' => [ 'WebKDC::AppToken',
+                        { subject         => 'testuser',
+                          creation_time   => 1308777900,
+                          expiration_time => 1308871632 }
+                      ],
+     'app-ok'      => [ 'WebKDC::AppToken',
+                        { subject         => 'testuser',
+                          lastused_time   => 1308777930,
+                          initial_factors => 'p',
+                          session_factors => 'c',
+                          loa             => 1,
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
     );
 
 # Get the tokens to create from the command line, if any.
