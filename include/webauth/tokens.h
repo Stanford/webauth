@@ -61,10 +61,10 @@ struct webauth_token_app {
  * a Kerberos service ticket).
  */
 struct webauth_token_cred {
+    const char *subject;
     const char *type;
     const char *service;
-    const char *subject;
-    void *data;
+    const void *data;
     size_t data_len;
     time_t creation;
     time_t expiration;
@@ -77,9 +77,9 @@ struct webauth_token_cred {
  * and used as an opaque blob for creating later requests to the WebKDC.
  */
 struct webauth_token_proxy {
-    const char *type;
     const char *subject;
-    void *webkdc_proxy;
+    const char *type;
+    const void *webkdc_proxy;
     size_t webkdc_proxy_len;
     time_t creation;
     time_t expiration;
