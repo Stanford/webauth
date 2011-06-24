@@ -45,7 +45,7 @@
 #define SET_APP_STATE(state, len)    ADD_PTR(WA_TK_APP_STATE, state, len)
 #define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
 #define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_SERVER(type)        ADD_STR(WA_TK_CRED_SERVER, type)
+#define SET_CRED_SERVICE(type)       ADD_STR(WA_TK_CRED_SERVICE, type)
 #define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
 #define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
@@ -75,6 +75,13 @@
  * store the result in, and that the correct thing to do on an error is to
  * go to the fail label.
  */
+#define DECODE_DATA(a, m, r)                                            \
+    do {                                                                \
+        status = decode_data(ctx, alist, (a), &token->m,                \
+                             &token->m ## _len, (r));                   \
+        if (status != WA_ERR_NONE)                                      \
+            goto fail;                                                  \
+    } while (0)
 #define DECODE_STR(a, m, r)                                             \
     do {                                                                \
         status = decode_string(ctx, alist, (a), &token->m, (r));        \
@@ -134,6 +141,43 @@ fail:
         *alist = NULL;
     }
     webauth_error_set(ctx, status, "bad %s token", type);
+    return status;
+}
+
+
+/*
+ * Extract a data attribute from a token and copy it into pool-allocated
+ * memory, storing it into the value argument and its length into the length
+ * argument.  The last argument determines whether the attribute is required
+ * or optional.  If it's required, return an error if it's missing.  If it's
+ * not required, return success if it's missing.  Return a status and set the
+ * internal error message if needed, and set the value to NULL and the length
+ * to 0 on an error.
+ */
+static int
+decode_data(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+            const char *attr, const void **value, size_t *length,
+            bool required)
+{
+    int status;
+    void *v, *output;
+    size_t len;
+
+    status = webauth_attr_list_get(alist, attr, &v, &len, WA_F_NONE);
+    if (status != WA_ERR_NONE) {
+        *value = NULL;
+        *length = 0;
+        if (status == WA_ERR_NOT_FOUND && !required)
+            return WA_ERR_NONE;
+        if (status == WA_ERR_NOT_FOUND)
+            status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "decoding attribute %s failed", attr);
+        return status;
+    }
+    output = apr_palloc(ctx->pool, len);
+    memcpy(output, v, len);
+    *value = output;
+    *length = len;
     return status;
 }
 
@@ -257,6 +301,45 @@ webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,        false);
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,      true);
     DECODE_UINT(WA_TK_LOA,             loa,             false);
+
+    webauth_attr_list_free(alist);
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Decode a credential token from the encrypted base64 wire format and store a
+ * newly allocated webauth_token_cred struct in token with the contents.
+ * Returns a WebAuth status code.  On failure, sets token to NULL.
+ */
+int
+webauth_token_decode_cred(struct webauth_context *ctx, const char *encoded,
+                          const WEBAUTH_KEYRING *keyring,
+                          struct webauth_token_cred **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    struct webauth_token_cred *token;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_CRED, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* We have a valid cred token.  Pull out the attributes. */
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_cred));
+    DECODE_STR( WA_TK_SUBJECT,         subject,    true);
+    DECODE_STR( WA_TK_CRED_TYPE,       type,       true);
+    DECODE_STR( WA_TK_CRED_SERVICE,    service,    true);
+    DECODE_DATA(WA_TK_CRED_DATA,       data,       true);
+    DECODE_TIME(WA_TK_CREATION_TIME,   creation,   true);
+    DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration, true);
 
     webauth_attr_list_free(alist);
     *decoded = token;

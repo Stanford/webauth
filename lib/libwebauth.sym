@@ -65,6 +65,7 @@ webauth_random_key
 webauth_token_create
 webauth_token_create_with_key
 webauth_token_decode_app
+webauth_token_decode_cred
 webauth_token_encoded_length
 webauth_token_parse
 webauth_token_parse_with_key
