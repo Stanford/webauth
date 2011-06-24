@@ -93,7 +93,7 @@ typedef enum {
 #define WA_TK_APP_STATE            "as"
 #define WA_TK_COMMAND              "cmd"
 #define WA_TK_CRED_DATA            "crd"
-#define WA_TK_CRED_SERVER          "crs"
+#define WA_TK_CRED_SERVICE         "crs"
 #define WA_TK_CRED_TYPE            "crt"
 #define WA_TK_CREATION_TIME        "ct"
 #define WA_TK_ERROR_CODE           "ec"

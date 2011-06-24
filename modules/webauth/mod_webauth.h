@@ -235,7 +235,7 @@
 #define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
 #define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
 #define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_SERVER(server)      ADD_STR(WA_TK_CRED_SERVER, server)
+#define SET_CRED_SERVICE(server)     ADD_STR(WA_TK_CRED_SERVICE, server)
 #define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
 #define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)

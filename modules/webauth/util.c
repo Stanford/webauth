@@ -340,7 +340,7 @@ mwa_parse_cred_token(char *token,
     }
 
     /* pull out type */
-    ct.cred_server = mwa_get_str_attr(alist, WA_TK_CRED_SERVER,
+    ct.cred_server = mwa_get_str_attr(alist, WA_TK_CRED_SERVICE,
                                       rc->r, mwa_func, NULL);
     if (ct.cred_server == NULL) {
         goto cleanup;

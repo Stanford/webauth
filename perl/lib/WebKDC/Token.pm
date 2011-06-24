@@ -41,7 +41,7 @@ our %ta_desc =
      &WA_TK_APP_STATE            => 'app-state',
      &WA_TK_COMMAND              => 'command',
      &WA_TK_CRED_DATA            => 'cred-data',
-     &WA_TK_CRED_SERVER          => 'cred-server',
+     &WA_TK_CRED_SERVICE         => 'cred-service',
      &WA_TK_CRED_TYPE            => 'cred-type',
      &WA_TK_CREATION_TIME        => 'creation-time',
      &WA_TK_ERROR_CODE           => 'error-code',
@@ -609,8 +609,8 @@ sub cred_type {
 
 sub cred_server {
     my $self = shift;
-    $self->{'attrs'}{&WA_TK_CRED_SERVER} = shift if @_;
-    return $self->{'attrs'}{&WA_TK_CRED_SERVER};
+    $self->{'attrs'}{&WA_TK_CRED_SERVICE} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_CRED_SERVICE};
 }
 
 sub cred_data {

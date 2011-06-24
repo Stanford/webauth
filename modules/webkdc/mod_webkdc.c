@@ -30,7 +30,7 @@
 #define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
 #define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
 #define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_SERVER(type)        ADD_STR(WA_TK_CRED_SERVER, type)
+#define SET_CRED_SERVICE(type)       ADD_STR(WA_TK_CRED_SERVICE, type)
 #define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
 #define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
 #define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
@@ -1535,7 +1535,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 
     SET_TOKEN_TYPE(WA_TT_CRED);
     SET_CRED_TYPE(ct);
-    SET_CRED_SERVER(sp);
+    SET_CRED_SERVICE(sp);
     SET_CRED_DATA(ticket, ticket_len);
     SET_SUBJECT(sub_pt->subject);
     SET_CREATION_TIME(creation);

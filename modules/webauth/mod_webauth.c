@@ -1095,7 +1095,7 @@ make_cred_cookie(MWA_CRED_TOKEN *ct,
 
     SET_TOKEN_TYPE(WA_TT_CRED);
     SET_CRED_TYPE(ct->cred_type);
-    SET_CRED_SERVER(ct->cred_server);
+    SET_CRED_SERVICE(ct->cred_server);
     SET_SUBJECT(ct->subject);
     SET_CRED_DATA(ct->cred_data, ct->cred_data_len);
     SET_EXPIRATION_TIME(ct->expiration_time);
