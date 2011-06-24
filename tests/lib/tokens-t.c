@@ -111,7 +111,7 @@ main(void)
     token = read_token("data/tokens/app-bad-hmac");
     status = webauth_token_decode_app(ctx, token, ring, &app);
     is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad application token: HMAC check failed",
+    is_string("bad app token: HMAC check failed",
               webauth_error_message(ctx, status), "...with correct error");
     free(token);
     token = read_token("data/tokens/app-empty");
@@ -123,7 +123,7 @@ main(void)
     token = read_token("data/tokens/app-expired");
     status = webauth_token_decode_app(ctx, token, ring, &app);
     is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode app-expired");
-    is_string("bad application token: token has expired",
+    is_string("bad app token: token has expired",
               webauth_error_message(ctx, status), "...with correct error");
     free(token);
     token = read_token("data/tokens/cred-ok");

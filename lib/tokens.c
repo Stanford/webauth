@@ -73,26 +73,69 @@
  * These macros require that ctx be the context, alist be the attribute list,
  * token be the token struct we're writing things to, status be available to
  * store the result in, and that the correct thing to do on an error is to
- * return immediately.
+ * go to the fail label.
  */
 #define DECODE_STR(a, m, r)                                             \
     do {                                                                \
         status = decode_string(ctx, alist, (a), &token->m, (r));        \
         if (status != WA_ERR_NONE)                                      \
-            return status;                                              \
+            goto fail;                                                  \
     } while (0)
 #define DECODE_TIME(a, m, r)                                            \
     do {                                                                \
         status = decode_time(ctx, alist, (a), &token->m, (r));          \
         if (status != WA_ERR_NONE)                                      \
-            return status;                                              \
+            goto fail;                                                  \
     } while (0)
 #define DECODE_UINT(a, m, r)                                            \
     do {                                                                \
         status = decode_uint(ctx, alist, (a), &token->m, (r));          \
         if (status != WA_ERR_NONE)                                      \
-            return status;                                              \
+            goto fail;                                                  \
     } while (0)
+
+
+/*
+ * Parse a base64-encoded token into an attribute list and check whether it's
+ * the token type that we expected.  Returns a webauth status.  On success,
+ * stores the attribute list in the provided parameter; on failure, sets the
+ * attribute list pointer to NULL.
+ */
+static int
+parse_token(struct webauth_context *ctx, const char *type, const char *token,
+            const WEBAUTH_KEYRING *keyring, WEBAUTH_ATTR_LIST **alist)
+{
+    char *input, *value;
+    size_t length;
+    int status;
+
+    *alist = NULL;
+    input = apr_pstrdup(ctx->pool, token);
+    length = apr_base64_decode(input, input);
+    status = webauth_token_parse(input, length, 0, keyring, alist);
+    if (status != WA_ERR_NONE)
+        goto fail;
+    status = webauth_attr_list_get_str(*alist, WA_TK_TOKEN_TYPE, &value,
+                                       &length, WA_F_NONE);
+    if (status != WA_ERR_NONE)
+        goto fail;
+    else if (length != strlen(type) || strncmp(value, type, length) != 0) {
+        webauth_attr_list_free(*alist);
+        *alist = NULL;
+        webauth_error_set(ctx, WA_ERR_CORRUPT, "wrong token type %s while"
+                          " decoding %s token", value, type);
+        return WA_ERR_CORRUPT;
+    }
+    return WA_ERR_NONE;
+
+fail:
+    if (*alist != NULL) {
+        webauth_attr_list_free(*alist);
+        *alist = NULL;
+    }
+    webauth_error_set(ctx, status, "bad %s token", type);
+    return status;
+}
 
 
 /*
@@ -196,32 +239,14 @@ webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
                          const WEBAUTH_KEYRING *keyring,
                          struct webauth_token_app **decoded)
 {
-    char *input;
-    size_t length;
-    WEBAUTH_ATTR_LIST *alist;
-    char *type;
+    WEBAUTH_ATTR_LIST *alist = NULL;
     struct webauth_token_app *token;
     int status;
 
     *decoded = NULL;
-    input = apr_pstrdup(ctx->pool, encoded);
-    length = apr_base64_decode(input, input);
-    status = webauth_token_parse(input, length, 0, keyring, &alist);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "bad application token");
+    status = parse_token(ctx, WA_TT_APP, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
         return status;
-    }
-    status = webauth_attr_list_get_str(alist, WA_TK_TOKEN_TYPE, &type,
-                                       &length, WA_F_NONE);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "bad application token");
-        return status;
-    } else if (length != strlen(WA_TT_APP)
-               || strncmp(type, WA_TT_APP, length) != 0) {
-        webauth_error_set(ctx, WA_ERR_CORRUPT, "wrong token type %s while"
-                          " decoding app token", type);
-        return WA_ERR_CORRUPT;
-    }
 
     /* We have a valid app token.  Pull out the attributes. */
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_app));
@@ -233,6 +258,12 @@ webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,      true);
     DECODE_UINT(WA_TK_LOA,             loa,             false);
 
+    webauth_attr_list_free(alist);
     *decoded = token;
     return WA_ERR_NONE;
+
+fail:
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+    return status;
 }
