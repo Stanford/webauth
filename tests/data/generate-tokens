@@ -37,6 +37,10 @@ our %TOKENS =
                           creation_time   => 1308777900,
                           expiration_time => 1308871632 }
                       ],
+     'app-minimal' => [ 'WebKDC::AppToken',
+                        { subject         => 'testuser',
+                          expiration_time => 2147483600 }
+                      ],
      'app-ok'      => [ 'WebKDC::AppToken',
                         { subject         => 'testuser',
                           lastused_time   => 1308777930,

@@ -54,7 +54,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
 
-    plan(14);
+    plan(22);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -71,7 +71,7 @@ main(void)
              webauth_error_message(NULL, status));
     test_file_path_free(keyring);
 
-    /* Test encoding and decoding of an app token. */
+    /* Test decoding of an app token. */
     token = read_token("data/tokens/app-ok");
     status = webauth_token_decode_app(ctx, token, ring, &app);
     is_int(WA_ERR_NONE, status, "Decode app-ok");
@@ -89,7 +89,25 @@ main(void)
     }
     free(token);
 
-    /* Test error cases for app tokens. */
+    /* Test decoding of a minimal app token. */
+    token = read_token("data/tokens/app-minimal");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_NONE, status, "Decode app-minimal");
+    if (app == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(6, 0, "Decoding failed");
+    } else {
+        is_string("testuser", app->subject, "...subject");
+        is_int(0, app->last_used, "...last used");
+        is_string(NULL, app->initial_factors, "...initial factors");
+        is_string(NULL, app->session_factors, "...session factors");
+        is_int(0, app->loa, "...level of assurance");
+        is_int(0, app->creation, "...creation");
+        is_int(2147483600, app->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding error cases for app tokens. */
     token = read_token("data/tokens/app-bad-hmac");
     status = webauth_token_decode_app(ctx, token, ring, &app);
     is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
