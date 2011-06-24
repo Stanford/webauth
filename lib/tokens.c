@@ -350,3 +350,41 @@ fail:
         webauth_attr_list_free(alist);
     return status;
 }
+
+
+/*
+ * Decode a proxy token from the encrypted base64 wire format and store a
+ * newly allocated webauth_token_proxy struct in token with the contents.
+ * Returns a WebAuth status code.  On failure, sets token to NULL.
+ */
+int
+webauth_token_decode_proxy(struct webauth_context *ctx, const char *encoded,
+                           const WEBAUTH_KEYRING *keyring,
+                           struct webauth_token_proxy **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    struct webauth_token_proxy *token;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_PROXY, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* We have a valid cred token.  Pull out the attributes. */
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_cred));
+    DECODE_STR( WA_TK_SUBJECT,         subject,      true);
+    DECODE_STR( WA_TK_PROXY_TYPE,      type,         true);
+    DECODE_DATA(WA_TK_WEBKDC_TOKEN,    webkdc_proxy, true);
+    DECODE_TIME(WA_TK_CREATION_TIME,   creation,     true);
+    DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,   true);
+
+    webauth_attr_list_free(alist);
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+    return status;
+}

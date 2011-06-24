@@ -73,6 +73,26 @@ our %TOKENS =
                           creation_time   => 1308777900,
                           expiration_time => 1308871632 }
                       ],
+     'proxy-empty' => [ 'WebKDC::ProxyToken',
+                        { proxy_type      => 'krb5',
+                          webkdc_token    => "s=foo\0s=bar;;da",
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
+     'proxy-exp'   => [ 'WebKDC::ProxyToken',
+                        { subject         => 'testuser',
+                          proxy_type      => 'krb5',
+                          webkdc_token    => "s=foo\0s=bar;;da",
+                          creation_time   => 1308777900,
+                          expiration_time => 1308871632 }
+                      ],
+     'proxy-ok'    => [ 'WebKDC::ProxyToken',
+                        { subject         => 'testuser',
+                          proxy_type      => 'krb5',
+                          webkdc_token    => "s=foo\0s=bar;;da",
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
     );
 
 # Get the tokens to create from the command line, if any.

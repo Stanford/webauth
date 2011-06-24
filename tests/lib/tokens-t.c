@@ -54,8 +54,9 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
     struct webauth_token_cred *cred;
+    struct webauth_token_proxy *proxy;
 
-    plan(40);
+    plan(55);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -177,6 +178,51 @@ main(void)
     status = webauth_token_decode_cred(ctx, token, ring, &cred);
     is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as cred token");
     is_string("wrong token type app while decoding cred token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    free(token);
+
+    /* Test decoding of a proxy token. */
+    token = read_token("data/tokens/proxy-ok");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
+    is_int(WA_ERR_NONE, status, "Decode proxy-ok");
+    if (proxy == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(5, 0, "Decoding failed");
+    } else {
+        is_string("testuser", proxy->subject, "...subject");
+        is_string("krb5", proxy->type, "...type");
+        ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
+           "...WebKDC proxy token");
+        is_int(15, proxy->webkdc_proxy_len, "...WebKDC proxy token length");
+        is_int(1308777900, proxy->creation, "...creation");
+        is_int(2147483600, proxy->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding error cases for proxy tokens. */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
+    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
+    is_string("bad proxy token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/proxy-empty");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode proxy-empty");
+    is_string("decoding attribute s failed: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/proxy-exp");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
+    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode proxy-exp");
+    is_string("bad proxy token: token has expired",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-ok");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as proxy token");
+    is_string("wrong token type app while decoding proxy token: data is"
               " incorrectly formatted", webauth_error_message(ctx, status),
               "...with correct error");
     free(token);
