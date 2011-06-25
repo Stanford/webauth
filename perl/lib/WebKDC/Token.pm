@@ -1072,12 +1072,12 @@ WebKDC::Token - token objects for use with WebAuth
   # includes WebKDC::{App,Id,Proxy,Request,Response,Service}Token
 
   # manually create a new token, and then encode/encrypt it
-  my $id_token = new WebKDC::Token;
+  my $id_token = new WebKDC::IdToken;
 
   $id_token->subject_auth('krb5');
   $id_token->subject_auth_data($sad);
   $id_token->creation_time(time());
-  $id_token->subject_expiration_time($et);
+  $id_token->expiration_time($et);
 
   my $id_token_str = bas64_encode($id_token->to_token($key));
 
@@ -1205,14 +1205,14 @@ The WebKDC::CredToken object is used to represent WebAuth cred-tokens.
 
 The WebKDC::IdToken object is used to represent WebAuth id-tokens.
 
-  $token = new WebKDC::IDToken;
+  $token = new WebKDC::IdToken;
   $token = new WebKDC::IdToken($binary_token, $key_or_ring, $ttl);
 
   $token->creation_time([$new_value])
+  $token->expiration_time([$new_value])
   $token->subject([$new_value])
   $token->subject_auth([$new_value])
   $token->subject_auth_data([$new_value])
-  $token->subject_expiration_time([$new_value])
   $token->initial_factors([$new_value, ...])
   $token->session_factors([$new_value, ...])
   $token->loa([$new_value])
