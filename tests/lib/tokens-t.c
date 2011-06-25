@@ -54,9 +54,10 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
     struct webauth_token_cred *cred;
+    struct webauth_token_id *id;
     struct webauth_token_proxy *proxy;
 
-    plan(55);
+    plan(91);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -178,6 +179,88 @@ main(void)
     status = webauth_token_decode_cred(ctx, token, ring, &cred);
     is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as cred token");
     is_string("wrong token type app while decoding cred token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    free(token);
+
+    /* Test decoding of an id webkdc token. */
+    token = read_token("data/tokens/id-webkdc");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_NONE, status, "Decode id-webkdc");
+    if (id == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string("testuser", id->subject, "...subject");
+        is_string("webkdc", id->auth, "...subject auth");
+        ok(id->auth_data == NULL, "...subject auth data");
+        is_int(0, id->auth_data_len, "...subject auth data length");
+        is_string("p", id->initial_factors, "...initial factors");
+        is_string("c", id->session_factors, "...session factors");
+        is_int(1, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding of an id krb5 token. */
+    token = read_token("data/tokens/id-krb5");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_NONE, status, "Decode id-krb5");
+    if (id == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string(NULL, id->subject, "...subject");
+        is_string("krb5", id->auth, "...subject auth");
+        ok(memcmp("s=foo\0s=bar;;da", id->auth_data, 15) == 0,
+                  "...subject auth data");
+        is_int(15, id->auth_data_len, "...subject auth data length");
+        is_string("p", id->initial_factors, "...initial factors");
+        is_string("c", id->session_factors, "...session factors");
+        is_int(1, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding of a minimal id webkdc token. */
+    token = read_token("data/tokens/id-minimal");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_NONE, status, "Decode id-minimal");
+    if (id == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string("testuser", id->subject, "...subject");
+        is_string("webkdc", id->auth, "...subject auth");
+        ok(id->auth_data == NULL, "...subject auth data");
+        is_int(0, id->auth_data_len, "...subject auth data length");
+        is_string(NULL, id->initial_factors, "...initial factors");
+        is_string(NULL, id->session_factors, "...session factors");
+        is_int(0, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding error cases for id tokens. */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
+    is_string("bad id token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/id-expired");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode id-expired");
+    is_string("bad id token: token has expired",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-ok");
+    status = webauth_token_decode_id(ctx, token, ring, &id);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as id token");
+    is_string("wrong token type app while decoding id token: data is"
               " incorrectly formatted", webauth_error_message(ctx, status),
               "...with correct error");
     free(token);
