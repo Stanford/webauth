@@ -133,8 +133,6 @@ lib/libwebauth.pc: $(srcdir)/lib/libwebauth.pc.in
 	    -e 's![@]includedir[@]!$(includedir)!g' \
 	    -e 's![@]libdir[@]!$(libdir)!g' \
 	    -e 's![@]PACKAGE_VERSION[@]!$(PACKAGE_VERSION)!g' \
-	    -e 's![@]APR_LDFLAGS[@]!$(APR_LDFLAGS)!g' \
-	    -e 's![@]APR_LIBS[@]!$(APR_LIBS)!g' \
 	    -e 's![@]KRB5_LDFLAGS[@]!$(KRB5_LDFLAGS)!g' \
 	    -e 's![@]KRB5_LIBS[@]!$(KRB5_LIBS)!g' \
 	    -e 's![@]CRYPTO_LDFLAGS[@]!$(CRYPTO_LDFLAGS)!g' \
