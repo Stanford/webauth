@@ -25,50 +25,6 @@
 #include <webauth/tokens.h>
 
 /*
- * Attribute list macros to add attributes, which make code easier to read and
- * audit.  We don't need to check error codes since we are using WA_F_NONE,
- * which doesn't allocate any memory.  For strings and pointers, this means
- * that the value must already be in pool-allocated memory.
- *
- * These require that alist be the attribute list.
- */
-#define ADD_STR(name, value) \
-       webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-#define ADD_PTR(name, value, len) \
-       webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-#define ADD_TIME(name, value) \
-       webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
-#define ADD_UINT(name, value) \
-       webauth_attr_list_add_uint32(alist, name, value, WA_F_NONE)
-
-/* Attribute list addition macros for each token attribute. */
-#define SET_APP_STATE(state, len)    ADD_PTR(WA_TK_APP_STATE, state, len)
-#define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
-#define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_SERVICE(type)       ADD_STR(WA_TK_CRED_SERVICE, type)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
-#define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
-#define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
-#define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
-#define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INITIAL_FACTORS(list)    ADD_STR(WA_TK_INITIAL_FACTORS, list)
-#define SET_SESSION_KEY(key, len)    ADD_PTR(WA_TK_SESSION_KEY, key, len)
-#define SET_LOA(loa)                 ADD_UINT(WA_TK_LOA, loa)
-#define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_DATA(data, len)    ADD_PTR(WA_TK_PROXY_DATA, data, len)
-#define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
-#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
-#define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
-#define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
-#define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
-#define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
-#define SET_SUBJECT_AUTH_DATA(d, l)  ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
-#define SET_SESSION_FACTORS(list)    ADD_STR(WA_TK_SESSION_FACTORS, list)
-#define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
-#define SET_WEBKDC_TOKEN(d, l)       ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
-
-/*
  * Macros for decoding attributes, which make code easier to read and audit.
  * These macros require that ctx be the context, alist be the attribute list,
  * token be the token struct we're writing things to, status be available to
