@@ -1,5 +1,5 @@
 /*
- * Test token encoding and decoding.
+ * Test token decoding.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011
@@ -311,6 +311,7 @@ main(void)
     free(token);
 
     /* Clean up. */
+    webauth_keyring_free(ring);
     webauth_context_free(ctx);
     return 0;
 }

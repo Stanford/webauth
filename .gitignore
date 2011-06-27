@@ -45,6 +45,7 @@
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
 /tests/lib/token-decode-t
+/tests/lib/token-encode-t
 /tests/lib/token-t
 /tests/portable/asprintf-t
 /tests/portable/snprintf-t

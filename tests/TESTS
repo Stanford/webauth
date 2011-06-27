@@ -7,6 +7,7 @@ lib/krb5-tgt
 lib/random
 lib/token
 lib/token-decode
+lib/token-encode
 portable/asprintf
 portable/snprintf
 portable/mkstemp

@@ -136,19 +136,19 @@ int webauth_token_decode_proxy(struct webauth_context *,
  * set to NULL and an error code is returned.
  */
 int webauth_token_encode_app(struct webauth_context *,
-                             struct webauth_token_app *,
+                             const struct webauth_token_app *,
                              const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 int webauth_token_encode_cred(struct webauth_context *,
-                              struct webauth_token_cred *,
+                              const struct webauth_token_cred *,
                               const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 int webauth_token_encode_id(struct webauth_context *,
-                            struct webauth_token_id *,
+                            const struct webauth_token_id *,
                             const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 int webauth_token_encode_proxy(struct webauth_context *,
-                               struct webauth_token_app *,
+                               const struct webauth_token_proxy *,
                                const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 

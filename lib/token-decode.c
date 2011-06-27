@@ -1,8 +1,8 @@
 /*
- * High level interface to WebAuth tokens.
+ * High level interface to decoding WebAuth tokens.
  *
- * Interfaces for encoding and decoding tokens from the encrypted wire tokens
- * into structs representing the same information.
+ * Interfaces for decoding tokens from the encrypted wire tokens into structs
+ * representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011

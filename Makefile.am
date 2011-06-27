@@ -73,7 +73,7 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/tokens.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = include/webauth.h lib/attrs.c lib/base64.c	\
 	lib/context.c lib/key.c lib/krb5.c lib/misc.c lib/random.c	\
-	lib/token-decode.c lib/token.c
+	lib/token-decode.c lib/token-encode.c lib/token.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS) \
 	$(APRUTIL_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
@@ -242,13 +242,14 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	 \
-	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		 \
-	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t \
-	tests/lib/token-t tests/portable/asprintf-t			 \
-	tests/portable/mkstemp-t tests/portable/snprintf-t		 \
-	tests/portable/strlcat-t tests/portable/strlcpy-t		 \
-	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
+	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		   \
+	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
+	tests/lib/token-encode-t tests/lib/token-t			   \
+	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
+	tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -268,6 +269,8 @@ tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a
+tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a
 tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
