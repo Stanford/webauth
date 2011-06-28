@@ -71,6 +71,7 @@ WEBAUTH_2.0 {
         webauth_token_decode_id;
         webauth_token_decode_proxy;
         webauth_token_encode_app;
+        webauth_token_encode_cred;
         webauth_token_encoded_length;
         webauth_token_parse;
         webauth_token_parse_with_key;

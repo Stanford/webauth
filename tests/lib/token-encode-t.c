@@ -70,6 +70,51 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
 }
 
 
+/*
+ * Check a credential token by encoding the struct and then decoding it,
+ * ensuring that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
+                 WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_cred *cred2;
+    const char *token = NULL;
+
+    status = webauth_token_encode_cred(ctx, cred, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding cred %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(9, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_cred(ctx, token, ring, &cred2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (cred2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(7, 0, "...decoding failed");
+        return;
+    }
+    ok(cred2 != NULL, "...and sets the struct pointer");
+    is_string(cred->subject, cred2->subject, "...subject is right");
+    is_string(cred->type, cred2->type, "...type is right");
+    is_string(cred->service, cred2->service, "...service is right");
+    ok(memcmp(cred->data, cred2->data, cred->data_len) == 0,
+       "...data is right");
+    is_int(cred->data_len, cred2->data_len, "...data length is right");
+    if (cred->creation > 0)
+        is_int(cred->creation, cred2->creation, "...creation is right");
+    else
+        ok((cred2->creation > time(NULL) - 1)
+           && (cred2->creation < time(NULL) + 1), "...creation is right");
+    is_int(cred->expiration, cred2->expiration, "...expiration is right");
+}
+
+
 int
 main(void)
 {
@@ -80,8 +125,9 @@ main(void)
     int status;
     struct webauth_context *ctx;
     struct webauth_token_app app;
+    struct webauth_token_cred cred;
 
-    plan(28);
+    plan(71);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -128,6 +174,78 @@ main(void)
     is_int(WA_ERR_CORRUPT, status, "Encoding app without expiration fails");
     is_string("missing expiration for app token: data is incorrectly formatted",
               webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+
+    /* Flesh out a credential token, and then encode and decode it. */
+    cred.subject = "testuser";
+    cred.type = "krb5";
+    cred.service = "webauth/example.com@EXAMPLE.COM";
+    cred.data = "s=ome\0da;;ta";
+    cred.data_len = 12;
+    cred.creation = now;
+    cred.expiration = now + 60;
+    check_cred_token(ctx, &cred, ring, "full");
+
+    /* Test with a minimal set of attributes. */
+    cred.creation = 0;
+    check_cred_token(ctx, &cred, ring, "minimal");
+
+    /* Test for error cases for missing data. */
+    token = "foo";
+    cred.subject = NULL;
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without subject fails");
+    is_string("missing subject for cred token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.subject = "testuser";
+    cred.type = NULL;
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without type fails");
+    is_string("missing type for cred token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.type = "random";
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred with bad type fails");
+    is_string("unknown type random for cred token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.type = "krb5";
+    cred.service = NULL;
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without service fails");
+    is_string("missing service for cred token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.service = "webauth/example.com@EXAMPLE.COM";
+    cred.data = NULL;
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without data fails");
+    is_string("missing data for cred token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.data = "s=ome\0da;;ta";
+    cred.data_len = 0;
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without data length fails");
+    is_string("empty data for cred token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    cred.data_len = 12;
+    cred.expiration = 0;
+    token = "foo";
+    status = webauth_token_encode_cred(ctx, &cred, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding cred without expiration fails");
+    is_string("missing expiration for cred token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
     is_string(NULL, token, "...and token is NULL");
 
     /* Clean up. */
