@@ -127,7 +127,7 @@ webauth_error_set(struct webauth_context *ctx, int err, const char *format,
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
-    ctx->error =
-        apr_pstrcat(ctx->pool, string, ": ", error_string(ctx, err), NULL);
+    ctx->error = apr_pstrcat(ctx->pool, error_string(ctx, err),
+                             " (", string, ")", NULL);
     ctx->code = err;
 }

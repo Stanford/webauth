@@ -45,6 +45,44 @@ read_token(const char *filename)
 }
 
 
+/*
+ * Check decoding errors in various tokens.  Each of these function is the
+ * same except for the token type, so we generate all the functions with
+ * macros.  Each takes the context, the name of the token, the keyring, the
+ * WebAuth status code, and the expected error message.
+ */
+#define FUNCTION_NAME(type) #type
+#define CHECK_FUNCTION(type)                                            \
+    static void                                                         \
+    check_ ## type ## _error(struct webauth_context *ctx,               \
+                             const char *name, WEBAUTH_KEYRING *ring,   \
+                             int code, const char *message)             \
+    {                                                                   \
+        struct webauth_token_ ## type *type;                            \
+        int s;                                                          \
+        char *path, *token, *err;                                       \
+                                                                        \
+        if (asprintf(&path, "data/tokens/%s", name) < 0)                \
+            sysbail("cannot allocate memory");                          \
+        token = read_token(path);                                       \
+        free(path);                                                     \
+        s = webauth_token_decode_ ## type(ctx, token, ring, &type);     \
+        is_int(code, s, "Fail to decode %s", name);                     \
+        if (asprintf(&err, "%s (%s)",                                   \
+                     webauth_error_message(NULL, code), message) < 0)   \
+            sysbail("cannot allocate memory");                          \
+        is_string(err, webauth_error_message(ctx, s), "...with error"); \
+        free(err);                                                      \
+        free(token);                                                    \
+    }
+CHECK_FUNCTION(app)
+CHECK_FUNCTION(cred)
+CHECK_FUNCTION(error)
+CHECK_FUNCTION(id)
+CHECK_FUNCTION(proxy)
+CHECK_FUNCTION(request)
+
+
 int
 main(void)
 {
@@ -113,31 +151,14 @@ main(void)
     free(token);
 
     /* Test decoding error cases for app tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_app(ctx, token, ring, &app);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad app token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-empty");
-    status = webauth_token_decode_app(ctx, token, ring, &app);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-empty");
-    is_string("decoding attribute s failed: data is incorrectly formatted",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-expired");
-    status = webauth_token_decode_app(ctx, token, ring, &app);
-    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode app-expired");
-    is_string("bad app token: token has expired",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/cred-ok");
-    status = webauth_token_decode_app(ctx, token, ring, &app);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode cred-ok as app token");
-    is_string("wrong token type cred while decoding app token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_app_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                    "bad app token");
+    check_app_error(ctx, "app-empty", ring, WA_ERR_CORRUPT,
+                    "decoding attribute s failed");
+    check_app_error(ctx, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
+                    "bad app token");
+    check_app_error(ctx, "cred-ok", ring, WA_ERR_CORRUPT,
+                    "wrong token type cred while decoding app token");
 
     /* Test decoding of a credential token. */
     token = read_token("data/tokens/cred-ok");
@@ -159,31 +180,14 @@ main(void)
     free(token);
 
     /* Test decoding error cases for cred tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_cred(ctx, token, ring, &cred);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad cred token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/cred-empty");
-    status = webauth_token_decode_cred(ctx, token, ring, &cred);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode cred-empty");
-    is_string("decoding attribute s failed: data is incorrectly formatted",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/cred-exp");
-    status = webauth_token_decode_cred(ctx, token, ring, &cred);
-    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode cred-exp");
-    is_string("bad cred token: token has expired",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-ok");
-    status = webauth_token_decode_cred(ctx, token, ring, &cred);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as cred token");
-    is_string("wrong token type app while decoding cred token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_cred_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                     "bad cred token");
+    check_cred_error(ctx, "cred-empty", ring, WA_ERR_CORRUPT,
+                     "decoding attribute s failed");
+    check_cred_error(ctx, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
+                     "bad cred token");
+    check_cred_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                     "wrong token type app while decoding cred token");
 
     /* Test decoding of an error token. */
     token = read_token("data/tokens/error-ok");
@@ -200,25 +204,12 @@ main(void)
     free(token);
 
     /* Test decoding error cases for error tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_error(ctx, token, ring, &err);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad error token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/error-code");
-    status = webauth_token_decode_error(ctx, token, ring, &err);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode error-code");
-    is_string("error code foo is not a number: data is incorrectly formatted",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-ok");
-    status = webauth_token_decode_error(ctx, token, ring, &err);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as error token");
-    is_string("wrong token type app while decoding error token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_error_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                      "bad error token");
+    check_error_error(ctx, "error-code", ring, WA_ERR_CORRUPT,
+                      "error code foo is not a number");
+    check_error_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                      "wrong token type app while decoding error token");
 
     /* Test decoding of an id webkdc token. */
     token = read_token("data/tokens/id-webkdc");
@@ -282,25 +273,12 @@ main(void)
     free(token);
 
     /* Test decoding error cases for id tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_id(ctx, token, ring, &id);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad id token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/id-expired");
-    status = webauth_token_decode_id(ctx, token, ring, &id);
-    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode id-expired");
-    is_string("bad id token: token has expired",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-ok");
-    status = webauth_token_decode_id(ctx, token, ring, &id);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as id token");
-    is_string("wrong token type app while decoding id token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_id_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                   "bad id token");
+    check_id_error(ctx, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
+                   "bad id token");
+    check_id_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                   "wrong token type app while decoding id token");
 
     /* Test decoding of a proxy token. */
     token = read_token("data/tokens/proxy-ok");
@@ -321,31 +299,14 @@ main(void)
     free(token);
 
     /* Test decoding error cases for proxy tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad proxy token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/proxy-empty");
-    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode proxy-empty");
-    is_string("decoding attribute s failed: data is incorrectly formatted",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/proxy-exp");
-    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
-    is_int(WA_ERR_TOKEN_EXPIRED, status, "Fail to decode proxy-exp");
-    is_string("bad proxy token: token has expired",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-ok");
-    status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as proxy token");
-    is_string("wrong token type app while decoding proxy token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_proxy_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                      "bad proxy token");
+    check_proxy_error(ctx, "proxy-empty", ring, WA_ERR_CORRUPT,
+                      "decoding attribute s failed");
+    check_proxy_error(ctx, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
+                      "bad proxy token");
+    check_proxy_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                      "wrong token type app while decoding proxy token");
 
     /* Test decoding of several types of request tokens. */
     token = read_token("data/tokens/req-id");
@@ -455,19 +416,10 @@ main(void)
     free(token);
 
     /* Test decoding error cases for request tokens. */
-    token = read_token("data/tokens/app-bad-hmac");
-    status = webauth_token_decode_request(ctx, token, ring, &req);
-    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
-    is_string("bad req token: HMAC check failed",
-              webauth_error_message(ctx, status), "...with correct error");
-    free(token);
-    token = read_token("data/tokens/app-ok");
-    status = webauth_token_decode_request(ctx, token, ring, &req);
-    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as request token");
-    is_string("wrong token type app while decoding req token: data is"
-              " incorrectly formatted", webauth_error_message(ctx, status),
-              "...with correct error");
-    free(token);
+    check_request_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                        "bad req token");
+    check_request_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                        "wrong token type app while decoding req token");
 
     /* Clean up. */
     webauth_keyring_free(ring);
