@@ -79,6 +79,18 @@
         }                                                               \
     } while (0)
 
+/* Check that a pointer that should be NULL is. */
+#define CHECK_NULL(token, attr, reason)                                 \
+    do {                                                                \
+        if (token->attr != NULL) {                                      \
+            webauth_error_set(ctx, WA_ERR_CORRUPT,                      \
+                              "%s not valid with %s in %s token",       \
+                              APR_STRINGIFY(attr), reason,              \
+                              APR_STRINGIFY(token));                    \
+            goto corrupt;                                               \
+        }                                                               \
+    } while (0)
+
 
 /*
  * Prepare for token encoding.  This function handles the common setup for all
@@ -283,6 +295,104 @@ webauth_token_encode_proxy(struct webauth_context *ctx,
              proxy->webkdc_proxy_len);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, proxy->expiration);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
+ * Encode a request token.  Takes the struct representing the token contents
+ * and the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_request(struct webauth_context *ctx,
+                             const struct webauth_token_request *request,
+                             const WEBAUTH_KEYRING *keyring,
+                             const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /*
+     * Sanity-check the token attributes.  There are two entirely different
+     * types of data represented here, so we have to do checks based on what
+     * type of request token it is.
+     */
+    if (request->command != NULL) {
+        CHECK_NULL(request, type,            "command");
+        CHECK_NULL(request, auth,            "command");
+        CHECK_NULL(request, proxy_type,      "command");
+        CHECK_NULL(request, state,           "command");
+        CHECK_NULL(request, return_url,      "command");
+        CHECK_NULL(request, options,         "command");
+        CHECK_NULL(request, initial_factors, "command");
+        CHECK_NULL(request, session_factors, "command");
+    } else {
+        CHECK_STR( request, type);
+        CHECK_STR( request, return_url);
+        if (strcmp(request->type, "id") == 0) {
+            CHECK_STR( request, auth);
+            if (strcmp(request->auth, "krb5") != 0
+                && strcmp(request->auth, "webkdc") != 0) {
+                webauth_error_set(ctx, WA_ERR_CORRUPT,
+                                  "unknown subject auth %s for request token",
+                                  request->auth);
+                goto corrupt;
+            }
+        } else if (strcmp(request->type, "proxy") == 0) {
+            CHECK_STR( request, proxy_type);
+            if (strcmp(request->proxy_type, "krb5") != 0) {
+                webauth_error_set(ctx, WA_ERR_CORRUPT,
+                                  "unknown proxy type %s for request token",
+                                  request->proxy_type);
+                goto corrupt;
+            }
+        } else {
+            webauth_error_set(ctx, WA_ERR_CORRUPT,
+                              "unknown requested token type %s for request"
+                              " token", request->type);
+            goto corrupt;
+        }
+    }
+
+    /* Encode the token attributes into the attribute list. */
+    creation = (request->creation > 0) ? request->creation : time(NULL);
+    ADD_STR(WA_TK_TOKEN_TYPE, WA_TT_REQUEST);
+    if (request->command != NULL)
+        ADD_STR(WA_TK_COMMAND, request->command);
+    else {
+        ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, request->type);
+        ADD_STR(WA_TK_RETURN_URL,           request->return_url);
+        if (request->auth != NULL)
+            ADD_STR( WA_TK_SUBJECT_AUTH, request->auth);
+        if (request->proxy_type != NULL)
+            ADD_STR( WA_TK_PROXY_TYPE, request->proxy_type);
+        if (request->state != NULL)
+            ADD_DATA(WA_TK_APP_STATE, request->state, request->state_len);
+        if (request->options != NULL)
+            ADD_STR(WA_TK_REQUEST_OPTIONS, request->options);
+        if (request->initial_factors != NULL)
+            ADD_STR(WA_TK_INITIAL_FACTORS, request->initial_factors);
+        if (request->session_factors != NULL)
+            ADD_STR(WA_TK_SESSION_FACTORS, request->session_factors);
+        if (request->loa > 0)
+            ADD_UINT(WA_TK_LOA, request->loa);
+    }
+    ADD_TIME(WA_TK_CREATION_TIME, creation);
 
     /* Finish encoding the token. */
     status = finish_encode(ctx, keyring, alist, token);

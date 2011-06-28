@@ -443,7 +443,7 @@ webauth_token_decode_proxy(struct webauth_context *ctx, const char *encoded,
     if (status != WA_ERR_NONE)
         return status;
 
-    /* We have a valid cred token.  Pull out the attributes. */
+    /* We have a valid proxy token.  Pull out the attributes. */
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_proxy));
     DECODE_STR( WA_TK_SUBJECT,         subject,      true);
     DECODE_STR( WA_TK_PROXY_TYPE,      type,         true);
@@ -451,6 +451,96 @@ webauth_token_decode_proxy(struct webauth_context *ctx, const char *encoded,
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,     true);
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,   true);
 
+    webauth_attr_list_free(alist);
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Decode a request token from the encrypted base64 wire format and store a
+ * newly allocated webauth_token_request struct in token with the contents.
+ * Returns a WebAuth status code.  On failure, sets token to NULL.
+ */
+int
+webauth_token_decode_request(struct webauth_context *ctx, const char *encoded,
+                             const WEBAUTH_KEYRING *keyring,
+                             struct webauth_token_request **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    struct webauth_token_request *token;
+    int status;
+    bool required = true;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_REQUEST, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /*
+     * We have a valid request token.  Pull out the attributes.  Required
+     * attributes vary depending on whether there's a command.
+     */
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_request));
+    DECODE_STR(WA_TK_COMMAND, command, false);
+    if (token->command != NULL)
+        required = false;
+    DECODE_STR( WA_TK_REQUESTED_TOKEN_TYPE, type,            required);
+    DECODE_STR( WA_TK_SUBJECT_AUTH,         auth,            false);
+    DECODE_STR( WA_TK_PROXY_TYPE,           proxy_type,      false);
+    DECODE_DATA(WA_TK_APP_STATE,            state,           false);
+    DECODE_STR( WA_TK_RETURN_URL,           return_url,      required);
+    DECODE_STR( WA_TK_REQUEST_OPTIONS,      options,         false);
+    DECODE_STR( WA_TK_INITIAL_FACTORS,      initial_factors, false);
+    DECODE_STR( WA_TK_SESSION_FACTORS,      session_factors, false);
+    DECODE_UINT(WA_TK_LOA,                  loa,             false);
+    DECODE_TIME(WA_TK_CREATION_TIME,        creation,        true);
+
+    /* We can now do some additional sanity checks for consistency. */
+    if (token->command != NULL
+        && (token->type != NULL || token->auth != NULL
+            || token->proxy_type != NULL || token->state != NULL
+            || token->return_url != NULL || token->options != NULL)) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "command request tokens may not have"
+                          " other attributes");
+        goto fail;
+    }
+
+    /* Skip all subsequent sanity checks if this is a command token. */
+    if (token->command != NULL)
+        goto done;
+
+    /* Check the attributes of a non-command token for consistency. */
+    if (strcmp(token->type, "id") != 0 && strcmp(token->type, "proxy") != 0) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown requested token type %s"
+                          " in request token", token->type);
+        goto fail;
+    }
+    if (strcmp(token->type, "id") == 0
+        && (token->auth == NULL
+            || (strcmp(token->auth, "krb5") != 0
+                && strcmp(token->auth, "webkdc") != 0))) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown subject auth %s in request"
+                          " token", token->auth);
+        goto fail;
+    } else if (strcmp(token->type, "proxy") == 0
+               && (token->proxy_type == NULL
+                   || strcmp(token->proxy_type, "krb5") != 0)) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown proxy type %s in request"
+                          " token", token->proxy_type);
+        goto fail;
+    }
+
+done:
     webauth_attr_list_free(alist);
     *decoded = token;
     return WA_ERR_NONE;

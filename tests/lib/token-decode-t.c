@@ -57,8 +57,9 @@ main(void)
     struct webauth_token_error *err;
     struct webauth_token_id *id;
     struct webauth_token_proxy *proxy;
+    struct webauth_token_request *req;
 
-    plan(101);
+    plan(170);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -342,6 +343,128 @@ main(void)
     status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
     is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as proxy token");
     is_string("wrong token type app while decoding proxy token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    free(token);
+
+    /* Test decoding of several types of request tokens. */
+    token = read_token("data/tokens/req-id");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_NONE, status, "Decode req-id");
+    if (req == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(11, 0, "Decoding failed");
+    } else {
+        is_string("id", req->type, "...type");
+        is_string("webkdc", req->auth, "...subject auth");
+        is_string(NULL, req->proxy_type, "...proxy type");
+        ok(memcmp("s=foo\0s=bar;;da", req->state, 15) == 0, "...state");
+        is_int(15, req->state_len, "...state length");
+        is_string("https://example.com/", req->return_url, "...return URL");
+        is_string("fa", req->options, "...options");
+        is_string("p,o3,o,m", req->initial_factors, "...initial factors");
+        is_string("p,o3,o,m", req->session_factors, "...session factors");
+        is_int(3, req->loa, "...level of assurance");
+        is_string(NULL, req->command, "...command");
+        is_int(1308777900, req->creation, "...creation");
+    }
+    free(token);
+    token = read_token("data/tokens/req-id-krb5");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_NONE, status, "Decode req-id-krb5");
+    if (req == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(11, 0, "Decoding failed");
+    } else {
+        is_string("id", req->type, "...type");
+        is_string("krb5", req->auth, "...subject auth");
+        is_string(NULL, req->proxy_type, "...proxy type");
+        ok(memcmp("s=foo\0s=bar;;da", req->state, 15) == 0, "...state");
+        is_int(15, req->state_len, "...state length");
+        is_string("https://example.com/", req->return_url, "...return URL");
+        is_string("fa", req->options, "...options");
+        is_string("p,o3,o,m", req->initial_factors, "...initial factors");
+        is_string("p,o3,o,m", req->session_factors, "...session factors");
+        is_int(3, req->loa, "...level of assurance");
+        is_string(NULL, req->command, "...command");
+        is_int(1308777900, req->creation, "...creation");
+    }
+    free(token);
+    token = read_token("data/tokens/req-minimal");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_NONE, status, "Decode req-minimal");
+    if (req == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(11, 0, "Decoding failed");
+    } else {
+        is_string("id", req->type, "...type");
+        is_string("webkdc", req->auth, "...subject auth");
+        is_string(NULL, req->proxy_type, "...proxy type");
+        is_string(NULL, req->state, "...state");
+        is_int(0, req->state_len, "...state length");
+        is_string("https://example.com/", req->return_url, "...return URL");
+        is_string(NULL, req->options, "...options");
+        is_string(NULL, req->initial_factors, "...initial factors");
+        is_string(NULL, req->session_factors, "...session factors");
+        is_int(0, req->loa, "...level of assurance");
+        is_string(NULL, req->command, "...command");
+        is_int(1308777900, req->creation, "...creation");
+    }
+    free(token);
+    token = read_token("data/tokens/req-proxy");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_NONE, status, "Decode req-proxy");
+    if (req == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(11, 0, "Decoding failed");
+    } else {
+        is_string("proxy", req->type, "...type");
+        is_string(NULL, req->auth, "...subject auth");
+        is_string("krb5", req->proxy_type, "...proxy type");
+        ok(memcmp("s=foo\0s=bar;;da", req->state, 15) == 0, "...state");
+        is_int(15, req->state_len, "...state length");
+        is_string("https://example.com/", req->return_url, "...return URL");
+        is_string("fa", req->options, "...options");
+        is_string("p,o3,o,m", req->initial_factors, "...initial factors");
+        is_string("p,o3,o,m", req->session_factors, "...session factors");
+        is_int(3, req->loa, "...level of assurance");
+        is_string(NULL, req->command, "...command");
+        is_int(1308777900, req->creation, "...creation");
+    }
+    free(token);
+    token = read_token("data/tokens/req-command");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_NONE, status, "Decode req-command");
+    if (req == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(11, 0, "Decoding failed");
+    } else {
+        is_string(NULL, req->type, "...type");
+        is_string(NULL, req->auth, "...subject auth");
+        is_string(NULL, req->proxy_type, "...proxy type");
+        is_string(NULL, req->state, "...state");
+        is_int(0, req->state_len, "...state length");
+        is_string(NULL, req->return_url, "...return URL");
+        is_string(NULL, req->options, "...options");
+        is_string(NULL, req->initial_factors, "...initial factors");
+        is_string(NULL, req->session_factors, "...session factors");
+        is_int(0, req->loa, "...level of assurance");
+        is_string("getTokensRequest", req->command, "...command");
+        is_int(1308777900, req->creation, "...creation");
+    }
+    free(token);
+
+    /* Test decoding error cases for request tokens. */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
+    is_string("bad req token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-ok");
+    status = webauth_token_decode_request(ctx, token, ring, &req);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as request token");
+    is_string("wrong token type app while decoding req token: data is"
               " incorrectly formatted", webauth_error_message(ctx, status),
               "...with correct error");
     free(token);

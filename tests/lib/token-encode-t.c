@@ -161,6 +161,59 @@ check_proxy_token(struct webauth_context *ctx,
 }
 
 
+/*
+ * Check a request token by encoding the struct and then decoding it, ensuring
+ * that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_request_token(struct webauth_context *ctx,
+                    struct webauth_token_request *req,
+                    WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_request *req2;
+    const char *token = NULL;
+
+    status = webauth_token_encode_request(ctx, req, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding request %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(14, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_request(ctx, token, ring, &req2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (req2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(12, 0, "...decoding failed");
+        return;
+    }
+    ok(req2 != NULL, "...and sets the struct pointer");
+    is_string(req->type, req2->type, "...requested token type is right");
+    is_string(req->auth, req2->auth, "...subject auth is right");
+    is_string(req->proxy_type, req2->proxy_type, "...proxy type is right");
+    ok(memcmp(req->state, req2->state, req->state_len) == 0,
+       "...state is right");
+    is_int(req->state_len, req2->state_len, "...state length is right");
+    is_string(req->return_url, req2->return_url, "...return URL is right");
+    is_string(req->options, req2->options, "...options is right");
+    is_string(req->initial_factors, req2->initial_factors,
+              "...initial factors is right");
+    is_string(req->session_factors, req2->session_factors,
+              "...session factors is right");
+    is_int(req->loa, req2->loa, "...level of assurance is right");
+    is_string(req->command, req2->command, "...command is right");
+    if (req->creation > 0)
+        is_int(req->creation, req2->creation, "...creation is right");
+    else
+        ok((req2->creation > time(NULL) - 1)
+           && (req2->creation < time(NULL) + 1), "...creation is right");
+}
+
+
 int
 main(void)
 {
@@ -173,8 +226,9 @@ main(void)
     struct webauth_token_app app;
     struct webauth_token_cred cred;
     struct webauth_token_proxy proxy;
+    struct webauth_token_request req;
 
-    plan(109);
+    plan(213);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -359,6 +413,115 @@ main(void)
     is_int(WA_ERR_CORRUPT, status, "Encoding proxy without expiration fails");
     is_string("missing expiration for proxy token: data is incorrectly"
               " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+
+    /*
+     * Flesh out a request token, and then encode and decode it.  There are a
+     * few different varients that are allowed, so test each one and make sure
+     * they're all permitted.
+     */
+    req.type = "id";
+    req.auth = "webkdc";
+    req.state = "s=ome\0da;;ta";
+    req.state_len = 12;
+    req.return_url = "https://example.com/";
+    req.options = "fa,lc";
+    req.initial_factors = "p";
+    req.session_factors = "c";
+    req.loa = 1;
+    req.command = NULL;
+    req.creation = now;
+    check_request_token(ctx, &req, ring, "full id");
+    req.auth = "krb5";
+    check_request_token(ctx, &req, ring, "full id krb5");
+    req.type = "proxy";
+    req.auth = NULL;
+    req.proxy_type = "krb5";
+    check_request_token(ctx, &req, ring, "full proxy");
+    req.state = NULL;
+    req.state_len = 0;
+    req.options = NULL;
+    req.initial_factors = NULL;
+    req.session_factors = NULL;
+    req.loa = 0;
+    req.creation = 0;
+    check_request_token(ctx, &req, ring, "minimal");
+    req.type = NULL;
+    req.proxy_type = NULL;
+    req.return_url = NULL;
+    req.command = "getTokens";
+    check_request_token(ctx, &req, ring, "command");
+
+    /* Test various error cases. */
+    token = "foo";
+    req.command = NULL;
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request without type or command fails");
+    is_string("missing type for request token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.type = "random";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request without return URL fails");
+    is_string("missing return_url for request token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.return_url = "https://example.com/";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request with unknown type fails");
+    is_string("unknown requested token type random for request token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.type = "id";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request without auth fails");
+    is_string("missing auth for request token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.auth = "random";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request with unknown auth fails");
+    is_string("unknown subject auth random for request token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.type = "proxy";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request without proxy_type fails");
+    is_string("missing proxy_type for request token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.proxy_type = "random";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request with unknown proxy_type fails");
+    is_string("unknown proxy type random for request token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    token = "foo";
+    req.command = "getTokens";
+    status = webauth_token_encode_request(ctx, &req, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding request with command and type fails");
+    is_string("type not valid with command in request token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
               "...with correct error");
     is_string(NULL, token, "...and token is NULL");
 

@@ -119,6 +119,30 @@ struct webauth_token_proxy {
     time_t expiration;
 };
 
+/*
+ * Request token, sent by the WebAuth Application Server to the WebKDC.
+ *
+ * This token has two forms.  The first is sent by the WAS to the WebKDC via a
+ * redirect to request either an id or a proxy token for the user, depending
+ * on whether the WAS will need credentials.  The second is sent to the WebKDC
+ * as part of a request for a service token and contains only the command and
+ * creation time.
+ */
+struct webauth_token_request {
+    const char *type;
+    const char *auth;
+    const char *proxy_type;
+    const void *state;
+    size_t state_len;
+    const char *return_url;
+    const char *options;
+    const char *initial_factors;
+    const char *session_factors;
+    unsigned long loa;
+    const char *command;
+    time_t creation;
+};
+
 BEGIN_DECLS
 
 /*
@@ -147,6 +171,10 @@ int webauth_token_decode_proxy(struct webauth_context *,
                                const char *, const WEBAUTH_KEYRING *,
                                struct webauth_token_proxy **)
     __attribute__((__nonnull__));
+int webauth_token_decode_request(struct webauth_context *,
+                                 const char *, const WEBAUTH_KEYRING *,
+                                 struct webauth_token_request **)
+    __attribute__((__nonnull__));
 
 /*
  * Encode a token.  Takes the corresponding struct for that token type and a
@@ -162,13 +190,13 @@ int webauth_token_encode_cred(struct webauth_context *,
                               const struct webauth_token_cred *,
                               const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
-int webauth_token_encode_id(struct webauth_context *,
-                            const struct webauth_token_id *,
-                            const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
 int webauth_token_encode_proxy(struct webauth_context *,
                                const struct webauth_token_proxy *,
                                const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_request(struct webauth_context *,
+                                 const struct webauth_token_request *,
+                                 const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 
 END_DECLS

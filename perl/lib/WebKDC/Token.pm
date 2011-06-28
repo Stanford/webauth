@@ -905,10 +905,12 @@ sub validate_token {
 	    $self->command() eq 'getTokensRequest';
     } else {
 	croak "validate_token failed" unless
-	    defined($self->return_url()) &&
-	    ($self->requested_token_type() eq 'id') &&
-	    ($self->subject_auth() eq 'krb5' ||
-	     ($self->subject_auth() eq 'webkdc'));
+	    (defined($self->return_url())
+             && ((($self->requested_token_type() eq 'id')
+                  && ($self->subject_auth() eq 'krb5'
+                      || $self->subject_auth() eq 'webkdc'))
+                 || ($self->requested_token_type() eq 'proxy'
+                     && $self->proxy_type() eq 'krb5')));
     }
 }
 

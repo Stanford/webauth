@@ -133,6 +133,49 @@ our %TOKENS =
                           creation_time   => 1308777900,
                           expiration_time => 2147483600 }
                       ],
+     'req-id'      => [ 'WebKDC::RequestToken',
+                        { requested_token_type => 'id',
+                          subject_auth         => 'webkdc',
+                          app_state            => "s=foo\0s=bar;;da",
+                          return_url           => 'https://example.com/',
+                          request_options      => 'fa',
+                          initial_factors      => 'p,o3,o,m',
+                          session_factors      => 'p,o3,o,m',
+                          loa                  => 3,
+                          creation_time        => 1308777900 }
+                      ],
+     'req-id-krb5' => [ 'WebKDC::RequestToken',
+                        { requested_token_type => 'id',
+                          subject_auth         => 'krb5',
+                          app_state            => "s=foo\0s=bar;;da",
+                          return_url           => 'https://example.com/',
+                          request_options      => 'fa',
+                          initial_factors      => 'p,o3,o,m',
+                          session_factors      => 'p,o3,o,m',
+                          loa                  => 3,
+                          creation_time        => 1308777900 }
+                      ],
+     'req-minimal' => [ 'WebKDC::RequestToken',
+                        { requested_token_type => 'id',
+                          subject_auth         => 'webkdc',
+                          return_url           => 'https://example.com/',
+                          creation_time        => 1308777900 }
+                      ],
+     'req-proxy'   => [ 'WebKDC::RequestToken',
+                        { requested_token_type => 'proxy',
+                          proxy_type           => 'krb5',
+                          app_state            => "s=foo\0s=bar;;da",
+                          return_url           => 'https://example.com/',
+                          request_options      => 'fa',
+                          initial_factors      => 'p,o3,o,m',
+                          session_factors      => 'p,o3,o,m',
+                          loa                  => 3,
+                          creation_time        => 1308777900 }
+                      ],
+     'req-command' => [ 'WebKDC::RequestToken',
+                        { command         => 'getTokensRequest',
+                          creation_time   => 1308777900 }
+                      ],
     );
 
 # Get the tokens to create from the command line, if any.
