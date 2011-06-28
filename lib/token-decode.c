@@ -230,25 +230,81 @@ decode_uint(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
 
 
 /*
- * Decode an application token from the encrypted base64 wire format and store
- * a newly allocated webauth_token_app struct in token with the contents.
- * Returns a WebAuth status code.  On failure, sets token to NULL.
+ * Check the provided value to determine whether it's a valid credential type.
+ * Takes the token type as well as the credential type.  Assumes the
+ * credential type is non-NULL.  Returns a WebAuth error code and sets the
+ * error message if needed.
  */
-int
-webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
-                         const WEBAUTH_KEYRING *keyring,
-                         struct webauth_token_app **decoded)
+static int
+check_cred_type(struct webauth_context *ctx, const char *cred_type,
+                 const char *type)
 {
-    WEBAUTH_ATTR_LIST *alist = NULL;
+    int status = WA_ERR_NONE;
+
+    if (strcmp(cred_type, "krb5") != 0) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown credential type %s in %s"
+                          " token", cred_type, type);
+    }
+    return status;
+}
+
+
+/*
+ * Check the provided value to determine whether it's a valid proxy type.
+ * Takes the token type as well as the proxy type.  Assumes the proxy type is
+ * non-NULL.  Returns a WebAuth error code and sets the error message if
+ * needed.
+ */
+static int
+check_proxy_type(struct webauth_context *ctx, const char *proxy_type,
+                 const char *type)
+{
+    int status = WA_ERR_NONE;
+
+    if (strcmp(proxy_type, "krb5") != 0) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown proxy type %s in %s token",
+                          proxy_type, type);
+    }
+    return status;
+}
+
+
+/*
+ * Check the provided value to determine whether it's a valid subject auth
+ * type.  Takes the token type as well as the subject auth type.  Assumes the
+ * subject auth type is non-NULL.  Returns a WebAuth error code and sets the
+ * error message if needed.
+ */
+static int
+check_subject_auth(struct webauth_context *ctx, const char *auth,
+                   const char *type)
+{
+    int status = WA_ERR_NONE;
+
+    if (strcmp(auth, "krb5") != 0 && strcmp(auth, "webkdc") != 0) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown auth type %s in %s token",
+                          auth, type);
+    }
+    return status;
+}
+
+
+/*
+ * Given the attribute list of an app token, decode it and store the results
+ * in decoded, using newly-allocated pool memory.  On failure, sets decoded to
+ * NULL and sets the error message.
+ */
+static int
+decode_app_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                 struct webauth_token_app **decoded)
+{
     struct webauth_token_app *token;
     int status;
 
     *decoded = NULL;
-    status = parse_token(ctx, WA_TT_APP, encoded, keyring, &alist);
-    if (status != WA_ERR_NONE)
-        return status;
-
-    /* We have a valid app token.  Pull out the attributes. */
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_app));
     DECODE_STR( WA_TK_SUBJECT,         subject,         true);
     DECODE_STR( WA_TK_INITIAL_FACTORS, initial_factors, false);
@@ -257,38 +313,50 @@ webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,        false);
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,      true);
     DECODE_UINT(WA_TK_LOA,             loa,             false);
-
-    webauth_attr_list_free(alist);
     *decoded = token;
     return WA_ERR_NONE;
 
 fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
     return status;
 }
 
 
 /*
- * Decode a credential token from the encrypted base64 wire format and store a
- * newly allocated webauth_token_cred struct in token with the contents.
- * Returns a WebAuth status code.  On failure, sets token to NULL.
+ * Decode an application token from the encrypted base64 wire format.  Store
+ * the results in decoded, using newly-allocated pool memory.  On failure,
+ * sets decoded to NULL and sets the error message.
  */
 int
-webauth_token_decode_cred(struct webauth_context *ctx, const char *encoded,
-                          const WEBAUTH_KEYRING *keyring,
-                          struct webauth_token_cred **decoded)
+webauth_token_decode_app(struct webauth_context *ctx, const char *encoded,
+                         const WEBAUTH_KEYRING *keyring,
+                         struct webauth_token_app **decoded)
 {
-    WEBAUTH_ATTR_LIST *alist = NULL;
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_APP, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = decode_app_alist(ctx, alist, decoded);
+    webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Given the attribute list of a cred token, decode it and store the results
+ * in decoded, using newly-allocated pool memory.  On failure, sets deocded to
+ * NULL and sets the error message.
+ */
+static int
+decode_cred_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                  struct webauth_token_cred **decoded)
+{
     struct webauth_token_cred *token;
     int status;
 
     *decoded = NULL;
-    status = parse_token(ctx, WA_TT_CRED, encoded, keyring, &alist);
-    if (status != WA_ERR_NONE)
-        return status;
-
-    /* We have a valid cred token.  Pull out the attributes. */
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_cred));
     DECODE_STR( WA_TK_SUBJECT,         subject,    true);
     DECODE_STR( WA_TK_CRED_TYPE,       type,       true);
@@ -296,104 +364,55 @@ webauth_token_decode_cred(struct webauth_context *ctx, const char *encoded,
     DECODE_DATA(WA_TK_CRED_DATA,       data,       true);
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,   true);
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration, true);
-
-    webauth_attr_list_free(alist);
+    status = check_cred_type(ctx, token->type, "cred");
+    if (status != WA_ERR_NONE)
+        goto fail;
     *decoded = token;
     return WA_ERR_NONE;
 
 fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
     return status;
 }
 
 
 /*
- * Decode an id token from the encrypted base64 wire format and store a newly
- * allocated webauth_token_id struct in token with the contents.  Returns a
- * WebAuth status code.  On failure, sets token to NULL.
+ * Decode a credential token from the encrypted base64 wire format.  Store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL and sets the error message.
  */
 int
-webauth_token_decode_id(struct webauth_context *ctx, const char *encoded,
-                        const WEBAUTH_KEYRING *keyring,
-                        struct webauth_token_id **decoded)
+webauth_token_decode_cred(struct webauth_context *ctx, const char *encoded,
+                          const WEBAUTH_KEYRING *keyring,
+                          struct webauth_token_cred **decoded)
 {
-    WEBAUTH_ATTR_LIST *alist = NULL;
-    struct webauth_token_id *token;
+    WEBAUTH_ATTR_LIST *alist;
     int status;
 
     *decoded = NULL;
-    status = parse_token(ctx, WA_TT_ID, encoded, keyring, &alist);
+    status = parse_token(ctx, WA_TT_CRED, encoded, keyring, &alist);
     if (status != WA_ERR_NONE)
         return status;
-
-    /* We have a valid app token.  Pull out the attributes. */
-    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_id));
-    DECODE_STR( WA_TK_SUBJECT,           subject,         false);
-    DECODE_STR( WA_TK_SUBJECT_AUTH,      auth,            true);
-    DECODE_DATA(WA_TK_SUBJECT_AUTH_DATA, auth_data,       false);
-    DECODE_STR( WA_TK_INITIAL_FACTORS,   initial_factors, false);
-    DECODE_STR( WA_TK_SESSION_FACTORS,   session_factors, false);
-    DECODE_UINT(WA_TK_LOA,               loa,             false);
-    DECODE_TIME(WA_TK_CREATION_TIME,     creation,        false);
-    DECODE_TIME(WA_TK_EXPIRATION_TIME,   expiration,      true);
-
-    /*
-     * Depending on the authenticator type, either subject or auth_data are
-     * mandatory attributes.  The authenticator type must be either krb5 or
-     * webkdc.
-     */
-    if (strcmp(token->auth, "krb5") == 0) {
-        if (token->auth_data == NULL || token->auth_data_len == 0) {
-            status = WA_ERR_CORRUPT;
-            webauth_error_set(ctx, status, "missing krb5 authentication data");
-            goto fail;
-        }
-    } else if (strcmp(token->auth, "webkdc") == 0) {
-        if (token->subject == NULL) {
-            status = WA_ERR_CORRUPT;
-            webauth_error_set(ctx, status, "missing webkdc subject");
-            goto fail;
-        }
-    } else {
-        status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unknown auth type %s", token->auth);
-        goto fail;
-    }
-
+    status = decode_cred_alist(ctx, alist, decoded);
     webauth_attr_list_free(alist);
-    *decoded = token;
-    return WA_ERR_NONE;
-
-fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
     return status;
 }
 
 
 /*
- * Decode an error token from the encrypted base64 wire format and store a
- * newly allocated webauth_token_error struct in token with the contents.
- * Returns a WebAuth status code.  On failure, sets token to NULL.
+ * Given the attribute list of an error token, decode it and store the results
+ * in decoded, using newly-allocated pool memory.  On failure, sets decoded to
+ * NULL and sets the error message.
  */
-int
-webauth_token_decode_error(struct webauth_context *ctx, const char *encoded,
-                           const WEBAUTH_KEYRING *keyring,
-                           struct webauth_token_error **decoded)
+static int
+decode_error_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                   struct webauth_token_error **decoded)
 {
-    WEBAUTH_ATTR_LIST *alist = NULL;
     struct webauth_token_error *token;
+    int status;
     const char *code;
     char *end;
-    int status;
 
     *decoded = NULL;
-    status = parse_token(ctx, WA_TT_ERROR, encoded, keyring, &alist);
-    if (status != WA_ERR_NONE)
-        return status;
-
-    /* We have a valid error token.  Pull out the attributes. */
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_error));
     DECODE_STR( WA_TK_ERROR_MESSAGE, message,  true);
     DECODE_TIME(WA_TK_CREATION_TIME, creation, true);
@@ -413,21 +432,134 @@ webauth_token_decode_error(struct webauth_context *ctx, const char *encoded,
         goto fail;
     }
 
-    webauth_attr_list_free(alist);
     *decoded = token;
     return WA_ERR_NONE;
 
 fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
     return status;
 }
 
 
 /*
- * Decode a proxy token from the encrypted base64 wire format and store a
- * newly allocated webauth_token_proxy struct in token with the contents.
- * Returns a WebAuth status code.  On failure, sets token to NULL.
+ * Decode an error token from the encrypted base64 wire format.  Store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL and sets the error message.
+ */
+int
+webauth_token_decode_error(struct webauth_context *ctx, const char *encoded,
+                           const WEBAUTH_KEYRING *keyring,
+                           struct webauth_token_error **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_ERROR, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = decode_error_alist(ctx, alist, decoded);
+    webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Given the attribute list of an id token, decode it and store the results in
+ * decoded, using newly-allocated pool memory.  On failure, sets decoded to
+ * NULL and sets the error message.
+ */
+static int
+decode_id_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                struct webauth_token_id **decoded)
+{
+    struct webauth_token_id *token;
+    int status;
+    bool need_data = false;
+
+    /*
+     * Depending on the authenticator type, either subject or auth_data are
+     * mandatory attributes.
+     */
+    *decoded = NULL;
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_id));
+    DECODE_STR( WA_TK_SUBJECT_AUTH,      auth,            true);
+    if (strcmp(token->auth, "krb5") == 0)
+        need_data = true;
+    DECODE_STR( WA_TK_SUBJECT,           subject,         !need_data);
+    DECODE_DATA(WA_TK_SUBJECT_AUTH_DATA, auth_data,       need_data);
+    DECODE_STR( WA_TK_INITIAL_FACTORS,   initial_factors, false);
+    DECODE_STR( WA_TK_SESSION_FACTORS,   session_factors, false);
+    DECODE_UINT(WA_TK_LOA,               loa,             false);
+    DECODE_TIME(WA_TK_CREATION_TIME,     creation,        false);
+    DECODE_TIME(WA_TK_EXPIRATION_TIME,   expiration,      true);
+    status = check_subject_auth(ctx, token->auth, "id");
+    if (status != WA_ERR_NONE)
+        goto fail;
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    return status;
+}
+
+
+/*
+ * Decode an id token from the encrypted base64 wire format.  Store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL and sets the error message.
+ */
+int
+webauth_token_decode_id(struct webauth_context *ctx, const char *encoded,
+                        const WEBAUTH_KEYRING *keyring,
+                        struct webauth_token_id **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_ID, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = decode_id_alist(ctx, alist, decoded);
+    webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Given the attribute list of a proxy token, decode it and store the results
+ * in decoded, using newly-allocated pool memory.  On failure, sets decoded to
+ * NULL and sets the error message.
+ */
+static int
+decode_proxy_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                   struct webauth_token_proxy **decoded)
+{
+    struct webauth_token_proxy *token;
+    int status;
+
+    *decoded = NULL;
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_proxy));
+    DECODE_STR( WA_TK_SUBJECT,         subject,      true);
+    DECODE_STR( WA_TK_PROXY_TYPE,      type,         true);
+    DECODE_DATA(WA_TK_WEBKDC_TOKEN,    webkdc_proxy, true);
+    DECODE_TIME(WA_TK_CREATION_TIME,   creation,     true);
+    DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,   true);
+    status = check_proxy_type(ctx, token->type, "proxy");
+    if (status != WA_ERR_NONE)
+        goto fail;
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    return status;
+}
+
+
+/*
+ * Decode a proxy token from the encrypted base64 wire format.  Store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL, and sets the error message.
  */
 int
 webauth_token_decode_proxy(struct webauth_context *ctx, const char *encoded,
@@ -435,64 +567,48 @@ webauth_token_decode_proxy(struct webauth_context *ctx, const char *encoded,
                            struct webauth_token_proxy **decoded)
 {
     WEBAUTH_ATTR_LIST *alist = NULL;
-    struct webauth_token_proxy *token;
     int status;
 
     *decoded = NULL;
     status = parse_token(ctx, WA_TT_PROXY, encoded, keyring, &alist);
     if (status != WA_ERR_NONE)
         return status;
-
-    /* We have a valid proxy token.  Pull out the attributes. */
-    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_proxy));
-    DECODE_STR( WA_TK_SUBJECT,         subject,      true);
-    DECODE_STR( WA_TK_PROXY_TYPE,      type,         true);
-    DECODE_DATA(WA_TK_WEBKDC_TOKEN,    webkdc_proxy, true);
-    DECODE_TIME(WA_TK_CREATION_TIME,   creation,     true);
-    DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,   true);
-
+    status = decode_proxy_alist(ctx, alist, decoded);
     webauth_attr_list_free(alist);
-    *decoded = token;
-    return WA_ERR_NONE;
-
-fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
     return status;
 }
 
 
 /*
- * Decode a request token from the encrypted base64 wire format and store a
- * newly allocated webauth_token_request struct in token with the contents.
- * Returns a WebAuth status code.  On failure, sets token to NULL.
+ * Given the attribute list of a request token, decode it and store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL and sets the error message.
  */
-int
-webauth_token_decode_request(struct webauth_context *ctx, const char *encoded,
-                             const WEBAUTH_KEYRING *keyring,
-                             struct webauth_token_request **decoded)
+static int
+decode_request_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
+                     struct webauth_token_request **decoded)
 {
-    WEBAUTH_ATTR_LIST *alist = NULL;
     struct webauth_token_request *token;
     int status;
     bool required = true;
-
-    *decoded = NULL;
-    status = parse_token(ctx, WA_TT_REQUEST, encoded, keyring, &alist);
-    if (status != WA_ERR_NONE)
-        return status;
+    bool need_auth = false;
+    bool need_proxy;
 
     /*
-     * We have a valid request token.  Pull out the attributes.  Required
-     * attributes vary depending on whether there's a command.
+     * Required attributes vary depending on whether there's a command,
+     * and then further on whether the requested token type is id or proxy.
      */
+    *decoded = NULL;
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_request));
     DECODE_STR(WA_TK_COMMAND, command, false);
     if (token->command != NULL)
         required = false;
-    DECODE_STR( WA_TK_REQUESTED_TOKEN_TYPE, type,            required);
-    DECODE_STR( WA_TK_SUBJECT_AUTH,         auth,            false);
-    DECODE_STR( WA_TK_PROXY_TYPE,           proxy_type,      false);
+    DECODE_STR(WA_TK_REQUESTED_TOKEN_TYPE, type, required);
+    if (token->type != NULL && strcmp(token->type, "id") == 0)
+        need_auth = true;
+    need_proxy = (!need_auth && required);
+    DECODE_STR( WA_TK_SUBJECT_AUTH,         auth,            need_auth);
+    DECODE_STR( WA_TK_PROXY_TYPE,           proxy_type,      need_proxy);
     DECODE_DATA(WA_TK_APP_STATE,            state,           false);
     DECODE_STR( WA_TK_RETURN_URL,           return_url,      required);
     DECODE_STR( WA_TK_REQUEST_OPTIONS,      options,         false);
@@ -512,41 +628,46 @@ webauth_token_decode_request(struct webauth_context *ctx, const char *encoded,
         goto fail;
     }
 
-    /* Skip all subsequent sanity checks if this is a command token. */
-    if (token->command != NULL)
-        goto done;
-
     /* Check the attributes of a non-command token for consistency. */
-    if (strcmp(token->type, "id") != 0 && strcmp(token->type, "proxy") != 0) {
+    if (token->command != NULL)
+        ; /* Nothing to do. */
+    else if (strcmp(token->type, "id") == 0)
+        status = check_subject_auth(ctx, token->auth, "request");
+    else if (strcmp(token->type, "proxy") == 0)
+        status = check_proxy_type(ctx, token->proxy_type, "request");
+    else {
         status = WA_ERR_CORRUPT;
         webauth_error_set(ctx, status, "unknown requested token type %s"
                           " in request token", token->type);
-        goto fail;
     }
-    if (strcmp(token->type, "id") == 0
-        && (token->auth == NULL
-            || (strcmp(token->auth, "krb5") != 0
-                && strcmp(token->auth, "webkdc") != 0))) {
-        status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unknown subject auth %s in request"
-                          " token", token->auth);
+    if (status != WA_ERR_NONE)
         goto fail;
-    } else if (strcmp(token->type, "proxy") == 0
-               && (token->proxy_type == NULL
-                   || strcmp(token->proxy_type, "krb5") != 0)) {
-        status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unknown proxy type %s in request"
-                          " token", token->proxy_type);
-        goto fail;
-    }
-
-done:
-    webauth_attr_list_free(alist);
     *decoded = token;
     return WA_ERR_NONE;
 
 fail:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Decode a request token from the encrypted base64 wire format.  Store the
+ * results in decoded, using newly-allocated pool memory.  On failure, sets
+ * decoded to NULL, and sets the error message.
+ */
+int
+webauth_token_decode_request(struct webauth_context *ctx, const char *encoded,
+                             const WEBAUTH_KEYRING *keyring,
+                             struct webauth_token_request **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_REQUEST, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = decode_request_alist(ctx, alist, decoded);
+    webauth_attr_list_free(alist);
     return status;
 }
