@@ -10,6 +10,7 @@
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 
 
 /*
@@ -278,107 +279,41 @@ mwa_get_webauth_cookies(request_rec *r)
 /*
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
-MWA_CRED_TOKEN *
+struct webauth_token_cred *
 mwa_parse_cred_token(char *token,
                      WEBAUTH_KEYRING *ring,
                      WEBAUTH_KEY *key,
                      MWA_REQ_CTXT *rc)
 {
-    WEBAUTH_ATTR_LIST *alist;
-    size_t blen;
     int status;
-    const char *tt;
-    MWA_CRED_TOKEN ct, *nct;
+    struct webauth_token_cred *cred;
     const char *mwa_func="mwa_parse_cred_token";
 
     ap_unescape_url(token);
-    blen = apr_base64_decode(token, token);
-    status = WA_ERR_NONE;
-    nct = NULL;
 
     /* parse the token, TTL is zero because cred-tokens don't have ttl,
      * just expiration
      */
     if (key != NULL) {
-        status = webauth_token_parse_with_key(token, blen, 0, key, &alist);
-    } else if (ring != NULL){
-        status = webauth_token_parse(token, blen, 0, ring, &alist);
-    } else {
+        status = webauth_keyring_from_key(rc->ctx, key, &ring);
+        if (status != WA_ERR_NONE) {
+            mwa_log_webauth_error(rc->r->server, status,
+                                  mwa_func, "webauth_keyring_from_key", NULL);
+            return NULL;
+        }
+    } else if (ring == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: callled with NULL key and ring!",
                      mwa_func);
         return NULL;
     }
-
+    status = webauth_token_decode_cred(rc->ctx, token, ring, &cred);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_parse", NULL);
+                              mwa_func, "webauth_token_decode", NULL);
         return NULL;
     }
-
-    /* make sure its a cred-token */
-    tt = mwa_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwa_func, NULL);
-    if (tt == NULL || strcmp(tt, WA_TT_CRED) != 0) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: token type(%s) not (%s)",
-                     mwa_func, tt ? tt : "(null)", WA_TT_CRED);
-        goto cleanup;
-    }
-
-    /* pull out subject */
-    ct.subject = mwa_get_str_attr(alist, WA_TK_SUBJECT, rc->r, mwa_func, NULL);
-
-    if (ct.subject == NULL) {
-        goto cleanup;
-    }
-
-    /* pull out type */
-    ct.cred_type = mwa_get_str_attr(alist, WA_TK_CRED_TYPE,
-                                    rc->r, mwa_func, NULL);
-    if (ct.cred_type == NULL) {
-        goto cleanup;
-    }
-
-    /* pull out type */
-    ct.cred_server = mwa_get_str_attr(alist, WA_TK_CRED_SERVICE,
-                                      rc->r, mwa_func, NULL);
-    if (ct.cred_server == NULL) {
-        goto cleanup;
-    }
-
-    webauth_attr_list_get_time(alist, WA_TK_CREATION_TIME,
-                               &ct.creation_time, WA_F_NONE);
-
-    webauth_attr_list_get_time(alist, WA_TK_EXPIRATION_TIME,
-                               &ct.expiration_time, WA_F_NONE);
-
-    status = webauth_attr_list_get(alist, WA_TK_CRED_DATA,
-                                   &ct.cred_data,
-                                   &ct.cred_data_len, WA_F_NONE);
-
-    if (status != WA_ERR_NONE) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: "
-                     "can't get cred data from proxy-token",
-                     mwa_func);
-        goto cleanup;
-    }
-
-    nct = (MWA_CRED_TOKEN*)apr_pcalloc(rc->r->pool, sizeof(MWA_CRED_TOKEN));
-
-    /* need to strdup/copy stuff into the request pool */
-    nct->cred_type = apr_pstrdup(rc->r->pool, ct.cred_type);
-    nct->cred_server = apr_pstrdup(rc->r->pool, ct.cred_server);
-    nct->subject = apr_pstrdup(rc->r->pool, ct.subject);
-    nct->creation_time = ct.creation_time;
-    nct->expiration_time = ct.expiration_time;
-    nct->cred_data =
-        apr_pstrmemdup(rc->r->pool, ct.cred_data, ct.cred_data_len);
-    nct->cred_data_len = ct.cred_data_len;
-
- cleanup:
-    webauth_attr_list_free(alist);
-    return nct;
+    return cred;
 }
 
 

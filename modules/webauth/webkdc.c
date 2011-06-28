@@ -2,7 +2,7 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009, 2010
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -10,6 +10,7 @@
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA
@@ -873,44 +874,31 @@ mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
 }
 
 
-static char *
+static const char *
 make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
 {
-    WEBAUTH_ATTR_LIST *alist;
-    char *token, *btoken;
-    size_t tlen, olen;
-    int status;
-    time_t curr = time(NULL);
     const char *mwa_func = "make_request_token";
+    const char *token;
+    int status;
+    struct webauth_token_request req;
+    WEBAUTH_KEYRING *ring;
 
-    alist = webauth_attr_list_new(10);
-    if (alist == NULL) {
+    status = webauth_keyring_from_key(rc->ctx, &st->key, &ring);
+    if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
-                     "mod_webauth: %s: webauth_attr_list_new failed",
+                     "mod_webauth: %s: webauth_keyring_from_key failed",
                      mwa_func);
         return NULL;
     }
-
-    SET_TOKEN_TYPE(WA_TT_REQUEST);
-    SET_CREATION_TIME(curr);
-    SET_COMMAND(cmd);
-
-    tlen = webauth_token_encoded_length(alist);
-    token = apr_palloc(rc->r->pool, tlen);
-
-    status = webauth_token_create_with_key(alist, curr, token, &olen, tlen,
-                                           &st->key);
-    webauth_attr_list_free(alist);
-
+    memset(&req, 0, sizeof(req));
+    req.command = cmd;
+    status = webauth_token_encode_request(rc->ctx, &req, ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_create_with_key", NULL);
+                              "webauth_token_encode_request", NULL);
         return NULL;
     }
-
-    btoken = apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-    apr_base64_encode(btoken, token, olen);
-    return btoken;
+    return token;
 }
 
 
@@ -923,7 +911,7 @@ parse_get_creds_response(apr_xml_doc *xd,
     apr_xml_elem *e, *tokens, *token;
     static const char *mwa_func = "parse_service_token_response";
     char *token_data;
-    MWA_CRED_TOKEN *ct;
+    struct webauth_token_cred *ct;
 
     e = xd->root;
 
@@ -979,15 +967,15 @@ parse_get_creds_response(apr_xml_doc *xd,
         /* take token_data, parse it, expecting a cred-token */
         ct = mwa_parse_cred_token(token_data, NULL, &st->key, rc);
         if (ct != NULL) {
-            MWA_CRED_TOKEN **nct;
+            struct webauth_token_cred **nct;
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                          "mod_webauth: %s: "
                          "parsed %s %s",
-                         mwa_func, ct->cred_type, ct->cred_server);
+                         mwa_func, ct->type, ct->service);
 
             if (*acquired_creds == NULL)
                 *acquired_creds = apr_array_make(rc->r->pool, 2,
-                                                 sizeof(MWA_CRED_TOKEN*));
+                                                 sizeof(struct webauth_token_cred *));
             nct = apr_array_push(*acquired_creds);
             *nct = ct;
         }
@@ -1001,7 +989,7 @@ parse_get_creds_response(apr_xml_doc *xd,
  */
 int
 mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
-                          MWA_PROXY_TOKEN *pt,
+                          struct webauth_token_proxy *pt,
                           MWA_WACRED *creds,
                           size_t num_creds,
                           apr_array_header_t **acquired_creds)
@@ -1014,7 +1002,7 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     apr_status_t astatus;
     MWA_SERVICE_TOKEN *st;
     MWA_STRING cred_tokens;
-    char *request_token;
+    const char *request_token;
 
     /* get service token first */
     st = mwa_get_service_token(rc->r->server, rc->sconf, rc->r->pool, 0);
@@ -1050,8 +1038,8 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
 
     /* base64 encode the webkdc-proxy-token */
     b64_pt = (char*) apr_palloc(rc->r->pool,
-                                apr_base64_encode_len(pt->wpt_len));
-    apr_base64_encode(b64_pt, pt->wpt, pt->wpt_len);
+                                apr_base64_encode_len(pt->webkdc_proxy_len));
+    apr_base64_encode(b64_pt, pt->webkdc_proxy, pt->webkdc_proxy_len);
 
     /* build the actual request */
     xml_request = apr_pstrcat(rc->r->pool,

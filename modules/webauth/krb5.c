@@ -10,6 +10,7 @@
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 
 static void
@@ -58,7 +59,7 @@ get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
 
 
 static const char *
-krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, size_t sad_len)
+krb5_validate_sad(MWA_REQ_CTXT *rc, const void *sad, size_t sad_len)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
@@ -117,7 +118,8 @@ cred_cache_destroy(void *data)
  * prepare any krb5 creds
  */
 static int
-krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
+krb5_prepare_creds(MWA_REQ_CTXT *rc, struct webauth_token_cred **creds,
+                   size_t num_creds)
 {
     const char *mwa_func="krb5_prepare_creds";
     WEBAUTH_KRB5_CTXT *ctxt;
@@ -173,21 +175,21 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
     webauth_krb5_keep_cred_cache(ctxt);
 
     for (i = 0; i < num_creds; i++) {
-        if (strcmp(creds[i]->cred_type, "krb5") == 0) {
+        if (strcmp(creds[i]->type, "krb5") == 0) {
             if (rc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webauth: %s: prepare (%s) for (%s)",
-                             mwa_func, creds[i]->cred_server,
+                             mwa_func, creds[i]->service,
                              creds[i]->subject);
             if (i == 0) {
                 status = webauth_krb5_init_via_cred(ctxt,
-                                                    creds[i]->cred_data,
-                                                    creds[i]->cred_data_len,
+                                                    (void *) creds[i]->data,
+                                                    creds[i]->data_len,
                                                     temp_cred_file);
             } else {
                 status = webauth_krb5_import_cred(ctxt,
-                                                  creds[i]->cred_data,
-                                                  creds[i]->cred_data_len);
+                                                  (void *) creds[i]->data,
+                                                  creds[i]->data_len);
             }
             if (status != WA_ERR_NONE)
                 log_webauth_error(rc->r->server,

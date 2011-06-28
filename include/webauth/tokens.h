@@ -39,6 +39,8 @@
 #include <sys/types.h>
 #include <time.h>
 
+struct webauth_context;
+
 /*
  * The types of tokens specified in the protocol, returned by the generic
  * webauth_token_decode function.  WA_TOKEN_UNKNOWN will be returned by that
