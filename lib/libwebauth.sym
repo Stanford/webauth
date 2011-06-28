@@ -66,6 +66,7 @@ webauth_token_create
 webauth_token_create_with_key
 webauth_token_decode_app
 webauth_token_decode_cred
+webauth_token_decode_error
 webauth_token_decode_id
 webauth_token_decode_proxy
 webauth_token_encode_app

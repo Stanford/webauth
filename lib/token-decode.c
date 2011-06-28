@@ -373,6 +373,58 @@ fail:
 
 
 /*
+ * Decode an error token from the encrypted base64 wire format and store a
+ * newly allocated webauth_token_error struct in token with the contents.
+ * Returns a WebAuth status code.  On failure, sets token to NULL.
+ */
+int
+webauth_token_decode_error(struct webauth_context *ctx, const char *encoded,
+                           const WEBAUTH_KEYRING *keyring,
+                           struct webauth_token_error **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    struct webauth_token_error *token;
+    const char *code;
+    char *end;
+    int status;
+
+    *decoded = NULL;
+    status = parse_token(ctx, WA_TT_ERROR, encoded, keyring, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* We have a valid error token.  Pull out the attributes. */
+    token = apr_palloc(ctx->pool, sizeof(struct webauth_token_error));
+    DECODE_STR( WA_TK_ERROR_MESSAGE, message,  true);
+    DECODE_TIME(WA_TK_CREATION_TIME, creation, true);
+
+    /*
+     * The error code is a string in the protocol.  Convert it to a number
+     * for the convenience of library callers.
+     */
+    status = decode_string(ctx, alist, WA_TK_ERROR_CODE, &code, true);
+    if (status != WA_ERR_NONE)
+        goto fail;
+    errno = 0;
+    token->code = strtoul(code, &end, 10);
+    if (*end != '\0' || (token->code == ULONG_MAX && errno != 0)) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "error code %s is not a number", code);
+        goto fail;
+    }
+
+    webauth_attr_list_free(alist);
+    *decoded = token;
+    return WA_ERR_NONE;
+
+fail:
+    if (alist != NULL)
+        webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
  * Decode a proxy token from the encrypted base64 wire format and store a
  * newly allocated webauth_token_proxy struct in token with the contents.
  * Returns a WebAuth status code.  On failure, sets token to NULL.

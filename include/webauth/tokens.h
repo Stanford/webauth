@@ -73,6 +73,21 @@ struct webauth_token_cred {
 };
 
 /*
+ * Error token, returned by the WebKDC in response to a request token if some
+ * error occurred in processing that request.
+ *
+ * Note that the error code is a string, not a number, in the WebAuth protocol
+ * on the wire.  This cannot be changed in the protocol due to backward
+ * compatibility constraints, but the code is presented as a number to users
+ * of the library for convenience.
+ */
+struct webauth_token_error {
+    unsigned long code;
+    const char *message;
+    time_t creation;
+};
+
+/*
  * Id token, which identifies a user to a WebAuth Authentication Server.  This
  * token is sent from the WebKDC to the WAS following a user authentication to
  * communicate the authentication information.
@@ -119,6 +134,10 @@ int webauth_token_decode_app(struct webauth_context *,
 int webauth_token_decode_cred(struct webauth_context *,
                               const char *, const WEBAUTH_KEYRING *,
                               struct webauth_token_cred **)
+    __attribute__((__nonnull__));
+int webauth_token_decode_error(struct webauth_context *,
+                               const char *, const WEBAUTH_KEYRING *,
+                               struct webauth_token_error **)
     __attribute__((__nonnull__));
 int webauth_token_decode_id(struct webauth_context *,
                             const char *, const WEBAUTH_KEYRING *,

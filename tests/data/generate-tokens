@@ -18,7 +18,7 @@
 #
 # See LICENSE for licensing terms.
 
-use WebAuth ();
+use WebAuth qw(WA_PEC_LOGIN_CANCELED);
 use WebKDC::Token ();
 
 # Path to the keyring used to generate the tokens.  We assume this script is
@@ -72,6 +72,16 @@ our %TOKENS =
                           cred_data       => "some\0cred;da;;ta",
                           creation_time   => 1308777900,
                           expiration_time => 1308871632 }
+                      ],
+     'error-code'  => [ 'WebKDC::ErrorToken',
+                        { error_code      => 'foo',
+                          error_message   => 'user canceled login',
+                          creation_time   => 1308777900 }
+                      ],
+     'error-ok'    => [ 'WebKDC::ErrorToken',
+                        { error_code      => WA_PEC_LOGIN_CANCELED,
+                          error_message   => 'user canceled login',
+                          creation_time   => 1308777900 }
                       ],
      'id-expired'  => [ 'WebKDC::IdToken',
                         { subject         => 'testuser',

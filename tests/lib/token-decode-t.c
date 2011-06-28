@@ -54,10 +54,11 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app *app;
     struct webauth_token_cred *cred;
+    struct webauth_token_error *err;
     struct webauth_token_id *id;
     struct webauth_token_proxy *proxy;
 
-    plan(91);
+    plan(101);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -179,6 +180,41 @@ main(void)
     status = webauth_token_decode_cred(ctx, token, ring, &cred);
     is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as cred token");
     is_string("wrong token type app while decoding cred token: data is"
+              " incorrectly formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    free(token);
+
+    /* Test decoding of an error token. */
+    token = read_token("data/tokens/error-ok");
+    status = webauth_token_decode_error(ctx, token, ring, &err);
+    is_int(WA_ERR_NONE, status, "Decode error-ok");
+    if (err == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(2, 0, "Decoding failed");
+    } else {
+        is_int(16, err->code, "...code");
+        is_string("user canceled login", err->message, "...message");
+        is_int(1308777900, err->creation, "...creation");
+    }
+    free(token);
+
+    /* Test decoding error cases for error tokens. */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode_error(ctx, token, ring, &err);
+    is_int(WA_ERR_BAD_HMAC, status, "Fail to decode app-bad-hmac");
+    is_string("bad error token: HMAC check failed",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/error-code");
+    status = webauth_token_decode_error(ctx, token, ring, &err);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode error-code");
+    is_string("error code foo is not a number: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    free(token);
+    token = read_token("data/tokens/app-ok");
+    status = webauth_token_decode_error(ctx, token, ring, &err);
+    is_int(WA_ERR_CORRUPT, status, "Fail to decode app-ok as error token");
+    is_string("wrong token type app while decoding error token: data is"
               " incorrectly formatted", webauth_error_message(ctx, status),
               "...with correct error");
     free(token);
