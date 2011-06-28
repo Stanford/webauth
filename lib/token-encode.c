@@ -241,3 +241,55 @@ corrupt:
     webauth_attr_list_free(alist);
     return WA_ERR_CORRUPT;
 }
+
+
+/*
+ * Encode a proxy token.  Takes the struct representing the token contents and
+ * the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_proxy(struct webauth_context *ctx,
+                           const struct webauth_token_proxy *proxy,
+                           const WEBAUTH_KEYRING *keyring,
+                           const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_STR( proxy, subject);
+    CHECK_STR( proxy, type);
+    CHECK_DATA(proxy, webkdc_proxy);
+    CHECK_NUM( proxy, expiration);
+    if (strcmp(proxy->type, "krb5") != 0) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "unknown type %s for proxy token", proxy->type);
+        goto corrupt;
+    }
+
+    /* Encode the token attributes into the attribute list. */
+    creation = (proxy->creation > 0) ? proxy->creation : time(NULL);
+    ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_PROXY);
+    ADD_STR( WA_TK_SUBJECT,         proxy->subject);
+    ADD_STR( WA_TK_PROXY_TYPE,      proxy->type);
+    ADD_DATA(WA_TK_WEBKDC_TOKEN,    proxy->webkdc_proxy,
+             proxy->webkdc_proxy_len);
+    ADD_TIME(WA_TK_CREATION_TIME,   creation);
+    ADD_TIME(WA_TK_EXPIRATION_TIME, proxy->expiration);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}

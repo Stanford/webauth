@@ -115,6 +115,52 @@ check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
 }
 
 
+/*
+ * Check a proxy token by encoding the struct and then decoding it, ensuring
+ * that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_proxy_token(struct webauth_context *ctx,
+                  struct webauth_token_proxy *proxy,
+                 WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_proxy *proxy2;
+    const char *token = NULL;
+
+    status = webauth_token_encode_proxy(ctx, proxy, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding proxy %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(8, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_proxy(ctx, token, ring, &proxy2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (proxy2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(6, 0, "...decoding failed");
+        return;
+    }
+    ok(proxy2 != NULL, "...and sets the struct pointer");
+    is_string(proxy->subject, proxy2->subject, "...subject is right");
+    is_string(proxy->type, proxy2->type, "...type is right");
+    ok(memcmp(proxy->webkdc_proxy, proxy2->webkdc_proxy,
+              proxy->webkdc_proxy_len) == 0, "...webkdc_proxy is right");
+    is_int(proxy->webkdc_proxy_len, proxy2->webkdc_proxy_len,
+           "...webkdc_proxy length is right");
+    if (proxy->creation > 0)
+        is_int(proxy->creation, proxy2->creation, "...creation is right");
+    else
+        ok((proxy2->creation > time(NULL) - 1)
+           && (proxy2->creation < time(NULL) + 1), "...creation is right");
+    is_int(proxy->expiration, proxy2->expiration, "...expiration is right");
+}
+
+
 int
 main(void)
 {
@@ -126,8 +172,9 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app app;
     struct webauth_token_cred cred;
+    struct webauth_token_proxy proxy;
 
-    plan(71);
+    plan(109);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -244,6 +291,73 @@ main(void)
     status = webauth_token_encode_cred(ctx, &cred, ring, &token);
     is_int(WA_ERR_CORRUPT, status, "Encoding cred without expiration fails");
     is_string("missing expiration for cred token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+
+    /* Flesh out a proxy token, and then encode and decode it. */
+    proxy.subject = "testuser";
+    proxy.type = "krb5";
+    proxy.webkdc_proxy = "s=ome\0da;;ta";
+    proxy.webkdc_proxy_len = 12;
+    proxy.creation = now;
+    proxy.expiration = now + 60;
+    check_proxy_token(ctx, &proxy, ring, "full");
+
+    /* Test with a minimal set of attributes. */
+    proxy.creation = 0;
+    check_proxy_token(ctx, &proxy, ring, "minimal");
+
+    /* Test for error cases for missing data. */
+    token = "foo";
+    proxy.subject = NULL;
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding proxy without subject fails");
+    is_string("missing subject for proxy token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    proxy.subject = "testuser";
+    proxy.type = NULL;
+    token = "foo";
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding proxy without type fails");
+    is_string("missing type for proxy token: data is incorrectly formatted",
+              webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    proxy.type = "random";
+    token = "foo";
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding proxy with bad type fails");
+    is_string("unknown type random for proxy token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    proxy.type = "krb5";
+    proxy.webkdc_proxy = NULL;
+    token = "foo";
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding proxy without webkdc_proxy fails");
+    is_string("missing webkdc_proxy for proxy token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    proxy.webkdc_proxy = "s=ome\0da;;ta";
+    proxy.webkdc_proxy_len = 0;
+    token = "foo";
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status,
+           "Encoding proxy without webkdc_proxy length fails");
+    is_string("empty webkdc_proxy for proxy token: data is incorrectly"
+              " formatted", webauth_error_message(ctx, status),
+              "...with correct error");
+    is_string(NULL, token, "...and token is NULL");
+    proxy.webkdc_proxy_len = 12;
+    proxy.expiration = 0;
+    token = "foo";
+    status = webauth_token_encode_proxy(ctx, &proxy, ring, &token);
+    is_int(WA_ERR_CORRUPT, status, "Encoding proxy without expiration fails");
+    is_string("missing expiration for proxy token: data is incorrectly"
               " formatted", webauth_error_message(ctx, status),
               "...with correct error");
     is_string(NULL, token, "...and token is NULL");
