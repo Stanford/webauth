@@ -40,6 +40,24 @@
 #include <time.h>
 
 /*
+ * The types of tokens specified in the protocol, returned by the generic
+ * webauth_token_decode function.  WA_TOKEN_UNKNOWN will be returned by that
+ * function in the event of an error.
+ */
+enum webauth_token_type {
+    WA_TOKEN_UNKNOWN,
+    WA_TOKEN_APP,
+    WA_TOKEN_CRED,
+    WA_TOKEN_ERROR,
+    WA_TOKEN_ID,
+    WA_TOKEN_LOGIN,
+    WA_TOKEN_PROXY,
+    WA_TOKEN_REQUEST,
+    WA_TOKEN_WEBKDC_PROXY,
+    WA_TOKEN_WEBKDC_SERVICE
+};
+
+/*
  * Application token, used by a WebAuth Application Server to hold
  * authentication information for its own use.  (Note that applications are
  * not required to use this token format; nothing else in the WebAuth protocol
@@ -174,6 +192,29 @@ int webauth_token_decode_proxy(struct webauth_context *,
 int webauth_token_decode_request(struct webauth_context *,
                                  const char *, const WEBAUTH_KEYRING *,
                                  struct webauth_token_request **)
+    __attribute__((__nonnull__));
+
+/*
+ * Decode an arbitrary token, where the token type is not known in advance.
+ * Takes the context, the token, and the keyring to decrypt it.
+ *
+ * On success, the type of the token is stored in the type argument and a
+ * pointer to the corresponding struct is stored in the token argument.  The
+ * token is stored in newly-allocated pool memory.  The client is responsible
+ * for casting the token pointer to the appropriate type after discovering the
+ * type of the token.
+ *
+ * On error, type is set to WA_TOKEN_UNKNOWN and token is set to NULL, and an
+ * error code is returned.
+ *
+ * This function does not provide as strong of type checking, so should only
+ * be used when the caller truly doesn't know what type of token to expect.
+ * The caller is responsible for handling and rejecting tokens of entirely
+ * inappropriate types.
+ */
+int webauth_token_decode(struct webauth_context *, const char *,
+                         const WEBAUTH_KEYRING *, enum webauth_token_type *,
+                         void **token)
     __attribute__((__nonnull__));
 
 /*

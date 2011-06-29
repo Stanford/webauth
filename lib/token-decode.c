@@ -57,6 +57,29 @@
             goto fail;                                                  \
     } while (0)
 
+/* Abbreviates some long chains of string comparisons. */
+#define EQn(a, b, n) (strlen(b) == (n) && strncmp((a), (b), (n)) == 0)
+
+
+/*
+ * Map a token type string to one of the enum token_type constants.  Returns
+ * WA_TOKEN_UNKNOWN on error.
+ */
+static enum webauth_token_type
+token_type_code(const char *t, size_t l)
+{
+    if      (EQn(t, WA_TT_APP,            l)) return WA_TOKEN_APP;
+    else if (EQn(t, WA_TT_CRED,           l)) return WA_TOKEN_CRED;
+    else if (EQn(t, WA_TT_ERROR,          l)) return WA_TOKEN_ERROR;
+    else if (EQn(t, WA_TT_ID,             l)) return WA_TOKEN_ID;
+    else if (EQn(t, WA_TT_LOGIN,          l)) return WA_TOKEN_LOGIN;
+    else if (EQn(t, WA_TT_PROXY,          l)) return WA_TOKEN_PROXY;
+    else if (EQn(t, WA_TT_REQUEST,        l)) return WA_TOKEN_REQUEST;
+    else if (EQn(t, WA_TT_WEBKDC_PROXY,   l)) return WA_TOKEN_WEBKDC_PROXY;
+    else if (EQn(t, WA_TT_WEBKDC_SERVICE, l)) return WA_TOKEN_WEBKDC_SERVICE;
+    else return WA_TOKEN_UNKNOWN;
+}
+
 
 /*
  * Parse a base64-encoded token into an attribute list and check whether it's
@@ -85,8 +108,8 @@ parse_token(struct webauth_context *ctx, const char *type, const char *token,
     else if (length != strlen(type) || strncmp(value, type, length) != 0) {
         webauth_attr_list_free(*alist);
         *alist = NULL;
-        webauth_error_set(ctx, WA_ERR_CORRUPT, "wrong token type %s while"
-                          " decoding %s token", value, type);
+        webauth_error_set(ctx, WA_ERR_CORRUPT, "wrong token type %.*s while"
+                          " decoding %s token", length, value, type);
         return WA_ERR_CORRUPT;
     }
     return WA_ERR_NONE;
@@ -97,6 +120,52 @@ fail:
         *alist = NULL;
     }
     webauth_error_set(ctx, status, "bad %s token", type);
+    return status;
+}
+
+
+/*
+ * Similar to parse_token, but allows the token type to be anything.  On a
+ * successful decode of the token to an attribute list, stores the token type
+ * in the type argument.  Requires the token be of a known type or returns an
+ * error.
+ */
+static int
+parse_token_any(struct webauth_context *ctx, const char *token,
+                const WEBAUTH_KEYRING *keyring, enum webauth_token_type *type,
+                WEBAUTH_ATTR_LIST **alist)
+{
+    char *input, *value;
+    size_t length;
+    int status;
+
+    *type = WA_TOKEN_UNKNOWN;
+    *alist = NULL;
+    input = apr_pstrdup(ctx->pool, token);
+    length = apr_base64_decode(input, input);
+    status = webauth_token_parse(input, length, 0, keyring, alist);
+    if (status != WA_ERR_NONE)
+        goto fail;
+    status = webauth_attr_list_get_str(*alist, WA_TK_TOKEN_TYPE, &value,
+                                       &length, WA_F_NONE);
+    if (status != WA_ERR_NONE)
+        goto fail;
+    *type = token_type_code(value, length);
+    if (*type == WA_TOKEN_UNKNOWN) {
+        webauth_attr_list_free(*alist);
+        *alist = NULL;
+        webauth_error_set(ctx, WA_ERR_CORRUPT, "unknown token type %.*s",
+                          length, value);
+        return WA_ERR_CORRUPT;
+    }
+    return WA_ERR_NONE;
+
+fail:
+    if (*alist != NULL) {
+        webauth_attr_list_free(*alist);
+        *alist = NULL;
+    }
+    webauth_error_set(ctx, status, "bad token during generic decoding");
     return status;
 }
 
@@ -669,5 +738,69 @@ webauth_token_decode_request(struct webauth_context *ctx, const char *encoded,
         return status;
     status = decode_request_alist(ctx, alist, decoded);
     webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Decode an arbitrary token, where the token type is not known in advance.
+ * Takes the context, the token, and the keyring to decrypt it, and stores the
+ * token type and newly-allocated struct in the remaining arguments.  On
+ * error, type is set to WA_TOKEN_UNKNOWN and decoded is set to NULL, and an
+ * error code is returned.
+ */
+int
+webauth_token_decode(struct webauth_context *ctx, const char *encoded,
+                     const WEBAUTH_KEYRING *keyring,
+                     enum webauth_token_type *type, void **decoded)
+{
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    int status;
+    struct webauth_token_app *app;
+    struct webauth_token_cred *cred;
+    struct webauth_token_error *err;
+    struct webauth_token_id *id;
+    struct webauth_token_proxy *proxy;
+    struct webauth_token_request *req;
+
+    *decoded = NULL;
+    status = parse_token_any(ctx, encoded, keyring, type, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+    switch (*type) {
+    case WA_TOKEN_APP:
+        status = webauth_token_decode_app(ctx, encoded, keyring, &app);
+        *decoded = app;
+        break;
+    case WA_TOKEN_CRED:
+        status = webauth_token_decode_cred(ctx, encoded, keyring, &cred);
+        *decoded = cred;
+        break;
+    case WA_TOKEN_ERROR:
+        status = webauth_token_decode_error(ctx, encoded, keyring, &err);
+        *decoded = err;
+        break;
+    case WA_TOKEN_ID:
+        status = webauth_token_decode_id(ctx, encoded, keyring, &id);
+        *decoded = id;
+        break;
+    case WA_TOKEN_PROXY:
+        status = webauth_token_decode_proxy(ctx, encoded, keyring, &proxy);
+        *decoded = proxy;
+        break;
+    case WA_TOKEN_REQUEST:
+        status = webauth_token_decode_request(ctx, encoded, keyring, &req);
+        *decoded = req;
+        break;
+    case WA_TOKEN_UNKNOWN:
+    case WA_TOKEN_LOGIN:
+    case WA_TOKEN_WEBKDC_PROXY:
+    case WA_TOKEN_WEBKDC_SERVICE:
+    default:
+        status = WA_ERR_UNIMPLEMENTED;
+        webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED,
+                          "unsupported token type %d while decoding", *type);
+        break;
+    }
     return status;
 }

@@ -96,8 +96,10 @@ main(void)
     struct webauth_token_id *id;
     struct webauth_token_proxy *proxy;
     struct webauth_token_request *req;
+    enum webauth_token_type type;
+    void *generic;
 
-    plan(170);
+    plan(197);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -420,6 +422,104 @@ main(void)
                         "bad req token");
     check_request_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
                         "wrong token type app while decoding req token");
+
+    /*
+     * Now test for the generic decoding function.  We'll run each of the
+     * token types we support through it and make sure that it works
+     * properly.  We won't bother checking every data element of the tokens,
+     * just something relatively unique to that token.
+     */
+    token = read_token("data/tokens/app-ok");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode app-ok");
+    is_int(WA_TOKEN_APP, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        app = generic;
+        ok(app != NULL, "...token struct");
+        is_int(1308777930, app->last_used, "...last used");
+    }
+    free(token);
+    token = read_token("data/tokens/cred-ok");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode cred-ok");
+    is_int(WA_TOKEN_CRED, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        cred = generic;
+        ok(cred != NULL, "...token struct");
+        is_string("webauth/example.com@EXAMPLE.COM", cred->service,
+                  "...service");
+    }
+    free(token);
+    token = read_token("data/tokens/error-ok");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode error-ok");
+    is_int(WA_TOKEN_ERROR, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        err = generic;
+        ok(err != NULL, "...token struct");
+        is_string("user canceled login", err->message, "...message");
+    }
+    free(token);
+    token = read_token("data/tokens/id-webkdc");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode id-webkdc");
+    is_int(WA_TOKEN_ID, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        id = generic;
+        ok(id != NULL, "...token struct");
+        is_string("webkdc", id->auth, "...subject auth");
+    }
+    free(token);
+    token = read_token("data/tokens/proxy-ok");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode proxy-ok");
+    is_int(WA_TOKEN_PROXY, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        proxy = generic;
+        ok(proxy != NULL, "...token struct");
+        ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
+           "...WebKDC proxy token");
+    }
+    free(token);
+    token = read_token("data/tokens/req-id");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_NONE, status, "Generic decode req-id");
+    is_int(WA_TOKEN_REQUEST, type, "...token type");
+    if (generic == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok(0, "Decoding failed");
+    } else {
+        req = generic;
+        ok(id != NULL, "...token struct");
+        is_string("https://example.com/", req->return_url, "...return URL");
+    }
+    free(token);
+
+    /*
+     * And test basic error handling with generic decoding.  We won't bother
+     * to test the error message; that was previously tested.
+     */
+    token = read_token("data/tokens/app-bad-hmac");
+    status = webauth_token_decode(ctx, token, ring, &type, &generic);
+    is_int(WA_ERR_BAD_HMAC, status, "Failed generic decode of app-bad-hmac");
+    is_int(WA_TOKEN_UNKNOWN, type, "...token type");
+    ok(generic == NULL, "...token struct");
+    free(token);
 
     /* Clean up. */
     webauth_keyring_free(ring);
