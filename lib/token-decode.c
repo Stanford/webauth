@@ -372,13 +372,24 @@ decode_app_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
 {
     struct webauth_token_app *token;
     int status;
+    bool need_subject = true;
 
+    /*
+     * There are two major different uses of app tokens: one to hold
+     * authentication information for a user, and the other to hold a session
+     * key that needs to be returned to the WAS because it may be another pool
+     * member without access to the original key.  Subject is required for the
+     * former and not for the latter.
+     */
     *decoded = NULL;
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_app));
-    DECODE_STR( WA_TK_SUBJECT,         subject,         true);
+    DECODE_DATA(WA_TK_SESSION_KEY,     session_key,     false);
+    if (token->session_key != NULL)
+        need_subject = false;
+    DECODE_STR( WA_TK_SUBJECT,         subject,         need_subject);
+    DECODE_TIME(WA_TK_LASTUSED_TIME,   last_used,       false);
     DECODE_STR( WA_TK_INITIAL_FACTORS, initial_factors, false);
     DECODE_STR( WA_TK_SESSION_FACTORS, session_factors, false);
-    DECODE_TIME(WA_TK_LASTUSED_TIME,   last_used,       false);
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,        false);
     DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,      true);
     DECODE_UINT(WA_TK_LOA,             loa,             false);

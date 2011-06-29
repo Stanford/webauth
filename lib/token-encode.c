@@ -91,6 +91,18 @@
         }                                                               \
     } while (0)
 
+/* Check that a value that should be numerically zero is. */
+#define CHECK_ZERO(token, attr, reason)                                 \
+    do {                                                                \
+        if (token->attr != 0) {                                         \
+            webauth_error_set(ctx, WA_ERR_CORRUPT,                      \
+                              "%s not valid with %s in %s token",       \
+                              APR_STRINGIFY(attr), reason,              \
+                              APR_STRINGIFY(token));                    \
+            goto corrupt;                                               \
+        }                                                               \
+    } while (0)
+
 
 /*
  * Prepare for token encoding.  This function handles the common setup for all
@@ -173,23 +185,34 @@ webauth_token_encode_app(struct webauth_context *ctx,
         return status;
 
     /* Sanity-check the token attributes. */
-    CHECK_STR(app, subject);
     CHECK_NUM(app, expiration);
+    if (app->session_key == NULL)
+        CHECK_STR(app, subject);
+    else {
+        CHECK_NULL(app, subject,         "session key");
+        CHECK_ZERO(app, last_used,       "session key");
+        CHECK_NULL(app, initial_factors, "session key");
+        CHECK_NULL(app, session_factors, "session key");
+        CHECK_ZERO(app, loa,             "session key");
+    }
 
     /* Encode the token attributes into the attribute list. */
     creation = (app->creation > 0) ? app->creation : time(NULL);
     ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_APP);
-    ADD_STR( WA_TK_SUBJECT,         app->subject);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, app->expiration);
+    if (app->subject != NULL)
+        ADD_STR(WA_TK_SUBJECT, app->subject);
+    if (app->session_key != NULL)
+        ADD_DATA(WA_TK_SESSION_KEY, app->session_key, app->session_key_len);
     if (app->last_used > 0)
-        ADD_TIME(WA_TK_LASTUSED_TIME,   app->last_used);
+        ADD_TIME(WA_TK_LASTUSED_TIME, app->last_used);
     if (app->initial_factors != NULL)
         ADD_STR( WA_TK_INITIAL_FACTORS, app->initial_factors);
     if (app->session_factors != NULL)
         ADD_STR( WA_TK_SESSION_FACTORS, app->session_factors);
     if (app->loa > 0)
-        ADD_UINT(WA_TK_LOA,             app->loa);
+        ADD_UINT(WA_TK_LOA, app->loa);
 
     /* Finish encoding the token. */
     status = finish_encode(ctx, keyring, alist, token);

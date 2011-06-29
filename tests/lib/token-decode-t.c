@@ -99,7 +99,7 @@ main(void)
     enum webauth_token_type type;
     void *generic;
 
-    plan(200);
+    plan(214);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -122,9 +122,11 @@ main(void)
     is_int(WA_ERR_NONE, status, "Decode app-ok");
     if (app == NULL) {
         is_string("", webauth_error_message(ctx, status), "Decoding failed");
-        ok_block(6, 0, "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
     } else {
         is_string("testuser", app->subject, "...subject");
+        ok(app->session_key == NULL, "...session key");
+        is_int(0, app->session_key_len, "...session key length");
         is_int(1308777930, app->last_used, "...last used");
         is_string("p", app->initial_factors, "...initial factors");
         is_string("c", app->session_factors, "...session factors");
@@ -140,9 +142,32 @@ main(void)
     is_int(WA_ERR_NONE, status, "Decode app-minimal");
     if (app == NULL) {
         is_string("", webauth_error_message(ctx, status), "Decoding failed");
-        ok_block(6, 0, "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
     } else {
         is_string("testuser", app->subject, "...subject");
+        ok(app->session_key == NULL, "...session key");
+        is_int(0, app->session_key_len, "...session key length");
+        is_int(0, app->last_used, "...last used");
+        is_string(NULL, app->initial_factors, "...initial factors");
+        is_string(NULL, app->session_factors, "...session factors");
+        is_int(0, app->loa, "...level of assurance");
+        is_int(0, app->creation, "...creation");
+        is_int(2147483600, app->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding an app token holding only a session key. */
+    token = read_token("data/tokens/app-session");
+    status = webauth_token_decode_app(ctx, token, ring, &app);
+    is_int(WA_ERR_NONE, status, "Decode app-session");
+    if (app == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string(NULL, app->subject, "...subject");
+        ok(memcmp("\0\0;s=test;\0", app->session_key, 11) == 0,
+           "...session key");
+        is_int(11, app->session_key_len, "...session key length");
         is_int(0, app->last_used, "...last used");
         is_string(NULL, app->initial_factors, "...initial factors");
         is_string(NULL, app->session_factors, "...session factors");

@@ -67,6 +67,8 @@ enum webauth_token_type {
 struct webauth_token_app {
     const char *subject;
     time_t last_used;
+    const void *session_key;
+    size_t session_key_len;
     const char *initial_factors;
     const char *session_factors;
     unsigned long loa;

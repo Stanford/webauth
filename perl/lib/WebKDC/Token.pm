@@ -1218,6 +1218,7 @@ The WebKDC::AppToken object is used to represent WebAuth app-tokens.
   $token->expiration_time([$new_value])
   $token->lastused_time([$lastused_time])
   $token->subject([$new_value])
+  $token->session_key([$new_value])
   $token->initial_factors([$new_value, ...])
   $token->session_factors([$new_value, ...])
   $token->loa([$new_value])

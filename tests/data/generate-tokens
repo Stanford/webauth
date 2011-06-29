@@ -41,6 +41,10 @@ our %TOKENS =
                         { subject         => 'testuser',
                           expiration_time => 2147483600 }
                       ],
+     'app-session' => [ 'WebKDC::AppToken',
+                        { session_key     => "\0\0;s=test;\0",
+                          expiration_time => 2147483600 }
+                      ],
      'app-ok'      => [ 'WebKDC::AppToken',
                         { subject         => 'testuser',
                           lastused_time   => 1308777930,

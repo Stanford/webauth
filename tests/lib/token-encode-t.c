@@ -55,6 +55,10 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
     }
     ok(app2 != NULL, "...and sets the struct pointer");
     is_string(app->subject, app2->subject, "...subject");
+    ok(memcmp(app->session_key, app2->session_key, app->session_key_len) == 0,
+       "...session key");
+    is_int(app->session_key_len, app2->session_key_len,
+           "...session key length");
     is_int(app->last_used, app2->last_used, "...last used");
     is_string(app->initial_factors, app2->initial_factors,
               "...initial factors");
@@ -264,7 +268,7 @@ main(void)
     struct webauth_token_proxy proxy;
     struct webauth_token_request req;
 
-    plan(219);
+    plan(242);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -280,6 +284,8 @@ main(void)
     /* Now, flesh out a application token, and then encode and decode it. */
     now = time(NULL);
     app.subject = "testuser";
+    app.session_key = NULL;
+    app.session_key_len = 0;
     app.last_used = now;
     app.initial_factors = "p,o3,o,m";
     app.session_factors = "c";
@@ -296,14 +302,30 @@ main(void)
     app.creation = 0;
     check_app_token(ctx, &app, ring, "stripped");
 
-    /* Test for error cases for missing data. */
+    /* Test one containing only a session key. */
     app.subject = NULL;
+    app.session_key = "\0\0;s=test;\0";
+    app.session_key_len = 11;
+    check_app_token(ctx, &app, ring, "session");
+
+    /* Test for error cases for missing or invalid data. */
+    app.session_key = NULL;
+    app.session_key_len = 0;
     check_app_error(ctx, &app, ring, "without subject",
                     "missing subject for app token");
     app.subject = "testuser";
     app.expiration = 0;
     check_app_error(ctx, &app, ring, "without expiration",
                     "missing expiration for app token");
+    app.session_key = "\0\0;s=test;\0";
+    app.session_key_len = 11;
+    app.expiration = now + 60;
+    check_app_error(ctx, &app, ring, "with subject and session key",
+                    "subject not valid with session key in app token");
+    app.subject = NULL;
+    app.last_used = now;
+    check_app_error(ctx, &app, ring, "with session key and last used",
+                    "last_used not valid with session key in app token");
 
     /* Flesh out a credential token, and then encode and decode it. */
     cred.subject = "testuser";
