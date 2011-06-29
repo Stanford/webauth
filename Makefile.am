@@ -48,7 +48,7 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
-AM_CPPFLAGS = -I$(srcdir)/include
+AM_CPPFLAGS = -I$(srcdir)/include -I$(builddir)/include
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
