@@ -1738,7 +1738,10 @@
             <vspace blankLines='0'/>The one-time password method numbered
             # was used.  The meaning of the numbers is site-defined, but
             the numbers should be integers starting with 1 and higher
-            numbers should indicate a stronger OTP method.</t>
+            numbers should indicate a stronger OTP method.  For example,
+            o1 could indicate a printed list of OTP codes, o2 could
+            indicate a code sent via SMS message, and o3 could indicate a
+            hardware device that is synchronized with the OTP server.</t>
 
             <t hangText='p (password)'>
             <vspace blankLines='0'/>Traditional password
@@ -1760,8 +1763,20 @@
             server and no information about that method is available.</t>
 
             <t hangText='x (X.509)'>
-            <vspace blankLines='0'/>X.509 authentication was used.
-            Whether this is via a smart card is site-defined.</t>
+            <vspace blankLines='0'/>Some form of X.509 authentication was
+            used.  Whether this is via a smart card is site-defined.  This
+            factor code is often used in combination with one of the x#
+            codes defined below.</t>
+
+            <t hangText='x# (X.509)'>
+            <vspace blankLines='0'/>The X.509 authentication method
+            numbered # was used.  The meaning of the numbers is
+            site-defined, but the numbers should be integers starting with
+            1 and higher numbers should indicate a stronger X.509 method.
+            For example, x1 could indicate an X.509 certificate that may
+            be stored on the file system of a user's system or on a
+            removable drive, and x2 could indicate a hardware smart
+            card.</t>
           </list>
         </t>
 

@@ -144,6 +144,7 @@ typedef enum {
 #define WA_FA_RANDOM_MULTIFACTOR   "rm"
 #define WA_FA_UNKNOWN              "u"
 #define WA_FA_X509                 "x"
+#define WA_FA_X509_TYPE            "x%d"
 
 
 /*
