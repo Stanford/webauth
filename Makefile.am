@@ -20,30 +20,34 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
-	perl/t/misc.t perl/t/page-pwchange.t perl/t/pending-expire.t	    \
-	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/typemap
+	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
+	perl/t/pending-expire.t perl/t/webauth.t perl/t/webkdc.t	    \
+	perl/t/weblogin.t perl/typemap
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
-	conf/debian/webauth.conf conf/debian/webauth.load		   \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
-	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	   \
-	docs/install-spnego docs/install-stanford docs/install-webkdc	   \
-	docs/mod_webauth.html.en docs/mod_webauth.xml			   \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
-	include/mkheader include/webauth/defines.h.in lib/libwebauth.map   \
-	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST  \
-	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
-	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
-	tools/wa_keyring.pod tools/weblogin-passcheck			   \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
-	weblogin/images/help.xcf weblogin/images/login.xcf		   \
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
+	conf/debian/webauth.conf conf/debian/webauth.load		    \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
+	docs/diagrams/weblogin-flow.dia docs/diagrams/weblogin-flow.png	    \
+	docs/diagrams/weblogin-flow.svg docs/install-spnego		    \
+	docs/install-stanford docs/install-webkdc docs/mod_webauth.html.en  \
+	docs/mod_webauth.xml docs/mod_webauthldap.html.en		    \
+	docs/mod_webauthldap.xml docs/mod_webkdc.html.en		    \
+	docs/mod_webkdc.xml docs/protocol.html docs/protocol.txt	    \
+	docs/protocol.xml docs/test-plan docs/userauth docs/weblogin-config \
+	docs/weblogin-cookies docs/weblogin-flow include/mkheader	    \
+	include/webauth/defines.h.in lib/internal.h lib/libwebauth.map	    \
+	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST   \
+	perl/MANIFEST.SKIP tests/TESTS tests/data/README		    \
+	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
+	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
 	weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
