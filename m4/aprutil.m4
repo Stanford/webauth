@@ -81,20 +81,15 @@ AC_DEFUN([RRA_LIB_APRUTIL],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_aprutil_libdir="$withval"])])
 
- AS_IF([test x"$rra_reduced_depends" = xtrue],
+ AC_ARG_VAR([APU_CONFIG], [Path to apu-1-config or apu-config])
+ AC_PATH_PROGS([APU_CONFIG], [apu-1-config apu-config], [false])
+ AS_IF([test x"$APU_CONFIG" != xfalse],
+    [APRUTIL_CPPFLAGS="$APRUTIL_CPPFLAGS "`"$APU_CONFIG" --includes`
+     AS_IF([test x"$rra_reduced_depends" = xtrue],
+        [APRUTIL_LIBS=`"$APU_CONFIG" --link-ld --avoid-ldap --avoid-dbm`],
+        [APRUTIL_LIBS=`"$APU_CONFIG" --link-ld --libs`])],
     [_RRA_LIB_APRUTIL_PATHS
      RRA_LIB_APRUTIL_SWITCH
-     AC_CHECK_LIB([aprutil-1], [apr_base64_decode],
-        [APRUTIL_LIBS="-laprutil-1"],
-        [AC_MSG_ERROR([cannot find usable APR-Util library])])
-     RRA_LIB_APRUTIL_RESTORE],
-    [AC_ARG_VAR([APU_CONFIG], [Path to apu-1-config or apu-config])
-     AC_PATH_PROGS([APU_CONFIG], [apu-1-config apu-config], [false])
-     AS_IF([test x"$APU_CONFIG" != xfalse],
-        [APRUTIL_CPPFLAGS="$APRUTIL_CPPFLAGS "`"$APU_CONFIG" --includes`
-         APRUTIL_LIBS=`"$APU_CONFIG" --avoid-ldap --avoid-dbm --link-ld`],
-        [RRA_LIB_APRUTIL_SWITCH
-         AC_CHECK_LIB([aprutil-1], [apr_base64_decode],
-            [APRUTIL_LIBS="-laprutil-1"],
-            [AC_MSG_ERROR([cannot find usable APR-Util library])])
-         RRA_LIB_APRUTIL_RESTORE])])])
+     AC_CHECK_LIB([apr-1], [apr_base64_decode], [APRUTIL_LIBS="-lapr-1"],
+        [AC_MSG_ERROR([cannot find usable APR library])])
+     RRA_LIB_APRUTIL_RESTORE])])

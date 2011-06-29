@@ -80,18 +80,15 @@ AC_DEFUN([RRA_LIB_APR],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_apr_libdir="$withval"])])
 
- AS_IF([test x"$rra_reduced_depends" = xtrue],
+ AC_ARG_VAR([APR_CONFIG], [Path to apr-1-config or apr-config])
+ AC_PATH_PROGS([APR_CONFIG], [apr-1-config apr-config], [false])
+ AS_IF([test x"$APR_CONFIG" != xfalse],
+    [APR_CPPFLAGS="$APR_CPPFLAGS "`"$APR_CONFIG" --includes`
+     AS_IF([test x"$rra_reduced_depends" = xtrue],
+        [APR_LIBS=`"$APR_CONFIG" --link-ld`],
+        [APR_LIBS=`"$APR_CONFIG" --link-ld --libs`])],
     [_RRA_LIB_APR_PATHS
      RRA_LIB_APR_SWITCH
      AC_CHECK_LIB([apr-1], [apr_initialize], [APR_LIBS="-lapr-1"],
         [AC_MSG_ERROR([cannot find usable APR library])])
-     RRA_LIB_APR_RESTORE],
-    [AC_ARG_VAR([APR_CONFIG], [Path to apr-1-config or apr-config])
-     AC_PATH_PROGS([APR_CONFIG], [apr-1-config apr-config], [false])
-     AS_IF([test x"$APR_CONFIG" != xfalse],
-        [APR_CPPFLAGS="$APR_CPPFLAGS "`"$APR_CONFIG" --includes`
-         APR_LIBS=`"$APR_CONFIG" --link-ld`],
-        [RRA_LIB_APR_SWITCH
-         AC_CHECK_LIB([apr-1], [apr_initialize], [APR_LIBS="-lapr-1"],
-            [AC_MSG_ERROR([cannot find usable APR library])])
-         RRA_LIB_APR_RESTORE])])])
+     RRA_LIB_APR_RESTORE])])
