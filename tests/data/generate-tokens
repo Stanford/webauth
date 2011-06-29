@@ -130,6 +130,9 @@ our %TOKENS =
                         { subject         => 'testuser',
                           proxy_type      => 'krb5',
                           webkdc_token    => "s=foo\0s=bar;;da",
+                          initial_factors => 'p,o1,o,m',
+                          session_factors => 'p,o1,o,m',
+                          loa             => 2,
                           creation_time   => 1308777900,
                           expiration_time => 2147483600 }
                       ],

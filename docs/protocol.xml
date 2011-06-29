@@ -1959,7 +1959,11 @@
 
         <section anchor='tokenproxy' title='proxy Token Encoding'>
           <t>A proxy token is returned by the WebKDC when a WAS requests a
-          proxy token from the WebKDC via the HTML interface.</t>
+          proxy token from the WebKDC via the HTML interface.  Normally,
+          the WAS just requests an id token directly, but if the WAS may
+          need cred tokens for a user, it requests a proxy token instead.
+          The proxy token can be later used to retrieve an id or cred
+          token from the WebKDC.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1970,11 +1974,23 @@
   wt={webkdc-proxy-token}
   ct={creation-time}
   et={expiration-time}
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
           <t>All attributes are AES-encrypted in the webkdc-service token
           session key.</t>
+
+          <t>In addition to the webkdc-proxy token, a proxy token provides
+          all the same authentication information about a user as an id
+          token with a subject auth of "webkdc".  If the WAS only needs id
+          token information at the level provided by the "webkdc" subject
+          auth type, it can use the proxy token for that information
+          without requesting an id token.  If it wants an id token with a
+          "krb5" subject auth type, it will have to request that from the
+          WebKDC using the proxy token.</t>
 
           <t>The value of ct is used to prevent replay attacks.  Values
           older then a certain time (probably 5 minutes by default) should

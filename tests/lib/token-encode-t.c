@@ -132,7 +132,7 @@ check_proxy_token(struct webauth_context *ctx,
     if (token == NULL) {
         is_string("", webauth_error_message(ctx, status),
                   "...and sets the token pointer");
-        ok_block(8, 0, "...encoding failed");
+        ok_block(11, 0, "...encoding failed");
         return;
     }
     ok(token != NULL, "...and sets the token pointer");
@@ -141,7 +141,7 @@ check_proxy_token(struct webauth_context *ctx,
     if (proxy2 == NULL) {
         is_string("", webauth_error_message(ctx, status),
                   "...and sets the struct pointer");
-        ok_block(6, 0, "...decoding failed");
+        ok_block(9, 0, "...decoding failed");
         return;
     }
     ok(proxy2 != NULL, "...and sets the struct pointer");
@@ -151,6 +151,11 @@ check_proxy_token(struct webauth_context *ctx,
               proxy->webkdc_proxy_len) == 0, "...webkdc_proxy");
     is_int(proxy->webkdc_proxy_len, proxy2->webkdc_proxy_len,
            "...webkdc_proxy length");
+    is_string(proxy->initial_factors, proxy2->initial_factors,
+              "...initial factors");
+    is_string(proxy->session_factors, proxy2->session_factors,
+              "...session factors");
+    is_int(proxy->loa, proxy2->loa, "...level of assurance");
     if (proxy->creation > 0)
         is_int(proxy->creation, proxy2->creation, "...creation");
     else
@@ -259,7 +264,7 @@ main(void)
     struct webauth_token_proxy proxy;
     struct webauth_token_request req;
 
-    plan(213);
+    plan(219);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -347,6 +352,9 @@ main(void)
     proxy.type = "krb5";
     proxy.webkdc_proxy = "s=ome\0da;;ta";
     proxy.webkdc_proxy_len = 12;
+    proxy.initial_factors = "p,x,m";
+    proxy.session_factors = "k";
+    proxy.loa = 2;
     proxy.creation = now;
     proxy.expiration = now + 60;
     check_proxy_token(ctx, &proxy, ring, "full");

@@ -295,6 +295,12 @@ webauth_token_encode_proxy(struct webauth_context *ctx,
              proxy->webkdc_proxy_len);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, proxy->expiration);
+    if (proxy->initial_factors != NULL)
+        ADD_STR(WA_TK_INITIAL_FACTORS, proxy->initial_factors);
+    if (proxy->session_factors != NULL)
+        ADD_STR(WA_TK_SESSION_FACTORS, proxy->session_factors);
+    if (proxy->loa > 0)
+        ADD_UINT(WA_TK_LOA, proxy->loa);
 
     /* Finish encoding the token. */
     status = finish_encode(ctx, keyring, alist, token);

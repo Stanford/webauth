@@ -499,7 +499,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -553,6 +553,39 @@ sub expiration_time {
 	return unpack('N', $time);
     } else {
 	return $time;
+    }
+}
+
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub session_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_SESSION_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
     }
 }
 
@@ -1243,6 +1276,9 @@ The WebKDC::ProxyToken object is used to represent WebAuth proxy-tokens.
   $token->proxy_type([$new_value])
   $token->subject([$new_value])
   $token->webkdc_token([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->session_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::RequestToken
 

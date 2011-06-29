@@ -609,11 +609,14 @@ decode_proxy_alist(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *alist,
 
     *decoded = NULL;
     token = apr_palloc(ctx->pool, sizeof(struct webauth_token_proxy));
-    DECODE_STR( WA_TK_SUBJECT,         subject,      true);
-    DECODE_STR( WA_TK_PROXY_TYPE,      type,         true);
-    DECODE_DATA(WA_TK_WEBKDC_TOKEN,    webkdc_proxy, true);
-    DECODE_TIME(WA_TK_CREATION_TIME,   creation,     true);
-    DECODE_TIME(WA_TK_EXPIRATION_TIME, expiration,   true);
+    DECODE_STR( WA_TK_SUBJECT,           subject,         true);
+    DECODE_STR( WA_TK_PROXY_TYPE,        type,            true);
+    DECODE_DATA(WA_TK_WEBKDC_TOKEN,      webkdc_proxy,    true);
+    DECODE_STR( WA_TK_INITIAL_FACTORS,   initial_factors, false);
+    DECODE_STR( WA_TK_SESSION_FACTORS,   session_factors, false);
+    DECODE_UINT(WA_TK_LOA,               loa,             false);
+    DECODE_TIME(WA_TK_CREATION_TIME,     creation,        true);
+    DECODE_TIME(WA_TK_EXPIRATION_TIME,   expiration,      true);
     status = check_proxy_type(ctx, token->type, "proxy");
     if (status != WA_ERR_NONE)
         goto fail;

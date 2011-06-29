@@ -133,6 +133,9 @@ struct webauth_token_proxy {
     const char *type;
     const void *webkdc_proxy;
     size_t webkdc_proxy_len;
+    const char *initial_factors;
+    const char *session_factors;
+    unsigned long loa;
     time_t creation;
     time_t expiration;
 };

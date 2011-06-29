@@ -99,7 +99,7 @@ main(void)
     enum webauth_token_type type;
     void *generic;
 
-    plan(197);
+    plan(200);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -288,13 +288,16 @@ main(void)
     is_int(WA_ERR_NONE, status, "Decode proxy-ok");
     if (proxy == NULL) {
         is_string("", webauth_error_message(ctx, status), "Decoding failed");
-        ok_block(5, 0, "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
     } else {
         is_string("testuser", proxy->subject, "...subject");
         is_string("krb5", proxy->type, "...type");
         ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
            "...WebKDC proxy token");
         is_int(15, proxy->webkdc_proxy_len, "...WebKDC proxy token length");
+        is_string("p,o1,o,m", proxy->initial_factors, "...initial factors");
+        is_string("p,o1,o,m", proxy->session_factors, "...session factors");
+        is_int(2, proxy->loa, "...level of assurance");
         is_int(1308777900, proxy->creation, "...creation");
         is_int(2147483600, proxy->expiration, "...expiration");
     }
