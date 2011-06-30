@@ -2032,6 +2032,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
      * support.
      */
     pt->factors = apr_pstrdup(rc->r->pool, "p");
+    pt->loa = 0;
 
     /* if ProxyTokenLifetime is non-zero, use the min of it
        and the tgt, else just use the tgt  */
