@@ -28,6 +28,7 @@ webauth_info_build
 webauth_info_version
 webauth_context_free
 webauth_context_init
+webauth_context_init_apr
 webauth_key_copy
 webauth_key_create
 webauth_key_free

@@ -23,6 +23,7 @@ WEBAUTH_2.0 {
         webauth_base64_encoded_length;
         webauth_context_free;
         webauth_context_init;
+        webauth_context_init_apr;
         webauth_error_message;
         webauth_hex_decode;
         webauth_hex_decoded_length;
