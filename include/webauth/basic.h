@@ -103,16 +103,29 @@ BEGIN_DECLS
  * WebAuth will use the default APR behavior, which is likely to be unfriendly
  * to your application.
  *
- * The initialized context must be freed with webauth_context_free().  Be sure
+ * The initialized context must be freed with webauth_context_free.  Be sure
  * to do this during application shutdown or APR will not be closed properly.
  */
 int webauth_context_init(struct webauth_context **, WA_APR_POOL_T *)
     __attribute__((__nonnull__(1)));
 
 /*
+ * A variant of of webauth_context_init for APR-aware applications.  The only
+ * difference in this function is that it does not call apr_initialize and
+ * therefore does not have to be (and should not be) paired with
+ * webauth_context_free.  The pool argument is mandatory, and the WebAuth
+ * library will use a sub-pool of that pool.
+ */
+int webauth_context_init_apr(struct webauth_context **, WA_APR_POOL_T *)
+    __attribute__((__nonnull__));
+
+/*
  * Free a WebAuth context.  After this call, the contents of the provided
  * webauth_context struct will be invalid and should not be reused without
  * calling webauth_init_context on that struct again.
+ *
+ * This function must not be called if webauth_context_init_apr was used.
+ * Instead, just destroy the parent pool.
  */
 void webauth_context_free(struct webauth_context *)
     __attribute__((__nonnull__));
