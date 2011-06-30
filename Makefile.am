@@ -152,7 +152,7 @@ if BUILD_WEBKDC
     weblogindir = $(datadir)/weblogin
     imagedir    = $(weblogindir)/generic/images
     templatedir = $(weblogindir)/generic/templates
-    dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi	\
+    dist_weblogin_SCRIPTS = weblogin/login.fcgi weblogin/logout.fcgi	\
 	weblogin/pwchange.fcgi
     dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png \
 	weblogin/images/help.png weblogin/images/login.png		    \
