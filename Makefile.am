@@ -73,11 +73,12 @@ endif
 lib_LTLIBRARIES = lib/libwebauth.la
 include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
-webauthinclude_HEADERS = include/webauth/basic.h include/webauth/tokens.h
+webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h \
+	include/webauth/tokens.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = include/webauth.h lib/attrs.c lib/base64.c	\
-	lib/context.c lib/key.c lib/krb5.c lib/misc.c lib/random.c	\
-	lib/token-decode.c lib/token-encode.c lib/token.c
+	lib/context.c lib/key.c lib/keys.c lib/krb5.c lib/misc.c	\
+	lib/random.c lib/token-decode.c lib/token-encode.c lib/token.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS) \
 	$(APRUTIL_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
@@ -247,7 +248,7 @@ warnings:
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
-	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		   \
+	tests/lib/hex-t tests/lib/key-t tests/lib/keys-t tests/lib/krb5-t  \
 	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
 	tests/lib/token-encode-t tests/lib/token-t			   \
 	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
@@ -267,6 +268,7 @@ tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
