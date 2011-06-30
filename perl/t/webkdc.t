@@ -101,7 +101,7 @@ if (-e 't/data/test.keyring.path') {
 if (!$WebKDC::Config::KEYRING_PATH) {
     die "could not find server keyring path\n";
 }
-my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
 my $random = WebAuth::random_key (WebAuth::WA_AES_128);

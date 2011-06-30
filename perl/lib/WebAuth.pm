@@ -371,33 +371,6 @@ be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
 
-=item keyring_new(initial_capacity)
-
- $ring = keyring_new($initial_capacity);
-
-Creates a reference to a WEBAUTH_KEYRINGPtr object, or undef
-on error.
-
-=item keyring_add(ring, creation_time, valid_after, key)
-
- keyring_add($ring, $c, $vf, $vt, $key);
-
-Adds a key to the keyring. creation_time and valid_after can both be
-0, in which case the current time is used. key is copied internally, and
-can be undef'd after calling this function.
-
-=item keyring_write_file(ring, path)
-
- keyring_write_file($ring, $path);
-
-Writes a key ring to a file.
-
-=item keyring_read_file(path)
-
- $ring = keyring_read_file($path);
-
-Reads a keyring from a file and returns it in $ring on success.
-
 =item token_create(attrs, hint, key_or_ring)
 
   $token = token_create($attrs, $hint, $key_or_ring);
