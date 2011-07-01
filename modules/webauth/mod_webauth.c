@@ -261,6 +261,8 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
 static void
 fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
 {
+    ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                 "mod_webauth: setting pending %s cookie", name);
     mwa_setn_note(rc->r,
                   "mod_webauth_COOKIE_",
                   name,
@@ -1391,11 +1393,11 @@ handle_proxy_token(const struct webauth_token_proxy *proxy, MWA_REQ_CTXT *rc)
                                proxy->webkdc_proxy, proxy->webkdc_proxy_len,
                                proxy->initial_factors, proxy->session_factors,
                                proxy->loa, proxy->expiration, rc);
-    if (status == WA_ERR_NONE)
+    if (status)
         status = make_app_cookie(proxy->subject, 0, proxy->expiration, 0,
                                  proxy->initial_factors,
                                  proxy->session_factors, proxy->loa, rc);
-    return (status == WA_ERR_NONE);
+    return status;
 }
 
 
