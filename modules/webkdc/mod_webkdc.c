@@ -1385,6 +1385,10 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     SET_WEBKDC_TOKEN(wkdc_token, wkdc_len);
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(expiration);
+    if (sub_pt->factors != NULL)
+        SET_INITIAL_FACTORS(sub_pt->factors);
+    if (sub_pt->loa > 0)
+        SET_LOA(sub_pt->loa);
 
     rtoken->subject = sub_pt->subject;
     rtoken->info =
