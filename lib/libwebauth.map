@@ -1,4 +1,4 @@
-WEBAUTH_2.0 {
+WEBAUTH_3 {
     global:
         webauth_attr_list_add;
         webauth_attr_list_add_int32;
