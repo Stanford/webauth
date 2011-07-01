@@ -251,16 +251,15 @@ apr_array_header_t *
 mwa_get_webauth_cookies(request_rec *r)
 {
     char *c;
+    const char *cookie;
     char *last, *val;
     apr_array_header_t *a;
     char **p;
 
-    c = (char*) apr_table_get(r->headers_in, "Cookie");
-
-    if (c == NULL || (ap_strstr(c, "webauth_") == NULL))
+    cookie = apr_table_get(r->headers_in, "Cookie");
+    if (cookie == NULL || ap_strstr(cookie, "webauth_") == NULL)
         return NULL;
-
-    c = apr_pstrdup(r->pool, c);
+    c = apr_pstrdup(r->pool, cookie);
 
     last = NULL;
     a = NULL;
@@ -272,7 +271,7 @@ mwa_get_webauth_cookies(request_rec *r)
         }
         if (strncmp(val, "webauth_", 8) == 0) {
             if (a == NULL) {
-                a = apr_array_make(r->pool, 5, sizeof(char*));
+                a = apr_array_make(r->pool, 5, sizeof(char *));
             }
             p = apr_array_push(a);
             *p = val;
@@ -294,7 +293,7 @@ mwa_parse_cred_token(char *token,
 {
     int status;
     struct webauth_token_cred *cred;
-    const char *mwa_func="mwa_parse_cred_token";
+    const char *mwa_func = "mwa_parse_cred_token";
 
     ap_unescape_url(token);
 

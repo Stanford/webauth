@@ -381,9 +381,7 @@ typedef struct {
 
     /* function to run through all the cred tokens and prepare any
        cred tokens that are the same as our type for use by CGI */
-    int (*prepare_creds)(MWA_REQ_CTXT *rc,
-                         struct webauth_token_cred **creds,
-                         size_t num_creds);
+    int (*prepare_creds)(MWA_REQ_CTXT *rc, apr_array_header_t *creds);
 
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
@@ -405,8 +403,7 @@ mwa_get_service_token(server_rec *server,
 int
 mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                           struct webauth_token_proxy *pt,
-                          MWA_WACRED *creds,
-                          size_t num_creds,
+                          apr_array_header_t *needed_creds,
                           apr_array_header_t **acquired_creds);
 
 /* util.c */

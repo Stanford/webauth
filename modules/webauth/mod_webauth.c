@@ -82,8 +82,14 @@ is_https(request_rec *r)
 }
 
 
-/* remove any webauth_* cookies and tokens from Referer
-   before proxying the request */
+/*
+ * Remove any webauth_* cookies and tokens from Referer before proxying the
+ * request.
+ *
+ * FIXME: We do in-place edits on the headers, which APR says you're not
+ * supposed to do (the return type is declared const).  We should figure out
+ * if there's a better way to do this.
+ */
 static void
 strip_webauth_info(MWA_REQ_CTXT *rc)
 {
@@ -213,7 +219,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
 static int
 set_pending_cookie_cb(void *rec, const char *key, const char *value)
 {
-    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT*) rec;
+    MWA_REQ_CTXT *rc = rec;
 
     if (strncmp(key, "mod_webauth_COOKIE_", 19) == 0) {
         apr_table_addn(rc->r->err_headers_out, "Set-Cookie", value);
@@ -292,26 +298,22 @@ static void
 nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
 {
     int i;
-    char **p;
     apr_array_header_t *cookies;
 
     cookies = mwa_get_webauth_cookies(rc->r);
-
     if (cookies == NULL)
         return;
-
-    p = (char**)cookies->elts;
-
     for (i = 0; i < cookies->nelts; i++) {
-        char *val;
+        char *cookie, *val;
 
-        val = ap_strchr(p[i], '=');
-        if (val) {
+        cookie = APR_ARRAY_IDX(cookies, i, char *);
+        val = ap_strchr(cookie, '=');
+        if (val != NULL) {
             *val++ = '\0';
             /* don't nuke any webkdc cookies, which noramlly wouldn't
                show up, but due during development */
-            if (strncmp(p[i], "webauth_wpt", 11) != 0) {
-                nuke_cookie(rc, p[i], 1);
+            if (strncmp(cookie, "webauth_wpt", 11) != 0) {
+                nuke_cookie(rc, cookie, 1);
             }
         }
     }
@@ -426,18 +428,17 @@ mod_webauth_cleanup(void *data)
 {
     server_rec *s = (server_rec*) data;
     server_rec *t;
-    MWA_SCONF *sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-                                                        &webauth_module);
+    MWA_SCONF *sconf;
 
-    if (sconf->debug) {
+    sconf = ap_get_module_config(s->module_config, &webauth_module);
+    if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webauth: cleanup");
-    }
 
     /* walk through list of servers and clean up */
     for (t=s; t; t=t->next) {
-        MWA_SCONF *tconf = (MWA_SCONF*)ap_get_module_config(t->module_config,
-                                                            &webauth_module);
+        MWA_SCONF *tconf;
 
+        tconf = ap_get_module_config(t->module_config, &webauth_module);
         if (tconf->ring && tconf->free_ring) {
             if (sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
@@ -476,8 +477,7 @@ init_sconf(server_rec *s, MWA_SCONF *bconf,
 {
     MWA_SCONF *sconf;
 
-    sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-                                                 &webauth_module);
+    sconf = ap_get_module_config(s->module_config, &webauth_module);
 
 #define CHECK_DIR(field,dir) \
             if (sconf->field == NULL) die_directive(s, dir, ptemp);
@@ -542,14 +542,14 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
     server_rec *scheck;
     char *version;
 
-    sconf = (MWA_SCONF*)ap_get_module_config(s->module_config,
-                                                 &webauth_module);
+    sconf = ap_get_module_config(s->module_config, &webauth_module);
 
     /* FIXME: this needs to be configurable at some point */
     mwa_register_cred_interface(s, sconf, pconf, mwa_krb5_cred_interface);
 
     if (sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webauth: initializing");
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
+                     "mod_webauth: initializing");
 
     apr_pool_cleanup_register(pconf, s,
                               mod_webauth_cleanup,
@@ -605,7 +605,7 @@ config_server_create(apr_pool_t *p, server_rec *s UNUSED)
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
     sconf->webkdc_cert_check = DF_WebKdcSSLCertCheck;
     sconf->extra_redirect = DF_ExtraRedirect;
-    return (void *)sconf;
+    return sconf;
 }
 
 
@@ -619,7 +619,7 @@ config_dir_create(apr_pool_t *p, char *path UNUSED)
     /* init defaults */
     dconf->extra_redirect = DF_ExtraRedirect;
 
-    return (void *)dconf;
+    return dconf;
 }
 
 
@@ -635,9 +635,9 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
 {
     MWA_SCONF *conf, *bconf, *oconf;
 
-    conf = (MWA_SCONF*) apr_pcalloc(p, sizeof(MWA_SCONF));
-    bconf = (MWA_SCONF*) basev;
-    oconf = (MWA_SCONF*) overv;
+    conf = apr_pcalloc(p, sizeof(MWA_SCONF));
+    bconf = basev;
+    oconf = overv;
 
     conf->token_max_ttl = oconf->token_max_ttl_ex ?
         oconf->token_max_ttl : bconf->token_max_ttl;
@@ -688,7 +688,7 @@ config_server_merge(apr_pool_t *p, void *basev, void *overv)
         conf->keytab_principal = bconf->keytab_principal;
     MERGE_PTR(cred_cache_dir);
     MERGE_PTR(st_cache_path);
-    return (void *)conf;
+    return conf;
 }
 
 
@@ -697,9 +697,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 {
     MWA_DCONF *conf, *bconf, *oconf;
 
-    conf = (MWA_DCONF*) apr_pcalloc(p, sizeof(MWA_DCONF));
-    bconf = (MWA_DCONF*) basev;
-    oconf = (MWA_DCONF*) overv;
+    conf = apr_pcalloc(p, sizeof(MWA_DCONF));
+    bconf = basev;
+    oconf = overv;
 
     conf->do_logout = oconf->do_logout_ex ?
         oconf->do_logout : bconf->do_logout;
@@ -750,7 +750,7 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
         conf->creds = apr_array_append(p, bconf->creds, oconf->creds);
     }
 
-    return (void *)conf;
+    return conf;
 }
 
 #undef MERGE_PTR
@@ -833,8 +833,7 @@ handler_hook(request_rec *r)
     if (r->method_number != M_GET)
         return DECLINED;
 
-    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                                &webauth_module);
+    sconf = ap_get_module_config(r->server->module_config, &webauth_module);
 
     r->content_type = "text/html";
 
@@ -1572,10 +1571,7 @@ make_return_url(MWA_REQ_CTXT *rc,
     }
 
     if (rc->dconf->ssl_return && strncmp(uri, "http:", 5) == 0) {
-        uri = apr_pstrcat(rc->r->pool,
-                          "https:",
-                          uri+5,
-                          NULL);
+        uri = apr_pstrcat(rc->r->pool, "https:", uri + 5, NULL);
     }
 
     return uri;
@@ -1634,17 +1630,19 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         if (rc->needed_proxy_type) {
             req.proxy_type = rc->needed_proxy_type;
         } else {
+            MWA_WACRED *cred;
+
             /*
              * If we don't know which one we need, lets request a proxy token
              * for the first one in the list.
              */
-            MWA_WACRED *cred = (MWA_WACRED *) rc->dconf->creds->elts;
+            cred = &APR_ARRAY_IDX(rc->dconf->creds, 0, MWA_WACRED);
             req.proxy_type = cred->type;
         }
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                         "mod_webauth: %s: redirecting for proxy token",
-                         mwa_func);
+                         "mod_webauth: %s: redirecting for proxy token (%s)",
+                         mwa_func, req.proxy_type);
     } else {
         req.type = "id";
         req.auth = rc->sconf->subject_auth_type;
@@ -1811,12 +1809,11 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 static void
 add_proxy_type(apr_array_header_t *a, char *type)
 {
-   char **ntype;
    int i;
+   char **ntype;
 
-   ntype = (char**)a->elts;
    for (i = 0; i < a->nelts; i++)
-       if (strcmp(ntype[0], type) == 0)
+       if (strcmp(APR_ARRAY_IDX(a, i, char *), type) == 0)
            return;
    ntype = apr_array_push(a);
    *ntype = type;
@@ -1829,8 +1826,7 @@ add_proxy_type(apr_array_header_t *a, char *type)
  * a credential cache file and setting KRB5CCNAME.
  */
 static int
-prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
-              struct webauth_token_cred **creds, size_t num_creds)
+prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type, apr_array_header_t *creds)
 {
     const char *mwa_func="prepare_creds";
 
@@ -1838,7 +1834,7 @@ prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
         mwa_find_cred_interface(rc->r->server, proxy_type);
 
     if (mci != NULL) {
-        return mci->prepare_creds(rc, creds, num_creds);
+        return mci->prepare_creds(rc, creds);
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: unhandled proxy type: (%s)",
@@ -1856,10 +1852,10 @@ prepare_creds(MWA_REQ_CTXT *rc, char *proxy_type,
  */
 static int
 acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
-              MWA_WACRED *creds, size_t num_creds,
+              apr_array_header_t *needed_creds,
               apr_array_header_t **acquired_creds)
 {
-    const char *mwa_func="acquire_creds";
+    const char *mwa_func = "acquire_creds";
     struct webauth_token_proxy *pt = NULL;
 
     if (rc->sconf->debug) {
@@ -1880,7 +1876,7 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
         return redirect_request_token(rc);
     }
 
-    if (!mwa_get_creds_from_webkdc(rc, pt, creds, num_creds, acquired_creds)) {
+    if (!mwa_get_creds_from_webkdc(rc, pt, needed_creds, acquired_creds)) {
 
         /* FIXME: what do we want to do here? mwa_get_creds_from_webkdc
            will log any errors. We could either cause a failure_redirect
@@ -1896,17 +1892,17 @@ acquire_creds(MWA_REQ_CTXT *rc, char *proxy_type,
         }
     } else {
         /* need to construct new cookies for newly gathered creds */
-        if (*acquired_creds) {
-            struct webauth_token_cred **new_creds
-                = (struct webauth_token_cred **) (*acquired_creds)->elts;
-            int i, num_new_creds = (*acquired_creds)->nelts;
+        if (*acquired_creds != NULL) {
+            struct webauth_token_cred *cred;
+            size_t i;
 
-            for (i = 0; i < num_new_creds; i++) {
-                make_cred_cookie(new_creds[i], rc);
+            for (i = 0; i < (size_t) (*acquired_creds)->nelts; i++) {
+                cred = APR_ARRAY_IDX(*acquired_creds, i,
+                                     struct webauth_token_cred *);
+                make_cred_cookie(cred, rc);
             }
         }
     }
-
 
     return OK;
 }
@@ -1921,46 +1917,45 @@ gather_creds(MWA_REQ_CTXT *rc)
 {
     int i, code;
     apr_array_header_t *needed_creds = NULL; /* (MWA_WACRED) */
-    apr_array_header_t *needed_proxy_types = NULL; /* (char*) */
-    apr_array_header_t *all_proxy_types = NULL; /* (char*) */
-    apr_array_header_t *gathered_creds = NULL; /* (MWA_CRED_TOKEN*) */
-    apr_array_header_t *acquired_creds = NULL; /* (MWA_CRED_TOKEN*) */
+    apr_array_header_t *needed_proxy_types = NULL; /* (char *) */
+    apr_array_header_t *all_proxy_types = NULL; /* (char *) */
+    apr_array_header_t *gathered_creds = NULL; /* (webauth_token_cred *) */
+    apr_array_header_t *acquired_creds = NULL; /* (webauth_token_cred *) */
     MWA_WACRED *ncred, *cred;
     struct webauth_token_cred *ct, **nct;
 
-    cred = (MWA_WACRED*) rc->dconf->creds->elts;
-
     for (i = 0; i < rc->dconf->creds->nelts; i++) {
-        if (cred[i].service) {
+        cred = &APR_ARRAY_IDX(rc->dconf->creds, i, MWA_WACRED);
+        if (cred->service) {
 
             if (all_proxy_types == NULL)
-                all_proxy_types = apr_array_make(rc->r->pool, 2,
-                                                 sizeof(char*));
-            add_proxy_type(all_proxy_types, cred[i].type);
+                all_proxy_types
+                    = apr_array_make(rc->r->pool, 2, sizeof(char *));
+            add_proxy_type(all_proxy_types, cred->type);
 
             /* check the cookie first */
-            ct = parse_cred_token_cookie(rc, &cred[i]);
+            ct = parse_cred_token_cookie(rc, cred);
 
             if (ct != NULL) {
                 /* save in gathered creds */
                 if (gathered_creds == NULL)
-                    gathered_creds = apr_array_make(rc->r->pool,
-                                                    rc->dconf->creds->nelts,
-                                                    sizeof(struct webauth_token_cred *));
+                    gathered_creds
+                        = apr_array_make(rc->r->pool, rc->dconf->creds->nelts,
+                                         sizeof(struct webauth_token_cred *));
                 nct = apr_array_push(gathered_creds);
                 *nct = ct;
             } else {
                 /* keep track of the ones we need */
                 if (needed_creds == NULL) {
-                    needed_creds = apr_array_make(rc->r->pool, 5,
-                                                  sizeof(MWA_WACRED));
-                    needed_proxy_types = apr_array_make(rc->r->pool, 2,
-                                                        sizeof(char*));
+                    needed_creds
+                        = apr_array_make(rc->r->pool, 5, sizeof(MWA_WACRED));
+                    needed_proxy_types
+                        = apr_array_make(rc->r->pool, 2, sizeof(char *));
                 }
                 ncred = apr_array_push(needed_creds);
-                ncred->type = cred[i].type;
-                ncred->service = cred[i].service;
-                add_proxy_type(needed_proxy_types, cred[i].type);
+                ncred->type = cred->type;
+                ncred->service = cred->service;
+                add_proxy_type(needed_proxy_types, cred->type);
             }
         }
     }
@@ -1968,14 +1963,12 @@ gather_creds(MWA_REQ_CTXT *rc)
     /* now, for each proxy type that has needed credentials,
        try and acquire them from the webkdc. */
     if (needed_proxy_types != NULL) {
-        char **proxy = (char**)needed_proxy_types->elts;
-        cred = (MWA_WACRED*) needed_creds->elts;
+        char *proxy;
 
         /* foreach proxy type, attempt to acquire the needed creds */
-        for (i=0; i < needed_proxy_types->nelts; i++) {
-            code = acquire_creds(rc, proxy[i], cred,
-                                 needed_creds->nelts,
-                                 &acquired_creds);
+        for (i = 0; i < needed_proxy_types->nelts; i++) {
+            proxy = APR_ARRAY_IDX(needed_proxy_types, i, char *);
+            code = acquire_creds(rc, proxy, needed_creds, &acquired_creds);
             if (code != OK)
                 return code;
         }
@@ -1996,13 +1989,12 @@ gather_creds(MWA_REQ_CTXT *rc)
     */
 
     if (all_proxy_types != NULL && gathered_creds != NULL) {
-        char **proxy = (char**)all_proxy_types->elts;
-        struct webauth_token_cred **new_cred
-            = (struct webauth_token_cred **) gathered_creds->elts;
+        char *proxy;
 
         /* foreach proxy type, process the creds */
-        for (i=0; i < all_proxy_types->nelts; i++) {
-            if (!prepare_creds(rc, proxy[i], new_cred, gathered_creds->nelts)) {
+        for (i = 0; i < all_proxy_types->nelts; i++) {
+            proxy = APR_ARRAY_IDX(all_proxy_types, i, char *);
+            if (!prepare_creds(rc, proxy, gathered_creds)) {
                 /* FIXME: similar as case where we can't get
                    creds from the webkdc. prepare_creds will log
                    any errors. For now, we continue and let the
@@ -2093,11 +2085,8 @@ check_user_id_hook(request_rec *r)
         return DECLINED;
     }
 
-    rc.dconf = (MWA_DCONF*)ap_get_module_config(r->per_dir_config,
-                                                &webauth_module);
-
-    rc.sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                                &webauth_module);
+    rc.dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
+    rc.sconf = ap_get_module_config(r->server->module_config, &webauth_module);
     if (rc.sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: in check_user_id hook(%s)",
@@ -2166,7 +2155,7 @@ check_user_id_hook(request_rec *r)
                      (subject != NULL) ? subject : rc.at->subject);
 
     r->user = (subject != NULL) ? (char *) subject : (char *) rc.at->subject;
-    r->ap_auth_type = (char*)at;
+    r->ap_auth_type = (char *) at;
 
     /*
      * Set environment variables.
@@ -2177,11 +2166,11 @@ check_user_id_hook(request_rec *r)
     mwa_setenv(&rc, ENV_WEBAUTH_USER, r->user);
     if (rc.at != NULL) {
         wte = rc.at->expiration ?
-            apr_psprintf(rc.r->pool, "%d", (int)rc.at->expiration) : NULL;
+            apr_psprintf(rc.r->pool, "%d", (int) rc.at->expiration) : NULL;
         wtc = rc.at->creation ?
-            apr_psprintf(rc.r->pool, "%d", (int)rc.at->creation) : NULL;
+            apr_psprintf(rc.r->pool, "%d", (int) rc.at->creation) : NULL;
         wtlu = rc.at->last_used ?
-            apr_psprintf(rc.r->pool, "%d", (int)rc.at->last_used) : NULL;
+            apr_psprintf(rc.r->pool, "%d", (int) rc.at->last_used) : NULL;
         wif = rc.at->initial_factors != NULL ?
             apr_pstrdup(rc.r->pool, rc.at->initial_factors) : NULL;
         wsf = rc.at->session_factors != NULL ?
@@ -2276,8 +2265,7 @@ translate_name_hook(request_rec *r)
     static const char *rmagic = WEBAUTHR_MAGIC;
     static const char *smagic = WEBAUTHS_MAGIC;
 
-    sconf = (MWA_SCONF*)ap_get_module_config(r->server->module_config,
-                                             &webauth_module);
+    sconf = ap_get_module_config(r->server->module_config, &webauth_module);
     if (!ap_is_initial_req(r)) {
         return DECLINED;
     }
@@ -2307,10 +2295,10 @@ translate_name_hook(request_rec *r)
      */
     mwa_setn_note(r, N_WEBAUTHR, NULL, "%s", wr);
 
-    s = p+1;
+    s = p + 1;
     p = ap_strstr(s, smagic);
     if (p != NULL) {
-        s = p+WEBAUTHS_MAGIC_LEN;
+        s = p + WEBAUTHS_MAGIC_LEN;
         p = ap_strchr(s, ';');
         if (p == NULL) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
@@ -2323,7 +2311,7 @@ translate_name_hook(request_rec *r)
          * "mod_webauth: stash ws(%s)", ws);
          */
         mwa_setn_note(r, N_WEBAUTHS, NULL, "%s", ws);
-        s = p+1;
+        s = p + 1;
     }
 
     /* Strip the WebAuth information from the internal URL unless asked. */
@@ -2384,8 +2372,7 @@ fixups_hook(request_rec *r)
                      webauth_error_message(NULL, status));
         return DECLINED;
     }
-    rc.sconf = (MWA_SCONF *)
-        ap_get_module_config(r->server->module_config, &webauth_module);
+    rc.sconf = ap_get_module_config(r->server->module_config, &webauth_module);
 
     /*
      * Reportedly with Solaris 10 x86's included Apache (2.0.63),
@@ -2393,8 +2380,7 @@ fixups_hook(request_rec *r)
      * that we're not doing logout.
      */
     if (r->per_dir_config != NULL)
-        rc.dconf = (MWA_DCONF *)
-            ap_get_module_config(r->per_dir_config, &webauth_module);
+        rc.dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
     if (rc.dconf != NULL && rc.dconf->do_logout) {
         nuke_all_webauth_cookies(&rc);
         dont_cache(&rc);
@@ -2451,10 +2437,10 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
 {
     intptr_t e = (intptr_t) cmd->info;
     const char *error_str = NULL;
-    MWA_DCONF *dconf = (MWA_DCONF *)mconf;
+    MWA_DCONF *dconf = mconf;
+    MWA_SCONF *sconf;
 
-    MWA_SCONF *sconf = (MWA_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauth_module);
+    sconf = ap_get_module_config(cmd->server->module_config, &webauth_module);
 
     switch (e) {
         /* server configs */
@@ -2566,10 +2552,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig, int flag)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
-    MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
+    MWA_DCONF *dconf = mconfig;
+    MWA_SCONF *sconf;
 
-    MWA_SCONF *sconf = (MWA_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauth_module);
+    sconf = ap_get_module_config(cmd->server->module_config, &webauth_module);
 
     switch (e) {
         /* server configs */
@@ -2667,11 +2653,11 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 {
     intptr_t e = (intptr_t) cmd->info;
     char *error_str = NULL;
-    MWA_DCONF *dconf = (MWA_DCONF*) mconfig;
+    MWA_DCONF *dconf = mconfig;
     MWA_WACRED *cred;
+    MWA_SCONF *sconf;
 
-    MWA_SCONF *sconf = (MWA_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauth_module);
+    sconf = ap_get_module_config(cmd->server->module_config, &webauth_module);
 
     switch (e) {
         /* server configs */
