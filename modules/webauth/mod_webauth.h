@@ -13,35 +13,10 @@
 
 #include <modules/mod-config.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_log.h"
-#include "http_core.h"
-#include "http_protocol.h"
-#include "http_request.h"
-#include "ap_config.h"
-#include "apr.h"
-#include "apr_lib.h"
-#include "apr_file_io.h"
-#include "apr_file_info.h"
-#include "apr_errno.h"
-#include "apr_strings.h"
-#include "apr_pools.h"
-#include "apr_tables.h"
-#include "apr_time.h"
-#include "apr_xml.h"
-#include "apr_base64.h"
-
-#include <curl/curl.h>
-
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#elif HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <apr_pools.h>          /* apr_pool_t */
+#include <apr_tables.h>         /* apr_array_header_t */
+#include <httpd.h>              /* server_rec and request_rec */
+#include <sys/types.h>          /* size_t, etc. */
 
 #include <webauth.h>
 #include <webauth/tokens.h>
@@ -49,7 +24,7 @@
 /* how long to wait between trying for a new token when
  * a renewal attempt fails
  */
-#define TOKEN_RETRY_INTERVAL  600
+#define TOKEN_RETRY_INTERVAL 600
 
 /*
  * how long into the tokens lifetime do we attempt our first revnewal
@@ -58,10 +33,10 @@
 
 /* where to look in URL for returned tokens */
 #define WEBAUTHR_MAGIC "?WEBAUTHR="
-#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
+#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC) - 1)
 
 #define WEBAUTHS_MAGIC ";WEBAUTHS="
-#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC)-1)
+#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC) - 1)
 
 /* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
