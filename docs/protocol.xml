@@ -1757,7 +1757,7 @@
 
             <t hangText='u (unknown)'>
             <vspace blankLines='0'/>The authentication method is not
-            known.  THis may be used, for example, when the user
+            known.  This may be used, for example, when the user
             authenticates to the WebLogin component of the WebKDC using
             some authentication mechanism handled external to the WebLogin
             server and no information about that method is available.</t>
