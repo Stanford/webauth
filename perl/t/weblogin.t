@@ -29,9 +29,11 @@ mkdir ('./t/tmp');
 # for testing.
 our ($TEST_STATUS, $TEST_ERROR);
 package WebKDC;
+no warnings 'redefine';
 sub make_request_token_request ($$) {
     return ($TEST_STATUS, $TEST_ERROR);
 }
+use warnings 'redefine';
 package main;
 
 # Whether we've found a valid kerberos config.
@@ -76,7 +78,7 @@ $ENV{REQUEST_METHOD} = 'POST';
 sub init_weblogin {
     my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
 
-    my $query = CGI->new;
+    my $query = CGI->new ({});
     $query->param ('username', $username);
     $query->param ('password', $password);
     $query->param ('ST', $st_base64);
@@ -85,11 +87,11 @@ sub init_weblogin {
     $WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
     $WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
 
-    my $weblogin = WebLogin->new (PARAMS => { pages => $pages });
+    my $weblogin = WebLogin->new (QUERY  => $query,
+                                  PARAMS => { pages => $pages });
     $weblogin->param ('debug', 0);
     $weblogin->param ('logging', 0);
     $weblogin->param ('script_name', '/login');
-    $weblogin->query ($query);
 
     # Normally set during WebKDC::request_token_request.
     $weblogin->{response}->return_url ('https://test.example.org/');

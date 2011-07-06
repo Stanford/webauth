@@ -35,7 +35,7 @@ my %PAGES = (confirm  => 'confirm.tmpl',
 
 # Set up a query with some test data.
 $ENV{REQUEST_METHOD} = 'GET';
-my $query = CGI->new;
+my $query = CGI->new ({});
 
 # Fake a weblogin object.
 my $weblogin = {};
@@ -100,7 +100,7 @@ my ($page, $retval);
 SKIP: {
     skip 'error_password_no_post tests do not yet work', 3;
 
-    $query = CGI->new;
+    $query = CGI->new ({});
     $query->param ('password', 'abc');
     $query->request_method ('POST');
     $weblogin->query ($query);
@@ -127,7 +127,7 @@ SKIP: {
 
     # error_if_no_cookies tests - cookie is set
     $weblogin->param ('test_cookie', 'testcookie');
-    $query = CGI->new;
+    $query = CGI->new ({});
     $query->cookie (-name  => $weblogin->param ('test_cookie'),
                     -value => 1);
     $weblogin->query ($query);
@@ -138,7 +138,7 @@ SKIP: {
 # error_if_no_cookies after the page has redirected to check for cookies, but
 # without the cookie successfully set.  Not testing the code that adjusts
 # for old templates.
-$query = CGI->new;
+$query = CGI->new ({});
 $query->param ('test_cookie', 1);
 $weblogin->query ($query);
 $page = WebLogin::error_if_no_cookies ($weblogin);
@@ -151,7 +151,7 @@ like ($$page, qr/err_cookies_disabled 1/, ' with the correct error message');
 SKIP: {
     skip 'headers do not yet work right', 2;
     $ENV{REQUEST_METHOD} = 'GET';
-    $query = CGI->new;
+    $query = CGI->new ({});
     $weblogin->query ($query);
     $page = WebLogin::error_if_no_cookies ($weblogin);
     ok (defined ($page), ' and redirects when not yet having tried to get cookie');
@@ -159,7 +159,7 @@ SKIP: {
 }
 
 # error_no_request_token success
-$query = CGI->new;
+$query = CGI->new ({});
 $query->param ('RT', 'TestRT');
 $query->param ('ST', 'TestST');
 $weblogin->query ($query);
@@ -167,20 +167,20 @@ $page = WebLogin::error_no_request_token ($weblogin);
 is ($page, undef, 'error_no_request_token with RT and ST works');
 
 # error_no_request_token without RT and ST
-$query = CGI->new;
+$query = CGI->new ({});
 $weblogin->query ($query);
 $page = WebLogin::error_no_request_token ($weblogin);
 ok (defined ($page), ' and fails with both unset');
 
 # error_no_request_token with only RT
-$query = CGI->new;
+$query = CGI->new ({});
 $query->param ('RT', 'TestRT');
 $weblogin->query ($query);
 $page = WebLogin::error_no_request_token ($weblogin);
 ok (defined ($page), ' and fails with only RT set');
 
 # error_no_request_token with only ST
-$query = CGI->new;
+$query = CGI->new ({});
 $query->param ('ST', 'TestST');
 $weblogin->query ($query);
 $page = WebLogin::error_no_request_token ($weblogin);
@@ -278,9 +278,8 @@ TODO: {
     #    unless -f ('t/data/test.principal');
 
     # add_proxy_token
-    $query = CGI->new;
-    $weblogin = WebLogin->new;
-    $weblogin->query ($query);
+    $query = CGI->new ({});
+    $weblogin = WebLogin->new (QUERY => $query);
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     $weblogin->add_proxy_token;
     $ENV{KRB5CCNAME} = $oldcache;
@@ -293,9 +292,8 @@ SKIP: {
         unless -f ('t/data/test.principal');
 
     # add_remuser_token
-    $query = CGI->new ({ });
-    $weblogin = WebLogin->new;
-    $weblogin->query ($query);
+    $query = CGI->new ({});
+    $weblogin = WebLogin->new (QUERY => $query);
     $weblogin->add_remuser_token;
     my $token = $weblogin->{request}->proxy_cookie ('remuser');
     ok ($token, 'add_remuser_token works');
