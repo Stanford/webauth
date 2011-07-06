@@ -1270,6 +1270,9 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     if (sub_pt->loa > 0)
         SET_LOA(sub_pt->loa);
 
+    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
+    SET_SESSION_FACTORS("u");
+
     ms = make_token_with_key(rc, &req_cred->u.st.key,
                              alist, creation,
                              (char**)&rtoken->token_data,
@@ -1389,6 +1392,9 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
         SET_INITIAL_FACTORS(sub_pt->factors);
     if (sub_pt->loa > 0)
         SET_LOA(sub_pt->loa);
+
+    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
+    SET_SESSION_FACTORS("u");
 
     rtoken->subject = sub_pt->subject;
     rtoken->info =
@@ -2614,6 +2620,9 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     SET_PROXY_DATA(tgt, tgt_len);
     SET_CREATION_TIME(creation);
     SET_EXPIRATION_TIME(tgt_expiration);
+
+    /* FIXME: Need to get this from Apache configuration. */
+    SET_INITIAL_FACTORS("u");
 
     ms = make_token(rc, alist, creation,
                     (char**)&token_data, &token_len, 1, mwk_func);
