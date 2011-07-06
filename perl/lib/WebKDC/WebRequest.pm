@@ -47,6 +47,12 @@ sub pass {
     return $self->{'pass'};
 }
 
+sub otp {
+    my $self = shift;
+    $self->{'otp'} = shift if @_;
+    return $self->{'otp'};
+}
+
 sub proxy_cookie {
     my $self = shift;
     my $type = shift;

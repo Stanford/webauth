@@ -196,7 +196,7 @@ sub proxy_token_request($$) {
 sub request_token_request($$) {
     my ($wreq, $wresp) = @_;
 
-    my ($user, $pass) = ($wreq->user(), $wreq->pass());
+    my ($user, $pass, $otp) = ($wreq->user(), $wreq->pass(), $wreq->otp());
     my $request_token = $wreq->request_token();
     my $service_token = $wreq->service_token();
     my $proxy_cookies = $wreq->proxy_cookies();
@@ -215,9 +215,13 @@ sub request_token_request($$) {
 	$webkdc_doc->current->attr('type','login');
 
 	my $login_token = new WebKDC::LoginToken;
-	$login_token->password($pass);
 	$login_token->username($user);
 	$login_token->creation_time(time());
+        if (defined $otp) {
+            $login_token->otp($pass);
+        } else {
+            $login_token->password($pass);
+        }
 
 	# FIXME: DEBUGGING!
 	#print STDERR $login_token;
@@ -336,7 +340,30 @@ sub request_token_request($$) {
 		$wresp->proxy_cookie($cname, $cvalue);
 	    }
 	}
-	$wresp->return_url($return_url);
+
+        my $multifactor = $root->find_child('multifactorRequired');
+        if (defined($multifactor)) {
+            foreach my $mf_setting (@{$multifactor->children}) {
+                my $factor = $mf_setting->content;
+                if ($mf_setting->name eq 'factor') {
+                    $wresp->factor_needed($factor);
+                } elsif ($mf_setting->name eq 'configuredFactor') {
+                    $wresp->factor_configured($factor);
+                }
+            }
+        }
+
+        my $login_history = $root->find_child('loginHistory');
+        if (defined($login_history)) {
+            foreach my $login (@{$login_history->children}) {
+                my $timestamp = $login->attr('time');
+                my $ip = $login->attr('ip');
+                my $hostname = $login->content | '';
+                $wresp->login_history ([$timestamp, $ip, $hostname]);
+            }
+        }
+
+        $wresp->return_url($return_url);
 	$wresp->response_token($returned_token);
 	$wresp->response_token_type($returned_token_type);
 	$wresp->requester_subject($requester_sub);
