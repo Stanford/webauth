@@ -350,21 +350,6 @@ typedef struct {
     char *service;
 } MWA_WACRED;
 
-/* enums for MWA_TOKEN_DATA->type */
-enum {
-    MWA_T_APP,
-    MWA_T_PROXY,
-    MWA_T_CRED,
-};
-
-/* enums for MWA_TOKEN_DATA->source */
-enum {
-    MWA_TDS_COOKIE, /* data was in a cookie */
-    MWA_TDS_NOTE,   /* data was in a note, from a cookie */
-    MWA_TDS_URL,    /* data was from WEBAUTHR in URL */
-    MWA_TDS_TOKEN,  /* data was from newly-created token */
-};
-
 /* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
@@ -423,15 +408,6 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                           apr_array_header_t **acquired_creds);
 
 /* util.c */
-
-/*
- * get a string from an attr list, log an error if not present.
- * vlen is optional and can be set to NULL.
- */
-
-char *
-mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
-                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get note from main request

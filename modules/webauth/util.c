@@ -20,34 +20,6 @@
 #include <webauth/keys.h>
 
 
-/*
- * get a required char* attr from a token, with logging if not present.
- * returns value or NULL on error,
- */
-char *
-mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist,
-                 const char *name,
-                 request_rec *r,
-                 const char *func,
-                 size_t *vlen)
-{
-    int status;
-    ssize_t i;
-
-    status = webauth_attr_list_find(alist, name, &i);
-    if (status == WA_ERR_NOT_FOUND || i == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webauth: %s: can't find attr(%s) in attr list",
-                     func, name);
-        return NULL;
-    }
-    if (vlen)
-        *vlen = alist->attrs[i].length;
-
-    return (char*)alist->attrs[i].value;
-}
-
-
 static request_rec *
 get_top(request_rec *r)
 {
