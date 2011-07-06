@@ -401,3 +401,26 @@ Configuration
       The only argument passed to the function is the username (as passed
       to the WebKDC, not as entered by the user), and the return value (if
       any) is ignored.
+
+  remuser_factors
+
+      If defined, this function is called whenever a user is authenticated
+      via Apache authentication instead of via a password or other
+      authentication information sent to the WebKDC.  The only argument
+      passed to the function is the username, but it's run within the
+      context of the WebLogin application and can examine the environment
+      for additional information about the Apache authentication as
+      desired.
+
+      This function should return a list of three values: the initial
+      authentication factors, the session authentication factors, and the
+      level of assurance.  The factors should be comma-separated lists of
+      factor codes (see the WebAuth protocol documentation for valid
+      factors).  The level of assurance should be an integer number
+      reflecting the site-defined levels of assurance for authentications
+      and identity binding.  Return 0 for the level of assurance if
+      nothing is known about it.
+
+      If this function is not provided, WebLogin will use "u" (unknown) as
+      the initial and session factor for Apache authentications and will
+      not provide level of assurance information.

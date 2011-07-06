@@ -2,7 +2,7 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -178,7 +178,6 @@ sub get_pagename {
         if $self->param ('logging');
     return '';
 }
-
 
 ##############################################################################
 # Utility functions
@@ -835,6 +834,21 @@ sub add_remuser_token {
     $token->proxy_subject ('WEBKDC:remuser');
     $token->proxy_type ('remuser');
     $token->subject ($user);
+
+    # If there's a callback defined for determining the initial and session
+    # factors and level of assurance, make that callback and store the results
+    # in the generated token.  Otherwise, set the initial factors to unknown
+    # and omit the level of assurance.
+    #
+    # FIXME: Session factor information is not yet used and will require
+    # protocol modifications to use properly.
+    if (defined (&WebKDC::Config::remuser_factors)) {
+        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
+        $token->initial_factors ($ini);
+        $token->loa ($loa) if (defined ($loa) && $loa > 0);
+    } else {
+        $token->initial_factors ('u');
+    }
 
     # Add the token to the WebKDC request.
     my $token_string = base64_encode ($token->to_token ($keyring));
