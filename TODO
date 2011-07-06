@@ -23,7 +23,7 @@ Protocol:
  * User request: Increase the timeout of the token sent by the WAS to the
    WebLogin server for initial user login.  It doesn't contain security
    information and therefore doesn't need to expire in five minutes.
-   (WA-1)
+   (WEBAUTH-1)
 
  * Allow a WebAuth Application Server to specify that authentication
    should be done using a particular instance (and perhaps only a
@@ -40,6 +40,9 @@ Protocol:
 
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
+
+ * Make the proxy data attribute of the webkdc-proxy token optional.  It
+   has no useful value for remuser (authentication-only) proxy tokens.
 
 General:
 
