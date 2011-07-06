@@ -480,7 +480,7 @@ sub validate_token {
     croak "validate_token failed" unless
 	($self->token_type() eq 'login') &&
 	defined($self->username) &&
-	defined($self->password);
+	(defined($self->password) || defined($self->otp));
 }
 
 ############################################################
