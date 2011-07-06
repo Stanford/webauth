@@ -1620,4 +1620,123 @@ WebAuthOptional on
   </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+  <name>WebAuthRequireInitialFactor</name>
+  <description>Required factors for initial authentication</description>
+  <syntax>WebAuthRequireInitialFactor <em>factor</em> [<em>factor</em>
+  ...]</syntax>
+  <default>(none)</default>
+  <contextlist>
+    <context>directory</context>
+    <context>.htaccess</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's initial authentication be done with a particular
+      factor.  The value is a space-separated list of factors, all of
+      which are required.  If any of those factors were not used for the
+      initial authentication, the user will be sent back to the WebLogin
+      server to reauthenticate.
+    </p>
+    <p>
+      The initial authentication is the authentication used to obtain
+      single sign-on cookies (if any).  That authentication may have been
+      done immediately before going to this web site, or earlier to obtain
+      single sign-on credentials.  See <a
+      href="#webauthrequiresessionfactor"><code>WebAuthRequireSessionFactor</code></a>
+      to control the factors used to authenticate to this specific
+      resource, or <a
+      href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
+      different approach to these sorts of restrictions.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebAuthRequireInitialFactor p o
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
+  <name>WebAuthRequireLOA</name>
+  <description>Required level of assurance for authentication</description>
+  <syntax>WebAuthRequireLOA <em>loa</em></syntax>
+  <default>0</default>
+  <contextlist>
+    <context>directory</context>
+    <context>.htaccess</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's authentication meet a particular level of assurance.
+    </p>
+    <p>
+      A level of assurance is an integer number whose definition varies
+      from site to site, except that larger numbers indicate a stronger
+      assurance of the user's authentication and identity than smaller
+      numbers.  Level of assurance may combine multiple factors, such as
+      binding of identity (whether the user presented identification when
+      obtaining their account credentials), method of authentication, and
+      other site-defined information.  This directive should be used in
+      conjunction with site-specific supplemental documentation of what
+      the level of assurance numbers mean for that site.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebAuthRequireLOA 2
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
+  <name>WebAuthRequireSessionFactor</name>
+  <description>Required factors for session authentication</description>
+  <syntax>WebAuthRequireSessionFactor <em>factor</em> [<em>factor</em>
+  ...]</syntax>
+  <default>(none)</default>
+  <contextlist>
+    <context>directory</context>
+    <context>.htaccess</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's session authentication be done with a particular
+      factor.  The value is a space-separated list of factors, all of
+      which are required.  If any of those factors were not used for the
+      session authentication, the user will be sent back to the WebLogin
+      server to reauthenticate.
+    </p>
+    <p>
+      The session authentication is the authentication used to access this
+      particular resource (or, more specifically, to obtain an application
+      authentication cookie scoped to include this resource).  This will
+      match the initial authentication if the user did not use any single
+      sign-on method (or if <a
+      href="#webauthforcelogin"><code>WebAuthForceLogin</code></a> is
+      set), but may be different if single sign-on is in use.  In most
+      situations, one should instead use <a
+      href="#webauthrequireinitialfactor"><code>WebAuthRequireInitialFactor</code></a>
+      to control the initial authentication factors and allow single
+      sign-on to work normally.  See <a
+      href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
+      different approach to these sorts of restrictions.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebAuthRequireSessionFactor m
+    </example>
+  </usage>
+</directivesynopsis>
+
 </modulesynopsis>

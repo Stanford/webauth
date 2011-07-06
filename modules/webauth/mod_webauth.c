@@ -723,6 +723,9 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
     conf->optional = oconf->optional_ex ? oconf->optional : bconf->optional;
     conf->optional_ex = oconf->optional_ex || bconf->optional_ex;
 
+    conf->loa = oconf->loa_ex ? oconf->loa : bconf->loa;
+    conf->loa_ex = oconf->loa_ex || bconf->loa_ex;
+
     conf->ssl_return = oconf->ssl_return_ex ?
         oconf->ssl_return : bconf->ssl_return;
     conf->ssl_return_ex = oconf->ssl_return_ex ||
@@ -743,6 +746,8 @@ config_dir_merge(apr_pool_t *p, void *basev, void *overv)
 #ifndef NO_STANFORD_SUPPORT
     MERGE_PTR(su_authgroups);
 #endif
+    MERGE_PTR(initial_factors);
+    MERGE_PTR(session_factors);
     if (bconf->creds == NULL) {
         conf->creds = oconf->creds;
     } else if (oconf->creds == NULL) {
@@ -1671,6 +1676,16 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     req.return_url = return_url;
 
+    /* Add factor and level of assurance requirements. */
+    if (rc->dconf->loa > 0)
+        req.loa = rc->dconf->loa;
+    if (rc->dconf->initial_factors != NULL)
+        req.initial_factors
+            = apr_array_pstrcat(rc->r->pool, rc->dconf->initial_factors, ',');
+    if (rc->dconf->session_factors != NULL)
+        req.session_factors
+            = apr_array_pstrcat(rc->r->pool, rc->dconf->session_factors, ',');
+
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: return_url(%s)", mwa_func, return_url);
@@ -2018,7 +2033,8 @@ gather_creds(MWA_REQ_CTXT *rc)
 static int
 gather_tokens(MWA_REQ_CTXT *rc)
 {
-    int code, in_url;
+    int code, in_url, i;
+    char *factor;
 
     /* check the URL. this will parse the token in WEBAUTHR if there
        was one, and create the appropriate cookies, as well as fill in
@@ -2042,6 +2058,73 @@ gather_tokens(MWA_REQ_CTXT *rc)
                 return OK;
             else
                 return redirect_request_token(rc);
+        }
+    }
+
+    /*
+     * We have an app token.  Now check whether our factor and LoA
+     * requirements are met.  If they're not, return a redirect.
+     *
+     * FIXME: Using strstr to do the check is lame.  This should be replaced
+     * with something stronger.
+     *
+     * FIXME: Need better error reporting if there are no initial or session
+     * factors in the app token.  We may be dealing with a WebKDC that cannot
+     * satisfy our request.  Consider making that a fatal error leading to a
+     * permission denied screen instead of a redirect once the WebKDC always
+     * includes initial and session factor information.  Likewise for level of
+     * assurance.
+     */
+    if (rc->dconf->loa > rc->at->loa) {
+        ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
+                      "mod_webauth: insufficient level of assurance (have"
+                      " %lu, want %lu)", rc->at->loa, rc->dconf->loa);
+        return redirect_request_token(rc);
+    }
+    if (rc->dconf->initial_factors != NULL) {
+        if (rc->at->initial_factors == NULL) {
+            ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
+                          "mod_webauth: initial authentication factors"
+                          " required (want %s)",
+                          apr_array_pstrcat(rc->r->pool,
+                                            rc->dconf->initial_factors, ','));
+            return redirect_request_token(rc);
+        }
+        for (i = 0; i < rc->dconf->initial_factors->nelts; i++) {
+            factor = APR_ARRAY_IDX(rc->dconf->initial_factors, i, char *);
+            if (ap_strstr(rc->at->initial_factors, factor) == NULL) {
+                ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
+                              "mod_webauth: insufficient initial"
+                              " authentication factors (have %s, want %s)",
+                              rc->at->initial_factors,
+                              apr_array_pstrcat(rc->r->pool,
+                                                rc->dconf->initial_factors,
+                                                ','));
+                return redirect_request_token(rc);
+            }
+        }
+    }
+    if (rc->dconf->session_factors != NULL) {
+        if (rc->at->session_factors == NULL) {
+            ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
+                          "mod_webauth: session authentication factors"
+                          " required (want %s)",
+                          apr_array_pstrcat(rc->r->pool,
+                                            rc->dconf->session_factors, ','));
+            return redirect_request_token(rc);
+        }
+        for (i = 0; i < rc->dconf->session_factors->nelts; i++) {
+            factor = APR_ARRAY_IDX(rc->dconf->session_factors, i, char *);
+            if (ap_strstr(rc->at->session_factors, factor) == NULL) {
+                ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
+                              "mod_webauth: insufficient session"
+                              " authentication factors (have %s, want %s)",
+                              rc->at->session_factors,
+                              apr_array_pstrcat(rc->r->pool,
+                                                rc->dconf->session_factors,
+                                                ','));
+                return redirect_request_token(rc);
+            }
         }
     }
 
@@ -2441,6 +2524,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     const char *error_str = NULL;
     MWA_DCONF *dconf = mconf;
     MWA_SCONF *sconf;
+    const char **factor;
 
     sconf = ap_get_module_config(cmd->server->module_config, &webauth_module);
 
@@ -2515,6 +2599,23 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
             break;
         case E_LastUseUpdateInterval:
             dconf->last_use_update_interval = seconds(arg, &error_str);
+            break;
+        case E_RequireLOA:
+            dconf->loa = atoi(arg);
+            dconf->loa_ex = 1;
+        case E_RequireInitialFactor:
+            if (dconf->initial_factors == NULL)
+                dconf->initial_factors
+                    = apr_array_make(cmd->pool, 1, sizeof(const char *));
+            factor = apr_array_push(dconf->initial_factors);
+            *factor = arg;
+            break;
+        case E_RequireSessionFactor:
+            if (dconf->session_factors == NULL)
+                dconf->session_factors
+                    = apr_array_make(cmd->pool, 1, sizeof(const char *));
+            factor = apr_array_push(dconf->session_factors);
+            *factor = arg;
             break;
 #ifndef NO_STANFORD_SUPPORT
         case SE_ConfirmMsg:
@@ -2689,6 +2790,7 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
     return error_str;
 }
 
+
 #define SSTR(dir,mconfig,help) \
   {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
 
@@ -2703,6 +2805,9 @@ cfg_take12(cmd_parms *cmd, void *mconfig, const char *w1, const char *w2)
 
 #define DFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG, FLAG, help}
+
+#define DITER(dir,mconfig,help) \
+  {dir, (cmd_func)cfg_str,(void*)mconfig, OR_AUTHCFG, ITERATE, help}
 
 #define AFLAG(dir,mconfig,help) \
   {dir, (cmd_func)cfg_flag,(void*)mconfig, OR_AUTHCFG|RSRC_CONF, FLAG, help}
@@ -2759,10 +2864,13 @@ static const command_rec cmds[] = {
     DFLAG(CD_DontCache, E_DontCache, CM_DontCache),
     DFLAG(CD_Optional, E_Optional, CM_Optional),
     DFLAG(CD_SSLReturn, E_SSLReturn, CM_SSLReturn),
+    DITER(CD_InitialFactor, E_RequireInitialFactor, CM_InitialFactor),
+    DITER(CD_SessionFactor, E_RequireSessionFactor, CM_SessionFactor),
     DSTR(CD_ReturnURL, E_ReturnURL, CM_ReturnURL),
     DSTR(CD_PostReturnURL, E_PostReturnURL, CM_PostReturnURL),
     DSTR(CD_LoginCanceledURL, E_LoginCanceledURL, CM_LoginCanceledURL),
     DSTR(CD_VarPrefix, E_VarPrefix, CM_VarPrefix),
+    DSTR(CD_LOA, E_RequireLOA, CM_LOA),
 
 #ifndef NO_STANFORD_SUPPORT
     DSTR(SCD_ConfirmMsg, SE_ConfirmMsg, SCM_ConfirmMsg),

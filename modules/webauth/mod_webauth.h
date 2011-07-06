@@ -163,6 +163,15 @@
 #define CD_Optional "WebAuthOptional"
 #define CM_Optional "authentication is optional, user will not be redirected"
 
+#define CD_InitialFactor "WebAuthRequireInitialFactor"
+#define CM_InitialFactor "required factors for initial authentication"
+
+#define CD_SessionFactor "WebAuthRequireSessionFactor"
+#define CM_SessionFactor "required factors for session authentication"
+
+#define CD_LOA "WebAuthRequireLOA"
+#define CM_LOA "required level of assurance for authentication"
+
 #ifndef NO_STANFORD_SUPPORT
 
 /* Stanford WebAuth 2.5 compat */
@@ -217,6 +226,9 @@ enum {
     E_Optional,
     E_PostReturnURL,
     E_ReturnURL,
+    E_RequireInitialFactor,
+    E_RequireLOA,
+    E_RequireSessionFactor,
     E_RequireSSL,
     E_SSLReturn,
     E_SSLRedirect,
@@ -313,6 +325,8 @@ typedef struct {
     int force_login_ex;
     int optional;
     int optional_ex;
+    unsigned long loa;
+    int loa_ex;
     int ssl_return;
     int ssl_return_ex;
     int use_creds;
@@ -323,6 +337,8 @@ typedef struct {
     char *login_canceled_url;
     char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
+    apr_array_header_t *initial_factors; /* array of char *'s */
+    apr_array_header_t *session_factors; /* array of char *'s */
 #ifndef NO_STANFORD_SUPPORT
     char *su_authgroups;
 #endif
