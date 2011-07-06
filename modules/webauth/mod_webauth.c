@@ -2603,6 +2603,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         case E_RequireLOA:
             dconf->loa = atoi(arg);
             dconf->loa_ex = 1;
+            break;
         case E_RequireInitialFactor:
             if (dconf->initial_factors == NULL)
                 dconf->initial_factors
