@@ -41,7 +41,7 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
     if (token == NULL) {
         is_string("", webauth_error_message(ctx, status),
                   "...and sets the token pointer");
-        ok_block(9, 0, "...encoding failed");
+        ok_block(11, 0, "...encoding failed");
         return;
     }
     ok(token != NULL, "...and sets the token pointer");
@@ -50,7 +50,7 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
     if (app2 == NULL) {
         is_string("", webauth_error_message(ctx, status),
                   "...and sets the struct pointer");
-        ok_block(7, 0, "...decoding failed");
+        ok_block(9, 0, "...decoding failed");
         return;
     }
     ok(app2 != NULL, "...and sets the struct pointer");
@@ -115,6 +115,138 @@ check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
         ok((cred2->creation > time(NULL) - 1)
            && (cred2->creation < time(NULL) + 1), "...creation");
     is_int(cred->expiration, cred2->expiration, "...expiration");
+}
+
+
+/*
+ * Check an error token by encoding the struct and then decoding it, ensuring
+ * that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_error_token(struct webauth_context *ctx,
+                  struct webauth_token_error *err,
+                  WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_error *err2;
+    const char *token = NULL;
+
+    status = webauth_token_encode_error(ctx, err, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding error %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(5, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_error(ctx, token, ring, &err2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (err2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(3, 0, "...decoding failed");
+        return;
+    }
+    ok(err2 != NULL, "...and sets the struct pointer");
+    is_int(err->code, err2->code, "...code");
+    is_string(err->message, err2->message, "...message");
+    if (err->creation > 0)
+        is_int(err->creation, err2->creation, "...creation");
+    else
+        ok((err2->creation > time(NULL) - 1)
+           && (err2->creation < time(NULL) + 1), "...creation");
+}
+
+
+/*
+ * Check an id token by encoding the struct and then decoding it, ensuring
+ * that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
+                WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_id *id2;
+    const char *token;
+
+    status = webauth_token_encode_id(ctx, id, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding id %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(11, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_id(ctx, token, ring, &id2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (id2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(9, 0, "...decoding failed");
+        return;
+    }
+    ok(id2 != NULL, "...and sets the struct pointer");
+    is_string(id->subject, id2->subject, "...subject");
+    is_string(id->auth, id2->auth, "...subject auth");
+    ok(memcmp(id->auth_data, id2->auth_data, id->auth_data_len) == 0,
+       "...auth data");
+    is_int(id->auth_data_len, id2->auth_data_len, "...auth data length");
+    is_string(id->initial_factors, id2->initial_factors,
+              "...initial factors");
+    is_string(id->session_factors, id2->session_factors,
+              "...session factors");
+    is_int(id->loa, id2->loa, "...level of assurance");
+    if (id->creation > 0)
+        is_int(id->creation, id2->creation, "...creation");
+    else
+        ok((id2->creation > time(NULL) - 1)
+           && (id2->creation < time(NULL) + 1), "...creation");
+    is_int(id->expiration, id2->expiration, "...expiration");
+}
+
+
+/*
+ * Check a login token by encoding the struct and then decoding it, ensuring
+ * that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_login_token(struct webauth_context *ctx,
+                  struct webauth_token_login *login,
+                  WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_login *login2;
+    const char *token = NULL;
+
+    status = webauth_token_encode_login(ctx, login, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding login %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(6, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_login(ctx, token, ring, &login2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (login2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(4, 0, "...decoding failed");
+        return;
+    }
+    ok(login2 != NULL, "...and sets the struct pointer");
+    is_string(login->username, login2->username, "...username");
+    is_string(login->password, login2->password, "...password");
+    is_string(login->otp, login2->otp, "...otp");
+    if (login->creation > 0)
+        is_int(login->creation, login2->creation, "...creation");
+    else
+        ok((login2->creation > time(NULL) - 1)
+           && (login2->creation < time(NULL) + 1), "...creation");
 }
 
 
@@ -222,6 +354,101 @@ check_request_token(struct webauth_context *ctx,
 
 
 /*
+ * Check a webkdc-proxy token by encoding the struct and then decoding it,
+ * ensuring that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_webkdc_proxy_token(struct webauth_context *ctx,
+                         struct webauth_token_webkdc_proxy *wkproxy,
+                         WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_webkdc_proxy *wkproxy2;
+    const char *token;
+
+    status = webauth_token_encode_webkdc_proxy(ctx, wkproxy, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding webkdc-proxy %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(11, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_webkdc_proxy(ctx, token, ring, &wkproxy2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (wkproxy2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(9, 0, "...decoding failed");
+        return;
+    }
+    ok(wkproxy2 != NULL, "...and sets the struct pointer");
+    is_string(wkproxy->subject, wkproxy2->subject, "...subject");
+    is_string(wkproxy->proxy_type, wkproxy2->proxy_type, "...proxy type");
+    is_string(wkproxy->proxy_subject, wkproxy2->proxy_subject,
+              "...proxy subject");
+    ok(memcmp(wkproxy->data, wkproxy2->data, wkproxy->data_len) == 0,
+       "...proxy data");
+    is_int(wkproxy->data_len, wkproxy2->data_len, "...proxy data length");
+    is_string(wkproxy->initial_factors, wkproxy2->initial_factors,
+              "...initial factors");
+    is_int(wkproxy->loa, wkproxy2->loa, "...level of assurance");
+    if (wkproxy->creation > 0)
+        is_int(wkproxy->creation, wkproxy2->creation, "...creation");
+    else
+        ok((wkproxy2->creation > time(NULL) - 1)
+           && (wkproxy2->creation < time(NULL) + 1), "...creation");
+    is_int(wkproxy->expiration, wkproxy2->expiration, "...expiration");
+}
+
+
+/*
+ * Check a webkdc-service token by encoding the struct and then decoding it,
+ * ensuring that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_webkdc_service_token(struct webauth_context *ctx,
+                         struct webauth_token_webkdc_service *service,
+                         WEBAUTH_KEYRING *ring, const char *name)
+{
+    int status;
+    struct webauth_token_webkdc_service *service2;
+    const char *token;
+
+    status = webauth_token_encode_webkdc_service(ctx, service, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding webkdc-service %s succeeds", name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(7, 0, "...encoding failed");
+        return;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_webkdc_service(ctx, token, ring, &service2);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (service2 == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(5, 0, "...decoding failed");
+        return;
+    }
+    ok(service2 != NULL, "...and sets the struct pointer");
+    is_string(service->subject, service2->subject, "...subject");
+    ok(memcmp(service->session_key, service2->session_key,
+              service->session_key_len) == 0, "...session key");
+    is_int(service->session_key_len, service2->session_key_len,
+           "...session key length");
+    if (service->creation > 0)
+        is_int(service->creation, service2->creation, "...creation");
+    else
+        ok((service2->creation > time(NULL) - 1)
+           && (service2->creation < time(NULL) + 1), "...creation");
+    is_int(service->expiration, service2->expiration, "...expiration");
+}
+
+
+/*
  * Check encoding errors in various tokens.  Each of these function is the
  * same except for the token type, so we generate all the functions with
  * macros.  Each takes the context, the struct to encode, a keyring, a summary
@@ -251,8 +478,13 @@ check_request_token(struct webauth_context *ctx,
     }
 CHECK_FUNCTION(app)
 CHECK_FUNCTION(cred)
+CHECK_FUNCTION(error)
+CHECK_FUNCTION(id)
+CHECK_FUNCTION(login)
 CHECK_FUNCTION(proxy)
 CHECK_FUNCTION(request)
+CHECK_FUNCTION(webkdc_proxy)
+CHECK_FUNCTION(webkdc_service)
 
 
 int
@@ -265,10 +497,15 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_token_app app;
     struct webauth_token_cred cred;
+    struct webauth_token_error err;
+    struct webauth_token_id id;
+    struct webauth_token_login login;
     struct webauth_token_proxy proxy;
     struct webauth_token_request req;
+    struct webauth_token_webkdc_proxy wkproxy;
+    struct webauth_token_webkdc_service service;
 
-    plan(242);
+    plan(408);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -368,6 +605,90 @@ main(void)
     cred.expiration = 0;
     check_cred_error(ctx, &cred, ring, "without expiration",
                      "missing expiration for cred token");
+
+    /* Flesh out an error token, and then encode and decode it. */
+    err.code = 12;
+    err.message = "some message";
+    err.creation = now;
+    check_error_token(ctx, &err, ring, "full");
+    err.creation = 0;
+    check_error_token(ctx, &err, ring, "minimal");
+
+    /* Test for error cases for missing data. */
+    err.code = 0;
+    check_error_error(ctx, &err, ring, "without code",
+                      "missing code for error token");
+    err.code = 12;
+    err.message = NULL;
+    check_error_error(ctx, &err, ring, "without message",
+                      "missing message for error token");
+
+    /* Flesh out an id token, and then encode and decode it. */
+    id.subject = "testuser";
+    id.auth = "krb5";
+    id.auth_data = "s=ome\0da;;ta";
+    id.auth_data_len = 12;
+    id.initial_factors = "p,x,m";
+    id.session_factors = "k";
+    id.loa = 2;
+    id.creation = now;
+    id.expiration = now + 60;
+    check_id_token(ctx, &id, ring, "full");
+    id.auth = "webkdc";
+    id.auth_data = NULL;
+    id.auth_data_len = 0;
+    id.initial_factors = NULL;
+    id.session_factors = NULL;
+    id.loa = 0;
+    id.creation = 0;
+    check_id_token(ctx, &id, ring, "minimal");
+
+    /* Test for error cases for missing data. */
+    id.subject = NULL;
+    check_id_error(ctx, &id, ring, "without subject",
+                      "missing subject for id token");
+    id.subject = "testuser";
+    id.auth = NULL;
+    check_id_error(ctx, &id, ring, "without subject auth",
+                      "missing auth for id token");
+    id.auth = "random";
+    check_id_error(ctx, &id, ring, "with bad subject auth",
+                      "unknown subject auth random for id token");
+    id.auth = "krb5";
+    check_id_error(ctx, &id, ring, "without auth data for krb5",
+                      "missing auth_data for id token");
+    id.auth_data = "s=ome\0da;;ta";
+    id.auth_data_len = 0;
+    check_id_error(ctx, &id, ring, "without auth data length for krb5",
+                      "empty auth_data for id token");
+    id.auth_data_len = 12;
+    id.expiration = 0;
+    check_id_error(ctx, &id, ring, "without expiration",
+                      "missing expiration for id token");
+
+    /* Flesh out an login token, and then encode and decode it. */
+    login.username = "testuser";
+    login.password = "password";
+    login.otp = NULL;
+    login.creation = now;
+    check_login_token(ctx, &login, ring, "password");
+    login.password = NULL;
+    login.otp = "123456";
+    login.creation = 0;
+    check_login_token(ctx, &login, ring, "otp");
+
+    /* Test for error cases for missing or inconsistent data. */
+    login.username = NULL;
+    check_login_error(ctx, &login, ring, "without username",
+                      "missing username for login token");
+    login.username = "testuser";
+    login.otp = NULL;
+    check_login_error(ctx, &login, ring, "without password or otp",
+                      "either password or otp required for login token");
+    login.password = "password";
+    login.otp = "123456";
+    check_login_error(ctx, &login, ring, "both password and otp",
+                      "both password and otp set in login token");
 
     /* Flesh out a proxy token, and then encode and decode it. */
     proxy.subject = "testuser";
@@ -472,6 +793,81 @@ main(void)
     req.command = "getTokensRequest";
     check_request_error(ctx, &req, ring, "with command and type",
                         "type not valid with command in request token");
+
+    /* Flesh out a webkdc-proxy token, and then encode and decode it. */
+    wkproxy.subject = "testuser";
+    wkproxy.proxy_type = "krb5";
+    wkproxy.proxy_subject = "krb5:webauth/example.com@EXAMPLE.COM";
+    wkproxy.data = "s=ome\0da;;ta";
+    wkproxy.data_len = 12;
+    wkproxy.initial_factors = "p,x,m";
+    wkproxy.loa = 2;
+    wkproxy.creation = now;
+    wkproxy.expiration = now + 60;
+    check_webkdc_proxy_token(ctx, &wkproxy, ring, "krb5");
+    wkproxy.proxy_type = "remuser";
+    wkproxy.proxy_subject = "WEBKDC:remuser";
+    wkproxy.initial_factors = NULL;
+    wkproxy.loa = 0;
+    wkproxy.creation = 0;
+    check_webkdc_proxy_token(ctx, &wkproxy, ring, "remuser");
+
+    /* Test for error cases for missing data. */
+    wkproxy.subject = NULL;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without subject",
+                             "missing subject for webkdc_proxy token");
+    wkproxy.subject = "testuser";
+    wkproxy.proxy_type = NULL;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy type",
+                             "missing proxy_type for webkdc_proxy token");
+    wkproxy.proxy_type = "random";
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "with bad proxy type",
+                             "unknown proxy type random for webkdc-proxy"
+                             " token");
+    wkproxy.proxy_type = "krb5";
+    wkproxy.proxy_subject = NULL;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy subject",
+                             "missing proxy_subject for webkdc_proxy token");
+    wkproxy.proxy_subject = "krb5:webauth/example.com@EXAMPLE.COM";
+    wkproxy.data = NULL;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy data",
+                             "missing data for webkdc_proxy token");
+    wkproxy.data = "s=ome\0da;;ta";
+    wkproxy.data_len = 0;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy data length",
+                             "empty data for webkdc_proxy token");
+    wkproxy.data_len = 12;
+    wkproxy.expiration = 0;
+    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without expiration",
+                             "missing expiration for webkdc_proxy token");
+
+    /* Flesh out a webkdc-service token, and then encode and decode it. */
+    service.subject = "testuser";
+    service.session_key = "so\0me";
+    service.session_key_len = 5;
+    service.creation = now;
+    service.expiration = now + 60;
+    check_webkdc_service_token(ctx, &service, ring, "full");
+    service.creation = 0;
+    check_webkdc_service_token(ctx, &service, ring, "minimal");
+
+    /* Test for error cases for missing data. */
+    service.subject = NULL;
+    check_webkdc_service_error(ctx, &service, ring, "without subject",
+                               "missing subject for webkdc_service token");
+    service.subject = "testuser";
+    service.session_key = NULL;
+    check_webkdc_service_error(ctx, &service, ring, "without session key",
+                               "missing session_key for webkdc_service token");
+    service.session_key = "so\0me";
+    service.session_key_len = 0;
+    check_webkdc_service_error(ctx, &service, ring,
+                               "without session key length",
+                               "empty session_key for webkdc_service token");
+    service.session_key_len = 5;
+    service.expiration = 0;
+    check_webkdc_service_error(ctx, &service, ring, "without expiration",
+                               "missing expiration for webkdc_service token");
 
     /* Clean up. */
     webauth_keyring_free(ring);

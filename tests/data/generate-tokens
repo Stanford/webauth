@@ -117,6 +117,20 @@ our %TOKENS =
                           creation_time   => 1308777900,
                           expiration_time => 2147483600 }
                       ],
+     'login-empty' => [ 'WebKDC::LoginToken',
+                        { username        => 'testuser',
+                          password        => 'some;s=password' }
+                      ],
+     'login-otp'   => [ 'WebKDC::LoginToken',
+                        { username        => 'testuser',
+                          otp             => '489147',
+                          creation_time   => 1308777900 }
+                      ],
+     'login-pass'  => [ 'WebKDC::LoginToken',
+                        { username        => 'testuser',
+                          password        => 'some;s=password',
+                          creation_time   => 1308777900 }
+                      ],
      'proxy-empty' => [ 'WebKDC::ProxyToken',
                         { proxy_type      => 'krb5',
                           webkdc_token    => "s=foo\0s=bar;;da",
@@ -182,6 +196,44 @@ our %TOKENS =
      'req-command' => [ 'WebKDC::RequestToken',
                         { command         => 'getTokensRequest',
                           creation_time   => 1308777900 }
+                      ],
+     'service-exp' => [ 'WebKDC::WebKDCServiceToken',
+                        { subject         => 'krb5:service/foo@EXAMPLE.COM',
+                          session_key     => "s=foo\0s=bar;;da",
+                          creation_time   => 1308777900,
+                          expiration_time => 1308871632 }
+                      ],
+     'service-ok'  => [ 'WebKDC::WebKDCServiceToken',
+                        { subject         => 'krb5:service/foo@EXAMPLE.COM',
+                          session_key     => "s=foo\0s=bar;;da",
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
+     'wkproxy-exp' => [ 'WebKDC::WebKDCProxyToken',
+                        { subject         => 'testuser',
+                          proxy_type      => 'remuser',
+                          proxy_subject   => 'WEBKDC:remuser',
+                          proxy_data      => 'testuser',
+                          creation_time   => 1308777900,
+                          expiration_time => 1308871632 }
+                      ],
+     'wkproxy-min' => [ 'WebKDC::WebKDCProxyToken',
+                        { subject         => 'testuser',
+                          proxy_type      => 'remuser',
+                          proxy_subject   => 'WEBKDC:remuser',
+                          proxy_data      => 'testuser',
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
+                      ],
+     'wkproxy-ok'  => [ 'WebKDC::WebKDCProxyToken',
+                        { subject         => 'testuser',
+                          proxy_type      => 'krb5',
+                          proxy_subject   => 'krb5:service/foo@EXAMPLE.COM',
+                          proxy_data      => "s=foo\0s=bar;;da",
+                          initial_factors => 'p,o1,o,m',
+                          loa             => 2,
+                          creation_time   => 1308777900,
+                          expiration_time => 2147483600 }
                       ],
     );
 

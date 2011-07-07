@@ -79,8 +79,11 @@ CHECK_FUNCTION(app)
 CHECK_FUNCTION(cred)
 CHECK_FUNCTION(error)
 CHECK_FUNCTION(id)
+CHECK_FUNCTION(login)
 CHECK_FUNCTION(proxy)
 CHECK_FUNCTION(request)
+CHECK_FUNCTION(webkdc_proxy)
+CHECK_FUNCTION(webkdc_service)
 
 
 int
@@ -94,12 +97,15 @@ main(void)
     struct webauth_token_cred *cred;
     struct webauth_token_error *err;
     struct webauth_token_id *id;
+    struct webauth_token_login *login;
     struct webauth_token_proxy *proxy;
     struct webauth_token_request *req;
+    struct webauth_token_webkdc_proxy *wkproxy;
+    struct webauth_token_webkdc_service *service;
     enum webauth_token_type type;
     void *generic;
 
-    plan(214);
+    plan(268);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -307,6 +313,44 @@ main(void)
     check_id_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
                    "wrong token type app while decoding id token");
 
+    /* Test decoding of a login password token. */
+    token = read_token("data/tokens/login-pass");
+    status = webauth_token_decode_login(ctx, token, ring, &login);
+    is_int(WA_ERR_NONE, status, "Decode login-pass");
+    if (login == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(3, 0, "Decoding failed");
+    } else {
+        is_string("testuser", login->username, "...username");
+        is_string("some;s=password", login->password, "...password");
+        is_string(NULL, login->otp, "...otp");
+        is_int(1308777900, login->creation, "...creation");
+    }
+    free(token);
+
+    /* Test decoding of a login OTP token. */
+    token = read_token("data/tokens/login-otp");
+    status = webauth_token_decode_login(ctx, token, ring, &login);
+    is_int(WA_ERR_NONE, status, "Decode login-otp");
+    if (login == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(3, 0, "Decoding failed");
+    } else {
+        is_string("testuser", login->username, "...username");
+        is_string(NULL, login->password, "...password");
+        is_string("489147", login->otp, "...otp");
+        is_int(1308777900, login->creation, "...creation");
+    }
+    free(token);
+
+    /* Test decoding error cases for login tokens. */
+    check_login_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                      "bad login token");
+    check_login_error(ctx, "login-empty", ring, WA_ERR_CORRUPT,
+                      "decoding attribute ct failed");
+    check_login_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                      "wrong token type app while decoding login token");
+
     /* Test decoding of a proxy token. */
     token = read_token("data/tokens/proxy-ok");
     status = webauth_token_decode_proxy(ctx, token, ring, &proxy);
@@ -450,6 +494,85 @@ main(void)
                         "bad req token");
     check_request_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
                         "wrong token type app while decoding req token");
+
+    /* Test decoding of a webkdc-proxy token. */
+    token = read_token("data/tokens/wkproxy-ok");
+    status = webauth_token_decode_webkdc_proxy(ctx, token, ring, &wkproxy);
+    is_int(WA_ERR_NONE, status, "Decode wkproxy-ok");
+    if (wkproxy == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string("testuser", wkproxy->subject, "...subject");
+        is_string("krb5", wkproxy->proxy_type, "...proxy type");
+        is_string("krb5:service/foo@EXAMPLE.COM", wkproxy->proxy_subject,
+                  "...proxy subject");
+        ok(memcmp("s=foo\0s=bar;;da", wkproxy->data, 15) == 0,
+           "...proxy data");
+        is_int(15, wkproxy->data_len, "...proxy data length");
+        is_string("p,o1,o,m", wkproxy->initial_factors, "...initial factors");
+        is_int(2, wkproxy->loa, "...level of assurance");
+        is_int(1308777900, wkproxy->creation, "...creation");
+        is_int(2147483600, wkproxy->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding of a minimal webkdc-proxy token. */
+    token = read_token("data/tokens/wkproxy-min");
+    status = webauth_token_decode_webkdc_proxy(ctx, token, ring, &wkproxy);
+    is_int(WA_ERR_NONE, status, "Decode wkproxy-min");
+    if (wkproxy == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(8, 0, "Decoding failed");
+    } else {
+        is_string("testuser", wkproxy->subject, "...subject");
+        is_string("remuser", wkproxy->proxy_type, "...proxy type");
+        is_string("WEBKDC:remuser", wkproxy->proxy_subject,
+                  "...proxy subject");
+        ok(memcmp("testuser", wkproxy->data, 8) == 0, "...proxy data");
+        is_int(8, wkproxy->data_len, "...proxy data length");
+        is_string(NULL, wkproxy->initial_factors, "...initial factors");
+        is_int(0, wkproxy->loa, "...level of assurance");
+        is_int(1308777900, wkproxy->creation, "...creation");
+        is_int(2147483600, wkproxy->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding error cases for webkdc-proxy tokens. */
+    check_webkdc_proxy_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                             "bad webkdc-proxy token");
+    check_webkdc_proxy_error(ctx, "wkproxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
+                             "bad webkdc-proxy token");
+    check_webkdc_proxy_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                             "wrong token type app while decoding"
+                             " webkdc-proxy token");
+
+    /* Test decoding of a webkdc-service token. */
+    token = read_token("data/tokens/service-ok");
+    status = webauth_token_decode_webkdc_service(ctx, token, ring, &service);
+    is_int(WA_ERR_NONE, status, "Decode service-ok");
+    if (service == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(4, 0, "Decoding failed");
+    } else {
+        is_string("krb5:service/foo@EXAMPLE.COM", service->subject,
+                  "...subject");
+        ok(memcmp("s=foo\0s=bar;;da", service->session_key, 15) == 0,
+           "...session key");
+        is_int(15, service->session_key_len, "...session key length");
+        is_int(1308777900, service->creation, "...creation");
+        is_int(2147483600, service->expiration, "...expiration");
+    }
+    free(token);
+
+    /* Test decoding error cases for webkdc-service tokens. */
+    check_webkdc_service_error(ctx, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
+                               "bad webkdc-service token");
+    check_webkdc_service_error(ctx, "service-exp", ring, WA_ERR_TOKEN_EXPIRED,
+                               "bad webkdc-service token");
+    check_webkdc_service_error(ctx, "app-ok", ring, WA_ERR_CORRUPT,
+                               "wrong token type app while decoding"
+                               " webkdc-service token");
 
     /*
      * Now test for the generic decoding function.  We'll run each of the

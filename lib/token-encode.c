@@ -279,6 +279,163 @@ corrupt:
 
 
 /*
+ * Encode an error token.  Takes the struct representing the token contents
+ * and the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_error(struct webauth_context *ctx,
+                           const struct webauth_token_error *error,
+                           const WEBAUTH_KEYRING *keyring,
+                           const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    const char *code_string;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_NUM(error, code);
+    CHECK_STR(error, message);
+
+    /* Encode the token attributes into the attribute list. */
+    creation = (error->creation > 0) ? error->creation : time(NULL);
+    code_string = apr_psprintf(ctx->pool, "%lu", error->code);
+    ADD_STR( WA_TK_ERROR_CODE,    code_string);
+    ADD_STR( WA_TK_TOKEN_TYPE,    WA_TT_ERROR);
+    ADD_STR( WA_TK_ERROR_MESSAGE, error->message);
+    ADD_TIME(WA_TK_CREATION_TIME, creation);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
+ * Encode an id token.  Takes the struct representing the token contents and
+ * the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_id(struct webauth_context *ctx,
+                        const struct webauth_token_id *id,
+                        const WEBAUTH_KEYRING *keyring,
+                        const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_STR(id, subject);
+    CHECK_STR(id, auth);
+    CHECK_NUM(id, expiration);
+    if (strcmp(id->auth, "krb5") != 0 && strcmp(id->auth, "webkdc") != 0) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "unknown subject auth %s for id token", id->auth);
+        goto corrupt;
+    }
+    if (strcmp(id->auth, "krb5") == 0)
+        CHECK_DATA(id, auth_data);
+
+    /* Encode the token attributes into the attribute list. */
+    creation = (id->creation > 0) ? id->creation : time(NULL);
+    ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_ID);
+    ADD_STR( WA_TK_SUBJECT,         id->subject);
+    ADD_STR( WA_TK_SUBJECT_AUTH,    id->auth);
+    ADD_TIME(WA_TK_CREATION_TIME,   creation);
+    ADD_TIME(WA_TK_EXPIRATION_TIME, id->expiration);
+    if (id->auth_data != NULL)
+        ADD_DATA(WA_TK_SUBJECT_AUTH_DATA, id->auth_data, id->auth_data_len);
+    if (id->initial_factors != NULL)
+        ADD_STR(WA_TK_INITIAL_FACTORS, id->initial_factors);
+    if (id->session_factors != NULL)
+        ADD_STR(WA_TK_SESSION_FACTORS, id->session_factors);
+    if (id->loa > 0)
+        ADD_UINT(WA_TK_LOA, id->loa);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
+ * Encode a login token.  Takes the struct representing the token contents and
+ * the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_login(struct webauth_context *ctx,
+                           const struct webauth_token_login *login,
+                           const WEBAUTH_KEYRING *keyring,
+                           const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_STR(login, username);
+    if (login->password == NULL && login->otp == NULL) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "either password or otp required for login token");
+        goto corrupt;
+    }
+    if (login->password != NULL && login->otp != NULL) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "both password and otp set in login token");
+        goto corrupt;
+    }
+
+    /* Encode the token attributes into the attribute list. */
+    creation = (login->creation > 0) ? login->creation : time(NULL);
+    ADD_STR( WA_TK_TOKEN_TYPE,    WA_TT_LOGIN);
+    ADD_STR( WA_TK_USERNAME,      login->username);
+    ADD_TIME(WA_TK_CREATION_TIME, creation);
+    if (login->password != NULL)
+        ADD_STR(WA_TK_PASSWORD, login->password);
+    if (login->otp != NULL)
+        ADD_STR(WA_TK_OTP, login->otp);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
  * Encode a proxy token.  Takes the struct representing the token contents and
  * the keyring to use for encryption.  Stores the pointer to the
  * newly-allocated token (created from pool-allocated memory) in the token
@@ -422,6 +579,118 @@ webauth_token_encode_request(struct webauth_context *ctx,
             ADD_UINT(WA_TK_LOA, request->loa);
     }
     ADD_TIME(WA_TK_CREATION_TIME, creation);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
+ * Encode a webkdc-proxy token.  Takes the struct representing the token
+ * contents and the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_webkdc_proxy(struct webauth_context *ctx,
+                                  const struct webauth_token_webkdc_proxy
+                                      *webkdc_proxy,
+                                  const WEBAUTH_KEYRING *keyring,
+                                  const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_STR( webkdc_proxy, subject);
+    CHECK_STR( webkdc_proxy, proxy_type);
+    CHECK_STR( webkdc_proxy, proxy_subject);
+    CHECK_DATA(webkdc_proxy, data);
+    CHECK_NUM( webkdc_proxy, expiration);
+    if (strcmp(webkdc_proxy->proxy_type, "krb5") != 0
+        && strcmp(webkdc_proxy->proxy_type, "remuser") != 0) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "unknown proxy type %s for webkdc-proxy token",
+                          webkdc_proxy->proxy_type);
+        goto corrupt;
+    }
+
+    /* Encode the token attributes into the attribute list. */
+    creation
+        = (webkdc_proxy->creation > 0) ? webkdc_proxy->creation : time(NULL);
+    ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_WEBKDC_PROXY);
+    ADD_STR( WA_TK_SUBJECT,         webkdc_proxy->subject);
+    ADD_STR( WA_TK_PROXY_TYPE,      webkdc_proxy->proxy_type);
+    ADD_STR( WA_TK_PROXY_SUBJECT,   webkdc_proxy->proxy_subject);
+    ADD_DATA(WA_TK_PROXY_DATA,      webkdc_proxy->data,
+             webkdc_proxy->data_len);
+    ADD_TIME(WA_TK_CREATION_TIME,   creation);
+    ADD_TIME(WA_TK_EXPIRATION_TIME, webkdc_proxy->expiration);
+    if (webkdc_proxy->initial_factors != NULL)
+        ADD_STR(WA_TK_INITIAL_FACTORS, webkdc_proxy->initial_factors);
+    if (webkdc_proxy->loa > 0)
+        ADD_UINT(WA_TK_LOA, webkdc_proxy->loa);
+
+    /* Finish encoding the token. */
+    status = finish_encode(ctx, keyring, alist, token);
+    webauth_attr_list_free(alist);
+    return status;
+
+corrupt:
+    webauth_attr_list_free(alist);
+    return WA_ERR_CORRUPT;
+}
+
+
+/*
+ * Encode a webkdc-service token.  Takes the struct representing the token
+ * contents and the keyring to use for encryption.  Stores the pointer to the
+ * newly-allocated token (created from pool-allocated memory) in the token
+ * parameter.  On error, token is set to NULL and an error code is returned.
+ */
+int
+webauth_token_encode_webkdc_service(struct webauth_context *ctx,
+                                    const
+                                    struct webauth_token_webkdc_service
+                                        *webkdc_service,
+                                    const WEBAUTH_KEYRING *keyring,
+                                    const char **token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    time_t creation;
+
+    status = prep_encode(ctx, keyring, token, &alist);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Sanity-check the token attributes. */
+    CHECK_STR( webkdc_service, subject);
+    CHECK_DATA(webkdc_service, session_key);
+    CHECK_NUM( webkdc_service, expiration);
+
+    /* Encode the token attributes into the attribute list. */
+    if (webkdc_service->creation > 0)
+        creation = webkdc_service->creation;
+    else
+        creation = time(NULL);
+    ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_WEBKDC_SERVICE);
+    ADD_STR( WA_TK_SUBJECT,         webkdc_service->subject);
+    ADD_DATA(WA_TK_SESSION_KEY,     webkdc_service->session_key,
+             webkdc_service->session_key_len);
+    ADD_TIME(WA_TK_CREATION_TIME,   creation);
+    ADD_TIME(WA_TK_EXPIRATION_TIME, webkdc_service->expiration);
 
     /* Finish encoding the token. */
     status = finish_encode(ctx, keyring, alist, token);

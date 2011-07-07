@@ -127,6 +127,17 @@ struct webauth_token_id {
 };
 
 /*
+ * Login token, sent from the WebLogin server to the WebKDC and containing the
+ * user's username and password or other authentication secret.
+ */
+struct webauth_token_login {
+    const char *username;
+    const char *password;
+    const char *otp;
+    time_t creation;
+};
+
+/*
  * Proxy token, returned by the WebKDC to a WebAuth Application Server if the
  * WAS may need to request various tokens (particularly credential tokens).
  * The embedded webkdc-proxy token is stored in an intermediate binary form
@@ -168,6 +179,42 @@ struct webauth_token_request {
     time_t creation;
 };
 
+/*
+ * WebKDC proxy token, which stores user credentials or authentication
+ * information for later use by the WebKDC.  This is the token that's stored
+ * as a single sign-on cookie in the user's browser, allowing the user to
+ * authenticate to subsequent web sites without reauthenticating.  This token
+ * is also returned inside a proxy token to a WAS, which can then present it
+ * back to the WebKDC to obtain id or cred tokens.
+ */
+struct webauth_token_webkdc_proxy {
+    const char *subject;
+    const char *proxy_type;
+    const char *proxy_subject;
+    const void *data;
+    size_t data_len;
+    const char *initial_factors;
+    unsigned long loa;
+    time_t creation;
+    time_t expiration;
+};
+
+/*
+ * WebKDC service token, sent by the WebKDC to a WAS and returned by the WAS
+ * to the WebKDC as part of the request token.  The purpose of this token is
+ * to store the session key used for encrypting the request token and its
+ * responses.  It's encrypted in the WebKDC's long-term key, and is therefore
+ * used by the WebKDC to recover the session key without having local state.
+ */
+struct webauth_token_webkdc_service {
+    const char *subject;
+    const void *session_key;
+    size_t session_key_len;
+    time_t creation;
+    time_t expiration;
+};
+
+
 BEGIN_DECLS
 
 /*
@@ -192,6 +239,10 @@ int webauth_token_decode_id(struct webauth_context *,
                             const char *, const WEBAUTH_KEYRING *,
                             struct webauth_token_id **)
     __attribute__((__nonnull__));
+int webauth_token_decode_login(struct webauth_context *,
+                               const char *, const WEBAUTH_KEYRING *,
+                               struct webauth_token_login **)
+    __attribute__((__nonnull__));
 int webauth_token_decode_proxy(struct webauth_context *,
                                const char *, const WEBAUTH_KEYRING *,
                                struct webauth_token_proxy **)
@@ -199,6 +250,14 @@ int webauth_token_decode_proxy(struct webauth_context *,
 int webauth_token_decode_request(struct webauth_context *,
                                  const char *, const WEBAUTH_KEYRING *,
                                  struct webauth_token_request **)
+    __attribute__((__nonnull__));
+int webauth_token_decode_webkdc_proxy(struct webauth_context *,
+                                      const char *, const WEBAUTH_KEYRING *,
+                                      struct webauth_token_webkdc_proxy **)
+    __attribute__((__nonnull__));
+int webauth_token_decode_webkdc_service(struct webauth_context *,
+                                        const char *, const WEBAUTH_KEYRING *,
+                                        struct webauth_token_webkdc_service **)
     __attribute__((__nonnull__));
 
 /*
@@ -238,6 +297,18 @@ int webauth_token_encode_cred(struct webauth_context *,
                               const struct webauth_token_cred *,
                               const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
+int webauth_token_encode_error(struct webauth_context *,
+                               const struct webauth_token_error *,
+                               const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_id(struct webauth_context *,
+                            const struct webauth_token_id *,
+                            const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_login(struct webauth_context *,
+                               const struct webauth_token_login *,
+                               const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
 int webauth_token_encode_proxy(struct webauth_context *,
                                const struct webauth_token_proxy *,
                                const WEBAUTH_KEYRING *, const char **token)
@@ -245,6 +316,18 @@ int webauth_token_encode_proxy(struct webauth_context *,
 int webauth_token_encode_request(struct webauth_context *,
                                  const struct webauth_token_request *,
                                  const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_webkdc_proxy(struct webauth_context *,
+                                      const
+                                      struct webauth_token_webkdc_proxy *,
+                                      const WEBAUTH_KEYRING *,
+                                      const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_webkdc_service(struct webauth_context *,
+                                        const
+                                        struct webauth_token_webkdc_service *,
+                                        const WEBAUTH_KEYRING *,
+                                        const char **token)
     __attribute__((__nonnull__));
 
 END_DECLS
