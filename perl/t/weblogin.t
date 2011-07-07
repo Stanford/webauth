@@ -79,6 +79,7 @@ sub init_weblogin {
     my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
 
     my $query = CGI->new ({});
+    $query->request_method ('POST');
     $query->param ('username', $username);
     $query->param ('password', $password);
     $query->param ('ST', $st_base64);
@@ -318,7 +319,7 @@ is ($output[2], 'err_no_request_token ',
 is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
 is ($output[4], 'err_msg there is most likely a configuration problem '
     .'with the server that redirected you. Please contact its '
-    .'administrator', ' with correct error message');
+    .'administrator.', ' with correct error message');
 is ($output[5], 'err_confirm ', ' and err_confirm was not set');
 is ($output[6], 'script_name ', ' and script_name was not set');
 
@@ -628,7 +629,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_WEBAUTH_SERVER_ERROR, 'webautherr');
 $errmsg = 'there is most likely a configuration problem with'
     . ' the server that redirected you. Please contact its'
-    . ' administrator';
+    . ' administrator.';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for unrecoverable webauth server error');
 is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');

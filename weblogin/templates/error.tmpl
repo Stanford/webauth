@@ -11,11 +11,16 @@ This is the template for the WebAuth error page.  It is displayed whenever
 the login.fcgi script on the weblogin server encounters an error.
 Variables used:
 
-err_bad_method         : browser submitted login page via GET not POST
-err_cookies_disabled   : cookies disabled in the web browser
-err_no_request_token   : no request token (user went straight to weblogin)
-err_webkdc             : the WebKDC returned an error
-err_msg                : error message from WebKDC
+err_bad_method            : browser submitted login page via GET not POST
+err_cookies_disabled      : cookies disabled in the web browser
+err_no_request_token      : no request token (user went straight to weblogin)
+err_sendauth              : sendauth function returned non-zero status
+err_no_mfactor            : site requested multifactor, user has none
+err_insufficient_mfactor  : site requested higher multifactor than user has
+err_webkdc                : the WebKDC returned an error
+err_msg                   : error message from WebKDC
+multifactor_required      : level of multifactor required for the destination
+multifactor_configured    : level of multifactor set up by the user
 -->
   [% END %]
 
@@ -62,6 +67,29 @@ err_msg                : error message from WebKDC
                 <p>Error: Necessary form data was missing.</p>
                 <p>You have probably accessed a stale cached page by
                    mistake.</p>
+              [% END %]
+
+              <!-- Error: multifactor required, user has none set up -->
+              [% IF err_no_mfactor %]
+                <p>Error: Multifactor is required for the destination site
+                   but you have none set up to use.</p>
+              [% END %]
+
+              <!-- Error: higher multifactor level required than user has -->
+              [% IF err_insufficient_mfactor %]
+                <p>Error: The destination site requires a higher level of
+                   multifactor than you have set up.</p>
+                <p>The site requires one of the following levels:<br />
+                   [% multifactor_required %]</p>
+                <p>Your level of multifactor is only:<br />
+                   [% multifactor_configured %]</p>
+              [% END %]
+
+              <!-- Error: sendauth failed to run successfully -->
+              [% IF err_sendauth %]
+                <p>Error: Unable to send authentication code.</p>
+                <p>There was an internal error while attempting to send you
+                   an authentication code.</p>
               [% END %]
 
               [% IF err_webkdc %]

@@ -179,6 +179,7 @@ sub get_pagename {
     return '';
 }
 
+
 ##############################################################################
 # Utility functions
 ##############################################################################
@@ -565,13 +566,14 @@ sub print_confirm_page {
     # later on but present the regular confirmation page as the body in case
     # the browser doesn't support it.  We also skip the bypass if the user
     # has an upcoming password expiration warning.
+    my $post = ($q->request_method eq 'POST') ? 1 : 0;
     my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
     $bypass = 0 if $expire_warning;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
     }
     if ($token_type eq 'id') {
-        if ($bypass and not $self->param ('force_confirm')) {
+        if ($bypass and not $post) {
             return $self->print_headers ($resp->proxy_cookies, $return_url);
         }
     }
@@ -724,6 +726,33 @@ sub print_pwchange_confirm_page {
     } else {
         $self->print_error_fatal ('could not process pwchange confirm '
                                   .'template');
+    }
+}
+
+# Print the page prompting a user to give a multifactor OTP.  This is called
+# whenever the user's login attempt returns that multifactor should be tried,
+# or on an unsuccessful attempt to use multifactor.
+sub print_multifactor_page {
+    my ($self, $RT, $ST) = @_;
+    my $q = $self->query;
+    my $pagename = $self->get_pagename ('multifactor');
+    my $params = $self->template_params;
+
+    $params->{script_name} = $self->param ('script_name');
+    $params->{username} = $q->param ('username');
+    $params->{RT} = $RT;
+    $params->{ST} = $ST;
+    $params->{factor_type} = $self->{response}->factor_configured;
+
+    $params->{error} = 1 if $params->{'err_multifactor_missing'};
+    $params->{error} = 1 if $params->{'err_multifactor_invalid'};
+
+    $self->print_headers;
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process multifactor template');
     }
 }
 
@@ -1180,6 +1209,7 @@ sub setup_kdc_request {
     $self->{request}->service_token ($self->fix_token ($q->param ('ST')));
     $self->{request}->request_token ($self->fix_token ($q->param ('RT')));
     $self->{request}->pass ($q->param ('password')) if $q->param ('password');
+    $self->{request}->otp ($q->param ('otp')) if $q->param ('otp');
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1296,19 +1326,14 @@ sub index : StartRunmode {
     # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
     # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
     # requires username/password even if the user has other auth methods.
-    #
-    # If username was set, we were the target of a form submission and
-    # therefore by protocol must display a real page.  Otherwise, we can
-    # return a redirect if BYPASS_CONFIRM is set.
     # Auth branch on "WebKDC return status" 1A
     if ($status == WK_SUCCESS) {
         if (defined (&WebKDC::Config::record_login)) {
             WebKDC::Config::record_login ($resp->subject);
         }
 
-        print STDERR "WebKDC::make_request_token_request sucess\n"
+        print STDERR "WebKDC::make_request_token_request success\n"
             if $self->param ('debug');
-        $self->param ('force_confirm', 1) if $q->param ('username');
         return $self->print_confirm_page;
 
     # User's password has expired and we have somewhere to send them to get it
@@ -1383,6 +1408,25 @@ sub index : StartRunmode {
         return $self->print_login_page ($status, $req->request_token,
                                         $req->service_token);
 
+    # Multifactor was required and the KDC says the user can give it.
+    } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
+        print STDERR "multifactor required for login\n"
+            if $self->param ('debug');
+
+        my $req = $self->{request};
+        return $self->print_multifactor_page ($req->request_token,
+                                              $req->service_token);
+
+    # Multifactor was required but they have no or insufficiently high
+    # multifactor configured.
+    } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
+        if (defined $req->factor_configured) {
+            $self->template_params ({err_user_insufficient_mfactor => 1});
+        } else {
+            $self->template_params ({err_user_no_mfactor => 1});
+        }
+        return $self->print_error_page;
+
     # Something abnormal happened.  Figure out what error message to display
     # and throw up the error page instead.
     } else {
@@ -1407,7 +1451,7 @@ sub index : StartRunmode {
         } elsif ($status == WK_ERR_WEBAUTH_SERVER_ERROR) {
             $errmsg = "there is most likely a configuration problem with"
                 . " the server that redirected you. Please contact its"
-                . " administrator";
+                . " administrator.";
         }
 
         # Display the error page.
@@ -1558,6 +1602,85 @@ sub pwchange_display : Runmode {
 #        Passes to normal login process (success)
 sub multifactor : Runmode {
     my ($self) = @_;
+    my $q = $self->query;
+
+    if ($q->param ('otp')) {
+        $self->{request}->otp ($q->param ('otp'));
+        my $req = $self->{request};
+        my $resp = $self->{response};
+        my ($status, $error)
+            = WebKDC::make_request_token_request ($req, $resp);
+
+        if ($status == WK_SUCCESS) {
+            print STDERR "WebKDC::make_request_token_request success\n"
+                if $self->param ('debug');
+            return $self->print_confirm_page;
+
+        } else {
+            # FIXME: Probably want to handle $status more, but not yet
+            #        sure what statuses we might get back.
+            print STDERR "multifactor failed with $error\n"
+                if $self->param ('logging');
+            $self->template_params ({err_multifactor_invalid => 1});
+        }
+    } else {
+        $self->template_params ({err_otp_missing => 1});
+    }
+
+    my $req = $self->{request};
+    return $self->print_multifactor_page ($req->request_token,
+                                          $req->service_token);
+}
+
+# Handle a request to send a multifactor authentication token somewhere via
+# program.  The normal example case would be to fire off a command that sends
+# an OTP via SMS.
+# Pages: Multifactor page on success
+#        Error page on any failure
+sub multifactor_sendauth : Runmode {
+    my ($self) = @_;
+    my $q = $self->query;
+
+    # Error if we don't have the setup configured.
+    if (!$WebKDC::Config::MULTIFACTOR_SERVER
+        || $WebKDC::Config::MULTIFACTOR_COMMAND) {
+
+        print STDERR "multifactor_sendauth failed due to no server "
+            . "configured\n" if $self->param ('logging');
+
+        my $errmsg = "unrecoverable error occured. Try again later.";
+        $self->template_params ({err_webkdc => 1});
+        $self->template_params ({err_msg => $errmsg});
+        return $self->print_error_page;
+
+    } else {
+
+        # Send the remctl command, switching tgts out beforehand.
+        my $username = $q->param ('username');
+        my @cmd = split (' ', $WebKDC::Config::MULTIFACTOR_COMMAND);
+        local $ENV{KRB5CCNAME} = $WebKDC::Config::MULTIFACTOR_TGT;
+        my $result = Net::Remctl::remctl ($WebKDC::Config::MULTIFACTOR_SERVER,
+                                          $WebKDC::Config::MULTIFACTOR_PORT,
+                                          $WebKDC::Config::MULTIFACTOR_PRINC,
+                                          @cmd, $username);
+
+        if ($result->error) {
+            print STDERR "multifactor_sendauth failed to run program: " .
+                $result->error . "\n" if $self->param ('logging');
+            $self->template_params ({err_sendauth => 1});
+            return $self->print_error_page;
+        } elsif ($result->status != 0) {
+            print STDERR "multifactor_sendauth failed to run program: " .
+                $result->stderr . "\n" if $self->param ('logging');
+            $self->template_params ({err_sendauth => 1});
+            return $self->print_error_page;
+        } else {
+            $self->template_params ({multifactor_sentauth => 1});
+            my $req = $self->{request};
+            return $self->print_multifactor_page ($req->request_token,
+                                                  $req->service_token);
+        }
+    }
 }
 
 # Handle the request from the user to change their REMOTE_USER setting, called

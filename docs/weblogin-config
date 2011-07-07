@@ -94,8 +94,24 @@ Templates
       err_cookies_disabled      If set, user doesn't have cookies enabled
       err_no_request_token      If set, user had no request token
       err_confirm               If set, incomplete data for confirm page
+      err_sendauth              If set, error running sendauth program
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
+
+  When encountering a login that requires multifactor, we send the user
+  to a page that will prompt them for entering a multifactor one-time
+  password, and potentially allow them to send those passwords via an
+  external mechanism.  It takes the following Template variables:
+
+  multifactor.tmpl
+
+      factor_type              Type of multifactor being used (o1, o2, etc)
+      username                 The authenticated identity of the user
+      login_cancel             If set, application provided a cancel URL
+      cancel_url               The cancel URL (return URL plus cancel token)
+      error                    If set, some error happened
+      err_multifactor_missing  If set, form was submitted without an OTP
+      err_multifactor_invalid  If set, could not validate a submitted OTP
 
   Finally, the logout script uses a simple template with only one
   variable:
@@ -375,6 +391,42 @@ Configuration
       during the login attempt.  When this is set, we will instead require
       that the user retype their password at the same time they enter their
       new password.  Default: 1 (require the users to resend password).
+
+  $MULTIFACTOR_SERVER
+
+      A server that implements a remctl interface for sending one-time
+      passwords via some external mechanism, such as SMS.  This will
+      only be called if a custom template has been set up for the
+      multifactor page.  Default: not set.
+
+  $MULTIFACTOR_TGT
+
+      The TGT file used to query against the remctl interface used in
+      $MULTIFACTOR_SERVER.  The TGT should be maintained by a process
+      outside of webauth.  Default: not set.
+
+  $MULTIFACTOR_PRINC
+
+      The principal of the server used for authentication to the
+      remctl interface for sending OTPs.  Usually this should be left
+      as the default and not be set, where Net::Remctl will do the
+      correct thing.  However, during the test suite we need to set
+      this to test against a local remctl.  Default: empty string.
+
+  $MULTIFACTOR_PORT
+
+      The remctl port of the server used for authentication to the
+      remctl interface for sending OTPs.  Usually this should be left
+      as the default and not be set, where Net::Remctl will do the
+      correct thing.  Default: 0.
+
+  $MULTIFACTOR_COMMAND
+
+      The command to pass through to the remctl interface for sending
+      OTPs.  This will probably be a string of at least two words, for
+      command and sub-command.  WebLogin will split on whitespace and
+      then append the username before sending to the server specified
+      in $MULTIFACTOR_SERVER.  Default: not set.
 
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
