@@ -1353,6 +1353,11 @@ handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
     const char *mwa_func = "handle_id_token";
     const char *subject;
 
+    if (id->creation + rc->sconf->token_max_ttl > time(NULL)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: id token too old", mwa_func);
+        return 0;
+    }
     if (id->auth_data != NULL) {
         MWA_CRED_INTERFACE *mci;
 
@@ -1390,6 +1395,11 @@ handle_proxy_token(const struct webauth_token_proxy *proxy, MWA_REQ_CTXT *rc)
     const char *mwa_func = "handle_proxy_token";
     int status;
 
+    if (proxy->creation + rc->sconf->token_max_ttl > time(NULL)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: proxy token too old", mwa_func);
+        return 0;
+    }
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: got subject(%s) from proxy token",
@@ -1417,6 +1427,11 @@ handle_error_token(const struct webauth_token_error *err, MWA_REQ_CTXT *rc)
     static const char *mwa_func = "handle_error_token";
     const char *log_message;
 
+    if (err->creation + rc->sconf->token_max_ttl > time(NULL)) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: %s: error token too old", mwa_func);
+        return failure_redirect(rc);
+    }
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: parsed an error token(%lu, %s)",
