@@ -887,7 +887,7 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
     const char *mwa_func = "make_request_token";
     const char *token;
     int status;
-    struct webauth_token_request req;
+    struct webauth_token req;
     WEBAUTH_KEYRING *ring;
 
     status = webauth_keyring_from_key(rc->ctx, &st->key, &ring);
@@ -898,8 +898,9 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
         return NULL;
     }
     memset(&req, 0, sizeof(req));
-    req.command = cmd;
-    status = webauth_token_encode_request(rc->ctx, &req, ring, &token);
+    req.type = WA_TOKEN_REQUEST;
+    req.token.request.command = cmd;
+    status = webauth_token_encode(rc->ctx, &req, ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_encode_request", NULL);

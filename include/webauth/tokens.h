@@ -264,50 +264,14 @@ int webauth_token_decode(struct webauth_context *, enum webauth_token_type,
     __attribute__((__nonnull__));
 
 /*
- * Encode a token.  Takes the corresponding struct for that token type and a
- * keyring to use for encryption, and stores in the token argument the newly
- * created token (in pool-allocated memory).  On error, the token argument is
- * set to NULL and an error code is returned.
+ * Encode a token.  Takes a token struct and a keyring to use for encryption,
+ * and stores in the token argument the newly created token (in pool-allocated
+ * memory).  On error, the token argument is set to NULL and an error code is
+ * returned.
  */
-int webauth_token_encode_app(struct webauth_context *,
-                             const struct webauth_token_app *,
-                             const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_cred(struct webauth_context *,
-                              const struct webauth_token_cred *,
-                              const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_error(struct webauth_context *,
-                               const struct webauth_token_error *,
-                               const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_id(struct webauth_context *,
-                            const struct webauth_token_id *,
-                            const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_login(struct webauth_context *,
-                               const struct webauth_token_login *,
-                               const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_proxy(struct webauth_context *,
-                               const struct webauth_token_proxy *,
-                               const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_request(struct webauth_context *,
-                                 const struct webauth_token_request *,
-                                 const WEBAUTH_KEYRING *, const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_webkdc_proxy(struct webauth_context *,
-                                      const
-                                      struct webauth_token_webkdc_proxy *,
-                                      const WEBAUTH_KEYRING *,
-                                      const char **token)
-    __attribute__((__nonnull__));
-int webauth_token_encode_webkdc_service(struct webauth_context *,
-                                        const
-                                        struct webauth_token_webkdc_service *,
-                                        const WEBAUTH_KEYRING *,
-                                        const char **token)
+int webauth_token_encode(struct webauth_context *,
+                         const struct webauth_token *,
+                         const WEBAUTH_KEYRING *, const char **token)
     __attribute__((__nonnull__));
 
 END_DECLS

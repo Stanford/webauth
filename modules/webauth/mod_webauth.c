@@ -1034,6 +1034,7 @@ make_proxy_cookie(const char *proxy_type,
                   MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "make_proxy_cookie";
+    struct webauth_token *data;
     struct webauth_token_proxy *pt;
     void *webkdc_proxy;
     const char *token;
@@ -1041,7 +1042,9 @@ make_proxy_cookie(const char *proxy_type,
 
     if (rc->sconf->ring == NULL)
         return 0;
-    pt = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token_proxy));
+    data = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
+    data->type = WA_TOKEN_PROXY;
+    pt = &data->token.proxy;
     pt->subject = apr_pstrdup(rc->r->pool, subject);
     pt->type = apr_pstrdup(rc->r->pool, proxy_type);
     webkdc_proxy = apr_palloc(rc->r->pool, wpt_len);
@@ -1052,7 +1055,7 @@ make_proxy_cookie(const char *proxy_type,
     pt->session_factors = apr_pstrdup(rc->r->pool, session_factors);
     pt->loa = loa;
     pt->expiration = expiration_time;
-    status = webauth_token_encode_proxy(rc->ctx, pt, rc->sconf->ring, &token);
+    status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_encode_proxy", subject);
@@ -1072,14 +1075,18 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "make_cred_cookie";
     const char *token;
+    struct webauth_token data;
     int status;
 
     if (rc->sconf->ring == NULL)
         return 0;
-    status = webauth_token_encode_cred(rc->ctx, ct, rc->sconf->ring, &token);
+    data.type = WA_TOKEN_CRED;
+    data.token.cred = *ct;
+    status = webauth_token_encode(rc->ctx, &data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_cred", ct->subject);
+                              "webauth_token_encode_cred",
+                              ct->subject);
         return 0;
     }
     fixup_setcookie(rc, cred_cookie_name(ct->type, ct->service, rc), token);
@@ -1103,6 +1110,7 @@ make_app_cookie(const char *subject,
                 MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "make_app_cookie";
+    struct webauth_token *data;
     struct webauth_token_app *app;
     const char *token;
     int status;
@@ -1116,7 +1124,9 @@ make_app_cookie(const char *subject,
         last_used_time =
             rc->dconf->last_use_update_interval ? creation_time : 0;
     }
-    app = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token_app));
+    data = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
+    data->type = WA_TOKEN_APP;
+    app = &data->token.app;
     app->subject = apr_pstrdup(rc->r->pool, subject);
     app->last_used = last_used_time;
     if (initial_factors != NULL)
@@ -1126,7 +1136,7 @@ make_app_cookie(const char *subject,
     app->loa = loa;
     app->creation = creation_time;
     app->expiration = expiration_time;
-    status = webauth_token_encode_app(rc->ctx, app, rc->sconf->ring, &token);
+    status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_encode_app", subject);
@@ -1612,7 +1622,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     const char *mwa_func = "redirect_request_token";
     MWA_SERVICE_TOKEN *st;
     WEBAUTH_KEYRING *ring;
-    struct webauth_token_request req;
+    struct webauth_token data;
+    struct webauth_token_request *req;
     char *redirect_url, *return_url;
     const char *token;
     int status;
@@ -1642,21 +1653,23 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         return failure_redirect(rc);
     }
 
-    memset(&req, 0, sizeof(req));
+    memset(&data, 0, sizeof(data));
+    data.type = WA_TOKEN_REQUEST;
+    req = &data.token.request;
     if (rc->dconf->force_login || rc->dconf->login_canceled_url != NULL) {
         int fl = rc->dconf->force_login;
         int lc = rc->dconf->login_canceled_url != NULL;
 
-        req.options = apr_pstrcat(rc->r->pool,
-                                  fl         ? "fa" : "",
-                                  (fl && lc) ? ","  : "",
-                                  lc         ? "lc" : "",
-                                  NULL);
+        req->options = apr_pstrcat(rc->r->pool,
+                                   fl         ? "fa" : "",
+                                   (fl && lc) ? ","  : "",
+                                   lc         ? "lc" : "",
+                                   NULL);
     }
     if (rc->dconf->creds) {
-        req.type = "proxy";
+        req->type = "proxy";
         if (rc->needed_proxy_type) {
-            req.proxy_type = rc->needed_proxy_type;
+            req->proxy_type = rc->needed_proxy_type;
         } else {
             MWA_WACRED *cred;
 
@@ -1665,15 +1678,15 @@ redirect_request_token(MWA_REQ_CTXT *rc)
              * for the first one in the list.
              */
             cred = &APR_ARRAY_IDX(rc->dconf->creds, 0, MWA_WACRED);
-            req.proxy_type = cred->type;
+            req->proxy_type = cred->type;
         }
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webauth: %s: redirecting for proxy token (%s)",
-                         mwa_func, req.proxy_type);
+                         mwa_func, req->proxy_type);
     } else {
-        req.type = "id";
-        req.auth = rc->sconf->subject_auth_type;
+        req->type = "id";
+        req->auth = rc->sconf->subject_auth_type;
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webauth: %s: redirecting for id token",
@@ -1681,8 +1694,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     }
 
     if (st->app_state != NULL) {
-        req.state = st->app_state;
-        req.state_len = st->app_state_len;
+        req->state = st->app_state;
+        req->state_len = st->app_state_len;
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: app state is NULL",
@@ -1695,16 +1708,16 @@ redirect_request_token(MWA_REQ_CTXT *rc)
        end of it, that could get ugly... */
     strip_end(return_url, WEBAUTHR_MAGIC);
 
-    req.return_url = return_url;
+    req->return_url = return_url;
 
     /* Add factor and level of assurance requirements. */
     if (rc->dconf->loa > 0)
-        req.loa = rc->dconf->loa;
+        req->loa = rc->dconf->loa;
     if (rc->dconf->initial_factors != NULL)
-        req.initial_factors
+        req->initial_factors
             = apr_array_pstrcat(rc->r->pool, rc->dconf->initial_factors, ',');
     if (rc->dconf->session_factors != NULL)
-        req.session_factors
+        req->session_factors
             = apr_array_pstrcat(rc->r->pool, rc->dconf->session_factors, ',');
 
     if (rc->sconf->debug)
@@ -1713,7 +1726,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 
     status = webauth_keyring_from_key(rc->ctx, &st->key, &ring);
     if (status == WA_ERR_NONE)
-        status = webauth_token_encode_request(rc->ctx, &req, ring, &token);
+        status = webauth_token_encode(rc->ctx, &data, ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_encode_request", NULL);

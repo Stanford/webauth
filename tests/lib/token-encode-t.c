@@ -25,6 +25,43 @@
 
 
 /*
+ * Encode and decode a token of a particular type, returning the new generic
+ * token on success and NULL on failure.  Takes the context, token, keyring,
+ * and the name of the token for reporting, along with the number of test
+ * cases to fail if encoding or decoding fails.
+ */
+static struct webauth_token *
+encode_decode(struct webauth_context *ctx, struct webauth_token *data,
+              WEBAUTH_KEYRING *ring, const char *name, int count)
+{
+    int status;
+    struct webauth_token *result;
+    const char *token;
+
+    status = webauth_token_encode(ctx, data, ring, &token);
+    is_int(WA_ERR_NONE, status, "Encoding %s %s succeeds",
+           webauth_token_type_string(data->type), name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(count, 0, "...encoding failed");
+        return NULL;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode(ctx, data->type, token, ring, &result);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (result == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(count, 0, "...decoding failed");
+        return NULL;
+    }
+    ok(result != NULL, "...and sets the struct pointer");
+    return result;
+}
+
+
+/*
  * Check an application token by encoding the struct and then decoding it,
  * ensuring that all attributes in the decoded struct match the encoded one.
  */
@@ -32,30 +69,15 @@ static void
 check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
                 WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_app *app2;
-    const char *token;
 
-    status = webauth_token_encode_app(ctx, app, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding app %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(11, 0, "...encoding failed");
+    data.type = WA_TOKEN_APP;
+    data.token.app = *app;
+    result = encode_decode(ctx, &data, ring, name, 9);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_APP, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(9, 0, "...decoding failed");
-        return;
-    }
     app2 = &result->token.app;
-    ok(app2 != NULL, "...and sets the struct pointer");
     is_string(app->subject, app2->subject, "...subject");
     ok(memcmp(app->session_key, app2->session_key, app->session_key_len) == 0,
        "...session key");
@@ -84,30 +106,15 @@ static void
 check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
                  WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_cred *cred2;
-    const char *token = NULL;
 
-    status = webauth_token_encode_cred(ctx, cred, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding cred %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(9, 0, "...encoding failed");
+    data.type = WA_TOKEN_CRED;
+    data.token.cred = *cred;
+    result = encode_decode(ctx, &data, ring, name, 7);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_CRED, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(7, 0, "...decoding failed");
-        return;
-    }
     cred2 = &result->token.cred;
-    ok(cred2 != NULL, "...and sets the struct pointer");
     is_string(cred->subject, cred2->subject, "...subject");
     is_string(cred->type, cred2->type, "...type");
     is_string(cred->service, cred2->service, "...service");
@@ -131,30 +138,15 @@ check_error_token(struct webauth_context *ctx,
                   struct webauth_token_error *err,
                   WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_error *err2;
-    const char *token = NULL;
 
-    status = webauth_token_encode_error(ctx, err, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding error %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(5, 0, "...encoding failed");
+    data.type = WA_TOKEN_ERROR;
+    data.token.error = *err;
+    result = encode_decode(ctx, &data, ring, name, 3);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_ERROR, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(3, 0, "...decoding failed");
-        return;
-    }
     err2 = &result->token.error;
-    ok(err2 != NULL, "...and sets the struct pointer");
     is_int(err->code, err2->code, "...code");
     is_string(err->message, err2->message, "...message");
     if (err->creation > 0)
@@ -173,30 +165,15 @@ static void
 check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
                 WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_id *id2;
-    const char *token;
 
-    status = webauth_token_encode_id(ctx, id, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding id %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(11, 0, "...encoding failed");
+    data.type = WA_TOKEN_ID;
+    data.token.id = *id;
+    result = encode_decode(ctx, &data, ring, name, 9);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(9, 0, "...decoding failed");
-        return;
-    }
     id2 = &result->token.id;
-    ok(id2 != NULL, "...and sets the struct pointer");
     is_string(id->subject, id2->subject, "...subject");
     is_string(id->auth, id2->auth, "...subject auth");
     ok(memcmp(id->auth_data, id2->auth_data, id->auth_data_len) == 0,
@@ -225,30 +202,15 @@ check_login_token(struct webauth_context *ctx,
                   struct webauth_token_login *login,
                   WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_login *login2;
-    const char *token = NULL;
 
-    status = webauth_token_encode_login(ctx, login, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding login %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(6, 0, "...encoding failed");
+    data.type = WA_TOKEN_LOGIN;
+    data.token.login = *login;
+    result = encode_decode(ctx, &data, ring, name, 4);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_LOGIN, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(4, 0, "...decoding failed");
-        return;
-    }
     login2 = &result->token.login;
-    ok(login2 != NULL, "...and sets the struct pointer");
     is_string(login->username, login2->username, "...username");
     is_string(login->password, login2->password, "...password");
     is_string(login->otp, login2->otp, "...otp");
@@ -269,30 +231,15 @@ check_proxy_token(struct webauth_context *ctx,
                   struct webauth_token_proxy *proxy,
                  WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_proxy *proxy2;
-    const char *token = NULL;
 
-    status = webauth_token_encode_proxy(ctx, proxy, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding proxy %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(11, 0, "...encoding failed");
+    data.type = WA_TOKEN_PROXY;
+    data.token.proxy = *proxy;
+    result = encode_decode(ctx, &data, ring, name, 9);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_PROXY, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(9, 0, "...decoding failed");
-        return;
-    }
     proxy2 = &result->token.proxy;
-    ok(proxy2 != NULL, "...and sets the struct pointer");
     is_string(proxy->subject, proxy2->subject, "...subject");
     is_string(proxy->type, proxy2->type, "...type");
     ok(memcmp(proxy->webkdc_proxy, proxy2->webkdc_proxy,
@@ -322,30 +269,15 @@ check_request_token(struct webauth_context *ctx,
                     struct webauth_token_request *req,
                     WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_request *req2;
-    const char *token = NULL;
 
-    status = webauth_token_encode_request(ctx, req, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding request %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(14, 0, "...encoding failed");
+    data.type = WA_TOKEN_REQUEST;
+    data.token.request = *req;
+    result = encode_decode(ctx, &data, ring, name, 12);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_REQUEST, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(12, 0, "...decoding failed");
-        return;
-    }
     req2 = &result->token.request;
-    ok(req2 != NULL, "...and sets the struct pointer");
     is_string(req->type, req2->type, "...requested token type");
     is_string(req->auth, req2->auth, "...subject auth");
     is_string(req->proxy_type, req2->proxy_type, "...proxy type");
@@ -376,29 +308,14 @@ check_webkdc_proxy_token(struct webauth_context *ctx,
                          struct webauth_token_webkdc_proxy *wkproxy,
                          WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_webkdc_proxy *wkproxy2;
-    const char *token;
 
-    status = webauth_token_encode_webkdc_proxy(ctx, wkproxy, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding webkdc-proxy %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(11, 0, "...encoding failed");
+    data.type = WA_TOKEN_WEBKDC_PROXY;
+    data.token.webkdc_proxy = *wkproxy;
+    result = encode_decode(ctx, &data, ring, name, 10);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, token, ring,
-                                  &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(9, 0, "...decoding failed");
-        return;
-    }
     wkproxy2 = &result->token.webkdc_proxy;
     ok(wkproxy2 != NULL, "...and sets the struct pointer");
     is_string(wkproxy->subject, wkproxy2->subject, "...subject");
@@ -429,31 +346,15 @@ check_webkdc_service_token(struct webauth_context *ctx,
                          struct webauth_token_webkdc_service *service,
                          WEBAUTH_KEYRING *ring, const char *name)
 {
-    int status;
-    struct webauth_token *result;
+    struct webauth_token data, *result;
     struct webauth_token_webkdc_service *service2;
-    const char *token;
 
-    status = webauth_token_encode_webkdc_service(ctx, service, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding webkdc-service %s succeeds", name);
-    if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the token pointer");
-        ok_block(7, 0, "...encoding failed");
+    data.type = WA_TOKEN_WEBKDC_SERVICE;
+    data.token.webkdc_service = *service;
+    result = encode_decode(ctx, &data, ring, name, 5);
+    if (result == NULL)
         return;
-    }
-    ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, token, ring,
-                                  &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
-    if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
-                  "...and sets the struct pointer");
-        ok_block(5, 0, "...decoding failed");
-        return;
-    }
     service2 = &result->token.webkdc_service;
-    ok(service2 != NULL, "...and sets the struct pointer");
     is_string(service->subject, service2->subject, "...subject");
     ok(memcmp(service->session_key, service2->session_key,
               service->session_key_len) == 0, "...session key");
@@ -474,20 +375,23 @@ check_webkdc_service_token(struct webauth_context *ctx,
  * macros.  Each takes the context, the struct to encode, a keyring, a summary
  * of the test, and the expected error message.
  */
-#define FUNCTION_NAME(type) #type
-#define CHECK_FUNCTION(type)                                            \
+#define STRINGIFY(string) #string
+#define CHECK_FUNCTION(name, code)                                      \
     static void                                                         \
-    check_ ## type ## _error(struct webauth_context *ctx,               \
-                             struct webauth_token_ ## type *type,       \
+    check_ ## name ## _error(struct webauth_context *ctx,               \
+                             struct webauth_token_ ## name *name,       \
                              WEBAUTH_KEYRING *ring, const char *summ,   \
                              const char *message)                       \
     {                                                                   \
+        struct webauth_token data;                                      \
         const char *token = "foo";                                      \
         int s;                                                          \
         char *err;                                                      \
                                                                         \
-        s = webauth_token_encode_ ## type(ctx, type, ring, &token);     \
-        is_int(WA_ERR_CORRUPT, s, "Encoding " FUNCTION_NAME(type)       \
+        data.type = WA_TOKEN_ ## code;                                  \
+        data.token.name = *name;                                        \
+        s = webauth_token_encode(ctx, &data, ring, &token);             \
+        is_int(WA_ERR_CORRUPT, s, "Encoding " STRINGIFY(name)           \
                " %s fails", summ);                                      \
         if (asprintf(&err, "data is incorrectly formatted (%s)",        \
                      message) < 0)                                      \
@@ -496,15 +400,15 @@ check_webkdc_service_token(struct webauth_context *ctx,
         is_string(NULL, token, "...and token is NULL");                 \
         free(err);                                                      \
     }
-CHECK_FUNCTION(app)
-CHECK_FUNCTION(cred)
-CHECK_FUNCTION(error)
-CHECK_FUNCTION(id)
-CHECK_FUNCTION(login)
-CHECK_FUNCTION(proxy)
-CHECK_FUNCTION(request)
-CHECK_FUNCTION(webkdc_proxy)
-CHECK_FUNCTION(webkdc_service)
+CHECK_FUNCTION(app,            APP)
+CHECK_FUNCTION(cred,           CRED)
+CHECK_FUNCTION(error,          ERROR)
+CHECK_FUNCTION(id,             ID)
+CHECK_FUNCTION(login,          LOGIN)
+CHECK_FUNCTION(proxy,          PROXY)
+CHECK_FUNCTION(request,        REQUEST)
+CHECK_FUNCTION(webkdc_proxy,   WEBKDC_PROXY)
+CHECK_FUNCTION(webkdc_service, WEBKDC_SERVICE)
 
 
 int
@@ -525,7 +429,7 @@ main(void)
     struct webauth_token_webkdc_proxy wkproxy;
     struct webauth_token_webkdc_service service;
 
-    plan(408);
+    plan(410);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");

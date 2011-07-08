@@ -258,9 +258,7 @@ mwa_get_webauth_cookies(request_rec *r)
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
 struct webauth_token_cred *
-mwa_parse_cred_token(char *token,
-                     WEBAUTH_KEYRING *ring,
-                     WEBAUTH_KEY *key,
+mwa_parse_cred_token(char *token, WEBAUTH_KEYRING *ring, WEBAUTH_KEY *key,
                      MWA_REQ_CTXT *rc)
 {
     int status;
