@@ -1197,18 +1197,19 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "parse_app_token";
     int status;
-    struct webauth_token_app *app;
+    struct webauth_token *app;
 
     if (rc->sconf->ring == NULL)
         return 0;
     ap_unescape_url(token);
-    status = webauth_token_decode_app(rc->ctx, token, rc->sconf->ring, &app);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
+                                  rc->sconf->ring, &app);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_decode_app", token);
         return 0;
     }
-    rc->at = app;
+    rc->at = &app->token.app;
 
     /*
      * Update last-use-time and check inactivity.  If we can't use the app
@@ -1258,19 +1259,20 @@ static struct webauth_token_proxy *
 parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "parse_proxy_token";
-    struct webauth_token_proxy *pt;
+    struct webauth_token *pt;
     int status;
 
     if (rc->sconf->ring == NULL)
         return 0;
     ap_unescape_url(token);
-    status = webauth_token_decode_proxy(rc->ctx, token, rc->sconf->ring, &pt);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_PROXY, token,
+                                  rc->sconf->ring, &pt);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_decode_proxy", NULL);
         return NULL;
     }
-    return pt;
+    return &pt->token.proxy;
 }
 
 
@@ -1309,6 +1311,7 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
 static WEBAUTH_KEY *
 get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
+    struct webauth_token *data;
     struct webauth_token_app *app;
     WEBAUTH_KEY *key;
     size_t klen;
@@ -1318,12 +1321,14 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     ap_unescape_url(token);
     if (rc->sconf->ring == NULL)
         return NULL;
-    status = webauth_token_decode_app(rc->ctx, token, rc->sconf->ring, &app);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
+                                  rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_decode_app", NULL);
         return NULL;
     }
+    app = &data->token.app;
 
     /* Pull out the session key and make it a WEBAUTH_KEY. */
     klen = app->session_key_len;
@@ -1446,8 +1451,8 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 {
     static const char *mwa_func = "parse_returned_token";
     WEBAUTH_KEYRING *ring;
-    enum webauth_token_type type;
-    void *data;
+    enum webauth_token_type type = WA_TOKEN_ANY;
+    struct webauth_token *data;
     int status, code;
 
     /* FIXME: We return OK on errors? */
@@ -1457,7 +1462,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     ap_unescape_url(token);
     status = webauth_keyring_from_key(rc->ctx, key, &ring);
     if (status == WA_ERR_NONE)
-        status = webauth_token_decode(rc->ctx, token, ring, &type, &data);
+        status = webauth_token_decode(rc->ctx, type, token, ring, &data);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_decode", NULL);
@@ -1465,23 +1470,23 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     }
 
     /* get the token-type to see what we should do with it */
-    switch (type) {
+    switch (data->type) {
     case WA_TOKEN_ID:
-        if (!handle_id_token(data, rc)) {
+        if (!handle_id_token(&data->token.id, rc)) {
             /* FIXME: WHAT DO WE DO? failure redirect or ...?
                doing nothing will cause another redirect for auth...
              */
         }
         break;
     case WA_TOKEN_PROXY:
-        if (!handle_proxy_token(data, rc)) {
+        if (!handle_proxy_token(&data->token.proxy, rc)) {
             /* FIXME: WHAT DO WE DO? failure redirect or ...?
                doing nothing will cause another redirect for auth...
              */
         }
         break;
     case WA_TOKEN_ERROR:
-        code = handle_error_token(data, rc);
+        code = handle_error_token(&data->token.error, rc);
         break;
     case WA_TOKEN_UNKNOWN:
     case WA_TOKEN_APP:
@@ -1490,6 +1495,7 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
     case WA_TOKEN_REQUEST:
     case WA_TOKEN_WEBKDC_PROXY:
     case WA_TOKEN_WEBKDC_SERVICE:
+    case WA_TOKEN_ANY:
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: unhandled token type(%d)",
                      mwa_func, type);

@@ -128,6 +128,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_CREDS_EXPIRED:     return "password has expired";
     case WA_ERR_APR:               return "APR error";
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
+    case WA_ERR_INVALID:           return "invalid argument to function";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown error code %d", code);

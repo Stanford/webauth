@@ -84,6 +84,7 @@ enum webauth_status {
     WA_ERR_USER_REJECTED,    /* User not permitted to authenticate. */
     WA_ERR_APR,              /* An APR error occurred. */
     WA_ERR_UNIMPLEMENTED,    /* Operation not supported. */
+    WA_ERR_INVALID,          /* Invalid argument to function. */
 
     /* Update webauth_error_message when adding more codes. */
 };

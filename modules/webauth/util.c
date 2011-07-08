@@ -264,7 +264,7 @@ mwa_parse_cred_token(char *token,
                      MWA_REQ_CTXT *rc)
 {
     int status;
-    struct webauth_token_cred *cred;
+    struct webauth_token *data;
     const char *mwa_func = "mwa_parse_cred_token";
 
     ap_unescape_url(token);
@@ -285,13 +285,13 @@ mwa_parse_cred_token(char *token,
                      mwa_func);
         return NULL;
     }
-    status = webauth_token_decode_cred(rc->ctx, token, ring, &cred);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_CRED, token, ring, &data);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status,
                               mwa_func, "webauth_token_decode", NULL);
         return NULL;
     }
-    return cred;
+    return &data->token.cred;
 }
 
 

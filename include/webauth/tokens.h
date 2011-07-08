@@ -42,9 +42,11 @@
 struct webauth_context;
 
 /*
- * The types of tokens specified in the protocol, returned by the generic
- * webauth_token_decode function.  WA_TOKEN_UNKNOWN will be returned by that
- * function in the event of an error.
+ * The types of tokens specified in the protocol, used in the type field of
+ * the webauth_token struct.  WA_TOKEN_UNKNOWN will never be returned in that
+ * struct but is used internally for errors.  WA_TOKEN_ANY is used as the
+ * argument to webauth_token_decode when the caller doesn't know which type of
+ * token to expect.
  */
 enum webauth_token_type {
     WA_TOKEN_UNKNOWN,
@@ -56,7 +58,8 @@ enum webauth_token_type {
     WA_TOKEN_PROXY,
     WA_TOKEN_REQUEST,
     WA_TOKEN_WEBKDC_PROXY,
-    WA_TOKEN_WEBKDC_SERVICE
+    WA_TOKEN_WEBKDC_SERVICE,
+    WA_TOKEN_ANY = 255
 };
 
 /*
@@ -214,73 +217,50 @@ struct webauth_token_webkdc_service {
     time_t expiration;
 };
 
+/*
+ * A generic token.  This wrapper is used by the public interface for token
+ * encoding and decoding so that we don't need a separate interface for every
+ * token type.
+ */
+struct webauth_token {
+    enum webauth_token_type type;
+    union {
+        struct webauth_token_app app;
+        struct webauth_token_cred cred;
+        struct webauth_token_error error;
+        struct webauth_token_id id;
+        struct webauth_token_login login;
+        struct webauth_token_proxy proxy;
+        struct webauth_token_request request;
+        struct webauth_token_webkdc_proxy webkdc_proxy;
+        struct webauth_token_webkdc_service webkdc_service;
+    } token;
+};
+
 
 BEGIN_DECLS
 
 /*
- * Decode a token.  Takes a string and a keyring and decodes the token into
- * the corresponding data argument, which will be a newly pool-allocated
- * pointer to the corresponding token struct.  On error, the data argument is
- * set to NULL and an error code is returned.
+ * Map a token code to the string name used for the toke type attribute, or
+ * vice versa.  webauth_token_type_code returns WA_TOKEN_UNKNOWN when given an
+ * unknown token type string.  webauth_token_type_string returns NULL when
+ * given WA_TOKEN_UNKNOWN, WA_TOKEN_ANY, or an invalid enumeration value.
  */
-int webauth_token_decode_app(struct webauth_context *,
-                             const char *, const WEBAUTH_KEYRING *,
-                             struct webauth_token_app **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_cred(struct webauth_context *,
-                              const char *, const WEBAUTH_KEYRING *,
-                              struct webauth_token_cred **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_error(struct webauth_context *,
-                               const char *, const WEBAUTH_KEYRING *,
-                               struct webauth_token_error **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_id(struct webauth_context *,
-                            const char *, const WEBAUTH_KEYRING *,
-                            struct webauth_token_id **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_login(struct webauth_context *,
-                               const char *, const WEBAUTH_KEYRING *,
-                               struct webauth_token_login **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_proxy(struct webauth_context *,
-                               const char *, const WEBAUTH_KEYRING *,
-                               struct webauth_token_proxy **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_request(struct webauth_context *,
-                                 const char *, const WEBAUTH_KEYRING *,
-                                 struct webauth_token_request **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_webkdc_proxy(struct webauth_context *,
-                                      const char *, const WEBAUTH_KEYRING *,
-                                      struct webauth_token_webkdc_proxy **)
-    __attribute__((__nonnull__));
-int webauth_token_decode_webkdc_service(struct webauth_context *,
-                                        const char *, const WEBAUTH_KEYRING *,
-                                        struct webauth_token_webkdc_service **)
-    __attribute__((__nonnull__));
+enum webauth_token_type webauth_token_type_code(const char *type)
+    __attribute__((__nonnull__, __pure__));
+const char *webauth_token_type_string(enum webauth_token_type type)
+    __attribute__((__pure__));
 
 /*
- * Decode an arbitrary token, where the token type is not known in advance.
- * Takes the context, the token, and the keyring to decrypt it.
- *
- * On success, the type of the token is stored in the type argument and a
- * pointer to the corresponding struct is stored in the token argument.  The
- * token is stored in newly-allocated pool memory.  The client is responsible
- * for casting the token pointer to the appropriate type after discovering the
- * type of the token.
- *
- * On error, type is set to WA_TOKEN_UNKNOWN and token is set to NULL, and an
- * error code is returned.
- *
- * This function does not provide as strong of type checking, so should only
- * be used when the caller truly doesn't know what type of token to expect.
- * The caller is responsible for handling and rejecting tokens of entirely
- * inappropriate types.
+ * Decode a token.  Takes the expected token type, a string, and a keyring and
+ * decodes the token into the corresponding data argument, which will be a
+ * newly pool-allocated pointer to a generic token struct.  The expected token
+ * type may be WA_TOKEN_ANY to accept any token type.  On error, the data
+ * argument is set to NULL and an error code is returned.
  */
-int webauth_token_decode(struct webauth_context *, const char *,
-                         const WEBAUTH_KEYRING *, enum webauth_token_type *,
-                         void **token)
+int webauth_token_decode(struct webauth_context *, enum webauth_token_type,
+                         const char *, const WEBAUTH_KEYRING *,
+                         struct webauth_token **)
     __attribute__((__nonnull__));
 
 /*

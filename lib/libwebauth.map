@@ -69,15 +69,6 @@ WEBAUTH_3 {
         webauth_token_create;
         webauth_token_create_with_key;
         webauth_token_decode;
-        webauth_token_decode_app;
-        webauth_token_decode_cred;
-        webauth_token_decode_error;
-        webauth_token_decode_id;
-        webauth_token_decode_login;
-        webauth_token_decode_proxy;
-        webauth_token_decode_request;
-        webauth_token_decode_webkdc_proxy;
-        webauth_token_decode_webkdc_service;
         webauth_token_encode_app;
         webauth_token_encode_cred;
         webauth_token_encode_error;
@@ -90,6 +81,8 @@ WEBAUTH_3 {
         webauth_token_encoded_length;
         webauth_token_parse;
         webauth_token_parse_with_key;
+        webauth_token_type_code;
+        webauth_token_type_string;
 
     local:
         *;
