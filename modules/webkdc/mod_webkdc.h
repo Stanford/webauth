@@ -45,6 +45,8 @@
 #endif
 
 #include <webauth.h>
+#include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 /* defines for config directives */
 
@@ -156,54 +158,19 @@ typedef struct {
     char *remote_user;
 } MWK_REQUEST_INFO;
 
-/* interesting stuff from a parsed webkdc-service-token */
-typedef struct {
-    WEBAUTH_KEY key;
-    char *subject;
-} MWK_SERVICE_TOKEN;
-
-/* interesting stuff from a parsed webkdc-proxy-token */
-typedef struct {
-    const char *proxy_type;
-    char *proxy_subject;
-    const char *subject;
-    void *proxy_data;
-    size_t proxy_data_len;
-    time_t expiration;
-    time_t creation;
-    const char *factors;
-    uint32_t loa;
-} MWK_PROXY_TOKEN;
-
 /* interesting stuff from a parsed login-token */
 typedef struct {
-    char *username;
-    char *password;
+    const char *username;
+    const char *password;
 } MWK_LOGIN_TOKEN;
-
-/* interesting stuff from a parsed request-token */
-typedef struct {
-    char *cmd;
-    void *app_state;
-    size_t app_state_len;
-    char *return_url;
-    const char *request_options;
-    char *requested_token_type;
-    union {
-        /* when requested_token_type is 'id' */
-        char *subject_auth_type;
-        /* when requested_token_type is 'proxy' */
-        char *proxy_type;
-    } u;
-} MWK_REQUEST_TOKEN;
 
 /* used to represent processed <requesterCredential> */
 typedef struct {
-    char *type; /* krb5|service */
-    char *subject; /* always set */
+    const char *type; /* krb5|service */
+    const char *subject; /* always set */
     union {
         /* when type is service */
-        MWK_SERVICE_TOKEN st;
+        struct webauth_token_webkdc_service st;
     } u;
 } MWK_REQUESTER_CREDENTIAL;
 
@@ -213,16 +180,16 @@ typedef struct {
     union {
         struct {
             size_t num_proxy_tokens;
-            MWK_PROXY_TOKEN pt[MAX_PROXY_TOKENS_ACCEPTED];
+            struct webauth_token_webkdc_proxy pt[MAX_PROXY_TOKENS_ACCEPTED];
         } proxy;
-        MWK_LOGIN_TOKEN lt;
+        struct webauth_token_login lt;
     } u;
 } MWK_SUBJECT_CREDENTIAL;
 
 /* used to represent returned tokens */
 typedef struct {
     const char *id;
-    char *token_data;
+    const char *token_data;
     char *session_key; /* might be NULL */
     const char *expires; /* might be NULL */
     const char *subject; /* used only for logging */
@@ -249,6 +216,7 @@ typedef struct {
 typedef struct {
     request_rec *r;
     MWK_SCONF *sconf;
+    struct webauth_context *ctx;
     int error_code; /* set if an error happened */
     const char *error_message;
     const char *mwk_func; /* function error occured in */
