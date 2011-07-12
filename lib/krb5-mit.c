@@ -208,7 +208,7 @@ cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
  * credential.  Takes the encoded credential string and its length.
  */
 static int
-cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, char *input,
+cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, const void *input,
                         size_t input_length, krb5_creds *creds)
 {
     WEBAUTH_ATTR_LIST *list;

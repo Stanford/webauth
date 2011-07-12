@@ -766,7 +766,7 @@ webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *context,
  * Initialize a context via a passed, delegated credential.
  */
 int
-webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
+webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, const void *cred,
                            size_t cred_len, const char *cache_name)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;

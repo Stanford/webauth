@@ -782,7 +782,7 @@ int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *, const char *cache_name);
  *
  * Returns WA_ERR_NONE or WA_ERR_KRB5.
  */
-int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, char *cred,
+int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
                                size_t cred_len, const char *cache_name);
 
 /*
