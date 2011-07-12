@@ -62,21 +62,21 @@
 
 
 /*
- * Parse a base64-encoded token into an attribute list and check whether it's
- * the token type that we expected.  type may be set to WA_TOKEN_ANY to accept
- * any token type, in which case it will be changed to match the actual token
- * type on success.  Returns a webauth status.  On success, stores the
- * attribute list in the provided parameter; on failure, sets the attribute
- * list pointer to NULL.
+ * Parse a raw token into an attribute list and check whether it's the token
+ * type that we expected.  type may be set to WA_TOKEN_ANY to accept any token
+ * type, in which case it will be changed to match the actual token type on
+ * success.  Returns a webauth status.  On success, stores the attribute list
+ * in the provided parameter; on failure, sets the attribute list pointer to
+ * NULL.
  */
 static int
 parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
-            const char *token, const WEBAUTH_KEYRING *keyring,
+            const void *token, size_t length, const WEBAUTH_KEYRING *keyring,
             WEBAUTH_ATTR_LIST **alist)
 {
-    char *input, *value;
+    char *value;
+    void *input;
     const char *type_string = NULL;
-    size_t length;
     int status;
 
     /* Do some initial sanity checking. */
@@ -87,10 +87,11 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
         return WA_ERR_INVALID;
     }
 
-    /* Decode and parse the token. */
-    length = apr_base64_decode_len(token);
+    /* FIXME: Fix webauth_token_parse to not be destructive. */
     input = apr_palloc(ctx->pool, length);
-    length = apr_base64_decode(input, token);
+    memcpy(input, token, length);
+
+    /* Parse the token. */
     status = webauth_token_parse(input, length, 0, keyring, alist);
     if (status != WA_ERR_NONE)
         goto error;
@@ -628,23 +629,24 @@ fail:
 
 
 /*
- * Decode an arbitrary token.  Takes the context, the expected token type
- * (which may be WA_TOKEN_ANY), the token, and the keyring to decrypt it, and
- * stores the newly-allocated generic token struct in the decoded argument.
- * On error, decoded is set to NULL and an error code is returned.
+ * Decode an arbitrary raw token (one that is not base64-encoded).  Takes the
+ * context, the expected token type (which may be WA_TOKEN_ANY), the token,
+ * its length, and the keyring to decrypt it, and stores the newly-allocated
+ * generic token struct in the decoded argument.  On error, decoded is set to
+ * NULL and an error code is returned.
  */
 int
-webauth_token_decode(struct webauth_context *ctx,
-                     enum webauth_token_type type, const char *token,
-                     const WEBAUTH_KEYRING *ring,
-                     struct webauth_token **decoded)
+webauth_token_decode_raw(struct webauth_context *ctx,
+                         enum webauth_token_type type, const void *token,
+                         size_t length, const WEBAUTH_KEYRING *ring,
+                         struct webauth_token **decoded)
 {
     WEBAUTH_ATTR_LIST *alist = NULL;
     int status;
     struct webauth_token *out;
 
     *decoded = NULL;
-    status = parse_token(ctx, &type, token, ring, &alist);
+    status = parse_token(ctx, &type, token, length, ring, &alist);
     if (status != WA_ERR_NONE)
         return status;
     out = apr_palloc(ctx->pool, sizeof(struct webauth_token));
@@ -688,4 +690,27 @@ webauth_token_decode(struct webauth_context *ctx,
     if (status == WA_ERR_NONE)
         *decoded = out;
     return status;
+}
+
+
+/*
+ * Decode an arbitrary (base64-encoded) token.  Takes the context, the
+ * expected token type (which may be WA_TOKEN_ANY), the token, and the keyring
+ * to decrypt it, and stores the newly-allocated generic token struct in the
+ * decoded argument.  On error, decoded is set to NULL and an error code is
+ * returned.
+ */
+int
+webauth_token_decode(struct webauth_context *ctx,
+                     enum webauth_token_type type, const char *token,
+                     const WEBAUTH_KEYRING *ring,
+                     struct webauth_token **decoded)
+{
+    size_t length;
+    void *input;
+
+    length = apr_base64_decode_len(token);
+    input = apr_palloc(ctx->pool, length);
+    length = apr_base64_decode(input, token);
+    return webauth_token_decode_raw(ctx, type, input, length, ring, decoded);
 }

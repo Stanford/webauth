@@ -257,10 +257,17 @@ const char *webauth_token_type_string(enum webauth_token_type type)
  * newly pool-allocated pointer to a generic token struct.  The expected token
  * type may be WA_TOKEN_ANY to accept any token type.  On error, the data
  * argument is set to NULL and an error code is returned.
+ *
+ * The raw variant takes a token that is not base64-encoded, such as the
+ * webkdc-proxy token embedded inside a proxy token.
  */
 int webauth_token_decode(struct webauth_context *, enum webauth_token_type,
                          const char *, const WEBAUTH_KEYRING *,
                          struct webauth_token **)
+    __attribute__((__nonnull__));
+int webauth_token_decode_raw(struct webauth_context *, enum webauth_token_type,
+                             const void *, size_t, const WEBAUTH_KEYRING *,
+                             struct webauth_token **)
     __attribute__((__nonnull__));
 
 /*
@@ -268,10 +275,19 @@ int webauth_token_decode(struct webauth_context *, enum webauth_token_type,
  * and stores in the token argument the newly created token (in pool-allocated
  * memory).  On error, the token argument is set to NULL and an error code is
  * returned.
+ *
+ * The raw variant generates a token that is not base64-encoded, such as the
+ * webkdc-proxy token embedded inside a proxy token, and stores the length of
+ * the generated token in length.
  */
 int webauth_token_encode(struct webauth_context *,
                          const struct webauth_token *,
                          const WEBAUTH_KEYRING *, const char **token)
+    __attribute__((__nonnull__));
+int webauth_token_encode_raw(struct webauth_context *,
+                             const struct webauth_token *,
+                             const WEBAUTH_KEYRING *, const void **token,
+                             size_t *length)
     __attribute__((__nonnull__));
 
 END_DECLS

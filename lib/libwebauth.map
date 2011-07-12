@@ -69,7 +69,9 @@ WEBAUTH_3 {
         webauth_token_create;
         webauth_token_create_with_key;
         webauth_token_decode;
+        webauth_token_decode_raw;
         webauth_token_encode;
+        webauth_token_encode_raw;
         webauth_token_encoded_length;
         webauth_token_parse;
         webauth_token_parse_with_key;

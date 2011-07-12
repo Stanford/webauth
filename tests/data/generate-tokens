@@ -258,17 +258,25 @@ for my $file (sort keys %TOKENS) {
 }
 
 # Generate some additional tokens that cannot be generated directly.
-for my $file (sort grep { /-ok$/ } keys %TOKENS) {
-    my $corrupt = $file;
-    $corrupt =~ s/-ok/-bad-hmac/;
-    next if (%generate and not $generate{$corrupt});
-    open (OK, '<', "tokens/$file")
-        or die "cannot open tokens/$file: $!\n";
+if (not %generate or $generate{'app-bad-hmac'}) {
+    open (OK, '<', 'tokens/app-ok')
+        or die "cannot open tokens/app-ok: $!\n";
     my $token = <OK>;
     close OK;
     $token =~ s/^(.{109})./$1 . 'o'/e;
-    open (BAD, '>', "tokens/$corrupt")
-        or die "cannot create tokens/$corrupt: $!\n";
+    open (BAD, '>', 'tokens/app-bad-hmac')
+        or die "cannot create tokens/app-bad-hmac: $!\n";
     print BAD $token;
     close BAD;
+}
+if (not %generate or $generate{'app-raw'}) {
+    my ($class, $data) = @{ $TOKENS{'app-ok'} };
+    my $token = $class->new;
+    for my $method (sort keys %$data) {
+        $token->$method ($data->{$method});
+    }
+    open (RAW, '>', 'tokens/app-raw')
+        or die "cannot create tokens/app-raw: $!\n";
+    print RAW $token->to_token ($keyring);
+    close RAW;
 }

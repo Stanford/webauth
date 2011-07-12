@@ -112,7 +112,7 @@
  */
 static int
 prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
-            const char **token, WEBAUTH_ATTR_LIST **alist)
+            const void **token, WEBAUTH_ATTR_LIST **alist)
 {
     *token = NULL;
     if (keyring == NULL) {
@@ -132,17 +132,17 @@ prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
 
 /*
  * Finish encoding a token.  This function handles the common token encoding
- * steps of generating the raw token and then base64-encoding it, storing it
- * in token.  It returns an error code on failure and sets the WebAuth error.
+ * steps of generating the raw token, storing it in token and its length in
+ * length.  It returns an error code on failure and sets the WebAuth error.
  * token is not set on error.
  */
 static int
 finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
-              const WEBAUTH_ATTR_LIST *alist, const char **token)
+              const WEBAUTH_ATTR_LIST *alist, const void **token,
+              size_t *length)
 {
-    char *rtoken, *btoken;
+    char *rtoken;
     int status;
-    size_t length;
 
     /*
      * Encode the token.  First, we encode the binary form into newly
@@ -150,16 +150,14 @@ finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
      * for the base64-encoded form.  The first block is temporary memory that
      * we could reclaim faster if it ever looks worthwhile.
      */
-    length = webauth_token_encoded_length(alist);
-    rtoken = apr_palloc(ctx->pool, length);
-    status = webauth_token_create(alist, 0, rtoken, &length, length, keyring);
+    *length = webauth_token_encoded_length(alist);
+    rtoken = apr_palloc(ctx->pool, *length);
+    status = webauth_token_create(alist, 0, rtoken, length, *length, keyring);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "error encoding app token");
         return status;
     }
-    btoken = apr_palloc(ctx->pool, apr_base64_encode_len(length));
-    apr_base64_encode(btoken, rtoken, length);
-    *token = btoken;
+    *token = rtoken;
     return WA_ERR_NONE;
 }
 
@@ -565,15 +563,17 @@ corrupt:
 
 
 /*
- * Encode a token.  Takes a token struct and a keyring to use for encryption,
- * and stores in the token argument the newly created token (in pool-allocated
- * memory).  On error, the token argument is set to NULL and an error code is
+ * Encode a raw token (one that is not base64-encoded.  Takes a token struct
+ * and a keyring to use for encryption, and stores in the token argument the
+ * newly created token (in pool-allocated memory), with the length stored in
+ * length.  On error, the token argument is set to NULL and an error code is
  * returned.
  */
 int
-webauth_token_encode(struct webauth_context *ctx,
-                     const struct webauth_token *data,
-                     const WEBAUTH_KEYRING *ring, const char **token)
+webauth_token_encode_raw(struct webauth_context *ctx,
+                         const struct webauth_token *data,
+                         const WEBAUTH_KEYRING *ring, const void **token,
+                         size_t *length)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;
@@ -622,11 +622,40 @@ webauth_token_encode(struct webauth_context *ctx,
     }
     if (status != WA_ERR_NONE)
         goto fail;
-    status = finish_encode(ctx, ring, alist, token);
+    status = finish_encode(ctx, ring, alist, token, length);
     webauth_attr_list_free(alist);
     return status;
 
 fail:
     webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Encode a token.  Takes a token struct and a keyring to use for encryption,
+ * and stores in the token argument the newly created token (in pool-allocated
+ * memory).  On error, the token argument is set to NULL and an error code is
+ * returned.
+ */
+int
+webauth_token_encode(struct webauth_context *ctx,
+                     const struct webauth_token *data,
+                     const WEBAUTH_KEYRING *ring, const char **token)
+{
+    int status;
+    const void *raw;
+    char *btoken;
+    size_t length;
+
+    *token = NULL;
+    status = webauth_token_encode_raw(ctx, data, ring, &raw, &length);
+    if (status != WA_ERR_NONE)
+        goto done;
+    btoken = apr_palloc(ctx->pool, apr_base64_encode_len(length));
+    apr_base64_encode(btoken, raw, length);
+    *token = btoken;
+
+done:
     return status;
 }

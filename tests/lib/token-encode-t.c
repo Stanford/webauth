@@ -62,6 +62,45 @@ encode_decode(struct webauth_context *ctx, struct webauth_token *data,
 
 
 /*
+ * Encode and decode a raw token of a particular type, returning the new
+ * generic token on success and NULL on failure.  Takes the context, token,
+ * keyring, and the name of the token for reporting, along with the number of
+ * test cases to fail if encoding or decoding fails.
+ */
+static struct webauth_token *
+encode_decode_raw(struct webauth_context *ctx, struct webauth_token *data,
+                  WEBAUTH_KEYRING *ring, const char *name, int count)
+{
+    int status;
+    struct webauth_token *result;
+    const void *token;
+    size_t length;
+
+    status = webauth_token_encode_raw(ctx, data, ring, &token, &length);
+    is_int(WA_ERR_NONE, status, "Encoding %s %s succeeds",
+           webauth_token_type_string(data->type), name);
+    if (token == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the token pointer");
+        ok_block(count, 0, "...encoding failed");
+        return NULL;
+    }
+    ok(token != NULL, "...and sets the token pointer");
+    status = webauth_token_decode_raw(ctx, data->type, token, length, ring,
+                                      &result);
+    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    if (result == NULL) {
+        is_string("", webauth_error_message(ctx, status),
+                  "...and sets the struct pointer");
+        ok_block(count, 0, "...decoding failed");
+        return NULL;
+    }
+    ok(result != NULL, "...and sets the struct pointer");
+    return result;
+}
+
+
+/*
  * Check an application token by encoding the struct and then decoding it,
  * ensuring that all attributes in the decoded struct match the encoded one.
  */
@@ -428,8 +467,10 @@ main(void)
     struct webauth_token_request req;
     struct webauth_token_webkdc_proxy wkproxy;
     struct webauth_token_webkdc_service service;
+    struct webauth_token in;
+    struct webauth_token *out;
 
-    plan(410);
+    plan(415);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -792,6 +833,20 @@ main(void)
     service.expiration = 0;
     check_webkdc_service_error(ctx, &service, ring, "without expiration",
                                "missing expiration for webkdc_service token");
+
+    /*
+     * Test encoding and decoding of a raw webkdc-service token.  We don't
+     * need to test all of the data, just one sample attribute.
+     */
+    in.type = WA_TOKEN_WEBKDC_SERVICE;
+    in.token.webkdc_service.subject = "testuser";
+    in.token.webkdc_service.session_key = "so\0me";
+    in.token.webkdc_service.session_key_len = 5;
+    in.token.webkdc_service.expiration = now + 60;
+    out = encode_decode_raw(ctx, &in, ring, "raw", 2);
+    if (out != NULL)
+        is_int(5, out->token.webkdc_service.session_key_len,
+               "...session key length");
 
     /* Clean up. */
     webauth_keyring_free(ring);

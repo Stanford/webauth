@@ -38,6 +38,7 @@ read_token(const char *filename)
     test_file_path_free(path);
     if (fgets(buffer, sizeof(buffer), token) == NULL)
         sysbail("cannot read %s", path);
+    fclose(token);
     length = strlen(buffer);
     if (buffer[length - 1] == '\n')
         buffer[length - 1] = '\0';
@@ -64,6 +65,49 @@ check_decode(struct webauth_context *ctx, enum webauth_token_type type,
     free(path);
     status = webauth_token_decode(ctx, type, token, ring, &result);
     free(token);
+    is_int(WA_ERR_NONE, status, "%secode %s",
+           (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
+    if (result == NULL) {
+        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        ok_block(count, 0, "Decoding failed");
+    } else {
+        ok(result != NULL, "...succeeded");
+    }
+    return result;
+}
+
+
+/*
+ * Check a successful decoding of a raw token.  Takes the context, the token
+ * type, the name of the token, and the keyring, and the number of tests to
+ * fail if the token decoding fails.  Returns the decoded generic token.
+ */
+static struct webauth_token *
+check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
+                 const char *name, WEBAUTH_KEYRING *ring, int count)
+{
+    char *filename, *path;
+    FILE *token;
+    char buffer[4096];
+    size_t len;
+    int status;
+    struct webauth_token *result;
+
+    if (asprintf(&filename, "data/tokens/%s", name) < 0)
+        sysbail("cannot allocate memory");
+    path = test_file_path(filename);
+    if (path == NULL)
+        bail("cannot find test file %s", filename);
+    free(filename);
+    token = fopen(path, "rb");
+    if (token == NULL)
+        sysbail("cannot open %s", path);
+    len = fread(buffer, 1, sizeof(buffer), token);
+    if (len == 0)
+        sysbail("cannot read %s", path);
+    test_file_path_free(path);
+    fclose(token);
+    status = webauth_token_decode_raw(ctx, type, buffer, len, ring, &result);
     is_int(WA_ERR_NONE, status, "%secode %s",
            (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
     if (result == NULL) {
@@ -123,7 +167,7 @@ main(void)
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
-    plan(282);
+    plan(293);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -542,6 +586,21 @@ main(void)
      */
     check_error(ctx, WA_TOKEN_ANY, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
                 "bad token");
+
+    /* Test decoding of a raw app token. */
+    result = check_decode_raw(ctx, WA_TOKEN_APP, "app-raw", ring, 9);
+    if (result != NULL) {
+        app = &result->token.app;
+        is_string("testuser", app->subject, "...subject");
+        ok(app->session_key == NULL, "...session key");
+        is_int(0, app->session_key_len, "...session key length");
+        is_int(1308777930, app->last_used, "...last used");
+        is_string("p", app->initial_factors, "...initial factors");
+        is_string("c", app->session_factors, "...session factors");
+        is_int(1, app->loa, "...level of assurance");
+        is_int(1308777900, app->creation, "...creation");
+        is_int(2147483600, app->expiration, "...expiration");
+    }
 
     /* Clean up. */
     webauth_keyring_free(ring);
