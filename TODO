@@ -225,6 +225,8 @@ WebLogin:
 
 Build System:
 
+ * Make building with remctl optional.
+
  * Compile the WebAuth version into the modules rather than getting the
    version from the webauth library.  In the webauth and webkdc modules,
    warn if the versions don't match at runtime (but proceed anyway).
