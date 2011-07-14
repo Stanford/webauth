@@ -57,6 +57,9 @@ General:
 
 libwebauth:
 
+ * Deal with memory allocation failure in the library.  Set a default abort
+   function that blows up the whole application if one isn't already set.
+
  * The current library interface is very low-level.  Ideally, the library
    should treat particular WebAuth tokens as first-class objects with
    their own manipulation functions and not expose all of the low-level
