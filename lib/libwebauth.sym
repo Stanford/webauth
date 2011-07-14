@@ -75,3 +75,5 @@ webauth_token_parse
 webauth_token_parse_with_key
 webauth_token_type_code
 webauth_token_type_string
+webauth_user_config
+webauth_user_info

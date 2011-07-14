@@ -31,9 +31,10 @@ init_context(apr_pool_t *pool)
 {
     struct webauth_context *ctx;
 
-    ctx = apr_palloc(pool, sizeof(struct webauth_context));
+    ctx = apr_pcalloc(pool, sizeof(struct webauth_context));
     ctx->pool = pool;
     ctx->error = NULL;
+    ctx->user = NULL;
     return ctx;
 }
 
@@ -129,6 +130,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_APR:               return "APR error";
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
     case WA_ERR_INVALID:           return "invalid argument to function";
+    case WA_ERR_REMOTE_FAILURE:    return "a remote service call failed";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown error code %d", code);

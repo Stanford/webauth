@@ -1,0 +1,13 @@
+<authdata user="full">
+  <multifactor>
+    <type>o</type>
+    <type>o3</type>
+    <required />
+  </multifactor>
+  <login-history>
+    <host ip="127.0.0.2">example.com</host>
+    <host ip="127.0.0.3">www.example.com</host>
+  </login-history>
+  <max-loa>3</max-loa>
+  <password-expires>1310675733</password-expires>
+</authdata>

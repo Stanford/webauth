@@ -48,6 +48,7 @@
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
 /tests/lib/token-t
+/tests/lib/webkdc-info-t
 /tests/portable/asprintf-t
 /tests/portable/snprintf-t
 /tests/portable/mkstemp-t

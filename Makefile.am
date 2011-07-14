@@ -43,12 +43,13 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	include/webauth/defines.h.in lib/internal.h lib/libwebauth.map	    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST   \
 	perl/MANIFEST.SKIP tests/TESTS tests/data/README		    \
+	tests/data/cmd-webkdc tests/data/conf-webkdc			    \
 	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
-	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
+	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
@@ -76,16 +77,20 @@ webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h \
 	include/webauth/tokens.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = include/webauth.h lib/attrs.c lib/base64.c	\
-	lib/context.c lib/key.c lib/keys.c lib/krb5.c lib/misc.c	\
-	lib/random.c lib/token-decode.c lib/token-encode.c lib/token.c
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attrs.c lib/base64.c	\
+	lib/context.c lib/key.c lib/keys.c lib/krb5.c lib/internal.h	\
+	lib/misc.c lib/random.c lib/token-decode.c lib/token-encode.c	\
+	lib/token.c lib/userinfo.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS) \
-	$(APRUTIL_CPPFLAGS) $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 5:0:0 $(VERSION_LDFLAGS) \
-	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
-lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS) \
-	$(APRUTIL_LIBS) $(KRB5_LIBS) -lcom_err $(CRYPTO_LIBS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
+	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
+	$(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 5:0:0 $(VERSION_LDFLAGS)	    \
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
+	$(CRYPTO_LDFLAGS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)	\
+	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) -lcom_err	\
+	$(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =
@@ -250,7 +255,7 @@ warnings:
 check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/lib/hex-t tests/lib/key-t tests/lib/keys-t tests/lib/krb5-t  \
 	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
-	tests/lib/token-encode-t tests/lib/token-t			   \
+	tests/lib/token-encode-t tests/lib/token-t tests/lib/webkdc-info-t \
 	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
 	tests/portable/snprintf-t tests/portable/strlcat-t		   \
 	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
@@ -261,7 +266,8 @@ check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
-	tests/tap/messages.h tests/tap/process.c tests/tap/process.h
+	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
+	tests/tap/remctl.c tests/tap/remctl.h
 
 # All of the test programs.
 tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
@@ -279,6 +285,11 @@ tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a
 tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_info_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
 	tests/portable/asprintf.c
 tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la

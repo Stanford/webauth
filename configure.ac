@@ -66,6 +66,11 @@ AC_ARG_ENABLE([perl],
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
 AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
 
+dnl Used for the test suite.
+AC_ARG_VAR([PATH_REMCTLD], [Path to remctld for the test suite])
+AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
+    [$PATH$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/usr/local/sbin])
+
 RRA_LIB_APACHE
 RRA_LIB_APR
 RRA_LIB_APRUTIL
@@ -89,6 +94,7 @@ AC_CHECK_MEMBER([krb5_creds.session],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
+RRA_LIB_REMCTL
 RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
