@@ -12,6 +12,7 @@
 #define MOD_WEBKDC_H
 
 #include <modules/mod-config.h>
+#include <portable/stdbool.h>
 
 #include "httpd.h"
 #include "http_config.h"
@@ -220,7 +221,7 @@ typedef struct {
     int error_code; /* set if an error happened */
     const char *error_message;
     const char *mwk_func; /* function error occured in */
-    int need_to_log; /* set if we need to log error  */
+    bool need_to_log; /* set if we need to log error  */
 } MWK_REQ_CTXT;
 
 /* acl.c */

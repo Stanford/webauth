@@ -8,6 +8,9 @@
  * See LICENSE for licensing terms.
  */
 
+#include <modules/mod-config.h>
+#include <portable/stdbool.h>
+
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
@@ -97,7 +100,7 @@ generate_errorResponse(MWK_REQ_CTXT *rc)
  */
 static enum mwk_status
 set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
-                  const char *mwk_func, int log)
+                  const char *mwk_func, bool log)
 {
     rc->error_code = ec;
     rc->error_message = message;
@@ -116,7 +119,7 @@ unknown_element(MWK_REQ_CTXT *rc,
 {
     char *msg = apr_psprintf(rc->r->pool, "unknown element in <%s>: <%s>",
                              parent, u);
-    return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+    return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
 }
 
 
@@ -141,7 +144,7 @@ get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
     if (!string.data || string.data[0] == '\0') {
         char *msg = apr_psprintf(rc->r->pool, "<%s> does not contain data",
                                  e->name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         return NULL;
     }
     return string.data;
@@ -151,7 +154,7 @@ get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
  * get an attr from an element. if required and not found, we
  * log an error and generate an errorResponse.
  */
-static const char*
+static const char *
 get_attr_value(MWK_REQ_CTXT *rc,apr_xml_elem *e,
                const char *name, int required, const char *mwk_func)
 {
@@ -166,7 +169,7 @@ get_attr_value(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     if (required) {
         char *msg = apr_psprintf(rc->r->pool, "can't find attr in <%s>: %s",
                                  e->name, name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
     }
     return NULL;
 }
@@ -191,7 +194,7 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     if (required) {
         char *msg = apr_psprintf(rc->r->pool, "can't find element in <%s>: %s",
                                  e->name, name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
     }
     return NULL;
 }
@@ -205,7 +208,7 @@ find_proxy_token(MWK_REQ_CTXT *rc,
                  MWK_SUBJECT_CREDENTIAL *sub_cred,
                  const char *type,
                  const char *mwk_func,
-                 int set_error)
+                 bool set_error)
 {
     size_t i;
     char *msg;
@@ -220,7 +223,8 @@ find_proxy_token(MWK_REQ_CTXT *rc,
     if (set_error) {
         msg = apr_psprintf(rc->r->pool,
                            "need a proxy-token of type: %s", type);
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func,
+                          true);
     }
     return NULL;
 }
@@ -252,7 +256,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return MWK_ERROR;
         if (rc->sconf->ring == NULL)
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
                                       rc->sconf->ring, &data);
         if (status != WA_ERR_NONE) {
@@ -261,13 +265,14 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             if (status == WA_ERR_TOKEN_EXPIRED) {
                 set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
                                   "service token was expired",
-                                  mwk_func, 0);
+                                  mwk_func, false);
             } else if (status == WA_ERR_BAD_HMAC) {
                 set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                                  "can't decrypt service token", mwk_func, 0);
+                                  "can't decrypt service token", mwk_func,
+                                  false);
             } else {
                 set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                                  "error parsing token", mwk_func, 0);
+                                  "error parsing token", mwk_func, false);
             }
             return MWK_ERROR;
         }
@@ -282,7 +287,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         /* mwk_get_webauth_krb5_ctxt already logged error */
         if (ctxt == NULL) {
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                     "server failure", mwk_func, 0);
+                                     "server failure", mwk_func, false);
         }
 
         req = get_elem_text(rc, e, mwk_func);
@@ -303,7 +308,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                                   "webauth_krb5_rd_req", NULL);
             set_errorResponse(rc, WA_PEC_REQUESTER_KRB5_CRED_INVALID, msg,
-                              mwk_func, 1);
+                              mwk_func, true);
             webauth_krb5_free(ctxt);
             return MWK_ERROR;
         }
@@ -317,7 +322,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "unknown <requesterCredential> type: %s",
                                  at);
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 msg, mwk_func, 1);
+                                 msg, mwk_func, true);
     }
 
     /*
@@ -344,7 +349,7 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
 
     if (rc->sconf->ring == NULL)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_PROXY, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
@@ -353,13 +358,13 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
                               "proxy token was expired",
-                              mwk_func, 0);
+                              mwk_func, false);
         } else if (status == WA_ERR_BAD_HMAC) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                              "can't decrypt proxy token", mwk_func, 0);
+                              "can't decrypt proxy token", mwk_func, false);
         } else {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
+                              "error parsing token", mwk_func, false);
         }
         return MWK_ERROR;
     }
@@ -378,7 +383,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
 
     if (rc->sconf->ring == NULL)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_LOGIN, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
@@ -387,13 +392,13 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
                               "login token was expired",
-                              mwk_func, 0);
+                              mwk_func, false);
         } else if (status == WA_ERR_BAD_HMAC) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                              "can't decrypt login token", mwk_func, 0);
+                              "can't decrypt login token", mwk_func, false);
         } else {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
+                              "error parsing token", mwk_func, false);
         }
         return MWK_ERROR;
     }
@@ -474,7 +479,7 @@ parse_subjectCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "unknown <subjectCredential> type: %s",
                                  at);
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
     return MWK_OK;
 }
@@ -487,13 +492,13 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
 
     if (rc->sconf->ring == NULL)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "no keyring", mwk_func, 1);
+                                 "no keyring", mwk_func, true);
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, token);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, 0);
+                                 "token create failed", mwk_func, false);
     }
     return MWK_OK;
 }
@@ -507,14 +512,14 @@ make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
 
     if (rc->sconf->ring == NULL)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "no keyring", mwk_func, 1);
+                                 "no keyring", mwk_func, true);
     ring = rc->sconf->ring;
     status = webauth_token_encode_raw(rc->ctx, data, ring, token, length);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, 0);
+                                 "token create failed", mwk_func, false);
     }
     return MWK_OK;
 }
@@ -536,13 +541,13 @@ make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
     if (status != WA_ERR_NONE)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "cannot create keyring from key",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     status = webauth_token_encode(rc->ctx, data, ring, token);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, 0);
+                                 "token create failed", mwk_func, false);
     }
     return MWK_OK;
 }
@@ -567,13 +572,13 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create service-tokens with "
                                  "<requesterCredential> of type krb",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     if (!mwk_has_service_access(rc, req_cred->subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a service token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     status = webauth_random_key(session_key, sizeof(session_key));
@@ -582,7 +587,8 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_random_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "can't generate session key", mwk_func, 0);
+                                 "can't generate session key", mwk_func,
+                                 false);
     }
 
     memset(&token, 0, sizeof(token));
@@ -633,7 +639,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
         /* mwk_get_webauth_krb5_ctxt already logged error */
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                       "server failure (webauth_krb5_new)",
-                                      mwk_func, 0);
+                                      mwk_func, false);
     }
 
     status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
@@ -650,7 +656,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
          *        or a server-failure.
          */
         return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     server_principal = req_cred->u.st.subject;
@@ -667,7 +673,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
          */
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, true);
         ms = MWK_ERROR;
     } else {
         *sad = apr_palloc(rc->r->pool, *sad_len);
@@ -728,7 +734,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     if (auth_type == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "auth type is NULL",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* only create id tokens from service creds */
@@ -736,7 +742,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create id-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -744,14 +750,14 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create id-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* check access */
     if (!mwk_has_id_access(rc, req_cred->subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get an id token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     sad = NULL;
@@ -762,7 +768,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
             sub_pt = find_proxy_token(rc, sub_cred, "remuser", mwk_func, 0);
         if (sub_pt == NULL) {
             set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED,
-                              "need a proxy-token", mwk_func, 1);
+                              "need a proxy-token", mwk_func, true);
             return MWK_ERROR;
         }
     } else if (strcmp(auth_type, "krb5") == 0) {
@@ -777,7 +783,8 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     } else {
         char *msg = apr_psprintf(rc->r->pool, "invalid authenticator type %s",
                                  auth_type);
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func,
+                                 true);
     }
 
     /* check access again */
@@ -785,7 +792,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /*
@@ -845,7 +852,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     if (proxy_type == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "proxy type is NULL",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* only create proxy tokens from service creds */
@@ -853,7 +860,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create proxy-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -861,14 +868,14 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create proxy-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* check access */
     if (!mwk_has_proxy_access(rc, req_cred->subject, proxy_type)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we are creating a proxy-tyoken that has
@@ -882,7 +889,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* create the webkdc-proxy-token first, using existing proxy-token */
@@ -947,7 +954,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create cred-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -955,7 +962,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create cred-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     credential_type = get_element(rc, e, "credentialType", 1, mwk_func);
@@ -975,7 +982,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     if (!mwk_has_cred_access(rc, req_cred->subject, ct, sp)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get credential",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we are creating a cred-token that has
@@ -989,14 +996,14 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* try to get the credentials  */
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     if (ctxt == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                      "server failure", mwk_func, 0);
+                                      "server failure", mwk_func, false);
     }
 
     status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
@@ -1012,7 +1019,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
          *        or a server-failure.
          */
         return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* now try and export a ticket */
@@ -1029,7 +1036,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                               NULL);
         webauth_krb5_free(ctxt);
         return set_errorResponse(rc, WA_PEC_GET_CRED_FAILURE,
-                                 msg, mwk_func, 1);
+                                 msg, mwk_func, true);
     }
 
     webauth_krb5_free(ctxt);
@@ -1079,7 +1086,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
 
     if (token == NULL) {
         return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                                 "request token is NULL", mwk_func, 1);
+                                 "request token is NULL", mwk_func, true);
     }
 
     /* FIXME: This is a horrible hack. */
@@ -1089,7 +1096,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     status = webauth_keyring_from_key(rc->ctx, &key, &ring);
     if (status != WA_ERR_NONE)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "cannot generate keyring", mwk_func, 1);
+                                 "cannot generate keyring", mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_REQUEST, token, ring,
                                   &data);
     if (status != WA_ERR_NONE) {
@@ -1098,10 +1105,10 @@ parse_request_token(MWK_REQ_CTXT *rc,
                               "webauth_token_parse", NULL);
         if (status == WA_ERR_BAD_HMAC) {
             set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "can't decrypt request token", mwk_func, 0);
+                              "can't decrypt request token", mwk_func, false);
         } else {
             set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
+                              "error parsing token", mwk_func, false);
         }
         return MWK_ERROR;
     }
@@ -1110,7 +1117,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     *rt = &data->token.request;
     if ((*rt)->creation < time(NULL) - rc->sconf->token_max_ttl)
         set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
-                          "request token was stale", mwk_func, 0);
+                          "request token was stale", mwk_func, false);
     return MWK_OK;
 }
 
@@ -1170,21 +1177,21 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (tokens == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <tokens> in getTokensRequest",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found requesterCredential */
     if (!req_cred_parsed) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                           "missing <requesterCredential> in getTokensRequest",
-                          mwk_func, 1);
+                          mwk_func, true);
     }
 
     /* make sure sub_cred looks ok if its present */
     if (sub_cred_parsed && strcmp(sub_cred.type, "proxy") != 0) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "<subjectCredential> should be of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* if req_cred is of type "service", compare command name */
@@ -1194,7 +1201,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         if (request_token == NULL) {
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                    "missing <requestToken>",
-                                   mwk_func, 1);
+                                   mwk_func, true);
         }
         /* parse request_token */
         if (!parse_request_token(rc, request_token, &req_cred.u.st,
@@ -1207,7 +1214,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "xml command in request-token "
                                      "doesn't match",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
     }
 
@@ -1224,7 +1231,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         if (num_tokens == MAX_TOKENS_RETURNED) {
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "too many tokens requested",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
 
         rtokens[num_tokens].session_key = NULL;
@@ -1245,7 +1252,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "missing <subjectCredential> "
                                      "in getTokensRequest",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
 
         if (strcmp(tt, "service") == 0) {
@@ -1295,7 +1302,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             char *msg = apr_psprintf(rc->r->pool,
                                      "unknown token type: %s", tt);
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
         num_tokens++;
     }
@@ -1367,7 +1374,7 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_get_realm", NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
 
@@ -1384,7 +1391,7 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
     if (okay == 0) {
         char *msg = apr_psprintf(rc->r->pool, "realm %s is not permitted",
                                  realm);
-        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, true);
         free(realm);
         return MWK_ERROR;
     }
@@ -1432,7 +1439,8 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
                 char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                                       "webauth_krb5_get_realm",
                                                       NULL);
-                set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+                set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func,
+                                  true);
                 return MWK_ERROR;
             }
             do {
@@ -1452,7 +1460,7 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_get_principal",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
     *subject_out = apr_pstrdup(rc->r->pool, subject);
@@ -1497,7 +1505,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     if (ctxt == NULL) {
         /* mwk_get_webauth_krb5_ctxt already logged error */
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                      "server failure", mwk_func, 0);
+                                      "server failure", mwk_func, false);
     }
 
     status = webauth_krb5_init_via_password(ctxt,
@@ -1512,26 +1520,26 @@ mwk_do_login(MWK_REQ_CTXT *rc,
     if (status == WA_ERR_LOGIN_FAILED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, true);
         goto cleanup;
 
     } else if (status == WA_ERR_CREDS_EXPIRED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_CREDS_EXPIRED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_CREDS_EXPIRED, msg, mwk_func, true);
         goto cleanup;
 
     } else if (status == WA_ERR_USER_REJECTED) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, true);
         goto cleanup;
 
     } else if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_init_via_password",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         goto cleanup;
     }
 
@@ -1555,7 +1563,7 @@ mwk_do_login(MWK_REQ_CTXT *rc,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_export_tgt",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         goto cleanup;
     } else {
         char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
@@ -1654,7 +1662,7 @@ parse_requestInfo(MWK_REQ_CTXT *rc,
             req_info->remote_port == NULL)) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "<requestInfo> missing data",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
     return MWK_OK;
 }
@@ -1726,14 +1734,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (!req_cred_parsed) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requesterCredential>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
     if (!sub_cred_parsed) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure req_cred is of type "service" */
@@ -1741,14 +1749,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "must use <requesterCredential> "
                                  "of type 'service'",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found requestToken */
     if (request_token == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requestToken>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     if (!parse_request_token(rc, request_token, &req_cred.u.st, &req_token)) {
@@ -1824,7 +1832,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "unsupported requested-token-type: %s",
                                  req_token->type);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                               mwk_func, 1);
+                               mwk_func, true);
         return MWK_ERROR;
     }
 
@@ -1990,7 +1998,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                         "unknown <subjectCredential> type: %s",
                                          at);
                 return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                         mwk_func, 1);
+                                         mwk_func, true);
             }
             sc_data = get_elem_text(rc, child, mwk_func);
             if (sc_data == NULL)
@@ -2005,14 +2013,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (pd_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <proxyData>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
     if (sc_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     sc_blen = strlen(sc_data);
@@ -2024,7 +2032,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                               "webauth_base64_decode",
                                               "subjectCredential");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     pd_blen = strlen(pd_data);
@@ -2035,14 +2043,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                         "webauth__base64_decode", "proxyData");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
     if (ctxt == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "server failure", mwk_func, 0);
+                                 "server failure", mwk_func, false);
     }
 
     status = webauth_krb5_rd_req_with_data(ctxt,
@@ -2062,7 +2070,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth__krb5_rd_req_with_data",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         goto cleanup;
     }
 
@@ -2076,7 +2084,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_init_via_cred",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         free(client_principal);
         goto cleanup;
     }
@@ -2086,7 +2094,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_get_principal",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         free(client_principal);
         goto cleanup;
     }
@@ -2100,7 +2108,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         free(check_principal);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                           "authenticator and Kerberos TGT mismatch",
-                          mwk_func, 1);
+                          mwk_func, true);
         goto cleanup;
     }
     free(client_principal);
@@ -2121,7 +2129,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_export_tgt",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         goto cleanup;
     } else {
         char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
@@ -2218,7 +2226,7 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
     if (pt_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <webkdcProxyToken>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     if (!parse_webkdc_proxy_token(rc, pt_data, &pt))
@@ -2270,7 +2278,7 @@ parse_request(MWK_REQ_CTXT *rc)
                      "mod_webkdc: %s: "
                      "apr_xml_parser_create failed", mwk_func);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                          "server failure", mwk_func, 0);
+                          "server failure", mwk_func, false);
         generate_errorResponse(rc);
         return OK;
     }
@@ -2301,14 +2309,14 @@ parse_request(MWK_REQ_CTXT *rc)
                          errbuff,
                          astatus);
             set_errorResponse(rc, WA_PEC_INVALID_REQUEST, errbuff,
-                              mwk_func, 0);
+                              mwk_func, false);
             generate_errorResponse(rc);
             return OK;
         } else {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                        "mod_webkdc: %s: ap_get_client_block error", mwk_func);
             set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                              "read error while parsing", mwk_func, 0);
+                              "read error while parsing", mwk_func, false);
             generate_errorResponse(rc);
             return OK;
         }
@@ -2394,7 +2402,7 @@ parse_request(MWK_REQ_CTXT *rc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webkdc: %s: %s (from %s)", mwk_func, m,
                      rc->r->connection->remote_ip);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, 0);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, false);
         generate_errorResponse(rc);
         return OK;
     }
