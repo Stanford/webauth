@@ -1,6 +1,7 @@
 lib/attrs
 lib/base64
 lib/hex
+lib/interval
 lib/key
 lib/keys
 lib/krb5
