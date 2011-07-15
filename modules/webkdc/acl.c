@@ -8,6 +8,15 @@
  * See LICENSE for licensing terms.
  */
 
+#include <modules/mod-config.h>
+
+#include <apr_hash.h>
+#include <apr_pools.h>
+#include <apr_strings.h>
+#include <httpd.h>
+#include <http_config.h>
+#include <http_log.h>
+
 #include <modules/webkdc/mod_webkdc.h>
 
 /*

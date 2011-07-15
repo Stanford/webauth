@@ -11,6 +11,17 @@
 #include <modules/mod-config.h>
 #include <portable/stdbool.h>
 
+#include <apr_base64.h>
+#include <apr_lib.h>
+#include <apr_pools.h>
+#include <apr_tables.h>
+#include <apr_strings.h>
+#include <apr_xml.h>
+#include <httpd.h>
+#include <http_config.h>
+#include <http_log.h>
+#include <http_protocol.h>
+
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 #include <webauth/basic.h>

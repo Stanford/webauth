@@ -10,14 +10,6 @@
 
 #include <modules/mod-config.h>
 
-#include <stdlib.h>
-#if HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#endif
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
 #include <apr_errno.h>
 #include <apr_pools.h>
 #include <apr_strings.h>
@@ -25,6 +17,9 @@
 #include <ap_config.h>
 #include <httpd.h>
 #include <http_log.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <unixd.h>
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>

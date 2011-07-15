@@ -14,36 +14,9 @@
 #include <modules/mod-config.h>
 #include <portable/stdbool.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_log.h"
-#include "http_core.h"
-#include "http_protocol.h"
-#include "ap_config.h"
-#include "apr.h"
-#include "apr_lib.h"
-#include "apr_file_io.h"
-#include "apr_file_info.h"
-#include "apr_errno.h"
-#include "apr_strings.h"
-#include "apr_tables.h"
-#include "apr_xml.h"
-#include "apr_thread_mutex.h"
-#include "apr_base64.h"
-#include "unixd.h"
-#include "ap_config_auto.h"
-
-#if HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#endif
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#elif HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <apr_pools.h>
+#include <apr_tables.h>
+#include <sys/types.h>
 
 #include <webauth.h>
 #include <webauth/basic.h>
