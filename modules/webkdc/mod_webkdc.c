@@ -603,7 +603,7 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     }
 
     memset(&token, 0, sizeof(token));
-    expiration = time(NULL) + rc->sconf->service_token_lifetime;
+    expiration = time(NULL) + rc->sconf->service_lifetime;
     token.type = WA_TOKEN_WEBKDC_SERVICE;
     token.token.webkdc_service.subject = req_cred->subject;
     token.token.webkdc_service.session_key = session_key;
@@ -1093,6 +1093,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     struct webauth_token *data;
     WEBAUTH_KEY key;
     WEBAUTH_KEYRING *ring;
+    time_t expiration;
     static const char *mwk_func = "parse_xml_request_token";
 
     if (token == NULL) {
@@ -1126,7 +1127,8 @@ parse_request_token(MWK_REQ_CTXT *rc,
 
     /* Copy the token and do some additional checks. */
     *rt = &data->token.request;
-    if ((*rt)->creation < time(NULL) - rc->sconf->token_max_ttl)
+    expiration = (*rt)->creation + rc->sconf->token_max_ttl;
+    if (expiration < time(NULL))
         set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
                           "request token was stale", mwk_func, false);
     return MWK_OK;
@@ -1608,8 +1610,9 @@ mwk_do_login(MWK_REQ_CTXT *rc,
 
     /* if ProxyTokenLifetime is non-zero, use the min of it
        and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_lifetime) {
-        time_t pmax = time(NULL) + rc->sconf->proxy_token_lifetime;
+    if (rc->sconf->proxy_lifetime) {
+        time_t pmax = time(NULL) + rc->sconf->proxy_lifetime;
+
         pt->expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
     } else {
         pt->expiration = tgt_expiration;
@@ -2151,8 +2154,9 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     /* if ProxyTopkenLifetime is non-zero, use the min of it
        and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_lifetime) {
-        time_t pmax = time(NULL) + rc->sconf->proxy_token_lifetime;
+    if (rc->sconf->proxy_lifetime) {
+        time_t pmax = time(NULL) + rc->sconf->proxy_lifetime;
+
         tgt_expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
     }
     memset(&token, 0, sizeof(token));
@@ -2438,8 +2442,7 @@ handler_hook(request_rec *r)
     }
 
     rc.r = r;
-    rc.sconf = (MWK_SCONF*)ap_get_module_config(r->server->module_config,
-                                                &webkdc_module);
+    rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
 
     if (strcmp(r->handler, "webkdc")) {
         return DECLINED;
@@ -2459,17 +2462,6 @@ handler_hook(request_rec *r)
     return parse_request(&rc);
 }
 
-static int
-die(const char *message, server_rec *s)
-{
-    if (s) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webkdc: fatal error: %s", message);
-    }
-    printf("mod_webkdc: fatal error: %s\n", message);
-    exit(1);
-}
-
 
 /*
  * called on restarts
@@ -2479,8 +2471,9 @@ mod_webkdc_cleanup(void *data)
 {
     server_rec *s = (server_rec*) data;
     server_rec *t;
-    MWK_SCONF *sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                                        &webkdc_module);
+    struct config *sconf;
+
+    sconf = ap_get_module_config(s->module_config, &webkdc_module);
 
     if (sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webkdc: cleanup");
@@ -2488,9 +2481,9 @@ mod_webkdc_cleanup(void *data)
 
     /* walk through list of services and clean up */
     for (t=s; t; t=t->next) {
-        MWK_SCONF *tconf = (MWK_SCONF*)ap_get_module_config(t->module_config,
-                                                            &webkdc_module);
+        struct config *tconf;
 
+        tconf = ap_get_module_config(t->module_config, &webkdc_module);
         if (tconf->ring && tconf->free_ring) {
             if (sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
@@ -2505,60 +2498,6 @@ mod_webkdc_cleanup(void *data)
     return APR_SUCCESS;
 }
 
-static void
-die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
-{
-    char *msg;
-
-    if (s->is_virtual) {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set for virtual host %s:%d",
-                          dir, s->defn_name, s->defn_line_number);
-    } else {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set in main config",
-                          dir);
-    }
-    die(msg, s);
-}
-
-/*
- * check server conf directives for server,
- * also cache keyring
- */
-static void
-init_sconf(server_rec *s, MWK_SCONF *bconf, apr_pool_t *ptemp)
-{
-    MWK_SCONF *sconf;
-
-    sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                             &webkdc_module);
-
-#define CHECK_DIR(field,dir,val) \
-            if (sconf->field == val) die_directive(s, dir, ptemp);
-
-    CHECK_DIR(keyring_path, CD_Keyring, NULL);
-    CHECK_DIR(keytab_path, CD_Keytab, NULL);
-    CHECK_DIR(token_acl_path, CD_TokenAcl, NULL);
-    CHECK_DIR(service_token_lifetime, CD_ServiceTokenLifetime, 0);
-
-#undef CHECK_DIR
-
-    /* load up the keyring */
-
-    if (sconf->ring == NULL) {
-        if ((bconf->ring != NULL) &&
-            (strcmp(sconf->keyring_path, bconf->keyring_path) == 0)) {
-            sconf->ring = bconf->ring;
-            sconf->free_ring = 0;
-        } else {
-            mwk_cache_keyring(s, sconf);
-            if (sconf->ring)
-                sconf->free_ring = 1;
-        }
-    }
-}
-
 /*
  * called after config has been loaded in parent process
  */
@@ -2566,12 +2505,11 @@ static int
 mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                 apr_pool_t *ptemp, server_rec *s)
 {
-    MWK_SCONF *sconf;
+    struct config *sconf;
     server_rec *scheck;
     char *version;
 
-    sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                             &webkdc_module);
+    sconf = ap_get_module_config(s->module_config, &webkdc_module);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
@@ -2582,7 +2520,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                               apr_pool_cleanup_null);
 
     for (scheck=s; scheck; scheck=scheck->next) {
-        init_sconf(scheck, sconf, ptemp);
+        webkdc_config_init(scheck, sconf, ptemp);
     }
 
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
@@ -2607,278 +2545,6 @@ mod_webkdc_child_init(apr_pool_t *p UNUSED, server_rec *s)
     mwk_init_mutexes(s);
 }
 
-/*
-**
-**  per-server configuration structure handling
-**
-*/
-
-static void *
-config_server_create(apr_pool_t *p, server_rec *s UNUSED)
-{
-    MWK_SCONF *sconf;
-
-    sconf = (MWK_SCONF*)apr_pcalloc(p, sizeof(MWK_SCONF));
-
-    /* init defaults */
-    sconf->token_max_ttl        = DF_TokenMaxTTL;
-    sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
-    sconf->keyring_auto_update  = DF_KeyringAutoUpdate;
-    sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
-    sconf->permitted_realms     = apr_array_make(p, 0, sizeof(char *));
-    sconf->local_realms         = apr_array_make(p, 0, sizeof(char *));
-    return (void *)sconf;
-}
-
-#define MERGE_PTR(field) \
-    conf->field = (oconf->field != NULL) ? oconf->field : bconf->field
-
-#define MERGE_INT(field) \
-    conf->field = oconf->field ? oconf->field : bconf->field
-
-static void *
-config_server_merge(apr_pool_t *p, void *basev, void *overv)
-{
-    MWK_SCONF *conf, *bconf, *oconf;
-
-    conf = (MWK_SCONF*) apr_pcalloc(p, sizeof(MWK_SCONF));
-    bconf = (MWK_SCONF*) basev;
-    oconf = (MWK_SCONF*) overv;
-
-    conf->token_max_ttl = oconf->token_max_ttl_ex ?
-        oconf->token_max_ttl : bconf->token_max_ttl;
-
-    conf->proxy_token_lifetime = oconf->proxy_token_lifetime_ex ?
-        oconf->proxy_token_lifetime : bconf->proxy_token_lifetime;
-
-    conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
-
-    conf->keyring_auto_update = oconf->keyring_auto_update_ex ?
-        oconf->keyring_auto_update : bconf->keyring_auto_update;
-
-    conf->keyring_key_lifetime = oconf->keyring_key_lifetime_ex ?
-        oconf->keyring_key_lifetime : bconf->keyring_key_lifetime;
-
-    MERGE_PTR(keyring_path);
-    MERGE_PTR(keytab_path);
-    if (oconf->keytab_path)
-        conf->keytab_principal = oconf->keytab_principal;
-    else
-        conf->keytab_principal = bconf->keytab_principal;
-    MERGE_PTR(token_acl_path);
-    MERGE_INT(service_token_lifetime);
-
-    /* Duplicates in permitted realms are okay. */
-    if (bconf->permitted_realms == NULL)
-        conf->permitted_realms = oconf->permitted_realms;
-    else if (oconf->permitted_realms == NULL)
-        conf->permitted_realms = bconf->permitted_realms;
-    else
-        conf->permitted_realms = apr_array_append(p, bconf->permitted_realms,
-                                                  oconf->permitted_realms);
-
-    /*
-     * Duplicates in local realms aren't okay if the first element is a
-     * keyword rather than a realm.  FIXME: Handle this correctly.
-     */
-    if (bconf->local_realms == NULL)
-        conf->local_realms = oconf->local_realms;
-    else if (oconf->local_realms == NULL)
-        conf->local_realms = bconf->local_realms;
-    else
-        conf->local_realms = apr_array_append(p, bconf->local_realms,
-                                              oconf->local_realms);
-
-    return (void *)conf;
-}
-
-#undef MERGE_PTR
-#undef MERGE_INT
-
-static unsigned long
-seconds(const char *value, const char **error_str)
-{
-    char temp[32];
-    unsigned long mult, len;
-
-    len = strlen(value);
-    if (len > (sizeof(temp)-1)) {
-        *error_str = "error: value too long!";
-        return 0;
-    }
-
-    strcpy(temp, value);
-
-    switch(temp[len-1]) {
-        case 's':
-            mult = 1;
-            break;
-        case 'm':
-            mult = 60;
-            break;
-        case 'h':
-            mult = 60*60;
-            break;
-        case 'd':
-            mult = 60*60*24;
-            break;
-        case 'w':
-            mult = 60*60*24*7;
-            break;
-        default:
-            *error_str = "error: value too long!";
-            return 0;
-            break;
-    }
-
-    temp[len-1] = '\0';
-    return atoi(temp) * mult;
-}
-
-static const char *
-cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    const char *error_str = NULL;
-    char **realm;
-
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    /* server configs */
-    switch (e) {
-    case E_Keyring:
-        sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_Keytab:
-        sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_TokenAcl:
-        sconf->token_acl_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_ProxyTokenLifetime:
-        sconf->proxy_token_lifetime = seconds(arg, &error_str);
-        sconf->proxy_token_lifetime_ex = 1;
-        break;
-    case E_TokenMaxTTL:
-        sconf->token_max_ttl = seconds(arg, &error_str);
-        sconf->token_max_ttl_ex = 1;
-        break;
-    case E_KeyringKeyLifetime:
-        sconf->keyring_key_lifetime = seconds(arg, &error_str);
-        sconf->keyring_key_lifetime_ex = 1;
-        break;
-    case E_ServiceTokenLifetime:
-        sconf->service_token_lifetime = seconds(arg, &error_str);
-        break;
-    case E_PermittedRealms:
-        realm = apr_array_push(sconf->permitted_realms);
-        *realm = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_LocalRealms:
-        realm = apr_array_push(sconf->local_realms);
-        *realm = apr_pstrdup(cmd->pool, arg);
-        break;
-    default:
-        error_str =
-            apr_psprintf(cmd->pool,
-                         "Invalid value cmd->info(%d) for directive %s",
-                         (int) e, cmd->directive->directive);
-        break;
-    }
-    return error_str;
-}
-
-static const char *
-cfg_str12(cmd_parms *cmd, void *mconf UNUSED, const char *arg,
-          const char *arg2)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    switch (e) {
-        /* server configs */
-         case E_Keytab:
-            sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-            sconf->keytab_principal =
-                (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
-            break;
-         default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
-    }
-    return error_str;
-}
-
-static const char *
-cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    switch (e) {
-        /* server configs */
-        case E_Debug:
-            sconf->debug = flag;
-            sconf->debug_ex = 1;
-            break;
-        case E_KeyringAutoUpdate:
-            sconf->keyring_auto_update = flag;
-            sconf->keyring_auto_update_ex = 1;
-            break;
-        default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
-
-    }
-    return error_str;
-}
-
-
-#define SSTR(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
-
-#define SSTR12(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str12,(void*)mconfig, RSRC_CONF, TAKE12, help}
-
-#define SFLAG(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
-
-#define ISTR(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, ITERATE, help}
-
-static const command_rec cmds[] = {
-    /* server/vhost */
-    SSTR(CD_Keyring, E_Keyring, CM_Keyring),
-    SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
-    SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
-    SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
-    SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
-    SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime,
-         CM_ProxyTokenLifetime),
-    SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime,
-         CM_ServiceTokenLifetime),
-    SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
-    ISTR(CD_PermittedRealms, E_PermittedRealms, CM_PermittedRealms),
-    ISTR(CD_LocalRealms, E_LocalRealms, CM_LocalRealms),
-    { NULL, { NULL }, NULL, 0, 0, NULL }
-};
-
-#undef SSTR
-#undef SFLAG
-
 static void
 register_hooks(apr_pool_t *p UNUSED)
 {
@@ -2892,8 +2558,8 @@ module AP_MODULE_DECLARE_DATA webkdc_module = {
     STANDARD20_MODULE_STUFF,
     NULL,                  /* create per-dir    config structures */
     NULL,                  /* merge  per-dir    config structures */
-    config_server_create,  /* create per-server config structures */
-    config_server_merge,   /* merge  per-server config structures */
-    cmds,                  /* table of config file commands       */
+    webkdc_config_create,  /* create per-server config structures */
+    webkdc_config_merge,   /* merge  per-server config structures */
+    webkdc_cmds,           /* table of config file commands       */
     register_hooks         /* register hooks                      */
 };

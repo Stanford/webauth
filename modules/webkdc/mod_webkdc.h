@@ -14,6 +14,7 @@
 #include <modules/mod-config.h>
 #include <portable/stdbool.h>
 
+#include <httpd.h>
 #include <apr_pools.h>
 #include <apr_tables.h>
 #include <sys/types.h>
@@ -23,43 +24,6 @@
 #include <webauth/tokens.h>
 
 /* defines for config directives */
-
-#define CD_Keyring "WebKdcKeyring"
-#define CM_Keyring "path to the keyring file"
-
-#define CD_KeyringKeyLifetime "WebKdcKeyringKeyLifetime"
-#define CM_KeyringKeyLifetime "lifetime of keys we create"
-#define DF_KeyringKeyLifetime (60*60*24*30) /* 30 days */
-
-#define CD_KeyringAutoUpdate "WebKdcKeyringAutoUpdate"
-#define CM_KeyringAutoUpdate "whether or not to automatically update keyring"
-#define DF_KeyringAutoUpdate 1
-
-#define CD_TokenAcl "WebKdcTokenAcl"
-#define CM_TokenAcl "path to the token acl file"
-
-#define CD_Keytab "WebKdcKeytab"
-#define CM_Keytab "path to the K5 keytab file"
-
-#define CD_Debug "WebKdcDebug"
-#define CM_Debug "turn debugging on or off"
-
-#define CD_ProxyTokenLifetime "WebKdcProxyTokenLifetime"
-#define CM_ProxyTokenLifetime "lifetime of webdc-proxy-tokens"
-#define DF_ProxyTokenLifetime 0
-
-#define CD_ServiceTokenLifetime "WebKdcServiceTokenLifetime"
-#define CM_ServiceTokenLifetime "lifetime of webkdc-service-tokens"
-
-#define CD_TokenMaxTTL "WebKdcTokenMaxTTL"
-#define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
-#define DF_TokenMaxTTL (60*5)
-
-#define CD_PermittedRealms "WebKdcPermittedRealms"
-#define CM_PermittedRealms "list of realms permited for authentication"
-
-#define CD_LocalRealms "WebKdcLocalRealms"
-#define CM_LocalRealms "realms stripped from identities, \"none\" or \"local\""
 
 /* max number of <token>'s we will return. 64 is overkill */
 #define MAX_TOKENS_RETURNED 64
@@ -81,47 +45,45 @@ enum mwk_status {
     MWK_OK = 1
 };
 
-/* enums for config directives */
-
-enum {
-    E_TokenAcl,
-    E_Debug,
-    E_Keyring,
-    E_KeyringAutoUpdate,
-    E_KeyringKeyLifetime,
-    E_Keytab,
-    E_ProxyTokenLifetime,
-    E_ServiceTokenLifetime,
-    E_TokenMaxTTL,
-    E_PermittedRealms,
-    E_LocalRealms,
-};
-
 extern module webkdc_module;
 
-/* server conf stuff */
-typedef struct {
-    char *keyring_path;
-    char *keytab_path;
-    char *keytab_principal;
-    char *token_acl_path;
-    int debug;
-    int debug_ex;
-    int proxy_token_lifetime;
-    int proxy_token_lifetime_ex;
-    int service_token_lifetime;
-    int token_max_ttl;
-    int token_max_ttl_ex;
-    int keyring_auto_update;
-    int keyring_auto_update_ex;
-    int keyring_key_lifetime;
-    int keyring_key_lifetime_ex;
-    apr_array_header_t *permitted_realms;
-    apr_array_header_t *local_realms;
-    /* stuff we need to clean up on restarts and what not */
-    WEBAUTH_KEYRING *ring; /* our keyring */
-    int free_ring;         /* set if we should free ring */
-} MWK_SCONF;
+/* Command table provided by the configuration handling code. */
+extern const command_rec webkdc_cmds[];
+
+/*
+ * Server configuration.  For parameters where there's no obvious designated
+ * value for when the directive hasn't been set, there's a corresponding _set
+ * variable that holds whether that directive is set in a particular scope.
+ */
+struct config {
+    const char *keyring_path;
+    const char *keytab_path;
+    const char *keytab_principal;
+    const char *token_acl_path;
+    bool debug;
+    bool keyring_auto_update;
+    unsigned long key_lifetime;
+    unsigned long proxy_lifetime;
+    unsigned long service_lifetime;
+    unsigned long token_max_ttl;
+    apr_array_header_t *local_realms;           /* Array of const char * */
+    apr_array_header_t *permitted_realms;       /* Array of const char * */
+
+    /* Only used during configuration merging. */
+    bool debug_set;
+    bool keyring_auto_update_set;
+    bool key_lifetime_set;
+    bool proxy_lifetime_set;
+    bool token_max_ttl_set;
+
+    /*
+     * These aren't part of the Apache configuration, but they are loaded as
+     * part of reading the configuration, are global to the module, and need
+     * to be reset when the module is reloaded, so we store them here.
+     */
+    WEBAUTH_KEYRING *ring;
+    bool free_ring;
+};
 
 /* requestInfo */
 typedef struct {
@@ -189,13 +151,15 @@ typedef struct {
 /* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
-    MWK_SCONF *sconf;
+    struct config *sconf;
     struct webauth_context *ctx;
     int error_code; /* set if an error happened */
     const char *error_message;
     const char *mwk_func; /* function error occured in */
     bool need_to_log; /* set if we need to log error  */
 } MWK_REQ_CTXT;
+
+BEGIN_DECLS
 
 /* acl.c */
 
@@ -223,6 +187,19 @@ mwk_has_cred_access(MWK_REQ_CTXT *rc,
                     const char *subject,
                     const char *cred_type,
                     const char *cred);
+
+
+/* config.c */
+
+/* Create a new server configuration, used in the module hooks. */
+void *webkdc_config_create(apr_pool_t *, server_rec *s);
+
+/* Merge two server configurations, used in the module hooks. */
+void *webkdc_config_merge(apr_pool_t *, void *, void *);
+
+/* Perform final checks on the configuration (called from post_config hook). */
+void webkdc_config_init(server_rec *, struct config *, apr_pool_t *);
+
 
 /* util.c */
 
@@ -294,6 +271,6 @@ void
 mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size);
 
 int
-mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf);
+mwk_cache_keyring(server_rec *serv, struct config *sconf);
 
 #endif

@@ -278,7 +278,7 @@ mwk_log_webauth_error(server_rec *serv, int status, WEBAUTH_KRB5_CTXT *ctxt,
  * ownership permissions for the keyring.
  */
 int
-mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
+mwk_cache_keyring(server_rec *serv, struct config *sconf)
 {
     int status;
     WEBAUTH_KAU_STATUS kau_status;
@@ -287,7 +287,7 @@ mwk_cache_keyring(server_rec *serv, MWK_SCONF *sconf)
 
     status = webauth_keyring_auto_update(sconf->keyring_path,
                  sconf->keyring_auto_update,
-                 sconf->keyring_auto_update ? sconf->keyring_key_lifetime : 0,
+                 sconf->keyring_auto_update ? sconf->key_lifetime : 0,
                  &sconf->ring, &kau_status, &update_status);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(serv, status, NULL, mwk_func,
