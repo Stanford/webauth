@@ -110,6 +110,8 @@ libwebauth:
 
 mod_webauth:
 
+ * Support setting HttpOnly flag in the generated cookies.
+
  * User request: It would be nice to have a per-directory option to
    recognize a login if the WebAuth cookie is available, but not force it
    if the user isn't logged in.
@@ -198,6 +200,8 @@ mod_webkdc:
    differentiate between trusted Apache authentication and single sign-on.
 
 WebLogin:
+
+ * Set HttpOnly flag in the generated cookies.
 
  * Display a message if the password prompt is forced in order to get a
    TGT for credential delegation to the destination site.
