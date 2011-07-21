@@ -115,10 +115,10 @@ webauth_user_config(struct webauth_context *ctx, struct webauth_user_config *)
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
- * string) and the timestamp of the query are also provided.  The final flag
- * indicates whether a site requested random multifactor and asks the user
- * metadata service to calculate whether multifactor is forced based on that
- * random multifactor chance.
+ * string) is also provided.  The timestamp of the query is assumed to be the
+ * current time.  The final flag indicates whether a site requested random
+ * multifactor and asks the user metadata service to calculate whether
+ * multifactor is forced based on that random multifactor chance.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -130,7 +130,7 @@ webauth_user_config(struct webauth_context *ctx, struct webauth_user_config *)
  */
 int
 webauth_user_info(struct webauth_context *, const char *user, const char *ip,
-                  time_t, int, struct webauth_user_info **info)
+                  int, struct webauth_user_info **info)
     __attribute__((__nonnull__));
 
 END_DECLS

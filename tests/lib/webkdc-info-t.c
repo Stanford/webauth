@@ -51,7 +51,7 @@ main(void)
     remctld = remctld_start(PATH_REMCTLD, principal, conf, NULL);
 
     memset(&config, 0, sizeof(config));
-    status = webauth_user_info(ctx, "test", "127.0.0.1", time(NULL), 0, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
     is_int(WA_ERR_INVALID, status, "Info without configuration");
     is_string("invalid argument to function (user metadata service not"
               " configured)", webauth_error_message(ctx, status),
@@ -69,7 +69,7 @@ main(void)
     config.host = "localhost";
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with only host and protocol");
-    status = webauth_user_info(ctx, "test", "127.0.0.1", time(NULL), 0, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
     is_int(WA_ERR_INVALID, status, "remctl info call without command");
     is_string("invalid argument to function (no remctl command specified)",
               webauth_error_message(ctx, status), "...with correct error");
@@ -81,7 +81,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Complete config");
 
     /* Do a query for a full user. */
-    status = webauth_user_info(ctx, "full", "127.0.0.1", time(NULL), 0, &info);
+    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, &info);
     is_int(WA_ERR_NONE, status, "Metadata for full succeeded");
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
@@ -120,7 +120,7 @@ main(void)
     }
 
     /* Do a query for a minimal user. */
-    status = webauth_user_info(ctx, "mini", "127.0.0.1", time(NULL), 0, &info);
+    status = webauth_user_info(ctx, "mini", "127.0.0.1", 0, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)

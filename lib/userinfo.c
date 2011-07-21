@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <remctl.h>
+#include <time.h>
 
 #include <lib/internal.h>
 #include <webauth/basic.h>
@@ -210,8 +211,7 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
  */
 static int
 remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
-            time_t timestamp, int random_multifactor,
-            struct webauth_user_info **info)
+            int random_multifactor, struct webauth_user_info **info)
 {
     int status;
     struct remctl *r = NULL;
@@ -243,7 +243,7 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     argv[1] = "webkdc-info";
     argv[2] = user;
     argv[3] = ip;
-    argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) timestamp);
+    argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) time(NULL));
     argv[5] = apr_psprintf(ctx->pool, "%d", random_multifactor ? 1 : 0);
     argv[6] = NULL;
     if (!remctl_command(r, argv)) {
@@ -326,10 +326,10 @@ fail:
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
- * string) and the timestamp of the query are also provided.  The final flag
- * indicates whether a site requested random multifactor and asks the user
- * metadata service to calculate whether multifactor is forced based on that
- * random multifactor chance.
+ * string) is also provided.  The final flag indicates whether a site
+ * requested random multifactor and asks the user metadata service to
+ * calculate whether multifactor is forced based on that random multifactor
+ * chance.
  *
  * On success, sets the info parameter to a new webauth_userinfo struct
  * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
@@ -337,7 +337,7 @@ fail:
  */
 int
 webauth_user_info(struct webauth_context *ctx, const char *user,
-                  const char *ip, time_t timestamp, int random_multifactor,
+                  const char *ip, int random_multifactor,
                   struct webauth_user_info **info)
 {
     *info = NULL;
@@ -348,7 +348,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
     }
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_info(ctx, user, ip, timestamp, random_multifactor, info);
+        return remctl_info(ctx, user, ip, random_multifactor, info);
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
