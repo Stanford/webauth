@@ -54,6 +54,10 @@ our $TEST_COOKIE = "WebloginTestCookie";
 # The name of the cookie holding REMOTE_USER configuration information.
 our $REMUSER_COOKIE = 'weblogin_remuser';
 
+# Set any cookies we expire to this value, just in case a buggy browser
+# refuses to actually delete the expired cookie.
+our $EXPIRED_COOKIE = 'expired';
+
 # The lifetime of the REMOTE_USER configuration cookie.
 our $REMUSER_LIFETIME = '+365d';
 
@@ -221,7 +225,8 @@ sub print_headers {
 
     # REMUSER_COOKIE is handled as a special case, since it stores user
     # preferences and should be retained rather than being only a session
-    # cookie.
+    # cookie.  Any cookies sent us with no value should be deleted -- that's
+    # how the WebKDC tells us a proxy token is invalid.
     my $remuser_name = $self->param ('remuser_cookie');
     my $remuser_lifetime = $self->param ('remuser_lifetime');
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
@@ -231,7 +236,12 @@ sub print_headers {
         while (($name, $value) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
-            if ($name eq $remuser_name) {
+            if ($name =~ /^webauth_wpt/ && $value eq '') {
+                $cookie = $q->cookie(-name    => $name,
+                                     -value   => $EXPIRED_COOKIE,
+                                     -secure  => $secure,
+                                     -expires => '-1d');
+            } elsif ($name eq $remuser_name) {
                 $cookie = $q->cookie(-name    => $name,
                                      -value   => $value,
                                      -secure  => $secure,
@@ -1232,6 +1242,7 @@ sub setup_kdc_request {
     my $wpt_cookie;
     for (keys %cart) {
         next unless /^webauth_wpt/;
+        next if $q->cookie ($_) eq $EXPIRED_COOKIE;
         my $type = $_;
         $type =~ s/^(webauth_wpt_)//;
         $self->{request}->proxy_cookie ($type, $q->cookie ($_));
@@ -1479,7 +1490,7 @@ sub logout : Runmode {
     for my $key (sort keys %cookies) {
         if ($key =~ /^webauth_wpt/) {
             my ($name) = split ('=', $cookies{$key});
-            push (@$ca, $q->cookie (-name => $name, -value => '',
+            push (@$ca, $q->cookie (-name => $name, -value => $EXPIRED_COOKIE,
                                     -expires => '-1d', -secure => 1));
          }
     }
