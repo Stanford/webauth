@@ -4,7 +4,7 @@
 <?rfc toc="yes" symrefs="yes"?>
 <rfc>
   <front>
-    <title>WebAuth V3 Technical Specification</title>
+    <title>WebAuth Technical Specification</title>
     <author initials='R.' surname='Schemers' fullname='Roland Schemers'>
       <organization>Stanford University</organization>
     </author>
@@ -187,11 +187,11 @@
             ticket).</t>
 
             <t hangText='login (encrypted with WebKDC private key)'>
-            <vspace blankLines='0'/>A login tokens is used by the WebKDC
+            <vspace blankLines='0'/>A login token is used by the WebKDC
             with the requestTokenRequest command.  It contains the user's
             username and password and is used to obtain the inital
             webkdc-proxy token.  It normally only used internally by the
-            WebLogin component of te WebKDC.</t>
+            WebLogin component of the WebKDC.</t>
 
             <t hangText='app (encrypted with WAS private key)'>
             <vspace blankLines='0'/>An app token is used by a WAS server
@@ -447,7 +447,7 @@
             WebKDC and including the request token in the redirect
             URL.</t>
 
-            <t>The US follows the redirect and sends a request to the
+            <t>The UA follows the redirect and sends a request to the
             WebLogin component of the WebKDC, including the request token
             in the URL.  No cookies are sent to the WebKDC since the user
             has never previously authenticated.</t>
@@ -605,7 +605,7 @@
             This is done in exactly the same way as in the first
             scenario.</t>
 
-            <t>The US follows the redirect and sends a request to the
+            <t>The UA follows the redirect and sends a request to the
             WebLogin component of the WebKDC, including the request token
             in the URL.  Included in this request is a cookie containing a
             webkdc-proxy token since the user has previously
@@ -841,7 +841,7 @@
       session key or to use a proxy token to request credential tokens,
       and internally by the WebLogin component of the WebKDC to request
       webkdc-proxy, id, and proxy tokens from the WebKDC to return to the
-      UA></t>
+      UA.</t>
 
       <section anchor='xmlover' title='XML Protocol Overview'>
         <t>The protocol consists of an exchange of XML-formatted messages
