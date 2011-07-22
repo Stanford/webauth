@@ -1231,13 +1231,13 @@ sub setup_kdc_request {
     # and stuff them into the WebKDC request.
     my $wpt_cookie;
     for (keys %cart) {
-        if (/^webauth_wpt/) {
-            my ($name, $val) = split ('=', $cart{$_});
-            $name=~ s/^(webauth_wpt_)//;
-            $self->{request}->proxy_cookie ($name, $q->cookie ($_));
-            print STDERR "found a cookie $name\n" if $self->param ('debug');
-            $wpt_cookie = 1;
-        }
+        next unless /^webauth_wpt/;
+        my $type = $_;
+        $type =~ s/^(webauth_wpt_)//;
+        $self->{request}->proxy_cookie ($type, $q->cookie ($_));
+        print STDERR "found a cookie of type $type\n"
+            if $self->param ('debug');
+        $wpt_cookie = 1;
     }
     $self->param ('wpt_cookie', $wpt_cookie);
 
