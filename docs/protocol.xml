@@ -1114,14 +1114,17 @@
       {base64-webkdc-service-token}
     </requesterCredential>
 
-    <subjectCredential type="proxy|login">
-      <!-- for type="proxy" -->
+    <subjectCredential>
       <!-- need to pass in all the existing proxy-tokens, since
            we (the web front-end) don't know which we might need -->
-      <proxyToken>...</proxyToken>
+      <!-- source is the source of this proxy token, used to
+           determine the session factors, expressed as a factor
+           code, so "c" for tokens from cookies, "k" for tokens
+           derived from Kerberos authentication, and so forth -->
+      <proxyToken type="krb5|..." source="{factor}">...</proxyToken>
       <!-- additional <proxyToken>...</proxyToken> here -->
 
-      <!-- for type="login" -->
+      <!-- present if the user just authenticated -->
       <loginToken>...</loginToken>
     </subjectCredential>
 
@@ -1159,12 +1162,15 @@
       <!-- repeat for each factor code required by the WAS -->
       <!-- present if user has configured a multifactor method -->
       <configuredFactor>{factor-code}</configuredFactor>
+      <!-- repeat for each possible authentication method available
+           for that user that would satisfy a requirement of the WAS
+           or site policy, omitting "m" -->
     </multifactorRequired>
 
     <!-- any updated/new proxy tokens created, only passed back
-         if subjectCredential was type="login"  -->
+         if <loginToken> was present in <subjectCredential> -->
     <proxyTokens>
-      <proxyToken type="...">{base64-proxy-token}</proxyToken>
+      <proxyToken type="krb5|...">{base64-proxy-token}</proxyToken>
     </proxyTokens>
 
     <!-- the url to return to the user to -->
@@ -2409,7 +2415,7 @@
           KRB_AP_REQ, which is the correct protocol term for the results
           of a krb5_mk_req call.</t>
 
-          <t hangText='3.0.0 (2011-06-06, rra)'>
+          <t hangText='3.0.0 (2011-07-22, rra)'>
           <vspace blankLines='0'/>Add ia, san, and loa attributes to
           various tokens to store authentication factor information and
           level of assurance.  Document the factor codes for
@@ -2418,7 +2424,12 @@
           ever implemented.  Add additional error codes for multifactor
           and Level of Assurance support.  Add &lt;multifactorRequired>
           and &lt;loginHistory> to &lt;requestTokenResponse> and the otp
-          attribute to the login token.</t>
+          attribute to the login token.  Remove the type attribute to
+          &lt;subjectCredential> and change the protocol to allow both
+          &lt;proxyToken> and &lt;loginToken> to be sent in the same
+          request.  Add the type attribute to &lt;proxyToken>.  Include
+          source factor information in &lt;proxyToken> elements sent to
+          the WebKDC, used to derive session factor information.</t>
         </list>
       </t>
     </section>
