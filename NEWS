@@ -11,6 +11,12 @@ WebAuth 3.8.0 (unreleased)
     with keyring entries, and choose the best key from a keyring have been
     added.
 
+    Update to rra-c-util 3.7:
+
+    * Add notices to all files copied over from rra-c-util.
+    * Fix warnings when reporting memory allocation failure in messages.c.
+    * Include strings.h for additional POSIX functions where found.
+
 WebAuth 3.7.4 (2011-05-11)
 
     WebAuth now supports a new Apache configuration directive,

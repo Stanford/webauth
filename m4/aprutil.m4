@@ -13,6 +13,9 @@ dnl RRA_LIB_APRUTIL_SWITCH.
 dnl
 dnl Depends on RRA_SET_LDFLAGS and RRA_ENABLE_REDUCED_DEPENDS.
 dnl
+dnl The canonical version of this file is maintained in the rra-c-util
+dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2010, 2011
 dnl     The Board of Trustees of the Leland Stanford Junior University

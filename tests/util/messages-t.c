@@ -1,6 +1,9 @@
 /*
  * Test suite for error handling routines.
  *
+ * The canonical version of this file is maintained in the rra-c-util package,
+ * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+ *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2002, 2004, 2005 Russ Allbery <rra@stanford.edu>
  * Copyright 2009, 2010
