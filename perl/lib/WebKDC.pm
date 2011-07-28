@@ -199,7 +199,7 @@ sub request_token_request($$) {
     my ($user, $pass, $otp) = ($wreq->user(), $wreq->pass(), $wreq->otp());
     my $request_token = $wreq->request_token();
     my $service_token = $wreq->service_token();
-    my $proxy_cookies = $wreq->proxy_cookies();
+    my $proxy_cookies = $wreq->proxy_cookies_rich();
 
     my $webkdc_doc = new WebKDC::XmlDoc;
     my $root;
@@ -210,43 +210,44 @@ sub request_token_request($$) {
 		       $service_token)->end;
     $webkdc_doc->start('subjectCredential');
 
-    if (defined($user)) {
-	# need to make a login token
-	$webkdc_doc->current->attr('type','login');
+    # Create any login or proxy tokens for the user.  If there are none, we
+    # used to short-circuit here and raise WK_ER_USER_AND_PASS_REQUIRED, but
+    # now we go ahead with tokens to potentially get back a login-canceled
+    # token.  further note: its probably also better to go to the WebKDC as
+    # we'll validate the request-token too the first time around...
+    if (defined($user) || defined($proxy_cookies)) {
 
-	my $login_token = new WebKDC::LoginToken;
-	$login_token->username($user);
-	$login_token->creation_time(time());
-        if (defined $otp) {
-            $login_token->otp($pass);
-        } else {
-            $login_token->password($pass);
+        if (defined($user)) {
+            my $login_token = new WebKDC::LoginToken;
+            $login_token->username($user);
+            $login_token->creation_time(time());
+            if (defined $otp) {
+                $login_token->otp($pass);
+            } else {
+                $login_token->password($pass);
+            }
+
+            my $login_token_str =
+                base64_encode($login_token->to_token(get_keyring()));
+
+            $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
+        }
+
+        if (defined($proxy_cookies)) {
+            $webkdc_doc->current->attr('type','proxy');
+            while (my($type) = keys(%{$proxy_cookies})) {
+                my $token = $proxy_cookies->{$type}{'cookie'};
+                my $source = $proxy_cookies->{$type}{'session_factor'};
+                $webkdc_doc->start('proxyToken',
+                                   {'type' => $type, 'source' => $source},
+                                   $token)->end;
+            }
         }
 
 	# FIXME: DEBUGGING!
 	#print STDERR $login_token;
-
-	my $login_token_str =
-	    base64_encode($login_token->to_token(get_keyring()));
-
-	$webkdc_doc->start('loginToken',  undef, $login_token_str)->end;
-
-    } elsif (defined($proxy_cookies)) {
-	$webkdc_doc->current->attr('type','proxy');
-	while (my($type,$token) = each(%{$proxy_cookies})) {
-	    $webkdc_doc->start('proxyToken',
-			       {"type" => $type},
-			       $token)->end;
-	}
-    } else {
-	# we used to short-circuit here and just raise
-	# WK_ER_USER_AND_PASS_REQUIRED, but now we make a call
-	# to potentially get back a login-canceled token.
-	# we use subjectCredential of type proxy with no proxy tokens.
-	# further note: its probably also better to go to the WebKDC
-	# as we'll validate the request-token too the first time around...
-	$webkdc_doc->current->attr('type','proxy');
     }
+
     $webkdc_doc->end('subjectCredential');
     $webkdc_doc->start('requestToken',  undef, $request_token)->end;
     if ($wreq->local_ip_addr() || $wreq->remote_user()) {

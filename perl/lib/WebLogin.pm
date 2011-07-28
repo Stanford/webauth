@@ -822,7 +822,7 @@ sub add_proxy_token {
     }
     print STDERR "adding krb5 proxy token for $subject\n"
         if $self->param ('debug');
-    $self->{request}->proxy_cookie ('krb5', $token);
+    $self->{request}->proxy_cookie ('krb5', $token, 'k');
 }
 
 # Generate a proxy token containing the REMOTE_USER identity and pass it into
@@ -881,17 +881,20 @@ sub add_remuser_token {
     #
     # FIXME: Session factor information is not yet used and will require
     # protocol modifications to use properly.
+    my $session_factor;
     if (defined (&WebKDC::Config::remuser_factors)) {
         my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
         $token->initial_factors ($ini);
         $token->loa ($loa) if (defined ($loa) && $loa > 0);
+        $session_factor = $sess;
     } else {
         $token->initial_factors ('u');
+        $session_factor = 'u';
     }
 
     # Add the token to the WebKDC request.
     my $token_string = base64_encode ($token->to_token ($keyring));
-    $self->{request}->proxy_cookie ('remuser', $token_string);
+    $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
 }
 
 ##############################################################################
@@ -1245,7 +1248,7 @@ sub setup_kdc_request {
         next if $q->cookie ($_) eq $EXPIRED_COOKIE;
         my $type = $_;
         $type =~ s/^(webauth_wpt_)//;
-        $self->{request}->proxy_cookie ($type, $q->cookie ($_));
+        $self->{request}->proxy_cookie ($type, $q->cookie ($_), 'c');
         print STDERR "found a cookie of type $type\n"
             if $self->param ('debug');
         $wpt_cookie = 1;

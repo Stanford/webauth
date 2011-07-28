@@ -56,11 +56,25 @@ sub otp {
 sub proxy_cookie {
     my $self = shift;
     my $type = shift;
-    $self->{'cookies'}{$type} = shift if @_;
+    if (@_ == 2) {
+        my ($cookie, $session_factor) = @_;
+        $self->{'cookies'}{$type}{'cookie'} = $cookie;
+        $self->{'cookies'}{$type}{'session_factor'} = $session_factor;
+    }
     return $self->{'cookies'}{$type};
 }
 
 sub proxy_cookies {
+    my $self = shift;
+    $self->{'cookies'} = shift if @_;
+    my (%cookies);
+    foreach my $type (keys %{$self->{'cookies'}}) {
+        $cookies{$type} = $self->{'cookies'}{$type}{'cookie'};
+    }
+    return \%cookies;
+}
+
+sub proxy_cookies_rich {
     my $self = shift;
     $self->{'cookies'} = shift if @_;
     return $self->{'cookies'};
