@@ -40,6 +40,7 @@
 /tests/lib/attrs-t
 /tests/lib/base64-t
 /tests/lib/hex-t
+/tests/lib/factors-t
 /tests/lib/interval-t
 /tests/lib/key-t
 /tests/lib/keys-t

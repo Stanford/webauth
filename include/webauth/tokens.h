@@ -39,7 +39,21 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include <webauth.h>            /* WEBAUTH_KEYRING */
+
 struct webauth_context;
+
+/*
+ * Stores a set of factors that we want to perform operations on.  This is a
+ * list of authentication methods (like "p", "o1", etc.) plus flags for the
+ * presence of "derived" factors, such as "m" (which is present if the user
+ * has used two separate factors) or "o" (which is present if the user has
+ * used any of the OTP factors).
+ */
+struct webauth_factors {
+    int multifactor;                    /* "m" (two factors in use) */
+    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+};
 
 /*
  * The types of tokens specified in the protocol, used in the type field of
@@ -239,6 +253,33 @@ struct webauth_token {
 
 
 BEGIN_DECLS
+
+/*
+ * Given a comma-separated string of factors, parse it into a webauth_factors
+ * struct.  If the value of the last argument is not NULL, add the factors to
+ * the existing webauth_factors struct rather than allocating a new one.
+ * Returns a status code.
+ */
+int webauth_factors_parse(struct webauth_context *, const char *,
+                          struct webauth_factors **)
+    __attribute__((__nonnull__));
+
+/*
+ * Given a webauth_factors struct, return its value as a comma-separated
+ * string suitable for inclusion in a token.  The new string is
+ * pool-allocated.
+ */
+char *webauth_factors_string(struct webauth_context *,
+                             struct webauth_factors *)
+    __attribute__((__nonnull__));
+
+/*
+ * Given two sets of factors (struct webauth_factors), return true if the
+ * first set is satisfied by the second set, false otherwise.
+ */
+int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
+                           struct webauth_factors *)
+    __attribute__((__nonnull__));
 
 /*
  * Map a token code to the string name used for the toke type attribute, or

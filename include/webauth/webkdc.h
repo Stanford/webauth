@@ -38,19 +38,6 @@
 struct webauth_context;
 
 /*
- * Some of the data structures here use APR data structures, but we don't want
- * to require the caller use APR if there's no need for the functions they're
- * using.  Therefore, if we have the APR headers included, we use the proper
- * data types.  Otherwise, we switch to void * so that the header can still be
- * included.
- */
-#ifdef APR_TABLES_H
-# define WA_APR_ARRAY_HEADER_T apr_array_header_t
-#else
-# define WA_APR_ARRAY_HEADER_T void
-#endif
-
-/*
  * Supported protocols for contacting the user metadata and multifactor
  * authentication services.  Currently, only remctl is supported.
  */

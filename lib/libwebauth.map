@@ -25,6 +25,9 @@ WEBAUTH_3 {
         webauth_context_init;
         webauth_context_init_apr;
         webauth_error_message;
+        webauth_factors_parse;
+        webauth_factors_string;
+        webauth_factors_subset;
         webauth_hex_decode;
         webauth_hex_decoded_length;
         webauth_hex_encode;

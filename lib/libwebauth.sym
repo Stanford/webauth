@@ -20,6 +20,9 @@ webauth_base64_decoded_length
 webauth_base64_encode
 webauth_base64_encoded_length
 webauth_error_message
+webauth_factors_parse
+webauth_factors_string
+webauth_factors_subset
 webauth_hex_decode
 webauth_hex_decoded_length
 webauth_hex_encode
