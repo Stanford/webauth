@@ -786,15 +786,14 @@ int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
                                size_t cred_len, const char *cache_name);
 
 /*
- * Export the TGT from the context.  This is used to construct a proxy-token
- * after a call to webauth_krb5_init_via_password or
- * webauth_krb5_init_via_tgt.  Memory returned in TGT should be freed when it
- * is no longer needed.
+ * Export the TGT from the context and also store the expiration time.  This
+ * is used to construct a proxy-token after a call to
+ * webauth_krb5_init_via_password or webauth_krb5_init_via_tgt.  Memory
+ * returned in TGT should be freed when it is no longer needed.
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **tgt, size_t *tgt_len,
-                            time_t *expiration);
+int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **, size_t *, time_t *);
 
 /*
  * Import a credential (TGT or ticket) that was exported via
@@ -803,7 +802,7 @@ int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **tgt, size_t *tgt_len,
  *
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, char *cred, size_t cred_len);
+int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, const char *, size_t);
 
 /*
  * Get the string form of the principal from the context.  This should only be

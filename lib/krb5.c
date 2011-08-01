@@ -813,7 +813,7 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, const void *cred,
  * Import a credential into an existing ticket cache.
  */
 int
-webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, char *cred,
+webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, const char *cred,
                          size_t cred_len)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
