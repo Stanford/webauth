@@ -326,10 +326,10 @@ fail:
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
- * string) is also provided.  The final flag indicates whether a site
- * requested random multifactor and asks the user metadata service to
- * calculate whether multifactor is forced based on that random multifactor
- * chance.
+ * string) is also provided, defaulting to 127.0.0.1.  The final flag
+ * indicates whether a site requested random multifactor and asks the user
+ * metadata service to calculate whether multifactor is forced based on that
+ * random multifactor chance.
  *
  * On success, sets the info parameter to a new webauth_userinfo struct
  * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
@@ -346,6 +346,8 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
                           "user metadata service not configured");
         return WA_ERR_INVALID;
     }
+    if (ip == NULL)
+        ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
         return remctl_info(ctx, user, ip, random_multifactor, info);
