@@ -140,7 +140,7 @@ struct webauth_login {
 };
 
 /*
- * The webauth_userinfo struct and its supporting data structures stores
+ * The webauth_user_info struct and its supporting data structures stores
  * metadata about a user, returned from the site-local user management
  * middleware.
  */
@@ -149,6 +149,19 @@ struct webauth_user_info {
     int multifactor_required;           /* Whether multifactor is forced. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
+    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+};
+
+/*
+ * The webauth_user_validate struct is very similar to webauth_user_info, but
+ * is returned after an attempted OTP validation.  It contains the result of
+ * that validation, the factors configured, login history if any, and the LoA
+ * of the authentication were it successful.
+ */
+struct webauth_user_validate {
+    int success;                        /* Whether the validation succeeded. */
+    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+    unsigned long loa;                  /* Level of assurance. */
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
 };
 
@@ -175,12 +188,31 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
  * Depending on the method used, authentication credentials may also need to
  * be set up before calling this function.
  *
- * On success, sets the info parameter to a new webauth_userinfo struct
+ * On success, sets the info parameter to a new webauth_user_info struct
  * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
  * error code and sets the info parameter to NULL.
  */
 int webauth_user_info(struct webauth_context *, const char *user,
-                      const char *ip, int, struct webauth_user_info **info)
+                      const char *ip, int, struct webauth_user_info **)
+    __attribute__((__nonnull__));
+
+/*
+ * Validate an authentication code for a given user (generally an OTP code).
+ * The IP address (as a string) is also provided.  The timestamp of the query
+ * is sent to the remote server and assumed to be the current time.
+ *
+ * webauth_user_config must be called before this function.  Depending on the
+ * method used, authentication credentials may also need to be set up before
+ * calling this function.
+ *
+ * On success, sets the info parameter to a new webauth_user_info struct
+ * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
+ * error code and sets the info parameter to NULL.  Note that success only
+ * means that the call completed, not that the validation was successful.
+ */
+int webauth_user_validate(struct webauth_context *, const char *user,
+                          const char *ip, const char *code,
+                          struct webauth_user_validate **)
     __attribute__((__nonnull__));
 
 /*

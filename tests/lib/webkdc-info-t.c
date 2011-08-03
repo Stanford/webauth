@@ -22,6 +22,56 @@
 #include <webauth/webkdc.h>
 
 
+/*
+ * Check a user OTP validation.  Takes the OTP code and a flag indicating
+ * whether the validation will be successful or not.  Always attempts with the
+ * user "full" and verifies that the standard data is returned.
+ */
+static void
+test_validate(struct webauth_context *ctx, const char *code, bool success)
+{
+    struct webauth_user_validate *validate;
+    struct webauth_login *login;
+    int status;
+
+    status = webauth_user_validate(ctx, "full", "127.0.0.1", code, &validate);
+    is_int(WA_ERR_NONE, status, "Validate for full succeeded");
+    ok(validate != NULL, "...full is not NULL");
+    if (validate == NULL)
+        ok_block(14, 0, "Validate failed");
+    else {
+        is_int(success, validate->success, "...validation correct");
+        ok(validate->factors != NULL, "...factors is not NULL");
+        if (validate->factors == NULL)
+            ok_block(3, 0, "...factors is not NULL");
+        else {
+            is_int(2, validate->factors->nelts, "...two factors");
+            is_string("o", APR_ARRAY_IDX(validate->factors, 0, char *),
+                      "...first is correct");
+            is_string("o3", APR_ARRAY_IDX(validate->factors, 1, char *),
+                      "...second is correct");
+        }
+        ok(validate->logins != NULL, "...logins is not NULL");
+        if (validate->logins == NULL)
+            ok_block(7, 0, "...logins is not NULL");
+        else {
+            is_int(2, validate->logins->nelts, "...two logins");
+            login = &APR_ARRAY_IDX(validate->logins, 0, struct webauth_login);
+            is_string("127.0.0.2", login->ip, "...first IP is correct");
+            is_string("example.com", login->hostname,
+                      "...first hostname is correct");
+            is_int(0, login->timestamp, "...first timestamp is correct");
+            login = &APR_ARRAY_IDX(validate->logins, 1, struct webauth_login);
+            is_string("127.0.0.3", login->ip, "...second IP is correct");
+            is_string("www.example.com", login->hostname,
+                      "...second hostname is correct");
+            is_int(0, login->timestamp, "...second timestamp is correct");
+        }
+        is_int(3, validate->loa, "...LoA is correct");
+    }        
+}    
+
+
 int
 main(void)
 {
@@ -30,6 +80,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_user_config config;
     struct webauth_user_info *info;
+    struct webauth_user_validate *validate;
     struct webauth_login *login;
     int status;
 
@@ -42,7 +93,7 @@ main(void)
     if (principal == NULL)
         skip_all("Kerberos tests not configured");
 
-    plan(39);
+    plan(73);
 
     /* Set up the user metadata service configuration, testing error cases. */
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
@@ -138,6 +189,19 @@ main(void)
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
+
+    /* Attempt a login for the full user using the wrong code. */
+    test_validate(ctx, "654321", false);
+
+    /* Attempt a login for the full user with the correct code. */
+    test_validate(ctx, "123456", true);
+
+    /* Attempt a login for a user who doesn't have multifactor configured. */
+    status = webauth_user_validate(ctx, "mini", "127.0.0.1", "123456",
+                                   &validate);
+    is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for invalid user fails");
+    is_string("a remote service call failed (unknown user mini)",
+              webauth_error_message(ctx, status), "...with correct error");
 
     /* Clean up. */
     remctld_stop(remctld);
