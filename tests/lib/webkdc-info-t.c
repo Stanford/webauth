@@ -42,7 +42,7 @@ main(void)
     if (principal == NULL)
         skip_all("Kerberos tests not configured");
 
-    plan(36);
+    plan(39);
 
     /* Set up the user metadata service configuration, testing error cases. */
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
@@ -86,20 +86,26 @@ main(void)
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
         is_string("", webauth_error_message(ctx, status), "...no error");
-        ok_block(14, 0, "...info is not NULL");
+        ok_block(17, 0, "...info is not NULL");
     } else {
         is_int(1, info->multifactor_required, "...multifactor required");
         is_int(3, info->max_loa, "...max LoA");
         is_int(1310675733, info->password_expires, "...password expires");
         ok(info->factors != NULL, "...factors is not NULL");
         if (info->factors == NULL)
-            ok_block(3, 0, "...factors is not NULL");
+            ok_block(6, 0, "...factors is not NULL");
         else {
-            is_int(2, info->factors->nelts, "...two factors");
-            is_string("o", APR_ARRAY_IDX(info->factors, 0, char *),
+            is_int(5, info->factors->nelts, "...five factors");
+            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
                       "...first is correct");
-            is_string("o3", APR_ARRAY_IDX(info->factors, 1, char *),
+            is_string("r", APR_ARRAY_IDX(info->factors, 1, char *),
                       "...second is correct");
+            is_string("m", APR_ARRAY_IDX(info->factors, 2, char *),
+                      "...third is correct");
+            is_string("o", APR_ARRAY_IDX(info->factors, 3, char *),
+                      "...fourth is correct");
+            is_string("o3", APR_ARRAY_IDX(info->factors, 4, char *),
+                      "...fifth is correct");
         }
         ok(info->logins != NULL, "...logins is not NULL");
         if (info->logins == NULL)
