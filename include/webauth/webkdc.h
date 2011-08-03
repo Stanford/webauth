@@ -35,7 +35,72 @@
 
 #include <sys/types.h>
 
+#include <webauth.h>
+
 struct webauth_context;
+
+/*
+ * General configuration information for the WebKDC functions.  The WebKDC
+ * Apache module gets this information from the Apache configuration and then
+ * passes it into the library via webauth_webkdc_config.
+ */
+struct webauth_webkdc_config {
+    const char *keytab_path;    /* Path to WebKDC's Kerberos keytab. */
+    const char *principal;      /* WebKDC's Kerberos principal. */
+    time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
+    WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms. */
+    WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms. */
+};
+
+/*
+ * Holds an encoded webkdc-proxy token along with some additional metadata
+ * about it that may be needed by consumers who can't decode the token (or
+ * don't want to).
+ */
+struct webauth_webkdc_proxy_data {
+    const char *type;
+    const char *token;
+};
+
+/*
+ * Input for a <requestTokenRequest>, which is sent from the WebLogin server
+ * to the WebKDC and represents a request by a user to authenticate to a WAS.
+ * This request may contain webkdc-proxy tokens, representing existing single
+ * sign-on credentials, and a login token, representing a username and
+ * authentication credential provided by the user in this session.
+ */
+struct webauth_webkdc_login_request {
+    struct webauth_token_webkdc_service *service;
+    WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
+    struct webauth_token_request *request;
+    const char *remote_user;
+    const char *local_ip;
+    const char *local_port;
+    const char *remote_ip;
+    const char *remote_port;
+};
+
+/*
+ * Result from a <requestTokenResponse>, which is sent by the WebKDC back to
+ * the WebLogin server containing the results of an authentication request.
+ * It was successful if the login_error is 0.
+ */
+struct webauth_webkdc_login_response {
+    int login_error;
+    const char *login_message;
+    WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
+    WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
+    WA_APR_ARRAY_HEADER_T *proxies; /* Array of webkdc_proxy_data structs. */
+    const char *return_url;
+    const char *requester;
+    const char *subject;
+    const char *result;         /* Encrypted id or cred token. */
+    const char *result_type;    /* Type of result token as a string. */
+    const char *login_cancel;   /* Encrypted error token. */
+    const void *app_state;
+    size_t app_state_len;
+    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+};    
 
 /*
  * Supported protocols for contacting the user metadata and multifactor
@@ -64,6 +129,17 @@ struct webauth_user_config {
 };
 
 /*
+ * Stores a single suspicious or questionable login, or a login that for some
+ * other reason the user should be notified about.  Returned in an APR array
+ * in the webauth_userinfo struct.
+ */
+struct webauth_login {
+    const char *ip;
+    const char *hostname;
+    time_t timestamp;
+};
+
+/*
  * The webauth_userinfo struct and its supporting data structures stores
  * metadata about a user, returned from the site-local user management
  * middleware.
@@ -76,17 +152,6 @@ struct webauth_user_info {
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
 };
 
-/*
- * Stores a single suspicious or questionable login, or a login that for some
- * other reason the user should be notified about.  Returned in an APR array
- * in the webauth_userinfo struct.
- */
-struct webauth_login {
-    const char *ip;
-    const char *hostname;
-    time_t timestamp;
-};
-
 BEGIN_DECLS
 
 /*
@@ -96,9 +161,8 @@ BEGIN_DECLS
  * Returns a status code, which will be WA_ERR_NONE unless invalid parameters
  * were passed.
  */
-int
-webauth_user_config(struct webauth_context *ctx, struct webauth_user_config *)
-    __attribute__((__nonnull__(1, 2)));
+int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
+    __attribute__((__nonnull__));
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
@@ -115,9 +179,37 @@ webauth_user_config(struct webauth_context *ctx, struct webauth_user_config *)
  * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
  * error code and sets the info parameter to NULL.
  */
-int
-webauth_user_info(struct webauth_context *, const char *user, const char *ip,
-                  int, struct webauth_user_info **info)
+int webauth_user_info(struct webauth_context *, const char *user,
+                      const char *ip, int, struct webauth_user_info **info)
+    __attribute__((__nonnull__));
+
+/*
+ * Configure the WebKDC services.  Takes the context and the configuration
+ * information.  The configuration information is stored in the WebAuth
+ * context and is used for all subsequent webauth_webkdc functions.  Returns a
+ * status code, which will be WA_ERR_NONE unless invalid parameters were
+ * passed.
+ */
+int webauth_webkdc_config(struct webauth_context *,
+                          struct webauth_webkdc_config *)
+    __attribute__((__nonnull__));
+
+/*
+ * Given the data from a <requestTokenRequest> login attempt, process that
+ * attempted login and return the information for a <requestTokenResponse> in
+ * a newly-allocated struct from pool memory.  All of the tokens included in
+ * the input and output are the unencrypted struct representations; the caller
+ * does the encryption or decryption and base64 conversion.
+ *
+ * Returns WA_ERR_NONE if the request was successfully processed, which
+ * doesn't mean it succeeded; see the login_code attribute of the struct for
+ * that.  Returns an error code if we were unable to process the struct even
+ * to generate an error response.
+ */
+int webauth_webkdc_login(struct webauth_context *,
+                         struct webauth_webkdc_login_request *,
+                         struct webauth_webkdc_login_response **,
+                         WEBAUTH_KEYRING *keyring)
     __attribute__((__nonnull__));
 
 END_DECLS

@@ -81,3 +81,5 @@ webauth_token_type_code
 webauth_token_type_string
 webauth_user_config
 webauth_user_info
+webauth_webkdc_config
+webauth_webkdc_login

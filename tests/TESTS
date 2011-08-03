@@ -11,6 +11,7 @@ lib/random
 lib/token
 lib/token-decode
 lib/token-encode
+lib/webkdc-login
 portable/asprintf
 portable/snprintf
 portable/mkstemp

@@ -60,6 +60,8 @@ struct config {
     const char *keytab_path;
     const char *keytab_principal;
     const char *token_acl_path;
+    struct webauth_user_config *userinfo_config;
+    const char *userinfo_principal;
     bool debug;
     bool keyring_auto_update;
     unsigned long key_lifetime;

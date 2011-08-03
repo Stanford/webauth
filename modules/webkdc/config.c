@@ -26,6 +26,7 @@
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 #include <webauth/util.h>
+#include <webauth/webkdc.h>
 
 /*
  * For each directive, we have the directive name (CD_), a usage string (CU_),
@@ -57,6 +58,8 @@ DIRN(ProxyTokenLifetime,  "lifetime of webkdc-proxy tokens")
 DIRN(ServiceTokenLifetime,"lifetime of webkdc-service tokens")
 DIRN(TokenAcl,            "path to the token ACL file")
 DIRD(TokenMaxTTL,         "max lifetime of recent tokens", int, 60 * 5)
+DIRN(UserInfoURL,         "URL to user metadata service")
+DIRN(UserInfoPrincipal,   "authentication identity of the metadata service")
 
 enum {
     E_Debug,
@@ -70,6 +73,8 @@ enum {
     E_ServiceTokenLifetime,
     E_TokenAcl,
     E_TokenMaxTTL,
+    E_UserInfoURL,
+    E_UserInfoPrincipal,
 };
 
 /*
@@ -150,6 +155,8 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(keytab_path);
     MERGE_PTR_OTHER(keytab_principal, keytab_path);
     MERGE_PTR(token_acl_path);
+    MERGE_PTR(userinfo_config);
+    MERGE_PTR(userinfo_principal);
     MERGE_SET(debug);
     MERGE_SET(keyring_auto_update);
     MERGE_SET(key_lifetime);
@@ -245,6 +252,38 @@ parse_interval(cmd_parms *cmd, const char *arg, unsigned long *value)
 
 
 /*
+ * Utility function for parsing a user metadata service URL.  This also does
+ * validation of the URL and the protocol to ensure that it represents a
+ * supported user metadata service.  Returns an error string or NULL on
+ * success.  The URL will be of the form:
+ *
+ *     remctl://hostname.example.com:4373/oath
+ *
+ * where the path portion is the remctl command name.
+ */
+static const char *
+parse_userinfo_url(cmd_parms *cmd, const char *arg,
+                   struct webauth_user_config *config)
+{
+    apr_uri_t uri;
+    int status;
+
+    status = apr_uri_parse(cmd->pool, arg, &uri);
+    if (status != APR_SUCCESS)
+        return apr_psprintf(cmd->pool, "Invalid user metadata service URL"
+                            " \"%s\" for %s", arg, cmd->directive->directive);
+    if (strcmp(uri.scheme, "remctl") != 0)
+        return apr_psprintf(cmd->pool, "Unknown user metadata protocol \"%s\""
+                            " for %s", uri.scheme, cmd->directive->directive);
+    config->protocol = WA_PROTOCOL_REMCTL;
+    config->host = uri.hostname;
+    config->port = uri.port;
+    config->command = uri.path;
+    return NULL;
+}
+
+
+/*
  * Return the error message for an internal error parsing a configuration
  * directive.  This happens when the wrong configuration handling routine is
  * called for a directive and indicates a coding error in the configuration
@@ -309,6 +348,14 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
         err = parse_interval(cmd, arg, &sconf->token_max_ttl);
         if (err == NULL)
             sconf->token_max_ttl_set = true;
+        break;
+    case E_UserInfoURL:
+        sconf->userinfo_config
+            = apr_palloc(cmd->pool, sizeof(struct webauth_user_config));
+        err = parse_userinfo_url(cmd, arg, sconf->userinfo_config);
+        break;
+    case E_UserInfoPrincipal:
+        sconf->userinfo_principal = arg;
         break;
     default:
         err = unknown_error(cmd, directive, "cfg_str");
@@ -396,5 +443,7 @@ const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ServiceTokenLifetime),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   TokenAcl),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   TokenMaxTTL),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoURL),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoPrincipal),
     { NULL, { NULL }, NULL, OR_NONE, RAW_ARGS, NULL }
 };

@@ -27,6 +27,9 @@ struct webauth_context {
 
     /* The below are used only for the WebKDC functions. */
 
+    /* General WebKDC configuration. */
+    struct webauth_webkdc_config *webkdc;
+
     /* Configuration for contacting the user metadata service. */
     struct webauth_user_config *user;
 };
