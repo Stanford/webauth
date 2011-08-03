@@ -7,7 +7,7 @@ set -e
 
 # Verify that the front-end passed the correct data and determine the XML
 # directory to use for responses.
-if [ "$1" = "webkdc-info" ] ; then
+if [ "$1" = "webkdc-userinfo" ] ; then
     dir=info
     if [ "$3" != "127.0.0.1" ] ; then
         echo "invalid IP address $3" >&2

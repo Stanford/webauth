@@ -240,7 +240,7 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
         goto fail;
     }
     argv[0] = c->command;
-    argv[1] = "webkdc-info";
+    argv[1] = "webkdc-userinfo";
     argv[2] = user;
     argv[3] = ip;
     argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) time(NULL));
