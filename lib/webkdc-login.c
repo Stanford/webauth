@@ -139,6 +139,65 @@ done:
 
 
 /*
+ * Attempt an OTP authentication, which is a user authentication validatation
+ * via the user metadata service.  On success, generate a new webkdc-proxy
+ * token based on that information and store it in the token argument.  On
+ * login failure, store the error code and message in the response.  On a more
+ * fundamental failure, return an error code.
+ */
+static int
+do_otp(struct webauth_context *ctx,
+       struct webauth_webkdc_login_response *response,
+       struct webauth_token_login *login, const char *ip,
+       struct webauth_token **wkproxy)
+{
+    int status;
+    struct webauth_user_validate *validate;
+    struct webauth_token_webkdc_proxy *pt;
+
+    /* Do the remote validation call. */
+    if (ctx->user == NULL) {
+        webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
+        return WA_ERR_UNIMPLEMENTED;
+    }
+    if (ip == NULL)
+        ip = "127.0.0.1";
+    status = webauth_user_validate(ctx, login->username, ip, login->otp,
+                                   &validate);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* If validation failed, set the login error code and return. */
+    if (!validate->success) {
+        response->login_error = WA_PEC_LOGIN_FAILED;
+        response->login_message = "login incorrect";
+        return WA_ERR_NONE;
+    }
+
+    /*
+     * Create the resulting webkdc-proxy token.
+     *
+     * FIXME: Arbitrary magic 10 hour expiration time.
+     */
+    *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
+    pt = &(*wkproxy)->token.webkdc_proxy;
+    pt->subject = login->username;
+    pt->proxy_type = "otp";
+    pt->proxy_subject = "WEBKDC:otp";
+    pt->data = login->username;
+    pt->data_len = strlen(login->username);
+    pt->initial_factors = apr_array_pstrcat(ctx->pool, validate->factors, ',');
+    pt->loa = validate->loa;
+    if (ctx->webkdc->proxy_lifetime == 0)
+        pt->expiration = time(NULL) + 60 * 60 * 10;
+    else
+        pt->expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Attempt a username and password login.  On success, generate a new
  * webkdc-proxy token based on that information and store it in the token
  * argument.  On login failure, store the error code and message in the
@@ -718,7 +777,11 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (cred->type != WA_TOKEN_LOGIN)
             continue;
         token = apr_array_push(request->creds);
-        status = do_login(ctx, *response, &cred->token.login, token);
+        if (cred->token.login.otp != NULL)
+            status = do_otp(ctx, *response, &cred->token.login,
+                            request->remote_ip, token);
+        else
+            status = do_login(ctx, *response, &cred->token.login, token);
         if (status != WA_ERR_NONE)
             return status;
         if (*token == NULL)

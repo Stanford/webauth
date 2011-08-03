@@ -499,7 +499,8 @@ encode_webkdc_proxy(struct webauth_context *ctx,
     CHECK_DATA(webkdc_proxy, data);
     CHECK_NUM( webkdc_proxy, expiration);
     if (strcmp(webkdc_proxy->proxy_type, "krb5") != 0
-        && strcmp(webkdc_proxy->proxy_type, "remuser") != 0) {
+        && strcmp(webkdc_proxy->proxy_type, "remuser") != 0
+        && strcmp(webkdc_proxy->proxy_type, "otp") != 0) {
         webauth_error_set(ctx, WA_ERR_CORRUPT,
                           "unknown proxy type %s for webkdc-proxy token",
                           webkdc_proxy->proxy_type);

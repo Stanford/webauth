@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(158);
+    plan(172);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -582,6 +582,55 @@ main(void)
                   "...result initial factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 30 * 60, token->token.id.expiration,
+               "...and expiration matches the shorter expiration");
+    }
+
+    /* Attempt an OTP authentication with an incorrect OTP code. */
+    login.token.login.username = "full";
+    login.token.login.password = NULL;
+    login.token.login.otp = "654321";
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Invalid OTP returns success");
+    is_int(WA_PEC_LOGIN_FAILED, response->login_error,
+           "...with correct error");
+    is_string("login incorrect", response->login_message,
+              "...and the correct error message");
+
+    /*
+     * Switch to the correct OTP code and add back a webkdc-proxy token
+     * representing an earlier password authentication.  This combination is
+     * the typical case for a multifactor login and should result in
+     * satisfying the requirement for multifactor.
+     */
+    req.initial_factors = "m";
+    login.token.login.otp = "123456";
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Multifactor with proxy token and OTP login returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(5, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("full", token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("p,o,o3,m", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_int(3, token->token.id.loa, "...result LoA is right");
+        is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");
     }
 

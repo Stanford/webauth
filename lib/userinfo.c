@@ -305,7 +305,6 @@ remctl_generic(struct webauth_context *ctx, const char **command,
         case REMCTL_OUT_OUTPUT:
             switch (out->stream) {
             case 1:
-                printf("%.*s", out->length, out->data);
                 status = apr_xml_parser_feed(parser, out->data, out->length);
                 if (status != APR_SUCCESS) {
                     apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
