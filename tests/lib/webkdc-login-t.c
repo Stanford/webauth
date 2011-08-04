@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(172);
+    plan(178);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -241,7 +241,7 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(7, 0, "...no result token: %s",
+        ok_block(8, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string(username, token->token.id.subject,
@@ -251,6 +251,8 @@ main(void)
         ok(token->token.id.auth_data == NULL, "...and there is no auth data");
         is_string("p", token->token.id.initial_factors,
                   "...result initial factors is right");
+        is_string("p", token->token.id.session_factors,
+                  "...result session factors is right");
         is_int(0, token->token.id.loa, "...and no LoA");
         ok(token->token.id.creation - now < 3, "...and creation is sane");
         is_int(pt->expiration, token->token.id.expiration,
@@ -316,7 +318,7 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
+        ok_block(7, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string(username, token->token.proxy.subject,
@@ -325,6 +327,8 @@ main(void)
                   "...result proxy type is right");
         is_string("p", token->token.proxy.initial_factors,
                   "...result initial factors is right");
+        is_string("p", token->token.proxy.session_factors,
+                  "...result session factors is right");
         is_int(0, token->token.proxy.loa, "...and no LoA");
         ok(token->token.proxy.creation - now < 3, "...and creation is sane");
         is_int(expiration, token->token.proxy.expiration,
@@ -394,7 +398,7 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
+        ok_block(7, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("testuser", token->token.id.subject,
@@ -403,6 +407,8 @@ main(void)
                   "...result auth type is right");
         is_string("x,x1", token->token.proxy.initial_factors,
                   "...result initial factors is right");
+        is_string(NULL, token->token.proxy.session_factors,
+                  "...and there are no session factors");
         is_int(3, token->token.id.loa, "...result LoA is right");
         ok(token->token.id.creation - now < 3, "...and creation is sane");
         is_int(now + 60 * 60, token->token.id.expiration,
@@ -432,7 +438,10 @@ main(void)
               "...and the right message");
     is_string("testuser", response->subject, "...but we do know the subject");
 
-    /* Now, add configuration for user information, and try this again. */
+    /*
+     * Now, add configuration for user information and add a cookie session
+     * factor, and try this again.
+     */
     user_config.protocol = WA_PROTOCOL_REMCTL;
     user_config.host = "localhost";
     user_config.port = 14373;
@@ -446,6 +455,7 @@ main(void)
     wkproxy.token.webkdc_proxy.subject = "mini";
     wkproxy.token.webkdc_proxy.data = "mini";
     wkproxy.token.webkdc_proxy.data_len = strlen("mini");
+    wkproxy.token.webkdc_proxy.session_factors = "c";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));
@@ -458,7 +468,7 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(4, 0, "...no result token: %s",
+        ok_block(5, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("mini", token->token.id.subject,
@@ -467,6 +477,8 @@ main(void)
                   "...result auth type is right");
         is_string("x,x1", token->token.proxy.initial_factors,
                   "...result initial factors is right");
+        is_string("c", token->token.proxy.session_factors,
+                  "...result session factors is right");
         is_int(1, token->token.id.loa, "...result LoA is right");
     }
 
@@ -561,17 +573,22 @@ main(void)
     wkproxy2.token.webkdc_proxy.expiration = now + 30 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy2;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
     is_int(WA_ERR_NONE, status,
            "Multifactor with two proxies returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
+    if (response->result == NULL)
+        ok(0, "...which is an id token");
+    else
+        is_string("id", response->result_type, "...which is an id token");
     status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(5, 0, "...no result token: %s",
+        ok_block(6, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("full", token->token.id.subject,
@@ -580,6 +597,8 @@ main(void)
                   "...result auth type is right");
         is_string("p,o,o3,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
+        is_string("c", token->token.proxy.session_factors,
+                  "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 30 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");
@@ -620,7 +639,7 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(5, 0, "...no result token: %s",
+        ok_block(6, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("full", token->token.id.subject,
@@ -629,6 +648,8 @@ main(void)
                   "...result auth type is right");
         is_string("p,o,o3,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
+        is_string("c,o,o3", token->token.proxy.session_factors,
+                  "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");

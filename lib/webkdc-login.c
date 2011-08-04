@@ -76,7 +76,7 @@ canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
             free(realm);
         }
     }
-            
+
     /*
      * We now know the canonicalization method we're using, so we can retrieve
      * the principal from the context.
@@ -124,7 +124,7 @@ realm_permitted(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
             okay = true;
             break;
         }
-    }    
+    }
     if (!okay) {
         response->login_error = WA_PEC_USER_REJECTED;
         response->login_message
@@ -188,6 +188,7 @@ do_otp(struct webauth_context *ctx,
     pt->data = login->username;
     pt->data_len = strlen(login->username);
     pt->initial_factors = apr_array_pstrcat(ctx->pool, validate->factors, ',');
+    pt->session_factors = pt->initial_factors;
     pt->loa = validate->loa;
     if (ctx->webkdc->proxy_lifetime == 0)
         pt->expiration = time(NULL) + 60 * 60 * 10;
@@ -301,6 +302,7 @@ do_login(struct webauth_context *ctx,
     pt->data = tgt;
     pt->data_len = tgt_len;
     pt->initial_factors = WA_FA_PASSWORD;
+    pt->session_factors = pt->initial_factors;
     if (ctx->webkdc->proxy_lifetime == 0)
         pt->expiration = expires;
     else {
@@ -342,8 +344,9 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     struct webauth_token *genbest = NULL;
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_proxy *best = NULL;
-    struct webauth_factors *current;
+    struct webauth_factors *current, *scurrent;
     struct webauth_factors *factors = NULL;
+    struct webauth_factors *sfactors = NULL;
     time_t now;
     int i, status;
 
@@ -369,12 +372,24 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             if (status != WA_ERR_NONE)
                 return status;
         }
+        if (sfactors == NULL) {
+            status = webauth_factors_parse(ctx, best->session_factors,
+                                           &sfactors);
+            if (status != WA_ERR_NONE)
+                return status;
+        }
         current = NULL;
+        scurrent = NULL;
         status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                        &current);
         if (status != WA_ERR_NONE)
             return status;
+        status = webauth_factors_parse(ctx, wkproxy->session_factors,
+                                       &scurrent);
+        if (status != WA_ERR_NONE)
+            return status;
         if (webauth_factors_subset(ctx, current, factors)
+            && webauth_factors_subset(ctx, scurrent, sfactors)
             && (strcmp(best->proxy_type, "krb5") == 0
                 || strcmp(wkproxy->proxy_type, "krb5") != 0))
             continue;
@@ -394,6 +409,10 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
                                        &factors);
         if (status != WA_ERR_NONE)
             return status;
+        status = webauth_factors_parse(ctx, wkproxy->session_factors,
+                                       &sfactors);
+        if (status != WA_ERR_NONE)
+            return status;
         if (wkproxy->expiration < best->expiration)
             best->expiration = wkproxy->expiration;
         if (wkproxy->loa > best->loa)
@@ -401,6 +420,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     }
     if (created) {
         best->initial_factors = webauth_factors_string(ctx, factors);
+        best->session_factors = webauth_factors_string(ctx, sfactors);
         best->creation = now;
     }
     *result = genbest;
@@ -428,7 +448,7 @@ check_multifactor(struct webauth_context *ctx,
 {
     int i, status;
     apr_array_header_t *factors = NULL;
-    struct webauth_factors *wanted;
+    struct webauth_factors *wanted = NULL;
     struct webauth_factors configured;
     struct webauth_factors *have = NULL;
     struct webauth_token *cred;
@@ -611,10 +631,8 @@ create_id_token(struct webauth_context *ctx,
     }
     id->expiration = wkproxy->expiration;
     id->initial_factors = wkproxy->initial_factors;
+    id->session_factors = wkproxy->session_factors;
     id->loa = wkproxy->loa;
-
-    /* FIXME: No idea what the session factors are. */
-    id->session_factors = "u";
 
     /* Encode the token and store the resulting string. */
     response->result_type = "id";
@@ -654,11 +672,9 @@ create_proxy_token(struct webauth_context *ctx,
     proxy->subject = wkproxy->subject;
     proxy->type = req->proxy_type;
     proxy->initial_factors = wkproxy->initial_factors;
+    proxy->session_factors = wkproxy->session_factors;
     proxy->loa = wkproxy->loa;
     proxy->expiration = wkproxy->expiration;
-
-    /* FIXME: No idea what the session factors are. */
-    proxy->session_factors = "u";
 
     /* Create the embedded webkdc-proxy token and limit its scope. */
     memset(&subtoken, 0, sizeof(subtoken));
@@ -769,8 +785,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
      *
      * FIXME: Stop modifying the array in place.  This is surprising to the
      * caller and makes the test suite more annoying.
-     *
-     * FIXME: How do we get the LoA set in the resulting webkdc-proxy token?
      */
     for (i = 0; i < request->creds->nelts; i++) {
         cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);

@@ -1528,6 +1528,7 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 {
     static const char *mwk_func = "parse_subject_credentials";
     apr_xml_elem *child;
+    apr_xml_attr *a;
     char *data;
     struct webauth_token *token;
     struct webauth_token_webkdc_proxy *wkproxy;
@@ -1556,6 +1557,11 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             wkproxy = &token->token.webkdc_proxy;
             if (!parse_webkdc_proxy_token(rc, data, wkproxy))
                 continue;
+            for (a = child->attr; a != NULL; a = a->next)
+                if (strcmp(a->name, "source") == 0) {
+                    wkproxy->session_factors = a->value;
+                    break;
+                }
             APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
         } else if (strcmp(child->name, "loginToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);

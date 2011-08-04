@@ -203,6 +203,13 @@ struct webauth_token_request {
  * authenticate to subsequent web sites without reauthenticating.  This token
  * is also returned inside a proxy token to a WAS, which can then present it
  * back to the WebKDC to obtain id or cred tokens.
+ *
+ * The session_factors data element is special.  It's not included in the wire
+ * representation of this token, and therefore will always be NULL when
+ * initialized from the wire.  It's used internally to store session
+ * information obtained from other sources and used for generating other
+ * tokens (particularly id and proxy tokens), and is then discarded when the
+ * token is encoded.
  */
 struct webauth_token_webkdc_proxy {
     const char *subject;
@@ -214,6 +221,9 @@ struct webauth_token_webkdc_proxy {
     unsigned long loa;
     time_t creation;
     time_t expiration;
+
+    /* Not included in the wire representation. */
+    const char *session_factors;
 };
 
 /*
