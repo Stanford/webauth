@@ -66,6 +66,10 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
         factors->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
     }
 
+    /* If there are no input factors, no changes. */
+    if (input == NULL)
+        return WA_ERR_NONE;
+
     /*
      * Walk through each factor and add it to the array.  In the process,
      * we also track whether we've seen two factors from different classes of
@@ -118,6 +122,8 @@ char *
 webauth_factors_string(struct webauth_context *ctx,
                        struct webauth_factors *factors)
 {
+    if (factors == NULL)
+        return NULL;
     if (factors->factors->nelts == 0)
         return NULL;
     return apr_array_pstrcat(ctx->pool, factors->factors, ',');
