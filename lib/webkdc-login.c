@@ -316,8 +316,9 @@ cleanup:
 /*
  * Merge an array of webkdc-proxy tokens into a single token, which we'll then
  * use for subsequent operations.  Takes the context, the array of
- * credentials, and a place to store the newly created webkdc-proxy token (or
- * return a pointer to one of the ones passed in if there is only one.
+ * credentials, a boolean indicating whether we processed a login token, and a
+ * place to store the newly created webkdc-proxy token (or return a pointer to
+ * one of the ones passed in if there is only one.
  *
  * We use the following logic to merge webkdc-proxy tokens:
  *
@@ -330,10 +331,15 @@ cleanup:
  *    expiration set to the nearest expiration of all contributing tokens.
  * 5. Creation time is set to the current time if we pull from multiple
  *    tokens.
+ * 6. Session factors are merged from a webkdc-proxy token if and only if the
+ *    webkdc-proxy token contributes in some way to the result.
+ * 7. The session factors are used as-is unless the token is less than five
+ *    minutes old and we processed a login token, in which case its initial
+ *    factors count as session factors.
  */
 static int
 merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
-                   struct webauth_token **result)
+                   bool did_login, struct webauth_token **result)
 {
     bool created = false;
     struct webauth_token *token, *tmp;
@@ -408,8 +414,14 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
                                        &factors);
         if (status != WA_ERR_NONE)
             return status;
-        status = webauth_factors_parse(ctx, wkproxy->session_factors,
-                                       &sfactors);
+
+        /* FIXME: Hard-coded magic five minute time interval. */
+        if (did_login && wkproxy->creation > time(NULL) - 5 * 60)
+            status = webauth_factors_parse(ctx, wkproxy->initial_factors,
+                                           &sfactors);
+        else
+            status = webauth_factors_parse(ctx, wkproxy->session_factors,
+                                           &sfactors);
         if (status != WA_ERR_NONE)
             return status;
         if (wkproxy->expiration < best->expiration)
@@ -428,8 +440,8 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
 
 
 /*
- * Given the desired factors expressed by the WebAuth Application Server, the
- * current set of factors the user has authenticated with, and the user
+ * Given the request from the WebAuth Application Server, the current
+ * accumulated response, the current merged webkdc-proxy token, and the user
  * metadata information (which may be NULL if there's no metadata configured),
  * check whether multifactor authentication is already satisfied or
  * unnecessary, required, or impossible.
@@ -443,47 +455,37 @@ static int
 check_multifactor(struct webauth_context *ctx,
                   struct webauth_webkdc_login_request *request,
                   struct webauth_webkdc_login_response *response,
+                  struct webauth_token_webkdc_proxy *wkproxy,
                   struct webauth_user_info *info)
 {
     int i, status;
-    apr_array_header_t *factors = NULL;
-    struct webauth_factors *wanted = NULL;
+    struct webauth_factors *wanted = NULL, *swanted = NULL;
     struct webauth_factors configured;
-    struct webauth_factors *have = NULL;
-    struct webauth_token *cred;
+    struct webauth_factors *have = NULL, *shave = NULL;
     struct webauth_token_request *req;
-    struct webauth_token_webkdc_proxy *wkproxy;
+    const char *factor;
 
     /* If the WAS doesn't care, neither do we. */
     req = request->request;
 
     /* Figure out what factors we want and have. */
-    if (req->initial_factors == NULL || req->initial_factors[0] == '\0') {
-        wanted = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
-        wanted->factors = apr_array_make(ctx->pool, 1, sizeof(char *));
-    } else {
-        status = webauth_factors_parse(ctx, req->initial_factors, &wanted);
-        if (status != WA_ERR_NONE)
-            return status;
-    }
-    for (i = 0; i < request->creds->nelts; i++) {
-        cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
-        if (cred->type != WA_TOKEN_WEBKDC_PROXY)
-            continue;
-        wkproxy = &cred->token.webkdc_proxy;
-        status = webauth_factors_parse(ctx, wkproxy->initial_factors, &have);
-        if (status != WA_ERR_NONE)
-            return status;
-    }
+    status = webauth_factors_parse(ctx, req->initial_factors, &wanted);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = webauth_factors_parse(ctx, req->session_factors, &swanted);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = webauth_factors_parse(ctx, wkproxy->initial_factors, &have);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = webauth_factors_parse(ctx, wkproxy->session_factors, &shave);
+    if (status != WA_ERR_NONE)
+        return status;
 
     /*
-     * Check if multifactor is forced by user configuration.  If so, and if
-     * the user has not already authenticated with multifactor, we need to
-     * return one or the other error code.  Also set factors to the user's
-     * configured factors if they have any.
+     * Check if multifactor is forced by user configuration.  If so, add it to
+     * the initial factors that we require.
      */
-    if (info != NULL && info->factors != NULL && info->factors->nelts > 0)
-        factors = info->factors;
     if (info != NULL && info->multifactor_required) {
         status = webauth_factors_parse(ctx, WA_FA_MULTIFACTOR, &wanted);
         if (status != WA_ERR_NONE)
@@ -492,34 +494,48 @@ check_multifactor(struct webauth_context *ctx,
 
     /*
      * Second, see if the WAS-requested factors are already satisfied by the
-     * factors that we have.
+     * factors that we have.  If not, choose the error message.  If the user
+     * can't satisfy the factors at all, we'll change the error later.
      */
-    if (webauth_factors_subset(ctx, wanted, have))
-        return WA_ERR_NONE;
+    if (webauth_factors_subset(ctx, wanted, have)) {
+        if (webauth_factors_subset(ctx, swanted, shave))
+            return WA_ERR_NONE;
+        else {
+            printf("swanted: %s\n", webauth_factors_string(ctx, swanted));
+            printf("shave: %s\n", webauth_factors_string(ctx, shave));
+            response->login_error = WA_PEC_LOGIN_FORCED;
+            response->login_message = "forced authentication, need to login";
+        }
+    } else {
+        response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
+        response->login_message = "multifactor login required";
+    }
 
     /*
      * Finally, check if the WAS-requested factors can be satisfied by the
      * factors configured by the user.  We have to do a bit of work here to
      * turn the user's configured factors into a webauth_factors struct.
      *
-     * Assume we can always do password authentication.
+     * Assume we can do password authentication even without user metadata.
      */
     memset(&configured, 0, sizeof(configured));
-    if (factors != NULL) {
-        configured.factors = apr_array_copy(ctx->pool, factors);
-        for (i = 0; i < factors->nelts; i++)
-            if (strcmp(APR_ARRAY_IDX(factors, i, const char *), "m") == 0)
+    if (info != NULL && info->factors != NULL && info->factors->nelts > 0) {
+        configured.factors = apr_array_copy(ctx->pool, info->factors);
+        for (i = 0; i < configured.factors->nelts; i++) {
+            factor = APR_ARRAY_IDX(configured.factors, i, const char *);
+            if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
                 configured.multifactor = true;
+        }
     } else {
         configured.factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
-        APR_ARRAY_PUSH(configured.factors, const char *) = "p";
+        APR_ARRAY_PUSH(configured.factors, const char *) = WA_FA_PASSWORD;
     }
     response->factors_wanted = wanted->factors;
     response->factors_configured = configured.factors;
-    if (webauth_factors_subset(ctx, wanted, &configured)) {
-        response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
-        response->login_message = "multifactor login required";
-    } else {
+    if (!webauth_factors_subset(ctx, wanted, &configured)) {
+        response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
+        response->login_message = "multifactor required but not configured";
+    } else if (!webauth_factors_subset(ctx, swanted, &configured)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
     }
@@ -875,7 +891,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * want to copy that new webkdc-proxy token into our output.
      */
     wkproxy = NULL;
-    status = merge_webkdc_proxy(ctx, request->creds, &newproxy);
+    status = merge_webkdc_proxy(ctx, request->creds, did_login, &newproxy);
     if (status != WA_ERR_NONE)
         return status;
     if (newproxy != NULL) {
@@ -890,6 +906,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (status != WA_ERR_NONE)
             return status;
     }
+    if (wkproxy != NULL)
+        printf("session-factors: %s\n", wkproxy->session_factors);
 
     /*
      * Determine the authenticated user.
@@ -941,7 +959,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * the login with either multifactor required or with multifactor
      * unavailable, depending on whether the user has multifactor configured.
      */
-    status = check_multifactor(ctx, request, *response, info);
+    status = check_multifactor(ctx, request, *response, wkproxy, info);
     if (status != WA_ERR_NONE)
         return status;
     if ((*response)->login_error != 0)

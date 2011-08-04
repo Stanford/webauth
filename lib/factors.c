@@ -67,8 +67,10 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
     }
 
     /* If there are no input factors, no changes. */
-    if (input == NULL)
+    if (input == NULL) {
+        *result = factors;
         return WA_ERR_NONE;
+    }
 
     /*
      * Walk through each factor and add it to the array.  In the process,

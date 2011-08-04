@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(191);
+    plan(210);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -364,7 +364,7 @@ main(void)
     wkproxy.token.webkdc_proxy.data_len = strlen("testuser");
     wkproxy.token.webkdc_proxy.initial_factors = "x,x1";
     wkproxy.token.webkdc_proxy.loa = 3;
-    wkproxy.token.webkdc_proxy.creation = now;
+    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
     request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
@@ -553,12 +553,52 @@ main(void)
     is_string("id", response->result_type, "...which is an id token");
 
     /*
+     * Request a password factor for the session authentication.  This should
+     * fail, since we only have a session factor of cookie, returning the
+     * error code for forced login.
+     */
+    req.initial_factors = NULL;
+    req.session_factors = "p";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Multifactor session returns success");
+    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
+           "...with the right error");
+    is_string("forced authentication, need to login", response->login_message,
+              "...and the right message");
+
+    /*
+     * Even if the proxy token is recent enough, its factors aren't session
+     * factors unless we did a login.
+     */
+    wkproxy.token.webkdc_proxy.creation = now;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Multifactor recent session returns success");
+    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
+           "...with the right error");
+    is_string("forced authentication, need to login", response->login_message,
+              "...and the right message");
+
+    /*
+     * If instead we request an X.509 session factor, we'll fail with the
+     * error saying we have no multifactor configuration, since we have no
+     * user metadata service.
+     */
+    req.session_factors = "x";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Multifactor session returns success");
+    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
+           "...with the right error");
+    is_string("multifactor required but not configured",
+              response->login_message, "...and the right message");
+
+    /*
      * Change the WebKDC proxy token to assert just a password factor and ask
      * for an OTP factor, and try again.  This should be rejected with
      * multifactor required.
      */
     wkproxy.token.webkdc_proxy.initial_factors = "p";
     req.initial_factors = "o";
+    req.session_factors = NULL;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor without config returns success");
     is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
@@ -623,6 +663,7 @@ main(void)
     wkproxy2.token.webkdc_proxy.data = "full";
     wkproxy2.token.webkdc_proxy.data_len = strlen("full");
     wkproxy2.token.webkdc_proxy.initial_factors = "o,o3";
+    wkproxy2.token.webkdc_proxy.session_factors = "c";
     wkproxy2.token.webkdc_proxy.loa = 2;
     wkproxy2.token.webkdc_proxy.creation = now;
     wkproxy2.token.webkdc_proxy.expiration = now + 30 * 60;
@@ -677,6 +718,9 @@ main(void)
      * representing an earlier password authentication.  This combination is
      * the typical case for a multifactor login and should result in
      * satisfying the requirement for multifactor.
+     *
+     * We should get the full suite of session factors here, since the proxy
+     * token is fresh.
      */
     req.initial_factors = "m";
     login.token.login.otp = "123456";
@@ -703,12 +747,50 @@ main(void)
                   "...result auth type is right");
         is_string("o,o3,p,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("o,o3,c", token->token.proxy.session_factors,
+        is_string("o,o3,p,m", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");
     }
+
+    /*
+     * Request multifactor session factors as well.  This won't work because
+     * the password webkdc-proxy token is too old and hence can't contribute
+     * to the session factors, even though we're logging in.
+     */
+    req.session_factors = "m";
+    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Multifactor OTP session returns success");
+    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
+           "...with the right error");
+    is_string("forced authentication, need to login", response->login_message,
+              "...and the right message");
+
+    /* But if the webkdc-proxy token is current, this does work. */
+    wkproxy.token.webkdc_proxy.creation = now;
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Multifactor OTP recent session returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok(0, "...no result token: %s", webauth_error_message(ctx, status));
+    else
+        is_string("o,o3,p,m", token->token.proxy.session_factors,
+                  "...result session factors is right");
 
     /* Clean up. */
     remctld_stop(remctld);
