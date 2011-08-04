@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(188);
+    plan(191);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -439,13 +439,30 @@ main(void)
     is_string("testuser", response->subject, "...but we do know the subject");
 
     /*
+     * Try a mismatched proxy token and login token for two different users.
+     * This should fail.
+     */
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    req.type = "id";
+    req.auth = "webkdc";
+    req.proxy_type = NULL;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Mismatch proxy and login returns success");
+    is_int(WA_PEC_UNAUTHORIZED, response->login_error,
+           "...with correct error");
+    is_string("not authorized to use proxy token", response->login_message,
+              "...and correct message");
+
+    /*
      * If we have both a proxy token and a login token, the session factor
      * information from the login token should dominate and we shouldn't get
      * the "c" cookie session information in the resulting id token.
      */
     wkproxy.token.webkdc_proxy.subject = username;
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    wkproxy.token.webkdc_proxy.session_factors = "c";
     request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;

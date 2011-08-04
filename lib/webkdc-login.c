@@ -807,6 +807,46 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
+     * All of the supplied credentials, if any, must be for the same
+     * authenticated user (the same subject) and must be usable by the same
+     * entity (the same proxy_subject).  That proxy_subject must also either
+     * match the identity of the service subject or start with WEBKDC.  We can
+     * skip login tokens, since we've already turned them into webkdc-proxy
+     * tokens above.
+     */
+    if (request->creds != NULL && request->creds->nelts > 0) {
+        const char *subject = NULL;
+        const char *proxy_subject = NULL;
+
+        for (i = 0; i < request->creds->nelts; i++) {
+            cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+            if (cred->type == WA_TOKEN_LOGIN)
+                continue;
+            wkproxy = &cred->token.webkdc_proxy;
+            if (subject == NULL) {
+                subject = wkproxy->subject;
+                proxy_subject = wkproxy->proxy_subject;
+                if (strncmp(proxy_subject, "WEBKDC:", 7) != 0
+                    && strcmp(proxy_subject, request->service->subject) != 0) {
+                    (*response)->login_error = WA_PEC_UNAUTHORIZED;
+                    (*response)->login_message
+                        = "not authorized to use proxy token";
+                    return WA_ERR_NONE;
+                }
+                continue;
+            }
+            if (strcmp(subject, wkproxy->subject) != 0
+                || (strcmp(proxy_subject, wkproxy->proxy_subject) != 0
+                    && strncmp(proxy_subject, "WEBKDC:", 7) != 0)) {
+                (*response)->login_error = WA_PEC_UNAUTHORIZED;
+                (*response)->login_message
+                    = "not authorized to use proxy token";
+                return WA_ERR_NONE;
+            }
+        }
+    }
+
+    /*
      * If there was a login token, all webkdc-proxy tokens also supplied must
      * be WEBKDC tokens (in other words, global single-sign-on tokens).  A WAS
      * can't send a WAS-scoped webkdc-proxy token from a proxy token combined
@@ -834,6 +874,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * a login (meaning that we generated new webkdc-proxy information), we
      * want to copy that new webkdc-proxy token into our output.
      */
+    wkproxy = NULL;
     status = merge_webkdc_proxy(ctx, request->creds, &newproxy);
     if (status != WA_ERR_NONE)
         return status;

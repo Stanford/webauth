@@ -1743,38 +1743,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /*
-     * All of the supplied webkdc-proxy credentials, if any, must be for the
-     * same authenticated user (the same subject) and must be usable by the
-     * same entity (the same proxy_subject).  We don't have to check login
-     * tokens here, since we'll do that later in webauth_webkdc_login when we
-     * turn those login tokens into webkdc-proxy tokens.
-     */
-    if (request.creds != NULL && request.creds->nelts > 0) {
-        struct webauth_token *token;
-        struct webauth_token_webkdc_proxy *wkproxy;
-        const char *subject = NULL;
-        const char *proxy_subject = NULL;
-
-        for (i = 0; i < request.creds->nelts; i++) {
-            token = APR_ARRAY_IDX(request.creds, 0, struct webauth_token *);
-            if (token->type == WA_TOKEN_LOGIN)
-                continue;
-            wkproxy = &token->token.webkdc_proxy;
-            if (subject == NULL) {
-                subject = wkproxy->subject;
-                proxy_subject = wkproxy->proxy_subject;
-            } else {
-                if (strcmp(subject, wkproxy->subject) != 0
-                    || strcmp(proxy_subject, wkproxy->proxy_subject) != 0) {
-                    return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
-                                             "not authorized to get a proxy"
-                                             " token", mwk_func, true);
-                }
-            }
-        }
-    }
-                    
-    /*
      * Call into libwebauth to process the login information.  This will take
      * the accumulated data in the request and attempt to fulfill it.  On an
      * internal error, this function will return a status other than
