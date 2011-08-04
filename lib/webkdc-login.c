@@ -148,8 +148,7 @@ done:
 static int
 do_otp(struct webauth_context *ctx,
        struct webauth_webkdc_login_response *response,
-       struct webauth_token_login *login, const char *ip,
-       struct webauth_token **wkproxy)
+       struct webauth_token_login *login, struct webauth_token **wkproxy)
 {
     int status;
     struct webauth_user_validate *validate;
@@ -160,10 +159,7 @@ do_otp(struct webauth_context *ctx,
         webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
         return WA_ERR_UNIMPLEMENTED;
     }
-    if (ip == NULL)
-        ip = "127.0.0.1";
-    status = webauth_user_validate(ctx, login->username, ip, login->otp,
-                                   &validate);
+    status = webauth_user_validate(ctx, login->username, login->otp, &validate);
     if (status != WA_ERR_NONE)
         return status;
 
@@ -792,8 +788,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
             continue;
         token = apr_array_push(request->creds);
         if (cred->token.login.otp != NULL)
-            status = do_otp(ctx, *response, &cred->token.login,
-                            request->remote_ip, token);
+            status = do_otp(ctx, *response, &cred->token.login, token);
         else
             status = do_login(ctx, *response, &cred->token.login, token);
         if (status != WA_ERR_NONE)

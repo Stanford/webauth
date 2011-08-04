@@ -233,8 +233,6 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
                 validate->success = (strcmp(content, "yes") == 0);
         } else if (strcmp(child->name, "multifactor") == 0)
             status = parse_multifactor(ctx, child, &validate->factors, NULL);
-        else if (strcmp(child->name, "login-history") == 0)
-            status = parse_history(ctx, child, &validate->logins);
         else if (strcmp(child->name, "loa") == 0) {
             status = webauth_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)
@@ -391,21 +389,19 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
  * into a webauth_user_validate struct.
  */
 static int
-remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
+remctl_validate(struct webauth_context *ctx, const char *user,
                 const char *code, struct webauth_user_validate **validate)
 {
     int status;
-    const char *argv[7];
+    const char *argv[5];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
 
     argv[0] = c->command;
     argv[1] = "webkdc-validate";
     argv[2] = user;
-    argv[3] = ip;
-    argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) time(NULL));
-    argv[5] = code;
-    argv[6] = NULL;
+    argv[3] = code;
+    argv[4] = NULL;
     status = remctl_generic(ctx, argv, &doc);
     if (status != WA_ERR_NONE)
         return status;
@@ -467,8 +463,6 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
 
 /*
  * Validate an authentication code for a given user (generally an OTP code).
- * The IP address (as a string) is also provided.  The timestamp of the query
- * is sent to the remote server and assumed to be the current time.
  *
  * webauth_user_config must be called before this function.  Depending on the
  * method used, authentication credentials may also need to be set up before
@@ -481,8 +475,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
  */
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
-                      const char *ip, const char *code,
-                      struct webauth_user_validate **result)
+                      const char *code, struct webauth_user_validate **result)
 {
     int status;
 
@@ -490,11 +483,9 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
     status = check_config(ctx);
     if (status != WA_ERR_NONE)
         return status;
-    if (ip == NULL)
-        ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_validate(ctx, user, ip, code, result);
+        return remctl_validate(ctx, user, code, result);
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */

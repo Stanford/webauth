@@ -162,7 +162,6 @@ struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
     unsigned long loa;                  /* Level of assurance. */
-    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
 };
 
 BEGIN_DECLS
@@ -211,8 +210,7 @@ int webauth_user_info(struct webauth_context *, const char *user,
  * means that the call completed, not that the validation was successful.
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
-                          const char *ip, const char *code,
-                          struct webauth_user_validate **)
+                          const char *code, struct webauth_user_validate **)
     __attribute__((__nonnull__));
 
 /*
