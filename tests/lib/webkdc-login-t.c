@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(178);
+    plan(188);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -439,6 +439,45 @@ main(void)
     is_string("testuser", response->subject, "...but we do know the subject");
 
     /*
+     * If we have both a proxy token and a login token, the session factor
+     * information from the login token should dominate and we shouldn't get
+     * the "c" cookie session information in the resulting id token.
+     */
+    wkproxy.token.webkdc_proxy.subject = username;
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    req.type = "id";
+    req.auth = "webkdc";
+    req.proxy_type = NULL;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Proxy and login for webkdc returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(4, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string(username, token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("p", token->token.proxy.initial_factors,
+                  "...result initial factors are right");
+        is_string("p", token->token.proxy.session_factors,
+                  "...result session factors are right");
+    }
+
+    /*
      * Now, add configuration for user information and add a cookie session
      * factor, and try this again.
      */
@@ -449,13 +488,12 @@ main(void)
     user_config.command = "test";
     status = webauth_user_config(ctx, &user_config);
     is_int(WA_ERR_NONE, status, "User information config accepted");
-    req.type = "id";
-    req.auth = "webkdc";
-    req.proxy_type = NULL;
     wkproxy.token.webkdc_proxy.subject = "mini";
     wkproxy.token.webkdc_proxy.data = "mini";
     wkproxy.token.webkdc_proxy.data_len = strlen("mini");
-    wkproxy.token.webkdc_proxy.session_factors = "c";
+    wkproxy.token.webkdc_proxy.initial_factors = "x,x1";
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));
@@ -595,7 +633,7 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("p,o,o3,m", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
         is_string("c", token->token.proxy.session_factors,
                   "...result session factors is right");
@@ -646,9 +684,9 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("p,o,o3,m", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("c,o,o3", token->token.proxy.session_factors,
+        is_string("o,o3,c", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,

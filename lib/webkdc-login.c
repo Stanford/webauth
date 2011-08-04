@@ -340,7 +340,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     struct webauth_token *genbest = NULL;
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_proxy *best = NULL;
-    struct webauth_factors *current, *scurrent;
+    struct webauth_factors *current;
     struct webauth_factors *factors = NULL;
     struct webauth_factors *sfactors = NULL;
     time_t now;
@@ -350,7 +350,16 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     if (creds->nelts == 0)
         return WA_ERR_NONE;
     now = time(NULL);
-    for (i = 0; i < creds->nelts; i++) {
+
+    /*
+     * We merge the proxy tokens in reverse order, since any proxy tokens that
+     * we created via fresh login tokens should take precedence over anything
+     * that we had from older cookies and we added those to the end of the
+     * array.
+     */
+    i = creds->nelts - 1;
+    do {
+        printf("processing token %d\n", i);
         token = APR_ARRAY_IDX(creds, i, struct webauth_token *);
         if (token->type != WA_TOKEN_WEBKDC_PROXY)
             continue;
@@ -375,17 +384,11 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
                 return status;
         }
         current = NULL;
-        scurrent = NULL;
         status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                        &current);
         if (status != WA_ERR_NONE)
             return status;
-        status = webauth_factors_parse(ctx, wkproxy->session_factors,
-                                       &scurrent);
-        if (status != WA_ERR_NONE)
-            return status;
         if (webauth_factors_subset(ctx, current, factors)
-            && webauth_factors_subset(ctx, scurrent, sfactors)
             && (strcmp(best->proxy_type, "krb5") == 0
                 || strcmp(wkproxy->proxy_type, "krb5") != 0))
             continue;
@@ -413,7 +416,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             best->expiration = wkproxy->expiration;
         if (wkproxy->loa > best->loa)
             best->loa = wkproxy->loa;
-    }
+    } while (i-- > 0);
     if (created) {
         best->initial_factors = webauth_factors_string(ctx, factors);
         best->session_factors = webauth_factors_string(ctx, sfactors);
