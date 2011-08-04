@@ -709,6 +709,10 @@ webauth_token_decode(struct webauth_context *ctx,
     size_t length;
     void *input;
 
+    if (token == NULL) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT, "decoding null token");
+        return WA_ERR_CORRUPT;
+    }
     length = apr_base64_decode_len(token);
     input = apr_palloc(ctx->pool, length);
     length = apr_base64_decode(input, token);
