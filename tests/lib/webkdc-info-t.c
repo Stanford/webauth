@@ -33,7 +33,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     struct webauth_user_validate *validate;
     int status;
 
-    status = webauth_user_validate(ctx, "full", code, &validate);
+    status = webauth_user_validate(ctx, "full", "127.0.0.1", code, &validate);
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
@@ -160,7 +160,7 @@ main(void)
     }
 
     /* Do a query for a minimal user. */
-    status = webauth_user_info(ctx, "mini", "127.0.0.1", 0, &info);
+    status = webauth_user_info(ctx, "mini", NULL, 0, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
@@ -180,7 +180,7 @@ main(void)
     test_validate(ctx, "123456", true);
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
-    status = webauth_user_validate(ctx, "mini", "123456", &validate);
+    status = webauth_user_validate(ctx, "mini", NULL, "123456", &validate);
     is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
               webauth_error_message(ctx, status), "...with correct error");

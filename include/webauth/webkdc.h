@@ -178,10 +178,11 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
- * string) is also provided.  The timestamp of the query is assumed to be the
- * current time.  The final flag indicates whether a site requested random
- * multifactor and asks the user metadata service to calculate whether
- * multifactor is forced based on that random multifactor chance.
+ * string) is also provided.  If NULL, it defaults to 127.0.0.1.  The
+ * timestamp of the query is assumed to be the current time.  The final flag
+ * indicates whether a site requested random multifactor and asks the user
+ * metadata service to calculate whether multifactor is forced based on that
+ * random multifactor chance.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -193,12 +194,12 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
  */
 int webauth_user_info(struct webauth_context *, const char *user,
                       const char *ip, int, struct webauth_user_info **)
-    __attribute__((__nonnull__));
+    __attribute__((__nonnull__(1, 2, 5)));
 
 /*
  * Validate an authentication code for a given user (generally an OTP code).
- * The IP address (as a string) is also provided.  The timestamp of the query
- * is sent to the remote server and assumed to be the current time.
+ * The IP address (as a string) is also provided.  If NULL, it defaults to
+ * 127.0.0.1.
  *
  * webauth_user_config must be called before this function.  Depending on the
  * method used, authentication credentials may also need to be set up before
@@ -210,8 +211,9 @@ int webauth_user_info(struct webauth_context *, const char *user,
  * means that the call completed, not that the validation was successful.
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
-                          const char *code, struct webauth_user_validate **)
-    __attribute__((__nonnull__));
+                          const char *ip, const char *code,
+                          struct webauth_user_validate **)
+    __attribute__((__nonnull__(1, 2, 4, 5)));
 
 /*
  * Configure the WebKDC services.  Takes the context and the configuration

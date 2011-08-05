@@ -19,6 +19,10 @@ if [ "$1" = "webkdc-userinfo" ] ; then
     fi
 elif [ "$1" = "webkdc-validate" ] ; then
     dir=validate
+    if [ "$3" != "127.0.0.1" ] ; then
+        echo "invalid IP address $3" >&2
+        exit 1
+    fi
 else
     echo "invalid command $1" >&2
     exit 1
@@ -29,7 +33,7 @@ if [ -f "data/xml/$dir/$2.xml" ] ; then
     if [ "$1" = "webkdc-userinfo" ] ; then
         exec cat "data/xml/$dir/$2.xml"
     elif [ "$1" = "webkdc-validate" ] ; then
-        if [ "$3" != "123456" ] ; then
+        if [ "$4" != "123456" ] ; then
             cat "data/xml/$dir/$2.xml" | sed 's/<success>yes/<success>no/'
             exit $?
         else

@@ -777,6 +777,8 @@ main(void)
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
     is_int(WA_ERR_NONE, status,
            "Multifactor OTP recent session returns success");
     is_int(0, response->login_error, "...with no error");

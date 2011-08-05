@@ -389,19 +389,20 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
  * into a webauth_user_validate struct.
  */
 static int
-remctl_validate(struct webauth_context *ctx, const char *user,
+remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
                 const char *code, struct webauth_user_validate **validate)
 {
     int status;
-    const char *argv[5];
+    const char *argv[6];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
 
     argv[0] = c->command;
     argv[1] = "webkdc-validate";
     argv[2] = user;
-    argv[3] = code;
-    argv[4] = NULL;
+    argv[3] = ip;
+    argv[4] = code;
+    argv[5] = NULL;
     status = remctl_generic(ctx, argv, &doc);
     if (status != WA_ERR_NONE)
         return status;
@@ -475,7 +476,8 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
  */
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
-                      const char *code, struct webauth_user_validate **result)
+                      const char *ip, const char *code,
+                      struct webauth_user_validate **result)
 {
     int status;
 
@@ -483,9 +485,11 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
     status = check_config(ctx);
     if (status != WA_ERR_NONE)
         return status;
+    if (ip == NULL)
+        ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_validate(ctx, user, code, result);
+        return remctl_validate(ctx, user, ip, code, result);
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */

@@ -148,7 +148,8 @@ done:
 static int
 do_otp(struct webauth_context *ctx,
        struct webauth_webkdc_login_response *response,
-       struct webauth_token_login *login, struct webauth_token **wkproxy)
+       struct webauth_token_login *login, const char *ip,
+       struct webauth_token **wkproxy)
 {
     int status;
     struct webauth_user_validate *validate;
@@ -159,7 +160,8 @@ do_otp(struct webauth_context *ctx,
         webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
         return WA_ERR_UNIMPLEMENTED;
     }
-    status = webauth_user_validate(ctx, login->username, login->otp, &validate);
+    status = webauth_user_validate(ctx, login->username, ip, login->otp,
+                                   &validate);
     if (status != WA_ERR_NONE)
         return status;
 
@@ -365,7 +367,6 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
      */
     i = creds->nelts - 1;
     do {
-        printf("processing token %d\n", i);
         token = APR_ARRAY_IDX(creds, i, struct webauth_token *);
         if (token->type != WA_TOKEN_WEBKDC_PROXY)
             continue;
@@ -501,8 +502,6 @@ check_multifactor(struct webauth_context *ctx,
         if (webauth_factors_subset(ctx, swanted, shave))
             return WA_ERR_NONE;
         else {
-            printf("swanted: %s\n", webauth_factors_string(ctx, swanted));
-            printf("shave: %s\n", webauth_factors_string(ctx, shave));
             response->login_error = WA_PEC_LOGIN_FORCED;
             response->login_message = "forced authentication, need to login";
         }
@@ -807,7 +806,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
             continue;
         token = apr_array_push(request->creds);
         if (cred->token.login.otp != NULL)
-            status = do_otp(ctx, *response, &cred->token.login, token);
+            status = do_otp(ctx, *response, &cred->token.login,
+                            request->remote_ip, token);
         else
             status = do_login(ctx, *response, &cred->token.login, token);
         if (status != WA_ERR_NONE)
@@ -906,8 +906,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (status != WA_ERR_NONE)
             return status;
     }
-    if (wkproxy != NULL)
-        printf("session-factors: %s\n", wkproxy->session_factors);
 
     /*
      * Determine the authenticated user.
