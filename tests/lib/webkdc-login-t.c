@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(210);
+    plan(214);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -258,6 +258,7 @@ main(void)
         is_int(pt->expiration, token->token.id.expiration,
                "...and expiration matches the expiration of the proxy token");
     }
+    is_int(0, response->password_expires, "...and no password expire date");
 
     /* Get an id token with a Kerberos authenticator and test forced auth. */
     req.options = "lc,fa";
@@ -536,6 +537,7 @@ main(void)
                   "...result session factors is right");
         is_int(1, token->token.id.loa, "...result LoA is right");
     }
+    is_int(0, response->password_expires, "...no password expiration");
 
     /*
      * Request an X.509 factor and try again.  This should still work even
@@ -650,6 +652,8 @@ main(void)
     is_string("o3",
               APR_ARRAY_IDX(response->factors_configured, 4, const char *),
               "...and the OTP-3 factor");
+    is_int(1310675733, response->password_expires,
+           "...password expiration is correct");
 
     /*
      * Add a second webkdc-proxy token that repesents an OTP login.  This
@@ -699,6 +703,8 @@ main(void)
         is_int(now + 30 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");
     }
+    is_int(1310675733, response->password_expires,
+           "...password expiration is correct");
 
     /* Attempt an OTP authentication with an incorrect OTP code. */
     login.token.login.username = "full";

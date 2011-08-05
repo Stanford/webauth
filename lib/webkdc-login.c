@@ -925,6 +925,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
             (*response)->logins = info->logins;
         if (wkproxy->loa > info->max_loa)
             wkproxy->loa = info->max_loa;
+        (*response)->password_expires = info->password_expires;
     }
 
     /*

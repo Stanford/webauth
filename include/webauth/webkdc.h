@@ -100,6 +100,7 @@ struct webauth_webkdc_login_response {
     const void *app_state;
     size_t app_state_len;
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+    time_t password_expires;            /* Time of password expiration or 0. */
 };    
 
 /*

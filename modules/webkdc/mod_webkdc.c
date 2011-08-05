@@ -1875,6 +1875,11 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         ap_rvputs(rc->r, "</loginHistory>", NULL);
     }
 
+    /* passwordExpires (if present) */
+    if (response->password_expires > 0)
+        ap_rprintf(rc->r, "<passwordExpires>%lu</passwordExpires>",
+                   (unsigned long) response->password_expires);
+
     ap_rvputs(rc->r, "</requestTokenResponse>", NULL);
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,

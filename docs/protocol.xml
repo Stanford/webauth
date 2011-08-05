@@ -1207,6 +1207,11 @@
       </loginLocation>
       <!-- repeat for site-defined length of login history -->
     </loginHistory>
+
+    <!-- optional, included the WebKDC has information about when
+         the user's password expires, in seconds since POSIX
+         epoch -->
+    <passwordExpires>{expiration-time}</passwordExpires>
   </requestTokenResponse>
 ]]></artwork>
           </figure>
