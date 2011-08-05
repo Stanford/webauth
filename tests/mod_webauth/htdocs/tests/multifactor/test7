@@ -1,0 +1,34 @@
+#!/usr/bin/perl -w
+#
+# Written by Jon Robertson
+# Copyright 2011 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require '../auth/util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title (1, "LoA level 2 test");
+
+print<<EOS;
+<p>You are accessing a webauth-protected page as the user: $REMOTE_USER</p>
+<p>This test checks the ability of WebAuth to require a specific level of
+   assurance for any users logging in.  It requires a level of assurance
+   that you should only reach with some sort of multifactor, though the
+   method does not matter.</p>
+EOS
+
+&return_links;
+
+&multifactor_tests;
+&dump_stuff;
+
+print "</html>";
+
