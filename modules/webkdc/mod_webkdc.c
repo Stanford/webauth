@@ -1659,7 +1659,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     char *request_token = NULL;
     int i, status;
     const char *req_token_info;
-    struct webauth_user_info *info = NULL;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
 
@@ -1847,12 +1846,12 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* appState, need to base64-encode */
-    if (request.request->state != NULL) {
-        char *out_state = (char*)
+    if (response->app_state != NULL) {
+        char *out_state =
             apr_palloc(rc->r->pool,
-                       apr_base64_encode_len(request.request->state_len));
-        apr_base64_encode(out_state, request.request->state,
-                          request.request->state_len);
+                       apr_base64_encode_len(response->app_state_len));
+        apr_base64_encode(out_state, response->app_state,
+                          response->app_state_len);
         /*  don't need to quote */
         ap_rvputs(rc->r,
                   "<appState>", out_state , "</appState>",
@@ -1860,12 +1859,12 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* loginHistory (if present) */
-    if (info != NULL && info->logins != NULL) {
+    if (response->logins != NULL) {
         struct webauth_login *login;
 
         ap_rvputs(rc->r, "<loginHistory>", NULL);
-        for (i = 0; i < info->logins->nelts; i++) {
-            login = &APR_ARRAY_IDX(info->logins, i, struct webauth_login);
+        for (i = 0; i < response->logins->nelts; i++) {
+            login = &APR_ARRAY_IDX(response->logins, i, struct webauth_login);
             ap_rvputs(rc->r, "<loginLocation ip=\"", login->ip, "\"", NULL);
             if (login->timestamp != 0)
                 ap_rprintf(rc->r, "time=\"%lu\"",
