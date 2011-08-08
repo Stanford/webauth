@@ -40,7 +40,8 @@ main(void)
         s = webauth_base64_encode(orig_buffer, i,
                                   encoded_buffer, &elen, BUFSIZE);
         rlen = webauth_base64_encoded_length(i);
-        is_int(WA_ERR_NONE, s, "Encoding length %i succeeds", i);
+        is_int(WA_ERR_NONE, s, "Encoding length %lu succeeds",
+                (unsigned long) i);
         is_int(rlen, elen, "...and returns the correct length");
 
         s = webauth_base64_decoded_length(encoded_buffer, elen, &rdlen);
@@ -48,7 +49,8 @@ main(void)
 
         s = webauth_base64_decode(encoded_buffer, elen, 
                                   decoded_buffer, &dlen, BUFSIZE);
-        is_int(WA_ERR_NONE, s, "Decoding length %i succeeds", i);
+        is_int(WA_ERR_NONE, s, "Decoding length %lu succeeds",
+                (unsigned long) i);
         is_int(rdlen, dlen, "...and returns the right length");
         is_int(i, dlen, "...which matches the original size");
         ok(memcmp(decoded_buffer, orig_buffer, i) == 0, "...and data");

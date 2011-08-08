@@ -80,7 +80,7 @@ main(void)
              && (e1->key->type == e2->key->type)
              && (e1->key->length == e2->key->length)
              && (memcmp(e1->key->data, e2->key->data, e1->key->length) == 0));
-        ok(m, "...and entry %i matches", i);
+        ok(m, "...and entry %lu matches", (unsigned long) i);
     }
     s = webauth_keyring_write_file(ring2, "webauth_keyring2");
     is_int(WA_ERR_NONE, s, "Writing the second keyring back out succeeds");
