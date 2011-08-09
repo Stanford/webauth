@@ -70,6 +70,7 @@ struct config {
     unsigned long token_max_ttl;
     apr_array_header_t *local_realms;           /* Array of const char * */
     apr_array_header_t *permitted_realms;       /* Array of const char * */
+    apr_array_header_t *kerberos_factors;       /* Array of const char * */
 
     /* Only used during configuration merging. */
     bool debug_set;

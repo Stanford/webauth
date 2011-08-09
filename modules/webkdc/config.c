@@ -48,8 +48,9 @@
     static const type DF_ ## name = def;
 
 DIRN(Debug,               "whether to log debug messages")
+DIRN(KerberosFactors,     "list of factors used as initial factors")
 DIRN(Keyring,             "path to the keyring file")
-DIRD(KeyringAutoUpdate,  "whether to automatically update keyring", bool, true)
+DIRD(KeyringAutoUpdate,   "whether to automatically update keyring", bool, true)
 DIRD(KeyringKeyLifetime,  "lifetime of keys we create", int, 60 * 60 * 24 * 30)
 DIRN(Keytab,              "path to the Kerberos keytab file")
 DIRN(LocalRealms,         "realms to strip, \"none\", or \"local\"")
@@ -63,6 +64,7 @@ DIRN(UserInfoPrincipal,   "authentication identity of the metadata service")
 
 enum {
     E_Debug,
+    E_KerberosFactors,
     E_Keyring,
     E_KeyringAutoUpdate,
     E_KeyringKeyLifetime,
@@ -130,6 +132,7 @@ webkdc_config_create(apr_pool_t *pool, server_rec *s UNUSED)
     sconf->token_max_ttl       = DF_TokenMaxTTL;
     sconf->local_realms        = apr_array_make(pool, 0, sizeof(const char *));
     sconf->permitted_realms    = apr_array_make(pool, 0, sizeof(const char *));
+    sconf->kerberos_factors    = apr_array_make(pool, 0, sizeof(const char *));
     return sconf;
 }
 
@@ -164,6 +167,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_INT(service_lifetime);
     MERGE_SET(token_max_ttl);
     MERGE_ARRAY(permitted_realms);
+    MERGE_ARRAY(kerberos_factors);
 
     /* FIXME: Handle merging of local realm settings properly. */
     MERGE_ARRAY(local_realms);
@@ -311,7 +315,7 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
 {
     intptr_t directive = (intptr_t) cmd->info;
     const char *err = NULL;
-    const char **realm;
+    const char **realm, **factor;
     struct config *sconf;
 
     sconf = ap_get_module_config(cmd->server->module_config, &webkdc_module);
@@ -357,6 +361,9 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     case E_UserInfoPrincipal:
         sconf->userinfo_principal = arg;
         break;
+    case E_KerberosFactors:
+        factor = apr_array_push(sconf->kerberos_factors);
+        *factor = apr_pstrdup(cmd->pool, arg);
     default:
         err = unknown_error(cmd, directive, "cfg_str");
         break;
@@ -433,6 +440,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
 
 const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  Debug),
+    DIRECTIVE(AP_INIT_ITERATE, cfg_str,   KerberosFactors),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   Keyring),
     DIRECTIVE(AP_INIT_TAKE12,  cfg_str12, Keytab),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  KeyringAutoUpdate),

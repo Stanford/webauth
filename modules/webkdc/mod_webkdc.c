@@ -2102,8 +2102,19 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     token.token.webkdc_proxy.data_len = tgt_len;
     token.token.webkdc_proxy.expiration = tgt_expiration;
 
-    /* FIXME: Need to get this from Apache configuration. */
-    token.token.webkdc_proxy.initial_factors = "u";
+    /*
+     * Get the initial factors for the token, or set to 'u' if
+     * the factors array is unset
+     */
+
+    if (rc->sconf->kerberos_factors->nelts > 0) {
+        char *p;
+        p = apr_array_pstrcat(rc->r->pool, rc->sconf->kerberos_factors, ',');
+        token.token.webkdc_proxy.initial_factors = p;
+
+    } else {
+        token.token.webkdc_proxy.initial_factors = "u";
+    }
 
     ms = make_token(rc, &token, &token_data, mwk_func);
     if (ms != MWK_OK)
