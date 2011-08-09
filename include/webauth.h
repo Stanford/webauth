@@ -826,6 +826,15 @@ int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *, char **principal,
                                enum webauth_krb5_canon canon);
 
 /*
+ * Get the ticket cache from the context.  This is the string suitable for
+ * storing in KRB5CCNAME.  It should only be called after a successful call to
+ * webauth_krb5_init_via_*.  It should be freed when it is no longer needed.
+ *
+ * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
+ */
+int webauth_krb5_get_cache(WEBAUTH_KRB5_CTXT *, char **);
+
+/*
  * Get the realm from the context.  This should only be called after a
  * successful call to webauth_krb5_init_via_*.  realm should be freed when it
  * is no longer needed.

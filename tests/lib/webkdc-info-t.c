@@ -58,7 +58,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
 int
 main(void)
 {
-    char *principal, *conf;
+    char *principal, *keytab, *conf;
     pid_t remctld;
     struct webauth_context *ctx;
     struct webauth_user_config config;
@@ -75,14 +75,20 @@ main(void)
     principal = kerberos_setup();
     if (principal == NULL)
         skip_all("Kerberos tests not configured");
+    keytab = test_file_path("data/test.keytab");
+    if (keytab == NULL)
+        skip_all("Kerberos tests not configured");
 
-    plan(57);
+    plan(59);
 
     /* Set up the user metadata service configuration, testing error cases. */
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, principal, conf, NULL);
+
+    /* Empty the KRB5CCNAME environment variable and make the library cope. */
+    putenv((char *) "KRB5CCNAME=");
 
     memset(&config, 0, sizeof(config));
     status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
@@ -101,6 +107,15 @@ main(void)
     is_string("invalid argument to function (user metadata host must be set)",
               webauth_error_message(ctx, status), "...with correct error");
     config.host = "localhost";
+    config.port = 14373;
+    config.identity = principal;
+    status = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_INVALID, status, "remctl config without keytab");
+    is_string("invalid argument to function (keytab must be configured for"
+              " remctl protocol)", webauth_error_message(ctx, status),
+              "...with correct error");
+    config.keytab = keytab;
+    config.principal = principal;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with only host and protocol");
     status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
@@ -108,8 +123,6 @@ main(void)
     is_string("invalid argument to function (no remctl command specified)",
               webauth_error_message(ctx, status), "...with correct error");
     ok(info == NULL, "...and info is NULL");
-    config.port = 14373;
-    config.identity = principal;
     config.command = "test";
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Complete config");

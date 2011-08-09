@@ -16,6 +16,7 @@ lib/webkdc-login
 portable/asprintf
 portable/snprintf
 portable/mkstemp
+portable/setenv
 portable/strlcat
 portable/strlcpy
 tools/wa_keyring

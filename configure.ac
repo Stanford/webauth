@@ -110,7 +110,7 @@ AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
 
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.

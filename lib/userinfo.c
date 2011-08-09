@@ -24,6 +24,7 @@
 #include <time.h>
 
 #include <lib/internal.h>
+#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/webkdc.h>
 
@@ -53,6 +54,12 @@ webauth_user_config(struct webauth_context *ctx,
         webauth_error_set(ctx, status, "user metadata host must be set");
         goto done;
     }
+    if (user->protocol == WA_PROTOCOL_REMCTL && user->keytab == NULL) {
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status,
+                          "keytab must be configured for remctl protocol");
+        goto done;
+    }
     ctx->user = apr_palloc(ctx->pool, sizeof(struct webauth_user_config));
     ctx->user->protocol = user->protocol;
     ctx->user->host = apr_pstrdup(ctx->pool, user->host);
@@ -65,6 +72,14 @@ webauth_user_config(struct webauth_context *ctx,
         ctx->user->command = apr_pstrdup(ctx->pool, user->command);
     else
         ctx->user->command = NULL;
+    if (user->keytab != NULL)
+        ctx->user->keytab = apr_pstrdup(ctx->pool, user->keytab);
+    else
+        ctx->user->keytab = NULL;
+    if (user->principal != NULL)
+        ctx->user->principal = apr_pstrdup(ctx->pool, user->principal);
+    else
+        ctx->user->principal = NULL;
 
 done:
     return status;
@@ -261,7 +276,47 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     char errbuf[BUFSIZ] = "";
     struct buffer *errors;
     struct webauth_user_config *c = ctx->user;
+    WEBAUTH_KRB5_CTXT *kctx = NULL;
+    char *cache;
     int status;
+
+    /*
+     * Obtain authentication credentials from the configured keytab and
+     * principal.
+     *
+     * FIXME: This changes global process state to point to the correct
+     * Kerberos ticket cache.  Fix once remctl has a way of setting the
+     * Kerberos ticket cache to use.
+     *
+     * FIXME: Leaks memory on every use.
+     */
+    status = webauth_krb5_new(&kctx);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "initializing Kerberos context");
+        return status;
+    }
+    status = webauth_krb5_init_via_keytab(kctx, c->keytab, c->principal, NULL);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "%s", webauth_krb5_error_message(kctx));
+        return status;
+    }
+    status = webauth_krb5_get_cache(kctx, &cache);
+    if (cache == NULL) {
+        if (status == WA_ERR_KRB5)
+            webauth_error_set(ctx, status, "%s",
+                              webauth_krb5_error_message(kctx));
+        else
+            webauth_error_set(ctx, status, "%s",
+                              webauth_error_message(NULL, status));
+        return status;
+    }
+    if (setenv("KRB5CCNAME", cache, 1) < 0) {
+        status = WA_ERR_NO_MEM;
+        webauth_error_set(ctx, status, "setting KRB5CCNAME");
+        free(cache);
+        return status;
+    }
+    free(cache);
 
     /* Set up and execute the command. */
     if (c->command == NULL) {
@@ -333,6 +388,8 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     } while (out->type == REMCTL_OUT_OUTPUT);
     remctl_close(r);
     r = NULL;
+    webauth_krb5_free(kctx);
+    kctx = NULL;
 
     /*
      * We have an accumulated XML document in the parser and don't think we've
@@ -351,6 +408,8 @@ fail:
         apr_xml_parser_done(parser, NULL);
     if (r != NULL)
         remctl_close(r);
+    if (kctx != NULL)
+        webauth_krb5_free(kctx);
     return status;
 }
 
@@ -420,6 +479,12 @@ check_config(struct webauth_context *ctx)
                           "user metadata service not configured");
         return WA_ERR_INVALID;
     }
+    if (ctx->user->protocol == WA_PROTOCOL_REMCTL)
+        if (ctx->user->keytab == NULL) {
+            webauth_error_set(ctx, WA_ERR_INVALID,
+                              "keytab must be configured for remctl protocol");
+            return WA_ERR_INVALID;
+        }
     return WA_ERR_NONE;
 }
 

@@ -2391,6 +2391,9 @@ handler_hook(request_rec *r)
         return DECLINED;
     }
     if (rc.sconf->userinfo_config != NULL) {
+        rc.sconf->userinfo_config->identity = rc.sconf->userinfo_principal;
+        rc.sconf->userinfo_config->keytab = rc.sconf->keytab_path;
+        rc.sconf->userinfo_config->principal = rc.sconf->keytab_principal;
         status = webauth_user_config(rc.ctx, rc.sconf->userinfo_config);
         if (status != WA_ERR_NONE) {
             ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,

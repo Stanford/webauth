@@ -127,6 +127,8 @@ struct webauth_user_config {
     unsigned short port;        /* May be 0 to use the standard port. */
     const char *identity;       /* Metadata service identity (may be NULL). */
     const char *command;        /* Protocol-specific command. */
+    const char *keytab;         /* Kerberos keytab for authentication. */
+    const char *principal;      /* Principal from keytab for authentication. */
 };
 
 /*

@@ -504,6 +504,8 @@ main(void)
     user_config.port = 14373;
     user_config.identity = config.principal;
     user_config.command = "test";
+    user_config.keytab = config.keytab_path;
+    user_config.principal = config.principal;
     status = webauth_user_config(ctx, &user_config);
     is_int(WA_ERR_NONE, status, "User information config accepted");
     wkproxy.token.webkdc_proxy.subject = "mini";

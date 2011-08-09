@@ -52,6 +52,7 @@ webauth_krb5_error_message
 webauth_krb5_export_tgt
 webauth_krb5_export_ticket
 webauth_krb5_free
+webauth_krb5_get_cache
 webauth_krb5_get_principal
 webauth_krb5_get_realm
 webauth_krb5_import_cred

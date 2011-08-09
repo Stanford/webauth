@@ -940,3 +940,34 @@ webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *context, char **realm)
     *realm = escape_principal(raw, length);
     return (*realm == NULL) ? WA_ERR_NO_MEM : WA_ERR_NONE;
 }
+
+
+/*
+ * Get the ticket cache from the context.  Stores the newly allocated string
+ * in cache and returns WA_ERR_NONE on success, or another error code on
+ * failure.
+ */
+int
+webauth_krb5_get_cache(WEBAUTH_KRB5_CTXT *context, char **cache)
+{
+    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
+    const char *type, *name;
+    size_t length;
+
+    if (c->cc == NULL)
+        return WA_ERR_INVALID_CONTEXT;
+    type = krb5_cc_get_type(c->ctx, c->cc);
+    if (type == NULL)
+        return WA_ERR_KRB5;
+    name = krb5_cc_get_name(c->ctx, c->cc);
+    if (name == NULL)
+        return WA_ERR_KRB5;
+    length = strlen(type) + 1 + strlen(name) + 1;
+    *cache = malloc(length);
+    if (*cache == NULL)
+        return WA_ERR_NO_MEM;
+    strlcpy(*cache, type, length);
+    strlcat(*cache, ":", length);
+    strlcat(*cache, name, length);
+    return WA_ERR_NONE;
+}

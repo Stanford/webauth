@@ -259,9 +259,10 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
 	tests/lib/token-encode-t tests/lib/token-t tests/lib/webkdc-info-t \
 	tests/lib/webkdc-login-t tests/portable/asprintf-t		   \
-	tests/portable/mkstemp-t tests/portable/snprintf-t		   \
-	tests/portable/strlcat-t tests/portable/strlcpy-t		   \
-	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
+	tests/portable/mkstemp-t tests/portable/setenv-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
+	tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -306,6 +307,9 @@ tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_mkstemp_t_SOURCES = tests/portable/mkstemp-t.c \
 	tests/portable/mkstemp.c
 tests_portable_mkstemp_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_setenv_t_SOURCES = tests/portable/setenv-t.c \
+	tests/portable/setenv.c
+tests_portable_setenv_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_snprintf_t_SOURCES = tests/portable/snprintf-t.c \
 	tests/portable/snprintf.c
 tests_portable_snprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
