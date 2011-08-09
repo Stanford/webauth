@@ -1,11 +1,11 @@
 <authdata user="random">
-  <multifactor>
-    <type>p</type>
-    <type>m</type>
-    <type>r</type>
-    <type>o</type>
-    <type>o2</type>
-    <required />
-  </multifactor>
+  <factors>
+    <factor>p</factor>
+    <factor>m</factor>
+    <factor>r</factor>
+    <factor>o</factor>
+    <factor>o2</factor>
+  </factors>
+  <multifactor-required />
   <max-loa>2</max-loa>
 </authdata>

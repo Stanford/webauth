@@ -1,12 +1,12 @@
 <authdata user="full">
-  <multifactor>
-    <type>p</type>
-    <type>r</type>
-    <type>m</type>
-    <type>o</type>
-    <type>o3</type>
-    <required />
-  </multifactor>
+  <factors>
+    <factor>p</factor>
+    <factor>r</factor>
+    <factor>m</factor>
+    <factor>o</factor>
+    <factor>o3</factor>
+  </factors>
+  <multifactor-required />
   <login-history>
     <host ip="127.0.0.2">example.com</host>
     <host ip="127.0.0.3">www.example.com</host>

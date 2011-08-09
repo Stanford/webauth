@@ -94,23 +94,19 @@ convert_number(struct webauth_context *ctx, const char *string,
 
 
 /*
- * Parse the multifactor section of a userinfo XML document.  Stores the
- * results in the provided webauth_user_info struct.  Returns a status code.
+ * Parse the factors section of a userinfo XML document.  Stores the results
+ * in the provided webauth_user_info struct.  Returns a status code.
  */
 static int
-parse_multifactor(struct webauth_context *ctx, apr_xml_elem *root,
-                  apr_array_header_t **factors, int *mf_required)
+parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
+              apr_array_header_t **factors)
 {
     apr_xml_elem *child;
     const char **type;
     int status;
 
-    if (mf_required != NULL)
-        *mf_required = 0;
     for (child = root->first_child; child != NULL; child = child->next) {
-        if (strcmp(child->name, "required") == 0 && mf_required != NULL)
-            *mf_required = 1;
-        else if (strcmp(child->name, "type") == 0) {
+        if (strcmp(child->name, "factor") == 0) {
             if (*factors == NULL)
                 *factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
             type = apr_array_push(*factors);
@@ -181,9 +177,11 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
     }
     info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     for (child = doc->root->first_child; child != NULL; child = child->next) {
-        if (strcmp(child->name, "multifactor") == 0)
-            status = parse_multifactor(ctx, child, &info->factors,
-                                       &info->multifactor_required);
+        status = WA_ERR_NONE;
+        if (strcmp(child->name, "factors") == 0)
+            status = parse_factors(ctx, child, &info->factors);
+        else if (strcmp(child->name, "multifactor-required") == 0)
+            info->multifactor_required = true;
         else if (strcmp(child->name, "login-history") == 0)
             status = parse_history(ctx, child, &info->logins);
         else if (strcmp(child->name, "max-loa") == 0) {
@@ -231,8 +229,8 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
             status = webauth_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)
                 validate->success = (strcmp(content, "yes") == 0);
-        } else if (strcmp(child->name, "multifactor") == 0)
-            status = parse_multifactor(ctx, child, &validate->factors, NULL);
+        } else if (strcmp(child->name, "factors") == 0)
+            status = parse_factors(ctx, child, &validate->factors);
         else if (strcmp(child->name, "loa") == 0) {
             status = webauth_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)

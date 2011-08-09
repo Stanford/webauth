@@ -1,9 +1,9 @@
 <authdata user="full">
   <success>yes</success>
-  <multifactor>
-    <type>o</type>
-    <type>o3</type>
-  </multifactor>
+  <factors>
+    <factor>o</factor>
+    <factor>o3</factor>
+  </factors>
   <login-history>
     <host ip="127.0.0.2">example.com</host>
     <host ip="127.0.0.3">www.example.com</host>
