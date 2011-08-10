@@ -50,7 +50,7 @@ err_multifactor_invalid : could not validate a submitted OTP
           <td>
             <div class="loginform">
 
-              [% IF factor_type eq "o2" %]
+              [% IF factor_type == "o2" %]
                 <p>Your multifactor setup requires us to send you a password
                    via a configured interface to verify your identity. Please
                    click the following button to send the message to the
