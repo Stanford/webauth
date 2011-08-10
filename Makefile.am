@@ -166,6 +166,7 @@ if BUILD_WEBKDC
     dist_template_DATA = weblogin/templates/confirm.tmpl		\
 	weblogin/templates/error.tmpl weblogin/templates/help.html	\
 	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl	\
+	weblogin/templates/multifactor.tmpl				\
 	weblogin/templates/pwchange.tmpl
 endif
 

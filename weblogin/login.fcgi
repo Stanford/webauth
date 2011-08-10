@@ -37,11 +37,12 @@ our $EXITING = 0;
 
 # The names of the template pages that we use.  The beginning of the main
 # routine changes the values here to be Template Toolkit objects.
-our %PAGES = (login    => 'login.tmpl',
-              logout   => 'logout.tmpl',
-              confirm  => 'confirm.tmpl',
-              pwchange => 'pwchange.tmpl',
-              error    => 'error.tmpl');
+our %PAGES = (confirm     => 'confirm.tmpl',
+              error       => 'error.tmpl',
+              login       => 'login.tmpl',
+              logout      => 'logout.tmpl',
+              multifactor => 'multifactor.tmpl',
+              pwchange    => 'pwchange.tmpl');
 
 # If the WebKDC is localhost, disable LWP certificate verification.  The
 # WebKDC will have a certificate matching its public name, which will never
