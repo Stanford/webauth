@@ -1434,7 +1434,7 @@ sub index : StartRunmode {
     # Multifactor was required but they have no or insufficiently high
     # multifactor configured.
     } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
-        if (defined $req->factor_configured) {
+        if (defined $resp->factor_configured) {
             $self->template_params ({err_user_insufficient_mfactor => 1});
         } else {
             $self->template_params ({err_user_no_mfactor => 1});
@@ -1657,7 +1657,7 @@ sub multifactor_sendauth : Runmode {
 
     # Error if we don't have the setup configured.
     if (!$WebKDC::Config::MULTIFACTOR_SERVER
-        || $WebKDC::Config::MULTIFACTOR_COMMAND) {
+        || !$WebKDC::Config::MULTIFACTOR_COMMAND) {
 
         print STDERR "multifactor_sendauth failed due to no server "
             . "configured\n" if $self->param ('logging');
