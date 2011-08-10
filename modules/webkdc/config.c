@@ -278,7 +278,7 @@ parse_userinfo_url(cmd_parms *cmd, const char *arg,
     config->protocol = WA_PROTOCOL_REMCTL;
     config->host = uri.hostname;
     config->port = uri.port;
-    config->command = uri.path;
+    config->command = uri.path + 1;
     return NULL;
 }
 
