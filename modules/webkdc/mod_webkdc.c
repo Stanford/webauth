@@ -1644,7 +1644,7 @@ print_xml_array(MWK_REQ_CTXT *rc, const char *tag, apr_array_header_t *array)
     for (i = 0; i < array->nelts; i++) {
         string = APR_ARRAY_IDX(array, i, const char *);
         string = apr_xml_quote_string(rc->r->pool, string, false);
-        ap_rvputs(rc->r, "<%s>%s</%s>", tag, string, tag, NULL);
+        ap_rprintf(rc->r, "<%s>%s</%s>", tag, string, tag);
     }
 }
 
