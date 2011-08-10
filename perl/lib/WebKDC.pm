@@ -222,7 +222,7 @@ sub request_token_request($$) {
             $login_token->username($user);
             $login_token->creation_time(time());
             if (defined $otp) {
-                $login_token->otp($pass);
+                $login_token->otp($otp);
             } else {
                 $login_token->password($pass);
             }
@@ -235,7 +235,7 @@ sub request_token_request($$) {
 
         if (defined($proxy_cookies)) {
             $webkdc_doc->current->attr('type','proxy');
-            while (my($type) = keys(%{$proxy_cookies})) {
+            for my $type (keys %$proxy_cookies) {
                 my $token = $proxy_cookies->{$type}{'cookie'};
                 my $source = $proxy_cookies->{$type}{'session_factor'};
                 $webkdc_doc->start('proxyToken',

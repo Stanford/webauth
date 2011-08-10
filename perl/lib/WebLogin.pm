@@ -757,7 +757,7 @@ sub print_multifactor_page {
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
 
-    $self->print_headers;
+    $self->print_headers ($self->{response}->proxy_cookies);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -1223,6 +1223,9 @@ sub setup_kdc_request {
     $self->{request}->request_token ($self->fix_token ($q->param ('RT')));
     $self->{request}->pass ($q->param ('password')) if $q->param ('password');
     $self->{request}->otp ($q->param ('otp')) if $q->param ('otp');
+
+    # For the initial login page, we may need to map the username.  For OTP,
+    # we've already done this, so we don't need to do it again.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1236,8 +1239,9 @@ sub setup_kdc_request {
             $username = '';
             $status = WK_ERR_LOGIN_FAILED;
         }
-        $self->{request}->user ($username);
+        $q->param ('username', $username);
     }
+    $self->{request}->user ($q->param ('username'));
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)
@@ -1422,12 +1426,17 @@ sub index : StartRunmode {
         return $self->print_login_page ($status, $req->request_token,
                                         $req->service_token);
 
-    # Multifactor was required and the KDC says the user can give it.
+    # Multifactor was required and the KDC says the user can give it.  If we
+    # got here because the user already had a proxy token, we may not know
+    # what the username is, so get it from the response.
     } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
         print STDERR "multifactor required for login\n"
             if $self->param ('debug');
 
         my $req = $self->{request};
+        unless ($q->param ('username')) {
+            $q->param ('username', $resp->subject);
+        }
         return $self->print_multifactor_page ($req->request_token,
                                               $req->service_token);
 
@@ -1523,6 +1532,11 @@ sub logout : Runmode {
 sub pwchange : Runmode {
     my ($self) = @_;
 
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
     my $q = $self->query;
     my $req = $self->{request};
     my $resp = $self->{response};
@@ -1604,6 +1618,11 @@ sub pwchange : Runmode {
 sub pwchange_display : Runmode {
     my ($self) = @_;
 
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
     my $req = $self->{request};
     my $resp = $self->{response};
     return $self->print_pwchange_page ($req->request_token,
@@ -1618,10 +1637,16 @@ sub multifactor : Runmode {
     my ($self) = @_;
     my $q = $self->query;
 
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
     if ($q->param ('otp')) {
-        $self->{request}->otp ($q->param ('otp'));
         my $req = $self->{request};
         my $resp = $self->{response};
+        $req->user ($q->param ('username'));
+        $req->otp ($q->param ('otp'));
         my ($status, $error)
             = WebKDC::make_request_token_request ($req, $resp);
 
@@ -1654,6 +1679,11 @@ sub multifactor : Runmode {
 sub multifactor_sendauth : Runmode {
     my ($self) = @_;
     my $q = $self->query;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
 
     # Error if we don't have the setup configured.
     if (!$WebKDC::Config::MULTIFACTOR_SERVER
@@ -1703,6 +1733,11 @@ sub multifactor_sendauth : Runmode {
 # Pages: confirm screen
 sub edit_remoteuser : Runmode {
     my ($self) = @_;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
 
     my $q = $self->query;
     return $self->redisplay_confirm_page;
