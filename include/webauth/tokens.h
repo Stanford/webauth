@@ -267,12 +267,13 @@ BEGIN_DECLS
 /*
  * Given a comma-separated string of factors, parse it into a webauth_factors
  * struct.  If the value of the last argument is not NULL, add the factors to
- * the existing webauth_factors struct rather than allocating a new one.
- * Returns a status code.
+ * the existing webauth_factors struct rather than allocating a new one.  The
+ * string may be NULL, in which case the resulting factors struct will be
+ * empty.  Returns a status code.
  */
 int webauth_factors_parse(struct webauth_context *, const char *,
                           struct webauth_factors **)
-    __attribute__((__nonnull__));
+    __attribute__((__nonnull__(1, 3)));
 
 /*
  * Given a webauth_factors struct, return its value as a comma-separated

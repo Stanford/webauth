@@ -40,7 +40,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_factors *one, *two;
 
-    plan(62);
+    plan(64);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -141,6 +141,10 @@ main(void)
     parse_factors(ctx, "m,x,p", &two);
     is_int(1, webauth_factors_subset(ctx, two, one),
            "subset works out of order");
+
+    /* Check parsing a NULL factor string. */
+    one = NULL;
+    parse_factors(ctx, NULL, &one);
 
     /* Clean up. */
     webauth_context_free(ctx);
