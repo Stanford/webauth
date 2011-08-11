@@ -328,7 +328,7 @@ cleanup:
  * 2. Tokens whose initial factors are a subset of the accumulated factors
  *    and which do not add krb5 capability are discarded.
  * 3. The krb5 data is added if not already present, and the expiration is
- *    set to the token with the krb5 data.
+ *    set to the token with the krb5 data and the proxy type changed to krb5.
  * 4. Initial factors are merged between all webkdc-proxy tokens, with the
  *    expiration set to the nearest expiration of all contributing tokens.
  * 5. Creation time is set to the current time if we pull from multiple
@@ -410,6 +410,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             && strcmp(wkproxy->proxy_type, "krb5") == 0) {
             best->data = wkproxy->data;
             best->data_len = wkproxy->data_len;
+            best->proxy_type = wkproxy->proxy_type;
         }
         status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                        &factors);
