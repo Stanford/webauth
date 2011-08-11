@@ -16,10 +16,6 @@ Protocol:
    redirect to the weblogin logout page might ameliorate some of the
    problems.
 
- * User request: Add a method for the WebKDC to communicate to the WAS the
-   login method used, so that the WAS can expose this information in an
-   environment variable to CGI applications, etc.
-
  * User request: Increase the timeout of the token sent by the WAS to the
    WebLogin server for initial user login.  It doesn't contain security
    information and therefore doesn't need to expire in five minutes.
@@ -60,15 +56,14 @@ libwebauth:
  * Deal with memory allocation failure in the library.  Set a default abort
    function that blows up the whole application if one isn't already set.
 
+ * Convert the rest of the libwebauth interface to use APR and to set the
+   error message in the WebAuth context instead of just returning error
+   codes.
+
  * The current library interface is very low-level.  Ideally, the library
    should treat particular WebAuth tokens as first-class objects with
    their own manipulation functions and not expose all of the low-level
    marshal and unmarshal functions to clients.
-
- * The library needs a way of doing error logging that isn't just
-   returning error codes.  We probably need some sort of global WebAuth
-   context that can stash error messages, similar to how the Kerberos
-   library API works.
 
  * Switch all the WebAuth library interfaces to using opaque structs
    instead of typedefs, matching our current coding style.
