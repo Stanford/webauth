@@ -519,7 +519,7 @@ sub print_confirm_page {
     my $pagename = $self->get_pagename ('confirm');
     my $params = $self->template_params;
 
-    my $pretty_return_url = $self->param ('pretty_uri');
+    my $pretty_return_url = $self->pretty_return_uri ($uri);
     my $return_url = $resp->return_url;
     my $lc = $resp->login_canceled_token;
     my $token_type = $resp->response_token_type;
