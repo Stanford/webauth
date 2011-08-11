@@ -26,6 +26,9 @@ webauth (4.0.0~alpha1-1) UNRELEASED; urgency=low
       choose the best key have been added.
     - The libwebauth API has been changed substantially and will be
       changed further in subsequent releases.
+  * Install /var/cache/weblogin, writable by www-data, as a directory to
+    use for Template Toolkit to cache compiled templates.  Mention the new
+    $TEMPLATE_COMPILE_PATH directive in the libwebkdc-perl NEWS.Debian.
   * Update the webauth-weblogin README.Debian to mention the Apache
     FastCGI module now included in Debian and the alternative in
     non-free.

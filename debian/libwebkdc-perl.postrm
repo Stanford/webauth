@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# Remove the cached Template Toolkit compiled templates on removal or purge,
+# but leave them alone on upgrades since they probably haven't changed.
+
+set -e
+if [ "upgrade" != "$1" ] ; then
+    rm -rf /var/cache/weblogin
+fi
+
+#DEBHELPER#

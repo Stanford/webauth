@@ -1,0 +1,20 @@
+libwebkdc-perl (4.0.0~alpha1-1) UNRELEASED; urgency=low
+
+  WebLogin now uses Template Toolkit for page templating instead of
+  HTML::Template.  All local templates must be modified to use the new
+  syntax.  See the sample templates in /usr/share/weblogin/generic for
+  examples of the new syntax and the variables that should be handled.
+
+  There is a new mandatory option in /etc/webkdc/webkdc.conf:
+  $TEMPLATE_COMPILE_PATH.  This must point to a directory writable by the
+  user the WebLogin process runs as.  The package will create
+  /var/lib/weblogin, owned by www-data, for this purpose, but if you have
+  made local modifications to /etc/webkdc/webkdc.conf, you will need to
+  add:
+
+      $TEMPLATE_COMPILE_PATH = '/var/lib/weblogin';
+
+  to that file manually.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 11 Aug 2011 13:32:39 -0700
+
