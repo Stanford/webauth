@@ -39,11 +39,11 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/mod_webauthldap.xml docs/mod_webkdc.html.en		    \
 	docs/mod_webkdc.xml docs/protocol.html docs/protocol.txt	    \
 	docs/protocol.xml docs/test-plan docs/userauth docs/weblogin-config \
-	docs/weblogin-cookies docs/weblogin-flow include/mkheader	    \
-	include/webauth/defines.h.in lib/internal.h lib/libwebauth.map	    \
-	lib/libwebauth.pc.in lib/libwebauth.sym perl/README perl/MANIFEST   \
-	perl/MANIFEST.SKIP tests/TESTS tests/data/README		    \
-	tests/data/cmd-webkdc tests/data/conf-webkdc			    \
+	docs/weblogin-cookies docs/weblogin-flow docs/weblogin-testing	    \
+	include/mkheader include/webauth/defines.h.in lib/internal.h	    \
+	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	    \
+	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
+	tests/data/README tests/data/cmd-webkdc tests/data/conf-webkdc	    \
 	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
 	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
 	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
@@ -74,8 +74,9 @@ endif
 lib_LTLIBRARIES = lib/libwebauth.la
 include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
-webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h \
-	include/webauth/tokens.h include/webauth/util.h
+webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
+	include/webauth/tokens.h include/webauth/util.h			\
+	include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attrs.c lib/base64.c	\
 	lib/context.c lib/factors.c lib/key.c lib/keys.c lib/krb5.c	\
