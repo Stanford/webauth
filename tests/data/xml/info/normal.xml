@@ -1,0 +1,15 @@
+<authdata user="normal">
+  <factors>
+    <factor>p</factor>
+    <factor>m</factor>
+    <factor>r</factor>
+    <factor>o</factor>
+    <factor>o2</factor>
+  </factors>
+  <login-history>
+    <host ip="127.0.0.2">example.com</host>
+    <host ip="127.0.0.3">www.example.com</host>
+  </login-history>
+  <max-loa>3</max-loa>
+  <password-expires>1310675733</password-expires>
+</authdata>

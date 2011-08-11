@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009
+# Copyright 2003, 2005, 2008, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -68,6 +68,10 @@ our %EXPORT_TAGS = (
                                     WA_PEC_LOGIN_FORCED
                                     WA_PEC_USER_REJECTED
                                     WA_PEC_CREDS_EXPIRED
+                                    WA_PEC_MULTIFACTOR_REQUIRED
+                                    WA_PEC_MULTIFACTOR_UNAVAILABLE
+                                    WA_PEC_LOGIN_REJECTED
+                                    WA_PEC_LOA_UNAVAILABLE
                                     WA_AES_KEY
                                     WA_AES_128
                                     WA_AES_192
@@ -75,32 +79,34 @@ our %EXPORT_TAGS = (
                                     WA_TK_APP_STATE
                                     WA_TK_COMMAND
                                     WA_TK_CRED_DATA
-                                    WA_TK_CRED_SERVER
+                                    WA_TK_CRED_SERVICE
                                     WA_TK_CRED_TYPE
                                     WA_TK_CREATION_TIME
                                     WA_TK_ERROR_CODE
                                     WA_TK_ERROR_MESSAGE
                                     WA_TK_EXPIRATION_TIME
+                                    WA_TK_INITIAL_FACTORS
                                     WA_TK_SESSION_KEY
+                                    WA_TK_LOA
                                     WA_TK_LASTUSED_TIME
+                                    WA_TK_OTP
                                     WA_TK_PASSWORD
-                                    WA_TK_PROXY_TYPE
                                     WA_TK_PROXY_DATA
                                     WA_TK_PROXY_SUBJECT
+                                    WA_TK_PROXY_TYPE
                                     WA_TK_REQUEST_OPTIONS
                                     WA_TK_REQUESTED_TOKEN_TYPE
                                     WA_TK_RETURN_URL
                                     WA_TK_SUBJECT
                                     WA_TK_SUBJECT_AUTH
                                     WA_TK_SUBJECT_AUTH_DATA
+                                    WA_TK_SESSION_FACTORS
                                     WA_TK_TOKEN_TYPE
                                     WA_TK_USERNAME
                                     WA_TK_WEBKDC_TOKEN
                                     )],
                     'hex' => [ qw(hex_encode hex_decode) ],
-                    'key' => [ qw(key_create keyring_read_file
-                                  keyring_writefile keyring_new
-                                  keyring_add) ],
+                    'key' => [ qw(key_create) ],
                     'krb5' => [ qw(krb5_new krb5_error_code krb5_err_message
                                    krb5_init_via_password
                                    krb5_init_via_keytab
@@ -128,7 +134,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
                    );
 
 our @EXPORT = qw ();
-our $VERSION = '1.01';
+our $VERSION = '2.00';
 
 bootstrap WebAuth $VERSION;
 
@@ -148,7 +154,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 2.00;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -254,14 +260,18 @@ WebAuth - Perl extension for WebAuth (version 3)
 
 =head1 DESCRIPTION
 
-WebAuth is a low-level Perl interface into the WebAuth C API.
-Some functions have been made more Perl-like, though no attempt
-has been made to create an object-oriented interface to the WebAuth library.
+WebAuth is a low-level Perl interface into the WebAuth C API.  Some
+functions have been made more Perl-like, and there is some partial work on
+changing the API to be object-oriented.
 
-All functions have the potential to croak with a WebAuth::Exception object,
-so an eval block should be placed around calls to WebAuth functions
-if you intend to recover from errors. See the WebAuth::Exception section
-for more information.
+All functions have the potential to croak with a WebAuth::Exception
+object, so an eval block should be placed around calls to WebAuth
+functions if you intend to recover from errors.  See the
+WebAuth::Exception section for more information.
+
+Nearly all of the functionality is directly in the WebAuth namespace for
+right now.  The exceptions are WebAuth::Exception, WebAuth::Keyring, and
+WebAuth::KeyringEntry objects, described in L</SUBCLASSES> below.
 
 =head1 EXPORT
 
@@ -272,7 +282,7 @@ available:
   base64    the base64_* functions
   const     the wA_* constants
   hex       the hex_* functions
-  key       the key_* and keyring_* functions
+  key       the key_* functions
   krb5      the krb5_* functions
   random    the random_* functions
   token     the token_* functions
@@ -360,33 +370,6 @@ on error. $type must be WA_AES_KEY, and $key_material must
 be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
-
-=item keyring_new(initial_capacity)
-
- $ring = keyring_new($initial_capacity);
-
-Creates a reference to a WEBAUTH_KEYRINGPtr object, or undef
-on error.
-
-=item keyring_add(ring, creation_time, valid_after, key)
-
- keyring_add($ring, $c, $vf, $vt, $key);
-
-Adds a key to the keyring. creation_time and valid_after can both be
-0, in which case the current time is used. key is copied internally, and
-can be undef'd after calling this function.
-
-=item keyring_write_file(ring, path)
-
- keyring_write_file($ring, $path);
-
-Writes a key ring to a file.
-
-=item keyring_read_file(path)
-
- $ring = keyring_read_file($path);
-
-Reads a keyring from a file and returns it in $ring on success.
 
 =item token_create(attrs, hint, key_or_ring)
 
@@ -539,7 +522,9 @@ name and password.
 
 =back
 
-=head1 WebAuth::Exception
+=head1 SUBCLASSES
+
+=head2 WebAuth::Exception
 
 The various WebAuth functions can all throw exceptions if something
 wrong happens. These exceptions will be of type WebAuth::Exception.
@@ -565,49 +550,159 @@ For example:
 
 =item match($exception[, $status])
 
-  This class function (not a method) returns true if the given
-  $exception is a WebAuth::Exception. If $status is specified, then
-  $exception->status() will also be compared to $status.
+This class function (not a method) returns true if the given
+$exception is a WebAuth::Exception. If $status is specified, then
+$exception->status() will also be compared to $status.
 
 =item status()
 
-  This method returns the WebAuth status code for the exception,
-  which will be one of the WA_ERR_* codes.
+This method returns the WebAuth status code for the exception,
+which will be one of the WA_ERR_* codes.
 
 =item error_message()
 
-  This method returns the WebAuth error message for the status code,
-  using the WebAuth::error_message function.
+This method returns the WebAuth error message for the status code,
+using the WebAuth::error_message function.
 
 =item detail_message()
 
-  This method returns the "detail" message in the exception. The detail
-  message is additional information created with the exception when
-  it is raised, and is usually the name of the WebAuth C function that
-  raised the exception.
+This method returns the "detail" message in the exception. The detail
+message is additional information created with the exception when
+it is raised, and is usually the name of the WebAuth C function that
+raised the exception.
 
 =item krb5_error_code()
 
-  If the status of the exception is WA_ERR_KRB5, then this function
-  will return the Kerberos V5 error code that caused the exception.
-  There are currently no constants defined for these error codes.
+If the status of the exception is WA_ERR_KRB5, then this function
+will return the Kerberos V5 error code that caused the exception.
+There are currently no constants defined for these error codes.
 
 =item krb5_error_message()
 
-  If the status of the exception is WA_ERR_KRB5, then this function
-  will return the Kerberos V5 error message corresponding to the
-  krb5_error_code.
+If the status of the exception is WA_ERR_KRB5, then this function
+will return the Kerberos V5 error message corresponding to the
+krb5_error_code.
 
 =item verbose_message()
 
-  This method returns a verbose error message, which consists
-  of all information available in the exception, including the
-  status code, error message, line number and file, and any detail
-  message in the exception. It also will include the kerberos
-  error code and error message if status is WA_ERR_KRB5.
+This method returns a verbose error message, which consists
+of all information available in the exception, including the
+status code, error message, line number and file, and any detail
+message in the exception. It also will include the kerberos
+error code and error message if status is WA_ERR_KRB5.
 
-  The verbose_message method is also called if the exception is
-  used as a string.
+The verbose_message method is also called if the exception is
+used as a string.
+
+=back
+
+=head2 WebAuth::Keyring
+
+This Perl class represents a keyring, which is a set of WebAuth keys with
+associated creation times and times after which they become valid.  These
+keyrings can be read from and stored to files on disk and are used by
+WebAuth Application Servers and WebKDCs to store their encryption keys.
+
+=head3 Class Methods
+
+=over 4
+
+=item new([CAPACITY])
+
+Create a new keyring with initial capacity CAPACITY.  The default initial
+capacity is 1 if none is given.  Keyrings automatically resize to hold
+more keys when necessary, so the capacity is only for efficiency if one
+knows in advance roughly how many keys there will be.  Returns a new
+WebAuth::Keyring object or throws a WebAuth::Exception.
+
+=item read_file(FILE)
+
+Reads a keyring from the file FILE.  The created keyring object will have
+no association with the file after being created; it won't automatically
+be saved, or updated when the file changes.  Returns a new
+WebAuth::Keyring object or throws a WebAuth::Exception.
+
+=back
+
+=head3 Instance Methods
+
+As with other WebAuth module functions, failures are signalled by throwing
+WebAuth::Exception rather than by return status.
+
+=over 4
+
+=item add(CREATION, VALID_AFTER, KEY)
+
+Add a new KEY to the keyring with CREATION as the creation time and
+VALID_AFTER as the valid after time.  Both of the times should be in
+seconds since epoch, and the key must be a valid WebAuth key, such as is
+returned by WebAuth::webauth_random_key().  Keys will not used for
+encryption until after their valid after time, which provides an
+opportunity to synchronize the keyring between multiple systems before the
+keys are used.
+
+=item best_key(ENCRYPTION, HINT)
+
+Returns the best key available in the keyring for a particular purpose and
+time.  ENCRYPTION is a boolean and should be true if the key will be used
+for encryption and false if it will be used for decryption.  For
+decryption keys when ENCRYPTION is false, HINT is the timestamp of the
+data that will be decrypted.
+
+If ENCRYPTION is true, this method will return the valid key in the
+keyring that was created most recently, since this is the best key to use
+for encryption going forward.  If ENCRYPTION is false, this method will
+return the key most likely to have been used to encrypt something at the
+time HINT, where HINT is given in seconds since epoch.
+
+=item capacity()
+
+Returns the capacity of the keyring (the total number of keys it can hold
+without being resized).  This is not usually interesting since keyrings
+will automatically resize if necessary.  It is used mostly for testing.
+
+=item entries()
+
+In a scalar context, returns the number of entries in the keyring.  In an
+array context, returns a list of keyring entries as WebAuth::KeyringEntry
+objects.
+
+=item remove(INDEX)
+
+Removes the INDEX entry in the keyring.  The keyring will then be
+compacted, so all subsequent entries in the keyring will have their index
+decreased by one.  If you are removing multiple entries from a keyring,
+you should therefore remove them from the end of the keyring (the highest
+INDEX number) first.
+
+=item write_file(FILE)
+
+Writes the keyring out to FILE in the format suitable for later reading by
+read_file().
+
+=back
+
+=head2 WebAuth::KeyringEntry
+
+This object is only used as the return value from the entries() method of
+WebAuth::Keyring.  It's a read-only object that has the following methods:
+
+=head3 Instance Methods
+
+=over 4
+
+=item creation()
+
+Returns the creation time of the key in seconds since epoch.
+
+=item key()
+
+Returns the key of this entry.  This will be an opaque object that can be
+passed into other WebAuth module functions that take a key.
+
+=item valid_after()
+
+Returns the valid after time of the key in seconds since epoch.
 
 =back
 
@@ -653,6 +748,10 @@ The following constants from webauth.h are available:
   WA_PEC_LOGIN_FORCED
   WA_PEC_USER_REJECTED
   WA_PEC_CREDS_EXPIRED
+  WA_PEC_MULTIFACTOR_REQUIRED
+  WA_PEC_MULTIFACTOR_UNAVAILABLE
+  WA_PEC_LOGIN_REJECTED
+  WA_PEC_LOA_UNAVAILABLE
 
   WA_AES_KEY
   WA_AES_128
@@ -662,34 +761,35 @@ The following constants from webauth.h are available:
   WA_TK_APP_STATE
   WA_TK_COMMAND
   WA_TK_CRED_DATA
-  WA_TK_CRED_SERVER
+  WA_TK_CRED_SERVICE
   WA_TK_CRED_TYPE
   WA_TK_CREATION_TIME
   WA_TK_ERROR_CODE
   WA_TK_ERROR_MESSAGE
   WA_TK_EXPIRATION_TIME
+  WA_TK_INITIAL_FACTORS
   WA_TK_SESSION_KEY
+  WA_TK_LOA
   WA_TK_LASTUSED_TIME
+  WA_TK_OTP
   WA_TK_PASSWORD
-  WA_TK_PROXY_TYPE
   WA_TK_PROXY_DATA
   WA_TK_PROXY_SUBJECT
+  WA_TK_PROXY_TYPE
   WA_TK_REQUEST_OPTIONS
   WA_TK_REQUESTED_TOKEN_TYPE
   WA_TK_RETURN_URL
   WA_TK_SUBJECT
   WA_TK_SUBJECT_AUTH
   WA_TK_SUBJECT_AUTH_DATA
+  WA_TK_SESSION_FACTORS
   WA_TK_TOKEN_TYPE
   WA_TK_USERNAME
   WA_TK_WEBKDC_TOKEN
 
 =head1 AUTHOR
 
-Roland Schemers (schemers@stanford.edu)
-
-=head1 SEE ALSO
-
-L<perl>.
+Roland Schemers, Jon Robertson <jonrober@stanford.edu>, and Russ Allbery
+<rra@stanford.edu>.
 
 =cut

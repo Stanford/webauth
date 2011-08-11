@@ -10,3 +10,4 @@ Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lwebauth
 Libs.private: @KRB5_LDFLAGS@ @KRB5_LIBS@ @CRYPTO_LDFLAGS@ @CRYPTO_LIBS@
+Requires.private: apr-1 apr-util-1

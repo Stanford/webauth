@@ -16,13 +16,10 @@ Protocol:
    redirect to the weblogin logout page might ameliorate some of the
    problems.
 
- * User request: Add a method for the WebKDC to communicate to the WAS the
-   login method used, so that the WAS can expose this information in an
-   environment variable to CGI applications, etc.
-
  * User request: Increase the timeout of the token sent by the WAS to the
    WebLogin server for initial user login.  It doesn't contain security
    information and therefore doesn't need to expire in five minutes.
+   (WEBAUTH-1)
 
  * Allow a WebAuth Application Server to specify that authentication
    should be done using a particular instance (and perhaps only a
@@ -40,6 +37,9 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
+ * Make the proxy data attribute of the webkdc-proxy token optional.  It
+   has no useful value for remuser (authentication-only) proxy tokens.
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -53,15 +53,17 @@ General:
 
 libwebauth:
 
+ * Deal with memory allocation failure in the library.  Set a default abort
+   function that blows up the whole application if one isn't already set.
+
+ * Convert the rest of the libwebauth interface to use APR and to set the
+   error message in the WebAuth context instead of just returning error
+   codes.
+
  * The current library interface is very low-level.  Ideally, the library
    should treat particular WebAuth tokens as first-class objects with
    their own manipulation functions and not expose all of the low-level
    marshal and unmarshal functions to clients.
-
- * The library needs a way of doing error logging that isn't just
-   returning error codes.  We probably need some sort of global WebAuth
-   context that can stash error messages, similar to how the Kerberos
-   library API works.
 
  * Switch all the WebAuth library interfaces to using opaque structs
    instead of typedefs, matching our current coding style.
@@ -102,6 +104,8 @@ libwebauth:
    fails.
 
 mod_webauth:
+
+ * Support setting HttpOnly flag in the generated cookies.
 
  * User request: It would be nice to have a per-directory option to
    recognize a login if the WebAuth cookie is available, but not force it
@@ -192,6 +196,8 @@ mod_webkdc:
 
 WebLogin:
 
+ * Set HttpOnly flag in the generated cookies.
+
  * Display a message if the password prompt is forced in order to get a
    TGT for credential delegation to the destination site.
 
@@ -212,19 +218,13 @@ WebLogin:
  * Add a rate limit for WebLogin logins that blocks excessive failed
    password attempts for a specific user.
 
- * On the password change screen, when the password fails strength 
-   checking in Heimdal, we get a -1765328343 (Message stream modified).
-   Look into that more, as that seems a strange error code.
-
- * Similarly, we have not tested the similar case for MIT at all.  
-   Worst case, they should only get an error message confusing for users,
-   but someone should check against MIT.
-
  * Separate the two functions of @REMUSER_REALMS so that people can
    configure a set of realms to be stripped separately from a set of
    realms that are permitted.
 
 Build System:
+
+ * Make building with remctl optional.
 
  * Compile the WebAuth version into the modules rather than getting the
    version from the webauth library.  In the webauth and webkdc modules,

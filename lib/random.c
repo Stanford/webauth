@@ -14,7 +14,8 @@
 #include <assert.h>
 #include <openssl/rand.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 
 /*

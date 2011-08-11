@@ -13,42 +13,18 @@
 
 #include <modules/mod-config.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_log.h"
-#include "http_core.h"
-#include "http_protocol.h"
-#include "http_request.h"
-#include "ap_config.h"
-#include "apr.h"
-#include "apr_lib.h"
-#include "apr_file_io.h"
-#include "apr_file_info.h"
-#include "apr_errno.h"
-#include "apr_strings.h"
-#include "apr_pools.h"
-#include "apr_tables.h"
-#include "apr_time.h"
-#include "apr_xml.h"
-#include "apr_base64.h"
+#include <apr_pools.h>          /* apr_pool_t */
+#include <apr_tables.h>         /* apr_array_header_t */
+#include <httpd.h>              /* server_rec and request_rec */
+#include <sys/types.h>          /* size_t, etc. */
 
-#include <curl/curl.h>
-
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#elif HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
-#include <lib/webauth.h>
+#include <webauth.h>
+#include <webauth/tokens.h>
 
 /* how long to wait between trying for a new token when
  * a renewal attempt fails
  */
-#define TOKEN_RETRY_INTERVAL  600
+#define TOKEN_RETRY_INTERVAL 600
 
 /*
  * how long into the tokens lifetime do we attempt our first revnewal
@@ -57,16 +33,19 @@
 
 /* where to look in URL for returned tokens */
 #define WEBAUTHR_MAGIC "?WEBAUTHR="
-#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC)-1)
+#define WEBAUTHR_MAGIC_LEN (sizeof(WEBAUTHR_MAGIC) - 1)
 
 #define WEBAUTHS_MAGIC ";WEBAUTHS="
-#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC)-1)
+#define WEBAUTHS_MAGIC_LEN (sizeof(WEBAUTHS_MAGIC) - 1)
 
 /* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
+#define ENV_WEBAUTH_FACTORS_INITIAL "WEBAUTH_FACTORS_INITIAL"
+#define ENV_WEBAUTH_FACTORS_SESSION "WEBAUTH_FACTORS_SESSION"
+#define ENV_WEBAUTH_LOA "WEBAUTH_LOA"
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* defines for config directives */
@@ -184,6 +163,15 @@
 #define CD_Optional "WebAuthOptional"
 #define CM_Optional "authentication is optional, user will not be redirected"
 
+#define CD_InitialFactor "WebAuthRequireInitialFactor"
+#define CM_InitialFactor "required factors for initial authentication"
+
+#define CD_SessionFactor "WebAuthRequireSessionFactor"
+#define CM_SessionFactor "required factors for session authentication"
+
+#define CD_LOA "WebAuthRequireLOA"
+#define CM_LOA "required level of assurance for authentication"
+
 #ifndef NO_STANFORD_SUPPORT
 
 /* Stanford WebAuth 2.5 compat */
@@ -214,44 +202,6 @@
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
 
-/* attr list macros to make code easier to read and audit
- * we don't need to check error codes since we are using
- * WA_F_NONE, which doesn't allocate any memory.
- */
-
-#define ADD_STR(name,value) \
-       webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-
-#define ADD_PTR(name,value, len) \
-       webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-
-#define ADD_TIME(name,value) \
-       webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
-
-#define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
-#define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
-#define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
-#define SET_CRED_SERVER(server)      ADD_STR(WA_TK_CRED_SERVER, server)
-#define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
-#define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
-#define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
-#define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
-#define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
-#define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
-#define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
-#define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
-#define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
-#define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
-#define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
-#define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
-#define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
-#define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
-#define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
-
 /* enums for config directives */
 
 enum {
@@ -276,6 +226,9 @@ enum {
     E_Optional,
     E_PostReturnURL,
     E_ReturnURL,
+    E_RequireInitialFactor,
+    E_RequireLOA,
+    E_RequireSessionFactor,
     E_RequireSSL,
     E_SSLReturn,
     E_SSLRedirect,
@@ -372,6 +325,8 @@ typedef struct {
     int force_login_ex;
     int optional;
     int optional_ex;
+    unsigned long loa;
+    int loa_ex;
     int ssl_return;
     int ssl_return_ex;
     int use_creds;
@@ -382,6 +337,8 @@ typedef struct {
     char *login_canceled_url;
     char *var_prefix;
     apr_array_header_t *creds; /* array of MWA_WACRED's */
+    apr_array_header_t *initial_factors; /* array of char *'s */
+    apr_array_header_t *session_factors; /* array of char *'s */
 #ifndef NO_STANFORD_SUPPORT
     char *su_authgroups;
 #endif
@@ -393,55 +350,15 @@ typedef struct {
     char *service;
 } MWA_WACRED;
 
-/* enums for MWA_TOKEN_DATA->type */
-enum {
-    MWA_T_APP,
-    MWA_T_PROXY,
-    MWA_T_CRED,
-};
-
-/* enums for MWA_TOKEN_DATA->source */
-enum {
-    MWA_TDS_COOKIE, /* data was in a cookie */
-    MWA_TDS_NOTE,   /* data was in a note, from a cookie */
-    MWA_TDS_URL,    /* data was from WEBAUTHR in URL */
-    MWA_TDS_TOKEN,  /* data was from newly-created token */
-};
-
-typedef struct {
-    const char *subject;
-    time_t creation_time;
-    time_t expiration_time;
-    time_t last_used_time;
-} MWA_APP_TOKEN;
-
-typedef struct {
-    const char *proxy_type;
-    const char *subject;
-    time_t creation_time;
-    time_t expiration_time;
-    void *wpt; /* webkdc-proxy-token */
-    size_t wpt_len;
-} MWA_PROXY_TOKEN;
-
-typedef struct {
-    const char *cred_type;
-    const char *cred_server;
-    const char *subject;
-    void *cred_data; /* this is ready to be blasted to a file */
-    size_t cred_data_len;
-    time_t creation_time;
-    time_t expiration_time;
-} MWA_CRED_TOKEN;
-
 /* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
     MWA_SCONF *sconf;
     MWA_DCONF *dconf;
-    MWA_APP_TOKEN at;
+    struct webauth_context *ctx;
+    struct webauth_token_app *at;
     char *needed_proxy_type; /* set if we are redirecting for a proxy-token */
-    MWA_PROXY_TOKEN *pt; /* proxy-token that came from URL */
+    struct webauth_token_proxy *pt; /* proxy-token that came from URL */
     apr_array_header_t *cred_tokens; /* cred token(s) */
 } MWA_REQ_CTXT;
 
@@ -460,14 +377,12 @@ typedef struct {
 
     /* function to validate subject-authenticator-data */
     const char *(*validate_sad) (MWA_REQ_CTXT *rc,
-                                 void *sad,
+                                 const void *sad,
                                  size_t sad_len);
 
     /* function to run through all the cred tokens and prepare any
        cred tokens that are the same as our type for use by CGI */
-    int (*prepare_creds)(MWA_REQ_CTXT *rc,
-                         MWA_CRED_TOKEN **creds,
-                         size_t num_creds);
+    int (*prepare_creds)(MWA_REQ_CTXT *rc, apr_array_header_t *creds);
 
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
@@ -488,21 +403,11 @@ mwa_get_service_token(server_rec *server,
 
 int
 mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
-                          MWA_PROXY_TOKEN *pt,
-                          MWA_WACRED *creds,
-                          size_t num_creds,
+                          struct webauth_token_proxy *pt,
+                          apr_array_header_t *needed_creds,
                           apr_array_header_t **acquired_creds);
 
 /* util.c */
-
-/*
- * get a string from an attr list, log an error if not present.
- * vlen is optional and can be set to NULL.
- */
-
-char *
-mwa_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
-                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get note from main request
@@ -563,7 +468,7 @@ mwa_get_webauth_cookies(request_rec *r);
  * parse a cred token. If key is non-null use it, otherwise
  * if ring is non-null use it, otherwise log an error and return NULL.
  */
-MWA_CRED_TOKEN *
+struct webauth_token_cred *
 mwa_parse_cred_token(char *token,
                      WEBAUTH_KEYRING *ring,
                      WEBAUTH_KEY *key,

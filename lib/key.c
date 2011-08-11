@@ -17,7 +17,8 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 /* The version of the keyring file format that we implement. */
 #define KEYRING_VERSION 1
@@ -725,7 +726,7 @@ int
 webauth_keyring_auto_update(const char *path, int create, int lifetime,
                             WEBAUTH_KEYRING **ring,
                             WEBAUTH_KAU_STATUS *updated,
-                            WEBAUTH_ERR *update_status)
+                            int *update_status)
 {
     int s;
 

@@ -1,0 +1,34 @@
+Manual login (username/password):
+* Test login
+* Test incorrect password
+* Test page validation (no username, no password) fails correctly
+
+Remuser:
+* Test auto-login with SPNEGO setup
+
+Complete SPNEGO login:
+Not yet doing -- requires rewriting settings.fcgi in stanford-weblogin.
+
+Login with upcoming password expiration:
+* Test gets warning
+* Test page opens in new tab or window
+* After that, flows into same logic as testing with expired password
+
+Login with expired password:
+* Test change password
+* Test too-short new password fails correctly
+* Test password reuse fails correctly
+* Test page validation (no password, no new password, new passwords not
+  matching) fails correctly
+
+Direct password change:
+* Test change password
+* Test incorrect current password fails correctly
+* Test too-short new password fails correctly
+* Test password reuse fails correctly
+* Test page validation (no username, no password, no new password, new
+  passwords not matching) fails correctly
+
+Logout
+* Test logout with SSO cookies
+* Test logout without SSO cookies errors

@@ -16,8 +16,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 #define BUFSIZE 4096
 #define MAX_ATTRS 128
@@ -38,6 +39,7 @@ main(void)
     time_t expiration;
     char *cprinc = NULL;
     char *crealm = NULL;
+    char *ccache = NULL;
     FILE *file;
 
     /* Read the configuration information. */
@@ -78,7 +80,7 @@ main(void)
     password[strlen(password) - 1] = '\0';
     test_file_path_free(path);
     
-    plan(31);
+    plan(38);
 
     s = webauth_krb5_new(&c);
     is_int(WA_ERR_NONE, s, "Creating a context succeeds");
@@ -91,6 +93,9 @@ main(void)
     s = webauth_krb5_get_realm(c, &crealm);
     is_int(WA_ERR_INVALID_CONTEXT, s,
            "Getting the realm fails with the right error");
+    s = webauth_krb5_get_cache(c, &ccache);
+    is_int(WA_ERR_INVALID_CONTEXT, s,
+           "Getting the cache fails with the right error");
 
     /* Do the authentication with the username and password. */
     s = webauth_krb5_init_via_password(c, username, password, NULL, keytab,
@@ -176,6 +181,19 @@ main(void)
     ok(c != NULL, "...and the context is not NULL");
     s = webauth_krb5_init_via_keytab(c, keytab, NULL, NULL);
     is_int(WA_ERR_NONE, s, "Initializing with a keytab");
+    s = webauth_krb5_free(c);
+    is_int(WA_ERR_NONE, s, "Freeing the context");
+
+    /* Test specifying an explicit cache file and getting it back. */
+    s = webauth_krb5_new(&c);
+    is_int(WA_ERR_NONE, s, "Creating a new context");
+    ok(c != NULL, "...and the context is not NULL");
+    s = webauth_krb5_init_via_keytab(c, keytab, NULL, "FILE:tmp_krb5cc");
+    is_int(WA_ERR_NONE, s, "Initializing with a keytab");
+    s = webauth_krb5_get_cache(c, &ccache);
+    is_int(WA_ERR_NONE, s, "Retrieving the cache name");
+    is_string("FILE:tmp_krb5cc", ccache, "...and the name is correct");
+    free(ccache);
     s = webauth_krb5_free(c);
     is_int(WA_ERR_NONE, s, "Freeing the context");
 

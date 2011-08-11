@@ -16,9 +16,10 @@
 #include <errno.h>
 #include <openssl/md5.h>
 
-#include <lib/webauth.h>
 #include <util/messages.h>
 #include <util/xmalloc.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 /* Usage message. */
 static const char usage_message[] = "\
@@ -56,7 +57,7 @@ die_webauth(int s, const char *fmt, ...)
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     if (s != 0)
-        fprintf(stderr, ": %s", webauth_error_message(s));
+        fprintf(stderr, ": %s", webauth_error_message(NULL, s));
     fprintf(stderr, "\n");
     exit(message_fatal_cleanup ? (*message_fatal_cleanup)() : 1);
 }

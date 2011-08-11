@@ -5,6 +5,7 @@
     <title>WebAuth Logout</title>
   </head>
 
+  [% IF notdefined %]
 <!--
 This is the template for WebAuth logout.  It is displayed whenever the
 logout.fcgi script is executed.  logout.fcgi deletes the single sign-on
@@ -12,6 +13,7 @@ cookie.  Variables used:
 
 cookies_flag           : found a single sign-on cookie to delete
 -->
+  [% END %]
 
   <body>
     <h1 align="center">WebAuth Logout</h1>
@@ -26,11 +28,11 @@ cookies_flag           : found a single sign-on cookie to delete
               sign-on cookie.</strong></p>
 
               <p><strong>Results:</strong>
-              <TMPL_IF NAME=cookies_flag>
+              [% IF cookies_flag %]
                 Single sign-on cookie has been deleted.
-              <TMPL_ELSE> 
+              [% ELSE %]
                 No single sign-on cookies found to delete.
-              </TMPL_IF>
+              [% END %]
               </p>
             </div>
           </td>

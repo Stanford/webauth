@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (get_userinfo create_keyring);
 
 use CGI;
-use HTML::Template;
+use Template;
 
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebLogin;
@@ -46,9 +46,8 @@ my $newpassword = 'dujPifecvij3';
 
 # Set up a query with some test data.
 my $query = new CGI;
-my %pages = ();
-my $weblogin = new WebLogin ($query, \%pages);
-$weblogin->{logging} = 0;
+my $weblogin = new WebLogin;
+$weblogin->param ('logging', 0);
 
 # Create the keyring to use.
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
@@ -60,44 +59,46 @@ if ($username =~ /\@(\S+)/) {
 }
 
 # Test a successful password change.
-$weblogin->{query}->param ('username', $username);
-$weblogin->{query}->param ('password', $password);
-$weblogin->{query}->param ('new_passwd1', $newpassword);
+$weblogin->query->param ('username', $username);
+$weblogin->query->param ('password', $password);
+$weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
 is ($error, undef, ' with no error');
 
 # And undo it.
-$weblogin->{query}->param ('password', $newpassword);
-$weblogin->{query}->param ('new_passwd1', $password);
+$weblogin->query->param ('password', $newpassword);
+$weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
 is ($error, undef, ' with no error');
 
 # Test going to change_user_password with password but not CPT (should work)
-$weblogin->{CPT} = '';
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('username', $username);
-$weblogin->{query}->param ('password', $password);
-$weblogin->{query}->param ('new_passwd1', $newpassword);
+$weblogin->param ('CPT', '');
+$query = new CGI;
+$weblogin->query ($query);
+$weblogin->query->param ('username', $username);
+$weblogin->query->param ('password', $password);
+$weblogin->query->param ('new_passwd1', $newpassword);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS,
     'changing the password with old password but no CPT works');
 is ($error, undef, ' with no error');
 
 # And undo it.
-$weblogin->{query}->param ('password', $newpassword);
-$weblogin->{query}->param ('new_passwd1', $password);
+$weblogin->query->param ('password', $newpassword);
+$weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
 is ($error, undef, ' with no error');
 
 # Test going to change_user_password no CPT or password (should not work).
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('username', $username);
-$weblogin->{query}->param ('new_passwd1', $newpassword);
-$weblogin->{CPT} = '';
+$query = new CGI;
+$weblogin->query ($query);
+$weblogin->query->param ('username', $username);
+$weblogin->query->param ('new_passwd1', $newpassword);
+$weblogin->param ('CPT', '');
 ($status, $error) = $weblogin->change_user_password;
 isnt ($status, WebKDC::WK_SUCCESS,
       'changing the password without password or CPT fails');
@@ -105,10 +106,11 @@ isnt ($status, WebKDC::WK_SUCCESS,
 # Test trying a simple password 'abc' (should not work)
 # FIXME: Test exact error code, not isn't.  Allow success or failure if it's
 # not strong enough password (and if success, change the password back).
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('username', $username);
-$weblogin->{query}->param ('password', $password);
-$weblogin->{query}->param ('new_passwd1', 'cat');
+$query = new CGI;
+$weblogin->query ($query);
+$weblogin->query->param ('username', $username);
+$weblogin->query->param ('password', $password);
+$weblogin->query->param ('new_passwd1', 'cat');
 $weblogin->add_changepw_token;
 ($status, $error) = $weblogin->change_user_password;
 isnt ($status, WebKDC::WK_SUCCESS,
@@ -116,12 +118,13 @@ isnt ($status, WebKDC::WK_SUCCESS,
 
 # Test creating CPT, then sending different username to change_user_password
 # (should not work)
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('username', $username);
-$weblogin->{query}->param ('password', $password);
-$weblogin->{query}->param ('new_passwd1', $newpassword);
+$query = new CGI;
+$weblogin->query ($query);
+$weblogin->query->param ('username', $username);
+$weblogin->query->param ('password', $password);
+$weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
-$weblogin->{query}->param ('username', $username.'_doe');
+$weblogin->query->param ('username', $username.'_doe');
 ($status, $error) = $weblogin->change_user_password;
 isnt ($status, WebKDC::WK_SUCCESS, 'changing the password of a user fails');
 

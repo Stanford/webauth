@@ -5,7 +5,7 @@
     <title>WebAuth Password Change</title>
   </head>
 
-  <TMPL_IF NAME=notdefined>
+  [% IF notdefined %]
 <!--
 This is the template for the WebAuth password change page.  This page is
 called from pwchange.fcgi script on the weblogin server.  It displays a form
@@ -33,65 +33,62 @@ new_passwd2            : the new password (second)
 changepw               : set to show this is not our first visit
 expired                : set when sent here for expired password login fail
 -->
-  </TMPL_IF>
+  [% END %]
 
   <body onload="document.pwchange.username.focus();">
     <h1 align="center">WebAuth Password Change</h1>
-    <TMPL_IF NAME=error>
+    [% IF error %]
       <div class="error" align="center">
         <p><strong>
-          <TMPL_IF NAME=err_username>
+          [% IF err_username && err_password %]
+            <!-- Error: no username or password submitted. -->
+            Error: Enter your username and password.
+          [% ELSIF err_username %]
             <!-- Error: no username submitted. -->
-            <TMPL_IF NAME=err_password>
-              Error: Enter your username and password.
-            <TMPL_ELSE>
-              Error: Enter your username.
-            </TMPL_IF>
-          <TMPL_ELSE>
-            <TMPL_IF NAME=err_password>
-              <!-- Error: no password submitted. -->
-              Error: Enter your password.
-            </TMPL_IF>
-          </TMPL_IF>
-          <TMPL_IF NAME=err_newpassword>
+            Error: Enter your username.
+          [% ELSIF err_password %]
+            <!-- Error: no password submitted. -->
+            Error: Enter your password.
+          [% END %]
+          [% IF err_newpassword %]
             <!-- Error: at least one of the new password fields was empty. -->
             Error: Enter your new password twice.
-          </TMPL_IF>
-          <TMPL_IF NAME=err_newpassword_match>
+          [% END %]
+          [% IF err_newpassword_match %]
             <!-- Error: new passwords do not match. -->
             Error: The two entries for your new password must match.
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_loginfailed>
+          [% IF err_loginfailed %]
             <!-- Error: login failed. -->
             Error: You entered an incorrect username or password (or both).
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_rejected>
+          [% IF err_rejected %]
             <!-- Error: user principal rejected. -->
             Error: That username may not authenticate to this service.
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_pwweak>
+          [% IF err_pwweak %]
             <!-- Error: password was too weak. -->
             Error: The password given failed strength checking.
             Please enter a more difficult password not based on a dictionary
             word.
-          </TMPL_IF>
+          [% END %]
 
-          <TMPL_IF NAME=err_pwchange>
+          [% IF err_pwchange %]
             <!-- Error: password change attempted, failed. -->
-            Error: <TMPL_VAR name=err_msg>.
-          </TMPL_IF>
+            Error: [% err_msg %].
+          [% END %]
 
         </strong></p>
         <p>Click <a href="/help.html">help</a> for assistance.</p>
       </div>
-    </TMPL_IF>
+    [% END %]
 
     <div class="loginbox" align="center">
       <table border="1" width="70%">
-        <TMPL_IF NAME=success>
+        [% IF success %]
           <tr>
             <td><img alt="Confirm" src="/images/confirm.png"
                      width="160" height="160"/></td>
@@ -104,45 +101,46 @@ expired                : set when sent here for expired password login fail
               </div>
             </td>
           </tr>
-        <TMPL_ELSE>
+        [% ELSE %]
           <tr>
             <td><img alt="Login" src="/images/login.png"
                      width="160" height="160"/></td>
             <td>
               <div class="loginform">
                 <form name="pwchange"
-                      action="<TMPL_VAR ESCAPE=HTML NAME=script_name>"
+                      action="[% script_name FILTER html %]"
                       method="post" autocomplete="OFF"
                       enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="rm" value="pwchange">
                   <input type="hidden" name="RT"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=RT>">
+                         value="[% RT FILTER html %]">
                   <input type="hidden" name="ST"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=ST>">
+                         value="[% ST FILTER html %]">
                   <input type="hidden" name="CPT"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
+                         value="[% CPT FILTER html %]">
                   <input type="hidden" name="changepw" value="yes">
                   <input type="hidden" name="expired"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=expired>">
-                  <TMPL_IF NAME=skip_username>
+                         value="[% expired FILTER html %]">
+                  [% IF skip_username %]
                     <input type="hidden" name="username"
-                           value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                           value="[% username FILTER html %]">
                     <input type="hidden" name="skip_username" value="1">
-                  </TMPL_IF>
+                  [% END %]
                   <table>
-                    <TMPL_UNLESS NAME=skip_username>
+                    [% UNLESS skip_username %]
                       <tr>
                         <td><strong>Username:</strong></td>
                         <td><input name="username" type="text"
-                                   value="<TMPL_VAR ESCAPE=HTML NAME=username>"
+                                   value="[% username FILTER html %]"
                                    size="18"><br/></td>
                       </tr>
-                    </TMPL_UNLESS>
-                    <TMPL_UNLESS NAME=skip_password>
+                    [% END %]
+                    [% UNLESS skip_password %]
                       <tr>
                         <td><strong>Old Password:</strong></td>
                         <td><input name="password" type="password" size="18"></td>
                       </tr>
-                    </TMPL_UNLESS>
+                    [% END %]
                     <tr>
                       <td><strong>New Password (enter twice):</strong></td>
                       <td>
@@ -163,7 +161,7 @@ expired                : set when sent here for expired password login fail
               </div>
             </td>
           </tr>
-        </TMPL_IF>
+        [% END %]
       </table>
     </div>
 

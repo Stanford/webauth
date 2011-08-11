@@ -15,8 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 #define BUFSIZE 4096
 #define MAX_ATTRS 128
@@ -72,12 +73,12 @@ main(void)
            "...and the attribute count is correct");
     for (i = 0; i < ain->num_attrs; i++) {
         is_string(ain->attrs[i].name, aout->attrs[i].name,
-                  "...attribute name %d is correct", i);
+                  "...attribute name %lu is correct", (unsigned long) i);
         is_int(ain->attrs[i].length, aout->attrs[i].length,
-               "...attribute length %d is correct", i);
+               "...attribute length %lu is correct", (unsigned long) i);
         ok(memcmp(aout->attrs[i].value, ain->attrs[i].value,
                   ain->attrs[i].length) == 0,
-           "...attribute value %d is correct", i);
+           "...attribute value %lu is correct", (unsigned long) i);
     }
     webauth_attr_list_free(aout);
     free(token);
@@ -137,12 +138,12 @@ main(void)
            "...and the attribute count is correct");
     for (i = 0; i < ain->num_attrs; i++) {
         is_string(ain->attrs[i].name, aout->attrs[i].name,
-                  "...attribute name %d is correct", i);
+                  "...attribute name %lu is correct", (unsigned long) i);
         is_int(ain->attrs[i].length, aout->attrs[i].length,
-               "...attribute length %d is correct", i);
+               "...attribute length %lu is correct", (unsigned long) i);
         ok(memcmp(aout->attrs[i].value, ain->attrs[i].value,
                   ain->attrs[i].length) == 0,
-           "...attribute value %d is correct", i);
+           "...attribute value %lu is correct", (unsigned long) i);
     }
     webauth_attr_list_free(aout);
     webauth_attr_list_free(ain);
@@ -176,12 +177,12 @@ main(void)
            "...and the attribute count is correct");
     for (i = 0; i < ain->num_attrs; i++) {
         is_string(ain->attrs[i].name, aout->attrs[i].name,
-                  "...attribute name %d is correct", i);
+                  "...attribute name %lu is correct", (unsigned long) i);
         is_int(ain->attrs[i].length, aout->attrs[i].length,
-               "...attribute length %d is correct", i);
+               "...attribute length %lu is correct", (unsigned long) i);
         ok(memcmp(aout->attrs[i].value, ain->attrs[i].value,
                   ain->attrs[i].length) == 0,
-           "...attribute value %d is correct", i);
+           "...attribute value %lu is correct", (unsigned long) i);
     }
     webauth_attr_list_free(aout);
     webauth_attr_list_free(ain);
@@ -215,12 +216,12 @@ main(void)
            "...and the attribute count is correct");
     for (i = 0; i < ain->num_attrs; i++) {
         is_string(ain->attrs[i].name, aout->attrs[i].name,
-                  "...attribute name %d is correct", i);
+                  "...attribute name %lu is correct", (unsigned long) i);
         is_int(ain->attrs[i].length, aout->attrs[i].length,
-               "...attribute length %d is correct", i);
+               "...attribute length %lu is correct", (unsigned long) i);
         ok(memcmp(aout->attrs[i].value, ain->attrs[i].value,
                   ain->attrs[i].length) == 0,
-           "...attribute value %d is correct", i);
+           "...attribute value %lu is correct", (unsigned long) i);
     }
     webauth_attr_list_free(aout);
     webauth_attr_list_free(ain);

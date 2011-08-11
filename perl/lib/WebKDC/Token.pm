@@ -1,7 +1,7 @@
 # Decode and parse WebAuth tokens for WebLogin.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2009
+# Copyright 2002, 2003, 2005, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -23,7 +23,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -38,30 +38,35 @@ our @EXPORT_OK;
 
 our %ta_desc =
     (
-     &WA_TK_APP_STATE => 'app-state',
-     &WA_TK_COMMAND => 'command',
-     &WA_TK_CRED_DATA => 'cred-data',
-     &WA_TK_CRED_TYPE => 'cred-type',
-     &WA_TK_CREATION_TIME => 'creation-time',
-     &WA_TK_ERROR_CODE => 'error-code',
-     &WA_TK_ERROR_MESSAGE => 'error-message',
-     &WA_TK_EXPIRATION_TIME => 'expiration-time',
-     &WA_TK_SESSION_KEY => 'session-key',
-     &WA_TK_LASTUSED_TIME => 'lastused-time',
-     &WA_TK_PASSWORD => 'password',
-     &WA_TK_PROXY_TYPE => 'proxy-type',
-     &WA_TK_PROXY_DATA => 'proxy-data',
-     &WA_TK_PROXY_SUBJECT => 'proxy-subject',
-     &WA_TK_REQUEST_OPTIONS => 'request-options',
+     &WA_TK_APP_STATE            => 'app-state',
+     &WA_TK_COMMAND              => 'command',
+     &WA_TK_CRED_DATA            => 'cred-data',
+     &WA_TK_CRED_SERVICE         => 'cred-service',
+     &WA_TK_CRED_TYPE            => 'cred-type',
+     &WA_TK_CREATION_TIME        => 'creation-time',
+     &WA_TK_ERROR_CODE           => 'error-code',
+     &WA_TK_ERROR_MESSAGE        => 'error-message',
+     &WA_TK_EXPIRATION_TIME      => 'expiration-time',
+     &WA_TK_INITIAL_FACTORS      => 'initial-factors',
+     &WA_TK_SESSION_KEY          => 'session-key',
+     &WA_TK_LOA                  => 'loa',
+     &WA_TK_LASTUSED_TIME        => 'lastused-time',
+     &WA_TK_OTP                  => 'otp',
+     &WA_TK_PASSWORD             => 'password',
+     &WA_TK_PROXY_DATA           => 'proxy-data',
+     &WA_TK_PROXY_SUBJECT        => 'proxy-subject',
+     &WA_TK_PROXY_TYPE           => 'proxy-type',
+     &WA_TK_REQUEST_OPTIONS      => 'request-options',
      &WA_TK_REQUESTED_TOKEN_TYPE => 'req-token-type',
-     &WA_TK_RETURN_URL => 'return-url',
-     &WA_TK_SUBJECT => 'subject',
-     &WA_TK_SUBJECT_AUTH => 'subject-auth',
-     &WA_TK_SUBJECT_AUTH_DATA => 'subject-auth-data',
-     &WA_TK_TOKEN_TYPE => 'token-type',
-     &WA_TK_USERNAME => 'username',
-     &WA_TK_WEBKDC_TOKEN => 'webkdc-token',
-     );
+     &WA_TK_RETURN_URL           => 'return-url',
+     &WA_TK_SUBJECT              => 'subject',
+     &WA_TK_SUBJECT_AUTH         => 'subject-auth',
+     &WA_TK_SUBJECT_AUTH_DATA    => 'subject-auth-data',
+     &WA_TK_SESSION_FACTORS      => 'session-factors',
+     &WA_TK_TOKEN_TYPE           => 'token-type',
+     &WA_TK_USERNAME             => 'username',
+     &WA_TK_WEBKDC_TOKEN         => 'webkdc-token',
+    );
 
 sub get_ta_desc($) {
     my $ta = shift;
@@ -89,7 +94,9 @@ sub to_string {
 		 $key eq WA_TK_SUBJECT_AUTH_DATA ||
 		 $key eq WA_TK_WEBKDC_TOKEN) {
 	    $val = hex_encode($val);
-	}  elsif ($key eq WA_TK_PASSWORD) {
+        } elsif ($key eq WA_TK_LOA) {
+            $val = unpack("N", $val);
+	} elsif ($key eq WA_TK_PASSWORD) {
 	    $val = "XXXXXXX";
 	}
 	$out .= sprintf($fmt, get_ta_desc($key), $val);
@@ -173,7 +180,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -236,6 +243,39 @@ sub lastused_time {
     }
 }
 
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub session_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_SESSION_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
+    }
+}
+
 sub app_data {
     my $self = shift;
     my $name = shift;
@@ -267,7 +307,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -325,6 +365,39 @@ sub expiration_time {
     }
 }
 
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub session_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_SESSION_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
+    }
+}
+
 sub validate_token {
     my $self = shift;
 
@@ -355,7 +428,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -385,6 +458,12 @@ sub password {
     return $self->{'attrs'}{&WA_TK_PASSWORD};
 }
 
+sub otp {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_OTP} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_OTP};
+}
+
 sub creation_time {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_CREATION_TIME} = pack("N", shift) if @_;
@@ -401,7 +480,7 @@ sub validate_token {
     croak "validate_token failed" unless
 	($self->token_type() eq 'login') &&
 	defined($self->username) &&
-	defined($self->password);
+	(defined($self->password) || defined($self->otp));
 }
 
 ############################################################
@@ -420,7 +499,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -477,6 +556,39 @@ sub expiration_time {
     }
 }
 
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub session_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_SESSION_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
+    }
+}
+
 sub validate_token {
     my $self = shift;
 
@@ -505,7 +617,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -526,6 +638,12 @@ sub cred_type {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_CRED_TYPE} = shift if @_;
     return $self->{'attrs'}{&WA_TK_CRED_TYPE};
+}
+
+sub cred_server {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_CRED_SERVICE} = shift if @_;
+    return $self->{'attrs'}{&WA_TK_CRED_SERVICE};
 }
 
 sub cred_data {
@@ -590,7 +708,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -653,6 +771,28 @@ sub expiration_time {
     }
 }
 
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
+    }
+}
+
 sub validate_token {
     my $self = shift;
 
@@ -681,7 +821,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.00;
+    $VERSION     = 1.01;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -746,6 +886,39 @@ sub return_url {
     return $self->{'attrs'}{&WA_TK_RETURN_URL};
 }
 
+sub initial_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_INITIAL_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_INITIAL_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub session_factors {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_SESSION_FACTORS} = join(',', @_) if @_;
+    my $factors = $self->{'attrs'}{&WA_TK_SESSION_FACTORS};
+    if (defined($factors)) {
+        return split(',', $factors);
+    } else {
+        return;
+    }
+}
+
+sub loa {
+    my $self = shift;
+    $self->{'attrs'}{&WA_TK_LOA} = pack("N", shift) if @_;
+    my $loa = $self->{'attrs'}{&WA_TK_LOA};
+    if (defined($loa)) {
+        return unpack('N', $loa);
+    } else {
+        return $loa;
+    }
+}
+
 sub command {
     my $self = shift;
     $self->{'attrs'}{&WA_TK_COMMAND} = shift if @_;
@@ -765,10 +938,12 @@ sub validate_token {
 	    $self->command() eq 'getTokensRequest';
     } else {
 	croak "validate_token failed" unless
-	    defined($self->return_url()) &&
-	    ($self->requested_token_type() eq 'id') &&
-	    ($self->subject_auth() eq 'krb5' ||
-	     ($self->subject_auth() eq 'webkdc'));
+	    (defined($self->return_url())
+             && ((($self->requested_token_type() eq 'id')
+                  && ($self->subject_auth() eq 'krb5'
+                      || $self->subject_auth() eq 'webkdc'))
+                 || ($self->requested_token_type() eq 'proxy'
+                     && $self->proxy_type() eq 'krb5')));
     }
 }
 
@@ -932,12 +1107,12 @@ WebKDC::Token - token objects for use with WebAuth
   # includes WebKDC::{App,Id,Proxy,Request,Response,Service}Token
 
   # manually create a new token, and then encode/encrypt it
-  my $id_token = new WebKDC::Token;
+  my $id_token = new WebKDC::IdToken;
 
   $id_token->subject_auth('krb5');
   $id_token->subject_auth_data($sad);
   $id_token->creation_time(time());
-  $id_token->subject_expiration_time($et);
+  $id_token->expiration_time($et);
 
   my $id_token_str = bas64_encode($id_token->to_token($key));
 
@@ -1043,6 +1218,10 @@ The WebKDC::AppToken object is used to represent WebAuth app-tokens.
   $token->expiration_time([$new_value])
   $token->lastused_time([$lastused_time])
   $token->subject([$new_value])
+  $token->session_key([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->session_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::CredToken
 
@@ -1054,6 +1233,7 @@ The WebKDC::CredToken object is used to represent WebAuth cred-tokens.
   $token->creation_time([$new_value])
   $token->expiration_time([$new_value])
   $token->cred_type([$new_value])
+  $token->cred_subject([$new_value])
   $token->cred_data([$new_value])
   $token->subject([$new_value])
 
@@ -1061,14 +1241,17 @@ The WebKDC::CredToken object is used to represent WebAuth cred-tokens.
 
 The WebKDC::IdToken object is used to represent WebAuth id-tokens.
 
-  $token = new WebKDC::IDToken;
+  $token = new WebKDC::IdToken;
   $token = new WebKDC::IdToken($binary_token, $key_or_ring, $ttl);
 
   $token->creation_time([$new_value])
+  $token->expiration_time([$new_value])
   $token->subject([$new_value])
   $token->subject_auth([$new_value])
   $token->subject_auth_data([$new_value])
-  $token->subject_expiration_time([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->session_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::LoginToken
 
@@ -1079,6 +1262,7 @@ The WebKDC::LoginToken object is used to represent WebAuth login-tokens.
 
   $token->creation_time([$new_value])
   $token->password([$new_value])
+  $token->otp([$new_value])
   $token->username([$new_value])
 
 =head1 WebKDC::ProxyToken
@@ -1093,6 +1277,9 @@ The WebKDC::ProxyToken object is used to represent WebAuth proxy-tokens.
   $token->proxy_type([$new_value])
   $token->subject([$new_value])
   $token->webkdc_token([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->session_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::RequestToken
 
@@ -1108,6 +1295,9 @@ The WebKDC::RequestToken object is used to represent WebAuth request-tokens.
   $token->requested_token_type([$new_value])
   $token->return_url([$new_value])
   $token->subject_auth([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->session_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::ErrorToken
 
@@ -1134,6 +1324,8 @@ webkdc-proxy-tokens.
   $token->proxy_subject([$new_value])
   $token->proxy_type([$new_value])
   $token->subject([$new_value])
+  $token->initial_factors([$new_value, ...])
+  $token->loa([$new_value])
 
 =head1 WebKDC::WebKDCServiceToken
 

@@ -16,7 +16,7 @@ use Test::More;
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (:const);
 
-BEGIN { plan tests => 38 }
+BEGIN { plan tests => 39 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -119,12 +119,12 @@ eval {
     $key = WebAuth::key_create (WebAuth::WA_AES_KEY,
                                 WebAuth::random_key (WebAuth::WA_AES_128));
     my $attrs = { 'a' => '1', 'b' => 'hello', 'c' => 'world' };
-    my $ring = WebAuth::keyring_new (32);
+    my $ring = WebAuth::Keyring->new (32);
     ok (defined ($ring), 'creating a token works');
-    ok ($ring->isa ('WEBAUTH_KEYRINGPtr'), ' and is of the right type');
+    ok ($ring->isa ('WebAuth::Keyring'), ' and is of the right type');
 
     my $curr = time();
-    WebAuth::keyring_add ($ring, $curr, $curr, $key);
+    $ring->add ($curr, $curr, $key);
 
     $key = undef;
     my $token = WebAuth::token_create ($attrs, 0, $ring);
@@ -144,18 +144,15 @@ eval {
     is (compareHashes ($attrs, $attrs2), 1, ' as does parsing the token');
 
     # Test reading a new keyring file.
-    # FIXME: compare files, should probably use temp file names, etc.
-    WebAuth::keyring_write_file ($ring, 'webauth_keyring');
-    my $ring2 = WebAuth::keyring_read_file ('webauth_keyring');
-    ok ($ring2->isa ('WEBAUTH_KEYRINGPtr'), 'reading a new keyring works');
-    WebAuth::keyring_write_file ($ring2, 'webauth_keyring2');
+    $ring->write_file ('webauth_keyring');
+    my $ring2 = WebAuth::Keyring->read_file ('webauth_keyring');
+    ok ($ring2->isa ('WebAuth::Keyring'), 'reading a new keyring works');
+    $ring->write_file ('webauth_keyring2');
 
     unlink ('webauth_keyring') if -f 'webauth_keyring';
     unlink ('webauth_keyring2') if -f 'webauth_keyring2';
 };
-if ($@ and $@->isa ('WebAuth::Exception')) {
-    die $@;
-}
+is ($@, '', 'No unexpected exceptions');
 
 # A short hash comparison function in order to verify that hash output is as
 # expected.

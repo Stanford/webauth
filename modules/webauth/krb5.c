@@ -2,13 +2,23 @@
  * Kerberos-related functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2003, 2006, 2009, 2010
+ * Copyright 2003, 2006, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
+#include <modules/mod-config.h>
+
+#include <apr_base64.h>
+#include <apr_strings.h>
+#include <httpd.h>
+#include <http_log.h>
+#include <unistd.h>
+
 #include <modules/webauth/mod_webauth.h>
+#include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 
 static void
@@ -21,7 +31,7 @@ log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      mwa_func, func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status,
+                     webauth_error_message(NULL, status), status,
                      webauth_krb5_error_message(ctxt),
                      webauth_krb5_error_code(ctxt));
     else
@@ -31,7 +41,7 @@ log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
                      func,
                      extra == NULL ? "" : " ",
                      extra == NULL ? "" : extra,
-                     webauth_error_message(status), status);
+                     webauth_error_message(NULL, status), status);
 }
 
 
@@ -57,7 +67,7 @@ get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
 
 
 static const char *
-krb5_validate_sad(MWA_REQ_CTXT *rc, void *sad, size_t sad_len)
+krb5_validate_sad(MWA_REQ_CTXT *rc, const void *sad, size_t sad_len)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
@@ -116,7 +126,7 @@ cred_cache_destroy(void *data)
  * prepare any krb5 creds
  */
 static int
-krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
+krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 {
     const char *mwa_func="krb5_prepare_creds";
     WEBAUTH_KRB5_CTXT *ctxt;
@@ -171,22 +181,24 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, MWA_CRED_TOKEN **creds, size_t num_creds)
 
     webauth_krb5_keep_cred_cache(ctxt);
 
-    for (i = 0; i < num_creds; i++) {
-        if (strcmp(creds[i]->cred_type, "krb5") == 0) {
+    for (i = 0; i < (size_t) creds->nelts; i++) {
+        struct webauth_token_cred *cred;
+
+        cred = APR_ARRAY_IDX(creds, i, struct webauth_token_cred *);
+        if (strcmp(cred->type, "krb5") == 0) {
             if (rc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webauth: %s: prepare (%s) for (%s)",
-                             mwa_func, creds[i]->cred_server,
-                             creds[i]->subject);
+                             mwa_func, cred->service, cred->subject);
             if (i == 0) {
                 status = webauth_krb5_init_via_cred(ctxt,
-                                                    creds[i]->cred_data,
-                                                    creds[i]->cred_data_len,
+                                                    (void *) cred->data,
+                                                    cred->data_len,
                                                     temp_cred_file);
             } else {
                 status = webauth_krb5_import_cred(ctxt,
-                                                  creds[i]->cred_data,
-                                                  creds[i]->cred_data_len);
+                                                  (void *) cred->data,
+                                                  cred->data_len);
             }
             if (status != WA_ERR_NONE)
                 log_webauth_error(rc->r->server,

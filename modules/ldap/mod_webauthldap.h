@@ -13,30 +13,14 @@
 
 #include <modules/mod-config.h>
 
-#include "httpd.h"
-#include "http_config.h"
-#include "http_log.h"
-#include "http_core.h"
-#include "http_protocol.h"
-#include "http_request.h"
-#include "ap_config.h"
-
-#include "apr.h"
-#include "apr_lib.h"
-#include "apr_file_io.h"
-#include "apr_file_info.h"
-#include "apr_errno.h"
-#include "apr_strings.h"
-#include "apr_pools.h"
-#include "apr_tables.h"
-#include "apr_xml.h"
-#include "apr_base64.h"
-
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
 #elif HAVE_STDINT_H
 # include <stdint.h>
 #endif
+
+#include <apr_tables.h>
+#include <apr_thread_mutex.h>
 
 /* constants */
 #define MAX_ENV_VALUES 128
@@ -147,60 +131,48 @@ typedef struct {
     int scope;
 
     int ldcount;
-    apr_array_header_t* ldarray;
-    apr_thread_mutex_t* ldmutex;
-    apr_thread_mutex_t* totalmutex;
+    apr_array_header_t *ldarray;
+    apr_thread_mutex_t *ldmutex;
+    apr_thread_mutex_t *totalmutex;
 
 } MWAL_SCONF;
 
 
 /* directory conf stuff - looks like nothing so far*/
 typedef struct {
-
-    apr_array_header_t* attribs;
-    apr_array_header_t* privgroups;
-
+    apr_array_header_t *attribs;
+    apr_array_header_t *privgroups;
 } MWAL_DCONF;
 
 
 /* Used for passing things around */
 typedef struct {
-    request_rec * r; /* apache request struct */
+    request_rec *r; /* apache request struct */
 
-    MWAL_SCONF* sconf;
-    MWAL_DCONF* dconf;
+    MWAL_SCONF *sconf;
+    MWAL_DCONF *dconf;
 
-    apr_table_t ** entries;  /* retrieved ldap entries */
+    apr_table_t **entries;  /* retrieved ldap entries */
     int numEntries;
 
-    apr_table_t* envvars;    /* which attributes to place into environment */
-    apr_table_t* privgroups; /* which privgroups to check and place into
+    apr_table_t *envvars;    /* which attributes to place into environment */
+    apr_table_t *privgroups; /* which privgroups to check and place into
                                 environment */
     int legacymode;
 
     LDAP *ld;
     char **attrs;            /* attributes to retrieve from LDAP, (null = all)
                               */
-    char*  filter;
-    int    port;
+    char *filter;
+    int port;
 
-    const char*  authrule;    /* what group or rule was the user authorized on
+    const char *authrule;    /* what group or rule was the user authorized on
                               */
 
-    apr_table_t* privgroup_cache;
+    apr_table_t *privgroup_cache;
                              /* cached privgroup comparison results; keys are
                                 privgroup names; values should be "TRUE" or
                                 "FALSE" */
 } MWAL_LDAP_CTXT;
 
-
 #endif
-
-
-/*
-** Local variables:
-** mode: c
-** c-basic-offset: 4
-** indent-tabs-mode: nil
-** end:
-*/

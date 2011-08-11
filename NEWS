@@ -1,5 +1,78 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.0.0 (2011-08-11)
+
+    WARNING: This release is a major revision with significant changes to
+    mod_webkdc and to the WebLogin code.  While the additions are not
+    completely specific to Stanford University, it still has some
+    limitations (such as requiring libremctl to build) and missing
+    components that will make it difficult to deploy new features outside
+    of Stanford.  While the new mod_webauth and mod_webauthldap are
+    suitable for everyone, sites outside of Stanford University will
+    probably want to wait for subsequent releases before updating
+    mod_webkdc and the WebLogin code.
+
+    WebAuth now has support for multifactor authentication.  New WebAuth
+    configuration directives WebAuthRequireInitialFactor,
+    WebAuthRequireSessionFactor, and WebAuthRequireLOA can be used to
+    require specific authentication factors, unspecified multiple factors,
+    or a site-specific level of assurance value to allow access to
+    particular content.  Using this feature currently requires a custom
+    middleware service that returns information about users and their
+    configured factors and that validates a provided OTP code.  New WebKDC
+    configuration directives WebKdcUserInfoURL and WebKdcUserInfoPrincipal
+    control how that middleware service is used.  WebKdcKerberosFactors
+    controls what factors are assigned to webkdc-proxy tokens obtained
+    directly from the WebKDC rather than via WebLogin.
+
+    mod_webauth now exposes the user's initial and session authentication
+    methods via environment variables WEBAUTH_FACTORS_INITIAL and
+    WEBAUTH_FACTORS_SESSION, and the user's level of assurance (if known)
+    via WEBAUTH_LOA.
+
+    WebLogin now uses Template Toolkit for all templating instead of
+    HTML::Template.  This means that all local WebLogin templates will
+    have to be revised for the new syntax.  WebLogin has also dropped
+    support for obsolete template variables and for templates that don't
+    support the new variables that have been introduced over the years.
+    See the sample templates in weblogin/templates for examples of what
+    the new templates should look like.
+
+    As part of multifactor support, WebLogin can now tell an external
+    middleware service to send an OTP code to the user through
+    site-specific means (such as an SMS message).  There are new
+    configuration variables for webkdc.conf to specify how to contact this
+    optional service.
+
+    As part of multifactor support, WebLogin supports a new site-specific
+    callback to determine the initial and session factors for a user who
+    has been authenticated via some other Apache authentication mechanism
+    (such as GSS-API via mod_auth_kerb).  See docs/weblogin-config under
+    remuser_factors for more information.
+
+    The keyring manipulation functions of the WebAuth Perl module have
+    been rewritten to be object-oriented, introducing new WebAuth::Keyring
+    and WebAuth::KeyringEntry objects.  Perl code using the WebAuth module
+    to manipulate keyrings will have to be modified, since several
+    functions were removed in favor of the new interface.  Methods to
+    remove a key from a keyring, get the timestamps and keys associated
+    with keyring entries, and choose the best key from a keyring have been
+    added.
+
+    The libwebauth library API has changed significantly in this version
+    and will be changing further in subsequent versions.  There are new
+    webauth/*.h headers for the new API, but this API should not yet be
+    considered stable.  External users of the libwebauth API should stay
+    with previous releases until the libwebauth library changes have been
+    completed, and should expect to require substantial changes (mostly
+    simplifications).
+
+    Update to rra-c-util 3.7:
+
+    * Add notices to all files copied over from rra-c-util.
+    * Fix warnings when reporting memory allocation failure in messages.c.
+    * Include strings.h for additional POSIX functions where found.
+
 WebAuth 3.7.4 (2011-05-11)
 
     WebAuth now supports a new Apache configuration directive,

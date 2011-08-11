@@ -2,52 +2,32 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
+#include <modules/mod-config.h>
+#include <portable/stdbool.h>
+
+#include <apr_base64.h>
+#include <apr_lib.h>
+#include <apr_pools.h>
+#include <apr_tables.h>
+#include <apr_strings.h>
+#include <apr_xml.h>
+#include <httpd.h>
+#include <http_config.h>
+#include <http_log.h>
+#include <http_protocol.h>
+
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
-
-/* attr list macros to make code easier to read and audit
- * we don't need to check error codes since we are using
- * WA_F_NONE, which doesn't allocate any memory.
- */
-
-#define ADD_STR(name,value) \
-       webauth_attr_list_add_str(alist, name, value, 0, WA_F_NONE)
-
-#define ADD_PTR(name,value, len) \
-       webauth_attr_list_add(alist, name, value, len, WA_F_NONE)
-
-#define ADD_TIME(name,value) \
-       webauth_attr_list_add_time(alist, name, value, WA_F_NONE)
-
-#define SET_APP_STATE(state,len)     ADD_PTR(WA_TK_APP_STATE, state, len)
-#define SET_COMMAND(cmd)             ADD_STR(WA_TK_COMMAND, cmd)
-#define SET_CRED_DATA(data, len)     ADD_PTR(WA_TK_CRED_DATA, data, len)
-#define SET_CRED_TYPE(type)          ADD_STR(WA_TK_CRED_TYPE, type)
-#define SET_CRED_SERVER(type)        ADD_STR(WA_TK_CRED_SERVER, type)
-#define SET_CREATION_TIME(time)      ADD_TIME(WA_TK_CREATION_TIME, time)
-#define SET_ERROR_CODE(code)         ADD_STR(WA_TK_ERROR_CODE, code)
-#define SET_ERROR_MESSAGE(msg)       ADD_STR(WA_TK_ERROR_MESSAGE, msg)
-#define SET_EXPIRATION_TIME(time)    ADD_TIME(WA_TK_EXPIRATION_TIME, time)
-#define SET_INACTIVITY_TIMEOUT(to)   ADD_STR(WA_TK_INACTIVITY_TIMEOUT, to)
-#define SET_SESSION_KEY(key,len)     ADD_PTR(WA_TK_SESSION_KEY, key, len)
-#define SET_LASTUSED_TIME(time)      ADD_TIME(WA_TK_LASTUSED_TIME, time)
-#define SET_PROXY_TYPE(type)         ADD_STR(WA_TK_PROXY_TYPE, type)
-#define SET_PROXY_DATA(data,len)     ADD_PTR(WA_TK_PROXY_DATA, data, len)
-#define SET_PROXY_SUBJECT(sub)       ADD_STR(WA_TK_PROXY_SUBJECT, sub)
-#define SET_REQUEST_OPTIONS(ro)      ADD_STR(WA_TK_REQUEST_OPTIONS, ro)
-#define SET_REQUESTED_TOKEN_TYPE(t)  ADD_STR(WA_TK_REQUESTED_TOKEN_TYPE, t)
-#define SET_RETURN_URL(url)          ADD_STR(WA_TK_RETURN_URL, url)
-#define SET_SUBJECT(s)               ADD_STR(WA_TK_SUBJECT, s)
-#define SET_SUBJECT_AUTH(sa)         ADD_STR(WA_TK_SUBJECT_AUTH, sa)
-#define SET_SUBJECT_AUTH_DATA(d,l)   ADD_PTR(WA_TK_SUBJECT_AUTH_DATA, d, l)
-#define SET_TOKEN_TYPE(type)         ADD_STR(WA_TK_TOKEN_TYPE, type)
-#define SET_WEBKDC_TOKEN(d,l)        ADD_PTR(WA_TK_WEBKDC_TOKEN, d, l)
+#include <webauth/basic.h>
+#include <webauth/keys.h>
+#include <webauth/tokens.h>
+#include <webauth/webkdc.h>
 
 
 /*
@@ -133,7 +113,7 @@ generate_errorResponse(MWK_REQ_CTXT *rc)
  */
 static enum mwk_status
 set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
-                  const char *mwk_func, int log)
+                  const char *mwk_func, bool log)
 {
     rc->error_code = ec;
     rc->error_message = message;
@@ -142,110 +122,17 @@ set_errorResponse(MWK_REQ_CTXT *rc, int ec, const char *message,
     return MWK_ERROR;
 }
 
-/*
- * returns new attr list, or NULL if there was an error
- */
-
-static WEBAUTH_ATTR_LIST *
-new_attr_list(MWK_REQ_CTXT *rc, const char *mwk_func)
-{
-    WEBAUTH_ATTR_LIST *alist = webauth_attr_list_new(32);
-
-    if (alist == NULL) {
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                          "no memory for attr list", mwk_func, 0);
-    }
-    return alist;
-}
-
-static enum mwk_status
-make_token(MWK_REQ_CTXT *rc, WEBAUTH_ATTR_LIST *alist, time_t hint,
-           char **out_token, size_t *out_len, int base64_encode,
-           const char *mwk_func)
-{
-    char *buffer;
-    int status;
-    size_t elen, olen;
-
-    elen = webauth_token_encoded_length(alist);
-    buffer = (char*)apr_palloc(rc->r->pool, elen);
-    status = WA_ERR_NONE;
-
-    if (rc->sconf->ring == NULL) {
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "no keyring", mwk_func, 1);
-    }
-
-    status = webauth_token_create(alist, hint, buffer, &olen, elen,
-                                  rc->sconf->ring);
-
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_token_create", NULL);
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, 0);
-    }
-
-    if (base64_encode) {
-        *out_token = (char*)
-            apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-        *out_len = apr_base64_encode(*out_token, buffer, olen);
-    } else {
-        *out_token = buffer;
-        *out_len = olen;
-    }
-    return MWK_OK;
-}
-
-
-static enum mwk_status
-make_token_with_key(MWK_REQ_CTXT *rc,
-                    WEBAUTH_KEY *key,
-                    WEBAUTH_ATTR_LIST *alist, time_t hint,
-                    char **out_token, size_t *out_len,
-                    int base64_encode,
-                    const char *mwk_func)
-{
-    char *buffer;
-    int status;
-    size_t elen, olen;
-
-    elen = webauth_token_encoded_length(alist);
-    buffer = (char*)apr_palloc(rc->r->pool, elen);
-
-    status = webauth_token_create_with_key(alist, hint, buffer,
-                                           &olen, elen, key);
-
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_token_create_with_key", NULL);
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, 0);
-    }
-
-    if (base64_encode) {
-        *out_token = (char*)
-            apr_palloc(rc->r->pool, apr_base64_encode_len(olen));
-        *out_len = apr_base64_encode(*out_token, buffer, olen);
-    } else {
-        *out_token = buffer;
-        *out_len = olen;
-    }
-    return MWK_OK;
-}
-
 
 /*
  * log information about a bad element in XML and generate errorResponse
  */
-
 static enum mwk_status
 unknown_element(MWK_REQ_CTXT *rc,
                 const char *mwk_func, const char *parent, const char *u)
 {
     char *msg = apr_psprintf(rc->r->pool, "unknown element in <%s>: <%s>",
                              parent, u);
-    return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+    return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
 }
 
 
@@ -270,7 +157,7 @@ get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
     if (!string.data || string.data[0] == '\0') {
         char *msg = apr_psprintf(rc->r->pool, "<%s> does not contain data",
                                  e->name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         return NULL;
     }
     return string.data;
@@ -280,7 +167,7 @@ get_elem_text(MWK_REQ_CTXT *rc, apr_xml_elem *e, const char *mwk_func)
  * get an attr from an element. if required and not found, we
  * log an error and generate an errorResponse.
  */
-static const char*
+static const char *
 get_attr_value(MWK_REQ_CTXT *rc,apr_xml_elem *e,
                const char *name, int required, const char *mwk_func)
 {
@@ -295,7 +182,7 @@ get_attr_value(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     if (required) {
         char *msg = apr_psprintf(rc->r->pool, "can't find attr in <%s>: %s",
                                  e->name, name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
     }
     return NULL;
 }
@@ -320,7 +207,7 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
     if (required) {
         char *msg = apr_psprintf(rc->r->pool, "can't find element in <%s>: %s",
                                  e->name, name);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
     }
     return NULL;
 }
@@ -329,474 +216,30 @@ get_element(MWK_REQ_CTXT *rc,apr_xml_elem *e,
  * search through subject credentials for a proxy-token of the requested
  * type.
  */
-static MWK_PROXY_TOKEN *
+static struct webauth_token_webkdc_proxy *
 find_proxy_token(MWK_REQ_CTXT *rc,
                  MWK_SUBJECT_CREDENTIAL *sub_cred,
                  const char *type,
                  const char *mwk_func,
-                 int set_error)
+                 bool set_error)
 {
     size_t i;
     char *msg;
 
     if (strcmp(sub_cred->type, "proxy") == 0) {
-        for (i=0; i < sub_cred->u.proxy.num_proxy_tokens; i++) {
+        for (i = 0; i < sub_cred->u.proxy.num_proxy_tokens; i++) {
             if (strcmp(sub_cred->u.proxy.pt[i].proxy_type, type) == 0) {
-                return  &sub_cred->u.proxy.pt[i];
+                return &sub_cred->u.proxy.pt[i];
             }
         }
     }
     if (set_error) {
         msg = apr_psprintf(rc->r->pool,
                            "need a proxy-token of type: %s", type);
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED, msg, mwk_func,
+                          true);
     }
     return NULL;
-}
-
-/*
- * parse a <serviceToken>, which should be base64-encoded.
- * logs all errors and generates errorResponse if need be.
- */
-static enum mwk_status
-parse_service_token(MWK_REQ_CTXT *rc, char *token, MWK_SERVICE_TOKEN *st)
-{
-    WEBAUTH_ATTR_LIST *alist;
-    size_t blen;
-    ssize_t i;
-    int status;
-    const char *tt;
-    static const char *mwk_func = "parse_service_token";
-    enum mwk_status ms;
-
-    ms = MWK_ERROR;
-
-    if (token == NULL) {
-        return set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                                 "service token is NULL", mwk_func, 1);
-    }
-
-    blen = apr_base64_decode(token, token);
-    status = WA_ERR_NONE;
-
-    /* parse the token, TTL is zero because service-tokens don't have ttl,
-     * just expiration
-     */
-
-    if (rc->sconf->ring == NULL) {
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                 mwk_func, 1);
-    }
-
-    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
-
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_token_parse", NULL);
-        if (status == WA_ERR_TOKEN_EXPIRED) {
-            return set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
-                                   "service token was expired", mwk_func, 0);
-        } else if (status == WA_ERR_BAD_HMAC) {
-            return set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                                   "can't decrypt service token", mwk_func, 0);
-        } else {
-            return set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                                   "error parsing token", mwk_func, 0);
-        }
-    }
-
-    /* make sure its a service-token */
-    tt = mwk_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwk_func, NULL);
-    if ((tt == NULL) || (strcmp(tt, WA_TT_WEBKDC_SERVICE) != 0)) {
-        set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                               "not a service token", mwk_func, 1);
-        goto cleanup;
-    }
-
-    /* pull out session key */
-    status = webauth_attr_list_find(alist, WA_TK_SESSION_KEY, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                               "missing session key", mwk_func, 1);
-        goto cleanup;
-    }
-    st->key.length = alist->attrs[i].length;
-    st->key.data = apr_palloc(rc->r->pool, st->key.length);
-    memcpy(st->key.data, alist->attrs[i].value, st->key.length);
-    st->key.type = WA_AES_KEY; /* HARCODED */
-
-    /* pull out subject */
-    status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
-                               "missing subject", mwk_func, 1);
-        goto cleanup;
-    }
-    st->subject = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-    ms = MWK_OK;
-
- cleanup:
-    webauth_attr_list_free(alist);
-    return ms;
-}
-
-/*
- * parse a proxy-token, which should be base64-encoded.
- * logs all errors and generates errorResponse if need be.
- */
-static enum mwk_status
-parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token, MWK_PROXY_TOKEN *pt)
-{
-    WEBAUTH_ATTR_LIST *alist;
-    size_t blen;
-    ssize_t i;
-    int status;
-    enum mwk_status ms;
-    const char *tt;
-    static const char *mwk_func = "parse_webkdc_proxy_token";
-
-    if (token == NULL) {
-        return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                                 "proxy token is NULL", mwk_func, 1);
-    }
-
-    blen = apr_base64_decode(token, token);
-    status = WA_ERR_NONE;
-    ms = MWK_ERROR;
-
-    /* parse the token, TTL is zero because proxy-tokens don't have ttl,
-     * just expiration
-     */
-
-    if (rc->sconf->ring == NULL) {
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                 mwk_func, 1);
-    }
-
-    status = webauth_token_parse(token, blen, 0, rc->sconf->ring, &alist);
-
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_token_parse", NULL);
-        if (status == WA_ERR_TOKEN_EXPIRED) {
-            set_errorResponse(rc, WA_PEC_PROXY_TOKEN_EXPIRED,
-                              "proxy token was expired", mwk_func, 0);
-        } else if (status == WA_ERR_BAD_HMAC) {
-            set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                              "can't decrypt proxy token", mwk_func, 0);
-        } else {
-            set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
-        }
-        return MWK_ERROR;
-    }
-
-    /* make sure its a proxy-token */
-    tt = mwk_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwk_func, NULL);
-    if ((tt == NULL) || (strcmp(tt, WA_TT_WEBKDC_PROXY) != 0)) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "not a webkdc-proxy token", mwk_func, 1);
-        goto cleanup;
-    }
-
-    /* pull out proxy-data key */
-    status = webauth_attr_list_find(alist, WA_TK_PROXY_DATA, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing proxy data", mwk_func, 1);
-        goto cleanup;
-    }
-    pt->proxy_data_len = alist->attrs[i].length;
-    pt->proxy_data = apr_palloc(rc->r->pool, pt->proxy_data_len);
-    memcpy(pt->proxy_data, alist->attrs[i].value, pt->proxy_data_len);
-
-    /* pull out subject */
-    status = webauth_attr_list_find(alist, WA_TK_SUBJECT, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing subject", mwk_func, 1);
-        goto cleanup;
-    }
-    pt->subject = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    /* pull out proxy type */
-    status = webauth_attr_list_find(alist, WA_TK_PROXY_TYPE, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing proxy type", mwk_func, 1);
-        goto cleanup;
-    }
-    pt->proxy_type = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    /* pull out proxy subject */
-    status = webauth_attr_list_find(alist, WA_TK_PROXY_SUBJECT, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing proxy subject type", mwk_func, 1);
-        goto cleanup;
-    }
-    pt->proxy_subject = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    /* pull out expiration */
-    status = webauth_attr_list_get_time(alist, WA_TK_EXPIRATION_TIME,
-                                        &pt->expiration, WA_F_NONE);
-    if (status != WA_ERR_NONE) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing expiration", mwk_func, 1);
-        goto cleanup;
-    }
-
-    /* pull out creation */
-    status = webauth_attr_list_get_time(alist, WA_TK_CREATION_TIME,
-                                        &pt->creation, WA_F_NONE);
-    if (status != WA_ERR_NONE) {
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID,
-                          "missing creation", mwk_func, 1);
-        goto cleanup;
-    }
-
-    ms = MWK_OK;
-
- cleanup:
-    webauth_attr_list_free(alist);
-    return ms;
-}
-
-
-/*
- * parse a login-token, which should be base64-encoded.
- * return 1 on success, 0 on error.
- * logs all errors and generates errorResponse if need be.
- */
-static enum mwk_status
-parse_login_token(MWK_REQ_CTXT *rc, char *token,
-                     MWK_LOGIN_TOKEN *lt)
-{
-    WEBAUTH_ATTR_LIST *alist;
-    size_t blen;
-    ssize_t i;
-    int status;
-    enum mwk_status ms;
-    const char *tt;
-    static const char *mwk_func = "parse_login_token";
-
-    if (token == NULL) {
-        return set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                                 "login token is NULL", mwk_func, 1);
-    }
-
-    blen = apr_base64_decode(token, token);
-    status = WA_ERR_NONE;
-    ms = MWK_ERROR;
-
-    /* parse the token, with a TTL */
-
-
-    if (rc->sconf->ring == NULL) {
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
-                                 mwk_func, 1);
-    }
-
-    status = webauth_token_parse(token, blen,
-                                 rc->sconf->token_max_ttl,
-                                 rc->sconf->ring, &alist);
-
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_token_parse", NULL);
-        if (status == WA_ERR_TOKEN_STALE) {
-            set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_STALE,
-                              "login token was stale", mwk_func, 0);
-        } else if (status == WA_ERR_BAD_HMAC) {
-            set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                              "can't decrypt login token", mwk_func, 0);
-        } else {
-            set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
-        }
-        return MWK_ERROR;
-    }
-
-    /* make sure its a login-token */
-    tt = mwk_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwk_func, NULL);
-    if ((tt == NULL) || (strcmp(tt, WA_TT_LOGIN) != 0)) {
-        set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                          "not a login token", mwk_func, 1);
-        goto cleanup;
-    }
-
-    /* pull out username */
-    status = webauth_attr_list_find(alist, WA_TK_USERNAME, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                          "missing username", mwk_func, 1);
-        goto cleanup;
-    }
-    lt->username = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    /* pull out password */
-    status = webauth_attr_list_find(alist, WA_TK_PASSWORD, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_LOGIN_TOKEN_INVALID,
-                          "missing password", mwk_func, 1);
-        goto cleanup;
-    }
-    lt->password = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-    ms = MWK_OK;
-
- cleanup:
-    webauth_attr_list_free(alist);
-    return ms;
-}
-
-/*
- * parse a <requestToken> from a POST, which should be base64-encoded.
- * return 1 on success, 0 on error.
- * logs all errors and generates errorResponse if need be.
- */
-static enum mwk_status
-parse_request_token(MWK_REQ_CTXT *rc,
-                    char *token,
-                    MWK_SERVICE_TOKEN *st,
-                    MWK_REQUEST_TOKEN *rt,
-                    int cmd_only)
-{
-    WEBAUTH_ATTR_LIST *alist;
-    size_t blen;
-    int status;
-    ssize_t i;
-    enum mwk_status ms;
-    const char *tt;
-    static const char *mwk_func = "parse_xml_request_token";
-
-    if (token == NULL) {
-        return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                                 "request token is NULL", mwk_func, 1);
-    }
-
-    blen = apr_base64_decode(token, token);
-
-    ms = MWK_ERROR;
-
-    /* parse the token, use TTL  */
-    status = webauth_token_parse_with_key(token, blen,
-                                          rc->sconf->token_max_ttl,
-                                          &st->key, &alist);
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL,
-                              "parse_xml_request_token",
-                              "webauth_token_parse", NULL);
-        if (status == WA_ERR_TOKEN_STALE) {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
-                              "request token was stale", mwk_func, 0);
-        } else if (status == WA_ERR_BAD_HMAC) {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "can't decrypt request token", mwk_func, 0);
-        } else {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "error parsing token", mwk_func, 0);
-        }
-        return MWK_ERROR;
-    }
-
-    /* make sure its a request-token */
-    tt = mwk_get_str_attr(alist, WA_TK_TOKEN_TYPE, rc->r, mwk_func, NULL);
-    if ((tt == NULL) || (strcmp(tt, WA_TT_REQUEST) != 0)) {
-        return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                                 "not a request token", mwk_func, 1);
-    }
-
-    if (cmd_only) {
-        /* pull out command */
-        status = webauth_attr_list_find(alist, WA_TK_COMMAND, &i);
-        if (i == -1) {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "missing command", mwk_func, 1);
-            goto cleanup;
-        }
-        rt->cmd = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-        ms = MWK_OK;
-        goto cleanup;
-    }
-
-    /* else expecting full request-token */
-
-    /* pull out optional WA_TK_APP_STATE */
-    status = webauth_attr_list_find(alist, WA_TK_APP_STATE, &i);
-    if (i != -1) {
-        rt->app_state_len = alist->attrs[i].length;
-        rt->app_state = apr_palloc(rc->r->pool, rt->app_state_len);
-        memcpy(rt->app_state, alist->attrs[i].value, rt->app_state_len);
-    } else {
-        rt->app_state_len = 0;
-        rt->app_state = NULL;
-    }
-
-    /* pull out return-url */
-    status = webauth_attr_list_find(alist, WA_TK_RETURN_URL, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                          "missing return url", mwk_func, 1);
-        goto cleanup;
-    }
-    rt->return_url = apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    /* pull out request-options, they are optional */
-    status = webauth_attr_list_find(alist, WA_TK_REQUEST_OPTIONS, &i);
-    if (i == -1) {
-        rt->request_options = "";
-    } else {
-        rt->request_options =
-            apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-    }
-
-    /* pull out requested-token-type */
-    status = webauth_attr_list_find(alist, WA_TK_REQUESTED_TOKEN_TYPE, &i);
-    if (i == -1) {
-        set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                          "missing requested token type", mwk_func, 1);
-        goto cleanup;
-    }
-
-    rt->requested_token_type =
-        apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-
-    if (strcmp(rt->requested_token_type, "id") == 0) {
-        /* pull out subject-auth-type */
-        status = webauth_attr_list_find(alist, WA_TK_SUBJECT_AUTH, &i);
-        if (i == -1) {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "missing subject auth type", mwk_func, 1);
-            goto cleanup;
-        }
-
-        rt->u.subject_auth_type =
-            apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-    } else if (strcmp(rt->requested_token_type, "proxy") == 0) {
-        /* pull out proxy-type */
-        status = webauth_attr_list_find(alist, WA_TK_PROXY_TYPE, &i);
-        if (i == -1) {
-            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
-                              "missing proxy type", mwk_func, 1);
-            goto cleanup;
-        }
-
-        rt->u.proxy_type =
-            apr_pstrdup(rc->r->pool, (char*)alist->attrs[i].value);
-    } else {
-        char *msg = apr_psprintf(rc->r->pool,
-                                 "unknown requested-token-typee: %s",
-                                 rt->requested_token_type);
-        set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID, msg,
-                          mwk_func, 1);
-        goto cleanup;
-    }
-
-    ms = MWK_OK;
-
- cleanup:
-    webauth_attr_list_free(alist);
-    return ms;
 }
 
 /*
@@ -807,6 +250,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                           const char **req_subject_out)
 {
     int status;
+    struct webauth_token *data;
     static const char*mwk_func = "parse_requesterCredential";
     const char *at = get_attr_value(rc, e, "type",  1, mwk_func);
 
@@ -821,14 +265,32 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (strcmp(at, "service") == 0) {
         char *token = get_elem_text(rc, e, mwk_func);
 
-        if (token == NULL) {
+        if (token == NULL)
             return MWK_ERROR;
-        }
-
-        if (!parse_service_token(rc, token, &req_cred->u.st)) {
+        if (rc->sconf->ring == NULL)
+            return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
+                                     mwk_func, true);
+        status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
+                                      rc->sconf->ring, &data);
+        if (status != WA_ERR_NONE) {
+            mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                                  "webauth_token_decode", NULL);
+            if (status == WA_ERR_TOKEN_EXPIRED) {
+                set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
+                                  "service token was expired",
+                                  mwk_func, false);
+            } else if (status == WA_ERR_BAD_HMAC) {
+                set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                                  "can't decrypt service token", mwk_func,
+                                  false);
+            } else {
+                set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                                  "error parsing token", mwk_func, false);
+            }
             return MWK_ERROR;
         }
         /* pull out subject from service token */
+        req_cred->u.st = data->token.webkdc_service;
         req_cred->subject = req_cred->u.st.subject;
     } else if (strcmp(at, "krb5") == 0) {
         const char *req;
@@ -838,7 +300,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         /* mwk_get_webauth_krb5_ctxt already logged error */
         if (ctxt == NULL) {
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                     "server failure", mwk_func, 0);
+                                     "server failure", mwk_func, false);
         }
 
         req = get_elem_text(rc, e, mwk_func);
@@ -859,7 +321,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                                   "webauth_krb5_rd_req", NULL);
             set_errorResponse(rc, WA_PEC_REQUESTER_KRB5_CRED_INVALID, msg,
-                              mwk_func, 1);
+                              mwk_func, true);
             webauth_krb5_free(ctxt);
             return MWK_ERROR;
         }
@@ -873,7 +335,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "unknown <requesterCredential> type: %s",
                                  at);
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 msg, mwk_func, 1);
+                                 msg, mwk_func, true);
     }
 
     /*
@@ -882,6 +344,78 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     */
     *req_subject_out = req_cred->subject;
+    return MWK_OK;
+}
+
+
+/*
+ * parse a proxy-token, which should be base64-encoded.
+ * logs all errors and generates errorResponse if need be.
+ */
+static enum mwk_status
+parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
+                         struct webauth_token_webkdc_proxy *pt)
+{
+    static const char *mwk_func = "parse_webkdc_proxy_token";
+    int status;
+    struct webauth_token *data;
+
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
+                                 mwk_func, true);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_PROXY, token,
+                                  rc->sconf->ring, &data);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_decode", NULL);
+        if (status == WA_ERR_TOKEN_EXPIRED) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
+                              "proxy token was expired",
+                              mwk_func, false);
+        } else if (status == WA_ERR_BAD_HMAC) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "can't decrypt proxy token", mwk_func, false);
+        } else {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "error parsing token", mwk_func, false);
+        }
+        return MWK_ERROR;
+    }
+    *pt = data->token.webkdc_proxy;
+    return MWK_OK;
+}
+
+
+static enum mwk_status
+parse_login_token(MWK_REQ_CTXT *rc, char *token,
+                  struct webauth_token_login *lt)
+{
+    static const char *mwk_func = "parse_login_token";
+    int status;
+    struct webauth_token *data;
+
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
+                                 mwk_func, true);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_LOGIN, token,
+                                  rc->sconf->ring, &data);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_decode", NULL);
+        if (status == WA_ERR_TOKEN_EXPIRED) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
+                              "login token was expired",
+                              mwk_func, false);
+        } else if (status == WA_ERR_BAD_HMAC) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "can't decrypt login token", mwk_func, false);
+        } else {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "error parsing token", mwk_func, false);
+        }
+        return MWK_ERROR;
+    }
+    *lt = data->token.login;
     return MWK_OK;
 }
 
@@ -958,7 +492,75 @@ parse_subjectCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "unknown <subjectCredential> type: %s",
                                  at);
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
+    }
+    return MWK_OK;
+}
+
+static enum mwk_status
+make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
+           const char *mwk_func)
+{
+    int status;
+
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "no keyring", mwk_func, true);
+    status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, token);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_create", NULL);
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "token create failed", mwk_func, false);
+    }
+    return MWK_OK;
+}
+
+static enum mwk_status
+make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
+               const void **token, size_t *length, const char *mwk_func)
+{
+    int status;
+    WEBAUTH_KEYRING *ring;
+
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "no keyring", mwk_func, true);
+    ring = rc->sconf->ring;
+    status = webauth_token_encode_raw(rc->ctx, data, ring, token, length);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_create", NULL);
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "token create failed", mwk_func, false);
+    }
+    return MWK_OK;
+}
+
+/* FIXME: The key argument here is an ugly hack. */
+static enum mwk_status
+make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
+                    struct webauth_token *data, const char **token,
+                    const char *mwk_func)
+{
+    int status;
+    WEBAUTH_KEYRING *ring;
+    WEBAUTH_KEY wkey;
+
+    wkey.type = WA_AES_KEY;
+    wkey.length = key_len;
+    wkey.data = (void *) key;
+    status = webauth_keyring_from_key(rc->ctx, &wkey, &ring);
+    if (status != WA_ERR_NONE)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "cannot create keyring from key",
+                                 mwk_func, true);
+    status = webauth_token_encode(rc->ctx, data, ring, token);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_create", NULL);
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "token create failed", mwk_func, false);
     }
     return MWK_OK;
 }
@@ -973,8 +575,8 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     int status;
     size_t len;
     enum mwk_status ms;
-    time_t creation, expiration;
-    WEBAUTH_ATTR_LIST *alist;
+    time_t expiration;
+    struct webauth_token token;
 
     ms = MWK_ERROR;
 
@@ -983,13 +585,13 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create service-tokens with "
                                  "<requesterCredential> of type krb",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     if (!mwk_has_service_access(rc, req_cred->subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a service token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     status = webauth_random_key(session_key, sizeof(session_key));
@@ -998,32 +600,24 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_random_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "can't generate session key", mwk_func, 0);
+                                 "can't generate session key", mwk_func,
+                                 false);
     }
 
-    time(&creation);
-    expiration = creation + rc->sconf->service_token_lifetime;
-
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL) {
-        return MWK_ERROR;
-    }
-
-    SET_TOKEN_TYPE(WA_TT_WEBKDC_SERVICE);
-    SET_SESSION_KEY(session_key, sizeof(session_key));
-    SET_SUBJECT(req_cred->subject);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
-
-    ms = make_token(rc, alist, creation, &rtoken->token_data, &len, 1,
-                    mwk_func);
-
-    webauth_attr_list_free(alist);
+    memset(&token, 0, sizeof(token));
+    expiration = time(NULL) + rc->sconf->service_lifetime;
+    token.type = WA_TOKEN_WEBKDC_SERVICE;
+    token.token.webkdc_service.subject = req_cred->subject;
+    token.token.webkdc_service.session_key = session_key;
+    token.token.webkdc_service.session_key_len = sizeof(session_key);
+    token.token.webkdc_service.expiration = expiration;
+    ms = make_token(rc, &token, &rtoken->token_data, mwk_func);
 
     if (!ms)
         return MWK_ERROR;
 
-    rtoken->expires = apr_psprintf(rc->r->pool, "%d", (int) expiration);
+    rtoken->expires = apr_psprintf(rc->r->pool, "%lu",
+                                   (unsigned long) expiration);
 
     len = sizeof(session_key);
     rtoken->session_key = apr_palloc(rc->r->pool, apr_base64_encode_len(len));
@@ -1042,14 +636,14 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
 static enum mwk_status
 get_krb5_sad(MWK_REQ_CTXT *rc,
              MWK_REQUESTER_CREDENTIAL *req_cred,
-             MWK_PROXY_TOKEN *sub_pt,
+             struct webauth_token_webkdc_proxy *sub_pt,
              char **sad,
              size_t *sad_len,
              const char *mwk_func)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
     int status;
-    char *server_principal;
+    const char *server_principal;
     char *temp_sad;
     enum mwk_status ms;
 
@@ -1058,11 +652,11 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
         /* mwk_get_webauth_krb5_ctxt already logged error */
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                       "server failure (webauth_krb5_new)",
-                                      mwk_func, 0);
+                                      mwk_func, false);
     }
 
-    status = webauth_krb5_init_via_cred(ctxt, sub_pt->proxy_data,
-                                        sub_pt->proxy_data_len, NULL);
+    status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
+                                        NULL);
 
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
@@ -1075,7 +669,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
          *        or a server-failure.
          */
         return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     server_principal = req_cred->u.st.subject;
@@ -1092,7 +686,7 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
          */
-        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, true);
         ms = MWK_ERROR;
     } else {
         *sad = apr_palloc(rc->r->pool, *sad_len);
@@ -1109,40 +703,6 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
 /*
  */
 static enum mwk_status
-create_error_token_from_req(MWK_REQ_CTXT *rc,
-                            int error_code,
-                            const char *error_message,
-                            MWK_REQUESTER_CREDENTIAL *req_cred,
-                            MWK_RETURNED_TOKEN *rtoken)
-{
-    static const char *mwk_func="create_error_token_from_req";
-    WEBAUTH_ATTR_LIST *alist;
-    time_t creation;
-    enum mwk_status ms;
-    size_t tlen;
-
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        return MWK_ERROR;
-
-    time(&creation);
-
-    SET_TOKEN_TYPE(WA_TT_ERROR);
-    SET_CREATION_TIME(creation);
-    SET_ERROR_CODE(apr_psprintf(rc->r->pool, "%d", error_code));
-    SET_ERROR_MESSAGE(error_message);
-
-    ms = make_token_with_key(rc, &req_cred->u.st.key,
-                             alist, creation,
-                             (char**)&rtoken->token_data,
-                             &tlen, 1, mwk_func);
-    webauth_attr_list_free(alist);
-    return ms;
-}
-
-/*
- */
-static enum mwk_status
 create_id_token_from_req(MWK_REQ_CTXT *rc,
                          const char *auth_type,
                          MWK_REQUESTER_CREDENTIAL *req_cred,
@@ -1150,12 +710,11 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                          MWK_RETURNED_TOKEN *rtoken,
                          const char **subject_out)
 {
-    static const char *mwk_func="create_id_token_from_req";
-    size_t tlen, sad_len;
+    static const char *mwk_func = "create_id_token_from_req";
+    size_t sad_len;
     enum mwk_status ms;
-    time_t creation, expiration;
-    WEBAUTH_ATTR_LIST *alist;
-    MWK_PROXY_TOKEN *sub_pt;
+    struct webauth_token_webkdc_proxy *sub_pt;
+    struct webauth_token token;
     char *sad;
 
     ms = MWK_ERROR;
@@ -1164,16 +723,15 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     if (auth_type == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "auth type is NULL",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* only create id tokens from service creds */
     if (strcmp(req_cred->type, "service") != 0) {
-
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create id-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -1181,14 +739,14 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create id-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* check access */
     if (!mwk_has_id_access(rc, req_cred->subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get an id token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     sad = NULL;
@@ -1199,7 +757,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
             sub_pt = find_proxy_token(rc, sub_cred, "remuser", mwk_func, 0);
         if (sub_pt == NULL) {
             set_errorResponse(rc, WA_PEC_PROXY_TOKEN_REQUIRED,
-                              "need a proxy-token", mwk_func, 1);
+                              "need a proxy-token", mwk_func, true);
             return MWK_ERROR;
         }
     } else if (strcmp(auth_type, "krb5") == 0) {
@@ -1214,7 +772,8 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     } else {
         char *msg = apr_psprintf(rc->r->pool, "invalid authenticator type %s",
                                  auth_type);
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func,
+                                 true);
     }
 
     /* check access again */
@@ -1222,40 +781,40 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
-
-
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        return MWK_ERROR;
-
-    time(&creation);
-    /* expiration comes from expiration of proxy-token */
-    expiration = sub_pt->expiration;
-
-    SET_TOKEN_TYPE(WA_TT_ID);
-    SET_SUBJECT_AUTH(auth_type);
-    SET_SUBJECT(sub_pt->subject);
+    /*
+     * Expiration, initial credentials, and level of assurance come from the
+     * corresponding fields of the proxy-token.
+     */
+    memset(&token, 0, sizeof(token));
+    token.type = WA_TOKEN_ID;
+    token.token.id.subject = sub_pt->subject;
+    token.token.id.auth = auth_type;
     if (sad != NULL) {
-        SET_SUBJECT_AUTH_DATA(sad, sad_len);
+        token.token.id.auth_data = sad;
+        token.token.id.auth_data_len = sad_len;
     }
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
+    token.token.id.expiration = sub_pt->expiration;
+    if (sub_pt->initial_factors != NULL)
+        token.token.id.initial_factors = sub_pt->initial_factors;
+    if (sub_pt->loa > 0)
+        token.token.id.loa = sub_pt->loa;
 
-    ms = make_token_with_key(rc, &req_cred->u.st.key,
-                             alist, creation,
-                             (char**)&rtoken->token_data,
-                             &tlen, 1, mwk_func);
-    webauth_attr_list_free(alist);
+    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
+    token.token.id.session_factors = "u";
+
+    ms = make_token_with_key(rc, req_cred->u.st.session_key,
+                             req_cred->u.st.session_key_len, &token,
+                             &rtoken->token_data, mwk_func);
 
     rtoken->subject = sub_pt->subject;
     rtoken->info =
         apr_pstrcat(rc->r->pool, " type=id sa=", auth_type, NULL);
 
     if (subject_out)
-        *subject_out = (char*) rtoken->subject;
+        *subject_out = rtoken->subject;
 
     return ms;
 }
@@ -1269,13 +828,12 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                MWK_SUBJECT_CREDENTIAL *sub_cred,
                                MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_proxy_token_from_req";
-    size_t tlen, wkdc_len;
+    static const char *mwk_func = "create_proxy_token_from_req";
+    size_t wkdc_len;
     enum mwk_status ms;
-    time_t creation, expiration;
-    WEBAUTH_ATTR_LIST *alist;
-    MWK_PROXY_TOKEN *sub_pt;
-    char *wkdc_token;
+    struct webauth_token_webkdc_proxy *sub_pt;
+    struct webauth_token pt, token;
+    const void *wkdc_token;
 
     ms = MWK_ERROR;
 
@@ -1283,7 +841,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
     if (proxy_type == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "proxy type is NULL",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* only create proxy tokens from service creds */
@@ -1291,7 +849,7 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create proxy-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -1299,17 +857,17 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create proxy-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* check access */
     if (!mwk_has_proxy_access(rc, req_cred->subject, proxy_type)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
-    /* make sure we are creating a proxy-tyoken that has
+    /* make sure we are creating a proxy-token that has
        the same type as the proxy-token we are using to create it */
     sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func, 1);
     if (sub_pt == NULL)
@@ -1320,55 +878,42 @@ create_proxy_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* create the webkdc-proxy-token first, using existing proxy-token */
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        return MWK_ERROR;
-
-    time(&creation);
-
-    /* expiration comes from expiration of proxy-token */
-    expiration =  sub_pt->expiration;
-
-    /* make sure to use subject from service-token for new proxy-subject */
-    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
-    SET_PROXY_TYPE(sub_pt->proxy_type);
-    SET_PROXY_SUBJECT(req_cred->u.st.subject);
-    SET_SUBJECT(sub_pt->subject);
-    SET_PROXY_DATA(sub_pt->proxy_data, sub_pt->proxy_data_len);
-
-    ms = make_token(rc, alist, creation, &wkdc_token, &wkdc_len, 0, mwk_func);
-    webauth_attr_list_free(alist);
-
+    memset(&pt, 0, sizeof(pt));
+    pt.type = WA_TOKEN_WEBKDC_PROXY;
+    pt.token.webkdc_proxy = *sub_pt;
+    pt.token.webkdc_proxy.creation = 0;
+    ms = make_token_raw(rc, &pt, &wkdc_token, &wkdc_len, mwk_func);
     if (!ms)
         return MWK_ERROR;
 
     /* now create the proxy-token */
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        return MWK_ERROR;
+    memset(&token, 0, sizeof(token));
+    token.type = WA_TOKEN_PROXY;
+    token.token.proxy.subject = sub_pt->subject;
+    token.token.proxy.type = sub_pt->proxy_type;
+    token.token.proxy.webkdc_proxy = wkdc_token;
+    token.token.proxy.webkdc_proxy_len = wkdc_len;
+    token.token.proxy.expiration = sub_pt->expiration;
+    if (sub_pt->initial_factors != NULL)
+        token.token.proxy.initial_factors = sub_pt->initial_factors;
+    if (sub_pt->loa > 0)
+        token.token.proxy.loa = sub_pt->loa;
 
-    SET_TOKEN_TYPE(WA_TT_PROXY);
-    SET_PROXY_TYPE(sub_pt->proxy_type);
-    SET_SUBJECT(sub_pt->subject);
-    SET_WEBKDC_TOKEN(wkdc_token, wkdc_len);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
+    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
+    token.token.proxy.session_factors = "u";
+
+    ms = make_token_with_key(rc, req_cred->u.st.session_key,
+                             req_cred->u.st.session_key_len, &token,
+                             &rtoken->token_data, mwk_func);
 
     rtoken->subject = sub_pt->subject;
     rtoken->info =
         apr_pstrcat(rc->r->pool, " type=proxy pt=", proxy_type, NULL);
 
-    ms = make_token_with_key(rc, &req_cred->u.st.key,
-                             alist, creation,
-                             (char**)&rtoken->token_data,
-                             &tlen, 1, mwk_func);
-    webauth_attr_list_free(alist);
     return ms;
 }
 
@@ -1381,15 +926,15 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                            MWK_SUBJECT_CREDENTIAL *sub_cred,
                            MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_cred_token_from_req";
-    size_t tlen, ticket_len;
+    static const char *mwk_func = "create_cred_token_from_req";
+    size_t ticket_len;
     int status;
-    time_t creation, expiration, ticket_expiration;
-    WEBAUTH_ATTR_LIST *alist;
+    time_t expiration, ticket_expiration;
     apr_xml_elem *credential_type, *server_principal;
     char *ct, *sp;
     WEBAUTH_KRB5_CTXT *ctxt;
-    MWK_PROXY_TOKEN *sub_pt;
+    struct webauth_token_webkdc_proxy *sub_pt;
+    struct webauth_token token;
     char *ticket;
     enum mwk_status ms;
 
@@ -1398,7 +943,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create cred-tokens with "
                                  "<requesterCredential> of type service",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we have a subject cred with a type='proxy' */
@@ -1406,26 +951,19 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "can only create cred-tokens with "
                                  "<subjectCredential> of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     credential_type = get_element(rc, e, "credentialType", 1, mwk_func);
-
     if (credential_type == NULL)
         return MWK_ERROR;
-
     ct = get_elem_text(rc, credential_type, mwk_func);
-
     if (ct == NULL)
         return MWK_ERROR;
-
     server_principal = get_element(rc, e, "serverPrincipal", 1, mwk_func);
-
     if (server_principal == NULL)
         return MWK_ERROR;
-
     sp = get_elem_text(rc, server_principal, mwk_func);
-
     if (sp == NULL)
         return MWK_ERROR;
 
@@ -1433,7 +971,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     if (!mwk_has_cred_access(rc, req_cred->subject, ct, sp)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get credential",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we are creating a cred-token that has
@@ -1447,19 +985,17 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                  sub_pt->proxy_subject)) {
         return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to use proxy token",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* try to get the credentials  */
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     if (ctxt == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                      "server failure", mwk_func, 0);
+                                      "server failure", mwk_func, false);
     }
 
-    status = webauth_krb5_init_via_cred(ctxt,
-                                        sub_pt->proxy_data,
-                                        sub_pt->proxy_data_len,
+    status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
                                         NULL);
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r,
@@ -1472,7 +1008,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
          *        or a server-failure.
          */
         return set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* now try and export a ticket */
@@ -1489,44 +1025,91 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
                                               NULL);
         webauth_krb5_free(ctxt);
         return set_errorResponse(rc, WA_PEC_GET_CRED_FAILURE,
-                                 msg, mwk_func, 1);
+                                 msg, mwk_func, true);
     }
 
     webauth_krb5_free(ctxt);
 
     /* now create the cred-token */
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        return MWK_ERROR;
+    if (ticket_expiration < sub_pt->expiration)
+        expiration = ticket_expiration;
+    else
+        expiration = sub_pt->expiration;
+    memset(&token, 0, sizeof(token));
+    token.type = WA_TOKEN_CRED;
+    token.token.cred.subject = sub_pt->subject;
+    token.token.cred.type = ct;
+    token.token.cred.service = sp;
+    token.token.cred.data = ticket;
+    token.token.cred.data_len = ticket_len;
+    token.token.cred.expiration = expiration;
 
-    time(&creation);
-
-    /* expiration comes from min of ticket_expiration and proxy-token's
-     * expiration.
-     */
-    expiration = (ticket_expiration < sub_pt->expiration) ?
-        ticket_expiration : sub_pt->expiration;
-
-    SET_TOKEN_TYPE(WA_TT_CRED);
-    SET_CRED_TYPE(ct);
-    SET_CRED_SERVER(sp);
-    SET_CRED_DATA(ticket, ticket_len);
-    SET_SUBJECT(sub_pt->subject);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(expiration);
+    ms = make_token_with_key(rc, req_cred->u.st.session_key,
+                             req_cred->u.st.session_key_len, &token,
+                             &rtoken->token_data, mwk_func);
 
     rtoken->subject = sub_pt->subject;
-
     rtoken->info =
         apr_pstrcat(rc->r->pool, " type=cred crt=", ct, " crs=", sp,NULL);
 
-    ms = make_token_with_key(rc, &req_cred->u.st.key,
-                             alist, creation,
-                             (char**)&rtoken->token_data,
-                             &tlen, 1, mwk_func);
     free(ticket);
-    webauth_attr_list_free(alist);
     return ms;
+}
+
+/*
+ * parse a <requestToken> from a POST, which should be base64-encoded.
+ * return 1 on success, 0 on error.
+ * logs all errors and generates errorResponse if need be.
+ */
+static enum mwk_status
+parse_request_token(MWK_REQ_CTXT *rc,
+                    char *token,
+                    struct webauth_token_webkdc_service *st,
+                    struct webauth_token_request **rt)
+{
+    int status;
+    struct webauth_token *data;
+    WEBAUTH_KEY key;
+    WEBAUTH_KEYRING *ring;
+    time_t expiration;
+    static const char *mwk_func = "parse_xml_request_token";
+
+    if (token == NULL) {
+        return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
+                                 "request token is NULL", mwk_func, true);
+    }
+
+    /* FIXME: This is a horrible hack. */
+    key.type = WA_AES_KEY;
+    key.length = st->session_key_len;
+    key.data = (void *) st->session_key;
+    status = webauth_keyring_from_key(rc->ctx, &key, &ring);
+    if (status != WA_ERR_NONE)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "cannot generate keyring", mwk_func, true);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_REQUEST, token, ring,
+                                  &data);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL,
+                              "parse_xml_request_token",
+                              "webauth_token_parse", NULL);
+        if (status == WA_ERR_BAD_HMAC) {
+            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
+                              "can't decrypt request token", mwk_func, false);
+        } else {
+            set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
+                              "error parsing token", mwk_func, false);
+        }
+        return MWK_ERROR;
+    }
+
+    /* Copy the token and do some additional checks. */
+    *rt = &data->token.request;
+    expiration = (*rt)->creation + rc->sconf->token_max_ttl;
+    if (expiration < time(NULL))
+        set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
+                          "request token was stale", mwk_func, false);
+    return MWK_OK;
 }
 
 static enum mwk_status
@@ -1538,7 +1121,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_getTokensRequest";
     const char *mid = NULL;
     char *request_token;
-    MWK_REQUEST_TOKEN req_token;
+    struct webauth_token_request *req_token;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;
@@ -1585,21 +1168,21 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (tokens == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <tokens> in getTokensRequest",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found requesterCredential */
     if (!req_cred_parsed) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                           "missing <requesterCredential> in getTokensRequest",
-                          mwk_func, 1);
+                          mwk_func, true);
     }
 
     /* make sure sub_cred looks ok if its present */
     if (sub_cred_parsed && strcmp(sub_cred.type, "proxy") != 0) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "<subjectCredential> should be of type proxy",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* if req_cred is of type "service", compare command name */
@@ -1609,19 +1192,20 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         if (request_token == NULL) {
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                    "missing <requestToken>",
-                                   mwk_func, 1);
+                                   mwk_func, true);
         }
         /* parse request_token */
-        if (!parse_request_token(rc, request_token,
-                                    &req_cred.u.st, &req_token, 1)) {
+        if (!parse_request_token(rc, request_token, &req_cred.u.st,
+                                 &req_token)) {
             return MWK_ERROR;
         }
 
-        if (strcmp(req_token.cmd, "getTokensRequest") != 0) {
+        if (req_token->command == NULL
+            || strcmp(req_token->command, "getTokensRequest") != 0) {
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "xml command in request-token "
                                      "doesn't match",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
     }
 
@@ -1638,16 +1222,14 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         if (num_tokens == MAX_TOKENS_RETURNED) {
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "too many tokens requested",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
 
         rtokens[num_tokens].session_key = NULL;
         rtokens[num_tokens].expires = NULL;
         rtokens[num_tokens].token_data = NULL;
         rtokens[num_tokens].subject = "<unknown>";
-        rtokens[num_tokens].id = get_attr_value(rc, token, "id",
-                                                   0, mwk_func);
-
+        rtokens[num_tokens].id = get_attr_value(rc, token, "id", 0, mwk_func);
         rtokens[num_tokens].info = "";
 
         tt = get_attr_value(rc, token, "type", 1, mwk_func);
@@ -1661,7 +1243,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                      "missing <subjectCredential> "
                                      "in getTokensRequest",
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
 
         if (strcmp(tt, "service") == 0) {
@@ -1711,7 +1293,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             char *msg = apr_psprintf(rc->r->pool,
                                      "unknown token type: %s", tt);
             return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                     mwk_func, 1);
+                                     mwk_func, true);
         }
         num_tokens++;
     }
@@ -1783,7 +1365,7 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
     if (status != WA_ERR_NONE) {
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_get_realm", NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
 
@@ -1800,7 +1382,7 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
     if (okay == 0) {
         char *msg = apr_psprintf(rc->r->pool, "realm %s is not permitted",
                                  realm);
-        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, true);
         free(realm);
         return MWK_ERROR;
     }
@@ -1848,7 +1430,8 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
                 char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                                       "webauth_krb5_get_realm",
                                                       NULL);
-                set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+                set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func,
+                                  true);
                 return MWK_ERROR;
             }
             do {
@@ -1868,7 +1451,7 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth_krb5_get_principal",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
     *subject_out = apr_pstrdup(rc->r->pool, subject);
@@ -1876,213 +1459,195 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
     return MWK_OK;
 }
 
+
 /*
- * attempt to login. If successful, fill in both sub_cred and rtokens and
- * return MWK_OK. If unsuccessful, generate an errorResponse/log and return
- * MWK_ERROR.
- *
- * This is the point at which different types of authentication could be
- * plugged in, and the point at which we should create all the different types
- * of proxy-tokens we'll be needing at login time.
+ * Parses a <requesterCredential> XML element containing a service token and
+ * stores it in the provided webauth_webkdc_login_request struct after
+ * decoding it and confirming that it's the right type.  Use
+ * parse_requesterCredential to support either service or krb5 credentials.
  */
 static enum mwk_status
-mwk_do_login(MWK_REQ_CTXT *rc,
-             MWK_LOGIN_TOKEN *lt,
-             MWK_SUBJECT_CREDENTIAL *sub_cred,
-             MWK_RETURNED_PROXY_TOKEN rtokens[],
-             size_t *num_rtokens,
-             const char **subject_out)
+parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                    struct webauth_webkdc_login_request *request)
 {
-    static const char*mwk_func = "mwk_do_login";
-    WEBAUTH_KRB5_CTXT *ctxt;
-    const char *subject;
-    char *server_principal, *temp;
+    static const char *mwk_func = "parse_service_token";
     int status;
-    size_t tgt_len, len;
-    enum mwk_status ms;
-    time_t tgt_expiration, creation;
-    char *tgt;
-    MWK_PROXY_TOKEN *pt;
-    WEBAUTH_ATTR_LIST *alist;
+    struct webauth_token *data;
+    const char *at = get_attr_value(rc, e, "type", 1, mwk_func);
+    char *msg, *token;
 
-    *subject_out = NULL;
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
+                                 mwk_func, true);
 
-    ms = MWK_ERROR;
-
-    ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
-    if (ctxt == NULL) {
-        /* mwk_get_webauth_krb5_ctxt already logged error */
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                      "server failure", mwk_func, 0);
+    /* Make sure that the provided token type is service. */
+    if (at == NULL)
+        return MWK_ERROR;
+    if (strcmp(at, "service") != 0) {
+        msg = apr_psprintf(rc->r->pool, "unknown <requesterCredential> type:"
+                           " %s", at);
+        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func,
+                                 true);
     }
 
-    status = webauth_krb5_init_via_password(ctxt,
-                                            lt->username,
-                                            lt->password,
-                                            NULL,
-                                            rc->sconf->keytab_path,
-                                            rc->sconf->keytab_principal,
-                                            NULL,
-                                            &server_principal);
-
-    if (status == WA_ERR_LOGIN_FAILED) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_LOGIN_FAILED, msg, mwk_func, 1);
-        goto cleanup;
-
-    } else if (status == WA_ERR_CREDS_EXPIRED) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_CREDS_EXPIRED, msg, mwk_func, 1);
-        goto cleanup;
-
-    } else if (status == WA_ERR_USER_REJECTED) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "mwk_do_login", NULL);
-        set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, 1);
-        goto cleanup;
-
-    } else if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth_krb5_init_via_password",
-                                              NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
-        goto cleanup;
-    }
-
-    /* copy server_principal to request pool */
-    temp = apr_pstrcat(rc->r->pool, "krb5:", server_principal, NULL);
-    free(server_principal);
-    server_principal = temp;
-
-    /* Check if the realm of the authenticated principal is permitted. */
-    if (realm_permitted(rc, ctxt, mwk_func) != MWK_OK)
-        goto cleanup;
-
-    /* get subject, attempt local-name conversion */
-    if (get_subject(rc, ctxt, &subject, mwk_func) != MWK_OK)
-        goto cleanup;
-    *subject_out = subject;
-
-    /* export TGT for webkdc-proxy-token */
-    status = webauth_krb5_export_tgt(ctxt, &tgt, &tgt_len, &tgt_expiration);
+    token = get_elem_text(rc, e, mwk_func);
+    if (token == NULL)
+        return MWK_ERROR;
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
+                                  rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "webauth_krb5_export_tgt",
-                                              NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
-        goto cleanup;
-    } else {
-        char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
-        memcpy(new_tgt, tgt, tgt_len);
-        free(tgt);
-        tgt = new_tgt;
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_token_decode", NULL);
+        if (status == WA_ERR_TOKEN_EXPIRED) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
+                              "service token was expired",
+                              mwk_func, false);
+        } else if (status == WA_ERR_BAD_HMAC) {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "can't decrypt service token", mwk_func,
+                              false);
+        } else {
+            set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_INVALID,
+                              "error parsing token", mwk_func, false);
+        }
+        return MWK_ERROR;
     }
-
-    /* we now have everything we need to create the webkdc-proy-token
-     * lets load up data in the sub_cred proxy token and use it
-     * to create a token we'll return.
-     *
-     * we've already copied all this stuff into a pool, so there is no
-     * need to copy again...
-     */
-
-    pt = &sub_cred->u.proxy.pt[0];
-
-    pt->proxy_type = "krb5";
-    /* pt->proxy_subject = server_principal;*/
-    pt->proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:",
-                                    server_principal, NULL);
-    pt->subject = subject;
-    pt->proxy_data = tgt;
-    pt->proxy_data_len = tgt_len;
-
-    time(&creation);
-
-    /* if ProxyTokenLifetime is non-zero, use the min of it
-       and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_lifetime) {
-        time_t pmax = creation + rc->sconf->proxy_token_lifetime;
-        pt->expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
-    } else {
-        pt->expiration = tgt_expiration;
-    }
-
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
-        goto cleanup;
-
-    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
-    SET_PROXY_SUBJECT(pt->proxy_subject);
-    SET_PROXY_TYPE(pt->proxy_type);
-    SET_SUBJECT(pt->subject);
-    SET_PROXY_DATA(tgt, tgt_len);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(pt->expiration);
-
-    ms = make_token(rc, alist, creation,
-                    (char**)&rtokens[0].token_data, &len, 1, mwk_func);
-    if (ms == MWK_OK) {
-        rtokens[0].type = pt->proxy_type;
-        *num_rtokens = 1;
-        sub_cred->u.proxy.num_proxy_tokens = 1;
-        /* make sure we fill in type! */
-        sub_cred->type = "proxy";
-    }
-
-    webauth_attr_list_free(alist);
-
- cleanup:
-
-    webauth_krb5_free(ctxt);
-    return ms;
+    request->service = &data->token.webkdc_service;
+    return MWK_OK;
 }
 
+
+/*
+ * Parse a <subjectCredential> XML element passed in to <requestTokenRequest>
+ * into a webauth_webkdc_login_request struct.  Use parse_subjectCredential
+ * for <getTokens> for right now.
+ */
 static enum mwk_status
-parse_requestInfo(MWK_REQ_CTXT *rc,
-                  apr_xml_elem *e, MWK_REQUEST_INFO *req_info)
+parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                         struct webauth_webkdc_login_request *request)
 {
+    static const char *mwk_func = "parse_subject_credentials";
+    apr_xml_elem *child;
+    apr_xml_attr *a;
+    char *data;
+    struct webauth_token *token;
+    struct webauth_token_webkdc_proxy *wkproxy;
+
+    if (request->creds == NULL)
+        request->creds = apr_array_make(rc->r->pool, 2,
+                                        sizeof(struct webauth_token *));
+
+    /*
+     * Just quietly ignore invalid webkdc-proxy tokens for right now.
+     *
+     * FIXME: Restore a facility for telling WebLogin to discard uninteresting
+     * webkdc-proxy tokens.
+     *
+     * FIXME: We're calling functions that get generic tokens and collapse
+     * them into the appropriate type, and then allocating a generic token and
+     * copying it back.  This is silly.  Restructure all this code.
+     */
+    for (child = e->first_child; child != NULL; child = child->next) {
+        if (strcmp(child->name, "proxyToken") == 0) {
+            data = get_elem_text(rc, child, mwk_func);
+            if (data == NULL)
+                return MWK_ERROR;
+            token = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
+            token->type = WA_TOKEN_WEBKDC_PROXY;
+            wkproxy = &token->token.webkdc_proxy;
+            if (!parse_webkdc_proxy_token(rc, data, wkproxy))
+                continue;
+            for (a = child->attr; a != NULL; a = a->next)
+                if (strcmp(a->name, "source") == 0) {
+                    wkproxy->session_factors = a->value;
+                    break;
+                }
+            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+        } else if (strcmp(child->name, "loginToken") == 0) {
+            data = get_elem_text(rc, child, mwk_func);
+            if (data == NULL)
+                return MWK_ERROR;
+            token = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
+            token->type = WA_TOKEN_LOGIN;
+            if (!parse_login_token(rc, data, &token->token.login))
+                return MWK_ERROR;
+            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+        } else {
+            unknown_element(rc, mwk_func, e->name, child->name);
+            return MWK_ERROR;
+        }
+    }
+    return MWK_OK;
+}
+
+
+static enum mwk_status
+parse_requestInfo(MWK_REQ_CTXT *rc, apr_xml_elem *e,
+                  struct webauth_webkdc_login_request *request)
+{
+    static const char *mwk_func = "parse_requestInfo";
     apr_xml_elem *ie;
-    static const char *mwk_func="parse_identInfo";
 
     for (ie = e->first_child; ie; ie = ie->next) {
         if (strcmp(ie->name, "localIpAddr") == 0) {
-            req_info->local_addr = get_elem_text(rc, ie, mwk_func);
-            if (req_info->local_addr == NULL)
+            request->local_ip = get_elem_text(rc, ie, mwk_func);
+            if (request->local_ip == NULL)
                 return MWK_ERROR;
         } else if (strcmp(ie->name, "localIpPort") == 0) {
-            req_info->local_port = get_elem_text(rc, ie, mwk_func);
-            if (req_info->local_port == NULL)
+            request->local_port = get_elem_text(rc, ie, mwk_func);
+            if (request->local_port == NULL)
                 return MWK_ERROR;
         } else if (strcmp(ie->name, "remoteIpAddr") == 0) {
-            req_info->remote_addr = get_elem_text(rc, ie, mwk_func);
-            if (req_info->remote_addr == NULL)
+            request->remote_ip = get_elem_text(rc, ie, mwk_func);
+            if (request->remote_ip == NULL)
                 return MWK_ERROR;
         } else if (strcmp(ie->name, "remoteIpPort") == 0) {
-            req_info->remote_port = get_elem_text(rc, ie, mwk_func);
-            if (req_info->remote_port == NULL)
+            request->remote_port = get_elem_text(rc, ie, mwk_func);
+            if (request->remote_port == NULL)
                 return MWK_ERROR;
         } else if (strcmp(ie->name, "remoteUser") == 0) {
-            req_info->remote_user = get_elem_text(rc, ie, mwk_func);
-            if (req_info->remote_user == NULL)
+            request->remote_user = get_elem_text(rc, ie, mwk_func);
+            if (request->remote_user == NULL)
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, ie->name);
             return MWK_ERROR;
         }
     }
-    if (req_info->remote_user == NULL
-        && (req_info->local_addr == NULL ||
-            req_info->local_port == NULL ||
-            req_info->remote_addr == NULL ||
-            req_info->remote_port == NULL)) {
+    if (request->remote_user == NULL
+        && (request->local_ip == NULL ||
+            request->local_port == NULL ||
+            request->remote_ip == NULL ||
+            request->remote_port == NULL)) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "<requestInfo> missing data",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
     return MWK_OK;
 }
+
+
+/*
+ * Given the request context, an XML tag, and an array of const char *, print
+ * out the contents of the array as a series of that XML element.  If the
+ * array is NULL, prints out nothing.
+ */
+static void
+print_xml_array(MWK_REQ_CTXT *rc, const char *tag, apr_array_header_t *array)
+{
+    int i;
+    const char *string;
+
+    if (array == NULL)
+        return;
+
+    for (i = 0; i < array->nelts; i++) {
+        string = APR_ARRAY_IDX(array, i, const char *);
+        string = apr_xml_quote_string(rc->r->pool, string, false);
+        ap_rprintf(rc->r, "<%s>%s</%s>", tag, string, tag);
+    }
+}
+
 
 static enum mwk_status
 handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
@@ -2091,56 +1656,36 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
-    char *request_token;
-    MWK_REQUEST_INFO req_info;
-    MWK_REQUESTER_CREDENTIAL req_cred;
-    MWK_SUBJECT_CREDENTIAL parsed_sub_cred, login_sub_cred, *sub_cred;
-    enum mwk_status ms;
-    MWK_REQUEST_TOKEN req_token;
-    int req_cred_parsed = 0;
-    int sub_cred_parsed = 0;
-    size_t i;
-    int did_login;
-    int login_ec;
-    const char *login_em = NULL;
+    char *request_token = NULL;
+    int i, status;
     const char *req_token_info;
-    MWK_RETURNED_TOKEN rtoken;
-    MWK_RETURNED_PROXY_TOKEN rptokens[MAX_PROXY_TOKENS_RETURNED];
-    size_t num_proxy_tokens = 0;
+    struct webauth_webkdc_login_request request;
+    struct webauth_webkdc_login_response *response;
 
+    /*
+     * FIXME: These should be set to NULL, not <unknown>.  Chase down all the
+     * places we assume they aren't NULL.
+     */
     *subject_out = "<unknown>";
     *req_subject_out = "<unkknown>";
-    did_login = 0;
-    num_proxy_tokens = 0;
-    login_ec = 0;
-    request_token = NULL;
-    sub_cred = NULL;
 
     req_token_info = "";
-
-    memset(&req_cred, 0, sizeof(req_cred));
-    memset(&req_token, 0, sizeof(req_token));
-    memset(&rtoken, 0, sizeof(rtoken));
-    memset(&req_info, 0, sizeof(req_info));
+    memset(&request, 0, sizeof(request));
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_requesterCredential(rc, child, &req_cred,
-                                           req_subject_out))
+            if (!parse_service_token(rc, child, &request))
                 return MWK_ERROR;
-            req_cred_parsed = 1;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
-            if (!parse_subjectCredential(rc, child, &parsed_sub_cred,
-                                         &num_proxy_tokens, rptokens))
+            if (!parse_subject_credentials(rc, child, &request))
                 return MWK_ERROR;
-            sub_cred_parsed = 1;
         } else if (strcmp(child->name, "requestToken") == 0) {
             request_token = get_elem_text(rc, child, mwk_func);
             if (request_token == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestInfo") == 0) {
-            if (!parse_requestInfo(rc, child, &req_info))
+            if (!parse_requestInfo(rc, child, &request))
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
@@ -2149,225 +1694,209 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found requesterCredential */
-    if (!req_cred_parsed) {
+    if (request.service == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requesterCredential>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
+    if (request.service != NULL)
+        *req_subject_out = request.service->subject;
 
-    /* make sure we found subjectCredentials */
-    if (!sub_cred_parsed) {
+    /*
+     * Make sure we found <subjectCredential>.  Note that the array may be
+     * legitimately empty if the user has no proxy credentials and it's their
+     * first visit to WebLogin.
+     */
+    if (request.creds == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
-                                 mwk_func, 1);
-    }
-
-    /* make sure req_cred is of type "service" */
-    if (strcmp(req_cred.type, "service") != 0) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "must use <requesterCredential> "
-                                 "of type 'service'",
-                                 mwk_func, 1);
-    }
+                                 mwk_func, true);
 
     /* make sure we found requestToken */
     if (request_token == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requestToken>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
-
-    if (!parse_request_token(rc, request_token,
-                             &req_cred.u.st, &req_token, 0)) {
+    if (!parse_request_token(rc, request_token, request.service,
+                             &request.request))
         return MWK_ERROR;
+
+    /*
+     * Based on the type of token requested, check that the requesting WAS is
+     * permitted to get that type of token.
+     */
+    if (strcmp(request.request->type, "id") == 0) {
+        if (!mwk_has_id_access(rc, request.service->subject)) {
+            return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                     "not authorized to get an id token",
+                                     mwk_func, true);
+        }
+    } else if (strcmp(request.request->type, "proxy") == 0) {
+        if (!mwk_has_proxy_access(rc, request.service->subject,
+                                  request.request->proxy_type)) {
+            return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
+                                 "not authorized to get a proxy token",
+                                 mwk_func, true);
+        }
     }
 
     /*
-     * if we have a login-token, attempt to login with it,
-     * and if that succeeds, we'll get a new MWK_SUBJECT_CREDENTIAL
-     * to pass around, and new proxy-tokens to set.
-     *
+     * Call into libwebauth to process the login information.  This will take
+     * the accumulated data in the request and attempt to fulfill it.  On an
+     * internal error, this function will return a status other than
+     * WA_ERR_NONE.  Otherwise, it may set the login_error and login_message
+     * in the response.  We handle that below when we generate the XML
+     * response.
      */
-    if (strcmp(parsed_sub_cred.type, "login") == 0) {
-        if (!mwk_do_login(rc, &parsed_sub_cred.u.lt, &login_sub_cred,
-                          rptokens, &num_proxy_tokens, subject_out)) {
-            *subject_out = parsed_sub_cred.u.lt.username;
-            if (rc->error_code == WA_PEC_LOGIN_FAILED) {
-                login_ec = rc->error_code;
-                login_em = rc->error_message;
-                rc->error_code = 0;
-                rc->error_message = NULL;
-                goto send_response;
-            } else {
-                return MWK_ERROR;
-            }
-        }
-        sub_cred = &login_sub_cred;
-        did_login = 1;
-    } else {
-        sub_cred = &parsed_sub_cred;
-        /* grab first subject from passed in proxy tokens as subject_out */
-        if (strcmp(parsed_sub_cred.type, "proxy") == 0) {
-            for (i=0; i < parsed_sub_cred.u.proxy.num_proxy_tokens; i++) {
-                if (parsed_sub_cred.u.proxy.pt[i].subject) {
-                    *subject_out = parsed_sub_cred.u.proxy.pt[i].subject;
-                    break;
-                }
-            }
-        }
-    }
+    status = webauth_webkdc_login(rc->ctx, &request, &response,
+                                  rc->sconf->ring);
+    if (status != WA_ERR_NONE)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 webauth_error_message(rc->ctx, status),
+                                 mwk_func, true);
 
-    /* lets see if they requested forced-authentication, if so
-       and we didn't just login, then we need
-       to return an error that will cause the web front-end to
-       prompt for a username/password */
-    if ((ap_strstr(req_token.request_options, "fa") != 0) &&
-        !did_login) {
-        login_ec = WA_PEC_LOGIN_FORCED;
-        login_em = "forced authentication, need to login";
-        goto send_response;
-    }
-
-    /* now examine req_token to see what they asked for */
-
-    if (strcmp(req_token.requested_token_type, "id") == 0) {
-        ms = create_id_token_from_req(rc, req_token.u.subject_auth_type,
-                                      &req_cred, sub_cred, &rtoken,
-                                      subject_out);
-        req_token_info = apr_pstrcat(rc->r->pool,
-                                     " sa=",
-                                     req_token.u.subject_auth_type,
+    /* Accumulate logging information about what we were asked to do. */
+    if (strcmp(request.request->type, "id") == 0)
+        req_token_info = apr_pstrcat(rc->r->pool, " sa=", request.request->auth,
                                      NULL);
-    } else if (strcmp(req_token.requested_token_type, "proxy") == 0) {
-        ms = create_proxy_token_from_req(rc, req_token.u.proxy_type,
-                                         &req_cred, sub_cred, &rtoken);
-        req_token_info = apr_pstrcat(rc->r->pool,
-                                     " pt=",
-                                     req_token.u.proxy_type,
-                                     NULL);
-    } else {
-        char *msg = apr_psprintf(rc->r->pool,
-                                 "unsupported requested-token-type: %s",
-                                 req_token.requested_token_type);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                               mwk_func, 1);
-        return MWK_ERROR;
-    }
+    else if (strcmp(request.request->type, "proxy") == 0)
+        req_token_info = apr_pstrcat(rc->r->pool, " pt=",
+                                     request.request->proxy_type, NULL);
+    if (response->subject != NULL)
+        *subject_out = response->subject;
 
-    if (ms != MWK_OK) {
-        switch (rc->error_code) {
-            case WA_PEC_PROXY_TOKEN_REQUIRED:
-                login_ec = rc->error_code;
-                login_em = rc->error_message;
-                goto send_response;
-            default:
-                return MWK_ERROR;
-        }
-    }
+    /*
+     * If we saw an error other than proxy token required, abort and send the
+     * error message.
+     */
+    if (response->login_error != 0
+        && response->login_error != WA_PEC_PROXY_TOKEN_REQUIRED
+        && response->login_error != WA_PEC_MULTIFACTOR_REQUIRED
+        && response->login_error != WA_PEC_MULTIFACTOR_UNAVAILABLE
+        && response->login_error != WA_PEC_LOA_UNAVAILABLE)
+        return set_errorResponse(rc, response->login_error,
+                                 response->login_message, mwk_func, true);
 
- send_response:
-
+    /* Send the XML response. */
     ap_rvputs(rc->r, "<requestTokenResponse>", NULL);
 
-    if (login_ec) {
-        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>", login_ec);
+    if (response->login_error != 0) {
+        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>",
+                   response->login_error);
         ap_rprintf(rc->r, "<loginErrorMessage>%s</loginErrorMessage>",
-                   apr_xml_quote_string(rc->r->pool, login_em, 0));
+                   apr_xml_quote_string(rc->r->pool, response->login_message,
+                                        false));
     }
 
-    if (num_proxy_tokens) {
+    if (response->login_error == WA_PEC_MULTIFACTOR_REQUIRED) {
+        ap_rvputs(rc->r, "<multifactorRequired>", NULL);
+        print_xml_array(rc, "factor", response->factors_wanted);
+        print_xml_array(rc, "configuredFactor", response->factors_configured);
+        ap_rvputs(rc->r, "</multifactorRequired>", NULL);
+    }
+
+    if (response->proxies != NULL) {
+        struct webauth_webkdc_proxy_data *data;
+
         ap_rvputs(rc->r, "<proxyTokens>", NULL);
-        for (i = 0; i < num_proxy_tokens; i++) {
-            ap_rvputs(rc->r, "<proxyToken type='", rptokens[i].type,"'>",
-                      /* don't have to quote since base64'd data */
-                      rptokens[i].token_data,
-                      "</proxyToken>",
-                      NULL);
+        for (i = 0; i < response->proxies->nelts; i++) {
+            data = &APR_ARRAY_IDX(response->proxies, i,
+                                  struct webauth_webkdc_proxy_data);
+            ap_rvputs(rc->r, "<proxyToken type='", data->type, "'>",
+                      data->token, "</proxyToken>", NULL);
         }
         ap_rvputs(rc->r, "</proxyTokens>", NULL);
     }
     /* put out return-url */
     ap_rvputs(rc->r,"<returnUrl>",
-              apr_xml_quote_string(rc->r->pool, req_token.return_url, 1),
+              apr_xml_quote_string(rc->r->pool, response->return_url, 1),
               "</returnUrl>", NULL);
 
     /* requesterSubject */
     ap_rvputs(rc->r,
               "<requesterSubject>",
-              apr_xml_quote_string(rc->r->pool, req_cred.subject, 1),
+              apr_xml_quote_string(rc->r->pool, response->requester, 1),
               "</requesterSubject>", NULL);
 
     /* subject */
-    if (*subject_out != NULL) {
+    if (response->subject != NULL) {
         ap_rvputs(rc->r,
                   "<subject>",
-                  apr_xml_quote_string(rc->r->pool, *subject_out, 1),
+                  apr_xml_quote_string(rc->r->pool, response->subject, 1),
                   "</subject>", NULL);
     }
 
     /* requestedToken, don't need to quote */
-    if (rtoken.token_data) {
+    if (response->result != NULL) {
         ap_rvputs(rc->r,
                   "<requestedToken>",
-                  rtoken.token_data,
+                  response->result,
                   "</requestedToken>",
                   NULL);
         ap_rvputs(rc->r,
                   "<requestedTokenType>",
-                  apr_xml_quote_string(rc->r->pool,
-                                       req_token.requested_token_type, 1),
+                  apr_xml_quote_string(rc->r->pool, response->result_type, 1),
                   "</requestedTokenType>", NULL);
     }
 
-    if (ap_strstr(req_token.request_options, "lc")) {
-        MWK_RETURNED_TOKEN lc_token;
-
-        memset(&lc_token, 0, sizeof(lc_token));
-        ms = create_error_token_from_req(rc,
-                                         WA_PEC_LOGIN_CANCELED,
-                                         "user canceled login",
-                                         &req_cred,
-                                         &lc_token);
-        if (ms == MWK_OK)
-            ap_rvputs(rc->r,
-                      "<loginCanceledToken>",
-                      lc_token.token_data,
-                      "</loginCanceledToken>",
-                      NULL);
+    if (response->login_cancel != NULL) {
+        ap_rvputs(rc->r, "<loginCanceledToken>", response->login_cancel,
+                  "</loginCanceledToken>", NULL);
     }
 
     /* appState, need to base64-encode */
-    if (req_token.app_state_len) {
-        char *out_state = (char*)
+    if (response->app_state != NULL) {
+        char *out_state =
             apr_palloc(rc->r->pool,
-                       apr_base64_encode_len(req_token.app_state_len));
-        apr_base64_encode(out_state, req_token.app_state,
-                          req_token.app_state_len);
+                       apr_base64_encode_len(response->app_state_len));
+        apr_base64_encode(out_state, response->app_state,
+                          response->app_state_len);
         /*  don't need to quote */
         ap_rvputs(rc->r,
                   "<appState>", out_state , "</appState>",
                   NULL);
     }
+
+    /* loginHistory (if present) */
+    if (response->logins != NULL) {
+        struct webauth_login *login;
+
+        ap_rvputs(rc->r, "<loginHistory>", NULL);
+        for (i = 0; i < response->logins->nelts; i++) {
+            login = &APR_ARRAY_IDX(response->logins, i, struct webauth_login);
+            ap_rvputs(rc->r, "<loginLocation ip=\"", login->ip, "\"", NULL);
+            if (login->timestamp != 0)
+                ap_rprintf(rc->r, "time=\"%lu\"",
+                           (unsigned long) login->timestamp);
+            ap_rvputs(rc->r, ">", login->hostname, "</loginLocation>", NULL);
+        }
+        ap_rvputs(rc->r, "</loginHistory>", NULL);
+    }
+
+    /* passwordExpires (if present) */
+    if (response->password_expires > 0)
+        ap_rprintf(rc->r, "<passwordExpires>%lu</passwordExpires>",
+                   (unsigned long) response->password_expires);
+
     ap_rvputs(rc->r, "</requestTokenResponse>", NULL);
     ap_rflush(rc->r);
-
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
                  "server=%s user=%s rtt=%s%s%s%s%s",
                  rc->r->connection->remote_ip,
-                 (req_info.remote_addr == NULL ? "" : req_info.remote_addr),
-                 *req_subject_out,
-                 *subject_out,
-                 req_token.requested_token_type,
+                 (request.remote_ip == NULL ? "" : request.remote_ip),
+                 response->requester,
+                 (response->subject == NULL ? "<unknown>" : response->subject),
+                 request.request->type,
                  req_token_info,
-                 (req_token.request_options == NULL ||
-                  *req_token.request_options == '\0') ? "" :
-                 apr_psprintf(rc->r->pool, " ro=%s",
-                              req_token.request_options),
-                 (login_ec == 0 && !did_login) ? "" :
-                 apr_psprintf(rc->r->pool, " lec=%d", login_ec),
-                 login_em == NULL ? "" :
-                 apr_psprintf(rc->r->pool, " lem=%s", log_escape(rc, login_em))
+                 (request.request->options == NULL
+                  || *request.request->options == '\0') ? "" :
+                 apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
+                 apr_psprintf(rc->r->pool, " lec=%d", response->login_error),
+                 response->login_message == NULL ? "" :
+                 apr_psprintf(rc->r->pool, " lem=%s",
+                              log_escape(rc, response->login_message))
                  );
 
     return MWK_OK;
@@ -2379,18 +1908,19 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                const char **subject_out)
 {
     apr_xml_elem *child;
-    static const char *mwk_func="handle_webkdcProxyTokenRequest";
+    static const char *mwk_func = "handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
     char *sc_data, *pd_data;
-    char *dpd_data, *token_data;
+    char *dpd_data;
+    const char *token_data;
     char *tgt;
-    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len, token_len;
+    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len;
     int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
-    time_t tgt_expiration, creation;
+    time_t tgt_expiration;
     WEBAUTH_KRB5_CTXT *ctxt;
-    WEBAUTH_ATTR_LIST *alist;
+    struct webauth_token token;
 
     *subject_out = "<unknown>";
     sc_data = NULL;
@@ -2416,7 +1946,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                         "unknown <subjectCredential> type: %s",
                                          at);
                 return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                         mwk_func, 1);
+                                         mwk_func, true);
             }
             sc_data = get_elem_text(rc, child, mwk_func);
             if (sc_data == NULL)
@@ -2431,14 +1961,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (pd_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <proxyData>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
     if (sc_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     sc_blen = strlen(sc_data);
@@ -2450,7 +1980,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                               "webauth_base64_decode",
                                               "subjectCredential");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     pd_blen = strlen(pd_data);
@@ -2461,14 +1991,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                         "webauth__base64_decode", "proxyData");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
     if (ctxt == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "server failure", mwk_func, 0);
+                                 "server failure", mwk_func, false);
     }
 
     status = webauth_krb5_rd_req_with_data(ctxt,
@@ -2488,7 +2018,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                              "webauth__krb5_rd_req_with_data",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         goto cleanup;
     }
 
@@ -2502,7 +2032,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_init_via_cred",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         free(client_principal);
         goto cleanup;
     }
@@ -2512,7 +2042,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_get_principal",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         free(client_principal);
         goto cleanup;
     }
@@ -2526,7 +2056,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         free(check_principal);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                           "authenticator and Kerberos TGT mismatch",
-                          mwk_func, 1);
+                          mwk_func, true);
         goto cleanup;
     }
     free(client_principal);
@@ -2547,7 +2077,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
                                               "webauth_krb5_export_tgt",
                                               NULL);
-        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, 1);
+        set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         goto cleanup;
     } else {
         char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
@@ -2556,31 +2086,39 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         tgt = new_tgt;
     }
 
-    time(&creation);
     /* if ProxyTopkenLifetime is non-zero, use the min of it
        and the tgt, else just use the tgt  */
-    if (rc->sconf->proxy_token_lifetime) {
-        time_t pmax = creation + rc->sconf->proxy_token_lifetime;
+    if (rc->sconf->proxy_lifetime) {
+        time_t pmax = time(NULL) + rc->sconf->proxy_lifetime;
+
         tgt_expiration = (tgt_expiration < pmax) ? tgt_expiration : pmax;
     }
+    memset(&token, 0, sizeof(token));
+    token.type = WA_TOKEN_WEBKDC_PROXY;
+    token.token.webkdc_proxy.subject = *subject_out;
+    token.token.webkdc_proxy.proxy_type = "krb5";
+    token.token.webkdc_proxy.proxy_subject = proxy_subject;
+    token.token.webkdc_proxy.data = tgt;
+    token.token.webkdc_proxy.data_len = tgt_len;
+    token.token.webkdc_proxy.expiration = tgt_expiration;
 
-    alist = new_attr_list(rc, mwk_func);
-    if (alist == NULL)
+    /*
+     * Get the initial factors for the token, or set to 'u' if
+     * the factors array is unset
+     */
+
+    if (rc->sconf->kerberos_factors->nelts > 0) {
+        char *p;
+        p = apr_array_pstrcat(rc->r->pool, rc->sconf->kerberos_factors, ',');
+        token.token.webkdc_proxy.initial_factors = p;
+
+    } else {
+        token.token.webkdc_proxy.initial_factors = "u";
+    }
+
+    ms = make_token(rc, &token, &token_data, mwk_func);
+    if (ms != MWK_OK)
         goto cleanup;
-
-    SET_TOKEN_TYPE(WA_TT_WEBKDC_PROXY);
-    SET_PROXY_SUBJECT(proxy_subject);
-    SET_PROXY_TYPE("krb5");
-    SET_SUBJECT(*subject_out);
-    SET_PROXY_DATA(tgt, tgt_len);
-    SET_CREATION_TIME(creation);
-    SET_EXPIRATION_TIME(tgt_expiration);
-
-    ms = make_token(rc, alist, creation,
-                    (char**)&token_data, &token_len, 1, mwk_func);
-    webauth_attr_list_free(alist);
-
-    if (ms != MWK_OK) goto cleanup;
 
     ap_rvputs(rc->r, "<webkdcProxyTokenResponse>", NULL);
 
@@ -2625,7 +2163,7 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
     apr_xml_elem *child;
     static const char *mwk_func="handle_webkdcProxyTokenInfoRequest";
     enum mwk_status ms;
-    MWK_PROXY_TOKEN pt;
+    struct webauth_token_webkdc_proxy pt;
     char *pt_data;
 
     pt_data = NULL;
@@ -2648,7 +2186,7 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
     if (pt_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <webkdcProxyToken>",
-                                 mwk_func, 1);
+                                 mwk_func, true);
     }
 
     if (!parse_webkdc_proxy_token(rc, pt_data, &pt))
@@ -2700,7 +2238,7 @@ parse_request(MWK_REQ_CTXT *rc)
                      "mod_webkdc: %s: "
                      "apr_xml_parser_create failed", mwk_func);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                          "server failure", mwk_func, 0);
+                          "server failure", mwk_func, false);
         generate_errorResponse(rc);
         return OK;
     }
@@ -2731,14 +2269,14 @@ parse_request(MWK_REQ_CTXT *rc)
                          errbuff,
                          astatus);
             set_errorResponse(rc, WA_PEC_INVALID_REQUEST, errbuff,
-                              mwk_func, 0);
+                              mwk_func, false);
             generate_errorResponse(rc);
             return OK;
         } else {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                        "mod_webkdc: %s: ap_get_client_block error", mwk_func);
             set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                              "read error while parsing", mwk_func, 0);
+                              "read error while parsing", mwk_func, false);
             generate_errorResponse(rc);
             return OK;
         }
@@ -2824,7 +2362,7 @@ parse_request(MWK_REQ_CTXT *rc)
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webkdc: %s: %s (from %s)", mwk_func, m,
                      rc->r->connection->remote_ip);
-        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, 0);
+        set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, false);
         generate_errorResponse(rc);
         return OK;
     }
@@ -2836,13 +2374,45 @@ static int
 handler_hook(request_rec *r)
 {
     MWK_REQ_CTXT rc;
+    int status;
     const char *req_content_type;
+    struct webauth_webkdc_config config;
 
     memset(&rc, 0, sizeof(rc));
+    status = webauth_context_init_apr(&rc.ctx, r->pool);
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
+                     "mod_webkdc: webauth_context_init failed: %s",
+                     webauth_error_message(NULL, status));
+        return DECLINED;
+    }
 
     rc.r = r;
-    rc.sconf = (MWK_SCONF*)ap_get_module_config(r->server->module_config,
-                                                &webkdc_module);
+    rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
+    config.keytab_path = rc.sconf->keytab_path;
+    config.principal = rc.sconf->keytab_principal;
+    config.proxy_lifetime = rc.sconf->proxy_lifetime;
+    config.permitted_realms = rc.sconf->permitted_realms;
+    config.local_realms = rc.sconf->local_realms;
+    status = webauth_webkdc_config(rc.ctx, &config);
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
+                     "mod_webkdc: webauth_webkdc_config failed: %s",
+                     webauth_error_message(rc.ctx, status));
+        return DECLINED;
+    }
+    if (rc.sconf->userinfo_config != NULL) {
+        rc.sconf->userinfo_config->identity = rc.sconf->userinfo_principal;
+        rc.sconf->userinfo_config->keytab = rc.sconf->keytab_path;
+        rc.sconf->userinfo_config->principal = rc.sconf->keytab_principal;
+        status = webauth_user_config(rc.ctx, rc.sconf->userinfo_config);
+        if (status != WA_ERR_NONE) {
+            ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
+                         "mod_webkdc: webauth_user_config failed: %s",
+                         webauth_error_message(rc.ctx, status));
+            return DECLINED;
+        }
+    }
 
     if (strcmp(r->handler, "webkdc")) {
         return DECLINED;
@@ -2862,17 +2432,6 @@ handler_hook(request_rec *r)
     return parse_request(&rc);
 }
 
-static int
-die(const char *message, server_rec *s)
-{
-    if (s) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webkdc: fatal error: %s", message);
-    }
-    printf("mod_webkdc: fatal error: %s\n", message);
-    exit(1);
-}
-
 
 /*
  * called on restarts
@@ -2882,8 +2441,9 @@ mod_webkdc_cleanup(void *data)
 {
     server_rec *s = (server_rec*) data;
     server_rec *t;
-    MWK_SCONF *sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                                        &webkdc_module);
+    struct config *sconf;
+
+    sconf = ap_get_module_config(s->module_config, &webkdc_module);
 
     if (sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webkdc: cleanup");
@@ -2891,9 +2451,9 @@ mod_webkdc_cleanup(void *data)
 
     /* walk through list of services and clean up */
     for (t=s; t; t=t->next) {
-        MWK_SCONF *tconf = (MWK_SCONF*)ap_get_module_config(t->module_config,
-                                                            &webkdc_module);
+        struct config *tconf;
 
+        tconf = ap_get_module_config(t->module_config, &webkdc_module);
         if (tconf->ring && tconf->free_ring) {
             if (sconf->debug) {
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
@@ -2908,60 +2468,6 @@ mod_webkdc_cleanup(void *data)
     return APR_SUCCESS;
 }
 
-static void
-die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
-{
-    char *msg;
-
-    if (s->is_virtual) {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set for virtual host %s:%d",
-                          dir, s->defn_name, s->defn_line_number);
-    } else {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set in main config",
-                          dir);
-    }
-    die(msg, s);
-}
-
-/*
- * check server conf directives for server,
- * also cache keyring
- */
-static void
-init_sconf(server_rec *s, MWK_SCONF *bconf, apr_pool_t *ptemp)
-{
-    MWK_SCONF *sconf;
-
-    sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                             &webkdc_module);
-
-#define CHECK_DIR(field,dir,val) \
-            if (sconf->field == val) die_directive(s, dir, ptemp);
-
-    CHECK_DIR(keyring_path, CD_Keyring, NULL);
-    CHECK_DIR(keytab_path, CD_Keytab, NULL);
-    CHECK_DIR(token_acl_path, CD_TokenAcl, NULL);
-    CHECK_DIR(service_token_lifetime, CD_ServiceTokenLifetime, 0);
-
-#undef CHECK_DIR
-
-    /* load up the keyring */
-
-    if (sconf->ring == NULL) {
-        if ((bconf->ring != NULL) &&
-            (strcmp(sconf->keyring_path, bconf->keyring_path) == 0)) {
-            sconf->ring = bconf->ring;
-            sconf->free_ring = 0;
-        } else {
-            mwk_cache_keyring(s, sconf);
-            if (sconf->ring)
-                sconf->free_ring = 1;
-        }
-    }
-}
-
 /*
  * called after config has been loaded in parent process
  */
@@ -2969,12 +2475,11 @@ static int
 mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                 apr_pool_t *ptemp, server_rec *s)
 {
-    MWK_SCONF *sconf;
+    struct config *sconf;
     server_rec *scheck;
     char *version;
 
-    sconf = (MWK_SCONF*)ap_get_module_config(s->module_config,
-                                             &webkdc_module);
+    sconf = ap_get_module_config(s->module_config, &webkdc_module);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
@@ -2985,7 +2490,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
                               apr_pool_cleanup_null);
 
     for (scheck=s; scheck; scheck=scheck->next) {
-        init_sconf(scheck, sconf, ptemp);
+        webkdc_config_init(scheck, sconf, ptemp);
     }
 
     version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
@@ -3010,278 +2515,6 @@ mod_webkdc_child_init(apr_pool_t *p UNUSED, server_rec *s)
     mwk_init_mutexes(s);
 }
 
-/*
-**
-**  per-server configuration structure handling
-**
-*/
-
-static void *
-config_server_create(apr_pool_t *p, server_rec *s UNUSED)
-{
-    MWK_SCONF *sconf;
-
-    sconf = (MWK_SCONF*)apr_pcalloc(p, sizeof(MWK_SCONF));
-
-    /* init defaults */
-    sconf->token_max_ttl        = DF_TokenMaxTTL;
-    sconf->proxy_token_lifetime = DF_ProxyTokenLifetime;
-    sconf->keyring_auto_update  = DF_KeyringAutoUpdate;
-    sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
-    sconf->permitted_realms     = apr_array_make(p, 0, sizeof(char *));
-    sconf->local_realms         = apr_array_make(p, 0, sizeof(char *));
-    return (void *)sconf;
-}
-
-#define MERGE_PTR(field) \
-    conf->field = (oconf->field != NULL) ? oconf->field : bconf->field
-
-#define MERGE_INT(field) \
-    conf->field = oconf->field ? oconf->field : bconf->field
-
-static void *
-config_server_merge(apr_pool_t *p, void *basev, void *overv)
-{
-    MWK_SCONF *conf, *bconf, *oconf;
-
-    conf = (MWK_SCONF*) apr_pcalloc(p, sizeof(MWK_SCONF));
-    bconf = (MWK_SCONF*) basev;
-    oconf = (MWK_SCONF*) overv;
-
-    conf->token_max_ttl = oconf->token_max_ttl_ex ?
-        oconf->token_max_ttl : bconf->token_max_ttl;
-
-    conf->proxy_token_lifetime = oconf->proxy_token_lifetime_ex ?
-        oconf->proxy_token_lifetime : bconf->proxy_token_lifetime;
-
-    conf->debug = oconf->debug_ex ? oconf->debug : bconf->debug;
-
-    conf->keyring_auto_update = oconf->keyring_auto_update_ex ?
-        oconf->keyring_auto_update : bconf->keyring_auto_update;
-
-    conf->keyring_key_lifetime = oconf->keyring_key_lifetime_ex ?
-        oconf->keyring_key_lifetime : bconf->keyring_key_lifetime;
-
-    MERGE_PTR(keyring_path);
-    MERGE_PTR(keytab_path);
-    if (oconf->keytab_path)
-        conf->keytab_principal = oconf->keytab_principal;
-    else
-        conf->keytab_principal = bconf->keytab_principal;
-    MERGE_PTR(token_acl_path);
-    MERGE_INT(service_token_lifetime);
-
-    /* Duplicates in permitted realms are okay. */
-    if (bconf->permitted_realms == NULL)
-        conf->permitted_realms = oconf->permitted_realms;
-    else if (oconf->permitted_realms == NULL)
-        conf->permitted_realms = bconf->permitted_realms;
-    else
-        conf->permitted_realms = apr_array_append(p, bconf->permitted_realms,
-                                                  oconf->permitted_realms);
-
-    /*
-     * Duplicates in local realms aren't okay if the first element is a
-     * keyword rather than a realm.  FIXME: Handle this correctly.
-     */
-    if (bconf->local_realms == NULL)
-        conf->local_realms = oconf->local_realms;
-    else if (oconf->local_realms == NULL)
-        conf->local_realms = bconf->local_realms;
-    else
-        conf->local_realms = apr_array_append(p, bconf->local_realms,
-                                              oconf->local_realms);
-
-    return (void *)conf;
-}
-
-#undef MERGE_PTR
-#undef MERGE_INT
-
-static unsigned long
-seconds(const char *value, const char **error_str)
-{
-    char temp[32];
-    unsigned long mult, len;
-
-    len = strlen(value);
-    if (len > (sizeof(temp)-1)) {
-        *error_str = "error: value too long!";
-        return 0;
-    }
-
-    strcpy(temp, value);
-
-    switch(temp[len-1]) {
-        case 's':
-            mult = 1;
-            break;
-        case 'm':
-            mult = 60;
-            break;
-        case 'h':
-            mult = 60*60;
-            break;
-        case 'd':
-            mult = 60*60*24;
-            break;
-        case 'w':
-            mult = 60*60*24*7;
-            break;
-        default:
-            *error_str = "error: value too long!";
-            return 0;
-            break;
-    }
-
-    temp[len-1] = '\0';
-    return atoi(temp) * mult;
-}
-
-static const char *
-cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    const char *error_str = NULL;
-    char **realm;
-
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    /* server configs */
-    switch (e) {
-    case E_Keyring:
-        sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_Keytab:
-        sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_TokenAcl:
-        sconf->token_acl_path = ap_server_root_relative(cmd->pool, arg);
-        break;
-    case E_ProxyTokenLifetime:
-        sconf->proxy_token_lifetime = seconds(arg, &error_str);
-        sconf->proxy_token_lifetime_ex = 1;
-        break;
-    case E_TokenMaxTTL:
-        sconf->token_max_ttl = seconds(arg, &error_str);
-        sconf->token_max_ttl_ex = 1;
-        break;
-    case E_KeyringKeyLifetime:
-        sconf->keyring_key_lifetime = seconds(arg, &error_str);
-        sconf->keyring_key_lifetime_ex = 1;
-        break;
-    case E_ServiceTokenLifetime:
-        sconf->service_token_lifetime = seconds(arg, &error_str);
-        break;
-    case E_PermittedRealms:
-        realm = apr_array_push(sconf->permitted_realms);
-        *realm = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_LocalRealms:
-        realm = apr_array_push(sconf->local_realms);
-        *realm = apr_pstrdup(cmd->pool, arg);
-        break;
-    default:
-        error_str =
-            apr_psprintf(cmd->pool,
-                         "Invalid value cmd->info(%d) for directive %s",
-                         (int) e, cmd->directive->directive);
-        break;
-    }
-    return error_str;
-}
-
-static const char *
-cfg_str12(cmd_parms *cmd, void *mconf UNUSED, const char *arg,
-          const char *arg2)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    switch (e) {
-        /* server configs */
-         case E_Keytab:
-            sconf->keytab_path = ap_server_root_relative(cmd->pool, arg);
-            sconf->keytab_principal =
-                (arg2 != NULL) ? apr_pstrdup(cmd->pool, arg2) : NULL;
-            break;
-         default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
-    }
-    return error_str;
-}
-
-static const char *
-cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-
-    MWK_SCONF *sconf = (MWK_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webkdc_module);
-
-    switch (e) {
-        /* server configs */
-        case E_Debug:
-            sconf->debug = flag;
-            sconf->debug_ex = 1;
-            break;
-        case E_KeyringAutoUpdate:
-            sconf->keyring_auto_update = flag;
-            sconf->keyring_auto_update_ex = 1;
-            break;
-        default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
-
-    }
-    return error_str;
-}
-
-
-#define SSTR(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
-
-#define SSTR12(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str12,(void*)mconfig, RSRC_CONF, TAKE12, help}
-
-#define SFLAG(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
-
-#define ISTR(dir,mconfig,help) \
-    {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, ITERATE, help}
-
-static const command_rec cmds[] = {
-    /* server/vhost */
-    SSTR(CD_Keyring, E_Keyring, CM_Keyring),
-    SSTR12(CD_Keytab, E_Keytab,  CM_Keytab),
-    SSTR(CD_TokenAcl, E_TokenAcl,  CM_TokenAcl),
-    SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SFLAG(CD_KeyringAutoUpdate, E_KeyringAutoUpdate, CM_KeyringAutoUpdate),
-    SSTR(CD_TokenMaxTTL, E_TokenMaxTTL, CM_TokenMaxTTL),
-    SSTR(CD_ProxyTokenLifetime, E_ProxyTokenLifetime,
-         CM_ProxyTokenLifetime),
-    SSTR(CD_ServiceTokenLifetime, E_ServiceTokenLifetime,
-         CM_ServiceTokenLifetime),
-    SSTR(CD_KeyringKeyLifetime, E_KeyringKeyLifetime, CM_KeyringKeyLifetime),
-    ISTR(CD_PermittedRealms, E_PermittedRealms, CM_PermittedRealms),
-    ISTR(CD_LocalRealms, E_LocalRealms, CM_LocalRealms),
-    { NULL, { NULL }, NULL, 0, 0, NULL }
-};
-
-#undef SSTR
-#undef SFLAG
-
 static void
 register_hooks(apr_pool_t *p UNUSED)
 {
@@ -3295,8 +2528,8 @@ module AP_MODULE_DECLARE_DATA webkdc_module = {
     STANDARD20_MODULE_STUFF,
     NULL,                  /* create per-dir    config structures */
     NULL,                  /* merge  per-dir    config structures */
-    config_server_create,  /* create per-server config structures */
-    config_server_merge,   /* merge  per-server config structures */
-    cmds,                  /* table of config file commands       */
+    webkdc_config_create,  /* create per-server config structures */
+    webkdc_config_merge,   /* merge  per-server config structures */
+    webkdc_cmds,           /* table of config file commands       */
     register_hooks         /* register hooks                      */
 };

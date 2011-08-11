@@ -6,6 +6,9 @@
  * obtains Kerberos credentials, sets up a ticket cache, and sets the
  * environment variable pointing to the Kerberos keytab to use for testing.
  *
+ * The canonical version of this file is maintained in the rra-c-util package,
+ * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+ *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2006, 2007, 2009, 2010
  *     The Board of Trustees of the Leland Stanford Junior University

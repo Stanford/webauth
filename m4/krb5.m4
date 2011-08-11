@@ -32,6 +32,9 @@ dnl Also provides RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS, which checks
 dnl whether krb5_get_init_creds_opt_free takes one argument or two.  Defines
 dnl HAVE_KRB5_GET_INIT_CREDS_OPT_FREE_2_ARGS if it takes two arguments.
 dnl
+dnl The canonical version of this file is maintained in the rra-c-util
+dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2005, 2006, 2007, 2008, 2009, 2010
 dnl     The Board of Trustees of the Leland Stanford Junior University

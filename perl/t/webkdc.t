@@ -48,9 +48,6 @@ if (! -f 't/data/test.keyring.path' || ! -f 't/data/test.password'
 # and again.
 sub init_weblogin {
     my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
-    for (keys %{$pages}) {
-        $pages->{$_}->clear_params;
-    }
 
     my $query = CGI->new;
     $query->param ('username', $username);
@@ -58,10 +55,12 @@ sub init_weblogin {
     $query->param ('ST', $st_base64);
     $query->param ('RT', $rt_base64);
 
-    my $weblogin = WebLogin->new ($query, $pages);
-    $weblogin->{debug} = 0;
-    $weblogin->{logging} = 0;
-    $weblogin->{script_name} = '/login';
+    # Load the weblogin object, with undefined template (we don't do output).
+    my $weblogin = WebLogin->new (PARAMS => { pages => $pages });
+    $weblogin->param ('debug', 0);
+    $weblogin->param ('logging', 0);
+    $weblogin->param ('script_name', '/login');
+    $weblogin->query ($query);
 
     # Normally set during WebKDC::request_token_request.
     $weblogin->{response}->return_url ('https://test.example.org/');
@@ -103,7 +102,7 @@ if (-e 't/data/test.keyring.path') {
 if (!$WebKDC::Config::KEYRING_PATH) {
     die "could not find server keyring path\n";
 }
-my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
 my $random = WebAuth::random_key (WebAuth::WA_AES_128);

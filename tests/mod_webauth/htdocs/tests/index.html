@@ -1,34 +1,52 @@
 <html>
 <title>WebAuth V3 Tests</title>
-<h1>WebAuth V3 Tests</h1>
-<OL>
-<LI><b><a href="auth/test1">basic WebAuth test</a></b>
+<h1>General WebAuth V3 Tests</h1>
+<ol>
+<li><strong><a href="auth/test1">basic WebAuth test</a></strong>
 
-<LI><b><a href="auth/test2">test extra redirect</a></b>
+<li><strong><a href="auth/test2">test extra redirect</a></strong>
 
-<LI><b><a href="auth/test3">test environment variable prefix</a></b>
+<li><strong><a href="auth/test3">test environment variable prefix</a></strong>
 
-<LI><b><a href="auth/test4">test cancel login</a></b>
+<li><strong><a href="auth/test4">test cancel login</a></strong>
 
-<LI><b><a href="auth/test5">test return url</a></b>
+<li><strong><a href="auth/test5">test return url</a></strong>
 
-<LI><b><a href="auth/test6">test query params on initial redirect</a></b>
+<li><strong><a href="auth/test6">test query params on initial redirect</a></strong>
 
-<LI><b><a href="auth/test7">test 5 second app-token lifetime</a></b>
+<li><strong><a href="auth/test7">test 5 second app-token lifetime</a></strong>
 
 
-<LI><b><a href="auth/test8">test 5 second app-token lifetime and force login</a></b>
+<li><strong><a href="auth/test8">test 5 second app-token lifetime and force login</a></strong>
 
-<LI><b><a href="auth/test9">test last-used update</a></b>
+<li><strong><a href="auth/test9">test last-used update</a></strong>
 
-<LI><b><a href="auth/test10">test inactive-expire</a></b>
+<li><strong><a href="auth/test10">test inactive-expire</a></strong>
 
-<LI><b><a href="auth/test11">test for no query params on initial redirect</a></b>
+<li><strong><a href="auth/test11">test for no query params on initial redirect</a></strong>
 
-<LI><b><a href="auth/test12">test POST with expired cookie</a></b>
+<li><strong><a href="auth/test12">test POST with expired cookie</a></strong>
 
-<LI><b><a href="php/test1.php">test PHP (only works if PHP installed)</a></b>
+<li><strong><a href="php/test1.php">test PHP (only works if PHP installed)</a></strong>
+</ol>
 
-</OL>
+<h1>Multifactor Tests</h1>
+<ol>
+<li><strong><a href="multifactor/test1">any multifactor required</a></strong>
+<li><strong><a href="multifactor/test2">OTP multifactor required</a></strong>
+<li><strong><a href="multifactor/test3">OTP multifactor plus password required</a></strong>
+<li><strong><a href="multifactor/test4">random multifactor required</a></strong>
+<li><strong><a href="multifactor/test5">o3 multifactor method required</a></strong>
+<li><strong><a href="multifactor/test6">LoA required at a level any user should meet</a></strong>
+<li><strong><a href="multifactor/test7">LoA required at a level any OTP user should meet</a></strong>
+<li><strong><a href="multifactor/test8">LoA required at a level any strong OTP user should meet</a></strong>
+<li><strong><a href="multifactor/test9">LoA required at a level no user should meet (access denied)</a></strong>
+<li><strong><a href="multifactor/test10">LoA required at a level any OTP users should meet plus o3 multifactor required plus force login for multifactor</a></strong>
+<li><strong><a href="multifactor/test11">force session with password</a></strong>
+<li><strong><a href="multifactor/test12">force session with multifactor</a></strong>
+<li><strong><a href="multifactor/test13">force session with negotiate-auth</a></strong>
+<li><strong><a href="multifactor/test14">force session with either c or p</a></strong>
+</ol>
+
 
 </html>

@@ -4,7 +4,7 @@
 <?rfc toc="yes" symrefs="yes"?>
 <rfc>
   <front>
-    <title>WebAuth V3 Technical Specification</title>
+    <title>WebAuth Technical Specification</title>
     <author initials='R.' surname='Schemers' fullname='Roland Schemers'>
       <organization>Stanford University</organization>
     </author>
@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='June' year='2009' />
+    <date month='June' year='2011' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -187,11 +187,11 @@
             ticket).</t>
 
             <t hangText='login (encrypted with WebKDC private key)'>
-            <vspace blankLines='0'/>A login tokens is used by the WebKDC
+            <vspace blankLines='0'/>A login token is used by the WebKDC
             with the requestTokenRequest command.  It contains the user's
             username and password and is used to obtain the inital
             webkdc-proxy token.  It normally only used internally by the
-            WebLogin component of te WebKDC.</t>
+            WebLogin component of the WebKDC.</t>
 
             <t hangText='app (encrypted with WAS private key)'>
             <vspace blankLines='0'/>An app token is used by a WAS server
@@ -378,7 +378,7 @@
           without any authentication cookies.  In other words, there is no
           app token or proxy token in the UA cookie jar.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -386,34 +386,34 @@
   1.                     WAS ---------> WebKDC
 
                          return session key, webkdc-service token
-  2.                     WAS &lt;--------- WebKDC
+  2.                     WAS <--------- WebKDC
 
       request resource
   3.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for id token
-  4.  &lt;----------------- WAS
+  4.  <----------------- WAS
 
       pass along request token
   5.  -------------------------------> WebKDC
 
       login form sent back
-  6.  &lt;------------------------------- WebKDC
+  6.  <------------------------------- WebKDC
 
       post login form with user authentication (password)
   7.  -------------------------------> WebKDC
 
       confirmation page sent back, link contains id token
-  8.  &lt;------------------------------- WebKDC
+  8.  <------------------------------- WebKDC
 
       re-request resource (with returned id token in URL)
   9.  -----------------> WAS
 
       set the app token cookie, response from app
-  10. &lt;----------------- WAS
+  10. <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>The first and second steps normally happen when the
           WAS is first started or when its previous service token expire
@@ -447,7 +447,7 @@
             WebKDC and including the request token in the redirect
             URL.</t>
 
-            <t>The US follows the redirect and sends a request to the
+            <t>The UA follows the redirect and sends a request to the
             WebLogin component of the WebKDC, including the request token
             in the URL.  No cookies are sent to the WebKDC since the user
             has never previously authenticated.</t>
@@ -526,7 +526,7 @@
           WebAuth-protected resource and already has an app token in a
           cookie.  This will be the most common case.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -534,10 +534,10 @@
   1.  -----------------> WAS
 
       response
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
         </figure>
 
         <t>
@@ -565,7 +565,7 @@
           webkdc-proxy token to authenticate the user without having to
           prompt them for their password again.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
@@ -573,22 +573,22 @@
   1.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for id token
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
       pass along request token
   3.  -------------------------------> WebKDC
 
       confirmation page sent back, link contains id token
-  4.  &lt;------------------------------- WebKDC
+  4.  <------------------------------- WebKDC
 
       re-request resource (with returned id token in URL)
   5.  -----------------> WAS
 
       set the app token cookie, response from app
-  6.  &lt;----------------- WAS
+  6.  <----------------- WAS
 
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>This assumes the WAS has already established a
           session key with the WebKDC, as previously
@@ -605,7 +605,7 @@
             This is done in exactly the same way as in the first
             scenario.</t>
 
-            <t>The US follows the redirect and sends a request to the
+            <t>The UA follows the redirect and sends a request to the
             WebLogin component of the WebKDC, including the request token
             in the URL.  Included in this request is a cookie containing a
             webkdc-proxy token since the user has previously
@@ -642,7 +642,7 @@
           authentication and then everything else will proceed as
           below.</preamble>
 
-          <artwork>
+          <artwork><![CDATA[
   ---------------------------------------------------------------
       UA                 WAS                WebKDC
   ---------------------------------------------------------------
@@ -650,13 +650,13 @@
   1.  -----------------> WAS
 
       redirect to WebKDC w/request token asking for proxy token
-  2.  &lt;----------------- WAS
+  2.  <----------------- WAS
 
       pass along request token
   3.  ------------------------------------> WebKDC
 
       confirmation page sent back, contains proxy token
-  4.  &lt;------------------------------------ WebKDC
+  4.  <------------------------------------ WebKDC
 
       re-request resource (with returned proxy token in URL)
   5.  -----------------> WAS
@@ -665,12 +665,12 @@
   6.                     WAS -------------> WebKDC
 
                              returns credential token
-  7.                     WAS &lt;------------- WebKDC
+  7.                     WAS <------------- WebKDC
 
       set the app token cookie, response from app
-  8.  &lt;----------------- WAS
+  8.  <----------------- WAS
   ---------------------------------------------------------------
-          </artwork>
+]]></artwork>
 
           <postamble>This assumes the WAS has already established a
           session key with the WebKDC, as previously
@@ -841,7 +841,7 @@
       session key or to use a proxy token to request credential tokens,
       and internally by the WebLogin component of the WebKDC to request
       webkdc-proxy, id, and proxy tokens from the WebKDC to return to the
-      UA></t>
+      UA.</t>
 
       <section anchor='xmlover' title='XML Protocol Overview'>
         <t>The protocol consists of an exchange of XML-formatted messages
@@ -855,18 +855,18 @@
 
         <figure>
           <preamble>For example, this is valid:</preamble>
-          <artwork>
-  &lt;requestToken>{base64-webkdc-service-token}&lt;/requestToken>
-          </artwork>
+          <artwork><![CDATA[
+  <requestToken>{base64-webkdc-service-token}</requestToken>
+]]></artwork>
         </figure>
 
         <figure>
           <preamble>while this is not:</preamble>
-          <artwork>
-  &lt;requestToken>
+          <artwork><![CDATA[
+  <requestToken>
       {base64-webkdc-service-token}
-  &lt;/requestToken>
-          </artwork>
+  </requestToken>
+]]></artwork>
         </figure>
 
         <t>The spec uses whitespace in the following examples for
@@ -875,61 +875,38 @@
 
         <figure>
           <preamble>The command request format is:</preamble>
-          <artwork>
-  &lt;xxxxRequest>
-    &lt;!-- optional, no default -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;!-- optional, default is 1 -->
-    &lt;protocolVersion>1&lt;/protocolVersion>
-    &lt;!-- rest depends on command -->
-  &lt;/xxxxRequest>
-          </artwork>
+          <artwork><![CDATA[
+  <xxxxRequest>
+    <!-- rest depends on command -->
+  </xxxxRequest>
+]]></artwork>
           <postamble>where xxxx is the type of request.</postamble>
         </figure>
 
         <figure>
           <preamble>The command response format on success is:</preamble>
-          <artwork>
-  &lt;xxxxResponse>
-    &lt;!-- only if present in request -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;!-- rest depends on command -->
-  &lt;/xxxxResponse>
-          </artwork>
+          <artwork><![CDATA[
+  <xxxxResponse>
+    <!-- rest depends on command -->
+  </xxxxResponse>
+]]></artwork>
           <postamble>where xxxx is the type of request being responded
           to.</postamble>
         </figure>
 
         <figure>
           <preamble>The command response format on failure is:</preamble>
-          <artwork>
-  &lt;errorResponse>
-     &lt;!-- only if present in request -->
-    &lt;messageId>{message-id}&lt;/messageId>
-    &lt;errorCode>{numeric}&lt;errorCode>
-    &lt;errorMessage>{message}&lt;errorMessage>
-  &lt;/errorResponse>
-          </artwork>
-          <postamble>where xxxx is the type of request being responded
-          to.</postamble>
+          <artwork><![CDATA[
+  <errorResponse>
+    <errorCode>{numeric}<errorCode>
+    <errorMessage>{message}<errorMessage>
+  </errorResponse>
+]]></artwork>
         </figure>
       </section>
 
       <section anchor='xmlcommon' title='Common XML Elements'>
         <t>The following elements are common to all commands.</t>
-
-        <section anchor='xmlmsgid' title='&lt;messageId&gt;'>
-          <t>If a request message contains a &lt;messageId> element, then
-          the value of this element MUST be returned in the response
-          message corresponding to the request.</t>
-        </section>
-
-        <section anchor='xmlvers' title='&lt;protocolVersion&gt;'>
-          <t>This is an optional string that specifies the version of the
-          protocol in use.  The default value if not specified is 1.
-          Currently, the only supported protocol is version 1.  Using any
-          other value MUST return an error.</t>
-        </section>
 
         <section anchor='xmlerrorcode' title='&lt;errorCode&gt;'>
           <t>This is a numeric error code for an errorResponse message.
@@ -981,8 +958,8 @@
               required to fulfill the request but was not present in the
               request.</t>
 
-              <t hangText='16'>The user hit the cancel button during the
-              login process.</t>
+              <t hangText='16'>The user selected cancel during the login
+              process.</t>
 
               <t hangText='17'>The WAS server requested a forced login in
               the request token, so obtaining the id or proxy token via
@@ -990,6 +967,31 @@
 
               <t hangText='18'>The user's principal was not permitted to
               authenticate to the WebKDC.</t>
+
+              <t hangText='19'>The user's password has expired.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
+              authentication, so obtaining the id or proxy token via only
+              a webkdc-proxy token or only a login token is not
+              allowed.</t>
+
+              <t hangText='21'>The WAS server requested multifactor
+              authentication, but this user is not capable of multifactor
+              authentication for some reason (such as not being known to
+              the underlying multifactor authentication system or not
+              having a strong enough second factor configured).</t>
+
+              <t hangText='22'>The user is not permitted to log in at this
+              time for security reasons.  This may be due to such factors
+              as the originating IP address or repeated login failures.
+              This code indicates a temporary failure, not a permanent
+              login failure (which is indicated by code 14).</t>
+
+              <t hangText='23'>The WAS server requested a Level of
+              Assurance in the authentication that cannot be obtained for
+              this user (perhaps because the user doesn't have a strong
+              enough authentication method configured or hasn't associated
+              the account with proof of identity).</t>
             </list>
           </t>
         </section>
@@ -1022,56 +1024,59 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-    &lt;requesterCredential type="service|krb5">
-       &lt;!-- for type="service" -->
-        {base64-webkdc-service-token}
-       &lt;!-- for type="krb5" -->
-        {base64-krb5-mk-req-data}
-    &lt;/requesterCredential>
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service|krb5">
+       <!-- for type="service" -->
+       {base64-webkdc-service-token}
+       <!-- for type="krb5" -->
+       {base64-krb5-mk-req-data}
+    </requesterCredential>
 
-    &lt;!-- not present when only requesting a webkdc-service token -->
-    &lt;subjectCredential type="proxy">
-       &lt;proxyToken>{base64-webkdc-proxy-token}&lt;/proxyToken>
-       &lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here -->
-    &lt;/subjectCredential>
+    <!-- not present when only requesting a webkdc-service token -->
+    <subjectCredential type="proxy">
+       <proxyToken>{base64-webkdc-proxy-token}</proxyToken>
+       <!-- additional <proxyToken>...</proxyToken> here -->
+    </subjectCredential>
 
-    &lt;!-- present when requestCredential is of type="service" -->
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+    <!-- present when requestCredential is of type="service" -->
+    <requestToken>{base64-request-token}</requestToken>
 
-    &lt;tokens>
-      &lt;token type="id|proxy|service|cred" id="{id-for-response}">
-        &lt;!-- for type="id" -->
-         &lt;!-- optional, default is krb5 -->
-         &lt;authenticator type="krb5|webkdc"/>
-        &lt;!-- for type="proxy" -->
-         &lt;proxyType>krb5&lt;/proxyType>
-        &lt;!-- for type="cred" -->
-         &lt;credentialType>krb5&lt;/credentialType>
-         &lt;serverPrincipal>{krb5-service}&lt;/serverPrincipal>
-      &lt;/token>
-      &lt;!-- additional &lt;token>...&lt;/token> requests go here -->
-    &lt;/tokens>
-  &lt;/getTokensRequest>
-            </artwork>
+    <tokens>
+      <token type="id|proxy|service|cred" id="{id-for-response}">
+        <!-- for type="id" -->
+        <!-- optional, default is krb5 -->
+        <authenticator type="krb5|webkdc"/>
+
+        <!-- for type="proxy" -->
+        <proxyType>krb5</proxyType>
+
+        <!-- for type="cred" -->
+        <credentialType>krb5</credentialType>
+        <serverPrincipal>{krb5-service}</serverPrincipal>
+      </token>
+      <!-- additional <token>...</token> requests go here -->
+    </tokens>
+  </getTokensRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="{id-from-request}">
-        &lt;tokenData>{base64}&lt;/tokenData>
-        &lt;!-- for type="service" -->
-         &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-         &lt;expires>{expiration-time}&lt;/expires>
-      &lt;/token>
-      &lt;!-- additional &lt;token>...&lt;/token> responses go here -->
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="{id-from-request}">
+        <tokenData>{base64}</tokenData>
+
+        <!-- for type="service" -->
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
+      </token>
+      <!-- additional <token>...</token> responses go here -->
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1102,83 +1107,113 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;requestTokenRequest>
+            <artwork><![CDATA[
+  <requestTokenRequest>
 
-    &lt;requesterCredential type="service">
+    <requesterCredential type="service">
       {base64-webkdc-service-token}
-    &lt;/requesterCredential>
+    </requesterCredential>
 
-    &lt;subjectCredential type="proxy|login">
-      &lt;!-- for type="proxy" -->
-       &lt;!-- need to pass in all the existing proxy-tokens, since
-            we (the web front-end) don't know which we might need -->
-       &lt;proxyToken>...&lt;/proxyToken>
-       &lt;!-- additional &lt;proxyToken>...&lt;/proxyToken> here -->
-      &lt;!-- for type="login" -->
-       &lt;loginToken>...&lt;/loginToken>
-    &lt;/subjectCredential>
+    <subjectCredential>
+      <!-- need to pass in all the existing proxy-tokens, since
+           we (the web front-end) don't know which we might need -->
+      <!-- source is the source of this proxy token, used to
+           determine the session factors, expressed as a factor
+           code, so "c" for tokens from cookies, "k" for tokens
+           derived from Kerberos authentication, and so forth -->
+      <proxyToken type="krb5|..." source="{factor}">...</proxyToken>
+      <!-- additional <proxyToken>...</proxyToken> here -->
 
-    &lt;!-- request token from WAS -->
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+      <!-- present if the user just authenticated -->
+      <loginToken>...</loginToken>
+    </subjectCredential>
 
-    &lt;!-- request info from front-end, for logging purposes -->
-    &lt;requestInfo>
-      &lt;remoteUser>xxxx&lt;/remoteUser>
-      &lt;!-- if one of these is provided, all must be -->
-       &lt;localIpAddr>n.n.n.n&lt;/localIpAddr>
-       &lt;localIpPort>nnnn&lt;/localIpPort>
-       &lt;remoteIpAddr>n.n.n.n&lt;/remoteIpAddr>
-       &lt;remoteIpPort>nnnn&lt;/remoteIport>
-    &lt;/requestInfo>
+    <!-- request token from WAS -->
+    <requestToken>{base64-request-token}</requestToken>
 
-  &lt;/requestTokenRequest>
-            </artwork>
+    <!-- request info from front-end, for logging purposes -->
+    <requestInfo>
+      <remoteUser>xxxx</remoteUser>
+
+      <!-- if one of these is provided, all must be -->
+      <localIpAddr>n.n.n.n</localIpAddr>
+      <localIpPort>nnnn</localIpPort>
+      <remoteIpAddr>n.n.n.n</remoteIpAddr>
+      <remoteIpPort>nnnn</remoteIport>
+    </requestInfo>
+  </requestTokenRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
-  &lt;requestTokenResponse>
+            <artwork><![CDATA[
+  <requestTokenResponse>
 
-    &lt;!-- loginErrorCode will be set in a requestTokenResponse if
+    <!-- loginErrorCode will be set in a requestTokenResponse if
          there was an error related to logging in  -->
-    &lt;loginErrorCode>{numeric}&lt;loginErrorCode>
-    &lt;loginErrorMessage>{message}&lt;loginErrorMessage>
+    <loginErrorCode>{numeric}<loginErrorCode>
+    <loginErrorMessage>{message}<loginErrorMessage>
 
-    &lt;!-- any updated/new proxy tokens created, only passed back
-         if subjectCredential was type="login"  -->
-    &lt;proxyTokens>
-      &lt;proxyToken type="...">{base64-proxy-token}&lt;/proxyToken>
-    &lt;/proxyTokens>
+    <!-- set in combination with a loginErrorCode of 19 if
+         multifactor authentication is required -->
+    <multifactorRequired>
+      <factor>{factor-code}</factor>
+      <!-- repeat for each factor code required by the WAS -->
+      <!-- present if user has configured a multifactor method -->
+      <configuredFactor>{factor-code}</configuredFactor>
+      <!-- repeat for each possible authentication method available
+           for that user that would satisfy a requirement of the WAS
+           or site policy, omitting "m" -->
+    </multifactorRequired>
 
-    &lt;!-- the url to return to the user to -->
-    &lt;returnUrl>...&lt;/returnUrl>
+    <!-- any updated/new proxy tokens created, only passed back
+         if <loginToken> was present in <subjectCredential> -->
+    <proxyTokens>
+      <proxyToken type="krb5|...">{base64-proxy-token}</proxyToken>
+    </proxyTokens>
 
-    &lt;!-- subject inside of service-token used to make request -->
-    &lt;requesterSubject>...&lt;/requesterSubject>
+    <!-- the url to return to the user to -->
+    <returnUrl>...</returnUrl>
 
-    &lt;!-- subject from subjectCredential -->
-    &lt;subject>...&lt;/subject>
+    <!-- subject inside of service-token used to make request -->
+    <requesterSubject>...</requesterSubject>
 
-    &lt;!-- requestedToken will either be an error, id, or proxy token.
-         not set if &lt;loginErrorCode> is set. -->
-    &lt;requestedToken>{base64-token}&lt;/requestedToken>
+    <!-- subject from subjectCredential -->
+    <subject>...</subject>
 
-    &lt;!-- requestedTokenType will be the type of requestedToken,
-         one of error, id, or proxy.  not set if &lt;LoginErrorCode> is
+    <!-- requestedToken will either be an error, id, or proxy token.
+         not set if <loginErrorCode> is set. -->
+    <requestedToken>{base64-token}</requestedToken>
+
+    <!-- requestedTokenType will be the type of requestedToken,
+         one of error, id, or proxy.  not set if <LoginErrorCode> is
          set. -->
-    &lt;requestedTokenType>error|id|proxy&lt;/requestedToken>
+    <requestedTokenType>error|id|proxy</requestedToken>
 
-    &lt;!-- set if request token request options has "lc" -->
-    &lt;loginCanceledToken>{base64-error-token}&lt;/loginCanceledToken>
+    <!-- set if request token request options has "lc" -->
+    <loginCanceledToken>{base64-error-token}</loginCanceledToken>
 
-    &lt;!-- app state is the opaque app state passed in the
+    <!-- app state is the opaque app state passed in the
          request token that we hand back to WAS -->
-    &lt;appState>{base64-state}&lt;/appState>
+    <appState>{base64-state}</appState>
 
-  &lt;/requestTokenResponse>
-            </artwork>
+    <!-- optional, included if the user's login history should be
+         displayed (if, for example, it was suspicious) -->
+    <loginHistory>
+      <!-- the timestamp information is optional -->
+      <loginLocation ip="{ip-address}" time="{timestamp}">
+        {hostname}
+      </loginLocation>
+      <!-- repeat for site-defined length of login history -->
+    </loginHistory>
+
+    <!-- optional, included the WebKDC has information about when
+         the user's password expires, in seconds since POSIX
+         epoch -->
+    <passwordExpires>{expiration-time}</passwordExpires>
+  </requestTokenResponse>
+]]></artwork>
           </figure>
 
           <t>If any non-login-related errors occur, an &lt;errorResponse>
@@ -1214,6 +1249,40 @@
               authenticate to the WebKDC.  The web front-end may re-prompt
               for another username and password or just display an
               error.</t>
+
+              <t hangText='19'>The user's password has expired.  The web
+              front-end may prompt the user to change it and then
+              reattempt authentication.</t>
+
+              <t hangText='20'>The WAS server requested multifactor
+              authentication.  The web front-end should prompt the user
+              for their second factor based on the
+              &lt;multifactorRequired> attribute and then attempt
+              authentication again, including any returned proxy tokens
+              from this attempt.</t>
+
+              <t hangText='21'>The WAS server requested multifactor
+              authentication, but this user is not capable of multifactor
+              authentication for some reason (such as not being known to
+              the underlying multifactor authentication system or not
+              having a strong enough second factor configured).  The web
+              front end should display an error page explaining that the
+              user cannot authenticate to this site without configuring
+              multifactor.  The required second factor options will be
+              given in the &lt;multifactorRequired> attribute.</t>
+
+              <t hangText='22'>The user is not permitted to log in at this
+              time for security reasons.  This may be due to such factors
+              as the originating IP address or repeated login failures.
+              The web front-end should display an error message to the
+              user.</t>
+
+              <t hangText='23'>The WAS server requested a Level of
+              Assurance in the authentication that cannot be obtained for
+              this user (perhaps because the user doesn't have a strong
+              enough authentication method configured or hasn't associated
+              the account with proof of identity).  The web front-end
+              should display an error message to the user.</t>
             </list>
           </t>
 
@@ -1248,35 +1317,31 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenRequest>
-
-    &lt;subjectCredential type="krb5">
-      &lt;!-- for type="krb5" -->
+            <artwork><![CDATA[
+  <webkdcProxyTokenRequest>
+    <subjectCredential type="krb5">
+      <!-- for type="krb5" -->
       {base64-krb5-mk-req-data}
-    &lt;/subjectCredential>
+    </subjectCredential>
 
-    &lt;proxyData>
-      &lt;!-- for subjectCredential type="krb5" -->
+    <proxyData>
+      <!-- for subjectCredential type="krb5" -->
       {base64-krb5-mk-priv-on-tgt}
-    &lt;/proxyData>
-
-  &lt;/webkdcProxyTokenRequest>
-            </artwork>
+    </proxyData>
+  </webkdcProxyTokenRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenResponse>
+            <artwork><![CDATA[
+  <webkdcProxyTokenResponse>
+    <webkdcProxyToken>{base64-proxy-token}</webkdcProxyToken>
 
-    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
-
-    &lt;!-- subject from subjectCredential -->
-    &lt;subject>...&lt;/subject>
-
-  &lt;/webkdcProxyTokenResponse>
-            </artwork>
+    <!-- subject from subjectCredential -->
+    <subject>...</subject>
+  </webkdcProxyTokenResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1289,23 +1354,23 @@
 
           <figure>
             <preamble>The request message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenInfoRequest>
-    &lt;webkdcProxyToken>{base64-proxy-token}&lt;/webkdcProxyToken>
-  &lt;/webkdcProxyTokenInfoRequest>
-            </artwork>
+            <artwork><![CDATA[
+  <webkdcProxyTokenInfoRequest>
+    <webkdcProxyToken>{base64-proxy-token}</webkdcProxyToken>
+  </webkdcProxyTokenInfoRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>the response message is:</preamble>
-            <artwork>
-  &lt;webkdcProxyTokenInfoResponse>
-    &lt;subject>...&lt;/subject>
-    &lt;proxyType>...&lt;/proxyType>
-    &lt;creationTime>...&lt;/creationTime>
-    &lt;expirationTime>...&lt;/expirationTime>
-  &lt;/webkdcProxyTokenInfoResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <webkdcProxyTokenInfoResponse>
+    <subject>...</subject>
+    <proxyType>...</proxyType>
+    <creationTime>...</creationTime>
+    <expirationTime>...</expirationTime>
+  </webkdcProxyTokenInfoResponse>
+]]></artwork>
           </figure>
 
           <t>If any errors occur, an &lt;errorResponse> message will be
@@ -1337,31 +1402,31 @@
 
           <figure>
             <preamble>The request:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-     &lt;requesterCredential type="krb5">
+            <artwork><![CDATA[
+  <getTokensRequest>
+     <requesterCredential type="krb5">
         {base64-krb5-mk-req-data}
-     &lt;/requesterCredential>
-     &lt;tokens>
-       &lt;token type="service" id="0"/>
-     &lt;/tokens>
-  &lt;/getTokensRequest>
-            </artwork>
+     </requesterCredential>
+     <tokens>
+       <token type="service" id="0"/>
+     </tokens>
+  </getTokensRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response:</preamble>
-            <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="0">
-        &lt;sessionKey>{base64-session-key}&lt;/sessionKey>
-        &lt;expires>{expiration-time}&lt;/expires>
-        &lt;tokenData>{base64}&lt;/tokenData>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="0">
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
+        <tokenData>{base64}</tokenData>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
         </section>
 
@@ -1374,38 +1439,38 @@
 
           <figure>
             <preamble>The request:</preamble>
-            <artwork>
-  &lt;getTokensRequest>
-    &lt;requesterCredential type="service">
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service">
       {base64-webkdc-service-token}
-    &lt;/requesterCredential>
+    </requesterCredential>
 
-    &lt;requestToken>{base64-request-token}&lt;/requestToken>
+    <requestToken>{base64-request-token}</requestToken>
 
-    &lt;subjectCredential type="proxy">
+    <subjectCredential type="proxy">
       {webkdc-proxy-token}
-    &lt;/subjectCredential>
-    &lt;tokens>
-      &lt;token type="credential" id="0"/>
-        &lt;credentialType>krb5&lt;/credentialType>
-        &lt;serverPrincipal>service/ldap@stanford.edu&lt;/serverPrincipal>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensRequest>
-            </artwork>
+    </subjectCredential>
+    <tokens>
+      <token type="credential" id="0"/>
+        <credentialType>krb5</credentialType>
+        <serverPrincipal>service/ldap@stanford.edu</serverPrincipal>
+      </token>
+    </tokens>
+  </getTokensRequest>
+]]></artwork>
           </figure>
 
           <figure>
             <preamble>The response:</preamble>
-            <artwork>
-  &lt;getTokensResponse>
-    &lt;tokens>
-      &lt;token id="0">
-        &lt;tokenData>{base64}&lt;/tokenData>
-      &lt;/token>
-    &lt;/tokens>
-  &lt;/getTokensResponse>
-            </artwork>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="0">
+        <tokenData>{base64}</tokenData>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
           </figure>
 
           <t>The WebKDC will verify that the webkdc-proxy token was
@@ -1487,7 +1552,7 @@
         <t>The following is an exhaustive list of the attribute names used
         in tokens.  All time values are 32-bit values stored in network
         byte order and are the number of seconds since 1970-01-01 00:00:00
-        UTC.
+        UTC.  All binary integers are 32-bit values in network byte order.
           <list style='hanging' hangIndent='4'>
             <t hangText='as (binary)'>
             <vspace blankLines='0'/>Optional data included in the request
@@ -1535,8 +1600,27 @@
             <t hangText='et (binary time)'>
             <vspace blankLines='0'/>Expiration time of the token.</t>
 
+            <t hangText='ia (string)'>
+            <vspace blankLines='0'/>The list of authentication factors
+            used by the authenticated user to get initial credentials from
+            the local authentication system, or the initial authentication
+            factors that are required by this WAS for a successful
+            authentication.  This is a list of factor codes separated by
+            commas.  For the list of registered factor names, see <xref
+            target='factors' />.</t>
+
             <t hangText='k (binary)'>
             <vspace blankLines='0'/>AES session key.</t>
+
+            <t hangText='loa (binary unsigned integer)'>
+            <vspace blankLines='0'/>A non-zero site-defined numeric Level
+            of Assurance code for the assurance level of this
+            authentication of this user, or the assurance level required
+            for a successful authentication to this site.  Higher values
+            indicate a stronger level of assurance; otherwise, the meaning
+            of the codes is site-defined.  The value of 0 is reserved to
+            indicate that no level of assurance has been determined, and
+            will not appear in tokens.</t>
 
             <t hangText='lt (binary time)'>
             <vspace blankLines='0'/>Last-used time.  If this attribute is
@@ -1545,6 +1629,10 @@
             updated last-used time) as it is used for access.  This
             attribute is used to implement timing out of unused but still
             unexpired app tokens.</t>
+
+            <t hangText='otp (string)'>
+            <vspace blankLines='0'/>User's one-time password code, in a
+            login token.</t>
 
             <t hangText='p (string)'>
             <vspace blankLines='0'/>User's password, in a login token.</t>
@@ -1565,7 +1653,7 @@
 
             <t hangText='ro (string)'>
             <vspace blankLines='0'/>Comma-separated list of request
-            options.  Currently, the following options are supported: lc,
+            options.  Currently, the following options are supported:  lc,
             to return an error code to the application if login is
             cancelled; and fa, to force interactive authentication even if
             the user has a webkdc-proxy token.</t>
@@ -1600,21 +1688,112 @@
             is krb5, this is a KRB_AP_REQ for the same Kerberos V5
             principal as the webkdc-service token's subject.</t>
 
+            <t hangText='san (string)'>
+            <vspace blankLines='0'/>The list of authentication factors
+            used by the authenticated user for session authentication, or
+            the session authentication factors that are required by this
+            WAS for a successful authentication.  This is a list of factor
+            codes separated by commas.  For the list of registered factor
+            names, see <xref target='factors' />.</t>
+
             <t hangText='t (string)'>
             <vspace blankLines='0'/>The token type.  Currently recognized
             token types are webkdc-service, webkdc-proxy, req, error, id,
             proxy, cred, and app.  Used by a server to ensure that a token
             is being used for the correct purpose.</t>
 
-            <t hangText='wt (binary)'>
-            <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
-            that is being included inside another token.</t>
-
             <t hangText='u (string)'>
             <vspace blankLines='0'/>The user's username in a login
             token.</t>
+
+            <t hangText='wt (binary)'>
+            <vspace blankLines='0'/>A webkdc-proxy or webkdc-service token
+            that is being included inside another token.</t>
           </list>
         </t>
+      </section>
+
+      <section anchor='factors' title='Authentication Factors'>
+        <t>The ia and san attributes contain a comma-separated list of
+        authentication factors.  The following are the standardized factor
+        names to use and their meaning.  All of these codes are valid for
+        both initial authentication and session authentication factor
+        lists except where noted.
+          <list style='hanging' hangIndent='4'>
+            <t hangText='c (cookie)'>
+            <vspace blankLines='0'/>Only used for session authentication
+            factors, this indicates that the user authenticated this
+            session by presenting a cookie containing a webkdc-proxy token
+            (rather than, for example, providing a password or other
+            credentials).</t>
+
+            <t hangText='k (Kerberos)'>
+            <vspace blankLines='0'/>Only used for session authentication
+            factors, this indicates that the user authenticated this
+            session using a Kerberos authentication (generally via
+            Negotiate-Auth, but possibly via other methods).</t>
+
+            <t hangText='m (multifactor)'>
+            <vspace blankLines='0'/>Multiple independent authentication
+            factors were used.  The exact requirements for this are
+            site-defined, but traditionally means password plus OTP, or
+            password plus X.509, or an X.509 authentication from a smart
+            card requiring a PIN.</t>
+
+            <t hangText='o (OTP)'>
+            <vspace blankLines='0'/>Some one-time password method was used
+            for authentication.  This factor code is often used in
+            combination with one of the o# codes defined below.</t>
+
+            <t hangText='o# (OTP)'>
+            <vspace blankLines='0'/>The one-time password method numbered
+            # was used.  The meaning of the numbers is site-defined, but
+            the numbers should be integers starting with 1 and higher
+            numbers should indicate a stronger OTP method.  For example,
+            o1 could indicate a printed list of OTP codes, o2 could
+            indicate a code sent via SMS message, and o3 could indicate a
+            hardware device that is synchronized with the OTP server.</t>
+
+            <t hangText='p (password)'>
+            <vspace blankLines='0'/>Traditional password
+            authentication.</t>
+
+            <t hangText='rm (random multifactor'>
+            <vspace blankLines='0'/>The user was subject to a random chance
+            of being challenged with a requirement for a multifactor
+            authentication method and happened not to be challenged.  If
+            the user had been challenged, either authentication would have
+            failed or the m authentication factor would be used instead.
+            The chance of the challenge is site-defined.</t>
+
+            <t hangText='u (unknown)'>
+            <vspace blankLines='0'/>The authentication method is not
+            known.  This may be used, for example, when the user
+            authenticates to the WebLogin component of the WebKDC using
+            some authentication mechanism handled external to the WebLogin
+            server and no information about that method is available.</t>
+
+            <t hangText='x (X.509)'>
+            <vspace blankLines='0'/>Some form of X.509 authentication was
+            used.  Whether this is via a smart card is site-defined.  This
+            factor code is often used in combination with one of the x#
+            codes defined below.</t>
+
+            <t hangText='x# (X.509)'>
+            <vspace blankLines='0'/>The X.509 authentication method
+            numbered # was used.  The meaning of the numbers is
+            site-defined, but the numbers should be integers starting with
+            1 and higher numbers should indicate a stronger X.509 method.
+            For example, x1 could indicate an X.509 certificate that may
+            be stored on the file system of a user's system or on a
+            removable drive, and x2 could indicate a hardware smart
+            card.</t>
+          </list>
+        </t>
+
+        <t>Sites may define and use their own factor codes, but they risk
+        conflict with future standardized codes unless they coordinate
+        that use with this list.</t>
       </section>
 
       <section anchor='tokenspecific' title='Specific Token Encoding'>
@@ -1663,6 +1842,8 @@
   pd={proxy-data}
   ct={creation-date}
   et={expiration-date}
+  [ia={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -1704,6 +1885,9 @@
   sa=krb5|webkdc
   # for rt=proxy
   pt=krb5
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -1733,7 +1917,8 @@
 
         <section anchor='tokenerror' title='error Token Encoding'>
           <t>An error token is sent from the WebKDC as a response to a
-          request token when an error occurs.</t>
+          request token when an error occurs.  It may be returned to the
+          WAS as the response token if the user canceled login.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1769,6 +1954,9 @@
   sad={result-of-krb5-mk-req-for-webauth/hostname}
   ct={creation-time}
   et={expiration-time}
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -1797,7 +1985,11 @@
 
         <section anchor='tokenproxy' title='proxy Token Encoding'>
           <t>A proxy token is returned by the WebKDC when a WAS requests a
-          proxy token from the WebKDC via the HTML interface.</t>
+          proxy token from the WebKDC via the HTML interface.  Normally,
+          the WAS just requests an id token directly, but if the WAS may
+          need cred tokens for a user, it requests a proxy token instead.
+          The proxy token can be later used to retrieve an id or cred
+          token from the WebKDC.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1808,11 +2000,23 @@
   wt={webkdc-proxy-token}
   ct={creation-time}
   et={expiration-time}
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
           <t>All attributes are AES-encrypted in the webkdc-service token
           session key.</t>
+
+          <t>In addition to the webkdc-proxy token, a proxy token provides
+          all the same authentication information about a user as an id
+          token with a subject auth of "webkdc".  If the WAS only needs id
+          token information at the level provided by the "webkdc" subject
+          auth type, it can use the proxy token for that information
+          without requesting an id token.  If it wants an id token with a
+          "krb5" subject auth type, it will have to request that from the
+          WebKDC using the proxy token.</t>
 
           <t>The value of ct is used to prevent replay attacks.  Values
           older then a certain time (probably 5 minutes by default) should
@@ -1849,21 +2053,23 @@
 
         <section anchor='tokenlogin' title='login Token Encoding'>
           <t>A login token is used by the WebLogin component of the WebKDC
-          to communicate a username and password to the rest of the
-          WebKDC when it needs to authenticate a user.</t>
+          to communicate a username and password or one-time-password code
+          to the rest of the WebKDC when it needs to authenticate a
+          user.</t>
 
           <figure>
             <preamble>Token format:</preamble>
             <artwork>
   t=login
   ct={creation-time}
-  p={password}
   u={username}
+  [p={password}]
+  [otp={one-time-password-code}]
             </artwork>
           </figure>
 
           <t>All attributes are AES-encrypted in the WebKDC's private
-          key.</t>
+          key.  One of p or otp must be provided.</t>
         </section>
 
         <section anchor='tokenapp' title='app Token Encoding'>
@@ -1880,6 +2086,9 @@
   [s={username}]
   [k=session-key]
   [lt={last-use-time}]
+  [ia={factor-list}]
+  [san={factor-list}]
+  [loa={level-of-assurance}]
             </artwork>
           </figure>
 
@@ -2174,7 +2383,7 @@
           webkdcProxyTokenInfo commands.  Added requestInfo to
           requestToken command for S/Ident support.</t>
 
-          <t hangText='2.00 (2006-01-02, rra)'>
+          <t hangText='2.0.0 (2006-01-02, rra)'>
           <vspace blankLines='0'/>Rewritten in XML and substantially
           edited, clarified, and reworked.  Added &lt;remoteUser> to
           &lt;requestInfo> and clarified that &lt;requestInfo> must be
@@ -2184,32 +2393,48 @@
           may not have a webkdc-proxy token with other forms of
           authentication.</t>
 
-          <t hangText='2.01 (2006-01-23, rra)'>
+          <t hangText='2.0.1 (2006-01-23, rra)'>
           <vspace blankLines='0'/>Move the document history into an
           appendix.  Document the magic WEBKDC prefix to proxy
           subjects.</t>
 
-          <t hangText='2.10 (2006-02-17, rra)'>
+          <t hangText='2.1.0 (2006-02-17, rra)'>
           <vspace blankLines='0'/>Add a specification for the encoding of
           Kerberos credentials in tokens.  Specify the size of
           timestamps.</t>
 
-          <t hangText='2.11 (2008-03-14, rra)'>
+          <t hangText='2.1.1 (2008-03-14, rra)'>
           <vspace blankLines='0'/>Add error code 18, indicating that the
           WebKDC did not permit the user's principal to authenticate.  Fix
           typo in the webkdcProxyTokenInfoRequest example.  Fix XML
           formatting issues.</t>
 
-          <t hangText='2.12 (2009-06-24, rra)'>
+          <t hangText='2.1.2 (2009-06-24, rra)'>
           <vspace blankLines='0'/>Add requestedTokenType to the XML
           returned in response to &lt;requestToken> so that the WebLogin
           component can make decisions based on whether the WAS requested
           an id token or a proxy token.</t>
 
-          <t hangText='2.13 (2010-05-15, rra)'>
+          <t hangText='2.1.3 (2010-05-15, rra)'>
           <vspace blankLines='0'/>Replace all mentions of krb5_mk_req with
           KRB_AP_REQ, which is the correct protocol term for the results
           of a krb5_mk_req call.</t>
+
+          <t hangText='3.0.0 (2011-07-22, rra)'>
+          <vspace blankLines='0'/>Add ia, san, and loa attributes to
+          various tokens to store authentication factor information and
+          level of assurance.  Document the factor codes for
+          authentication factors.  Remove &lt;messageId> and
+          &lt;protocolVersion> from the XML specification; neither were
+          ever implemented.  Add additional error codes for multifactor
+          and Level of Assurance support.  Add &lt;multifactorRequired>
+          and &lt;loginHistory> to &lt;requestTokenResponse> and the otp
+          attribute to the login token.  Remove the type attribute to
+          &lt;subjectCredential> and change the protocol to allow both
+          &lt;proxyToken> and &lt;loginToken> to be sent in the same
+          request.  Add the type attribute to &lt;proxyToken>.  Include
+          source factor information in &lt;proxyToken> elements sent to
+          the WebKDC, used to derive session factor information.</t>
         </list>
       </t>
     </section>

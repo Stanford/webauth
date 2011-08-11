@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [3.7.4], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.0.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -66,7 +66,14 @@ AC_ARG_ENABLE([perl],
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
 AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
 
+dnl Used for the test suite.
+AC_ARG_VAR([PATH_REMCTLD], [Path to remctld for the test suite])
+AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
+    [$PATH$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/usr/local/sbin])
+
 RRA_LIB_APACHE
+RRA_LIB_APR
+RRA_LIB_APRUTIL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_HEADERS([et/com_err.h])
@@ -87,12 +94,13 @@ AC_CHECK_MEMBER([krb5_creds.session],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
+RRA_LIB_REMCTL
 RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/bittypes.h syslog.h])
+AC_CHECK_HEADERS([strings.h sys/bittypes.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_FUNCS([setrlimit])
 RRA_C_C99_VAMACROS
@@ -102,7 +110,7 @@ AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
 
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
@@ -120,7 +128,7 @@ AC_SUBST([DEPEND_LIBS])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
-AC_CONFIG_COMMANDS([lib/webauth.h],
-    [${srcdir}/lib/mkheader ${srcdir}/${filename}.in ${filename}],
-    [filename=lib/webauth.h])
+AC_CONFIG_COMMANDS([include/webauth/defines.h],
+    [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
+    [filename=include/webauth/defines.h])
 AC_OUTPUT

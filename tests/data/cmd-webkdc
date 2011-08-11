@@ -1,0 +1,46 @@
+#!/bin/sh
+#
+# Fake remctl backend for WebKDC user metadata queries.  Just returns a stock
+# XML file from the data/xml directory based on the command given.
+
+set -e
+
+# Verify that the front-end passed the correct data and determine the XML
+# directory to use for responses.
+if [ "$1" = "webkdc-userinfo" ] ; then
+    dir=info
+    if [ "$3" != "127.0.0.1" ] ; then
+        echo "invalid IP address $3" >&2
+        exit 1
+    fi
+    if [ "$5" != "0" ] ; then
+        echo "invalid random flag $5" >&2
+        exit 1
+    fi
+elif [ "$1" = "webkdc-validate" ] ; then
+    dir=validate
+    if [ "$3" != "127.0.0.1" ] ; then
+        echo "invalid IP address $3" >&2
+        exit 1
+    fi
+else
+    echo "invalid command $1" >&2
+    exit 1
+fi
+
+# See if the file exists, and if so, return it.
+if [ -f "data/xml/$dir/$2.xml" ] ; then
+    if [ "$1" = "webkdc-userinfo" ] ; then
+        exec cat "data/xml/$dir/$2.xml"
+    elif [ "$1" = "webkdc-validate" ] ; then
+        if [ "$4" != "123456" ] ; then
+            cat "data/xml/$dir/$2.xml" | sed 's/<success>yes/<success>no/'
+            exit $?
+        else
+            exec cat "data/xml/$dir/$2.xml"
+        fi
+    fi
+else
+    echo "unknown user $2" >&2
+    exit 1
+fi

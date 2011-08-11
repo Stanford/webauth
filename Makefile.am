@@ -20,37 +20,46 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
-	perl/t/misc.t perl/t/page-pwchange.t perl/t/pending-expire.t	    \
-	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/typemap
+	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
+	perl/t/pending-expire.t perl/t/webauth.t perl/t/webkdc.t	    \
+	perl/t/weblogin.t perl/typemap
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		   \
-	conf/debian/webauth.conf conf/debian/webauth.load		   \
-	conf/debian/webauthldap.conf conf/debian/webauthldap.load	   \
-	conf/debian/webkdc.conf conf/debian/webkdc.load			   \
-	conf/sample-webauth.conf conf/stanford-ldap.conf		   \
-	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	   \
-	docs/install-spnego docs/install-stanford docs/install-webkdc	   \
-	docs/mod_webauth.html.en docs/mod_webauth.xml			   \
-	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		   \
-	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	   \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth   \
-	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	   \
-	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	   \
-	lib/mkheader lib/webauth.h.in perl/README perl/MANIFEST		   \
-	perl/MANIFEST.SKIP tests/TESTS tests/data/README tests/mod_webauth \
-	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t  \
-	tools/wa_keyring.pod tools/weblogin-passcheck			   \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		   \
-	weblogin/images/help.xcf weblogin/images/login.xcf		   \
-	weblogin/images/logout.xcf $(PERL_FILES)
+EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
+	conf/debian/webauth.conf conf/debian/webauth.load		    \
+	conf/debian/webauthldap.conf conf/debian/webauthldap.load	    \
+	conf/debian/webkdc.conf conf/debian/webkdc.load			    \
+	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
+	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
+	docs/diagrams/weblogin-flow.dia docs/diagrams/weblogin-flow.png	    \
+	docs/diagrams/weblogin-flow.svg docs/install-spnego		    \
+	docs/install-stanford docs/install-webkdc docs/mod_webauth.html.en  \
+	docs/mod_webauth.xml docs/mod_webauthldap.html.en		    \
+	docs/mod_webauthldap.xml docs/mod_webkdc.html.en		    \
+	docs/mod_webkdc.xml docs/protocol.html docs/protocol.txt	    \
+	docs/protocol.xml docs/test-plan docs/userauth docs/weblogin-config \
+	docs/weblogin-cookies docs/weblogin-flow docs/weblogin-testing	    \
+	include/mkheader include/webauth/defines.h.in lib/internal.h	    \
+	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	    \
+	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
+	tests/data/README tests/data/cmd-webkdc tests/data/conf-webkdc	    \
+	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
+	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
+	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+
+# WebAuth library include files are in include.  Remember, when overriding
+# CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
+AM_CPPFLAGS = -I$(srcdir)/include -I$(builddir)/include
 
 noinst_LTLIBRARIES = portable/libportable.la
 portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
         portable/krb5.h portable/macros.h portable/stdbool.h		 \
         portable/system.h
-portable_libportable_la_CPPFLAGS = $(KRB5_CPPFLAGS)
+portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
 noinst_LIBRARIES = util/libutil.a
 util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
@@ -63,14 +72,26 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
-nodist_include_HEADERS = lib/webauth.h
-lib_libwebauth_la_SOURCES = lib/attrs.c lib/base64.c lib/key.c lib/krb5.c \
-	lib/misc.c lib/random.c lib/token.c lib/webauth.h
+include_HEADERS = include/webauth.h
+webauthincludedir = $(includedir)/webauth
+webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
+	include/webauth/tokens.h include/webauth/util.h			\
+	include/webauth/webkdc.h
+nodist_webauthinclude_HEADERS = include/webauth/defines.h
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attrs.c lib/base64.c	\
+	lib/context.c lib/factors.c lib/key.c lib/keys.c lib/krb5.c	\
+	lib/internal.h lib/misc.c lib/random.c lib/token-decode.c	\
+	lib/token-encode.c lib/token.c lib/userinfo.c lib/util.c	\
+	lib/webkdc-config.c lib/webkdc-login.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 4:0:0 $(VERSION_LDFLAGS) \
-	$(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
-lib_libwebauth_la_LIBADD = portable/libportable.la $(KRB5_LIBS) -lcom_err \
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
+	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
+	$(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 5:0:0 $(VERSION_LDFLAGS)	    \
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
+	$(CRYPTO_LDFLAGS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)	\
+	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) -lcom_err	\
 	$(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
@@ -87,7 +108,7 @@ endif
 
 modules_ldap_mod_webauthldap_la_SOURCES = modules/ldap/mod_webauthldap.c \
 	modules/ldap/mod_webauthldap.h
-modules_ldap_mod_webauthldap_la_CPPFLAGS = $(APACHE_CPPFLAGS) \
+modules_ldap_mod_webauthldap_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
 	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
 modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
@@ -96,15 +117,16 @@ modules_ldap_mod_webauthldap_la_LIBADD = portable/libportable.la \
 modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
 	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
 	modules/webauth/util.c modules/webauth/webkdc.c
-modules_webauth_mod_webauth_la_CPPFLAGS = $(APACHE_CPPFLAGS) $(CURL_CPPFLAGS)
+modules_webauth_mod_webauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
+	$(CURL_CPPFLAGS)
 modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(CURL_LDFLAGS)
 modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
 	$(CURL_LIBS)
-modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c \
-	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h \
-	modules/webkdc/util.c
-modules_webkdc_mod_webkdc_la_CPPFLAGS = $(APACHE_CPPFLAGS)
+modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c	\
+	modules/webkdc/config.c modules/webkdc/mod_webkdc.c	\
+	modules/webkdc/mod_webkdc.h modules/webkdc/util.c
+modules_webkdc_mod_webkdc_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS)
 modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS)
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
@@ -137,7 +159,7 @@ if BUILD_WEBKDC
     weblogindir = $(datadir)/weblogin
     imagedir    = $(weblogindir)/generic/images
     templatedir = $(weblogindir)/generic/templates
-    dist_weblogin_DATA = weblogin/login.fcgi weblogin/logout.fcgi	\
+    dist_weblogin_SCRIPTS = weblogin/login.fcgi weblogin/logout.fcgi	\
 	weblogin/pwchange.fcgi
     dist_image_DATA = weblogin/images/confirm.png weblogin/images/error.png \
 	weblogin/images/help.png weblogin/images/login.png		    \
@@ -145,6 +167,7 @@ if BUILD_WEBKDC
     dist_template_DATA = weblogin/templates/confirm.tmpl		\
 	weblogin/templates/error.tmpl weblogin/templates/help.html	\
 	weblogin/templates/login.tmpl weblogin/templates/logout.tmpl	\
+	weblogin/templates/multifactor.tmpl				\
 	weblogin/templates/pwchange.tmpl
 endif
 
@@ -160,7 +183,8 @@ endif
 # doesn't pass them.
 if GCC
     PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
-	-Wno-strict-prototypes -Wno-redundant-decls
+	-Wno-strict-prototypes -Wno-redundant-decls -Wno-shadow \
+	-Wno-unused-variable
 else
     PERL_WARNINGS =
 endif
@@ -190,7 +214,7 @@ all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = lib/libwebauth.pc
-DISTCLEANFILES = perl/Makefile lib/webauth.h
+DISTCLEANFILES = include/webauth/defines.h perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
@@ -232,9 +256,12 @@ warnings:
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
-	tests/lib/hex-t tests/lib/key-t tests/lib/krb5-t		   \
-	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-t	   \
-	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
+	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
+	tests/lib/key-t tests/lib/keys-t tests/lib/krb5-t		   \
+	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
+	tests/lib/token-encode-t tests/lib/token-t tests/lib/webkdc-info-t \
+	tests/lib/webkdc-login-t tests/portable/asprintf-t		   \
+	tests/portable/mkstemp-t tests/portable/setenv-t		   \
 	tests/portable/snprintf-t tests/portable/strlcat-t		   \
 	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
 	tests/util/xmalloc
@@ -244,25 +271,47 @@ check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
-	tests/tap/messages.h tests/tap/process.c tests/tap/process.h
+	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
+	tests/tap/remctl.c tests/tap/remctl.h
 
 # All of the test programs.
 tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la $(APR_LIBS)
 tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
 tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a
+tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a
 tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_info_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+tests_lib_webkdc_login_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
 	tests/portable/asprintf.c
 tests_portable_asprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_mkstemp_t_SOURCES = tests/portable/mkstemp-t.c \
 	tests/portable/mkstemp.c
 tests_portable_mkstemp_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_setenv_t_SOURCES = tests/portable/setenv-t.c \
+	tests/portable/setenv.c
+tests_portable_setenv_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_snprintf_t_SOURCES = tests/portable/snprintf-t.c \
 	tests/portable/snprintf.c
 tests_portable_snprintf_t_LDADD = tests/tap/libtap.a portable/libportable.la

@@ -81,6 +81,36 @@ sub end_tests {
     print "</table>";
 }
 
+sub multifactor_tests {
+
+    my $WEBAUTH_FACTORS_INITIAL = $ENV{'WEBAUTH_FACTORS_INITIAL'};
+    my $WEBAUTH_FACTORS_SESSION = $ENV{'WEBAUTH_FACTORS_SESSION'};
+    my $WEBAUTH_LOA = $ENV{'WEBAUTH_LOA'};
+
+    print "<hr>\n";
+
+    &begin_tests("Performing Multifactor tests");
+
+    &do_test("WEBAUTH_FACTORS_INITIAL",
+	     $WEBAUTH_FACTORS_INITIAL ne '',
+	     "set to <b>$WEBAUTH_FACTORS_INITIAL</b>",
+	     "not set!");
+
+    &do_test("WEBAUTH_FACTORS_SESSION",
+	     $WEBAUTH_FACTORS_SESSION ne '',
+	     "set to <b>$WEBAUTH_FACTORS_SESSION</b>",
+	     "not set!");
+
+    &do_test("WEBAUTH_LOA",
+	     $WEBAUTH_LOA ne '',
+	     "set to <b>$WEBAUTH_LOA</b>",
+	     "not set!");
+
+    &end_tests;
+
+    print "<hr>\n";
+}
+
 sub varprefix_tests {
 
     my $WEBAUTH_TOKEN_CREATION = $ENV{'WEBAUTH_TOKEN_CREATION'};
@@ -90,7 +120,6 @@ sub varprefix_tests {
     my $TEST_WEBAUTH_TOKEN_CREATION = $ENV{'TEST_WEBAUTH_TOKEN_CREATION'};
     my $TEST_WEBAUTH_TOKEN_EXPIRATION = $ENV{'TEST_WEBAUTH_TOKEN_EXPIRATION'};
     my $TEST_WEBAUTH_USER = $ENV{'TEST_WEBAUTH_USER'};
-
 
     print "<hr>\n";
 
@@ -196,7 +225,7 @@ foreach $var (sort(keys(%cookies))) {
     print "<tr><td>${var}</td><td>${val}</td>\n";
 }
 
-print<<EOS; 
+print<<EOS;
 
 </table>
 <hr>
@@ -216,7 +245,7 @@ foreach $var (sort(keys(%ENV))) {
 	$val = substr($val, 0, 80) . "...(truncated)";
     }
     $val = my_escapeHTML($val);
-    
+
 #    $val =~ s|\n|\\n|g;
 #    $val =~ s|"|\\"|g;
 
