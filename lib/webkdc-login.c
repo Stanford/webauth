@@ -445,8 +445,8 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
  * Given the request from the WebAuth Application Server, the current
  * accumulated response, the current merged webkdc-proxy token, and the user
  * metadata information (which may be NULL if there's no metadata configured),
- * check whether multifactor authentication is already satisfied or
- * unnecessary, required, or impossible.
+ * check whether multifactor authentication and a level of assurance
+ * restriction is already satisfied or unnecessary, required, or impossible.
  *
  * Returns WA_ERR_NONE and leaves request->login_error unchanged if any
  * multifactor requirements are satisfied.  Sets request->login_error if
@@ -467,7 +467,6 @@ check_multifactor(struct webauth_context *ctx,
     struct webauth_token_request *req;
     const char *factor;
 
-    /* If the WAS doesn't care, neither do we. */
     req = request->request;
 
     /* Figure out what factors we want and have. */
@@ -495,14 +494,31 @@ check_multifactor(struct webauth_context *ctx,
     }
 
     /*
-     * Second, see if the WAS-requested factors are already satisfied by the
+     * Second, check the level of assurance required.  If the user cannot
+     * establish a sufficient level of assurance, punt immediately; we don't
+     * care about the available factors in that case.
+     */
+    if (req->loa > wkproxy->loa) {
+        if (req->loa > info->max_loa) {
+            response->login_error = WA_PEC_LOA_UNAVAILABLE;
+            response->login_message = "insufficient level of assurance";
+            return WA_ERR_NONE;
+        } else {
+            response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
+            response->login_message = "multifactor login required";
+        }
+    }
+
+    /*
+     * Third, see if the WAS-requested factors are already satisfied by the
      * factors that we have.  If not, choose the error message.  If the user
-     * can't satisfy the factors at all, we'll change the error later.
+     * can't satisfy the factors at all, we'll change the error later.  Be
+     * careful not to override errors from the LoA check.
      */
     if (webauth_factors_subset(ctx, wanted, have)) {
         if (webauth_factors_subset(ctx, swanted, shave))
             return WA_ERR_NONE;
-        else {
+        else if (response->login_error == 0) {
             response->login_error = WA_PEC_LOGIN_FORCED;
             response->login_message = "forced authentication, need to login";
         }

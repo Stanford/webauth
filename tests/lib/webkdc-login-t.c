@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(214);
+    plan(223);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -557,10 +557,25 @@ main(void)
     is_string("id", response->result_type, "...which is an id token");
 
     /*
+     * Request a level of assurance that we can't possibly.  This should
+     * result in a specific LoA error code.
+     */
+    req.loa = 4;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Multifactor LoA returns success");
+    is_int(WA_PEC_LOA_UNAVAILABLE, response->login_error,
+           "...with the right error");
+    is_string("insufficient level of assurance", response->login_message,
+              "...and the right message");
+
+    /*
      * Request a password factor for the session authentication.  This should
      * fail, since we only have a session factor of cookie, returning the
      * error code for forced login.
      */
+    req.loa = 0;
     req.initial_factors = NULL;
     req.session_factors = "p";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -781,7 +796,7 @@ main(void)
 
     /* But if the webkdc-proxy token is current, this does work. */
     wkproxy.token.webkdc_proxy.creation = now;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -801,6 +816,31 @@ main(void)
     else
         is_string("o,o3,p,m", token->token.proxy.session_factors,
                   "...result session factors is right");
+
+    /*
+     * Try requesting only a level of assurance, with a webkdc-proxy token for
+     * an insufficient level of assurance, but a level of assurance that the
+     * user can meet.  Ensure the correct error message is returned.  Use
+     * normal instead of full as the user so that multifactor isn't forced.
+     */
+    wkproxy.token.webkdc_proxy.subject = "normal";
+    wkproxy.token.webkdc_proxy.loa = 1;
+    req.initial_factors = NULL;
+    req.session_factors = "m";
+    req.loa = 2;
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Multifactor for LoA returns success");
+    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
+           "...with the right error");
+    is_string("multifactor login required", response->login_message,
+              "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+    is_int(0, response->factors_wanted->nelts,
+           "...and no factors are wanted");
+    is_int(5, response->factors_configured->nelts,
+           "...and five factors are configured");
 
     /* Clean up. */
     remctld_stop(remctld);
