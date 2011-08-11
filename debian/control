@@ -3,9 +3,18 @@ Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 8), apache2-threaded-dev (>= 2.2),
- libcgi-fast-perl, libcurl4-openssl-dev, libhtml-template-perl,
- libipc-run-perl, libkrb5-dev, libldap2-dev, libssl-dev, libtimedate-perl,
- liburi-perl, libwww-perl, libxml-parser-perl, perl
+ libapr1-dev, libaprutil1-dev, libcgi-application-perl,
+ libcgi-application-perl (>= 4.50) |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-autorunmode-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-forward-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-tt-perl |
+ libcgi-application-extra-plugin-bundle-perl,
+ libcgi-fast-perl, libcurl4-openssl-dev, libipc-run-perl, libkrb5-dev,
+ libldap2-dev, libremctl-dev, libssl-dev, libtemplate-perl,
+ libtimedate-perl, liburi-perl, libwww-perl, libxml-parser-perl, perl
 Standards-Version: 3.9.2
 Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git
@@ -92,8 +101,17 @@ Package: libwebkdc-perl
 Section: perl
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 3.7.0),
- libcgi-fast-perl, libhtml-template-perl, libio-socket-ssl-perl,
- liburi-perl, libwww-perl, libxml-parser-perl
+ libcgi-application-perl,
+ libcgi-application-perl (>= 4.50) |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-autorunmode-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-forward-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-tt-perl |
+ libcgi-application-extra-plugin-bundle-perl,
+ libcgi-fast-perl, libio-socket-ssl-perl, libtemplate-perl, liburi-perl,
+ libwww-perl, libxml-parser-perl
 Suggests: libnet-remctl-perl, libtime-duration-perl, libtimedate-perl
 Description: Perl libraries for WebAuth central login server
  WebAuth is a cookie-based web authentication system built on top of
