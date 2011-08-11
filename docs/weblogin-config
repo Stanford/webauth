@@ -111,6 +111,7 @@ Templates
       username                 The authenticated identity of the user
       login_cancel             If set, application provided a cancel URL
       cancel_url               The cancel URL (return URL plus cancel token)
+      multifactor_sentauth     If set, we have run the sendauth function
       error                    If set, some error happened
       err_multifactor_missing  If set, form was submitted without an OTP
       err_multifactor_invalid  If set, could not validate a submitted OTP

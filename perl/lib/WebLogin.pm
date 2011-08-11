@@ -752,7 +752,8 @@ sub print_multifactor_page {
     $params->{username} = $q->param ('username');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
-    $params->{factor_type} = $self->{response}->factor_configured;
+    $params->{factor_type} = $self->{response}->factor_configured
+        || $q->param ('factor_type');
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
