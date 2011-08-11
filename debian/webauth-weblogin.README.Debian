@@ -152,22 +152,20 @@ Using FastCGI
 -------------
 
 The Weblogin scripts are written so that they can use FastCGI, but don't
-require it.  FastCGI is, unfortunately, under a non-free license, so this
-is not the default.
+require it.
 
 If you want to use these scripts with FastCGI, you will need to install
-the Apache 2.x modules for FastCGI, which are not bundled with Debian.
-You can obtain them from <http://www.fastcgi.com/>.  Once the module is
-installed, you need to add this line to load the module:
+the Apache 2.x modules for FastCGI.  libapache2-mod-fcgid comes with
+Debian, and libapache2-mod-fastcgi is available in the non-free Debian
+archive (which is not part of Debian, but which is provided on the same
+servers for the convenience of Debian users).
 
-    LoadModule fastcgi_module modules/mod_fastcgi.so
-
-and then, to the <Directory> block in the installation instructions above,
-add the line:
+Once you have configured Apache to support FastCGI, add, to the
+<Directory> block in the installation instructions above, the line:
 
     AddHandler fastcgi-script .fcgi
 
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Wed,  7 Jul 2010 18:00:16 -0700
+ -- Russ Allbery <rra@debian.org>, Thu, 11 Aug 2011 14:20:59 -0700

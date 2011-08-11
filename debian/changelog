@@ -26,6 +26,9 @@ webauth (4.0.0~alpha1-1) UNRELEASED; urgency=low
       choose the best key have been added.
     - The libwebauth API has been changed substantially and will be
       changed further in subsequent releases.
+  * Update the webauth-weblogin README.Debian to mention the Apache
+    FastCGI module now included in Debian and the alternative in
+    non-free.
 
  -- Russ Allbery <rra@debian.org>  Thu, 11 Aug 2011 13:32:03 -0700
 
