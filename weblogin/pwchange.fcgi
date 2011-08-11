@@ -26,7 +26,6 @@ use strict;
 use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
-use HTML::Template ();
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebLogin;
 use WebKDC ();
@@ -37,11 +36,13 @@ use WebKDC::WebKDCException;
 # once it finishes processing the current request.
 our $EXITING = 0;
 
-# The names of the template pages that we use.  The beginning of the main
-# routine changes the values here to be HTML::Template objects.
-our %PAGES = (pwchange => 'pwchange.tmpl',
+# The name of the template to use for logout.
+our %PAGES = (login    => 'login.tmpl',
+              logout   => 'logout.tmpl',
               confirm  => 'confirm.tmpl',
+              pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
+
 
 ##############################################################################
 # Debugging
@@ -68,15 +69,6 @@ sub dump_stuff {
 # Main routine
 ##############################################################################
 
-# Pre-compile our templates.  When running under FastCGI, this results in a
-# significant speedup, since loading and compiling the templates is a bit
-# time-consuming.
-%PAGES = map {
-    $_ => HTML::Template->new (filename => $PAGES{$_},
-                               cache    => 1,
-                               path     => $WebKDC::Config::TEMPLATE_PATH)
-} keys %PAGES;
-
 # Exit safely if we get a SIGTERM.
 $SIG{TERM} = sub { $EXITING = 1 };
 
@@ -85,96 +77,15 @@ $SIG{TERM} = sub { $EXITING = 1 };
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
 
-    my $weblogin = WebLogin->new ($q, \%PAGES);
-    my $req = $weblogin->{request};
+    # Could try $weblogin->start_mode ('pwchange'); if following doesn't work.
+    $q->param ('rm', 'pwchange') unless defined $q->param ('rm');
+    my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
+                                  QUERY  => $q);
+    $weblogin->run;
 
-    # Cases we might encounter:
-    # * Expired password -- login.fcgi creates a changepw cred token and
-    #   sends us here.
-    # * Password going to expire soon -- login.fcgi creates a changpw cred
-    #   token and gives a button to send us here.
-    # * User choice -- User comes here on their own, needing to enter username
-    #   and password
-
-    # Check to see if this is our first visit and simply show the change page
-    # if so (skipping checks for missing fields).
-    if (!$weblogin->{query}->param ('changepw')) {
-        $weblogin->print_pwchange_page ($req->request_token,
-                                        $req->service_token);
-        next;
-    }
-
-    # Test to make sure that all required fields are filled out.
-    next unless $weblogin->test_pwchange_fields;
-    next unless $weblogin->test_cookies;
-    next unless $weblogin->test_password_no_post;
-
-    # Attempt password change via krb5_change_password API
-    my ($status, $error) = $weblogin->change_user_password;
-
-    # We've successfully changed the password.  Depending on if we were sent
-    # by an expired password, either pass along to the normal page or give a
-    # confirm screen.
-    if ($status == WK_SUCCESS) {
-
-        # Expired password -- do the normal login process.
-        if ($weblogin->{query}->param ('expired')
-            and $weblogin->{query}->param ('expired') == 1) {
-
-            # Get the right script name and password.
-            $weblogin->{script_name} = $WebKDC::Config::LOGIN_URL;
-            my $newpass = $weblogin->{query}->param ('new_passwd1');
-            $weblogin->{query}->param ('password', $newpass);
-
-            # Set up all WebKDC parameters, including tokens, proxy tokens, and
-            # REMOTE_USER parameters.
-            my %cart = CGI::Cookie->fetch;
-            $status = $weblogin->setup_kdc_request (%cart);
-
-            # Pass the information along to the WebKDC and get the response.
-            if (!$status) {
-                ($status, $error)
-                    = WebKDC::make_request_token_request ($weblogin->{request},
-                                                          $weblogin->{response});
-            }
-
-            # Send the response we got off to the handler, where it can decide
-            # which page to display based on the response.
-            $weblogin->process_response ($status, $error);
-
-        # We weren't sent by expired password -- just print a confirm.
-        } else {
-            $weblogin->print_pwchange_confirm_page;
-        }
-
-    # Check if the user's old password was wrong.
-    } elsif ($status == WK_ERR_LOGIN_FAILED) {
-        $weblogin->{pages}->{pwchange}->param (error => 1);
-        $weblogin->{pages}->{pwchange}->param (err_loginfailed => 1);
-        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
-                                        $weblogin->{query}->param ('ST'));
-
-    # The password change failed for some reason.  Display the password change
-    # page again, with the error template variable filled in.  Heimdal, when
-    # using an external password strength checking program, adds a prefix to
-    # the error message that users don't care about, so strip that out.
-    } else {
-        $error =~ s/^password change failed for \S+: \(\d+\) //;
-        $error =~ s/External password quality program failed: //;
-        $weblogin->{pages}->{pwchange}->param (error => 1);
-        $weblogin->{pages}->{pwchange}->param (err_pwchange => 1);
-        $weblogin->{pages}->{pwchange}->param (err_msg => $error);
-        $weblogin->print_pwchange_page ($weblogin->{query}->param ('RT'),
-                                        $weblogin->{query}->param ('ST'));
-    }
-
-# Done on each pass through the FastCGI loop.  Clear out template parameters
-# for all of the pages for the next run and restart the script if its
+# Done on each pass through the FastCGI loop.  Restart the script if its
 # modification time has changed.
 } continue {
     exit if $EXITING;
-    for (keys %PAGES) {
-        $PAGES{$_}->clear_params;
-    }
     exit if -M $ENV{SCRIPT_FILENAME} < 0;
 }

@@ -15,6 +15,7 @@ my $conf = $ENV{WEBKDC_CONFIG} || '/etc/webkdc/webkdc.conf';
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";
 our $TEMPLATE_PATH = "/usr/local/share/weblogin/generic/templates";
+our $TEMPLATE_COMPILE_PATH = "/usr/local/share/weblogin/generic/templates/ttc";
 our $URL = "https://localhost/webkdc-service/";
 our $BYPASS_CONFIRM;
 our $DEFAULT_REALM;
@@ -26,13 +27,21 @@ our @SHIBBOLETH_IDPS;
 our $TOKEN_ACL;
 our $WEBKDC_PRINCIPAL;
 our $LOGIN_URL;
+our $FATAL_PAGE = '';
+
 our $EXPIRING_PW_SERVER;
 our $EXPIRING_PW_WARNING;
 our $EXPIRING_PW_URL;
 our $EXPIRING_PW_TGT;
 our $EXPIRING_PW_PRINC = '';
-our $EXPIRING_PW_PORT  = 0;
+our $EXPIRING_PW_PORT = 0;
 our $EXPIRING_PW_RESEND_PASSWORD = 1;
+
+our $MULTIFACTOR_COMMAND;
+our $MULTIFACTOR_TGT;
+our $MULTIFACTOR_SERVER;
+our $MULTIFACTOR_PORT = 0;
+our $MULTIFACTOR_PRINC = '';
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;

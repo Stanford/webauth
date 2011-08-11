@@ -16,39 +16,49 @@ use Util qw (contents create_keyring getcreds);
 
 use WebKDC::Config ();
 use WebLogin;
-use HTML::Template;
+use Template;
 use CGI;
 
+use File::Path qw (rmtree);
 use Test::More tests => 36;
 
 # Force a defined order on output.
 $| = 1;
 
+mkdir ('./t/tmp');
+
 # Load a version of the page templates that just prints out the vars sent.
-my %pages = (confirm  => 'confirm.tmpl',
+my %PAGES = (confirm  => 'confirm.tmpl',
              pwchange => 'pwchange.tmpl',
              error    => 'error.tmpl',
             );
-%pages = map {
-    $_    => HTML::Template->new (filename => $pages{$_},
-    cache => 1,
-    path  => 't/data/templates')
-} keys %pages;
 
 # Set up a query with some test data.
 $ENV{REQUEST_METHOD} = 'GET';
-my $query = CGI->new;
+my $query = CGI->new ({});
 
 # Fake a weblogin object.
 my $weblogin = {};
 bless $weblogin, 'WebLogin';
-$weblogin->{query} = $query;
-$weblogin->{pages} = \%pages;
-$weblogin->{response} = new WebKDC::WebResponse;
-$weblogin->{request} = new WebKDC::WebRequest;
-$weblogin->{request}->request_token ('TestReqToken');
-$weblogin->{request}->service_token ('TestServiceToken');
-$weblogin->{test_cookie} = $WebLogin::TEST_COOKIE;
+$weblogin->query ($query);
+my $resp = new WebKDC::WebResponse;
+my $req = new WebKDC::WebRequest;
+$req->request_token ('TestReqToken');
+$req->service_token ('TestServiceToken');
+$weblogin->{response} = $resp;
+$weblogin->{request} = $req;
+$weblogin->param ('test_cookie', $WebLogin::TEST_COOKIE);
+$weblogin->param ('pages', \%PAGES);
+
+# Load some default template options.
+$weblogin->tt_config(
+                     TEMPLATE_OPTIONS => {
+                         STAT_TTL     => 60,
+                         COMPILE_DIR  => 't/tmp/ttc',
+                         COMPILE_EXT  => '.ttc',
+                         INCLUDE_PATH => 't/data/templates',
+                     },
+                    );
 
 #############################################################################
 # token_rights tests
@@ -81,191 +91,161 @@ is (${$rights}[0]{'instance'}, 'testrealm.org', ' and instance is correct');
 # test_* function tests
 #############################################################################
 
-# test_password_no_post
+# error_password_no_post
 # FIXME: Doesn't actually work because we can't set $query->request_method
 #        with the CGI module.  We'll have to do something more tricky to
 #        fake a request, and can worry about that later.  skip these tests,
 #        but leave in to use when that's fixed.
 my ($page, $retval);
 SKIP: {
-    skip 'test_password_no_post tests do not yet work', 3;
+    skip 'error_password_no_post tests do not yet work', 3;
 
-    $weblogin->{query}->param ('password', 'abc');
-    $weblogin->{query}->request_method ('POST');
-    $retval = WebLogin::test_password_no_post ($weblogin);
+    $query = CGI->new ({});
+    $query->param ('password', 'abc');
+    $query->request_method ('POST');
+    $weblogin->query ($query);
+    $retval = WebLogin::error_password_no_post ($weblogin);
     is ($retval, 1, 'Password with POST works');
-    $weblogin->{query}->param ('password', '');
-    $weblogin->{query}->request_method ('GET');
-    $retval = WebLogin::test_password_no_post ($weblogin);
+    $query->param ('password', '');
+    $query->request_method ('GET');
+    $weblogin->query ($query);
+    $retval = WebLogin::error_password_no_post ($weblogin);
     is ($retval, 1, ' and no password with GET works');
 
-    $weblogin->{query}->param ('password', 'abc');
-    $weblogin->{query}->request_method ('GET');
-    open (PAGE, '>', \$page) or die "could not open string for writing";
-    select PAGE;
-    $retval = WebLogin::test_password_no_post ($weblogin);
-    select STDOUT;
-    close PAGE;
-    is ($retval, 0, ' and password with GET fails');
+    $query->param ('password', 'abc');
+    $query->request_method ('GET');
+    $weblogin->query ($query);
+    $page = WebLogin::error_password_no_post ($weblogin);
+    ok (defined ($page), ' and password with GET fails');
 }
 
-# test_cookies tests
+# error_if_no_cookies tests
 # FIXME: Can't easily set a cookie already in the CGI object, so we can't
 #        yet test the positive case
 SKIP: {
-    skip 'test_cookies existing cookie test does not yet work', 1;
+    skip 'error_if_no_cookies existing cookie test does not yet work', 1;
 
-    # test_cookies tests - cookie is set
-    $weblogin->{query} = new CGI;
-    $weblogin->{test_cookie} = 'testcookie';
-    $weblogin->{query}->cookie (-name => $weblogin->{test_cookie},
-                                -value => 1);
-    $retval = WebLogin::test_cookies ($weblogin);
-    is ($retval, 1, 'test_cookies with cookie set works');
+    # error_if_no_cookies tests - cookie is set
+    $weblogin->param ('test_cookie', 'testcookie');
+    $query = CGI->new ({});
+    $query->cookie (-name  => $weblogin->param ('test_cookie'),
+                    -value => 1);
+    $weblogin->query ($query);
+    $page = WebLogin::error_if_no_cookies ($weblogin);
+    is ($page, undef, 'error_if_no_cookies with cookie set works');
 }
 
-# test_cookies after the page has redirected to check for cookies, but
+# error_if_no_cookies after the page has redirected to check for cookies, but
 # without the cookie successfully set.  Not testing the code that adjusts
 # for old templates.
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('test_cookie', 1);
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_cookies ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, 'test_cookies fails with cookies disabled');
-like ($page, qr/err_cookies_disabled 1/, ' with the correct error message');
+$query = CGI->new ({});
+$query->param ('test_cookie', 1);
+$weblogin->query ($query);
+$page = WebLogin::error_if_no_cookies ($weblogin);
+ok (defined ($page), 'error_if_no_cookies fails with cookies disabled');
+like ($$page, qr/err_cookies_disabled 1/, ' with the correct error message');
 
 # test_cookie without a cookie set, but without the param showing we've
 # already redirected to find a cookie.
-$ENV{REQUEST_METHOD} = 'GET';
-$weblogin->{query} = new CGI;
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_cookies ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and redirects when not yet having tried to get cookie');
-ok ($page =~ /Status: 302 Moved/, ' with the correct error message');
+# FIXME: Need to figure out this case, with headers-only for a redirect.
+SKIP: {
+    skip 'headers do not yet work right', 2;
+    $ENV{REQUEST_METHOD} = 'GET';
+    $query = CGI->new ({});
+    $weblogin->query ($query);
+    $page = WebLogin::error_if_no_cookies ($weblogin);
+    ok (defined ($page), ' and redirects when not yet having tried to get cookie');
+    ok ($$page =~ /Status: 302 Moved/, ' with the correct error message');
+}
 
-# test_request_token success
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('RT', 'TestRT');
-$weblogin->{query}->param ('ST', 'TestST');
-$retval = WebLogin::test_request_token ($weblogin);
-is ($retval, 1, 'test_request_token with RT and ST works');
+# error_no_request_token success
+$query = CGI->new ({});
+$query->param ('RT', 'TestRT');
+$query->param ('ST', 'TestST');
+$weblogin->query ($query);
+$page = WebLogin::error_no_request_token ($weblogin);
+is ($page, undef, 'error_no_request_token with RT and ST works');
 
-# test_request_token without RT and ST
-$weblogin->{query} = new CGI;
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_request_token ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and fails with both unset');
+# error_no_request_token without RT and ST
+$query = CGI->new ({});
+$weblogin->query ($query);
+$page = WebLogin::error_no_request_token ($weblogin);
+ok (defined ($page), ' and fails with both unset');
 
-# test_request_token with only RT
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('RT', 'TestRT');
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_request_token ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and fails with only RT set');
+# error_no_request_token with only RT
+$query = CGI->new ({});
+$query->param ('RT', 'TestRT');
+$weblogin->query ($query);
+$page = WebLogin::error_no_request_token ($weblogin);
+ok (defined ($page), ' and fails with only RT set');
 
-# test_request_token with only ST
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('ST', 'TestST');
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_request_token ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and fails with only ST set');
+# error_no_request_token with only ST
+$query = CGI->new ({});
+$query->param ('ST', 'TestST');
+$weblogin->query ($query);
+$page = WebLogin::error_no_request_token ($weblogin);
+ok (defined ($page), ' and fails with only ST set');
 
-# test_pwchange_fields without a username
+# error_invalid_pwchange_fields without a username
 $ENV{REQUEST_METHOD} = 'POST';
-$weblogin->{query} = new CGI;
-$weblogin->{query}->param ('username', '');
-$weblogin->{query}->param ('expired', 0);
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, 'test_pwchange without username fails');
-ok ($page =~ /err_username 1/, ' with the correct error');
+$query = CGI->new ({ });
+$query->param ('username', '');
+$query->param ('expired', 0);
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), 'test_pwchange without username fails');
+ok ($$page =~ /err_username 1/, ' with the correct error');
 
-# test_pwchange_fields without a password
-$weblogin->{query}->param ('username', 'testuser');
-$weblogin->{query}->param ('password', '');
-$weblogin->{CPT} = '';
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and test_pwchange without CPT or password fails');
-ok ($page =~ /err_password 1/, ' with the correct error');
+# error_invalid_pwchange_fields without a password
+$query->param ('username', 'testuser');
+$query->param ('password', '');
+$weblogin->param ('CPT', '');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), ' and test_pwchange without CPT or password fails');
+ok ($$page =~ /err_password 1/, ' with the correct error');
 
-# test_pwchange_fields without either new password field
-$weblogin->{query}->param ('password', 'abc');
-$weblogin->{CPT} = 'TestCPT';
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0, ' and test_pwchange without either new password field fails');
-ok ($page =~ /err_newpassword 1/, ' with the correct error');
+# error_invalid_pwchange_fields without either new password field
+$query->param ('password', 'abc');
+$weblogin->param ('CPT', 'TestCPT');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), ' and test_pwchange without either new password field fails');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
 
-# test_pwchange_fields with only first new password field
-$weblogin->{query}->param ('new_passwd1', 'abc');
-$weblogin->{CPT} = 'TestCPT';
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0,
+# error_invalid_pwchange_fields with only first new password field
+$query->param ('new_passwd1', 'abc');
+$weblogin->param ('CPT', 'TestCPT');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
     ' and test_pwchange with only first new password field fails');
-ok ($page =~ /err_newpassword 1/, ' with the correct error');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
 
-# test_pwchange_fields with only second new password field
-$weblogin->{query}->param ('new_passwd1', '');
-$weblogin->{query}->param ('new_passwd2', 'abc');
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0,
+# error_invalid_pwchange_fields with only second new password field
+$query->param ('new_passwd1', '');
+$query->param ('new_passwd2', 'abc');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
     ' and test_pwchange with only second new password field fails');
-ok ($page =~ /err_newpassword 1/, ' with the correct error');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
 
-# test_pwchange_fields with new password fields not matching
-$weblogin->{query}->param ('new_passwd1', 'abc');
-$weblogin->{query}->param ('new_passwd2', 'xyz');
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 0,
+# error_invalid_pwchange_fields with new password fields not matching
+$query->param ('new_passwd1', 'abc');
+$query->param ('new_passwd2', 'xyz');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
     ' and test_pwchange with new password fields not matching fails');
-ok ($page =~ /err_newpassword_match 1/, ' with the correct error');
+ok ($$page =~ /err_newpassword_match 1/, ' with the correct error');
 
-# test_pwchange_fields with everything good
-$weblogin->{query}->param ('new_passwd1', 'abc');
-$weblogin->{query}->param ('new_passwd2', 'abc');
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-$retval = WebLogin::test_pwchange_fields ($weblogin);
-select STDOUT;
-close PAGE;
-is ($retval, 1, ' and test_pwchange with all fields correct works');
+# error_invalid_pwchange_fields with everything good
+$query->param ('new_passwd1', 'abc');
+$query->param ('new_passwd2', 'abc');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+is ($page, undef, ' and test_pwchange with all fields correct works');
 
 #############################################################################
 # add_*_token tests
@@ -298,8 +278,8 @@ TODO: {
     #    unless -f ('t/data/test.principal');
 
     # add_proxy_token
-    $query = new CGI;
-    $weblogin = WebLogin->new ($query, \%pages);
+    $query = CGI->new ({});
+    $weblogin = WebLogin->new (QUERY => $query);
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     $weblogin->add_proxy_token;
     $ENV{KRB5CCNAME} = $oldcache;
@@ -312,8 +292,8 @@ SKIP: {
         unless -f ('t/data/test.principal');
 
     # add_remuser_token
-    $query = new CGI;
-    $weblogin = WebLogin->new ($query, \%pages);
+    $query = CGI->new ({});
+    $weblogin = WebLogin->new (QUERY => $query);
     $weblogin->add_remuser_token;
     my $token = $weblogin->{request}->proxy_cookie ('remuser');
     ok ($token, 'add_remuser_token works');
@@ -321,3 +301,4 @@ SKIP: {
 
 unlink ($WebKDC::Config::KEYRING_PATH);
 unlink ('krb5cc_test');
+rmtree ('./t/tmp');

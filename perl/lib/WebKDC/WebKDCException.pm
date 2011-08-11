@@ -1,7 +1,7 @@
 # Exception class for WebKDC call failures.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2006, 2008, 2009
+# Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -20,7 +20,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, @ErrorNames);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 1.02;
     @ISA         = qw(Exporter);
     @EXPORT      = qw(WK_SUCCESS
 		      WK_ERR_USER_AND_PASS_REQUIRED
@@ -31,21 +31,29 @@ BEGIN {
 		      WK_ERR_LOGIN_FORCED
 		      WK_ERR_USER_REJECTED
 		      WK_ERR_CREDS_EXPIRED
+                      WK_ERR_MULTIFACTOR_REQUIRED
+                      WK_ERR_MULTIFACTOR_UNAVAILABLE
+                      WK_ERR_LOGIN_REJECTED
+                      WK_ERR_LOA_UNAVAILABLE
 		      );
     @EXPORT_OK   = ();
 }
 
 our @EXPORT_OK;
 
-sub WK_SUCCESS                         () {0;}
-sub WK_ERR_USER_AND_PASS_REQUIRED      () {1;}
-sub WK_ERR_LOGIN_FAILED                () {2;}
-sub WK_ERR_UNRECOVERABLE_ERROR         () {3;}
-sub WK_ERR_REQUEST_TOKEN_STALE         () {4;}
-sub WK_ERR_WEBAUTH_SERVER_ERROR        () {5;}
-sub WK_ERR_LOGIN_FORCED                () {6;}
-sub WK_ERR_USER_REJECTED               () {7;}
-sub WK_ERR_CREDS_EXPIRED               () {8;}
+sub WK_SUCCESS                         () { 0;}
+sub WK_ERR_USER_AND_PASS_REQUIRED      () { 1;}
+sub WK_ERR_LOGIN_FAILED                () { 2;}
+sub WK_ERR_UNRECOVERABLE_ERROR         () { 3;}
+sub WK_ERR_REQUEST_TOKEN_STALE         () { 4;}
+sub WK_ERR_WEBAUTH_SERVER_ERROR        () { 5;}
+sub WK_ERR_LOGIN_FORCED                () { 6;}
+sub WK_ERR_USER_REJECTED               () { 7;}
+sub WK_ERR_CREDS_EXPIRED               () { 8;}
+sub WK_ERR_MULTIFACTOR_REQUIRED        () { 9;}
+sub WK_ERR_MULTIFACTOR_UNAVAILABLE     () {10;}
+sub WK_ERR_LOGIN_REJECTED              () {11;}
+sub WK_ERR_LOA_UNAVAILABLE             () {12;}
 
 our @ErrorNames = qw(SUCCESS
 		     USER_AND_PASS_REQUIRED
@@ -54,7 +62,11 @@ our @ErrorNames = qw(SUCCESS
 		     REQUEST_TOKEN_STALE
 		     WEBAUTH_SERVER_ERROR
 		     LOGIN_FORCED
-		     USER_REJECTED);
+		     USER_REJECTED
+                     MULTIFACTOR_REQUIRED
+                     MULTIFACTOR_UNAVAILABLE
+                     LOGIN_REJECTED
+                     LOA_UNAVAILABLE);
 
 sub new {
     my ($type, $status, $mesg, $pec) = @_;
@@ -149,6 +161,10 @@ The following constants are exported:
   WK_ERR_LOGIN_FORCED
   WK_ERR_USER_REJECTED
   WK_ERR_CREDS_EXPIRED
+  WK_ERR_MULTIFACTOR_REQUIRED
+  WK_ERR_MULTIFACTOR_UNAVAILABLE
+  WK_ERR_LOGIN_REJECTED
+  WK_ERR_LOA_UNAVAILABLE
 
 =over 4
 
@@ -207,6 +223,35 @@ and the realm of the principal wasn't in that list).
 
 This status code indicates that the principal we attempted to authenticate
 to has an expired password.
+
+=item WK_ERR_MULTIFACTOR_REQUIRED
+
+This status code indicates that authentication was successful but that
+authentication with a second factor is also required.  The user should be
+prompted for their second factor and then the login reattempted with that
+information plus the returned proxy tokens.
+
+=item WK_ERR_MULTIFACTOR_UNAVAILABLE
+
+This status code indicates that the desired site requires multifactor, but
+the user does not have multifactor configured or does not have the correct
+second factor to authenticate to that site.
+
+=item WK_ERR_LOGIN_REJECT
+
+This status code indicates that this user is not allowed to log on to that
+site at this time for security reasons.  This is a transitory error; the
+user may be permitted to authenticate later, or from a different location.
+This error message is used for rejected logins from particular locations,
+logins that appear to be from a compromised account, or accounts that have
+been locked out due to too many failed logins.
+
+=item WK_ERR_LOA_UNAVAILABLE
+
+This status code indicates that the site requested a Level of Assurance
+for the user's authentication that is higher than this user can provide,
+either because of insufficient proof of identity available to the system
+or due to an insufficiently strong configured authentication method.
 
 =back
 

@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+#
+# Written by Jon Robertson
+# Copyright 2011 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+
+require '../auth/util.pl';
+
+print "Content-type: text/html\n\n";
+
+print "<html>";
+
+test_title (1, "Force session via negotiate-auth");
+
+print<<EOS;
+<p>You are accessing a webauth-protected page as the user: $REMOTE_USER</p>
+<p>This test checks the ability of WebAuth to force a session login via
+   negotiate-auth.</p>
+EOS
+
+&return_links;
+
+&multifactor_tests;
+&dump_stuff;
+
+print "</html>";
+

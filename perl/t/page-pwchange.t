@@ -15,16 +15,17 @@ use lib ('t/lib', 'lib', 'blib/arch');
 
 use WebLogin;
 use CGI;
+use Template;
 
+use File::Path qw (rmtree);
 use Test::More tests => 44;
 
+mkdir ('./t/tmp');
+
 # Load a version of the page templates that just prints out the vars sent.
-my %pages = (pwchange => 'pwchange.tmpl');
-%pages = map {
-    $_    => HTML::Template->new (filename => $pages{$_},
-    cache => 1,
-    path  => 't/data/templates')
-} keys %pages;
+my %PAGES = (pwchange => 'pwchange.tmpl');
+$WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
+$WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
 
 # Set up a query with some test data.
 my $query = CGI->new;
@@ -34,24 +35,16 @@ $query->param ('expired', 1);
 # Fake a weblogin object.
 my $weblogin = {};
 bless $weblogin, 'WebLogin';
-$weblogin->{query} = $query;
-$weblogin->{pages} = \%pages;
-$weblogin->{test_cookie} = $WebLogin::TEST_COOKIE;
+$weblogin->query ($query);
+$weblogin->param ('pages', \%PAGES);
+$weblogin->param ('test_cookie', $WebLogin::TEST_COOKIE);
+$weblogin->tt_include_path (['t/data/templates']);
 
 # Move stdout to a string so we can check the page output.
-my ($oldout, $page);
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-WebLogin::print_pwchange_page ($weblogin, 'TestRT', 'TestST');
-select STDOUT;
-close PAGE;
-my @output = split (/[\r\n]+/, $page);
+my $page = WebLogin::print_pwchange_page ($weblogin, 'TestRT', 'TestST');
+my @output = split (/[\r\n]+/, $$page);
 
 # Check to make sure the page printed as we expected.
-my $line;
-do {
-    $line = shift @output;
-} until $line =~ /Content-Type: /;
 ok ($page, 'pwchange page was printed');
 is ($output[0], 'error ', ' and error was not set');
 is ($output[1], 'err_username ', ' and err_username was not set');
@@ -77,17 +70,9 @@ is ($output[19], 'skip_username ', ' and skip_username was not set');
 is ($output[20], 'skip_password ', ' and skip_password was not set');
 
 # Once more, testing CPT suppressing the username and password.
-$weblogin->{CPT} = 'TestCPT';
-open (PAGE, '>', \$page) or die "could not open string for writing";
-select PAGE;
-WebLogin::print_pwchange_page ($weblogin, 'TestRT2', 'TestST2');
-select STDOUT;
-close PAGE;
-@output = split (/[\r\n]+/, $page);
-do {
-    $line = shift @output;
-} until $line =~ /Content-Type: /;
-
+$weblogin->param ('CPT', 'TestCPT');
+$page = WebLogin::print_pwchange_page ($weblogin, 'TestRT2', 'TestST2');
+@output = split (/[\r\n]+/, $$page);
 ok ($page, 'pwchange page was printed with CPT');
 is ($output[0], 'error ', ' and error was not set');
 is ($output[1], 'err_username ', ' and err_username was not set');
@@ -111,3 +96,5 @@ is ($output[17], 'changepw ', ' and changepw was not set');
 is ($output[18], 'expired 1', ' and expired was set');
 is ($output[19], 'skip_username 1', ' and skip_username was set');
 is ($output[20], 'skip_password 1', ' and skip_password was set');
+
+rmtree ('./t/tmp');

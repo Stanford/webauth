@@ -1,7 +1,7 @@
 # Interact with the WebAuth WebKDC service.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009
+# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -27,7 +27,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 1.02;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -43,34 +43,43 @@ our $DEBUG = 1;
 
 our $our_keyring = undef;
 
+# Map protocol error codes to the error codes that we're going to use internal
+# to the WebLogin code and other WebKDC::* modules.
 our %pec_mapping = (
-	     &WA_PEC_SERVICE_TOKEN_EXPIRED => WK_ERR_WEBAUTH_SERVER_ERROR,
-	     &WA_PEC_SERVICE_TOKEN_INVALID => WK_ERR_WEBAUTH_SERVER_ERROR,
-	     &WA_PEC_PROXY_TOKEN_EXPIRED => WK_ERR_USER_AND_PASS_REQUIRED,
-	     &WA_PEC_PROXY_TOKEN_INVALID => WK_ERR_USER_AND_PASS_REQUIRED,
-	     &WA_PEC_INVALID_REQUEST => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_UNAUTHORIZED => WK_ERR_WEBAUTH_SERVER_ERROR,
-	     &WA_PEC_SERVER_FAILURE => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_REQUEST_TOKEN_STALE => WK_ERR_REQUEST_TOKEN_STALE,
-	     &WA_PEC_REQUEST_TOKEN_INVALID => WK_ERR_WEBAUTH_SERVER_ERROR,
-	     &WA_PEC_GET_CRED_FAILURE => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_REQUESTER_KRB5_CRED_INVALID => WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_LOGIN_TOKEN_STALE  => WK_ERR_USER_AND_PASS_REQUIRED,
-	     &WA_PEC_LOGIN_TOKEN_INVALID => WK_ERR_USER_AND_PASS_REQUIRED,
-	     &WA_PEC_LOGIN_FAILED  => WK_ERR_LOGIN_FAILED,
-	     &WA_PEC_PROXY_TOKEN_REQUIRED  => WK_ERR_USER_AND_PASS_REQUIRED,
-	     # LOGIN_CANCELED SHOULD NEVER COME BACK in an errorCode,
-             # only inside a token which we can't decrypt
-	     &WA_PEC_LOGIN_CANCELED  =>  WK_ERR_UNRECOVERABLE_ERROR,
-	     &WA_PEC_LOGIN_FORCED  => WK_ERR_LOGIN_FORCED,
-	     &WA_PEC_USER_REJECTED  => WK_ERR_USER_REJECTED,
-	     &WA_PEC_CREDS_EXPIRED  => WK_ERR_CREDS_EXPIRED,
-	     );
+    &WA_PEC_SERVICE_TOKEN_EXPIRED       => WK_ERR_WEBAUTH_SERVER_ERROR,
+    &WA_PEC_SERVICE_TOKEN_INVALID       => WK_ERR_WEBAUTH_SERVER_ERROR,
+    &WA_PEC_PROXY_TOKEN_EXPIRED         => WK_ERR_USER_AND_PASS_REQUIRED,
+    &WA_PEC_PROXY_TOKEN_INVALID         => WK_ERR_USER_AND_PASS_REQUIRED,
+    &WA_PEC_INVALID_REQUEST             => WK_ERR_UNRECOVERABLE_ERROR,
+    &WA_PEC_UNAUTHORIZED                => WK_ERR_WEBAUTH_SERVER_ERROR,
+    &WA_PEC_SERVER_FAILURE              => WK_ERR_UNRECOVERABLE_ERROR,
+    &WA_PEC_REQUEST_TOKEN_STALE         => WK_ERR_REQUEST_TOKEN_STALE,
+    &WA_PEC_REQUEST_TOKEN_INVALID       => WK_ERR_WEBAUTH_SERVER_ERROR,
+    &WA_PEC_GET_CRED_FAILURE            => WK_ERR_UNRECOVERABLE_ERROR,
+    &WA_PEC_REQUESTER_KRB5_CRED_INVALID => WK_ERR_UNRECOVERABLE_ERROR,
+    &WA_PEC_LOGIN_TOKEN_STALE           => WK_ERR_USER_AND_PASS_REQUIRED,
+    &WA_PEC_LOGIN_TOKEN_INVALID         => WK_ERR_USER_AND_PASS_REQUIRED,
+    &WA_PEC_LOGIN_FAILED                => WK_ERR_LOGIN_FAILED,
+    &WA_PEC_PROXY_TOKEN_REQUIRED        => WK_ERR_USER_AND_PASS_REQUIRED,
+
+    # LOGIN_CANCELED SHOULD NEVER COME BACK in an errorCode, only inside a
+    # token which we can't decrypt, since it's the error code that's sent
+    # to the WAS in the login canceled token.
+    &WA_PEC_LOGIN_CANCELED              => WK_ERR_UNRECOVERABLE_ERROR,
+
+    &WA_PEC_LOGIN_FORCED                => WK_ERR_LOGIN_FORCED,
+    &WA_PEC_USER_REJECTED               => WK_ERR_USER_REJECTED,
+    &WA_PEC_CREDS_EXPIRED               => WK_ERR_CREDS_EXPIRED,
+    &WA_PEC_MULTIFACTOR_REQUIRED        => WK_ERR_MULTIFACTOR_REQUIRED,
+    &WA_PEC_MULTIFACTOR_UNAVAILABLE     => WK_ERR_MULTIFACTOR_UNAVAILABLE,
+    &WA_PEC_LOGIN_REJECTED              => WK_ERR_LOGIN_REJECTED,
+    &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
+);
 
 sub get_keyring {
     if (!defined($our_keyring)) {
 	$our_keyring =
-            WebAuth::keyring_read_file($WebKDC::Config::KEYRING_PATH);
+            WebAuth::Keyring->read_file($WebKDC::Config::KEYRING_PATH);
     }
     return $our_keyring;
 }
@@ -187,10 +196,10 @@ sub proxy_token_request($$) {
 sub request_token_request($$) {
     my ($wreq, $wresp) = @_;
 
-    my ($user, $pass) = ($wreq->user(), $wreq->pass());
+    my ($user, $pass, $otp) = ($wreq->user(), $wreq->pass(), $wreq->otp());
     my $request_token = $wreq->request_token();
     my $service_token = $wreq->service_token();
-    my $proxy_cookies = $wreq->proxy_cookies();
+    my $proxy_cookies = $wreq->proxy_cookies_rich();
 
     my $webkdc_doc = new WebKDC::XmlDoc;
     my $root;
@@ -201,39 +210,44 @@ sub request_token_request($$) {
 		       $service_token)->end;
     $webkdc_doc->start('subjectCredential');
 
-    if (defined($user)) {
-	# need to make a login token
-	$webkdc_doc->current->attr('type','login');
+    # Create any login or proxy tokens for the user.  If there are none, we
+    # used to short-circuit here and raise WK_ER_USER_AND_PASS_REQUIRED, but
+    # now we go ahead with tokens to potentially get back a login-canceled
+    # token.  further note: its probably also better to go to the WebKDC as
+    # we'll validate the request-token too the first time around...
+    if (defined($user) || defined($proxy_cookies)) {
 
-	my $login_token = new WebKDC::LoginToken;
-	$login_token->password($pass);
-	$login_token->username($user);
-	$login_token->creation_time(time());
+        if (defined($user)) {
+            my $login_token = new WebKDC::LoginToken;
+            $login_token->username($user);
+            $login_token->creation_time(time());
+            if (defined $otp) {
+                $login_token->otp($otp);
+            } else {
+                $login_token->password($pass);
+            }
+
+            my $login_token_str =
+                base64_encode($login_token->to_token(get_keyring()));
+
+            $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
+        }
+
+        if (defined($proxy_cookies)) {
+            $webkdc_doc->current->attr('type','proxy');
+            for my $type (keys %$proxy_cookies) {
+                my $token = $proxy_cookies->{$type}{'cookie'};
+                my $source = $proxy_cookies->{$type}{'session_factor'};
+                $webkdc_doc->start('proxyToken',
+                                   {'type' => $type, 'source' => $source},
+                                   $token)->end;
+            }
+        }
 
 	# FIXME: DEBUGGING!
 	#print STDERR $login_token;
-
-	my $login_token_str =
-	    base64_encode($login_token->to_token(get_keyring()));
-
-	$webkdc_doc->start('loginToken',  undef, $login_token_str)->end;
-
-    } elsif (defined($proxy_cookies)) {
-	$webkdc_doc->current->attr('type','proxy');
-	while (my($type,$token) = each(%{$proxy_cookies})) {
-	    $webkdc_doc->start('proxyToken',
-			       {"type" => $type},
-			       $token)->end;
-	}
-    } else {
-	# we used to short-circuit here and just raise
-	# WK_ER_USER_AND_PASS_REQUIRED, but now we make a call
-	# to potentially get back a login-canceled token.
-	# we use subjectCredential of type proxy with no proxy tokens.
-	# further note: its probably also better to go to the WebKDC
-	# as we'll validate the request-token too the first time around...
-	$webkdc_doc->current->attr('type','proxy');
     }
+
     $webkdc_doc->end('subjectCredential');
     $webkdc_doc->start('requestToken',  undef, $request_token)->end;
     if ($wreq->local_ip_addr() || $wreq->remote_user()) {
@@ -327,7 +341,30 @@ sub request_token_request($$) {
 		$wresp->proxy_cookie($cname, $cvalue);
 	    }
 	}
-	$wresp->return_url($return_url);
+
+        my $multifactor = $root->find_child('multifactorRequired');
+        if (defined($multifactor)) {
+            foreach my $mf_setting (@{$multifactor->children}) {
+                my $factor = $mf_setting->content;
+                if ($mf_setting->name eq 'factor') {
+                    $wresp->factor_needed($factor);
+                } elsif ($mf_setting->name eq 'configuredFactor') {
+                    $wresp->factor_configured($factor);
+                }
+            }
+        }
+
+        my $login_history = $root->find_child('loginHistory');
+        if (defined($login_history)) {
+            foreach my $login (@{$login_history->children}) {
+                my $timestamp = $login->attr('time');
+                my $ip = $login->attr('ip');
+                my $hostname = $login->content | '';
+                $wresp->login_history ([$timestamp, $ip, $hostname]);
+            }
+        }
+
+        $wresp->return_url($return_url);
 	$wresp->response_token($returned_token);
 	$wresp->response_token_type($returned_token_type);
 	$wresp->requester_subject($requester_sub);

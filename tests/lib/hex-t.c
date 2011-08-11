@@ -15,8 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 #define BUFSIZE 2048
 
@@ -38,12 +39,14 @@ main(void)
             orig_buffer[j] = j % 256;
         s = webauth_hex_encode(orig_buffer, i, encoded_buffer, &elen, BUFSIZE);
         rlen = webauth_hex_encoded_length(i);
-        is_int(WA_ERR_NONE, s, "Encoding length %i succeeds", i);
+        is_int(WA_ERR_NONE, s, "Encoding length %lu succeeds",
+                (unsigned long) i);
         is_int(rlen, elen, "...and returns the correct length");
 
         s = webauth_hex_decode(encoded_buffer, elen, 
                                decoded_buffer, &dlen, BUFSIZE);
-        is_int(WA_ERR_NONE, s, "Decoding length %i succeeds", i);
+        is_int(WA_ERR_NONE, s, "Decoding length %lu succeeds",
+                (unsigned long) i);
         s = webauth_hex_decoded_length(elen, &dlen2);
         is_int(WA_ERR_NONE, s, "Determing the decoded length succeeds");
         is_int(dlen, dlen2, "...and the lengths match");

@@ -14,7 +14,8 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include <lib/webauth.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 /*
  * Converts a hex digit to a number.   This macro will return non-sensical
@@ -27,39 +28,6 @@
 
 /* Used for hex encoding. */
 static char hex[] = "0123456789abcdef";
-
-
-/*
- * Map an error code to an error message.  Returns a constant string.
- */
-const char *
-webauth_error_message(int errcode)
-{
-    switch(errcode) {
-    case WA_ERR_NONE:              return "No error occurred";
-    case WA_ERR_NO_ROOM:           return "Supplied buffer too small";
-    case WA_ERR_CORRUPT:           return "Data is incorrectly formatted";
-    case WA_ERR_NO_MEM:            return "No memory";
-    case WA_ERR_BAD_HMAC:          return "HMAC check failed";
-    case WA_ERR_RAND_FAILURE:      return "Unable to get random data";
-    case WA_ERR_BAD_KEY:           return "Unable to use key";
-    case WA_ERR_KEYRING_OPENWRITE: return "Unable to open keyring for writing";
-    case WA_ERR_KEYRING_WRITE:     return "Error writing key ring";
-    case WA_ERR_KEYRING_OPENREAD:  return "Unable to open keyring for reading";
-    case WA_ERR_KEYRING_READ:      return "Error reading from keyring file";
-    case WA_ERR_KEYRING_VERSION:   return "Bad keyring version";
-    case WA_ERR_NOT_FOUND:         return "Item not found while searching";
-    case WA_ERR_KRB5:              return "Kerberos V5 error";
-    case WA_ERR_INVALID_CONTEXT:   return "Invalid context passed to function";
-    case WA_ERR_LOGIN_FAILED:      return "Login failed (bad username/password";
-    case WA_ERR_TOKEN_EXPIRED:     return "Token has expired";
-    case WA_ERR_TOKEN_STALE:       return "Token is stale";
-    case WA_ERR_CREDS_EXPIRED:     return "Password has expired";
-    default:
-        return "unknown error code";
-        break;
-    }
-}
 
 
 /*

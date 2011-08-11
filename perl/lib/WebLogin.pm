@@ -2,7 +2,7 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -12,6 +12,11 @@
 ##############################################################################
 
 package WebLogin;
+use base qw (CGI::Application);
+use CGI::Application::Plugin::AutoRunmode;
+use CGI::Application::Plugin::Forward;
+use CGI::Application::Plugin::Redirect;
+use CGI::Application::Plugin::TT;
 
 require 5.006;
 
@@ -21,7 +26,7 @@ use warnings;
 use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
-use HTML::Template ();
+use Template ();
 use WebAuth qw(:base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config ();
@@ -49,11 +54,135 @@ our $TEST_COOKIE = "WebloginTestCookie";
 # The name of the cookie holding REMOTE_USER configuration information.
 our $REMUSER_COOKIE = 'weblogin_remuser';
 
+# Set any cookies we expire to this value, just in case a buggy browser
+# refuses to actually delete the expired cookie.
+our $EXPIRED_COOKIE = 'expired';
+
 # The lifetime of the REMOTE_USER configuration cookie.
 our $REMUSER_LIFETIME = '+365d';
 
 # The lifetime of the kadmin/changepw token.
 our $CHANGEPW_EXPIRES = 5 * 60;
+
+# If the WebKDC is localhost, disable LWP certificate verification.  The
+# WebKDC will have a certificate matching its public name, which will
+# never match localhost, and we should be able to trust the server when
+# connecting directly to localhost.
+if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
+    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+}
+
+#############################################################################
+# CGI::Application setup functions
+#############################################################################
+
+# Set up initial application configuration.
+sub setup {
+    my ($self) = @_;
+
+    # Configure the template
+    $self->tt_config(
+                     TEMPLATE_OPTIONS => {
+                         STAT_TTL     => 60,
+                         COMPILE_DIR  =>
+                             $WebKDC::Config::TEMPLATE_COMPILE_PATH,
+                         COMPILE_EXT  => '.ttc',
+                         INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
+                     },
+                    );
+
+    # Set up the main request and response.  Add these directly to the object
+    # rather than to param -- it's much too useful to be able to access the
+    # objects' own methods directly.
+    $self->{request} = new WebKDC::WebRequest;
+    $self->{response} = new WebKDC::WebResponse;
+
+    # If we got our parameters via REDIRECT_QUERY_STRING, we're an error
+    # handler and don't want to redirect later.
+    $self->param ('is_error', defined $ENV{REDIRECT_QUERY_STRING});
+
+    # Testing and logging - optional.  These can be set from the calling
+    # script via:
+    #    my $app = WebLogin->new(PARAMS => { logging => 1, debug => 1 });
+    if (!defined $self->param ('logging')) {
+        $self->param ('logging', $LOGGING);
+    }
+    if (!defined $self->param ('debug')) {
+        $self->param ('debug', $DEBUG);
+    }
+
+    # Cookie values - optional.  See the logging comment above for how to set
+    # from calling script.
+    if (!defined $self->param ('remuser_cookie')) {
+        $self->param ('remuser_cookie', $REMUSER_COOKIE);
+    }
+    if (!defined $self->param ('remuser_lifetime')) {
+        $self->param ('remuser_lifetime', $REMUSER_LIFETIME);
+    }
+    if (!defined $self->param ('test_cookie')) {
+        $self->param ('test_cookie', $TEST_COOKIE);
+    }
+
+    # Store the CPT if one was already generated, so that we have one place
+    # to check.
+    $self->param ('CPT', $self->query->param ('CPT'));
+
+    # Put this into place for later.
+    $self->param ('wpt_cookie', '');
+
+    # Work around a bug in CGI.  Then copy the script name so that it can
+    # be easily updated when we switch between password and login scripts.
+    $self->query->{'.script_name'} = $ENV{SCRIPT_NAME};
+    $self->param ('script_name', $self->query->script_name);
+    print STDERR "Script name is ", $self->query->script_name, "\n"
+        if $self->param ('debug');
+}
+
+# Prerunning the application, make sure rm works if you're using GET or POST.
+# http://www.perlmonks.org/?node_id=748939
+sub cgiapp_prerun {
+    my ($self) = @_;
+    if (!defined $self->query->param ('rm')) {
+        $self->prerun_mode ($self->query->url_param ('rm'));
+    }
+}
+
+# Wrapper to help store current template settings.  We need to set template
+# parameters all over and collect them together in the end.  tt_params does
+# what we want, but it has precedence over things you pass in normally on
+# actual template building, which means we'd have to use it throughout the
+# actual print function as well.  There should be nothing wrong with that, but
+# still, I'd rather just create things this way, as it 'feels' cleaner.
+# Return the parameter hashref.
+sub template_params {
+    my ($self, $settings) = @_;
+
+    my $params = $self->param ('template_params');
+    if (defined $settings) {
+        for my $key (keys %$settings) {
+            $params->{$key} = $settings->{$key};
+        }
+        $self->param ('template_params', $params);
+    }
+
+    return $params;
+}
+
+# Given a page type, return the template URL from the param hash it's stored
+# in.  This could be done as a two-liner everywhere in the code, but it's a
+# little more readable to have this do the guts for us.  Returns a string of
+# the page template filename, or '' if none found.
+sub get_pagename {
+    my ($self, $pagetype) = @_;
+    my $pages = $self->param ('pages');
+    my $pagename = $pages->{$pagetype};
+    return $pagename if defined $pagename;
+
+    print STDERR "could not find a page template of type $pagetype\n"
+        if $self->param ('logging');
+    return '';
+}
+
 
 ##############################################################################
 # Utility functions
@@ -81,7 +210,7 @@ sub fix_token {
 }
 
 ##############################################################################
-# Output
+# Output related functions
 ##############################################################################
 
 # Print the headers for a page.  Takes the user's query and any additional
@@ -91,12 +220,15 @@ sub fix_token {
 # parameter saying that this is a post redirect.
 sub print_headers {
     my ($self, $cookies, $redir_url, $post) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
     my $ca;
 
     # REMUSER_COOKIE is handled as a special case, since it stores user
     # preferences and should be retained rather than being only a session
-    # cookie.
+    # cookie.  Any cookies sent us with no value should be deleted -- that's
+    # how the WebKDC tells us a proxy token is invalid.
+    my $remuser_name = $self->param ('remuser_cookie');
+    my $remuser_lifetime = $self->param ('remuser_lifetime');
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
     my $saw_remuser;
     if ($cookies) {
@@ -104,11 +236,16 @@ sub print_headers {
         while (($name, $value) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
-            if ($name eq $self->{remuser_cookie}) {
+            if ($name =~ /^webauth_wpt/ && $value eq '') {
+                $cookie = $q->cookie(-name    => $name,
+                                     -value   => $EXPIRED_COOKIE,
+                                     -secure  => $secure,
+                                     -expires => '-1d');
+            } elsif ($name eq $remuser_name) {
                 $cookie = $q->cookie(-name    => $name,
                                      -value   => $value,
                                      -secure  => $secure,
-                                     -expires => $self->{remuser_lifetime});
+                                     -expires => $remuser_lifetime);
                 $saw_remuser = 1;
             } else {
                 $cookie = $q->cookie(-name   => $name,
@@ -123,17 +260,17 @@ sub print_headers {
     # set in the query, set it in our page.  This refreshes the expiration
     # time of the cookie so that, provided the user visits WebLogin at least
     # once a year, the cookie will never expire.
-    if (!$saw_remuser && $q->cookie ($self->{remuser_cookie})) {
-        my $cookie = $q->cookie (-name    => $self->{remuser_cookie},
+    if (!$saw_remuser && $q->cookie ($remuser_name)) {
+        my $cookie = $q->cookie (-name    => $self->param ('remuser_cookie'),
                                  -value   => 1,
                                  -secure  => $secure,
-                                 -expires => $self->{remuser_lifetime});
+                                 -expires => $remuser_name);
         push (@$ca, $cookie);
     }
 
     # Set the test cookie unless it's already set.
-    unless ($q->cookie ($self->{test_cookie})) {
-        my $cookie = $q->cookie (-name  => $self->{test_cookie},
+    unless ($q->cookie ($self->param ('test_cookie'))) {
+        my $cookie = $q->cookie (-name  => $self->param ('test_cookie'),
                                  -value => 'True',
                                  -path  => '/',
                                  -secure => $secure);
@@ -147,8 +284,8 @@ sub print_headers {
               -status => $post ? '303 See Also' : '302 Moved');
     }
     push (@params, -cookie => $ca) if $ca;
-    print $q->header (-type => 'text/html', -Pragma => 'no-cache',
-                      -Cache_Control => 'no-cache, no-store', @params);
+    $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
+                         -Cache_Control => 'no-cache, no-store', @params);
 }
 
 # Determine what pretty display URL to use from the given return URI object.
@@ -190,89 +327,21 @@ sub pretty_return_uri {
     return $pretty;
 }
 
-# Parse the return URL of our request, filling out the provided lvars struct
-# with the details.  Make sure that the scheme exists and is a valid WebAuth
-# scheme.  Return 0 if everything is okay, 1 if the scheme is invalid.
+# Parse the return URL of our request, saving the prettified uri.  Make sure
+# that the scheme exists and is a valid WebAuth scheme.  Return 0 if
+# everything is okay, 1 if the scheme is invalid.
 sub parse_uri {
     my ($self) = @_;
     my $resp = $self->{response};
     my $uri = URI->new ($resp->return_url);
-
-    $self->{lvars}->{return_url} = $uri->canonical;
     my $scheme = $uri->scheme;
     unless (defined ($scheme) && $scheme =~ /^https?$/) {
-        $self->{pages}->{error}->param (err_webkdc => 1);
+        $self->template_params ({err_webkdc => 1});
         return 1;
     }
-    $self->{lvars}->{scheme} = $scheme;
-    $self->{lvars}->{host}   = $uri->host;
-    $self->{lvars}->{path}   = $uri->path;
-    $self->{lvars}->{port}   = $uri->port if ($uri->port != 80
-                                              && $uri->port != 443);
-    $self->{lvars}->{pretty} = $self->pretty_return_uri ($uri);
 
+    $self->param ('pretty_uri', $self->pretty_return_uri ($uri));
     return 0;
-}
-
-# Print the login page.  Takes the query, the variable hash, the error code if
-# any, the WebKDC response, the request token, and the service token, and
-# encodes them as appropriate in the login page.
-sub print_login_page {
-    my ($self, $err, $RT, $ST) = @_;
-    my $q = $self->{query};
-    my $resp = $self->{response};
-    my $page = $self->{pages}->{login};
-
-    $page->param (script_name => $self->{script_name});
-    $page->param (username => $self->{lvars}->{username});
-    $page->param (RT => $RT);
-    $page->param (ST => $ST);
-    $page->param (LC => $self->{lvars}->{LC});
-    if ($self->{lvars}->{remuser_url}) {
-        $page->param (show_remuser => 1);
-        $page->param (remuser_url => $self->{lvars}->{remuser_url});
-    }
-    if ($self->{lvars}->{remuser_failed}) {
-        $page->param (remuser_failed => 1);
-    }
-
-    # If and only if we got here as the target of a form submission (meaning
-    # that they already had one shot at logging in and something didn't work),
-    # set the appropriate error status.
-    #
-    # If they *haven't* already had one shot and forced login is set, display
-    # the error box telling them they're required to log in.
-    if ($q->param ('login')) {
-        $page->param (err_password => 1) unless $q->param ('password');
-        $page->param (err_username => 1) unless $q->param ('username');
-        $page->param (err_missinginput => 1) if $page->param ('err_username');
-        $page->param (err_missinginput => 1) if $page->param ('err_password');
-        if ($err == WK_ERR_LOGIN_FAILED) {
-            $page->param (err_loginfailed => 1);
-        }
-        if ($err == WK_ERR_USER_REJECTED) {
-            $page->param (err_rejected => 1);
-        }
-
-        # Set a generic error indicator if any of the specific ones were set
-        # to allow easier structuring of the login page template.
-        $page->param (error => 1) if $page->param ('err_missinginput');
-        $page->param (error => 1) if $page->param ('err_loginfailed');
-        $page->param (error => 1) if $page->param ('err_rejected');
-    } elsif ($self->{lvars}->{forced_login}) {
-        $page->param (err_forced => 1);
-        $page->param (error => 1);
-    }
-    $self->print_headers ($resp->proxy_cookies);
-    print $page->output;
-}
-
-# Print an error page, making sure that error pages are never cached.
-sub print_error_page {
-    my ($self) = @_;
-    my $q = $self->{query};
-    print $q->header (-expires => 'now');
-    print $self->{pages}->{error}->output;
 }
 
 # Parse the token.acl file and return a reference to a list of the credentials
@@ -314,16 +383,143 @@ sub token_rights {
     return $rights;
 }
 
+# Obtains the login cancel URL and sets appropriate parameters in the login
+# page if one is present.
+#
+# FIXME: Duplicates some of the logic of print_confirm_page but uses slightly
+# different template parameters.  This is annoying and should be standardized.
+sub get_login_cancel_url {
+    my ($self) = @_;
+    my $resp = $self->{response};
+    my $lc = $resp->login_canceled_token;
+    my $cancel_url;
+
+    # FIXME: Looks like extra semicolons here too.
+    if ($lc) {
+        $cancel_url = $resp->return_url . "?WEBAUTHR=$lc;";
+        $cancel_url .= ";WEBAUTHS=" . $resp->app_state . ";"
+            if $resp->app_state;
+    }
+    if ($cancel_url) {
+        $self->template_params ({login_cancel => 1});
+        $self->template_params ({cancel_url => $cancel_url});
+    }
+
+    return 0;
+}
+
+##############################################################################
+# Actual page views
+##############################################################################
+
+# Print the login page.  Takes the query, the variable hash, the error code if
+# any, the WebKDC response, the request token, and the service token, and
+# encodes them as appropriate in the login page.
+sub print_login_page {
+    my ($self, $err, $RT, $ST) = @_;
+    my $q = $self->query;
+
+    my $pagename = $self->get_pagename ('login');
+    my $params = $self->template_params;
+    $params->{script_name} = $self->param ('script_name');
+    $params->{username} = $q->param ('username');
+    $params->{RT} = $RT;
+    $params->{ST} = $ST;
+    if ($self->param ('remuser_url')) {
+        $params->{show_remuser} = 1;
+        $params->{remuser_url} = $self->param ('remuser_url');
+    }
+    if ($self->param ('remuser_failed')) {
+        $params->{remuser_failed} = 1;
+    }
+
+    # If and only if we got here as the target of a form submission (meaning
+    # that they already had one shot at logging in and something didn't work),
+    # set the appropriate error status.
+    #
+    # If they *haven't* already had one shot and forced login is set, display
+    # the error box telling them they're required to log in.
+    if ($q->param ('login')) {
+        $params->{err_password} = 1 unless $q->param ('password');
+        $params->{err_username} = 1 unless $q->param ('username');
+        $params->{err_missinginput} = 1 if $params->{'err_username'};
+        $params->{err_missinginput} = 1 if $params->{'err_password'};
+        if ($err == WK_ERR_LOGIN_FAILED) {
+            $params->{err_loginfailed} = 1;
+        }
+        if ($err == WK_ERR_USER_REJECTED) {
+            $params->{err_rejected} = 1;
+        }
+
+        # Set a generic error indicator if any of the specific ones were set
+        # to allow easier structuring of the login page template.
+        $params->{error} = 1 if $params->{'err_missinginput'};
+        $params->{error} = 1 if $params->{'err_loginfailed'};
+        $params->{error} = 1 if $params->{'err_rejected'};
+    } elsif ($self->param ('forced_login')) {
+        $params->{err_forced} = 1;
+        $params->{error} = 1;
+    }
+
+    $self->print_headers ($self->{response}->proxy_cookies);
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process login template');
+    }
+}
+
+# Print an error page, making sure that error pages are never cached.
+sub print_error_page {
+    my ($self) = @_;
+    my $pagename = $self->get_pagename ('error');
+    my $params = $self->template_params;
+    my $q = $self->query;
+
+    $self->header_props (-expires => 'now');
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process error template');
+    }
+}
+
+# In case of a fatal error, such as being unable to process a template, we
+# either print out a given 500 error page, or die to have Apache handle it
+# for us.
+sub print_error_fatal {
+    my ($self, $error) = @_;
+    my $q = $self->query;
+
+    if ($WebKDC::Config::FATAL_PAGE && -f $WebKDC::Config::FATAL_PAGE
+        && open (FATAL, '<', $WebKDC::Config::FATAL_PAGE)) {
+
+        warn ($error);
+        my $page = '';
+        while (<FATAL>) {
+            $page .= $_;
+        }
+        return $page;
+    } else {
+        die ($error);
+    }
+}
+
 # Given the query, the local variables, and the WebKDC response, print the
 # login page, filling in all of the various bits of data that the page
 # template needs.
+#
+# Setting the runmode occurs in the actual template file.
 sub print_confirm_page {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
     my $resp = $self->{response};
-    my $page = $self->{pages}->{confirm};
+    my $pagename = $self->get_pagename ('confirm');
+    my $params = $self->template_params;
 
-    my $pretty_return_url = $self->{lvars}->{pretty};
+    my $pretty_return_url = $self->param ('pretty_uri');
     my $return_url = $resp->return_url;
     my $lc = $resp->login_canceled_token;
     my $token_type = $resp->response_token_type;
@@ -345,7 +541,8 @@ sub print_confirm_page {
     # warning.  Skip if using remote_user or the user already has a
     # single-sign-on cookie.
     my $expire_warning = 0;
-    if (!$q->cookie ($self->{remuser_cookie}) && !$self->{wpt_cookie}
+    if (!$q->cookie ($self->param ('remuser_cookie'))
+        && !$self->param ('wpt_cookie')
         && $WebKDC::Config::EXPIRING_PW_URL) {
 
         my $expiring = $self->time_to_pwexpire;
@@ -355,21 +552,19 @@ sub print_confirm_page {
             $expire_warning = 1;
             my $expire_date = localtime ($expiring);
             my $countdown = Time::Duration::duration ($expiring - time);
-            $page->param (warn_expire => 1);
-            $page->param (expire_date => $expire_date);
-            $page->param (expire_time_left => $countdown);
-            $page->param (pwchange_url
-                          => $WebKDC::Config::EXPIRING_PW_URL);
+            $params->{warn_expire} = 1;
+            $params->{expire_date} = $expire_date;
+            $params->{expire_time_left} = $countdown;
+            $params->{pwchange_url} = $WebKDC::Config::EXPIRING_PW_URL;
 
             # Create and set the kadmin/changepw token (unless we require the
             # user re-enter).
             if (!$WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD) {
                 $self->add_changepw_token;
-                $page->param (CPT => $self->{CPT});
+                $params->{CPT} = $self->param ('CPT');
             } else {
-                $self->{pages}->{confirm}->param (skip_username => 1);
+                $params->{skip_username} = 1;
             }
-
         }
     }
 
@@ -381,49 +576,45 @@ sub print_confirm_page {
     # later on but present the regular confirmation page as the body in case
     # the browser doesn't support it.  We also skip the bypass if the user
     # has an upcoming password expiration warning.
+    my $post = ($q->request_method eq 'POST') ? 1 : 0;
     my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
     $bypass = 0 if $expire_warning;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
     }
     if ($token_type eq 'id') {
-        if ($bypass and not $self->{lvars}->{force_confirm}) {
-            $self->print_headers ($resp->proxy_cookies, $return_url);
-            return;
+        if ($bypass and not $post) {
+            return $self->print_headers ($resp->proxy_cookies, $return_url);
         }
     }
 
-    # Find our page and set general template parameters.  token_rights was
-    # added in WebAuth 3.6.1.  Adjust for older templates.
-    $page->param (return_url => $return_url);
-    $page->param (username => $resp->subject);
-    $page->param (pretty_return_url => $pretty_return_url);
-    if ($token_type eq 'proxy' and $page->query (name => 'token_rights')) {
-        $page->param (token_rights => $self->token_rights);
-    }
+    # Find our page and set general template parameters.
+    $params->{return_url} = $return_url;
+    $params->{username} = $resp->subject;
+    $params->{pretty_return_url} = $pretty_return_url;
+    $params->{token_rights} = $self->token_rights;
 
     # If there is a login cancel option, handle creating the link for it.
     if (defined $lc) {
-        $page->param (login_cancel => 1);
+        $params->{login_cancel} = 1;
         my $cancel_url = $resp->return_url;
 
         # FIXME: Looks like extra semicolons here too.
         $cancel_url .= "?WEBAUTHR=$lc;";
         $cancel_url .= ";WEBAUTHS=" . $resp->app_state . ";"
             if $resp->app_state;
-        $page->param (cancel_url => $cancel_url);
+        $params->{cancel_url} = $cancel_url;
     }
 
     # If REMOTE_USER is done at a separate URL *and* REMOTE_USER support was
     # either requested or used, show the checkbox for it.
     if ($WebKDC::Config::REMUSER_REDIRECT) {
-        if ($ENV{REMOTE_USER} || $q->cookie ($self->{remuser_cookie})) {
-            $page->param (show_remuser => 1);
-            if ($q->cookie ($self->{remuser_cookie})) {
-                $page->param (remuser => 1);
-            }
+        my $cookie_name = $self->param ('remuser_cookie');
+        if ($ENV{REMOTE_USER} || $q->cookie ($cookie_name)) {
+            $params->{show_remuser} = 1;
+            $params->{script_name} = $self->param ('script_name');
 
-            $page->param (script_name => $self->{script_name});
+            $params->{remuser} = 1 if $q->cookie ($cookie_name);
         }
     }
 
@@ -435,7 +626,12 @@ sub print_confirm_page {
     } else {
         $self->print_headers ($resp->proxy_cookies);
     }
-    print $page->output;
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process confirm template');
+    }
 }
 
 # Given the query, redisplay the confirmation page after a change in the
@@ -445,109 +641,130 @@ sub print_confirm_page {
 # the WAS in a hidden variable?
 sub redisplay_confirm_page {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
 
-    my $return_url = $q->param ('return_url');
     my $username = $q->param ('username');
-    my $cancel_url = $q->param ('cancel_url');
-
+    my $return_url = $q->param ('return_url');
     my $uri = URI->new ($return_url);
     unless ($username && $uri && $uri->scheme && $uri->host) {
-        $self->{pages}->{error}->param (err_confirm => 1);
+        $self->template_params ({err_confirm => 1});
         print STDERR "missing data when reconstructing confirm page\n"
-            if $self->{logging};
-        $self->print_error_page;
-        return;
+            if $self->param ('logging');
+        return $self->print_error_page;
     }
     my $pretty_return_url = $self->pretty_return_uri ($uri);
 
     # Find our page and set general template parameters.
-    my $page = $self->{pages}->{confirm};
-    $page->param (return_url => $return_url);
-    $page->param (username => $username);
-    $page->param (pretty_return_url => $pretty_return_url);
-    $page->param (script_name => $self->{script_name});
-    $page->param (show_remuser => 1);
+    my $pagename = $self->get_pagename ('confirm');
+    my $params = $self->template_params;
+    $params->{return_url} = $return_url;
+    $params->{username} = $username;
+    $params->{pretty_return_url} = $pretty_return_url;
+    $params->{script_name} = $self->param ('script_name');
+    $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
-    $page->param (remuser => $remuser);
+    $params->{remuser} = $remuser;
 
     # If there is a login cancel option, handle creating the link for it.
+    my $cancel_url = $q->param ('cancel_url');
     if (defined $cancel_url) {
-        $page->param (login_cancel => 1);
-        $page->param (cancel_url => $cancel_url);
+        $params->{login_cancel} = 1;
+        $params->{cancel_url} = $cancel_url;
     }
 
     # Print out the page, including the new REMOTE_USER cookie.
-    $self->print_headers ({ $self->{remuser_cookie} => ($remuser ? 1 : 0) });
-    print $page->output;
-}
-
-# Obtains the login cancel URL and sets appropriate parameters in the login
-# page if one is present.
-#
-# FIXME: Duplicates some of the logic of print_confirm_page but uses slightly
-# different template parameters.  This is annoying and should be standardized.
-sub get_login_cancel_url {
-    my ($self) = @_;
-    my $resp = $self->{response};
-    my $lc = $resp->login_canceled_token;
-    my $cancel_url;
-
-    # FIXME: Looks like extra semicolons here too.
-    if ($lc) {
-        $cancel_url = $resp->return_url . "?WEBAUTHR=$lc;";
-        $cancel_url .= ";WEBAUTHS=" . $resp->app_state . ";"
-            if $resp->app_state;
+    $self->print_headers ({ $self->param ('remuser_cookie') =>
+            ($remuser ? 1 : 0) });
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process confirm template');
     }
-    if ($cancel_url) {
-        $self->{pages}->{login}->param (login_cancel => 1);
-        $self->{pages}->{login}->param (cancel_url => $cancel_url);
-    }
-    $self->{lvars}->{LC} = $cancel_url ? base64_encode ($cancel_url) : '';
-    return 0;
 }
 
 # Print the password change page.
 sub print_pwchange_page {
     my ($self, $RT, $ST) = @_;
-    my $q = $self->{query};
-    my $page = $self->{pages}->{pwchange};
+    my $q = $self->query;
+    my $pagename = $self->get_pagename ('pwchange');
+    my $params = $self->template_params;
 
     # Get and pass along various field values that remain across attempts.
-    my $username = $q->param ('username');
-    $page->param (username => $username);
-    $page->param (CPT => $self->{CPT});
-    $page->param (RT => $RT);
-    $page->param (ST => $ST);
-    $page->param (script_name => $self->{script_name});
-    $page->param (expired => 1)
+    $params->{username} = $q->param ('username');
+    $params->{CPT} = $self->param ('CPT');
+    $params->{RT} = $RT;
+    $params->{ST} = $ST;
+    $params->{script_name} = $self->param ('script_name');
+    $params->{expired} = 1
         if ($q->param ('expired') and $q->param ('expired') == 1);
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token, or at previous request to skip the username.
-    if ($self->{CPT}) {
-        $page->param (skip_username => 1);
-        $page->param (skip_password => 1);
+    if ($self->param ('CPT')) {
+        $params->{skip_username} = 1;
+        $params->{skip_password} = 1;
     } elsif (defined $q->param ('skip_username')
              && $q->param ('skip_username') == 1) {
-        $page->param (skip_username => 1);
+        $params->{skip_username} = 1;
     }
 
     # Print out the page.
     $self->print_headers;
-    print $page->output;
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process pwchange template');
+    }
 }
 
 # Print confirmation page after successful password change.  This is only
-# hit when not having been sent here with an expired password.
+# hit when not having been sent here with an expired password.  We don't set
+# a runmode, since this is an end state.
 sub print_pwchange_confirm_page {
     my ($self) = @_;
-    my $q = $self->{query};
-    my $page = $self->{pages}->{pwchange};
+    my $q = $self->query;
+    my $pagename = $self->get_pagename ('pwchange');
+    my $params = $self->template_params;
 
-    $page->param (success => 1);
+    $params->{success} = 1;
     $self->print_headers;
-    print $page->output;
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process pwchange confirm '
+                                  .'template');
+    }
+}
+
+# Print the page prompting a user to give a multifactor OTP.  This is called
+# whenever the user's login attempt returns that multifactor should be tried,
+# or on an unsuccessful attempt to use multifactor.
+sub print_multifactor_page {
+    my ($self, $RT, $ST) = @_;
+    my $q = $self->query;
+    my $pagename = $self->get_pagename ('multifactor');
+    my $params = $self->template_params;
+
+    $params->{script_name} = $self->param ('script_name');
+    $params->{username} = $q->param ('username');
+    $params->{RT} = $RT;
+    $params->{ST} = $ST;
+    $params->{factor_type} = $self->{response}->factor_configured
+        || $q->param ('factor_type');
+
+    $params->{error} = 1 if $params->{'err_multifactor_missing'};
+    $params->{error} = 1 if $params->{'err_multifactor_invalid'};
+
+    $self->print_headers ($self->{response}->proxy_cookies);
+    my $content = $self->tt_process ($pagename, $params);
+    if ($content) {
+        return $content;
+    } else {
+        $self->print_error_fatal ('could not process multifactor template');
+    }
 }
 
 ##############################################################################
@@ -557,21 +774,21 @@ sub print_pwchange_confirm_page {
 # Redirect the user to the REMOTE_USER-enabled login URL.
 sub print_remuser_redirect {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
     my $uri = $WebKDC::Config::REMUSER_REDIRECT;
 
     unless ($uri) {
         print STDERR "REMUSER_REDIRECT not configured\n"
-            if $self->{logging};
-        $self->{pages}->{error}->param (err_webkdc => 1);
+            if $self->param ('logging');
+        $self->template_params ({err_webkdc => 1});
         my $errmsg = "unrecoverable error occured. Try again later.";
-        $self->{pages}->{error}->param (err_msg => $errmsg);
-        $self->print_error_page;
+        $self->template_params ({err_msg => $errmsg});
+        return $self->print_error_page;
     } else {
         $uri .= "?RT=" . $self->fix_token ($q->param ('RT')) .
                 ";ST=" . $self->fix_token ($q->param ('ST'));
-        print STDERR "redirecting to $uri\n" if $self->{debug};
-        print $q->redirect (-uri => $uri);
+        print STDERR "redirecting to $uri\n" if $self->param ('debug');
+        return $self->redirect ($uri);
     }
 }
 
@@ -581,7 +798,7 @@ sub add_proxy_token {
     my ($self) = @_;
 
     print STDERR "adding a proxy token for $ENV{REMOTE_USER}\n"
-        if $self->{debug};
+        if $self->param ('debug');
     my ($kreq, $data);
     my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
     eval {
@@ -594,18 +811,19 @@ sub add_proxy_token {
     };
     if ($@) {
         print STDERR "failed to create proxy token request for"
-            . " $ENV{REMOTE_USER}: $@\n" if $self->{logging};
+            . " $ENV{REMOTE_USER}: $@\n" if $self->param ('logging');
         return;
     }
     my ($status, $error, $token, $subject)
         = WebKDC::make_proxy_token_request ($kreq, $data);
     if ($status != WK_SUCCESS) {
         print STDERR "failed to obtain proxy token for $ENV{REMOTE_USER}:"
-            . " $error\n" if $self->{logging};
+            . " $error\n" if $self->param ('logging');
         return;
     }
-    print STDERR "adding krb5 proxy token for $subject\n" if $self->{debug};
-    $self->{request}->proxy_cookie ('krb5', $token);
+    print STDERR "adding krb5 proxy token for $subject\n"
+        if $self->param ('debug');
+    $self->{request}->proxy_cookie ('krb5', $token, 'k');
 }
 
 # Generate a proxy token containing the REMOTE_USER identity and pass it into
@@ -616,8 +834,8 @@ sub add_remuser_token {
     my ($self) = @_;
 
     print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
-        if $self->{debug};
-    my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+        if $self->param ('debug');
+    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -657,9 +875,27 @@ sub add_remuser_token {
     $token->proxy_type ('remuser');
     $token->subject ($user);
 
+    # If there's a callback defined for determining the initial and session
+    # factors and level of assurance, make that callback and store the results
+    # in the generated token.  Otherwise, set the initial factors to unknown
+    # and omit the level of assurance.
+    #
+    # FIXME: Session factor information is not yet used and will require
+    # protocol modifications to use properly.
+    my $session_factor;
+    if (defined (&WebKDC::Config::remuser_factors)) {
+        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
+        $token->initial_factors ($ini);
+        $token->loa ($loa) if (defined ($loa) && $loa > 0);
+        $session_factor = $sess;
+    } else {
+        $token->initial_factors ('u');
+        $session_factor = 'u';
+    }
+
     # Add the token to the WebKDC request.
     my $token_string = base64_encode ($token->to_token ($keyring));
-    $self->{request}->proxy_cookie ('remuser', $token_string);
+    $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
 }
 
 ##############################################################################
@@ -670,15 +906,15 @@ sub add_remuser_token {
 # true on success and false on failure.
 sub add_changepw_token {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
     my $username = $q->param ('username');
     my $password = $q->param ('password');
 
     # Don't bother if the token already is created.
-    return 1 if $self->{CPT};
+    return 1 if $self->param ('CPT');
 
     print STDERR "adding a kadmin/changepw cred token for $username\n"
-        if $self->{debug};
+        if $self->param ('debug');
 
     # Create a ticket for kadmin/changepw with the user name and password.
     my ($ticket, $expires);
@@ -694,7 +930,7 @@ sub add_changepw_token {
     };
     if ($@) {
         print STDERR "failed to create kadmin/changepw credential for"
-            . " $username: $@\n" if $self->{logging};
+            . " $username: $@\n" if $self->param ('logging');
         return;
     }
 
@@ -711,29 +947,30 @@ sub add_changepw_token {
     $token->subject ($username);
 
     # Add the token to the web page.
-    my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
         return;
     }
-    $self->{CPT} = base64_encode ($token->to_token ($keyring));
+    $self->param ('CPT', base64_encode ($token->to_token ($keyring)));
     return 1;
 }
 
 # Attempt to change the user password using the changepw token.
 sub change_user_password {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
     my ($status, $error);
 
     my $username = $q->param ('username');
     my $password = $q->param ('new_passwd1');
-    my $cpt = $self->{CPT};
+    my $cpt = $self->param ('CPT');
 
-    print STDERR "changing password for $username\n" if $self->{debug};
+    print STDERR "changing password for $username\n"
+        if $self->param ('debug');
 
-    my $keyring = keyring_read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -751,22 +988,22 @@ sub change_user_password {
             return (WK_ERR_LOGIN_FAILED,
                     'cannot acquire passord change credentials');
         }
-        $cpt = $self->{CPT};
+        $cpt = $self->param ('CPT');
     }
     my $token;
     eval {
         $token = new WebKDC::CredToken (base64_decode ($cpt), $keyring, 0);
     };
     if ($@) {
-        $self->{CPT} = '';
+        $self->param ('CPT', '');
         my $msg = "internal error";
         my $e = $@;
         if (ref $e and $e->isa('WebKDC::WebKDCException')) {
-            print STDERR $e->message(), "\n" if $self->{logging};
+            print STDERR $e->message(), "\n" if $self->param ('logging');
             return ($e->status(), $msg);
         } elsif (ref $e and $e->isa('WebAuth::Exception')) {
             print STDERR "WebAuth exception $e->{detail} $e->{status}\n"
-                if $self->{logging};
+                if $self->param ('logging');
             if ($e->{status} == WA_ERR_TOKEN_EXPIRED) {
                 $msg = "failed to change password for $username:"
                     . " timed out, re-enter old password";
@@ -778,12 +1015,12 @@ sub change_user_password {
 
     } elsif ($token->subject ne $username) {
         my $e = "failed to change password for $username: invalid username";
-        print STDERR $e, "\n" if $self->{logging};
+        print STDERR $e, "\n" if $self->param ('logging');
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } elsif ($token->cred_type ne 'krb5') {
         my $e = "failed to change password for $username: "
             . "invalid credential type";
-        print STDERR $e, "\n" if $self->{logging};
+        print STDERR $e, "\n" if $self->param ('logging');
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     }
 
@@ -810,7 +1047,7 @@ sub change_user_password {
 # expires, or undef if there is no expiration.
 sub time_to_pwexpire {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
 
     # Return if we've not set an expired password command.
     return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
@@ -843,7 +1080,7 @@ sub time_to_pwexpire {
     return undef unless $expiration;
     if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
         print STDERR "invalid password expire time for $username: "
-            ."$expiration\n" if $self->{logging};
+            ."$expiration\n" if $self->param ('logging');
         return undef;
     }
 
@@ -873,38 +1110,30 @@ sub time_to_pwexpire {
 #
 # If the parameter is already set and we still don't have a cookie, the
 # user has cookies disabled.  Display the error page.
-sub test_cookies {
+sub error_if_no_cookies {
     my ($self) = @_;
 
-    return 1 if $self->{query}->cookie ($self->{test_cookie});
-    if (defined $self->{query}->param ('test_cookie')) {
+    return undef if $self->query->cookie ($self->param ('test_cookie'));
+    if (defined $self->query->param ('test_cookie')) {
         print STDERR "no cookie, even after redirection\n"
-            if $self->{logging};
+            if $self->param ('logging');
 
-        # err_cookies_disabled was added as a form parameter with WebAuth
-        # 3.5.5.  Try to adjust for old templates.
-        if ($self->{pages}->{error}->query (name => "err_cookies_disabled")) {
-            $self->{pages}->{error}->param (err_cookies_disabled => 1);
-        } else {
-            print STDERR "warning: err_cookies_disabled not recognized"
-                . " by WebLogin error template\n" if $self->{logging};
-            $self->{pages}->{error}->param (err_webkdc => 1);
-            my $message = 'You must enable cookies in your web browser.';
-            $self->{pages}->{error}->param (err_msg => $message);
-        }
-        $self->print_error_page;
-        return 0;
-    } elsif ($self->{query}->request_method ne 'POST') {
-        $self->{query}->delete ('username', 'password', 'submit');
-        $self->{query}->param (test_cookie => 1);
-        my $redir_url = $self->{query}->url (-query => 1);
+        $self->template_params ({err_cookies_disabled => 1});
+        return $self->print_error_page;
+    } elsif ($self->query->request_method ne 'POST') {
+        $self->query->delete ('username', 'password', 'submit');
+        $self->query->param (test_cookie => 1);
+        my $redir_url = $self->query->url (-query => 1);
         print STDERR "no cookie set, redirecting to $redir_url\n"
-            if $self->{debug};
-        $self->print_headers ('', $redir_url);
-        return 0;
+            if $self->param ('debug');
+        # FIXME: How do we handle this?  print_headers will set the headers,
+        #        but then we have no actual output that should be returned.
+        #        Should probably return '' and make the caller differentiate
+        #        between getting that and getting undef.
+        return $self->print_headers ('', $redir_url);
     }
 
-    return 1;
+    return undef;
 }
 
 # If the user sent a password, force POST as a method.  Otherwise, if we
@@ -913,37 +1142,28 @@ sub test_cookies {
 #
 # err_bad_method was added as a form parameter with WebAuth 3.6.2.  Try to
 # adjust for old templates.
-sub test_password_no_post {
+sub error_password_no_post {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
 
-    return 1 unless $q->param ('password') && $q->request_method ne 'POST';
+    return undef unless $q->param ('password')
+        && $q->request_method ne 'POST';
 
-    if ($self->{pages}->{error}->query (name => 'err_bad_method')) {
-        $self->{pages}->{error}->param (err_bad_method => 1);
-    } else {
-        print STDERR "warning: err_bad_method not recognized by WebLogin"
-            . " error template\n" if $self->{logging};
-        $self->{pages}->{error}->param (err_webkdc => 1);
-        my $message = 'You must use the POST method to log in.';
-        $self->{pages}->{error}->param (err_msg => $message);
-    }
-    $self->print_error_page;
-    return 0;
+    $self->template_params ({err_bad_method => 1});
+    return $self->print_error_page;
 }
 
 # Check to see if we have a defined request token.  If not, display the
 # error page and tell the caller to skip to the next request.
-sub test_request_token {
+sub error_no_request_token {
     my ($self) = @_;
-    my $q = $self->{query};
+    my $q = $self->query;
 
-    return 1 if defined $q->param ('RT') && defined $q->param ('ST');
+    return undef if defined $q->param ('RT') && defined $q->param ('ST');
 
-    $self->{pages}->{error}->param (err_no_request_token => 1);
-    print STDERR "no request or service token\n" if $self->{logging};
-    $self->print_error_page;
-    return 0;
+    $self->template_params ({err_no_request_token => 1});
+    print STDERR "no request or service token\n" if $self->param ('logging');
+    return $self->print_error_page;
 }
 
 # Test for requirements of a password request:
@@ -954,43 +1174,41 @@ sub test_request_token {
 # Check to see if all required fields for a password change form have been
 # filled out correctly.  If so, return 1.  If not, print the password
 # change page again, with the errors, and return 0.
-sub test_pwchange_fields {
+sub error_invalid_pwchange_fields {
     my ($self) = @_;
-    my $q = $self->{query};
-    my $req = $self->{request};
+    my $q = $self->query;
     my $error;
 
     # Even if it's a hidden field and not given to user, this should exist.
     if (!$q->param ('username')) {
-        $self->{pages}->{pwchange}->param (err_username => 1);
+        $self->template_params ({err_username => 1});
         $error = 1;
     }
 
     # For password, we do not require it if we already have a kadmin/changepw
     # token.
-    if (!$q->param ('password') && !$self->{CPT}) {
-        $self->{pages}->{pwchange}->param (err_password => 1);
+    if (!$q->param ('password') && !$self->param ('CPT')) {
+        $self->template_params ({err_password => 1});
         $error = 1;
 
     # Check both for empty new password, and for it to not match itself.
     } elsif (!$q->param ('new_passwd1') || !$q->param ('new_passwd2')) {
-        $self->{pages}->{pwchange}->param (err_newpassword => 1);
+        $self->template_params ({err_newpassword => 1});
         $error = 1;
     } elsif ($q->param ('new_passwd1') ne $q->param ('new_passwd2')) {
-        $self->{pages}->{pwchange}->param (err_newpassword_match => 1);
+        $self->template_params ({err_newpassword_match => 1});
         $error = 1;
     }
 
-    return 1 unless $error;
+    return undef unless $error;
 
     # Mark us as having had an error and print the page again.
-    $self->{pages}->{pwchange}->param (error => 1);
-    $self->print_pwchange_page ($q->param ('RT'), $q->param ('ST'));
-    return 0;
+    $self->template_params ({error => 1});
+    return $self->print_pwchange_page ($q->param ('RT'), $q->param ('ST'));
 }
 
 ##############################################################################
-# Primary page handler
+# KDC interactions
 ##############################################################################
 
 # Set up all parameters to the WebKDC request, including tokens, username
@@ -999,12 +1217,16 @@ sub test_pwchange_fields {
 sub setup_kdc_request {
     my ($self, %cart) = @_;
     my ($status);
-    my $q = $self->{query};
+    my $q = $self->query;
 
     # Set up the parameters to the WebKDC request.
     $self->{request}->service_token ($self->fix_token ($q->param ('ST')));
     $self->{request}->request_token ($self->fix_token ($q->param ('RT')));
     $self->{request}->pass ($q->param ('password')) if $q->param ('password');
+    $self->{request}->otp ($q->param ('otp')) if $q->param ('otp');
+
+    # For the initial login page, we may need to map the username.  For OTP,
+    # we've already done this, so we don't need to do it again.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1018,23 +1240,25 @@ sub setup_kdc_request {
             $username = '';
             $status = WK_ERR_LOGIN_FAILED;
         }
-        $self->{request}->user ($username);
+        $q->param ('username', $username);
     }
+    $self->{request}->user ($q->param ('username'));
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)
     # and stuff them into the WebKDC request.
     my $wpt_cookie;
     for (keys %cart) {
-        if (/^webauth_wpt/) {
-            my ($name, $val) = split ('=', $cart{$_});
-            $name=~ s/^(webauth_wpt_)//;
-            $self->{request}->proxy_cookie ($name, $q->cookie ($_));
-            print STDERR "found a cookie $name\n" if $self->{debug};
-            $wpt_cookie = 1;
-        }
+        next unless /^webauth_wpt/;
+        next if $q->cookie ($_) eq $EXPIRED_COOKIE;
+        my $type = $_;
+        $type =~ s/^(webauth_wpt_)//;
+        $self->{request}->proxy_cookie ($type, $q->cookie ($_), 'c');
+        print STDERR "found a cookie of type $type\n"
+            if $self->param ('debug');
+        $wpt_cookie = 1;
     }
-    $self->{wpt_cookie} = $wpt_cookie;
+    $self->param ('wpt_cookie', $wpt_cookie);
 
     # Pass in the network connection information.  This is only used for
     # additional logging in the WebKDC.
@@ -1042,6 +1266,9 @@ sub setup_kdc_request {
     $self->{request}->local_ip_port ($ENV{SERVER_PORT});
     $self->{request}->remote_ip_addr ($ENV{REMOTE_ADDR});
     $self->{request}->remote_ip_port ($ENV{REMOTE_PORT});
+
+    # The WebKDC doesn't use this yet, but we might like to in the future.
+    $self->{request}->remote_user ($ENV{REMOTE_USER});
 
     # If WebKDC::Config::REMUSER_ENABLED is set to a true value, see if we
     # have a ticket cache.  If so, obtain a proxy token in advance.
@@ -1057,21 +1284,54 @@ sub setup_kdc_request {
             $self->add_remuser_token;
         }
     }
-    $self->{request}->remote_user ($ENV{REMOTE_USER});
     return $status;
 }
 
-# Decide which page we print out based on the response from the KDC, then
-# display that page.
-sub process_response {
-    my ($self, $status, $error) = @_;
-    my $q = $self->{query};
+#############################################################################
+# Actions to various requests
+#############################################################################
+
+# Main index, to log users in or display the login page if they are required
+# to enter login data.
+# Pages: multifactor page (success + multifactor required)
+#        login page (login failure)
+#        password reset page (success + password expired)
+#        confirm page (success + no multifactor + confirm required)
+#        redirect to base site (success + no multifactor + no confirm)
+#        error page (some critical failure)
+#        internal service error page (could not call template)
+sub index : StartRunmode {
+    my ($self) = @_;
+
+    my $q = $self->query;
     my $req = $self->{request};
     my $resp = $self->{response};
+    my ($status, $error);
+
+    # Test for lack of a request token, cookies not being enabled, or
+    # sending passwords over a non-POST method.  If found, these will
+    # internally handle the error pages, so we stop processing this
+    # request.
+    my $page;
+    return $page if ($page = $self->error_no_request_token);
+    return $page if ($page = $self->error_if_no_cookies);
+    return $page if ($page = $self->error_password_no_post);
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $status = $self->setup_kdc_request (%cart);
+
+    # Pass the information along to the WebKDC and get the response.
+    if (!$status) {
+        ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    }
 
     # Parse the result from the WebKDC and get the login cancel information if
-    # any.  (The login cancel stuff is oddly placed here, like it was added as
-    # an afterthought, and should probably be handled in a cleaner fashion.)
+    # any.
+    # FIXME: (The login cancel stuff is oddly placed here, like it was added
+    # as an afterthought, and should probably be handled in a cleaner
+    # fashion.)
     $self->get_login_cancel_url;
 
     # parse_uri returns 1 on failure to parse the return_url.
@@ -1085,72 +1345,69 @@ sub process_response {
     # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
     # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
     # requires username/password even if the user has other auth methods.
-    #
-    # If username was set, we were the target of a form submission and
-    # therefore by protocol must display a real page.  Otherwise, we can
-    # return a redirect if BYPASS_CONFIRM is set.
+    # Auth branch on "WebKDC return status" 1A
     if ($status == WK_SUCCESS) {
         if (defined (&WebKDC::Config::record_login)) {
             WebKDC::Config::record_login ($resp->subject);
         }
-        $self->{lvars}->{force_confirm} = 1 if $q->param ('username');
-        $self->print_confirm_page;
-        print STDERR "WebKDC::make_request_token_request sucess\n"
-            if $self->{debug};
+
+        print STDERR "WebKDC::make_request_token_request success\n"
+            if $self->param ('debug');
+        return $self->print_confirm_page;
 
     # User's password has expired and we have somewhere to send them to get it
     # changed.  Get the CPT (unless we require resending the password) and
     # update the script name.
+    # 1B
     } elsif ($status == WK_ERR_CREDS_EXPIRED
              && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
 
         if (!$WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD) {
             $self->add_changepw_token;
         } else {
-            $self->{pages}->{pwchange}->param (skip_username => 1);
+            $self->template_params ({skip_username => 1});
         }
 
-        $self->{script_name} = $WebKDC::Config::EXPIRING_PW_URL;
-        $self->{query}->param ('expired', 1);
-        $self->print_pwchange_page ($req->request_token, $req->service_token);
+        $self->param ('script_name', $WebKDC::Config::EXPIRING_PW_URL);
+        $self->query->param ('expired', 1);
+        return $self->print_pwchange_page ($req->request_token,
+                                           $req->service_token);
 
     # Other authentication methods can be used, REMOTE_USER support is
     # requested by cookie, we're not already at the REMOTE_USER-authenticated
     # URL, and we're not an error handler (meaning that we haven't tried
     # REMOTE_USER and failed).  Redirect to the REMOTE_USER URL.
+        # 1C - Should be doing this before actually trying the webkdc login.
+        #      Shouldn't be checking for the status it's checking.
+        #      Should check for cookie -- remove status check and move up in
+        #         flow for initial visit.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              && !$ENV{REMOTE_USER}
-             && $q->cookie ($self->{remuser_cookie})
-             && !$self->{is_error}
+             && $q->cookie ($self->param ('remuser_cookie'))
+             && !$self->param ('is_error')
              && !$q->param ('login')
              && $WebKDC::Config::REMUSER_REDIRECT) {
-        print STDERR "redirecting to REMOTE_USER page\n" if $self->{debug};
-        $self->print_remuser_redirect;
-
-    # The user didn't already ask for REMOTE_USER.  However, we just need
-    # authentication (not forced login) and we haven't already tried
-    # REMOTE_USER and failed, so give them the login screen with the choice.
-    } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
-             && !$q->cookie ($self->{remuser_cookie})
-             && !$self->{is_error}
-             && $WebKDC::Config::REMUSER_REDIRECT) {
-        $self->{lvars}->{remuser_url} = $WebKDC::Config::REMUSER_REDIRECT;
-        $self->print_login_page ($status, $req->request_token,
-                                 $req->service_token);
-        print STDERR "WebKDC::make_request_token_request failed,"
-            . " displaying login page (REMOTE_USER allowed)\n"
-            if $self->{debug};
+        print STDERR "redirecting to REMOTE_USER page\n"
+            if $self->param ('debug');
+        return $self->print_remuser_redirect;
 
     # We've tried REMOTE_USER and failed, the site has said that the user has
     # to use username/password no matter what, REMOTE_USER redirects are not
     # supported, or the user has already tried username/password.  Display the
     # login screen without the REMOTE_USER choice.
+        # 1D -- Displaying traditional login screen.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED
              || $status == WK_ERR_USER_REJECTED) {
         if ($WebKDC::Config::REMUSER_REDIRECT) {
-            $self->{lvars}->{remuser_failed} = $self->{is_error};
+            $self->param ('remuser_failed', $self->param ('is_error'));
+        }
+
+        if ($status == WK_ERR_USER_AND_PASS_REQUIRED
+            && !$q->cookie ($self->param ('remuser_cookie'))
+            && !$self->param ('is_error')) {
+            $self->param ('remuser_url', $WebKDC::Config::REMUSER_REDIRECT);
         }
 
         # If logins were forced, we want to tell the user.  However, if this
@@ -1159,21 +1416,45 @@ sub process_response {
         # set *and* either the user has single sign-on cookies or wants to do
         # REMUSER, set the relevant template variable.
         if ($status == WK_ERR_LOGIN_FORCED
-            && ($self->{wpt_cookie}
-                     || $q->cookie ($self->{remuser_cookie}))) {
-            $self->{lvars}->{forced_login} = 1;
+            && ($self->param ('wpt_cookie')
+                     || $q->cookie ($self->param ('remuser_cookie')))) {
+            $self->param ('forced_login', 1);
         }
 
-        $self->print_login_page ($status, $req->request_token,
-                                 $req->service_token);
         print STDERR "WebKDC::make_request_token_request failed,"
-            . " displaying login page (REMOTE_USER not allowed)\n"
-            if $self->{debug};
+            . " displaying login page\n"
+            if $self->param ('debug');
+        return $self->print_login_page ($status, $req->request_token,
+                                        $req->service_token);
+
+    # Multifactor was required and the KDC says the user can give it.  If we
+    # got here because the user already had a proxy token, we may not know
+    # what the username is, so get it from the response.
+    } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
+        print STDERR "multifactor required for login\n"
+            if $self->param ('debug');
+
+        my $req = $self->{request};
+        unless ($q->param ('username')) {
+            $q->param ('username', $resp->subject);
+        }
+        return $self->print_multifactor_page ($req->request_token,
+                                              $req->service_token);
+
+    # Multifactor was required but they have no or insufficiently high
+    # multifactor configured.
+    } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
+        if (defined $resp->factor_configured) {
+            $self->template_params ({err_insufficient_mfactor => 1});
+        } else {
+            $self->template_params ({err_no_mfactor => 1});
+        }
+        return $self->print_error_page;
 
     # Something abnormal happened.  Figure out what error message to display
     # and throw up the error page instead.
     } else {
-        my $errmsg;
+        my $errmsg = '';
 
         # Something very nasty.  Just display a "we don't know" error.
         if ($status == WK_ERR_UNRECOVERABLE_ERROR) {
@@ -1194,85 +1475,280 @@ sub process_response {
         } elsif ($status == WK_ERR_WEBAUTH_SERVER_ERROR) {
             $errmsg = "there is most likely a configuration problem with"
                 . " the server that redirected you. Please contact its"
-                . " administrator";
+                . " administrator.";
         }
 
         # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"
-            . " $errmsg: $error\n" if $self->{logging};
-        $self->{pages}->{error}->param (err_webkdc => 1);
-        $self->{pages}->{error}->param (err_msg => $errmsg);
-        $self->print_error_page;
+            . " $errmsg: $error\n" if $self->param ('logging');
+        $self->template_params ({err_webkdc => 1});
+        $self->template_params ({err_msg => $errmsg});
+        return $self->print_error_page;
     }
 }
 
-##############################################################################
-# Constructing the object
-##############################################################################
+# Process a request to log out of the page.  This won't be called by anything
+# else by WebLogin, only by the logout page directly.
+# Pages: logout template (success)
+#        service error page (failure building template)
+sub logout : Runmode {
+    my ($self) = @_;
+    my $q = $self->query;
+    my %cookies = CGI::Cookie->fetch;
+    my $ca;
+    my %params;
 
-# Create and returns a WebLogin object to handle page processing for a
-# request.
-sub new {
-    my ($class, $query, $pages, %settings)= @_;
+    # Locate any webauth_wpt cookies and blow them away, by setting the same
+    # cookie again with a null value and an expiration date in the past.
+    for my $key (sort keys %cookies) {
+        if ($key =~ /^webauth_wpt/) {
+            my ($name) = split ('=', $cookies{$key});
+            push (@$ca, $q->cookie (-name => $name, -value => $EXPIRED_COOKIE,
+                                    -expires => '-1d', -secure => 1));
+         }
+    }
 
-    my $self = {};
-    bless $self, $class;
+    $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
+                         -Cache_Control => 'no-cache, no-store');
+    if ($ca) {
+        $params{cookies_flag} = 1;
+        $self->header_add (-cookie => $ca);
+    }
 
-    # CGI object for the query objects for the request and response to the
-    # webkdc.
-    $self->{query} = $query;
-    $self->{request} = new WebKDC::WebRequest;
-    $self->{response} = new WebKDC::WebResponse;
+    my $pages = $self->param ('pages');
+    my $pagename = $pages->{logout};
+    my $content = $self->tt_process ($pagename, \%params);
+    if ($content) {
+        return $content;
+    } else {
+        return $self->print_error_fatal ('could not process login template');
+    }
+}
 
-    # If we got our parameters via REDIRECT_QUERY_STRING, we're an error
-    # handler and don't want to redirect later.
-    $self->{is_error} = defined $ENV{REDIRECT_QUERY_STRING};
+# Handle the user attempting to change current password, whether from the
+# user's own request or a force-change on password expiration.
+# Pages: password change screen (failure)
+#        login screen (success on force-change)
+#        confirm page (success on user deciding to change)
+sub pwchange : Runmode {
+    my ($self) = @_;
 
-    # A number of HTML::Template objects for each possible webpage.
-    $self->{pages} = $pages;
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
 
-    # Testing and logging - optional.
-    $self->{logging} = (exists $settings{logging})
-        ? $settings{logging} : $LOGGING;
-    $self->{debug} = (exists $settings{debug})
-        ? $settings{debug} : $DEBUG;
+    my $q = $self->query;
+    my $req = $self->{request};
+    my $resp = $self->{response};
 
-    # Cookie values - optional.
-    $self->{remuser_cookie} = (exists $settings{remuser_cookie})
-        ? $settings{remuser_cookie} : $REMUSER_COOKIE;
-    $self->{remuser_lifetime} = (exists $settings{remuser_lifetime})
-        ? $settings{remuser_lifetime} : $REMUSER_LIFETIME;
-    $self->{test_cookie} = (exists $settings{test_cookie})
-        ? $settings{test_cookie} : $TEST_COOKIE;
+    # Cases we might encounter:
+    # * Expired password -- login.fcgi creates a changepw cred token and
+    #   sends us here.
+    # * Password going to expire soon -- login.fcgi creates a changpw cred
+    #   token and gives a button to send us here.
+    # * User choice -- User comes here on their own, needing to enter username
+    #   and password
 
-    # Reload CPT from the query each time so that we can properly empty it
-    # if it has expired.
-    $self->{CPT} = $query->param ('CPT');
+    # Check to see if this is our first visit and simply show the change page
+    # if so (skipping checks for missing fields).
+    if (!$self->query->param ('changepw')) {
+        return $self->print_pwchange_page ($req->request_token,
+                                           $req->service_token);
+    }
 
-    # Track parameters from the pervious request.
-    # FIXME: We currently load this, but then also use $query->param in many
-    #        places as well.  Standardize on using this, and rename to
-    #        something more descriptive.
-    my %params = map { $_ => $query->param ($_) } $query->param;
-    $self->{lvars} = \%params;
+    # Test to make sure that all required fields are filled out.
+    my $page;
+    return $page if ($page = $self->error_invalid_pwchange_fields);
+    return $page if ($page = $self->error_if_no_cookies);
+    return $page if ($page = $self->error_password_no_post);
 
-    # Setting up for later.
-    $self->{wpt_cookie} = '';
+    # Attempt password change via krb5_change_password API
+    my ($status, $error) = $self->change_user_password;
 
-    # Work around a bug in CGI.  Then copy the script name so that it can
-    # be easily updated when we switch between password and login scripts.
-    $self->{query}->{'.script_name'} = $ENV{SCRIPT_NAME};
-    $self->{script_name} = $self->{query}->script_name;
-    print STDERR "Script name is ", $self->{query}->script_name, "\n"
-        if $self->{debug};
+    # We've successfully changed the password.  Depending on if we were sent
+    # by an expired password, either pass along to the normal page or give a
+    # confirm screen.
+    if ($status == WK_SUCCESS) {
 
-    return $self;
+        # Expired password -- drop back into the normal process flow.
+        # 2A
+        if ($self->query->param ('expired')
+            and $self->query->param ('expired') == 1) {
+
+            # Get the right script name and password.
+            $self->param ('script_name', $WebKDC::Config::LOGIN_URL);
+            my $newpass = $self->query->param ('new_passwd1');
+            $self->query->param ('password', $newpass);
+
+            # Move back into the main page flow now.
+            return $self->forward ('index');
+
+        # We weren't sent by expired password -- just print a confirm.
+        # 2B
+        } else {
+            return $self->print_pwchange_confirm_page;
+        }
+
+    # Check if the user's old password was wrong.
+    } elsif ($status == WK_ERR_LOGIN_FAILED) {
+        $self->template_params ({error => 1});
+        $self->template_params ({err_loginfailed => 1});
+        return $self->print_pwchange_page ($self->query->param ('RT'),
+                                           $self->query->param ('ST'));
+
+    # The password change failed for some reason.  Display the password change
+    # page again, with the error template variable filled in.  Heimdal, when
+    # using an external password strength checking program, adds a prefix to
+    # the error message that users don't care about, so strip that out.
+    } else {
+        $error =~ s/^password change failed for \S+: \(\d+\) //;
+        $error =~ s/External password quality program failed: //;
+        $self->template_params ({error => 1});
+        $self->template_params ({err_pwchange => 1});
+        $self->template_params ({err_msg => $error});
+        return $self->print_pwchange_page ($self->query->param ('RT'),
+                                           $self->query->param ('ST'));
+    }
+}
+
+# Handle displaying the password change screen when the user has explicitly
+# requested that screen.  This variation will not be called by anything else
+# in the pages, only by the pwchange script directly.
+# Pages: password change screen (success)
+sub pwchange_display : Runmode {
+    my ($self) = @_;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
+    my $req = $self->{request};
+    my $resp = $self->{response};
+    return $self->print_pwchange_page ($req->request_token,
+                                       $req->service_token);
+}
+
+# Handle a multifactor login request, or request to send an SMS for
+# multifactor login.
+# Pages: Multifactor page (failure to login or sending an SMS)
+#        Passes to normal login process (success)
+sub multifactor : Runmode {
+    my ($self) = @_;
+    my $q = $self->query;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
+    if ($q->param ('otp')) {
+        my $req = $self->{request};
+        my $resp = $self->{response};
+        $req->user ($q->param ('username'));
+        $req->otp ($q->param ('otp'));
+        my ($status, $error)
+            = WebKDC::make_request_token_request ($req, $resp);
+
+        if ($status == WK_SUCCESS) {
+            print STDERR "WebKDC::make_request_token_request success\n"
+                if $self->param ('debug');
+            return $self->print_confirm_page;
+
+        } else {
+            # FIXME: Probably want to handle $status more, but not yet
+            #        sure what statuses we might get back.
+            print STDERR "multifactor failed with $error\n"
+                if $self->param ('logging');
+            $self->template_params ({err_multifactor_invalid => 1});
+        }
+    } else {
+        $self->template_params ({err_otp_missing => 1});
+    }
+
+    my $req = $self->{request};
+    return $self->print_multifactor_page ($req->request_token,
+                                          $req->service_token);
+}
+
+# Handle a request to send a multifactor authentication token somewhere via
+# program.  The normal example case would be to fire off a command that sends
+# an OTP via SMS.
+# Pages: Multifactor page on success
+#        Error page on any failure
+sub multifactor_sendauth : Runmode {
+    my ($self) = @_;
+    my $q = $self->query;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
+    # Error if we don't have the setup configured.
+    if (!$WebKDC::Config::MULTIFACTOR_SERVER
+        || !$WebKDC::Config::MULTIFACTOR_COMMAND) {
+
+        print STDERR "multifactor_sendauth failed due to no server "
+            . "configured\n" if $self->param ('logging');
+
+        my $errmsg = "unrecoverable error occured. Try again later.";
+        $self->template_params ({err_webkdc => 1});
+        $self->template_params ({err_msg => $errmsg});
+        return $self->print_error_page;
+
+    } else {
+
+        # Send the remctl command, switching tgts out beforehand.
+        my $username = $q->param ('username');
+        my @cmd = split (' ', $WebKDC::Config::MULTIFACTOR_COMMAND);
+        local $ENV{KRB5CCNAME} = $WebKDC::Config::MULTIFACTOR_TGT;
+        my $result = Net::Remctl::remctl ($WebKDC::Config::MULTIFACTOR_SERVER,
+                                          $WebKDC::Config::MULTIFACTOR_PORT,
+                                          $WebKDC::Config::MULTIFACTOR_PRINC,
+                                          @cmd, $username);
+
+        if ($result->error) {
+            print STDERR "multifactor_sendauth failed to run program: " .
+                $result->error . "\n" if $self->param ('logging');
+            $self->template_params ({err_sendauth => 1});
+            return $self->print_error_page;
+        } elsif ($result->status != 0) {
+            print STDERR "multifactor_sendauth failed to run program: " .
+                $result->stderr . "\n" if $self->param ('logging');
+            $self->template_params ({err_sendauth => 1});
+            return $self->print_error_page;
+        } else {
+            $self->template_params ({multifactor_sentauth => 1});
+            my $req = $self->{request};
+            return $self->print_multifactor_page ($req->request_token,
+                                                  $req->service_token);
+        }
+    }
+}
+
+# Handle the request from the user to change their REMOTE_USER setting, called
+# from the confirm screen.  All of the actual 'action' here is performed by
+# the confirm screen sending itself with a cookie set or cleared.
+# Pages: confirm screen
+sub edit_remoteuser : Runmode {
+    my ($self) = @_;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
+    my $q = $self->query;
+    return $self->redisplay_confirm_page;
 }
 
 ##############################################################################
 # Documentation
 ##############################################################################
 
+# FIXME: Update the documentation with the CGI::Application rewrite bits.
 1;
 
 __END__

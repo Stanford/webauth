@@ -5,7 +5,7 @@
     <title>WebAuth Confirm</title>
   </head>
 
-  <TMPL_IF NAME=notdefined>
+  [% IF notdefined %]
 <!--
 This is the template for the WebAuth confirm page.  This page is called
 from login.fcgi script on the weblogin server after successful
@@ -25,91 +25,93 @@ expire_date            : the date and time of password expiration
 expire_time_left       : the amount of time left until password expiration
 pwchange_url           : URL for the password change form
 -->
-  </TMPL_IF>
+  [% END %]
 
   <body>
     <h1 align="center">WebAuth Confirm</h1>
     <div class="loginbox" align="center">
       <table border="1" width="70%">
-        <TMPL_IF NAME=warn_expire>
+        [% IF warn_expire %]
           <tr>
             <td colspan="2">
               <div class="errortext">
                 Warning: Your password will expire in
-                <TMPL_VAR NAME=expire_time_left>, on
-                <TMPL_VAR NAME=expire_date>.  Please change your password
+                [% expire_time_left %], on
+                [% expire_date %].  Please change your password
                 before this happens.
-                <form action="<TMPL_VAR ESCAPE=HTML NAME=pwchange_url>"
+                <form action="[% pwchange_url FILTER html %]"
                       method="post" target="_blank"
                       enctype="application/x-www-form-urlencoded">
+                  <input type="hidden" name="rm" value="pwchange">
                   <input type="hidden" name="skip_username"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=skip_username>">
+                         value="[% skip_username FILTER html %]">
                   <input type="hidden" name="username"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=username>">
+                         value="[% username FILTER html %]">
                   <input type="hidden" name="CPT"
-                         value="<TMPL_VAR ESCAPE=HTML NAME=CPT>">
+                         value="[% CPT FILTER html %]">
                   <input type="submit" name="Submit"
                          value="Change Password">
                 </form>
               </div>
             </td>
           </tr>
-        </TMPL_IF>
+        [% END %]
         <tr>
           <td><img alt="Confirm" src="/images/confirm.png"
                    width="160" height="160"/></td>
           <td>
             <div class="logintext">
               <p>You are logged into WebAuth as user
-              <strong><TMPL_VAR ESCAPE=HTML NAME=username></strong></p>
+              <strong>[% username FILTER html %]</strong></p>
               <p>Click this link to continue to the website you
               requested:</p>
-              <p><a href="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
-                 <TMPL_VAR ESCAPE=HTML NAME=pretty_return_url></a></p>
-              <TMPL_IF NAME=token_rights>
+              <p><a href="[% return_url FILTER html %]">
+                 [% pretty_return_url FILTER html %]</a></p>
+              [% IF token_rights %]
                 <p>If you continue to this website, you will grant it
                 permission to obtain the following credentials on your
                 behalf:</p>
-                <blockquote><p><TMPL_LOOP NAME=token_rights>
-                  <TMPL_VAR NAME=type> <TMPL_VAR NAME=name><br/>
-                  <!-- <TMPL_VAR NAME=principal> -->
-                  <!-- <TMPL_VAR NAME=instance> -->
-                  <!-- <TMPL_VAR NAME=realm> -->
-                </TMPL_LOOP></p></blockquote>
-              </TMPL_IF>
+                <blockquote><p>[% FOREACH right IN token_rights %]
+                  [% right.type %] [% right.name %]<br/>
+                  <!-- [% right.principal %] -->
+                  <!-- [% right.instance %] -->
+                  <!-- [% right.realm %] -->
+                [% END %]</p></blockquote>
+              [% END %]
               <p><strong>Protect your assets:</strong><br/>
                  Quit your web browser when you are finished (see below
                  for more details)</p>
-              <TMPL_IF NAME=login_cancel>
-                <p><a href="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">Cancel</a>
+              [% IF login_cancel %]
+                <p><a href="[% cancel_url %]">Cancel</a>
                    logging on to this service</p>
-              </TMPL_IF>
+              [% END %]
             </div>
           </td>
         </tr>
       </table>
     </div>
 
-    <TMPL_IF NAME=show_remuser>
+    [% IF show_remuser %]
       <div class="remuserbox" align="center">
-        <form action="<TMPL_VAR ESCAPE=HTML NAME=script_name>" method="post"
+        <form action="[% script_name FILTER html %]" method="post"
               enctype="application/x-www-form-urlencoded">
+          <input type="hidden" name="rm" value="edit_remoteuser">
           <input type="hidden" name="return_url"
-                 value="<TMPL_VAR ESCAPE=HTML NAME=return_url>">
+                 value="[% return_url FILTER html %]">
           <input type="hidden" name="username"
-                 value="<TMPL_VAR ESCAPE=HTML NAME=username>">
-          <TMPL_IF NAME=login_cancel>
+                 value="[% username FILTER html %]">
+          [% IF login_cancel %]
             <input type="hidden" name="cancel_url"
-                   value="<TMPL_VAR ESCAPE=HTML NAME=cancel_url>">
-          </TMPL_IF>
+                   value="[% cancel_url FILTER html %]">
+          [% END %]
           <table border="1" width="70%">
             <tr>
               <td>
-                <TMPL_IF NAME=remuser>
+                [% IF remuser %]
                   <input type="checkbox" name="remuser" checked>
-                <TMPL_ELSE>
+                [% ELSE %]
                   <input type="checkbox" name="remuser">
-                </TMPL_IF>
+                [% END %]
               </td>
               <td>
                 <input type="submit" name="Submit" value="Change Setting">
@@ -122,7 +124,7 @@ pwchange_url           : URL for the password change form
           </table>
         </form>
       </div>
-    </TMPL_IF>
+    [% END %]
 
     <div class="trailer">
       <h2>Important Security Information</h2>

@@ -38,9 +38,9 @@ that's longer than the HTTP protocol permits.
 
  2. You'll need to install the following Perl modules from CPAN:
 
-         HTML::Template
          libwww (LWP)
          Crypt::SSLeay -or- IO::Socket::SSL (for LWP https support)
+         Template (Template Toolkit)
          URI
          XML::Parser
 
@@ -81,7 +81,7 @@ that's longer than the HTTP protocol permits.
     installed a WebKdc.  You'll also want to set LogLevel to debug:
 
         LogLevel debug
-     
+
  4. Set up a script aliases to run the login, logout, and pwchange CGI
     services by adding the following lines to your Apache configuration:
 

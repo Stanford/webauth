@@ -89,4 +89,22 @@ sub app_state {
     return $self->{'app_state'};
 }
 
+sub factor_configured {
+    my $self = shift;
+    $self->{'factor_configured'} = shift if @_;
+    return $self->{'factor_configured'};
+}
+
+sub factor_needed {
+    my $self = shift;
+    push (@{$self->{'factor_needed'}}, @_) if @_;
+    return $self->{'factor_needed'};
+}
+
+sub login_history {
+    my $self = shift;
+    push (@{$self->{'login_history'}}, @_) if @_;
+    return $self->{'login_history'};
+}
+
 1;

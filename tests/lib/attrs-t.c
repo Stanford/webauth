@@ -15,8 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <lib/webauth.h>
 #include <tests/tap/basic.h>
+#include <webauth.h>
+#include <webauth/basic.h>
 
 #define BUFSIZE 2048
 #define MAX_ATTRS 100
@@ -87,7 +88,7 @@ main(void)
            "...with the right count");
     for (i = 0; i < attrs_out->num_attrs; i++) {
         is_string(attrs_in->attrs[i].name, attrs_out->attrs[i].name,
-                  "Attribute %d has the right value", i);
+                  "Attribute %lu has the right value", (unsigned long) i);
         is_int(attrs_in->attrs[i].length, attrs_out->attrs[i].length,
                "...and the right length");
         ok(memcmp(attrs_in->attrs[i].value, attrs_out->attrs[i].value, 

@@ -17,11 +17,11 @@ Introduction
 Templates
 
   WebLogin uses a set of template HTML pages to display the login, logout,
-  confirmation, and error pages.  Internally, it uses the HTML::Template
-  Perl module to process these templates.  For detailed information about
-  the supported syntax, install that module and then run:
+  confirmation, and error pages.  Internally, it uses the Template Perl
+  module to process these templates.  For detailed information about the
+  supported syntax, install that module and then run:
 
-      perldoc HTML::Template
+      perldoc Template
 
   You can probably figure out the details you need by looking at the
   existing templates, though.  WebLogin doesn't use any advanced features.
@@ -31,9 +31,9 @@ Templates
   functional and simple, but not particularly pretty.
 
   There are four templates used by the weblogin scripts.  They must
-  support the following HTML::Template variables, which means that all of
+  support the following Template variables, which means that all of
   these variables must be mentioned in the templates even if you don't
-  want to use them (otherwise, HTML::Template will throw errors).
+  want to use them (otherwise, Template will throw errors).
 
   The primary two templates are:
 
@@ -86,7 +86,7 @@ Templates
 
   A different template is used when the user doesn't have cookies enabled
   or in the event of some other WebKDC error.  It takes the following
-  HTML::Template variables:
+  Template variables:
 
   error.tmpl
 
@@ -94,8 +94,27 @@ Templates
       err_cookies_disabled      If set, user doesn't have cookies enabled
       err_no_request_token      If set, user had no request token
       err_confirm               If set, incomplete data for confirm page
+      err_sendauth              If set, error running sendauth program
+      err_insufficient_mfactor  If set, user multifactor below requested level
+      err_no_mfactor            If set, user has no configured multifactor
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
+
+  When encountering a login that requires multifactor, we send the user
+  to a page that will prompt them for entering a multifactor one-time
+  password, and potentially allow them to send those passwords via an
+  external mechanism.  It takes the following Template variables:
+
+  multifactor.tmpl
+
+      factor_type              Type of multifactor being used (o1, o2, etc)
+      username                 The authenticated identity of the user
+      login_cancel             If set, application provided a cancel URL
+      cancel_url               The cancel URL (return URL plus cancel token)
+      multifactor_sentauth     If set, we have run the sendauth function
+      error                    If set, some error happened
+      err_multifactor_missing  If set, form was submitted without an OTP
+      err_multifactor_invalid  If set, could not validate a submitted OTP
 
   Finally, the logout script uses a simple template with only one
   variable:
@@ -149,6 +168,13 @@ Configuration
       "/usr/local/share/weblogin/generic/templates" (which works for the
       default installation paths).
 
+  $TEMPLATE_COMPILE_PATH
+
+      The path to the directory that Template Toolkit will use to
+      create compiled versions of the template for speed.  Default:
+      "/usr/local/share/weblogin/generic/templates/ttc" (which works for
+      the default installation paths).
+
   $URL
 
       URL to use to contact the WebKDC.  This should always point to
@@ -157,6 +183,14 @@ Configuration
       paranoid is nice.  Default: "https://localhost/webkdc-service/".
       You generally only want to change the local part of the URL, and
       then only if you want to use a non-standard URL for the WebKDC.
+
+  $FATAL_PAGE
+
+      In case of an error in trying to generate a page from a template,
+      we will print out a 500 page.  If this is not set, we simply die
+      with an error for logs and let Apache handle the page.  If this
+      is set, we load the file given as an error page and display it on
+      template errors.
 
   $BYPASS_CONFIRM
 
@@ -361,6 +395,42 @@ Configuration
       that the user retype their password at the same time they enter their
       new password.  Default: 1 (require the users to resend password).
 
+  $MULTIFACTOR_SERVER
+
+      A server that implements a remctl interface for sending one-time
+      passwords via some external mechanism, such as SMS.  This will
+      only be called if a custom template has been set up for the
+      multifactor page.  Default: not set.
+
+  $MULTIFACTOR_TGT
+
+      The TGT file used to query against the remctl interface used in
+      $MULTIFACTOR_SERVER.  The TGT should be maintained by a process
+      outside of webauth.  Default: not set.
+
+  $MULTIFACTOR_PRINC
+
+      The principal of the server used for authentication to the
+      remctl interface for sending OTPs.  Usually this should be left
+      as the default and not be set, where Net::Remctl will do the
+      correct thing.  However, during the test suite we need to set
+      this to test against a local remctl.  Default: empty string.
+
+  $MULTIFACTOR_PORT
+
+      The remctl port of the server used for authentication to the
+      remctl interface for sending OTPs.  Usually this should be left
+      as the default and not be set, where Net::Remctl will do the
+      correct thing.  Default: 0.
+
+  $MULTIFACTOR_COMMAND
+
+      The command to pass through to the remctl interface for sending
+      OTPs.  This will probably be a string of at least two words, for
+      command and sub-command.  WebLogin will split on whitespace and
+      then append the username before sending to the server specified
+      in $MULTIFACTOR_SERVER.  Default: not set.
+
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
   by the WebLogin scripts where appropriate.
@@ -386,3 +456,26 @@ Configuration
       The only argument passed to the function is the username (as passed
       to the WebKDC, not as entered by the user), and the return value (if
       any) is ignored.
+
+  remuser_factors
+
+      If defined, this function is called whenever a user is authenticated
+      via Apache authentication instead of via a password or other
+      authentication information sent to the WebKDC.  The only argument
+      passed to the function is the username, but it's run within the
+      context of the WebLogin application and can examine the environment
+      for additional information about the Apache authentication as
+      desired.
+
+      This function should return a list of three values: the initial
+      authentication factors, the session authentication factors, and the
+      level of assurance.  The factors should be comma-separated lists of
+      factor codes (see the WebAuth protocol documentation for valid
+      factors).  The level of assurance should be an integer number
+      reflecting the site-defined levels of assurance for authentications
+      and identity binding.  Return 0 for the level of assurance if
+      nothing is known about it.
+
+      If this function is not provided, WebLogin will use "u" (unknown) as
+      the initial and session factor for Apache authentications and will
+      not provide level of assurance information.

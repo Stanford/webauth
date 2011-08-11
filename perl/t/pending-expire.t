@@ -16,7 +16,6 @@ use Util qw (contents remctld_spawn remctld_stop getcreds);
 
 use WebKDC::Config ();
 use WebKDC::WebResponse;
-use HTML::Template;
 use CGI;
 
 use Test::More;
@@ -55,7 +54,7 @@ my $query = CGI->new;
 # Fake a weblogin object.
 my $weblogin = {};
 bless $weblogin, 'WebLogin';
-$weblogin->{query} = $query;
+$weblogin->query ($query);
 
 # Set a few things for remctl.
 $WebKDC::Config::EXPIRING_PW_SERVER = 'localhost';
@@ -76,16 +75,19 @@ $ENV{KRB5CCNAME} = $oldcache;
 $WebKDC::Config::EXPIRING_PW_TGT = 'krb5cc_test';
 $WebKDC::Config::EXPIRING_PW_PRINC = $principal;
 
-$weblogin->{query}->param ('username', 'testuser1');
+$query->param ('username', 'testuser1');
+$weblogin->query ($query);
 my $expiration = WebLogin::time_to_pwexpire ($weblogin);
 ok ($expiration =~ /^\d+$/, 'got response for user with expiration time');
 
-$weblogin->{query}->param ('username', 'testuser3');
+$query->param ('username', 'testuser3');
+$weblogin->query ($query);
 $expiration = WebLogin::time_to_pwexpire ($weblogin);
 is ($expiration, undef, 'got response for user with no expiration time');
 
 $WebKDC::Config::EXPIRING_PW_SERVER = '';
-$weblogin->{query}->param ('username', 'testuser3');
+$query->param ('username', 'testuser3');
+$weblogin->query ($query);
 $expiration = WebLogin::time_to_pwexpire ($weblogin);
 is ($expiration, undef, 'skipped check without a remctl server');
 

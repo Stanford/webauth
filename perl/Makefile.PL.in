@@ -51,7 +51,7 @@ WriteMakefile (
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'lib/WebAuth.pm',
        AUTHOR         => 'Roland Schemers (schemers@stanford.edu)') : ()),
-    INC               => '-I@top_srcdir@/lib',
+    INC               => '-I@top_srcdir@/include @APR_CPPFLAGS@',
     LDDLFLAGS         => $lddlflags,
     LIBS              => "$additions -lwebauth"
                          . ' @DEPEND_LIBS@ @LIBS@',

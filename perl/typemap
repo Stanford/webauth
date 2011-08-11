@@ -1,12 +1,35 @@
 # Typemap file for the Perl bindings to the WebAuth library.
 #
-# Written by Roland Schemers
-# Copyright 2003, 2005, 2009
+# Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
+# Copyright 2003, 2005, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 TYPEMAP
-WEBAUTH_KEY *	T_PTROBJ
-WEBAUTH_KEYRING *	T_PTROBJ
-WEBAUTH_KRB5_CTXT *	T_PTROBJ
+
+WEBAUTH_KEY *           T_PTROBJ
+WEBAUTH_KRB5_CTXT *     T_PTROBJ
+
+WebAuth::Keyring        T_PTROBJ_NU
+WebAuth::KeyringEntry   T_PTROBJ_NU
+
+INPUT
+
+T_PTROBJ_NU
+    if ($arg == &PL_sv_undef) {
+        $var = NULL;
+    } else if (sv_isa($arg, \"${ntype}\")) {
+        IV tmp = SvIV((SV *) SvRV($arg));
+        $var = INT2PTR($type, tmp);
+    } else {
+        croak(\"$var is not of type ${ntype}\");
+    }
+
+OUTPUT
+
+T_PTROBJ_NU
+    if ($var == NULL)
+        $arg = &PL_sv_undef;
+    else
+        sv_setref_pv($arg, \"${ntype}\", (void *) $var);

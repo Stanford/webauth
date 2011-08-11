@@ -767,4 +767,27 @@ WebKdcKeyringKeyLifetime 60d<br/>
 
 </usage>
 </directivesynopsis>
+
+<directivesynopsis>
+<name>WebKdcKerberosFactors</name>
+<description>Initial factor information for directly-obtained webkdc-proxy
+tokens</description>
+<syntax>WebKdcKerberosFactors <em>factor</em> ...</syntax>
+<default>WebKdcKerberosFactors u</default>
+<contextlist>
+  <context>server config</context>
+  <context>virtual host</context>
+</contextlist>
+
+<usage>
+
+<p>This directive sets the initial factor information for the webkdc-proxy
+tokens obtained by clients by direct Kerberos authentication (rather than by
+WebLogin). If left unset, the default factor will be set to 'unknown'.</p>
+
+<example><title>Example</title>
+WebKdcKerberosFactors p<br/>
+</example>
+
+</usage>
 </modulesynopsis>

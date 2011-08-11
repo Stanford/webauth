@@ -8,76 +8,41 @@
  * functions to generate random numbers or new AES keys.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2008, 2009, 2010
+ * Copyright 2002, 2003, 2008, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
- * See LICENSE for licensing terms.
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef WEBAUTH_H
 #define WEBAUTH_H 1
 
+#include <webauth/defines.h>
+
 #include <sys/types.h>
 #include <time.h>
-
-/* The necessary preprocessor magic to get int32_t and uint32_t. */
-# include <inttypes.h>
-# include <stdint.h>
-
-
-/*
- * BEGIN_DECLS is used at the beginning of declarations so that C++
- * compilers don't mangle their names.  END_DECLS is used at the end.
- */
-#undef BEGIN_DECLS
-#undef END_DECLS
-#ifdef __cplusplus
-# define BEGIN_DECLS    extern "C" {
-# define END_DECLS      }
-#else
-# define BEGIN_DECLS    /* empty */
-# define END_DECLS      /* empty */
-#endif
 
 BEGIN_DECLS
 
 /*
  * ERROR AND STATUS CODES
  */
-
-/*
- * libwebauth error codes.
- *
- * Many libwebauth functions return an error status, or 0 on success.  For
- * those functions, the error codes are chosen from the following enum.
- *
- * Use webauth_error_message(code) to get the corresponding error message.
- */
-typedef enum {
-    WA_ERR_NONE = 0,         /* No error occured. */
-    WA_ERR_NO_ROOM,          /* Supplied buffer too small. */
-    WA_ERR_CORRUPT,          /* Data is incorrectly formatted. */
-    WA_ERR_NO_MEM,           /* No memory. */
-    WA_ERR_BAD_HMAC,         /* HMAC check failed. */
-    WA_ERR_RAND_FAILURE,     /* Unable to get random data. */
-    WA_ERR_BAD_KEY,          /* Unable to use key. */
-    WA_ERR_KEYRING_OPENWRITE,/* Unable to open key ring for writing. */
-    WA_ERR_KEYRING_WRITE,    /* Unable to write to key ring. */
-    WA_ERR_KEYRING_OPENREAD, /* Unable to open key ring for reading. */
-    WA_ERR_KEYRING_READ,     /* Unable to read key ring file. */
-    WA_ERR_KEYRING_VERSION,  /* Bad keyring version. */
-    WA_ERR_NOT_FOUND,        /* Item not found while searching. */
-    WA_ERR_KRB5,             /* A Kerberos error occured. */
-    WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function. */
-    WA_ERR_LOGIN_FAILED,     /* Bad username/password. */
-    WA_ERR_TOKEN_EXPIRED,    /* Token has expired. */
-    WA_ERR_TOKEN_STALE,      /* Token is stale. */
-    WA_ERR_CREDS_EXPIRED,    /* Password has expired. */
-    WA_ERR_USER_REJECTED,    /* User not permitted to authenticate. */
-
-    /* Update webauth_error_message when adding more codes. */
-
-} WEBAUTH_ERR;
 
 /*
  * Protocol error codes (PEC) for error-token and XML messages.  These numbers
@@ -103,6 +68,10 @@ typedef enum {
     WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
     WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
     WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
+    WA_PEC_MULTIFACTOR_REQUIRED        = 20, /* Multifactor login required */
+    WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
+    WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
+    WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
 } WEBAUTH_ET_ERR;
 
 /*
@@ -124,42 +93,58 @@ typedef enum {
 #define WA_TK_APP_STATE            "as"
 #define WA_TK_COMMAND              "cmd"
 #define WA_TK_CRED_DATA            "crd"
+#define WA_TK_CRED_SERVICE         "crs"
 #define WA_TK_CRED_TYPE            "crt"
-#define WA_TK_CRED_SERVER          "crs"
 #define WA_TK_CREATION_TIME        "ct"
 #define WA_TK_ERROR_CODE           "ec"
 #define WA_TK_ERROR_MESSAGE        "em"
 #define WA_TK_EXPIRATION_TIME      "et"
+#define WA_TK_INITIAL_FACTORS      "ia"
 #define WA_TK_SESSION_KEY          "k"
+#define WA_TK_LOA                  "loa"
 #define WA_TK_LASTUSED_TIME        "lt"
+#define WA_TK_OTP                  "otp"
 #define WA_TK_PASSWORD             "p"
-#define WA_TK_PROXY_TYPE           "pt"
 #define WA_TK_PROXY_DATA           "pd"
 #define WA_TK_PROXY_SUBJECT        "ps"
+#define WA_TK_PROXY_TYPE           "pt"
 #define WA_TK_REQUEST_OPTIONS      "ro"
 #define WA_TK_REQUESTED_TOKEN_TYPE "rtt"
 #define WA_TK_RETURN_URL           "ru"
 #define WA_TK_SUBJECT              "s"
 #define WA_TK_SUBJECT_AUTH         "sa"
 #define WA_TK_SUBJECT_AUTH_DATA    "sad"
+#define WA_TK_SESSION_FACTORS      "san"
 #define WA_TK_TOKEN_TYPE           "t"
 #define WA_TK_USERNAME             "u"
 #define WA_TK_WEBKDC_TOKEN         "wt"
 
 /* Token type constants. */
-#define WA_TT_WEBKDC_SERVICE "webkdc-service"
-#define WA_TT_WEBKDC_PROXY   "webkdc-proxy"
-#define WA_TT_REQUEST        "req"
-#define WA_TT_ERROR          "error"
-#define WA_TT_ID             "id"
-#define WA_TT_PROXY          "proxy"
-#define WA_TT_CRED           "cred"
-#define WA_TT_APP            "app"
-#define WA_TT_LOGIN          "login"
+#define WA_TT_WEBKDC_SERVICE       "webkdc-service"
+#define WA_TT_WEBKDC_PROXY         "webkdc-proxy"
+#define WA_TT_REQUEST              "req"
+#define WA_TT_ERROR                "error"
+#define WA_TT_ID                   "id"
+#define WA_TT_PROXY                "proxy"
+#define WA_TT_CRED                 "cred"
+#define WA_TT_APP                  "app"
+#define WA_TT_LOGIN                "login"
 
 /* Subject auth type constants. */
-#define WA_SA_KRB5           "krb5"
-#define WA_SA_WEBKDC         "webkdc"
+#define WA_SA_KRB5                 "krb5"
+#define WA_SA_WEBKDC               "webkdc"
+
+/* Factor constants. */
+#define WA_FA_COOKIE               "c"
+#define WA_FA_PASSWORD             "p"
+#define WA_FA_KERBEROS             "k"
+#define WA_FA_MULTIFACTOR          "m"
+#define WA_FA_OTP                  "o"
+#define WA_FA_OTP_TYPE             "o%d"
+#define WA_FA_RANDOM_MULTIFACTOR   "rm"
+#define WA_FA_UNKNOWN              "u"
+#define WA_FA_X509                 "x"
+#define WA_FA_X509_TYPE            "x%d"
 
 
 /*
@@ -247,12 +232,6 @@ typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
 /*
  * INFORMATIONAL FUNCTIONS
  */
-
-/*
- * Returns the error message for the specified error code or "unknown error
- * code" if there is none.
- */
-const char *webauth_error_message(int errcode);
 
 /* Returns the package name and version number, separated by a space. */
 const char *webauth_info_version(void);
@@ -411,7 +390,7 @@ int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *, const char *name,
  * either of those previous flags, return a copy of the value rather than a
  * pointer into the attribute.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get(WEBAUTH_ATTR_LIST *, const char *name, void **value,
                           size_t *value_len, unsigned int flags);
@@ -421,7 +400,7 @@ int webauth_attr_list_get(WEBAUTH_ATTR_LIST *, const char *name, void **value,
  * length of the string in value_len.  Takes the same flags as
  * webauth_attr_list_get.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *, const char *name,
                               char **value, size_t *value_len,
@@ -431,7 +410,7 @@ int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *, const char *name,
  * Retrieve a numeric attribute by name, storing it in value.  Takes the same
  * flags as webauth_attr_list_get, but WA_F_COPY_VALUE is meaningless.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
+ * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *, const char *name,
                                  uint32_t *value, unsigned int flags);
@@ -616,7 +595,7 @@ int webauth_keyring_read_file(const char *, WEBAUTH_KEYRING **);
 int webauth_keyring_auto_update(const char *path, int create, int lifetime,
                                 WEBAUTH_KEYRING **ring,
                                 WEBAUTH_KAU_STATUS *kau_status,
-                                WEBAUTH_ERR *update_status);
+                                int *update_status);
 
 /*
  * TOKEN MANIPULATION
@@ -803,19 +782,18 @@ int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *, const char *cache_name);
  *
  * Returns WA_ERR_NONE or WA_ERR_KRB5.
  */
-int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, char *cred,
+int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
                                size_t cred_len, const char *cache_name);
 
 /*
- * Export the TGT from the context.  This is used to construct a proxy-token
- * after a call to webauth_krb5_init_via_password or
- * webauth_krb5_init_via_tgt.  Memory returned in TGT should be freed when it
- * is no longer needed.
+ * Export the TGT from the context and also store the expiration time.  This
+ * is used to construct a proxy-token after a call to
+ * webauth_krb5_init_via_password or webauth_krb5_init_via_tgt.  Memory
+ * returned in TGT should be freed when it is no longer needed.
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **tgt, size_t *tgt_len,
-                            time_t *expiration);
+int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **, size_t *, time_t *);
 
 /*
  * Import a credential (TGT or ticket) that was exported via
@@ -824,7 +802,7 @@ int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **tgt, size_t *tgt_len,
  *
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, char *cred, size_t cred_len);
+int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, const char *, size_t);
 
 /*
  * Get the string form of the principal from the context.  This should only be
@@ -846,6 +824,15 @@ int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, char *cred, size_t cred_len);
  */
 int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *, char **principal,
                                enum webauth_krb5_canon canon);
+
+/*
+ * Get the ticket cache from the context.  This is the string suitable for
+ * storing in KRB5CCNAME.  It should only be called after a successful call to
+ * webauth_krb5_init_via_*.  It should be freed when it is no longer needed.
+ *
+ * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
+ */
+int webauth_krb5_get_cache(WEBAUTH_KRB5_CTXT *, char **);
 
 /*
  * Get the realm from the context.  This should only be called after a
