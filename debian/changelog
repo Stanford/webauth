@@ -1,3 +1,34 @@
+webauth (4.0.0~alpha1-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Added support for multifactor, including new WebAuth directives
+      WebAuthRequireInitialFactor, WebAuthRequireSessionFactor, and
+      WebAuthRequireLOA and new WebKDC directives WebKdcUserInfoURL and
+      WebKdcUserInfoPrincipal.  Currently requires a metadata service for
+      which there isn't a packaged implementation.
+    - mod_webauth now exposes the user's initial and session
+      authentication details and level of assurance (if known) in
+      environment variables WEBAUTH_FACTORS_INITIAL,
+      WEBAUTH_FACTORS_SESSION, and WEBAUTH_LOA.
+    - WebLogin now uses Template Toolkit for all templating.  All
+      templates will have to be revised to use the new syntax.
+    - WebLogin can tell an external middleware service to send the user an
+      OTP code via some means, such as SMS.  There are new configuration
+      variables for /etc/webkdc/webkdc.conf that control this.
+    - WebLogin now supports a site-specific callback to determine the
+      initial and session factors and level of assurance for a user who
+      has been authenticated via Apache authentication.
+    - The keyring functions of the WebAuth Perl module have been rewritten
+      to use an object-oriented style and new WebAuth::Keyring and
+      WebAuth::KeyringEntry objects.  Perl code that used the keyring API
+      will need to be modified.  Methods to remove a key from a keyring,
+      get the timestamps and keys associated with keyring entries, and
+      choose the best key have been added.
+    - The libwebauth API has been changed substantially and will be
+      changed further in subsequent releases.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 11 Aug 2011 13:32:03 -0700
+
 webauth (3.7.4-1) unstable; urgency=low
 
   * New upstream release.
