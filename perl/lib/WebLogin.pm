@@ -1444,9 +1444,9 @@ sub index : StartRunmode {
     # multifactor configured.
     } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
         if (defined $resp->factor_configured) {
-            $self->template_params ({err_user_insufficient_mfactor => 1});
+            $self->template_params ({err_insufficient_mfactor => 1});
         } else {
-            $self->template_params ({err_user_no_mfactor => 1});
+            $self->template_params ({err_no_mfactor => 1});
         }
         return $self->print_error_page;
 

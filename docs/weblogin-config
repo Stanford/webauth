@@ -95,6 +95,8 @@ Templates
       err_no_request_token      If set, user had no request token
       err_confirm               If set, incomplete data for confirm page
       err_sendauth              If set, error running sendauth program
+      err_insufficient_mfactor  If set, user multifactor below requested level
+      err_no_mfactor            If set, user has no configured multifactor
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
 
