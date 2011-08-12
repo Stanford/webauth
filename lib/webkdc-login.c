@@ -516,9 +516,10 @@ check_multifactor(struct webauth_context *ctx,
      * careful not to override errors from the LoA check.
      */
     if (webauth_factors_subset(ctx, wanted, have)) {
-        if (webauth_factors_subset(ctx, swanted, shave))
-            return WA_ERR_NONE;
-        else if (response->login_error == 0) {
+        if (webauth_factors_subset(ctx, swanted, shave)) {
+            if (response->login_error == 0)
+                return WA_ERR_NONE;
+        } else if (response->login_error == 0) {
             response->login_error = WA_PEC_LOGIN_FORCED;
             response->login_message = "forced authentication, need to login";
         }
