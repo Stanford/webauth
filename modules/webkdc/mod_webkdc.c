@@ -1789,7 +1789,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                         false));
     }
 
-    if (response->login_error == WA_PEC_MULTIFACTOR_REQUIRED) {
+    if (response->factors_configured != NULL) {
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
         print_xml_array(rc, "factor", response->factors_wanted);
         print_xml_array(rc, "configuredFactor", response->factors_configured);

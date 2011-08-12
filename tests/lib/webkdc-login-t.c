@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(223);
+    plan(229);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -677,6 +677,7 @@ main(void)
      * login should then work.
      */
     wkproxy.token.webkdc_proxy.loa = 3;
+    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
     wkproxy2.type = WA_TOKEN_WEBKDC_PROXY;
     wkproxy2.token.webkdc_proxy.subject = "full";
     wkproxy2.token.webkdc_proxy.proxy_type = "remuser";
@@ -686,7 +687,7 @@ main(void)
     wkproxy2.token.webkdc_proxy.initial_factors = "o,o3";
     wkproxy2.token.webkdc_proxy.session_factors = "c";
     wkproxy2.token.webkdc_proxy.loa = 2;
-    wkproxy2.token.webkdc_proxy.creation = now;
+    wkproxy2.token.webkdc_proxy.creation = now - 2 * 60;
     wkproxy2.token.webkdc_proxy.expiration = now + 30 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy2;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -722,6 +723,22 @@ main(void)
     }
     is_int(1310675733, response->password_expires,
            "...password expiration is correct");
+    ok(response->proxies != NULL, "...and we have proxy tokens");
+    if (response->proxies == NULL)
+        ok_block(5, 0, "...no proxy tokens");
+    else {
+        is_int(1, response->proxies->nelts, "...one proxy token");
+        pd = &APR_ARRAY_IDX(response->proxies, 0,
+                            struct webauth_webkdc_proxy_data);
+        is_string("remuser", pd->type, "...of type remuser");
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
+                                      ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        pt = &token->token.webkdc_proxy;
+        is_string("o,o3,p,m", pt->initial_factors,
+                  "...with correct initial factors");
+        is_int(now - 10 * 60, pt->creation, "...and oldest creation");
+    }
 
     /* Attempt an OTP authentication with an incorrect OTP code. */
     login.token.login.username = "full";
@@ -747,6 +764,7 @@ main(void)
      */
     req.initial_factors = "m";
     login.token.login.otp = "123456";
+    wkproxy.token.webkdc_proxy.creation = now;
     request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;

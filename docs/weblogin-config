@@ -96,6 +96,7 @@ Templates
       err_confirm               If set, incomplete data for confirm page
       err_sendauth              If set, error running sendauth program
       err_insufficient_mfactor  If set, user multifactor below requested level
+      err_insufficient_loa      If set, user LoA below requested level
       err_no_mfactor            If set, user has no configured multifactor
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
@@ -115,6 +116,8 @@ Templates
       error                    If set, some error happened
       err_multifactor_missing  If set, form was submitted without an OTP
       err_multifactor_invalid  If set, could not validate a submitted OTP
+      multifactor_required     Set to site-required mf when user mf too low
+      multifactor_configured   Set to user mf when user mf too low for site
 
   Finally, the logout script uses a simple template with only one
   variable:
