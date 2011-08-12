@@ -1448,9 +1448,9 @@ sub index : StartRunmode {
         if (defined $resp->factor_configured) {
             $self->template_params ({err_insufficient_mfactor => 1});
             $self->template_params ({multifactor_configured
-                        => $req->factor_configured });
+                        => $resp->factor_configured });
             $self->template_params ({multifactor_required
-                        => $req->factor_needed });
+                        => $resp->factor_needed });
         } else {
             $self->template_params ({err_no_mfactor => 1});
         }
