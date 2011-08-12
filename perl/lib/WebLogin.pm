@@ -519,7 +519,8 @@ sub print_confirm_page {
     my $pagename = $self->get_pagename ('confirm');
     my $params = $self->template_params;
 
-    my $pretty_return_url = $self->param ('pretty_uri');
+    my $uri = URI->new ($resp->return_url);
+    my $pretty_return_url = $self->pretty_return_uri ($uri);
     my $return_url = $resp->return_url;
     my $lc = $resp->login_canceled_token;
     my $token_type = $resp->response_token_type;
@@ -1446,9 +1447,19 @@ sub index : StartRunmode {
     } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
         if (defined $resp->factor_configured) {
             $self->template_params ({err_insufficient_mfactor => 1});
+            $self->template_params ({multifactor_configured
+                        => $req->factor_configured });
+            $self->template_params ({multifactor_required
+                        => $req->factor_needed });
         } else {
             $self->template_params ({err_no_mfactor => 1});
         }
+        return $self->print_error_page;
+
+    # Multifactor was configured, but at too low a level of assurance to
+    # satisfy the destination site.
+    } elsif ($status == WA_PEC_LOA_UNAVAILABLE) {
+        $self->template_params ({err_insufficient_loa => 1});
         return $self->print_error_page;
 
     # Something abnormal happened.  Figure out what error message to display
