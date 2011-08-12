@@ -331,8 +331,9 @@ cleanup:
  *    set to the token with the krb5 data and the proxy type changed to krb5.
  * 4. Initial factors are merged between all webkdc-proxy tokens, with the
  *    expiration set to the nearest expiration of all contributing tokens.
- * 5. Creation time is set to the current time if we pull from multiple
- *    tokens.
+ * 5. Creation time is set to the oldest time of the tokens if we pull from
+ *    multiple tokens.  This has to be oldest, not newest or the current time,
+ *    to correctly handle when to lift initial factors into session factors.
  * 6. Session factors are merged from a webkdc-proxy token if and only if the
  *    webkdc-proxy token contributes in some way to the result.
  * 7. The session factors are used as-is unless the token is less than five
@@ -428,13 +429,14 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             return status;
         if (wkproxy->expiration < best->expiration)
             best->expiration = wkproxy->expiration;
+        if (wkproxy->creation < best->creation)
+            best->creation = wkproxy->creation;
         if (wkproxy->loa > best->loa)
             best->loa = wkproxy->loa;
     } while (i-- > 0);
     if (created) {
         best->initial_factors = webauth_factors_string(ctx, factors);
         best->session_factors = webauth_factors_string(ctx, sfactors);
-        best->creation = now;
     }
     *result = genbest;
     return WA_ERR_NONE;
