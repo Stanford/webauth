@@ -1458,7 +1458,7 @@ sub index : StartRunmode {
 
     # Multifactor was configured, but at too low a level of assurance to
     # satisfy the destination site.
-    } elsif ($status == WA_PEC_LOA_UNAVAILABLE) {
+    } elsif ($status == WK_ERR_LOA_UNAVAILABLE) {
         $self->template_params ({err_insufficient_loa => 1});
         return $self->print_error_page;
 
