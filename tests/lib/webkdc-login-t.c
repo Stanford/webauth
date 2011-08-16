@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(229);
+    plan(272);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -652,22 +652,19 @@ main(void)
            "...and two factors are wanted");
     is_string("o", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
               "...which is the OTP factor");
-    is_int(5, response->factors_configured->nelts,
-           "...and five factors are configured");
+    is_int(4, response->factors_configured->nelts,
+           "...and four factors are configured");
     is_string("p",
               APR_ARRAY_IDX(response->factors_configured, 0, const char *),
               "...which is the password factor");
-    is_string("r",
-              APR_ARRAY_IDX(response->factors_configured, 1, const char *),
-              "...the random factor");
     is_string("m",
-              APR_ARRAY_IDX(response->factors_configured, 2, const char *),
+              APR_ARRAY_IDX(response->factors_configured, 1, const char *),
               "...the generic multifactor factor");
     is_string("o",
-              APR_ARRAY_IDX(response->factors_configured, 3, const char *),
+              APR_ARRAY_IDX(response->factors_configured, 2, const char *),
               "...the OTP factor");
     is_string("o3",
-              APR_ARRAY_IDX(response->factors_configured, 4, const char *),
+              APR_ARRAY_IDX(response->factors_configured, 3, const char *),
               "...and the OTP-3 factor");
     is_int(1310675733, response->password_expires,
            "...password expiration is correct");
@@ -678,6 +675,7 @@ main(void)
      */
     wkproxy.token.webkdc_proxy.loa = 3;
     wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
+    wkproxy.token.webkdc_proxy.session_factors = "c";
     wkproxy2.type = WA_TOKEN_WEBKDC_PROXY;
     wkproxy2.token.webkdc_proxy.subject = "full";
     wkproxy2.token.webkdc_proxy.proxy_type = "remuser";
@@ -832,7 +830,7 @@ main(void)
     if (status != WA_ERR_NONE)
         ok(0, "...no result token: %s", webauth_error_message(ctx, status));
     else
-        is_string("o,o3,p,m", token->token.proxy.session_factors,
+        is_string("o,o3,p,m", token->token.id.session_factors,
                   "...result session factors is right");
 
     /*
@@ -857,8 +855,170 @@ main(void)
     ok(response->result == NULL, "...and there is no result token");
     is_int(0, response->factors_wanted->nelts,
            "...and no factors are wanted");
-    is_int(5, response->factors_configured->nelts,
-           "...and five factors are configured");
+    is_int(4, response->factors_configured->nelts,
+           "...and four factors are configured");
+
+    /*
+     * Request random multifactor for a user who will get lucky and not need
+     * to authenticate with multifactor.
+     */
+    req.type = "id";
+    req.auth = "webkdc";
+    req.proxy_type = NULL;
+    req.initial_factors = "rm";
+    req.session_factors = NULL;
+    req.loa = 0;
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Random multifactor returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,rm", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
+
+    /*
+     * Change the proxy token to indicate that random multifactor has already
+     * been checked for, and then try someone who would not get lucky and
+     * confirm that they're still allowed in.
+     */
+    wkproxy.token.webkdc_proxy.subject = "random";
+    wkproxy.token.webkdc_proxy.initial_factors = "p,rm";
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Have random multifactor returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,rm", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
+
+    /*
+     * Require random multifactor for the session, which should force a
+     * check even though the webkdc-proxy token indicates a check was already
+     * done.  This should fail and indicate multifactor is required.
+     */
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    req.session_factors = "rm";
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Random multifactor session returns success");
+    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
+           "...with the right error");
+    is_string("multifactor login required", response->login_message,
+              "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+
+    /*
+     * Similarly, requiring random multifactor for the initial factors should
+     * fail if the webkdc-proxy token doesn't already have random multifactor
+     * and we have an unlucky user.
+     */
+    req.session_factors = NULL;
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Random multifactor unlucky returns success");
+    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
+           "...with the right error");
+    is_string("multifactor login required", response->login_message,
+              "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+
+    /*
+     * But if we have a regular multifactor webkdc-proxy token, that allows
+     * random multifactor as well.  The factors for the id and webkdc-proxy
+     * tokens should just include multifactor.
+     */
+    wkproxy.token.webkdc_proxy.initial_factors = "p,o,o3,m";
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Random with multifactor returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,o,o3,m", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
+    ok(response->proxies != NULL, "...and we have proxy tokens");
+    if (response->proxies == NULL)
+        ok_block(3, 0, "...no proxy tokens");
+    else {
+        is_int(1, response->proxies->nelts, "...one proxy token");
+        pd = &APR_ARRAY_IDX(response->proxies, 0,
+                            struct webauth_webkdc_proxy_data);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
+                                      ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        pt = &token->token.webkdc_proxy;
+        is_string("p,o,o3,m", pt->initial_factors,
+                  "...with correct initial factors");
+    }
+
+    /* Try that with session multifactor. */
+    req.session_factors = "rm";
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Random with multifactor returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,o,o3,m", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c,rm", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
 
     /* Clean up. */
     remctld_stop(remctld);

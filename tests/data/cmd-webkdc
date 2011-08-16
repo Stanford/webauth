@@ -13,7 +13,7 @@ if [ "$1" = "webkdc-userinfo" ] ; then
         echo "invalid IP address $3" >&2
         exit 1
     fi
-    if [ "$5" != "0" ] ; then
+    if [ "$5" != "0" ] && [ "$5" != "1" ] ; then
         echo "invalid random flag $5" >&2
         exit 1
     fi
@@ -31,7 +31,13 @@ fi
 # See if the file exists, and if so, return it.
 if [ -f "data/xml/$dir/$2.xml" ] ; then
     if [ "$1" = "webkdc-userinfo" ] ; then
-        exec cat "data/xml/$dir/$2.xml"
+        if [ "$5" = "1" ] && [ "$2" = "random" ] ; then
+            cat "data/xml/$dir/$2.xml" \
+                | sed 's%<max%<multifactor-required /><max%'
+            exit $?
+        else
+            exec cat "data/xml/$dir/$2.xml"
+        fi
     elif [ "$1" = "webkdc-validate" ] ; then
         if [ "$4" != "123456" ] ; then
             cat "data/xml/$dir/$2.xml" | sed 's/<success>yes/<success>no/'
