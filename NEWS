@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.0.0 (2011-08-11)
+WebAuth 4.0.0 (unreleased)
 
     WARNING: This release is a major revision with significant changes to
     mod_webkdc and to the WebLogin code.  While the additions are not

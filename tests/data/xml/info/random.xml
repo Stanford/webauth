@@ -2,10 +2,8 @@
   <factors>
     <factor>p</factor>
     <factor>m</factor>
-    <factor>r</factor>
     <factor>o</factor>
     <factor>o2</factor>
   </factors>
-  <multifactor-required />
   <max-loa>2</max-loa>
 </authdata>

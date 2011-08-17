@@ -938,7 +938,31 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (wkproxy != NULL)
         (*response)->subject = wkproxy->subject;
     if (ctx->user != NULL && wkproxy != NULL) {
-        status = webauth_user_info(ctx, wkproxy->subject, ip, 0, &info);
+        bool randmf, irandmf, srandmf;
+        struct webauth_factors *factors = NULL, *wkfactors = NULL;
+
+        status = webauth_factors_parse(ctx, wkproxy->initial_factors,
+                                       &wkfactors);
+        if (status != WA_ERR_NONE)
+            return status;
+        status = webauth_factors_parse(ctx, req->initial_factors, &factors);
+        if (status != WA_ERR_NONE)
+            return status;
+        irandmf = (!webauth_factors_subset(ctx, factors, wkfactors)
+                   && factors->random);
+        factors = NULL;
+        wkfactors = NULL;
+        status = webauth_factors_parse(ctx, wkproxy->session_factors,
+                                       &wkfactors);
+        if (status != WA_ERR_NONE)
+            return status;
+        status = webauth_factors_parse(ctx, req->session_factors, &factors);
+        if (status != WA_ERR_NONE)
+            return status;
+        srandmf = (!webauth_factors_subset(ctx, factors, wkfactors)
+                   && factors->random);
+        randmf = irandmf || srandmf;
+        status = webauth_user_info(ctx, wkproxy->subject, ip, randmf, &info);
         if (status != WA_ERR_NONE)
             return status;
         if (did_login)
@@ -946,6 +970,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (wkproxy->loa > info->max_loa)
             wkproxy->loa = info->max_loa;
         (*response)->password_expires = info->password_expires;
+        if (irandmf)
+            wkproxy->initial_factors
+                = apr_pstrcat(ctx->pool, wkproxy->initial_factors, ",",
+                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
+        if (srandmf)
+            wkproxy->session_factors
+                = apr_pstrcat(ctx->pool, wkproxy->session_factors, ",",
+                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
     }
 
     /*

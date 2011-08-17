@@ -22,6 +22,8 @@ err_webkdc                : the WebKDC returned an error
 err_msg                   : error message from WebKDC
 multifactor_required      : level of multifactor required for the destination
 multifactor_configured    : level of multifactor set up by the user
+login_cancel              : a cancel URL was specified
+cancel_url                : the specified cancel URL
 -->
   [% END %]
 
@@ -84,12 +86,20 @@ multifactor_configured    : level of multifactor set up by the user
                    [% multifactor_required %]</p>
                 <p>Your level of multifactor is only:<br />
                    [% multifactor_configured %]</p>
+                [% IF login_cancel %]
+                  <p><a href="[% cancel_url %]">Cancel</a>
+                     logging on to this service</p>
+                [% END %]
               [% END %]
 
               <!-- Error: higher LoA required than user has -->
               [% IF err_insufficient_loa %]
                 <p>Error: The destination site requires a higher level of
                    assurance than you have set up.</p>
+                [% IF login_cancel %]
+                  <p><a href="[% cancel_url %]">Cancel</a>
+                     logging on to this service</p>
+                [% END %]
               [% END %]
 
               <!-- Error: sendauth failed to run successfully -->
