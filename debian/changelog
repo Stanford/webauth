@@ -1,4 +1,4 @@
-webauth (4.0.0~alpha1-1) UNRELEASED; urgency=low
+webauth (4.0.0~alpha2-1) UNRELEASED; urgency=low
 
   * New upstream release.
     - Added support for multifactor, including new WebAuth directives
