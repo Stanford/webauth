@@ -78,16 +78,21 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
      * authentication, which synthesizes the multifactor factor.
      */
     copy = apr_pstrdup(ctx->pool, input);
-    factor = apr_strtok(copy, ",", &last);
-    while (factor != NULL) {
+    for (factor = apr_strtok(copy, ",", &last); factor != NULL;
+         factor = apr_strtok(NULL, ",", &last)) {
+        found = false;
         if (strcmp(factor, "m") == 0) {
             if (!factors->multifactor)
                 APR_ARRAY_PUSH(factors->factors, const char *) = "m";
             factors->multifactor = true;
-            factor = apr_strtok(NULL, ",", &last);
+            continue;
+        } else if (strcmp(factor, "rm") == 0) {
+            if (!factors->random && !factors->multifactor) {
+                APR_ARRAY_PUSH(factors->factors, const char *) = "rm";
+                factors->random = true;
+            }
             continue;
         }
-        found = false;
         for (i = 0; i < factors->factors->nelts; i++) {
             current = APR_ARRAY_IDX(factors->factors, i, const char *);
             if (strcmp(factor, current) == 0) {
@@ -104,7 +109,6 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
             if (strncmp(factor, "x", 1) == 0)
                 x509 = true;
         }
-        factor = apr_strtok(NULL, ",", &last);
     }
     if (!factors->multifactor && (password + otp + x509) >= 2) {
         APR_ARRAY_PUSH(factors->factors, const char *) = "m";
@@ -149,6 +153,8 @@ webauth_factors_subset(struct webauth_context *ctx UNUSED,
         return false;
     for (i = 0; i < one->factors->nelts; i++) {
         f1 = APR_ARRAY_IDX(one->factors, i, const char *);
+        if (strcmp(f1, "rm") == 0 && two->multifactor)
+            continue;
         found = false;
         for (j = 0; j < two->factors->nelts; j++) {
             f2 = APR_ARRAY_IDX(two->factors, j, const char *);

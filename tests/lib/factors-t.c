@@ -40,7 +40,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_factors *one, *two;
 
-    plan(64);
+    plan(87);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -49,12 +49,14 @@ main(void)
     one = NULL;
     parse_factors(ctx, "u", &one);
     is_int(0, one->multifactor, "...and is not multifactor");
+    is_int(0, one->random, "...and is not random multifactor");
     is_int(1, one->factors->nelts, "...and saw one factor");
     is_string("u", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...which is correct");
     one = NULL;
     parse_factors(ctx, "o,o1", &one);
     is_int(0, one->multifactor, "...and is not multifactor");
+    is_int(0, one->random, "...and is not random multifactor");
     is_int(2, one->factors->nelts, "...and saw two factors");
     is_string("o", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...first is correct");
@@ -63,6 +65,7 @@ main(void)
     one = NULL;
     parse_factors(ctx, "p,m,o,o1", &one);
     is_int(1, one->multifactor, "...and is multifactor");
+    is_int(0, one->random, "...and is not random multifactor");
     is_int(4, one->factors->nelts, "...and saw four factors");
     is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...first is correct");
@@ -77,6 +80,7 @@ main(void)
     one = NULL;
     parse_factors(ctx, "p,o,o1", &one);
     is_int(1, one->multifactor, "...and is multifactor");
+    is_int(0, one->random, "...and is not random multifactor");
     is_int(4, one->factors->nelts, "...and saw four factors");
     is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...first is correct");
@@ -91,15 +95,28 @@ main(void)
     one = NULL;
     parse_factors(ctx, "", &one);
     is_int(0, one->multifactor, "...and is not multifactor");
+    is_int(0, one->random, "...and is not random multifactor");
     is_int(0, one->factors->nelts, "...and saw no factors");
     is_string(NULL, webauth_factors_string(ctx, one),
               "Resolves to empty string");
+
+    /* Check parsing of random multifactor. */
+    one = NULL;
+    parse_factors(ctx, "rm", &one);
+    is_int(0, one->multifactor, "...and is not multifactor");
+    is_int(1, one->random, "...but is random multifactor");
+    is_int(1, one->factors->nelts, "...and saw one factor");
+    is_string("rm", APR_ARRAY_IDX(one->factors, 0, const char *),
+              "...which is correct");
+    is_string("rm", webauth_factors_string(ctx, one),
+              "...and the stringification is correct");
 
     /* Check merging two factor sets. */
     one = NULL;
     parse_factors(ctx, "p", &one);
     parse_factors(ctx, "m,o,o1,x,x1", &one);
     is_int(1, one->multifactor, "...and is multifactor");
+    is_int(0, one->random, "...but is not random multifactor");
     is_int(6, one->factors->nelts, "...and saw six factors");
     is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...first is correct");
@@ -115,6 +132,15 @@ main(void)
               "...sixth is correct");
     is_string("p,m,o,o1,x,x1", webauth_factors_string(ctx, one),
               "Resolves to the correct string");
+
+    /*
+     * Adding random multifactor to a set that already has multifactor does
+     * nothing.
+     */
+    parse_factors(ctx, "rm", &one);
+    is_int(1, one->multifactor, "...and is multifactor");
+    is_int(0, one->random, "...but is not random multifactor");
+    is_int(6, one->factors->nelts, "...and saw six factors");
 
     /* Check merging with multifactor detection. */
     one = NULL;
@@ -141,6 +167,14 @@ main(void)
     parse_factors(ctx, "m,x,p", &two);
     is_int(1, webauth_factors_subset(ctx, two, one),
            "subset works out of order");
+
+    /* Multifactor should satisfy random multifactor. */
+    one = NULL;
+    two = NULL;
+    parse_factors(ctx, "rm", &one);
+    parse_factors(ctx, "p,o,o1,m", &two);
+    is_int(1, webauth_factors_subset(ctx, one, two),
+           "multifactor satisfies random in subset");
 
     /* Check parsing a NULL factor string. */
     one = NULL;

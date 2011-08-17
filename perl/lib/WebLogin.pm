@@ -474,8 +474,22 @@ sub print_login_page {
 sub print_error_page {
     my ($self) = @_;
     my $pagename = $self->get_pagename ('error');
+    my $resp = $self->{response};
     my $params = $self->template_params;
     my $q = $self->query;
+
+    # If there is a login cancel option, handle creating the link for it.
+    my $lc = $resp->login_canceled_token;
+    if (defined $lc) {
+        $params->{login_cancel} = 1;
+        my $cancel_url = $resp->return_url;
+
+        # FIXME: Looks like extra semicolons here too.
+        $cancel_url .= "?WEBAUTHR=$lc;";
+        $cancel_url .= ";WEBAUTHS=" . $resp->app_state . ";"
+            if $resp->app_state;
+        $params->{cancel_url} = $cancel_url;
+    }
 
     $self->header_props (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
@@ -522,7 +536,6 @@ sub print_confirm_page {
     my $uri = URI->new ($resp->return_url);
     my $pretty_return_url = $self->pretty_return_uri ($uri);
     my $return_url = $resp->return_url;
-    my $lc = $resp->login_canceled_token;
     my $token_type = $resp->response_token_type;
 
     # The code to return the response token type was added in WebAuth 3.6.1.
@@ -596,6 +609,7 @@ sub print_confirm_page {
     $params->{token_rights} = $self->token_rights;
 
     # If there is a login cancel option, handle creating the link for it.
+    my $lc = $resp->login_canceled_token;
     if (defined $lc) {
         $params->{login_cancel} = 1;
         my $cancel_url = $resp->return_url;
@@ -1448,9 +1462,9 @@ sub index : StartRunmode {
         if (defined $resp->factor_configured) {
             $self->template_params ({err_insufficient_mfactor => 1});
             $self->template_params ({multifactor_configured
-                        => $req->factor_configured });
+                        => $resp->factor_configured });
             $self->template_params ({multifactor_required
-                        => $req->factor_needed });
+                        => $resp->factor_needed });
         } else {
             $self->template_params ({err_no_mfactor => 1});
         }
@@ -1458,7 +1472,7 @@ sub index : StartRunmode {
 
     # Multifactor was configured, but at too low a level of assurance to
     # satisfy the destination site.
-    } elsif ($status == WA_PEC_LOA_UNAVAILABLE) {
+    } elsif ($status == WK_ERR_LOA_UNAVAILABLE) {
         $self->template_params ({err_insufficient_loa => 1});
         return $self->print_error_page;
 

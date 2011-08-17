@@ -52,6 +52,7 @@ struct webauth_context;
  */
 struct webauth_factors {
     int multifactor;                    /* "m" (two factors in use) */
+    int random;                         /* "rm" (random multifactor) */
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
 };
 
