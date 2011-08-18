@@ -83,7 +83,10 @@ cancel_url                : the specified cancel URL
                 <p>Error: The destination site requires a higher level of
                    multifactor than you have set up.</p>
                 <p>The site requires one of the following levels:<br />
-                   [% multifactor_required %]</p>
+                   [% FOREACH level IN multifactor_required %]
+                     [% level %]<br />
+                   [% END %]
+                </p>
                 <p>Your level of multifactor is only:<br />
                    [% multifactor_configured %]</p>
                 [% IF login_cancel %]
