@@ -767,8 +767,17 @@ sub print_multifactor_page {
     $params->{username} = $q->param ('username');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
-    $params->{factor_type} = $self->{response}->factor_configured
-        || $q->param ('factor_type');
+
+    # Find just the o* factor to pass along to the template for any special
+    # processing.
+    if ($self->{response}->factor_configured) {
+        foreach my $factor (@{$self->{response}->factor_configured}) {
+            next unless $factor =~ /^o\d+$/;
+            $params->{factor_type} = $factor;
+        }
+    } else {
+        $params->{factor_type} = $q->param ('factor_type');
+    }
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
@@ -1459,7 +1468,11 @@ sub index : StartRunmode {
     # Multifactor was required but they have no or insufficiently high
     # multifactor configured.
     } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
-        if (defined $resp->factor_configured) {
+        my $mf_setup = 0;
+        foreach my $factor (@{$resp->factor_configured}) {
+            $mf_setup = 1 if $factor eq 'm';
+        }
+        if ($mf_setup) {
             $self->template_params ({err_insufficient_mfactor => 1});
             $self->template_params ({multifactor_configured
                         => $resp->factor_configured });

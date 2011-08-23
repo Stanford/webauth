@@ -88,7 +88,10 @@ cancel_url                : the specified cancel URL
                    [% END %]
                 </p>
                 <p>Your level of multifactor is only:<br />
-                   [% multifactor_configured %]</p>
+                   [% FOREACH level IN multifactor_configured %]
+                     [% level %]<br />
+                   [% END %]
+                </p>
                 [% IF login_cancel %]
                   <p><a href="[% cancel_url %]">Cancel</a>
                      logging on to this service</p>
