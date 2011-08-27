@@ -181,6 +181,20 @@ key=value.  The possible keys are:</p>
     WebAuth protocol specification.</p>
 </dd>
 
+<dt>ifactors</dt>
+<dd><p>The initial authentication factors of this successful
+    authentication.</p>
+</dd>
+
+<dt>sfactors</dt>
+<dd><p>The session authentication factors of this successful
+    authentication.</p>
+</dd>
+
+<dt>loa</dt>
+<dd><p>The Level of Assurance of this successful authentication.</p>
+</dd>
+
 <dt>rtt</dt>
 <dd><p>The returned token type from a <code>requestToken</code> request.
     Normally this will be "id" for an id token, but may be another token
@@ -204,6 +218,20 @@ key=value.  The possible keys are:</p>
     <code>krb5</code>, which provides a Kerberos authenticator for the user
     that can be verified by the WebAuth Application Server's Kerberos
     key.</p>
+</dd>
+
+<dt>wifactors</dt>
+<dd><p>The initial authentication factors required by the WebAuth
+    Application Server.</p>
+</dd>
+
+<dt>wsfactors</dt>
+<dd><p>The session authentication factors required by the WebAuth
+    Application Server.</p>
+</dd>
+
+<dt>wloa</dt>
+<dd><p>The Level of Assurance required by the WebAuth Application Server.</p>
 </dd>
 
 <dt>server</dt>

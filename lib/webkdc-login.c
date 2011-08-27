@@ -1050,6 +1050,11 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * We have a single (or no) webkdc-proxy token that contains everything we
      * know about the user.  Attempt to satisfy their request.
      */
+    if (wkproxy != NULL) {
+        (*response)->initial_factors = wkproxy->initial_factors;
+        (*response)->session_factors = wkproxy->session_factors;
+        (*response)->loa = wkproxy->loa;
+    }
     if (strcmp(req->type, "id") == 0)
         status = create_id_token(ctx, request, wkproxy, *response, session);
     else if (strcmp(req->type, "proxy") == 0)

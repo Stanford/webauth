@@ -1763,6 +1763,15 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     else if (strcmp(request.request->type, "proxy") == 0)
         req_token_info = apr_pstrcat(rc->r->pool, " pt=",
                                      request.request->proxy_type, NULL);
+    if (request.request->initial_factors != NULL)
+        req_token_info = apr_pstrcat(rc->r->pool, req_token_info, " wifactors=",
+                                     request.request->initial_factors, NULL);
+    if (request.request->session_factors != NULL)
+        req_token_info = apr_pstrcat(rc->r->pool, req_token_info, " wsfactors=",
+                                     request.request->session_factors, NULL);
+    if (request.request->loa > 0)
+        req_token_info = apr_psprintf(rc->r->pool, "%s wloa=%lu",
+                                      req_token_info, request.request->loa);
     if (response->subject != NULL)
         *subject_out = response->subject;
 
@@ -1883,7 +1892,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s user=%s rtt=%s%s%s%s%s",
+                 "server=%s user=%s rtt=%s%s%s%s%s%s%s%s",
                  rc->r->connection->remote_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
                  response->requester,
@@ -1893,6 +1902,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  (request.request->options == NULL
                   || *request.request->options == '\0') ? "" :
                  apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
+                 (response->initial_factors == NULL ? "" :
+                  apr_psprintf(rc->r->pool, " ifactors=%s",
+                               response->initial_factors)),
+                 (response->session_factors == NULL ? "" :
+                  apr_psprintf(rc->r->pool, " sfactors=%s",
+                               response->session_factors)),
+                 (response->loa == 0 ? "" :
+                  apr_psprintf(rc->r->pool, " loa=%lu", response->loa)),
                  apr_psprintf(rc->r->pool, " lec=%d", response->login_error),
                  response->login_message == NULL ? "" :
                  apr_psprintf(rc->r->pool, " lem=%s",

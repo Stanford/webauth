@@ -120,7 +120,7 @@ main(void)
     conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
     remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
 
-    plan(272);
+    plan(281);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -259,6 +259,9 @@ main(void)
                "...and expiration matches the expiration of the proxy token");
     }
     is_int(0, response->password_expires, "...and no password expire date");
+    is_string("p", response->initial_factors, "...initial factors");
+    is_string("p", response->session_factors, "...session factors");
+    is_int(0, response->loa, "...level of assurance");
 
     /* Get an id token with a Kerberos authenticator and test forced auth. */
     req.options = "lc,fa";
@@ -415,6 +418,9 @@ main(void)
         is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the expiration of the proxy token");
     }
+    is_string("x,x1", response->initial_factors, "...initial factors");
+    is_string(NULL, response->session_factors, "...session factors");
+    is_int(3, response->loa, "...level of assurance");
 
     /* Set forced authentication and try again. */
     req.options = "fa";
@@ -737,6 +743,9 @@ main(void)
                   "...with correct initial factors");
         is_int(now - 10 * 60, pt->creation, "...and oldest creation");
     }
+    is_string("o,o3,p,m", response->initial_factors, "...initial factors");
+    is_string("c", response->session_factors, "...session factors");
+    is_int(3, response->loa, "...level of assurance");
 
     /* Attempt an OTP authentication with an incorrect OTP code. */
     login.token.login.username = "full";
