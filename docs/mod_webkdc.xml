@@ -181,6 +181,13 @@ key=value.  The possible keys are:</p>
     WebAuth protocol specification.</p>
 </dd>
 
+<dt>login</dt>
+<dd><p>If this request represents an initial user login (as opposed to an
+    authentication using single sign-on credentials), this key is present
+    and the value will indicate the type of authentication (password or
+    otp, or both if both are provided at the same time.</p>
+</dd>
+
 <dt>ifactors</dt>
 <dd><p>The initial authentication factors of this successful
     authentication.</p>
