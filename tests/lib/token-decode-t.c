@@ -482,8 +482,8 @@ main(void)
         is_string("remuser", wkproxy->proxy_type, "...proxy type");
         is_string("WEBKDC:remuser", wkproxy->proxy_subject,
                   "...proxy subject");
-        ok(memcmp("testuser", wkproxy->data, 8) == 0, "...proxy data");
-        is_int(8, wkproxy->data_len, "...proxy data length");
+        ok(wkproxy->data == NULL, "...proxy data");
+        is_int(0, wkproxy->data_len, "...proxy data length");
         is_string(NULL, wkproxy->initial_factors, "...initial factors");
         is_int(0, wkproxy->loa, "...level of assurance");
         is_int(1308777900, wkproxy->creation, "...creation");

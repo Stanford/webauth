@@ -1639,7 +1639,7 @@
 
             <t hangText='pd (binary)'>
             <vspace blankLines='0'/>Proxy data, such as an encoded
-            Kerberos V5 TgT.</t>
+            Kerberos ticket-granting ticket (TGT).</t>
 
             <t hangText='ps (string)'>
             <vspace blankLines='0'/>Proxy subject, the subject from the
@@ -1830,16 +1830,16 @@
           Encoding'>
           <t>A webkdc-proxy token is a proxy authentication token
           maintained by the WebKDC on behalf of another user, or on behalf
-          of itself.  Normally it contains a Kerberos V5 TGT.</t>
+          of itself.  Normally it contains a Kerberos TGT.</t>
 
           <figure>
             <preamble>Token format:</preamble>
             <artwork>
   t=webkdc-proxy
   ps={subject-from-webkdc-service-token-used-to-get-proxy-token}
-  pt=krb5|...
+  pt=krb5|remuser|...
   s={username}
-  pd={proxy-data}
+  [pd={proxy-data}]
   ct={creation-date}
   et={expiration-date}
   [ia={factor-list}]
@@ -1850,11 +1850,15 @@
           <t>All attributes are AES-encrypted in the WebKDC's private
           key.</t>
 
-          <t>As a special case, webkdc-proxy tokens that the WebKDC
+          <t>As a special case, krb5 webkdc-proxy tokens that the WebKDC
           obtains on behalf of itself (returned as part of a
           requestTokenRequest, for example) have a ps attribute value of
           WEBKDC:krb5:{server-principal} where {server-principal} is the
-          Kerberos principal of the WebKDC.</t>
+          Kerberos principal of the WebKDC.  remuser webkdc-proxy tokens
+          (created by WebLogin based on trusting REMOTE_USER
+          authentication from the web server rather than via a password
+          authentication or forwarded Kerberos ticket) have a ps attribute
+          value of WEBKDC:remuser.</t>
 
           <t>When a webkdc-proxy-token is used, the WebKDC checks that the
           subject in the webkdc-service token accompanying the request is

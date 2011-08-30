@@ -493,11 +493,10 @@ encode_webkdc_proxy(struct webauth_context *ctx,
     time_t creation;
 
     /* Sanity-check the token attributes. */
-    CHECK_STR( webkdc_proxy, subject);
-    CHECK_STR( webkdc_proxy, proxy_type);
-    CHECK_STR( webkdc_proxy, proxy_subject);
-    CHECK_DATA(webkdc_proxy, data);
-    CHECK_NUM( webkdc_proxy, expiration);
+    CHECK_STR(webkdc_proxy, subject);
+    CHECK_STR(webkdc_proxy, proxy_type);
+    CHECK_STR(webkdc_proxy, proxy_subject);
+    CHECK_NUM(webkdc_proxy, expiration);
     if (strcmp(webkdc_proxy->proxy_type, "krb5") != 0
         && strcmp(webkdc_proxy->proxy_type, "remuser") != 0
         && strcmp(webkdc_proxy->proxy_type, "otp") != 0) {
@@ -514,10 +513,10 @@ encode_webkdc_proxy(struct webauth_context *ctx,
     ADD_STR( WA_TK_SUBJECT,         webkdc_proxy->subject);
     ADD_STR( WA_TK_PROXY_TYPE,      webkdc_proxy->proxy_type);
     ADD_STR( WA_TK_PROXY_SUBJECT,   webkdc_proxy->proxy_subject);
-    ADD_DATA(WA_TK_PROXY_DATA,      webkdc_proxy->data,
-             webkdc_proxy->data_len);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, webkdc_proxy->expiration);
+    if (webkdc_proxy->data != NULL)
+        ADD_DATA(WA_TK_PROXY_DATA, webkdc_proxy->data, webkdc_proxy->data_len);
     if (webkdc_proxy->initial_factors != NULL)
         ADD_STR(WA_TK_INITIAL_FACTORS, webkdc_proxy->initial_factors);
     if (webkdc_proxy->loa > 0)
