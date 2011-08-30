@@ -335,7 +335,7 @@ CONFIGURATION
     The first three configuration settings will vary considerably given
     the name and configuration of your local LDAP server.  For more
     information on what these settings do, see the mod_webauthldap manual.
-    Please note that the WebAuth LDAP module only supports Kerberos v5
+    Please note that the WebAuth LDAP module only supports Kerberos
     GSS-API binds at this time.
 
     Once you've added that configuration and restarted Apache, LDAP

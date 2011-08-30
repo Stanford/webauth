@@ -2110,12 +2110,12 @@
         </section>
       </section>
 
-      <section anchor='krb5token' title='Kerberos v5 Credential Encoding'>
-        <t>Kerberos v5 credentials may be included in several types of
+      <section anchor='krb5token' title='Kerberos Credential Encoding'>
+        <t>Kerberos credentials may be included in several types of
         WebAuth tokens.  Whenever this is done, the credential data is
         encoded using the same basic encoding format as a token, and the
         system receiving the credential must decode it and recreate the
-        Kerberos v5 credential structure to use it.  This allows
+        Kerberos credential structure to use it.  This allows
         interoperability between different platforms and different
         Kerberos implementations.</t>
 
@@ -2163,7 +2163,7 @@
             <t hangText='f (binary number)'>
             <vspace blankLines='0'/>The ticket flags.  This is a 32-bit
             bitmask of Kerberos ticket flags, as defined by the Kerberos
-            v5 protocol specification.</t>
+            protocol specification.</t>
 
             <t hangText='na (binary number)'>
             <vspace blankLines='0'/>The number of addresses associated

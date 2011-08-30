@@ -212,7 +212,7 @@ key=value.  The possible keys are:</p>
 <dd><p>For tokens of type <code>proxy</code>, this will contain the proxy
     token type.  Currently, the only supported proxy token type is
     <code>krb5</code>, which can be used by the WebAuth Application Server
-    to request Kerberos v5 credentials on behalf of the user from the
+    to request Kerberos credentials on behalf of the user from the
     WebKDC.</p>
 </dd>
 
