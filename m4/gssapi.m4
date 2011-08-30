@@ -3,7 +3,8 @@ dnl
 dnl Finds the compiler and linker flags for linking with GSS-API libraries.
 dnl Provides the --with-gssapi, --with-gssapi-include, and --with-gssapi-lib
 dnl configure option to specify a non-standard path to the GSS-API libraries.
-dnl Uses krb5-config where available unless reduced dependencies is requested.
+dnl Uses krb5-config where available unless reduced dependencies is requested
+dnl or --with-gssapi-include or --with-gssapi-lib are given.
 dnl
 dnl Provides the macro RRA_LIB_GSSAPI and sets the substitution variables
 dnl GSSAPI_CPPFLAGS, GSSAPI_LDFLAGS, and GSSAPI_LIBS.  Also provides
@@ -121,6 +122,30 @@ AC_DEFUN([_RRA_LIB_GSSAPI_CHECK],
      _RRA_LIB_GSSAPI_PATHS
      _RRA_LIB_GSSAPI_MANUAL])])
 
+dnl Determine GSS-API compiler and linker flags from krb5-config.
+AC_DEFUN([_RRA_LIB_GSSAPI_CONFIG],
+[AC_ARG_VAR([PATH_KRB5_CONFIG], [Path to krb5-config])
+ AS_IF([test x"$rra_gssapi_root" != x && test -z "$PATH_KRB5_CONFIG"],
+     [AS_IF([test -x "${rra_gssapi_root}/bin/krb5-config"],
+         [PATH_KRB5_CONFIG="${rra_gssapi_root}/bin/krb5-config"])],
+     [AC_PATH_PROG([PATH_KRB5_CONFIG], [krb5-config], [],
+         [${PATH}:/usr/kerberos/bin])])
+ AS_IF([test x"$PATH_KRB5_CONFIG" != x && test -x "$PATH_KRB5_CONFIG"],
+     [AC_CACHE_CHECK([for gssapi support in krb5-config],
+         [rra_cv_lib_gssapi_config],
+         [AS_IF(["$PATH_KRB5_CONFIG" 2>&1 | grep gssapi >/dev/null 2>&1],
+             [rra_cv_lib_gssapi_config=yes],
+             [rra_cv_lib_gssapi_config=no])])
+      AS_IF([test "$rra_cv_lib_gssapi_config" = yes],
+          [GSSAPI_CPPFLAGS=`"$PATH_KRB5_CONFIG" --cflags gssapi 2>/dev/null`
+           GSSAPI_LIBS=`"$PATH_KRB5_CONFIG" --libs gssapi 2>/dev/null`],
+          [GSSAPI_CPPFLAGS=`"$PATH_KRB5_CONFIG" --cflags 2>/dev/null`
+           GSSAPI_LIBS=`"$PATH_KRB5_CONFIG" --libs 2>/dev/null`])
+      GSSAPI_CPPFLAGS=`echo "$GSSAPI_CPPFLAGS" | sed 's%-I/usr/include ?%%'`
+      _RRA_LIB_GSSAPI_CHECK],
+     [_RRA_LIB_GSSAPI_PATHS
+      _RRA_LIB_GSSAPI_MANUAL])])
+
 dnl The main macro.
 AC_DEFUN([RRA_LIB_GSSAPI],
 [AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
@@ -153,25 +178,8 @@ AC_DEFUN([RRA_LIB_GSSAPI],
  AS_IF([test x"$rra_reduced_depends" = xtrue],
     [_RRA_LIB_GSSAPI_PATHS
      _RRA_LIB_GSSAPI_REDUCED],
-    [AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
-     AS_IF([test x"$rra_gssapi_root" != x && test -z "$KRB5_CONFIG"],
-         [AS_IF([test -x "${rra_gssapi_root}/bin/krb5-config"],
-             [KRB5_CONFIG="${rra_gssapi_root}/bin/krb5-config"])],
-         [AC_PATH_PROG([KRB5_CONFIG], [krb5-config], [],
-             [${PATH}:/usr/kerberos/bin])])
-     AS_IF([test x"$KRB5_CONFIG" != x && test -x "$KRB5_CONFIG"],
-         [AC_CACHE_CHECK([for gssapi support in krb5-config],
-             [rra_cv_lib_gssapi_config],
-             [AS_IF(["$KRB5_CONFIG" 2>&1 | grep gssapi >/dev/null 2>&1],
-                 [rra_cv_lib_gssapi_config=yes],
-                 [rra_cv_lib_gssapi_config=no])])
-          AS_IF([test "$rra_cv_lib_gssapi_config" = yes],
-              [GSSAPI_CPPFLAGS=`"$KRB5_CONFIG" --cflags gssapi 2>/dev/null`
-               GSSAPI_LIBS=`"$KRB5_CONFIG" --libs gssapi 2>/dev/null`],
-              [GSSAPI_CPPFLAGS=`"$KRB5_CONFIG" --cflags 2>/dev/null`
-               GSSAPI_LIBS=`"$KRB5_CONFIG" --libs 2>/dev/null`])
-          GSSAPI_CPPFLAGS=`echo "$GSSAPI_CPPFLAGS" \
-              | sed 's%-I/usr/include ?%%'`
-          _RRA_LIB_GSSAPI_CHECK],
-         [_RRA_LIB_GSSAPI_PATHS
-          _RRA_LIB_GSSAPI_MANUAL])])])
+    [AS_IF([test x"$rra_gssapi_includedir" = x \
+            && test x"$rra_gssapi_libdir" = x],
+        [_RRA_LIB_GSSAPI_CONFIG],
+        [_RRA_LIB_GSSAPI_PATHS
+         _RRA_LIB_GSSAPI_MANUAL])])])

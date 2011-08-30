@@ -67,11 +67,17 @@ WebAuth 4.0.0 (unreleased)
     completed, and should expect to require substantial changes (mostly
     simplifications).
 
-    Update to rra-c-util 3.7:
+    Use PATH_KRB5_CONFIG as the environment variable to set the path to
+    krb5-config rather than KRB5_CONFIG, since the latter is used by the
+    Kerberos libraries to specify an alternative path to krb5.conf.
+
+    Update to rra-c-util 3.8:
 
     * Add notices to all files copied over from rra-c-util.
     * Fix warnings when reporting memory allocation failure in messages.c.
     * Include strings.h for additional POSIX functions where found.
+    * Avoid using krb5-config if --with-{krb5,gssapi}-{include,lib} given.
+    * Fix use of long long in portable/mkstemp.c.
 
 WebAuth 3.7.4 (2011-05-11)
 
