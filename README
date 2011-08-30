@@ -116,6 +116,11 @@ REQUIREMENTS
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
 
+      CGI::Application
+      CGI::Application::Plugin::AutoRunmode
+      CGI::Application::Plugin::Forward
+      CGI::Application::Plugin::Redirect
+      CGI::Application::Plugin::TT
       libwww (LWP)
       IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
       Template (Template Toolkit)
