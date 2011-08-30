@@ -362,7 +362,7 @@ CONFIGURATION
     the form WEBAUTH_LDAP_<attribute>, or in this case into the variables
     WEBAUTH_LDAP_DISPLAYNAME and WEBAUTH_LDAP_MAIL.
 
-RUNNING THE TEST SUITE
+RUNNING THE MODULE TEST SUITE
 
     You can now test WebAuth if you wish (and if this is the first time
     that you've set up WebAuth, it's recommended).  WebAuth comes with a
