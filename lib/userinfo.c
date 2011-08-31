@@ -27,6 +27,7 @@
 #include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/webkdc.h>
+#include <util/macros.h>
 
 
 /*
@@ -90,7 +91,7 @@ done:
  * Convert a number in an XML document from a string to a number, storing it
  * in the provided variable.  Returns a status code.
  */
-static int
+static int UNUSED
 convert_number(struct webauth_context *ctx, const char *string,
                unsigned long *value)
 {
@@ -112,7 +113,7 @@ convert_number(struct webauth_context *ctx, const char *string,
  * Parse the factors section of a userinfo XML document.  Stores the results
  * in the provided webauth_user_info struct.  Returns a status code.
  */
-static int
+static int UNUSED
 parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
               apr_array_header_t **factors)
 {
@@ -138,7 +139,7 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
  * Parse the login history section of a userinfo XML document.  Stores the
  * results in the provided webauth_user_info struct.  Returns a status code.
  */
-static int
+static int UNUSED
 parse_history(struct webauth_context *ctx, apr_xml_elem *root,
               apr_array_header_t **logins)
 {
@@ -175,7 +176,7 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
  * struct.  This function and all of the functions it calls intentionally
  * ignores unknown XML elements or attributes.  Returns a status code.
  */
-static int
+static int UNUSED
 parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
                 struct webauth_user_info **result)
 {
@@ -224,7 +225,7 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
  * struct.  This function and all of the functions it calls intentionally
  * ignores unknown XML elements or attributes.  Returns a status code.
  */
-static int
+static int UNUSED
 parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
                     struct webauth_user_validate **result)
 {
@@ -265,6 +266,7 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
  * the provided argument.  On any error, including remote failure to execute
  * the command, sets the WebAuth error and returns a status code.
  */
+#ifdef HAVE_REMCTL
 static int
 remctl_generic(struct webauth_context *ctx, const char **command,
                apr_xml_doc **doc)
@@ -412,6 +414,18 @@ fail:
         webauth_krb5_free(kctx);
     return status;
 }
+#else /* !HAVE_REMCTL */
+static int
+remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
+               apr_xml_doc **doc UNUSED)
+{
+    int status;
+
+    status = WA_ERR_UNIMPLEMENTED;
+    webauth_error_set(ctx, status, "not built with remctl support");
+    return status;
+}
+#endif /* !HAVE_REMCTL */
 
 
 /*
@@ -474,17 +488,25 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
 static int
 check_config(struct webauth_context *ctx)
 {
+    int status;
+
     if (ctx->user == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID,
-                          "user metadata service not configured");
-        return WA_ERR_INVALID;
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "user metadata service not configured");
+        return status;
     }
-    if (ctx->user->protocol == WA_PROTOCOL_REMCTL)
+    if (ctx->user->protocol == WA_PROTOCOL_REMCTL) {
         if (ctx->user->keytab == NULL) {
             webauth_error_set(ctx, WA_ERR_INVALID,
                               "keytab must be configured for remctl protocol");
             return WA_ERR_INVALID;
         }
+#ifndef HAVE_REMCTL
+        status = WA_ERR_UNIMPLEMENTED;
+        webauth_error_set(ctx, status, "not built with remctl support");
+        return status;
+#endif
+    }
     return WA_ERR_NONE;
 }
 

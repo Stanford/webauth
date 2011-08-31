@@ -67,6 +67,9 @@ main(void)
     struct webauth_login *login;
     int status;
 
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
 #ifndef PATH_REMCTLD
     skip_all("remctld not found");
 #endif

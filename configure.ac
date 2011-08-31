@@ -94,7 +94,7 @@ AC_CHECK_MEMBER([krb5_creds.session],
         [Define if your Kerberos implementation is MIT.])],
     [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
-RRA_LIB_REMCTL
+RRA_LIB_REMCTL_OPTIONAL
 RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])

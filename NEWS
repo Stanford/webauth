@@ -5,11 +5,11 @@ WebAuth 4.0.0 (unreleased)
     WARNING: This release is a major revision with significant changes to
     mod_webkdc and to the WebLogin code.  While the additions are not
     completely specific to Stanford University, it still has some
-    limitations (such as requiring libremctl to build) and missing
-    components that will make it difficult to deploy new features outside
-    of Stanford.  While the new mod_webauth and mod_webauthldap are
-    suitable for everyone, sites outside of Stanford University will
-    probably want to wait for subsequent releases before updating
+    limitations and missing components that will make it difficult to
+    deploy new features outside of Stanford, and it's not yet been tested
+    in a production deployment.  The new mod_webauth and mod_webauthldap
+    are suitable for everyone, but sites outside of Stanford University
+    will probably want to wait for subsequent releases before updating
     mod_webkdc and the WebLogin code.
 
     WebAuth now has support for multifactor authentication.  New WebAuth

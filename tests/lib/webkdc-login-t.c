@@ -112,7 +112,12 @@ main(void)
      * FIXME: Similarly, if we don't have remctl, we should skip tests instead
      * of skipping the whole thing.
      */
+#ifndef HAVE_REMCTL
+    kerberos_cleanup();
+    skip_all("built without remctl support");
+#endif
 #ifndef PATH_REMCTLD
+    kerberos_cleanup();
     skip_all("remctld not found");
 #endif
     if (chdir(getenv("SOURCE")) < 0)
