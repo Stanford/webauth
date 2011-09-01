@@ -260,7 +260,8 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/lib/key-t tests/lib/keys-t tests/lib/krb5-t		   \
 	tests/lib/krb5-tgt-t tests/lib/random-t tests/lib/token-decode-t   \
 	tests/lib/token-encode-t tests/lib/token-t tests/lib/webkdc-info-t \
-	tests/lib/webkdc-login-t tests/portable/asprintf-t		   \
+	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
+	tests/lib/webkdc-mf-t tests/portable/asprintf-t			   \
 	tests/portable/mkstemp-t tests/portable/setenv-t		   \
 	tests/portable/snprintf-t tests/portable/strlcat-t		   \
 	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
@@ -298,10 +299,18 @@ tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
 tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_info_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
-tests_lib_webkdc_login_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_krb_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+tests_lib_webkdc_login_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+tests_lib_webkdc_mf_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_mf_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_mf_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
 	tests/portable/asprintf.c
