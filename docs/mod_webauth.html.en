@@ -59,6 +59,9 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthloginurl">WebAuthLoginURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthoptional">WebAuthOptional</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthpostreturnurl">WebAuthPostReturnURL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthrequireinitialfactor">WebAuthRequireInitialFactor</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthrequireloa">WebAuthRequireLOA</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthrequiresessionfactor">WebAuthRequireSessionFactor</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
@@ -1216,6 +1219,114 @@ will return 401 (UNAUTHORIZED), as it is impractical to try and recover from a P
 WebAuthPostReturnURL /myapp/
 </code></p></div>
 
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthRequireInitialFactor" id="WebAuthRequireInitialFactor">WebAuthRequireInitialFactor</a> <a name="webauthrequireinitialfactor" id="webauthrequireinitialfactor">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Required factors for initial authentication</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireInitialFactor <em>factor</em> [<em>factor</em>
+  ...]</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's initial authentication be done with a particular
+      factor.  The value is a space-separated list of factors, all of
+      which are required.  If any of those factors were not used for the
+      initial authentication, the user will be sent back to the WebLogin
+      server to reauthenticate.
+    </p>
+    <p>
+      The initial authentication is the authentication used to obtain
+      single sign-on cookies (if any).  That authentication may have been
+      done immediately before going to this web site, or earlier to obtain
+      single sign-on credentials.  See <a href="#webauthrequiresessionfactor"><code>WebAuthRequireSessionFactor</code></a>
+      to control the factors used to authenticate to this specific
+      resource, or <a href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
+      different approach to these sorts of restrictions.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebAuthRequireInitialFactor p o
+    </code></p></div>
+  
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthRequireLOA" id="WebAuthRequireLOA">WebAuthRequireLOA</a> <a name="webauthrequireloa" id="webauthrequireloa">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Required level of assurance for authentication</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireLOA <em>loa</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>0</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's authentication meet a particular level of assurance.
+    </p>
+    <p>
+      A level of assurance is an integer number whose definition varies
+      from site to site, except that larger numbers indicate a stronger
+      assurance of the user's authentication and identity than smaller
+      numbers.  Level of assurance may combine multiple factors, such as
+      binding of identity (whether the user presented identification when
+      obtaining their account credentials), method of authentication, and
+      other site-defined information.  This directive should be used in
+      conjunction with site-specific supplemental documentation of what
+      the level of assurance numbers mean for that site.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebAuthRequireLOA 2
+    </code></p></div>
+  
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthRequireSessionFactor" id="WebAuthRequireSessionFactor">WebAuthRequireSessionFactor</a> <a name="webauthrequiresessionfactor" id="webauthrequiresessionfactor">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Required factors for session authentication</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireSessionFactor <em>factor</em> [<em>factor</em>
+  ...]</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+    <p>
+      Normally, WebAuth will accept any authentication method and allow
+      access to the protected resource.  This directive is used to require
+      that the user's session authentication be done with a particular
+      factor.  The value is a space-separated list of factors, all of
+      which are required.  If any of those factors were not used for the
+      session authentication, the user will be sent back to the WebLogin
+      server to reauthenticate.
+    </p>
+    <p>
+      The session authentication is the authentication used to access this
+      particular resource (or, more specifically, to obtain an application
+      authentication cookie scoped to include this resource).  This will
+      match the initial authentication if the user did not use any single
+      sign-on method (or if <a href="#webauthforcelogin"><code>WebAuthForceLogin</code></a> is
+      set), but may be different if single sign-on is in use.  In most
+      situations, one should instead use <a href="#webauthrequireinitialfactor"><code>WebAuthRequireInitialFactor</code></a>
+      to control the initial authentication factors and allow single
+      sign-on to work normally.  See <a href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
+      different approach to these sorts of restrictions.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebAuthRequireSessionFactor m
+    </code></p></div>
+  
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthReturnURL" id="WebAuthReturnURL">WebAuthReturnURL</a> <a name="webauthreturnurl" id="webauthreturnurl">Directive</a></h2>

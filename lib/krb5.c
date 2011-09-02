@@ -265,7 +265,7 @@ verify_tgt(WEBAUTH_KRB5_CTXTP *c, const char *keytab_path,
 
 
 /*
- * Given a portion of a Kerberos v5 principal and its length, allocate a new
+ * Given a portion of a Kerberos principal and its length, allocate a new
  * string and write the escaped form of that portion of a principal to the
  * newly allocated string.  Returns the newly allocated string, which the
  * caller is responsible for freeing, or NULL on failure.
@@ -357,7 +357,7 @@ webauth_krb5_new(WEBAUTH_KRB5_CTXT **ctxt)
 
 
 /*
- * Return the Kerberos v5 error code from the last operation.
+ * Return the Kerberos error code from the last operation.
  */
 int
 webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *context)
@@ -369,7 +369,7 @@ webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *context)
 
 
 /*
- * Return the Kerberos v5 error message from the last operation, using com_err
+ * Return the Kerberos error message from the last operation, using com_err
  * to map the code to a message.
  */
 const char *
@@ -622,8 +622,7 @@ webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *context)
 
 
 /*
- * Free a Kerberos v5 context and the associated data.  Returns a WA_ERR
- * code.
+ * Free a Kerberos context and the associated data.  Returns a WA_ERR code.
  */
 int
 webauth_krb5_free(WEBAUTH_KRB5_CTXT *context)

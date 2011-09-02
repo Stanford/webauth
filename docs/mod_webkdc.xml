@@ -181,6 +181,27 @@ key=value.  The possible keys are:</p>
     WebAuth protocol specification.</p>
 </dd>
 
+<dt>login</dt>
+<dd><p>If this request represents an initial user login (as opposed to an
+    authentication using single sign-on credentials), this key is present
+    and the value will indicate the type of authentication (password or
+    otp, or both if both are provided at the same time.</p>
+</dd>
+
+<dt>ifactors</dt>
+<dd><p>The initial authentication factors of this successful
+    authentication.</p>
+</dd>
+
+<dt>sfactors</dt>
+<dd><p>The session authentication factors of this successful
+    authentication.</p>
+</dd>
+
+<dt>loa</dt>
+<dd><p>The Level of Assurance of this successful authentication.</p>
+</dd>
+
 <dt>rtt</dt>
 <dd><p>The returned token type from a <code>requestToken</code> request.
     Normally this will be "id" for an id token, but may be another token
@@ -191,7 +212,7 @@ key=value.  The possible keys are:</p>
 <dd><p>For tokens of type <code>proxy</code>, this will contain the proxy
     token type.  Currently, the only supported proxy token type is
     <code>krb5</code>, which can be used by the WebAuth Application Server
-    to request Kerberos v5 credentials on behalf of the user from the
+    to request Kerberos credentials on behalf of the user from the
     WebKDC.</p>
 </dd>
 
@@ -204,6 +225,20 @@ key=value.  The possible keys are:</p>
     <code>krb5</code>, which provides a Kerberos authenticator for the user
     that can be verified by the WebAuth Application Server's Kerberos
     key.</p>
+</dd>
+
+<dt>wifactors</dt>
+<dd><p>The initial authentication factors required by the WebAuth
+    Application Server.</p>
+</dd>
+
+<dt>wsfactors</dt>
+<dd><p>The session authentication factors required by the WebAuth
+    Application Server.</p>
+</dd>
+
+<dt>wloa</dt>
+<dd><p>The Level of Assurance required by the WebAuth Application Server.</p>
 </dd>
 
 <dt>server</dt>
@@ -790,4 +825,100 @@ WebKdcKerberosFactors p<br/>
 </example>
 
 </usage>
+</directivesynopsis>
+
+<directivesynopsis>
+  <name>WebKdcUserInfoURL</name>
+  <description>URL for user metadata and multifactor queries</description>
+  <syntax>WebKdcUserInfoURL <em>url</em></syntax>
+  <default>(none)</default>
+  <contextlist>
+    <context>server config</context>
+    <context>virtual host</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      The WebKDC supports a user metadata and multifactor authentication
+      service which, if configured, is checked for the user's configured
+      authentication factors, level of assurance, and password expiration
+      time.  If this service is available and the user's list of
+      configured factors indicate that they are capable of authenticating
+      with a second factor (besides password), the WebKDC will also
+      trigger multifactor authentication for sites that require it or if
+      the user metadata service says it's required.  This service is also
+      used to determine whether an account requiring random multifactor
+      should have that requirement trigger for this site visit.
+    </p>
+
+    <p>
+      This directive configures the URL of the service.  Currently, the
+      only supported protocol method is <a
+      href="http://www.eyrie.org/~eagle/software/remctl/">remctl</a>.  The
+      server and port are specified with the normal URL syntax, and the
+      port defaults to the normal remctl port.  The path portion of the
+      URL must contain only one component and must be the command portion
+      of the remctl command.  By default, remctl will assume that the host
+      principal of the provided host name should be used as the
+      authentication target.  To change this, see <a
+      href="#webkdcuserinfoprincipal"><directive>WebKdcUserInfoPrincipal</directive></a>.
+    </p>
+
+    <p>
+      The subcommand sent to the remctl server will be
+      <code>webkdc-userinfo</code> for the metadata query during login and
+      <code>webkdc-validate</code> to validate a one-time password
+      authentication.
+    </p>
+
+    <p>
+      For specific details of the protocol used to talk to the user
+      metadata and multifactor authentication service, see the additional
+      protocol documentation that comes with the WebAuth source
+      distribution.
+    </p>
+
+    <example>
+      <title>Example</title>
+# Contact host userdb.example.com and send user webkdc-userinfo<br />
+WebKdcUserInfoURL remctl://userdb.example.com/user
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
+  <name>WebKdcUserInfoPrincipal</name>
+  <description>
+    Remote principal for user metadata and multifactor queries
+  </description>
+  <syntax>WebKdcUserInfoPrincipal <em>principal</em></syntax>
+  <default>(none)</default>
+  <contextlist>
+    <context>server config</context>
+    <context>virtual host</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      This directive sets the principal of the remote user metatadata and
+      multifactor authentication service.  This is the target principal of
+      the WebKDC's authentication if using a user metadata protocol that
+      uses Kerberos authentication (such as remctl).  It is not the
+      principal used by the WebKDC; that's set with <a
+      href="#webkdckeytab"><directive>WebKdcKeytab</directive></a>.
+      Rather, it's the principal of the remote service, required if the
+      host principal of the system on which it's running is not used.
+    </p>
+
+    <p>
+      This directive is only useful in combination with <a
+      href="$webkdcuserinfourl"><directive>WebKdcUserInfoURL</directive></a>.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
+    </example>
+  </usage>
+</directivesynopsis>
 </modulesynopsis>

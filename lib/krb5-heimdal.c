@@ -19,9 +19,9 @@
 #endif
 
 /*
- * Take a single Kerberos v5 credential and serialize it into a buffer, using
- * the encoding required for putting it into tokens.  output will be a pointer
- * to newly allocated memory, and length will be set to the encoded length.
+ * Take a single Kerberos credential and serialize it into a buffer, using the
+ * encoding required for putting it into tokens.  output will be a pointer to
+ * newly allocated memory, and length will be set to the encoded length.
  * expiration will be set to the expiration time of the ticket.  Returns a
  * WA_ERR code.
  */

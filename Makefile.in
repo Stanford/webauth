@@ -61,7 +61,9 @@ check_PROGRAMS = tests/runtests$(EXEEXT) tests/lib/attrs-t$(EXEEXT) \
 	tests/lib/random-t$(EXEEXT) tests/lib/token-decode-t$(EXEEXT) \
 	tests/lib/token-encode-t$(EXEEXT) tests/lib/token-t$(EXEEXT) \
 	tests/lib/webkdc-info-t$(EXEEXT) \
+	tests/lib/webkdc-krb-t$(EXEEXT) \
 	tests/lib/webkdc-login-t$(EXEEXT) \
+	tests/lib/webkdc-mf-t$(EXEEXT) \
 	tests/portable/asprintf-t$(EXEEXT) \
 	tests/portable/mkstemp-t$(EXEEXT) \
 	tests/portable/setenv-t$(EXEEXT) \
@@ -291,6 +293,16 @@ tests_lib_webkdc_info_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_webkdc_info_t_LDFLAGS) \
 	$(LDFLAGS) -o $@
+tests_lib_webkdc_krb_t_SOURCES = tests/lib/webkdc-krb-t.c
+tests_lib_webkdc_krb_t_OBJECTS =  \
+	tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT)
+tests_lib_webkdc_krb_t_DEPENDENCIES = tests/tap/libtap.a \
+	lib/libwebauth.la util/libutil.a portable/libportable.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+tests_lib_webkdc_krb_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_webkdc_krb_t_LDFLAGS) \
+	$(LDFLAGS) -o $@
 tests_lib_webkdc_login_t_SOURCES = tests/lib/webkdc-login-t.c
 tests_lib_webkdc_login_t_OBJECTS =  \
 	tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.$(OBJEXT)
@@ -300,6 +312,16 @@ tests_lib_webkdc_login_t_DEPENDENCIES = tests/tap/libtap.a \
 tests_lib_webkdc_login_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_webkdc_login_t_LDFLAGS) \
+	$(LDFLAGS) -o $@
+tests_lib_webkdc_mf_t_SOURCES = tests/lib/webkdc-mf-t.c
+tests_lib_webkdc_mf_t_OBJECTS =  \
+	tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.$(OBJEXT)
+tests_lib_webkdc_mf_t_DEPENDENCIES = tests/tap/libtap.a \
+	lib/libwebauth.la util/libutil.a portable/libportable.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+tests_lib_webkdc_mf_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_webkdc_mf_t_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_tests_portable_asprintf_t_OBJECTS =  \
 	tests/portable/asprintf-t.$(OBJEXT) \
@@ -400,8 +422,8 @@ SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	tests/lib/krb5-t.c tests/lib/krb5-tgt-t.c tests/lib/random-t.c \
 	tests/lib/token-decode-t.c tests/lib/token-encode-t.c \
 	tests/lib/token-t.c tests/lib/webkdc-info-t.c \
-	tests/lib/webkdc-login-t.c \
-	$(tests_portable_asprintf_t_SOURCES) \
+	tests/lib/webkdc-krb-t.c tests/lib/webkdc-login-t.c \
+	tests/lib/webkdc-mf-t.c $(tests_portable_asprintf_t_SOURCES) \
 	$(tests_portable_mkstemp_t_SOURCES) \
 	$(tests_portable_setenv_t_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
@@ -421,8 +443,8 @@ DIST_SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	tests/lib/krb5-t.c tests/lib/krb5-tgt-t.c tests/lib/random-t.c \
 	tests/lib/token-decode-t.c tests/lib/token-encode-t.c \
 	tests/lib/token-t.c tests/lib/webkdc-info-t.c \
-	tests/lib/webkdc-login-t.c \
-	$(tests_portable_asprintf_t_SOURCES) \
+	tests/lib/webkdc-krb-t.c tests/lib/webkdc-login-t.c \
+	tests/lib/webkdc-mf-t.c $(tests_portable_asprintf_t_SOURCES) \
 	$(tests_portable_mkstemp_t_SOURCES) \
 	$(tests_portable_setenv_t_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
@@ -511,7 +533,6 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-KRB5_CONFIG = @KRB5_CONFIG@
 KRB5_CPPFLAGS = @KRB5_CPPFLAGS@
 KRB5_LDFLAGS = @KRB5_LDFLAGS@
 KRB5_LIBS = @KRB5_LIBS@
@@ -543,6 +564,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PATH_KRB5_CONFIG = @PATH_KRB5_CONFIG@
 PATH_REMCTLD = @PATH_REMCTLD@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
@@ -837,11 +859,21 @@ tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_info_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 
-tests_lib_webkdc_login_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_krb_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 
+tests_lib_webkdc_login_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+
+tests_lib_webkdc_mf_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+
+tests_lib_webkdc_mf_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_mf_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
@@ -1295,11 +1327,21 @@ tests/lib/tests_lib_webkdc_info_t-webkdc-info-t.$(OBJEXT):  \
 tests/lib/webkdc-info-t$(EXEEXT): $(tests_lib_webkdc_info_t_OBJECTS) $(tests_lib_webkdc_info_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/webkdc-info-t$(EXEEXT)
 	$(AM_V_CCLD)$(tests_lib_webkdc_info_t_LINK) $(tests_lib_webkdc_info_t_OBJECTS) $(tests_lib_webkdc_info_t_LDADD) $(LIBS)
+tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/webkdc-krb-t$(EXEEXT): $(tests_lib_webkdc_krb_t_OBJECTS) $(tests_lib_webkdc_krb_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/webkdc-krb-t$(EXEEXT)
+	$(AM_V_CCLD)$(tests_lib_webkdc_krb_t_LINK) $(tests_lib_webkdc_krb_t_OBJECTS) $(tests_lib_webkdc_krb_t_LDADD) $(LIBS)
 tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.$(OBJEXT):  \
 	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/webkdc-login-t$(EXEEXT): $(tests_lib_webkdc_login_t_OBJECTS) $(tests_lib_webkdc_login_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/webkdc-login-t$(EXEEXT)
 	$(AM_V_CCLD)$(tests_lib_webkdc_login_t_LINK) $(tests_lib_webkdc_login_t_OBJECTS) $(tests_lib_webkdc_login_t_LDADD) $(LIBS)
+tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/webkdc-mf-t$(EXEEXT): $(tests_lib_webkdc_mf_t_OBJECTS) $(tests_lib_webkdc_mf_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/webkdc-mf-t$(EXEEXT)
+	$(AM_V_CCLD)$(tests_lib_webkdc_mf_t_LINK) $(tests_lib_webkdc_mf_t_OBJECTS) $(tests_lib_webkdc_mf_t_LDADD) $(LIBS)
 tests/portable/$(am__dirstamp):
 	@$(MKDIR_P) tests/portable
 	@: > tests/portable/$(am__dirstamp)
@@ -1501,7 +1543,9 @@ mostlyclean-compile:
 	-rm -f tests/lib/random-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_factors_t-factors-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_webkdc_info_t-webkdc-info-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.$(OBJEXT)
 	-rm -f tests/lib/token-decode-t.$(OBJEXT)
 	-rm -f tests/lib/token-encode-t.$(OBJEXT)
 	-rm -f tests/lib/token-t.$(OBJEXT)
@@ -1583,7 +1627,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/random-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_factors_t-factors-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_info_t-webkdc-info-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_login_t-webkdc-login-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-decode-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-encode-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-t.Po@am__quote@
@@ -1999,6 +2045,22 @@ tests/lib/tests_lib_webkdc_info_t-webkdc-info-t.obj: tests/lib/webkdc-info-t.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_info_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_info_t-webkdc-info-t.obj `if test -f 'tests/lib/webkdc-info-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-info-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-info-t.c'; fi`
 
+tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.o: tests/lib/webkdc-krb-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_krb_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Tpo -c -o tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.o `test -f 'tests/lib/webkdc-krb-t.c' || echo '$(srcdir)/'`tests/lib/webkdc-krb-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Tpo tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/lib/webkdc-krb-t.c' object='tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_krb_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.o `test -f 'tests/lib/webkdc-krb-t.c' || echo '$(srcdir)/'`tests/lib/webkdc-krb-t.c
+
+tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.obj: tests/lib/webkdc-krb-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_krb_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Tpo -c -o tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.obj `if test -f 'tests/lib/webkdc-krb-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-krb-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-krb-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Tpo tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/lib/webkdc-krb-t.c' object='tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_krb_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.obj `if test -f 'tests/lib/webkdc-krb-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-krb-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-krb-t.c'; fi`
+
 tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.o: tests/lib/webkdc-login-t.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_login_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_webkdc_login_t-webkdc-login-t.Tpo -c -o tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.o `test -f 'tests/lib/webkdc-login-t.c' || echo '$(srcdir)/'`tests/lib/webkdc-login-t.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_webkdc_login_t-webkdc-login-t.Tpo tests/lib/$(DEPDIR)/tests_lib_webkdc_login_t-webkdc-login-t.Po
@@ -2014,6 +2076,22 @@ tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.obj: tests/lib/webkdc-login-t.
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/lib/webkdc-login-t.c' object='tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_login_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.obj `if test -f 'tests/lib/webkdc-login-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-login-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-login-t.c'; fi`
+
+tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.o: tests/lib/webkdc-mf-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_mf_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Tpo -c -o tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.o `test -f 'tests/lib/webkdc-mf-t.c' || echo '$(srcdir)/'`tests/lib/webkdc-mf-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Tpo tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/lib/webkdc-mf-t.c' object='tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_mf_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.o `test -f 'tests/lib/webkdc-mf-t.c' || echo '$(srcdir)/'`tests/lib/webkdc-mf-t.c
+
+tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.obj: tests/lib/webkdc-mf-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_mf_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Tpo -c -o tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.obj `if test -f 'tests/lib/webkdc-mf-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-mf-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-mf-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Tpo tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/lib/webkdc-mf-t.c' object='tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_webkdc_mf_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.obj `if test -f 'tests/lib/webkdc-mf-t.c'; then $(CYGPATH_W) 'tests/lib/webkdc-mf-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/webkdc-mf-t.c'; fi`
 
 tests/tests_runtests-runtests.o: tests/runtests.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_runtests_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/tests_runtests-runtests.o -MD -MP -MF tests/$(DEPDIR)/tests_runtests-runtests.Tpo -c -o tests/tests_runtests-runtests.o `test -f 'tests/runtests.c' || echo '$(srcdir)/'`tests/runtests.c

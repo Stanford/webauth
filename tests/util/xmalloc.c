@@ -79,9 +79,9 @@ test_malloc(size_t size)
 
 
 /*
- * Allocate half the memory given, write to it, then reallocate to the desired
- * size, writing to the rest and then checking it all.  Returns true on
- * success, false on any failure.
+ * Allocate 10 bytes of memory given, write to it, then reallocate to the
+ * desired size, writing to the rest and then checking it all.  Returns true
+ * on success, false on any failure.
  */
 static int
 test_realloc(size_t size)

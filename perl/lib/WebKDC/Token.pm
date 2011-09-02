@@ -708,7 +708,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 1.02;
     @ISA         = qw(Exporter WebKDC::Token);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -800,7 +800,6 @@ sub validate_token {
 	($self->token_type() eq 'webkdc-proxy') &&
 	($self->proxy_type() =~ /^(?:krb5|remuser)$/) &&
 	defined($self->proxy_subject()) &&
-	defined($self->proxy_data()) &&
 	defined($self->creation_time());
 	defined($self->expiration_time());
 }

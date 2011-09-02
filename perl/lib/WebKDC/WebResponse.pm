@@ -91,7 +91,7 @@ sub app_state {
 
 sub factor_configured {
     my $self = shift;
-    $self->{'factor_configured'} = shift if @_;
+    push (@{$self->{'factor_configured'}}, @_) if @_;
     return $self->{'factor_configured'};
 }
 

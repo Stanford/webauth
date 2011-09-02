@@ -54,8 +54,8 @@
 
         <t>The WAS can also choose to either trust the WebKDC to vouch for
         the identity of a user, or it can request the WebKDC use an
-        authenticator such as a Kerberos V5 service request (KRB_AP_REQ)
-        that it can verify using its own Kerberos V5 keys.</t>
+        authenticator such as a Kerberos service request (KRB_AP_REQ)
+        that it can verify using its own Kerberos keys.</t>
 
         <section anchor='compua' title='User-Agent (UA)'>
           <t>The User-Agent is a web browser that supports cookies.  No
@@ -93,15 +93,15 @@
           the WAS has requested the user reauthenticate).  This is the way
           that WebAuth implements single sign-on.</t>
 
-          <t>If the cookie is not present or has expired, then the user will
-          be prompted for their username and password.  After submitting
-          this information back to the WebKDC, the WebKDC will then verify
-          the username and password, using whatever protocol is suitable
-          for that site (Kerberos V5 is the default).  The WebKDC will the
-          generate two "tokens".  One is placed in a cookie scoped for the
-          WebKDC and used to provide single sign-on in future requests,
-          and one that gets sent back to the WAS, which will verify it
-          upon receipt.</t>
+          <t>If the cookie is not present or has expired, then the user
+          will be prompted for their username and password.  After
+          submitting this information back to the WebKDC, the WebKDC will
+          then verify the username and password, using whatever protocol
+          is suitable for that site (Kerberos is the default).  The WebKDC
+          will the generate two "tokens".  One is placed in a cookie
+          scoped for the WebKDC and used to provide single sign-on in
+          future requests, and one that gets sent back to the WAS, which
+          will verify it upon receipt.</t>
 
           <t>The second type of the WebKDC handles consist of XML messages
           that get POSTed to the WebKDC via HTTPS directly from a WAS.
@@ -148,13 +148,14 @@
             <t hangText='webkdc-proxy (encrypted with WebKDC private key)'>
             <vspace blankLines='0'/>The webkdc-proxy-token contains a
             user's proxied credentials (generally, but not necessarily, a
-            Kerberos V5 TGT).  It can only be decrypted by the WebKDC, and
-            the WebKDC will only allow a webkdc-proxy token to be used by
-            the server it was originally generated for.  The main use of a
-            webkdc-proxy token is by the WebKDC itself to implement single
-            sign-on; that webkdc-proxy token is usually put in a cookie
-            scoped to the WebLogin service.  Its secondary use is to allow
-            WAS servers to request credential-tokens.</t>
+            Kerberos ticket-granting ticket).  It can only be decrypted by
+            the WebKDC, and the WebKDC will only allow a webkdc-proxy
+            token to be used by the server it was originally generated
+            for.  The main use of a webkdc-proxy token is by the WebKDC
+            itself to implement single sign-on; that webkdc-proxy token is
+            usually put in a cookie scoped to the WebLogin service.  Its
+            secondary use is to allow WAS servers to request
+            credential-tokens.</t>
 
             <t hangText='request (encrypted with session key)'>
             <vspace blankLines='0'/>The request token contains the request
@@ -183,7 +184,7 @@
 
             <t hangText='cred (encrypted with session key)'>
             <vspace blankLines='0'/>A credential token contains a
-            credential for a user (generally a Kerberos V5 service
+            credential for a user (generally a Kerberos service
             ticket).</t>
 
             <t hangText='login (encrypted with WebKDC private key)'>
@@ -241,7 +242,7 @@
           Session Keys'>
 
           <t>In order to exchange session keys, a key distribution
-          protocol is needed.  For this purpose, we use Kerberos V5 and
+          protocol is needed.  For this purpose, we use Kerberos and
           TLS/SSL to bootstrap and get the session keys.  The WAS that
           needs a session key will post an XML message to the WebKDC
           requesting a service token.  This message contains a KRB_AP_REQ
@@ -262,15 +263,15 @@
 
           <t>The WebAuth protocol is designed so that other authentication
           mechanisms may be used to bootstrap, such as GSS-API or TLS
-          client authentication between servers.  Kerberos V5 is just the
+          client authentication between servers.  Kerberos is just the
           first implemented bootstrap authentication mechanism.</t>
 
           <t>One potential issue here is that potentially weaker keys
-          (Kerberos V5 keytabs, which could be 3DES or even just DES) are
+          (Kerberos keytabs, which could be 3DES or even just DES) are
           being used to bootstrap into stronger WebAuth AES keys.  This
           issue is partially mitigated by the use of TLS or SSL to further
           protect the transaction.  This seems to be an acceptable risk,
-          but it's worth being aware of.  The Kerberos V5 infrastructure
+          but it's worth being aware of.  The Kerberos infrastructure
           should obviously use as strong of keys as possible.</t>
         </section>
 
@@ -429,7 +430,7 @@
             includes in this request a KRB_AP_REQ for the WebKDC's service
             principal, using the WAS's private Kerberos key.</t>
 
-            <t>The WebKDC authenticates the WAS server via Kerberos V5 and
+            <t>The WebKDC authenticates the WAS server via Kerberos and
             returns the webkdc-service token and corresponding session
             key.</t>
 
@@ -731,9 +732,9 @@
         <t>Normally, the requested credential tokens will be Kerberos
         service tickets that the WAS can then use to talk to other
         services that use Kerberos authentication.  Since the webkdc-proxy
-        token is generally a Kerberos V5 TGT, this works together well and
+        token is generally a Kerberos TGT, this works together well and
         allows WebAuth to treat the UA's cookie jar as essentially a
-        Kerberos V5 ticket cache.  However, this is not required by the
+        Kerberos ticket cache.  However, this is not required by the
         protocol and credential tokens may be any form of credential
         supported by the WAS and WebKDC.</t>
 
@@ -1012,7 +1013,7 @@
         requestToken command is used by the WebLogin component of the
         WebKDC to process a request token sent in a URL from a WAS.  The
         webkdcProxyToken command converts an existing credential (such as
-        a Kerberos V5 TGT) into a webkdc-proxy token and can be used to
+        a Kerberos TGT) into a webkdc-proxy token and can be used to
         bootstrap WebAuth authentication from an existing Kerberos ticket
         cache for improved single sign-on.  The webkdcProxyTokenInfo
         command returns information about an existing webkdc-proxy
@@ -1310,7 +1311,7 @@
 
         <section anchor='xmlwebkdcproxytoken' title='webkdcProxyToken'>
           <t>The webkdcProxyToken command is used to convert an existing
-          credential, such as a Kerberos V5 TGT, into a webkdc-proxy
+          credential, such as a Kerberos TGT, into a webkdc-proxy
           token.  It can be used to bootstrap WebAuth authentication from
           an existing Kerberos ticket cache for improved single
           sign-on.</t>
@@ -1567,12 +1568,12 @@
 
             <t hangText='crd (binary)'>
             <vspace blankLines='0'/>Credential data (for example, an
-            encoded Kerberos V5 service ticket).</t>
+            encoded Kerberos service ticket).</t>
 
             <t hangText='crs (string)'>
             <vspace blankLines='0'/>The identity of the service credential
             data can be used to access (normally the text representation
-            of the server principal for a Kerberos V5 service ticket).</t>
+            of the server principal for a Kerberos service ticket).</t>
 
             <t hangText='crt (string)'>
             <vspace blankLines='0'/>Credential type.  Currently this is
@@ -1639,7 +1640,7 @@
 
             <t hangText='pd (binary)'>
             <vspace blankLines='0'/>Proxy data, such as an encoded
-            Kerberos V5 TgT.</t>
+            Kerberos ticket-granting ticket (TGT).</t>
 
             <t hangText='ps (string)'>
             <vspace blankLines='0'/>Proxy subject, the subject from the
@@ -1674,19 +1675,19 @@
             tokens, it is the user who authenticated.  Server subjects
             have the form "type:identifier".  Currently, the only defined
             type is "krb5" indicating that the server authenticated with
-            Kerberos V5, and in that case the identifier is the text form
-            of a fully qualified Kerberos V5 principal.</t>
+            Kerberos, and in that case the identifier is the text form
+            of a fully qualified Kerberos principal.</t>
 
             <t hangText='sa (string)'>
             <vspace blankLines='0'/>Subject authenticator type in an id
             token.  This is currently either krb5, indicating that a
-            Kerberos V5 authenticator is included, or webkdc, indicating
+            Kerberos authenticator is included, or webkdc, indicating
             no additional authenticator is provided.</t>
 
             <t hangText='sad (binary)'>
             <vspace blankLines='0'/>Subject authenticator data.  If the sa
-            is krb5, this is a KRB_AP_REQ for the same Kerberos V5
-            principal as the webkdc-service token's subject.</t>
+            is krb5, this is a KRB_AP_REQ for the same Kerberos principal
+            as the webkdc-service token's subject.</t>
 
             <t hangText='san (string)'>
             <vspace blankLines='0'/>The list of authentication factors
@@ -1830,16 +1831,16 @@
           Encoding'>
           <t>A webkdc-proxy token is a proxy authentication token
           maintained by the WebKDC on behalf of another user, or on behalf
-          of itself.  Normally it contains a Kerberos V5 TGT.</t>
+          of itself.  Normally it contains a Kerberos TGT.</t>
 
           <figure>
             <preamble>Token format:</preamble>
             <artwork>
   t=webkdc-proxy
   ps={subject-from-webkdc-service-token-used-to-get-proxy-token}
-  pt=krb5|...
+  pt=krb5|remuser|...
   s={username}
-  pd={proxy-data}
+  [pd={proxy-data}]
   ct={creation-date}
   et={expiration-date}
   [ia={factor-list}]
@@ -1850,11 +1851,15 @@
           <t>All attributes are AES-encrypted in the WebKDC's private
           key.</t>
 
-          <t>As a special case, webkdc-proxy tokens that the WebKDC
+          <t>As a special case, krb5 webkdc-proxy tokens that the WebKDC
           obtains on behalf of itself (returned as part of a
           requestTokenRequest, for example) have a ps attribute value of
           WEBKDC:krb5:{server-principal} where {server-principal} is the
-          Kerberos principal of the WebKDC.</t>
+          Kerberos principal of the WebKDC.  remuser webkdc-proxy tokens
+          (created by WebLogin based on trusting REMOTE_USER
+          authentication from the web server rather than via a password
+          authentication or forwarded Kerberos ticket) have a ps attribute
+          value of WEBKDC:remuser.</t>
 
           <t>When a webkdc-proxy-token is used, the WebKDC checks that the
           subject in the webkdc-service token accompanying the request is
@@ -1969,7 +1974,7 @@
           krb5 webkdc-procy token.</t>
 
           <t>If at is webkdc, we are trusting the webkdc and "s" contains
-          the authenticated user's identity (generally as a Kerberos V5
+          the authenticated user's identity (generally as a Kerberos
           principal name in text form).</t>
 
           <t>The value of ct is used to prevent replay attacks.  Values
@@ -2110,12 +2115,12 @@
         </section>
       </section>
 
-      <section anchor='krb5token' title='Kerberos v5 Credential Encoding'>
-        <t>Kerberos v5 credentials may be included in several types of
+      <section anchor='krb5token' title='Kerberos Credential Encoding'>
+        <t>Kerberos credentials may be included in several types of
         WebAuth tokens.  Whenever this is done, the credential data is
         encoded using the same basic encoding format as a token, and the
         system receiving the credential must decode it and recreate the
-        Kerberos v5 credential structure to use it.  This allows
+        Kerberos credential structure to use it.  This allows
         interoperability between different platforms and different
         Kerberos implementations.</t>
 
@@ -2163,7 +2168,7 @@
             <t hangText='f (binary number)'>
             <vspace blankLines='0'/>The ticket flags.  This is a 32-bit
             bitmask of Kerberos ticket flags, as defined by the Kerberos
-            v5 protocol specification.</t>
+            protocol specification.</t>
 
             <t hangText='na (binary number)'>
             <vspace blankLines='0'/>The number of addresses associated

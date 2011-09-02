@@ -1,4 +1,4 @@
-                          WebAuth release 3.7.4
+                          WebAuth release 4.0.0
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011 The
@@ -32,10 +32,10 @@ DESCRIPTION
   until their credentials expire, even if they visit multiple different
   protected web sites.
 
-  WebAuth relies on either Kerberos v5 or Apache to establish the user's
-  identity, although some features are only available if Kerberos v5 is
-  used.  Kerberos v5 is the only supported mechanism for WebAuth servers
-  to authenticate to the WebKDC.  The protocol is sufficiently general,
+  WebAuth relies on either Kerberos or Apache to establish the user's
+  identity, although some features are only available if Kerberos is used.
+  Kerberos is the only supported mechanism for WebAuth servers to
+  authenticate to the WebKDC.  The protocol is sufficiently general,
   however, to allow other methods to be added.
 
   WebAuth supports obtaining of credentials on behalf of the user by
@@ -43,7 +43,7 @@ DESCRIPTION
   portal-style applications.
 
   WebAuth also provides a second module that can do LDAP directory lookups
-  using Kerberos v5 GSS-API authentication and use the result to authorize
+  using Kerberos GSS-API authentication and use the result to authorize
   web clients by privilege groups or provide directory information to web
   applications in environment variables.
 
@@ -68,7 +68,7 @@ REQUIREMENTS
 
       Apache 2 version 2.0.43 or later (2.2 or later recommended)
       OpenSSL 0.9.7 or later
-      MIT Kerberos v5 1.2.x or later (1.2.8 or later recommended)
+      MIT Kerberos 1.2.x or later (1.2.8 or later recommended)
         -or- Heimdal Kerberos (tested with 0.7 or later)
       cURL 7.10.2 or later
 
@@ -116,6 +116,11 @@ REQUIREMENTS
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
 
+      CGI::Application
+      CGI::Application::Plugin::AutoRunmode
+      CGI::Application::Plugin::Forward
+      CGI::Application::Plugin::Redirect
+      CGI::Application::Plugin::TT
       libwww (LWP)
       IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
       Template (Template Toolkit)
