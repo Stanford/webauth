@@ -38,6 +38,11 @@ WebAuth 4.0.0 (unreleased)
     See the sample templates in weblogin/templates for examples of what
     the new templates should look like.
 
+    WebLogin now uses CGI::Application to control page flow through the
+    WebLogin pages.  WebLogin servers will need CGI::Application plus
+    additional plugin modules installed.  See docs/install-webkdc for a
+    complete list.
+
     As part of multifactor support, WebLogin can now tell an external
     middleware service to send an OTP code to the user through
     site-specific means (such as an SMS message).  There are new
@@ -49,15 +54,6 @@ WebAuth 4.0.0 (unreleased)
     has been authenticated via some other Apache authentication mechanism
     (such as GSS-API via mod_auth_kerb).  See docs/weblogin-config under
     remuser_factors for more information.
-
-    The keyring manipulation functions of the WebAuth Perl module have
-    been rewritten to be object-oriented, introducing new WebAuth::Keyring
-    and WebAuth::KeyringEntry objects.  Perl code using the WebAuth module
-    to manipulate keyrings will have to be modified, since several
-    functions were removed in favor of the new interface.  Methods to
-    remove a key from a keyring, get the timestamps and keys associated
-    with keyring entries, and choose the best key from a keyring have been
-    added.
 
     The libwebauth library API has changed significantly in this version
     and will be changing further in subsequent versions.  There are new
@@ -72,6 +68,15 @@ WebAuth 4.0.0 (unreleased)
     no additional data.  The WebKDC now accepts webkdc-proxy tokens with
     no data but always adds some data for backward compatibility with
     older servers.  It will stop generating that data in a future release.
+
+    The keyring manipulation functions of the WebAuth Perl module have
+    been rewritten to be object-oriented, introducing new WebAuth::Keyring
+    and WebAuth::KeyringEntry objects.  Perl code using the WebAuth module
+    to manipulate keyrings will have to be modified, since several
+    functions were removed in favor of the new interface.  Methods to
+    remove a key from a keyring, get the timestamps and keys associated
+    with keyring entries, and choose the best key from a keyring have been
+    added.
 
     Use PATH_KRB5_CONFIG as the environment variable to set the path to
     krb5-config rather than KRB5_CONFIG, since the latter is used by the
