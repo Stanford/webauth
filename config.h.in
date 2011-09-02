@@ -36,6 +36,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to enable Kerberos features. */
+#undef HAVE_KERBEROS
+
 /* Define to 1 if you have the `krb5_data_free' function. */
 #undef HAVE_KRB5_DATA_FREE
 
@@ -93,6 +96,9 @@
 
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
+
+/* Define to enable remctl features. */
+#undef HAVE_REMCTL
 
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV

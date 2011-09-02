@@ -361,8 +361,11 @@ check_webkdc_proxy_token(struct webauth_context *ctx,
     is_string(wkproxy->proxy_type, wkproxy2->proxy_type, "...proxy type");
     is_string(wkproxy->proxy_subject, wkproxy2->proxy_subject,
               "...proxy subject");
-    ok(memcmp(wkproxy->data, wkproxy2->data, wkproxy->data_len) == 0,
-       "...proxy data");
+    if (wkproxy->data == NULL || wkproxy2->data == NULL)
+        ok(wkproxy->data == wkproxy2->data, "...proxy data");
+    else
+        ok(memcmp(wkproxy->data, wkproxy2->data, wkproxy->data_len) == 0,
+           "...proxy data");
     is_int(wkproxy->data_len, wkproxy2->data_len, "...proxy data length");
     is_string(wkproxy->initial_factors, wkproxy2->initial_factors,
               "...initial factors");
@@ -470,7 +473,7 @@ main(void)
     struct webauth_token in;
     struct webauth_token *out;
 
-    plan(415);
+    plan(409);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -772,6 +775,8 @@ main(void)
     check_webkdc_proxy_token(ctx, &wkproxy, ring, "krb5");
     wkproxy.proxy_type = "remuser";
     wkproxy.proxy_subject = "WEBKDC:remuser";
+    wkproxy.data = NULL;
+    wkproxy.data_len = 0;
     wkproxy.initial_factors = NULL;
     wkproxy.loa = 0;
     wkproxy.creation = 0;
@@ -794,14 +799,6 @@ main(void)
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy subject",
                              "missing proxy_subject for webkdc_proxy token");
     wkproxy.proxy_subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    wkproxy.data = NULL;
-    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy data",
-                             "missing data for webkdc_proxy token");
-    wkproxy.data = "s=ome\0da;;ta";
-    wkproxy.data_len = 0;
-    check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy data length",
-                             "empty data for webkdc_proxy token");
-    wkproxy.data_len = 12;
     wkproxy.expiration = 0;
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without expiration",
                              "missing expiration for webkdc_proxy token");

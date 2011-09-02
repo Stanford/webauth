@@ -96,7 +96,7 @@ Table of Contents
      5.1.  Token Encoding . . . . . . . . . . . . . . . . . . . . . . 34
      5.2.  Assigned Token Attributes  . . . . . . . . . . . . . . . . 35
      5.3.  Authentication Factors . . . . . . . . . . . . . . . . . . 38
-     5.4.  Specific Token Encoding  . . . . . . . . . . . . . . . . . 39
+     5.4.  Specific Token Encoding  . . . . . . . . . . . . . . . . . 40
        5.4.1.  webkdc-service Token Encoding  . . . . . . . . . . . . 40
        5.4.2.  webkdc-proxy Token Encoding  . . . . . . . . . . . . . 40
        5.4.3.  request Token Encoding . . . . . . . . . . . . . . . . 41
@@ -113,8 +113,8 @@ Schemers & Allbery                                              [Page 2]
                      WebAuth Technical Specification           June 2011
 
 
-       5.4.9.  app Token Encoding . . . . . . . . . . . . . . . . . . 44
-     5.5.  Kerberos v5 Credential Encoding  . . . . . . . . . . . . . 45
+       5.4.9.  app Token Encoding . . . . . . . . . . . . . . . . . . 45
+     5.5.  Kerberos Credential Encoding . . . . . . . . . . . . . . . 45
    6.  Cookie Formats . . . . . . . . . . . . . . . . . . . . . . . . 48
    Appendix A.  Document Revision History . . . . . . . . . . . . . . 49
    Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 53
@@ -192,8 +192,8 @@ Schemers & Allbery                                              [Page 3]
 
    The WAS can also choose to either trust the WebKDC to vouch for the
    identity of a user, or it can request the WebKDC use an authenticator
-   such as a Kerberos V5 service request (KRB_AP_REQ) that it can verify
-   using its own Kerberos V5 keys.
+   such as a Kerberos service request (KRB_AP_REQ) that it can verify
+   using its own Kerberos keys.
 
 1.1.1.  User-Agent (UA)
 
@@ -244,7 +244,7 @@ Schemers & Allbery                                              [Page 4]
    prompted for their username and password.  After submitting this
    information back to the WebKDC, the WebKDC will then verify the
    username and password, using whatever protocol is suitable for that
-   site (Kerberos V5 is the default).  The WebKDC will the generate two
+   site (Kerberos is the default).  The WebKDC will the generate two
    "tokens".  One is placed in a cookie scoped for the WebKDC and used
    to provide single sign-on in future requests, and one that gets sent
    back to the WAS, which will verify it upon receipt.
@@ -298,14 +298,14 @@ Schemers & Allbery                                              [Page 5]
 
    webkdc-proxy (encrypted with WebKDC private key)
        The webkdc-proxy-token contains a user's proxied credentials
-       (generally, but not necessarily, a Kerberos V5 TGT).  It can only
-       be decrypted by the WebKDC, and the WebKDC will only allow a
-       webkdc-proxy token to be used by the server it was originally
-       generated for.  The main use of a webkdc-proxy token is by the
-       WebKDC itself to implement single sign-on; that webkdc-proxy
-       token is usually put in a cookie scoped to the WebLogin service.
-       Its secondary use is to allow WAS servers to request credential-
-       tokens.
+       (generally, but not necessarily, a Kerberos ticket-granting
+       ticket).  It can only be decrypted by the WebKDC, and the WebKDC
+       will only allow a webkdc-proxy token to be used by the server it
+       was originally generated for.  The main use of a webkdc-proxy
+       token is by the WebKDC itself to implement single sign-on; that
+       webkdc-proxy token is usually put in a cookie scoped to the
+       WebLogin service.  Its secondary use is to allow WAS servers to
+       request credential-tokens.
 
    request (encrypted with session key)
        The request token contains the request from a WAS for a token
@@ -339,7 +339,7 @@ Schemers & Allbery                                              [Page 6]
 
    cred (encrypted with session key)
        A credential token contains a credential for a user (generally a
-       Kerberos V5 service ticket).
+       Kerberos service ticket).
 
    login (encrypted with WebKDC private key)
        A login token is used by the WebKDC with the requestTokenRequest
@@ -396,10 +396,10 @@ Schemers & Allbery                                              [Page 7]
 1.3.1.  Distributing and Managing Session Keys
 
    In order to exchange session keys, a key distribution protocol is
-   needed.  For this purpose, we use Kerberos V5 and TLS/SSL to
-   bootstrap and get the session keys.  The WAS that needs a session key
-   will post an XML message to the WebKDC requesting a service token.
-   This message contains a KRB_AP_REQ for the WebKDC's server principal,
+   needed.  For this purpose, we use Kerberos and TLS/SSL to bootstrap
+   and get the session keys.  The WAS that needs a session key will post
+   an XML message to the WebKDC requesting a service token.  This
+   message contains a KRB_AP_REQ for the WebKDC's server principal,
    which the WebKDC uses to authenticate the server making the request.
    The WebKDC will then send back the service token and a copy the
    session key that is also encrypted (in the WebKDC's key) inside of
@@ -415,16 +415,16 @@ Schemers & Allbery                                              [Page 7]
 
    The WebAuth protocol is designed so that other authentication
    mechanisms may be used to bootstrap, such as GSS-API or TLS client
-   authentication between servers.  Kerberos V5 is just the first
+   authentication between servers.  Kerberos is just the first
    implemented bootstrap authentication mechanism.
 
-   One potential issue here is that potentially weaker keys (Kerberos V5
+   One potential issue here is that potentially weaker keys (Kerberos
    keytabs, which could be 3DES or even just DES) are being used to
    bootstrap into stronger WebAuth AES keys.  This issue is partially
    mitigated by the use of TLS or SSL to further protect the
    transaction.  This seems to be an acceptable risk, but it's worth
-   being aware of.  The Kerberos V5 infrastructure should obviously use
-   as strong of keys as possible.
+   being aware of.  The Kerberos infrastructure should obviously use as
+   strong of keys as possible.
 
 1.3.2.  Distributing and Managing Private Keys
 
@@ -625,8 +625,8 @@ Schemers & Allbery                                             [Page 11]
         in this request a KRB_AP_REQ for the WebKDC's service principal,
         using the WAS's private Kerberos key.
 
-   2.   The WebKDC authenticates the WAS server via Kerberos V5 and
-        returns the webkdc-service token and corresponding session key.
+   2.   The WebKDC authenticates the WAS server via Kerberos and returns
+        the webkdc-service token and corresponding session key.
 
    3.   The UA requests a WebAuth-protected resource from WAS.
 
@@ -992,10 +992,10 @@ Schemers & Allbery                                             [Page 17]
    Normally, the requested credential tokens will be Kerberos service
    tickets that the WAS can then use to talk to other services that use
    Kerberos authentication.  Since the webkdc-proxy token is generally a
-   Kerberos V5 TGT, this works together well and allows WebAuth to treat
-   the UA's cookie jar as essentially a Kerberos V5 ticket cache.
-   However, this is not required by the protocol and credential tokens
-   may be any form of credential supported by the WAS and WebKDC.
+   Kerberos TGT, this works together well and allows WebAuth to treat
+   the UA's cookie jar as essentially a Kerberos ticket cache.  However,
+   this is not required by the protocol and credential tokens may be any
+   form of credential supported by the WAS and WebKDC.
 
    As with an id token, the WAS may choose not to put the credentials in
    an app token for subsequent use.  It may instead want to store them
@@ -1304,7 +1304,7 @@ Schemers & Allbery                                             [Page 23]
    credential tokens from a proxy token.  The requestToken command is
    used by the WebLogin component of the WebKDC to process a request
    token sent in a URL from a WAS.  The webkdcProxyToken command
-   converts an existing credential (such as a Kerberos V5 TGT) into a
+   converts an existing credential (such as a Kerberos TGT) into a
    webkdc-proxy token and can be used to bootstrap WebAuth
    authentication from an existing Kerberos ticket cache for improved
    single sign-on.  The webkdcProxyTokenInfo command returns information
@@ -1669,7 +1669,7 @@ Schemers & Allbery                                             [Page 29]
 4.3.3.  webkdcProxyToken
 
    The webkdcProxyToken command is used to convert an existing
-   credential, such as a Kerberos V5 TGT, into a webkdc-proxy token.  It
+   credential, such as a Kerberos TGT, into a webkdc-proxy token.  It
    can be used to bootstrap WebAuth authentication from an existing
    Kerberos ticket cache for improved single sign-on.
 
@@ -1929,13 +1929,13 @@ Schemers & Allbery                                             [Page 34]
        commands.
 
    crd (binary)
-       Credential data (for example, an encoded Kerberos V5 service
+       Credential data (for example, an encoded Kerberos service
        ticket).
 
    crs (string)
        The identity of the service credential data can be used to access
        (normally the text representation of the server principal for a
-       Kerberos V5 service ticket).
+       Kerberos service ticket).
 
    crt (string)
        Credential type.  Currently this is always krb5.
@@ -2003,12 +2003,12 @@ Schemers & Allbery                                             [Page 35]
        User's password, in a login token.
 
    pd (binary)
-       Proxy data, such as an encoded Kerberos V5 TgT.
+       Proxy data, such as an encoded Kerberos ticket-granting ticket
+       (TGT).
 
-   ps (string)
-       Proxy subject, the subject from the webkdc-service token that was
-       used when the webkdc-proxy token was created.  This is used to
-       verify that a webkdc-proxy token is being used by the same entity
+
+
+
 
 
 
@@ -2017,6 +2017,10 @@ Schemers & Allbery                                             [Page 36]
                      WebAuth Technical Specification           June 2011
 
 
+   ps (string)
+       Proxy subject, the subject from the webkdc-service token that was
+       used when the webkdc-proxy token was created.  This is used to
+       verify that a webkdc-proxy token is being used by the same entity
        as originally requested it.
 
    pt (string)
@@ -2042,29 +2046,25 @@ Schemers & Allbery                                             [Page 36]
        token.  In all other tokens, it is the user who authenticated.
        Server subjects have the form "type:identifier".  Currently, the
        only defined type is "krb5" indicating that the server
-       authenticated with Kerberos V5, and in that case the identifier
-       is the text form of a fully qualified Kerberos V5 principal.
+       authenticated with Kerberos, and in that case the identifier is
+       the text form of a fully qualified Kerberos principal.
 
    sa (string)
        Subject authenticator type in an id token.  This is currently
-       either krb5, indicating that a Kerberos V5 authenticator is
+       either krb5, indicating that a Kerberos authenticator is
        included, or webkdc, indicating no additional authenticator is
        provided.
 
    sad (binary)
        Subject authenticator data.  If the sa is krb5, this is a
-       KRB_AP_REQ for the same Kerberos V5 principal as the webkdc-
-       service token's subject.
+       KRB_AP_REQ for the same Kerberos principal as the webkdc-service
+       token's subject.
 
    san (string)
        The list of authentication factors used by the authenticated user
        for session authentication, or the session authentication factors
        that are required by this WAS for a successful authentication.
        This is a list of factor codes separated by commas.  For the list
-       of registered factor names, see Section 5.3.
-
-
-
 
 
 
@@ -2072,6 +2072,8 @@ Schemers & Allbery                                             [Page 37]
 
                      WebAuth Technical Specification           June 2011
 
+
+       of registered factor names, see Section 5.3.
 
    t (string)
        The token type.  Currently recognized token types are webkdc-
@@ -2117,10 +2119,8 @@ Schemers & Allbery                                             [Page 37]
        factor code is often used in combination with one of the o# codes
        defined below.
 
-   o# (OTP)
-       The one-time password method numbered # was used.  The meaning of
-       the numbers is site-defined, but the numbers should be integers
-       starting with 1 and higher numbers should indicate a stronger OTP
+
+
 
 
 
@@ -2129,6 +2129,10 @@ Schemers & Allbery                                             [Page 38]
                      WebAuth Technical Specification           June 2011
 
 
+   o# (OTP)
+       The one-time password method numbered # was used.  The meaning of
+       the numbers is site-defined, but the numbers should be integers
+       starting with 1 and higher numbers should indicate a stronger OTP
        method.  For example, o1 could indicate a printed list of OTP
        codes, o2 could indicate a code sent via SMS message, and o3
        could indicate a hardware device that is synchronized with the
@@ -2170,11 +2174,7 @@ Schemers & Allbery                                             [Page 38]
    conflict with future standardized codes unless they coordinate that
    use with this list.
 
-5.4.  Specific Token Encoding
 
-   The following sections describe which tokens are supported, what
-   they're used for, and which attributes are included and what those
-   attributes mean in that context.
 
 
 
@@ -2184,6 +2184,12 @@ Schemers & Allbery                                             [Page 39]
 
                      WebAuth Technical Specification           June 2011
 
+
+5.4.  Specific Token Encoding
+
+   The following sections describe which tokens are supported, what
+   they're used for, and which attributes are included and what those
+   attributes mean in that context.
 
 5.4.1.  webkdc-service Token Encoding
 
@@ -2210,15 +2216,15 @@ Schemers & Allbery                                             [Page 39]
 
    A webkdc-proxy token is a proxy authentication token maintained by
    the WebKDC on behalf of another user, or on behalf of itself.
-   Normally it contains a Kerberos V5 TGT.
+   Normally it contains a Kerberos TGT.
 
    Token format:
 
      t=webkdc-proxy
      ps={subject-from-webkdc-service-token-used-to-get-proxy-token}
-     pt=krb5|...
+     pt=krb5|remuser|...
      s={username}
-     pd={proxy-data}
+     [pd={proxy-data}]
      ct={creation-date}
      et={expiration-date}
      [ia={factor-list}]
@@ -2226,13 +2232,7 @@ Schemers & Allbery                                             [Page 39]
 
    All attributes are AES-encrypted in the WebKDC's private key.
 
-   As a special case, webkdc-proxy tokens that the WebKDC obtains on
-   behalf of itself (returned as part of a requestTokenRequest, for
-   example) have a ps attribute value of WEBKDC:krb5:{server-principal}
-   where {server-principal} is the Kerberos principal of the WebKDC.
-
-   When a webkdc-proxy-token is used, the WebKDC checks that the subject
-   in the webkdc-service token accompanying the request is authorized to
+   As a special case, krb5 webkdc-proxy tokens that the WebKDC obtains
 
 
 
@@ -2241,6 +2241,16 @@ Schemers & Allbery                                             [Page 40]
                      WebAuth Technical Specification           June 2011
 
 
+   on behalf of itself (returned as part of a requestTokenRequest, for
+   example) have a ps attribute value of WEBKDC:krb5:{server-principal}
+   where {server-principal} is the Kerberos principal of the WebKDC.
+   remuser webkdc-proxy tokens (created by WebLogin based on trusting
+   REMOTE_USER authentication from the web server rather than via a
+   password authentication or forwarded Kerberos ticket) have a ps
+   attribute value of WEBKDC:remuser.
+
+   When a webkdc-proxy-token is used, the WebKDC checks that the subject
+   in the webkdc-service token accompanying the request is authorized to
    used the webkdc-proxy token granted to the ps subject or that the ps
    subject starts with "WEBKDC:".
 
@@ -2279,6 +2289,14 @@ Schemers & Allbery                                             [Page 40]
    All attributes are AES-encrypted in the webkdc-service token session
    key.
 
+
+
+
+Schemers & Allbery                                             [Page 41]
+
+                     WebAuth Technical Specification           June 2011
+
+
    The value of ct is used to prevent replay attacks.  Values older than
    a certain time (probably 5 minutes by default) should be rejected as
    a replay.
@@ -2287,15 +2305,6 @@ Schemers & Allbery                                             [Page 40]
    getTokensRequest).  The WebKDC will compare this command against the
    name of the command in the XML, thereby verifying the unencrypted XML
    request.
-
-
-
-
-
-Schemers & Allbery                                             [Page 41]
-
-                     WebAuth Technical Specification           June 2011
-
 
 5.4.4.  error Token Encoding
 
@@ -2336,6 +2345,14 @@ Schemers & Allbery                                             [Page 41]
      [san={factor-list}]
      [loa={level-of-assurance}]
 
+
+
+
+Schemers & Allbery                                             [Page 42]
+
+                     WebAuth Technical Specification           June 2011
+
+
    All attributes are AES-encrypted in the webkdc-service token session
    key.
 
@@ -2345,16 +2362,8 @@ Schemers & Allbery                                             [Page 41]
    webkdc-procy token.
 
    If at is webkdc, we are trusting the webkdc and "s" contains the
-
-
-
-Schemers & Allbery                                             [Page 42]
-
-                     WebAuth Technical Specification           June 2011
-
-
-   authenticated user's identity (generally as a Kerberos V5 principal
-   name in text form).
+   authenticated user's identity (generally as a Kerberos principal name
+   in text form).
 
    The value of ct is used to prevent replay attacks.  Values older than
    a certain time (probably 5 minutes by default) should be rejected as
@@ -2392,6 +2401,14 @@ Schemers & Allbery                                             [Page 42]
    In addition to the webkdc-proxy token, a proxy token provides all the
    same authentication information about a user as an id token with a
    subject auth of "webkdc".  If the WAS only needs id token information
+
+
+
+Schemers & Allbery                                             [Page 43]
+
+                     WebAuth Technical Specification           June 2011
+
+
    at the level provided by the "webkdc" subject auth type, it can use
    the proxy token for that information without requesting an id token.
    If it wants an id token with a "krb5" subject auth type, it will have
@@ -2401,13 +2418,6 @@ Schemers & Allbery                                             [Page 42]
    a certain time (probably 5 minutes by default) should be rejected as
    a replay, as proxy tokens are only used once and re-written into an
    app token.
-
-
-
-Schemers & Allbery                                             [Page 43]
-
-                     WebAuth Technical Specification           June 2011
-
 
    wt is the webkdc-proxy token (in binary form).  It can be used by the
    WAS later to request credential tokens from the WebKDC.
@@ -2447,16 +2457,6 @@ Schemers & Allbery                                             [Page 43]
      [otp={one-time-password-code}]
 
    All attributes are AES-encrypted in the WebKDC's private key.  One of
-   p or otp must be provided.
-
-5.4.9.  app Token Encoding
-
-   An app token is controlled and maintained by a WAS.  The main use of
-   an app token is to cache the idenity within an id token after it has
-   been verified.
-
-
-
 
 
 
@@ -2464,6 +2464,14 @@ Schemers & Allbery                                             [Page 44]
 
                      WebAuth Technical Specification           June 2011
 
+
+   p or otp must be provided.
+
+5.4.9.  app Token Encoding
+
+   An app token is controlled and maintained by a WAS.  The main use of
+   an app token is to cache the idenity within an id token after it has
+   been verified.
 
    Token format:
 
@@ -2491,26 +2499,18 @@ Schemers & Allbery                                             [Page 44]
    serving the same web resource with a pool of servers that all should
    be able to decrypt the id token from the WebKDC.
 
-5.5.  Kerberos v5 Credential Encoding
+5.5.  Kerberos Credential Encoding
 
-   Kerberos v5 credentials may be included in several types of WebAuth
+   Kerberos credentials may be included in several types of WebAuth
    tokens.  Whenever this is done, the credential data is encoded using
    the same basic encoding format as a token, and the system receiving
-   the credential must decode it and recreate the Kerberos v5 credential
+   the credential must decode it and recreate the Kerberos credential
    structure to use it.  This allows interoperability between different
    platforms and different Kerberos implementations.
 
    The credential encoding uses the following attributes, where binary
    number is a 32-bit number in network byte order and binary time is a
    32-bit time in seconds since 1970-01-01 00:00:00 UTC:
-
-   c (string)
-       Client principal name.
-
-   s (string)
-       Server principal name.
-
-
 
 
 
@@ -2520,6 +2520,12 @@ Schemers & Allbery                                             [Page 45]
 
                      WebAuth Technical Specification           June 2011
 
+
+   c (string)
+       Client principal name.
+
+   s (string)
+       Server principal name.
 
    K (binary number)
        Kerberos encryption type for the session key.  This will be
@@ -2551,7 +2557,7 @@ Schemers & Allbery                                             [Page 45]
 
    f (binary number)
        The ticket flags.  This is a 32-bit bitmask of Kerberos ticket
-       flags, as defined by the Kerberos v5 protocol specification.
+       flags, as defined by the Kerberos protocol specification.
 
    na (binary number)
        The number of addresses associated with the credential.  Address
@@ -2560,12 +2566,6 @@ Schemers & Allbery                                             [Page 45]
        but space is provided in case it's useful for some reason.  For
        each address, there is a corresponding "A" attribute holding the
        address type and an "a" attribute holding the address itself.
-
-   A# (binary number)
-       The type of address for the #th address. # is replaced by the
-       index number of the address.  Addresses are numbered starting
-       with 0, so if na was 2, there will be an A0 attribute and an A1
-       attribute (but no A2 attribute).
 
 
 
@@ -2576,6 +2576,12 @@ Schemers & Allbery                                             [Page 46]
 
                      WebAuth Technical Specification           June 2011
 
+
+   A# (binary number)
+       The type of address for the #th address. # is replaced by the
+       index number of the address.  Addresses are numbered starting
+       with 0, so if na was 2, there will be an A0 attribute and an A1
+       attribute (but no A2 attribute).
 
    a# (binary)
        The #th address in the credential. # is replaced by the index
@@ -2606,12 +2612,6 @@ Schemers & Allbery                                             [Page 46]
        number of the block.  Data blocks are numbered starting with 0,
        so if nd was 2, there will be a d0 attribute and a d1 attribute
        (but no d2 attribute).
-
-
-
-
-
-
 
 
 

@@ -767,8 +767,17 @@ sub print_multifactor_page {
     $params->{username} = $q->param ('username');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
-    $params->{factor_type} = $self->{response}->factor_configured
-        || $q->param ('factor_type');
+
+    # Find just the o* factor to pass along to the template for any special
+    # processing.
+    if ($self->{response}->factor_configured) {
+        foreach my $factor (@{$self->{response}->factor_configured}) {
+            next unless $factor =~ /^o\d+$/;
+            $params->{factor_type} = $factor;
+        }
+    } else {
+        $params->{factor_type} = $q->param ('factor_type');
+    }
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
@@ -894,9 +903,6 @@ sub add_remuser_token {
     # factors and level of assurance, make that callback and store the results
     # in the generated token.  Otherwise, set the initial factors to unknown
     # and omit the level of assurance.
-    #
-    # FIXME: Session factor information is not yet used and will require
-    # protocol modifications to use properly.
     my $session_factor;
     if (defined (&WebKDC::Config::remuser_factors)) {
         my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
@@ -1459,7 +1465,11 @@ sub index : StartRunmode {
     # Multifactor was required but they have no or insufficiently high
     # multifactor configured.
     } elsif ($status == WK_ERR_MULTIFACTOR_UNAVAILABLE) {
-        if (defined $resp->factor_configured) {
+        my $mf_setup = 0;
+        foreach my $factor (@{$resp->factor_configured}) {
+            $mf_setup = 1 if $factor eq 'm';
+        }
+        if ($mf_setup) {
             $self->template_params ({err_insufficient_mfactor => 1});
             $self->template_params ({multifactor_configured
                         => $resp->factor_configured });

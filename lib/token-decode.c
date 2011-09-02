@@ -593,7 +593,7 @@ decode_webkdc_proxy(struct webauth_context *ctx,
     DECODE_STR( WA_TK_SUBJECT,         subject,         true);
     DECODE_STR( WA_TK_PROXY_TYPE,      proxy_type,      true);
     DECODE_STR( WA_TK_PROXY_SUBJECT,   proxy_subject,   true);
-    DECODE_DATA(WA_TK_PROXY_DATA,      data,            true);
+    DECODE_DATA(WA_TK_PROXY_DATA,      data,            false);
     DECODE_STR( WA_TK_INITIAL_FACTORS, initial_factors, false);
     DECODE_UINT(WA_TK_LOA,             loa,             false);
     DECODE_TIME(WA_TK_CREATION_TIME,   creation,        true);

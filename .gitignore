@@ -51,7 +51,9 @@
 /tests/lib/token-encode-t
 /tests/lib/token-t
 /tests/lib/webkdc-info-t
+/tests/lib/webkdc-krb-t
 /tests/lib/webkdc-login-t
+/tests/lib/webkdc-mf-t
 /tests/portable/asprintf-t
 /tests/portable/mkstemp-t
 /tests/portable/setenv-t

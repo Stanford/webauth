@@ -37,9 +37,6 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
- * Make the proxy data attribute of the webkdc-proxy token optional.  It
-   has no useful value for remuser (authentication-only) proxy tokens.
-
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -238,6 +235,14 @@ Test Suite:
 
 Documentation:
 
+ * Rewrite the protocol specification to provide a better-structured and
+   more complete introduction to the protocol and defining terms earlier
+   and more consistently.
+
+ * Describe the multifactor design and implementation in the protocol
+   specification, particularly including the criteria used when deciding
+   whether to merge factors together as initial factors.
+
  * Add POD documentation for all Perl modules.  Many of the WebKDC modules
    currently don't have documentation.
 
@@ -247,6 +252,8 @@ Documentation:
  * Update the docs/test-plan document and check it against the current
    implementation and the set of things that can be tested (such as SPNEGO
    and advanced configuration).
+
+ * Document the multifactor page flow in docs/weblogin-flow.
 
 Style:
 

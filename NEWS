@@ -1,15 +1,15 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.0.0 (unreleased)
+WebAuth 4.0.0 (2011-09-02)
 
     WARNING: This release is a major revision with significant changes to
     mod_webkdc and to the WebLogin code.  While the additions are not
     completely specific to Stanford University, it still has some
-    limitations (such as requiring libremctl to build) and missing
-    components that will make it difficult to deploy new features outside
-    of Stanford.  While the new mod_webauth and mod_webauthldap are
-    suitable for everyone, sites outside of Stanford University will
-    probably want to wait for subsequent releases before updating
+    limitations and missing components that will make it difficult to
+    deploy new features outside of Stanford, and it's not yet been tested
+    in a production deployment.  The new mod_webauth and mod_webauthldap
+    are suitable for everyone, but sites outside of Stanford University
+    will probably want to wait for subsequent releases before updating
     mod_webkdc and the WebLogin code.
 
     WebAuth now has support for multifactor authentication.  New WebAuth
@@ -38,6 +38,11 @@ WebAuth 4.0.0 (unreleased)
     See the sample templates in weblogin/templates for examples of what
     the new templates should look like.
 
+    WebLogin now uses CGI::Application to control page flow through the
+    WebLogin pages.  WebLogin servers will need CGI::Application plus
+    additional plugin modules installed.  See docs/install-webkdc for a
+    complete list.
+
     As part of multifactor support, WebLogin can now tell an external
     middleware service to send an OTP code to the user through
     site-specific means (such as an SMS message).  There are new
@@ -50,6 +55,20 @@ WebAuth 4.0.0 (unreleased)
     (such as GSS-API via mod_auth_kerb).  See docs/weblogin-config under
     remuser_factors for more information.
 
+    The libwebauth library API has changed significantly in this version
+    and will be changing further in subsequent versions.  There are new
+    webauth/*.h headers for the new API, but this API should not yet be
+    considered stable.  External users of the libwebauth API should stay
+    with previous releases until the libwebauth library changes have been
+    completed, and should expect to require substantial changes (mostly
+    simplifications).
+
+    The proxy data attribute of webkdc-proxy tokens is now optional and
+    may be omitted for webkdc-proxy token types (like remuser) that carry
+    no additional data.  The WebKDC now accepts webkdc-proxy tokens with
+    no data but always adds some data for backward compatibility with
+    older servers.  It will stop generating that data in a future release.
+
     The keyring manipulation functions of the WebAuth Perl module have
     been rewritten to be object-oriented, introducing new WebAuth::Keyring
     and WebAuth::KeyringEntry objects.  Perl code using the WebAuth module
@@ -59,19 +78,22 @@ WebAuth 4.0.0 (unreleased)
     with keyring entries, and choose the best key from a keyring have been
     added.
 
-    The libwebauth library API has changed significantly in this version
-    and will be changing further in subsequent versions.  There are new
-    webauth/*.h headers for the new API, but this API should not yet be
-    considered stable.  External users of the libwebauth API should stay
-    with previous releases until the libwebauth library changes have been
-    completed, and should expect to require substantial changes (mostly
-    simplifications).
+    Use PATH_KRB5_CONFIG as the environment variable to set the path to
+    krb5-config rather than KRB5_CONFIG, since the latter is used by the
+    Kerberos libraries to specify an alternative path to krb5.conf.
 
-    Update to rra-c-util 3.7:
+    Update to rra-c-util 3.8:
 
     * Add notices to all files copied over from rra-c-util.
     * Fix warnings when reporting memory allocation failure in messages.c.
     * Include strings.h for additional POSIX functions where found.
+    * Avoid using krb5-config if --with-{krb5,gssapi}-{include,lib} given.
+    * Fix use of long long in portable/mkstemp.c.
+
+    Update to C TAP Harness 1.8:
+
+    * Add bmalloc, bcalloc, brealloc, and bstrdup TAP library functions.
+    * Fix runtests to honor -s even if BUILD and -b aren't given.
 
 WebAuth 3.7.4 (2011-05-11)
 

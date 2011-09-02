@@ -12,7 +12,9 @@ lib/token
 lib/token-decode
 lib/token-encode
 lib/webkdc-info
+lib/webkdc-krb
 lib/webkdc-login
+lib/webkdc-mf
 portable/asprintf
 portable/snprintf
 portable/mkstemp

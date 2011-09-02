@@ -84,6 +84,9 @@ struct webauth_webkdc_login_request {
  * Result from a <requestTokenResponse>, which is sent by the WebKDC back to
  * the WebLogin server containing the results of an authentication request.
  * It was successful if the login_error is 0.
+ *
+ * The initial factors, session factors, and LoA information is not returned
+ * to WebLogin, but is included for better logging in the WebKDC.
  */
 struct webauth_webkdc_login_response {
     int login_error;
@@ -96,6 +99,9 @@ struct webauth_webkdc_login_response {
     const char *subject;
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
+    const char *initial_factors;
+    const char *session_factors;
+    unsigned long loa;
     const char *login_cancel;   /* Encrypted error token. */
     const void *app_state;
     size_t app_state_len;

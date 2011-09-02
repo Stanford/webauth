@@ -221,7 +221,6 @@ our %TOKENS =
                         { subject         => 'testuser',
                           proxy_type      => 'remuser',
                           proxy_subject   => 'WEBKDC:remuser',
-                          proxy_data      => 'testuser',
                           creation_time   => 1308777900,
                           expiration_time => 2147483600 }
                       ],

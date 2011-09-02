@@ -38,6 +38,11 @@ that's longer than the HTTP protocol permits.
 
  2. You'll need to install the following Perl modules from CPAN:
 
+         CGI::Application
+         CGI::Application::Plugin::AutoRunmode
+         CGI::Application::Plugin::Forward
+         CGI::Application::Plugin::Redirect
+         CGI::Application::Plugin::TT
          libwww (LWP)
          Crypt::SSLeay -or- IO::Socket::SSL (for LWP https support)
          Template (Template Toolkit)
@@ -182,3 +187,6 @@ that's longer than the HTTP protocol permits.
 If you want to use let clients use SPNEGO to authenticate to the WebLogin
 front-end with fallback to standard password authentication, see the
 separate install-spengo documentation.
+
+If you want to enable multifactor authentication, see the separate
+install-multifactor documentation.
