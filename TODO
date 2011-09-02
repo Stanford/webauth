@@ -253,6 +253,8 @@ Documentation:
    implementation and the set of things that can be tested (such as SPNEGO
    and advanced configuration).
 
+ * Document the multifactor page flow in docs/weblogin-flow.
+
 Style:
 
  * The mod_webauthldap module needs a lot of formatting and coding style

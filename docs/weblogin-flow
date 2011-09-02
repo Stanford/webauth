@@ -30,6 +30,11 @@ Introduction
   rest of this document, and the abbreviation "remuser" is used in
   variables and cookies.
 
+  This flow documentation is also available in visual form in the file
+  docs/diagrams/weblogin-flow.svg or weblogin-flow.png.  This may be a
+  clearer way to understand the page flow, and is worth consulting in
+  conjunction with this document.
+
 Cookie Check
 
   For all methods of visiting WebLogin, the WebLogin script first checks
