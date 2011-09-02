@@ -235,6 +235,14 @@ Test Suite:
 
 Documentation:
 
+ * Rewrite the protocol specification to provide a better-structured and
+   more complete introduction to the protocol and defining terms earlier
+   and more consistently.
+
+ * Describe the multifactor design and implementation in the protocol
+   specification, particularly including the criteria used when deciding
+   whether to merge factors together as initial factors.
+
  * Add POD documentation for all Perl modules.  Many of the WebKDC modules
    currently don't have documentation.
 
