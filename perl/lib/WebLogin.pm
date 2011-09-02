@@ -903,9 +903,6 @@ sub add_remuser_token {
     # factors and level of assurance, make that callback and store the results
     # in the generated token.  Otherwise, set the initial factors to unknown
     # and omit the level of assurance.
-    #
-    # FIXME: Session factor information is not yet used and will require
-    # protocol modifications to use properly.
     my $session_factor;
     if (defined (&WebKDC::Config::remuser_factors)) {
         my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
