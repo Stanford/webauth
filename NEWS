@@ -67,6 +67,12 @@ WebAuth 4.0.0 (unreleased)
     completed, and should expect to require substantial changes (mostly
     simplifications).
 
+    The proxy data attribute of webkdc-proxy tokens is now optional and
+    may be omitted for webkdc-proxy token types (like remuser) that carry
+    no additional data.  The WebKDC now accepts webkdc-proxy tokens with
+    no data but always adds some data for backward compatibility with
+    older servers.  It will stop generating that data in a future release.
+
     Use PATH_KRB5_CONFIG as the environment variable to set the path to
     krb5-config rather than KRB5_CONFIG, since the latter is used by the
     Kerberos libraries to specify an alternative path to krb5.conf.

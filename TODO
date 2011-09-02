@@ -37,9 +37,6 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
- * Make the proxy data attribute of the webkdc-proxy token optional.  It
-   has no useful value for remuser (authentication-only) proxy tokens.
-
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
