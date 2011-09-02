@@ -1,4 +1,4 @@
-webauth (4.0.0~alpha2-1) UNRELEASED; urgency=low
+webauth (4.0.0-1) UNRELEASED; urgency=low
 
   * New upstream release.
     - Added support for multifactor, including new WebAuth directives
@@ -26,6 +26,7 @@ webauth (4.0.0~alpha2-1) UNRELEASED; urgency=low
       choose the best key have been added.
     - The libwebauth API has been changed substantially and will be
       changed further in subsequent releases.
+    - The proxy data attribute of webkdc-proxy tokens is now optional.
   * Install /var/cache/weblogin, writable by www-data, as a directory to
     use for Template Toolkit to cache compiled templates.  Mention the new
     $TEMPLATE_COMPILE_PATH directive in the libwebkdc-perl NEWS.Debian.
