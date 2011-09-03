@@ -170,7 +170,7 @@ main(void)
            "...and correct proxy subject identity");
         ok(pt->data != NULL, "...and data is not NULL");
         is_string("p", pt->initial_factors, "...and factors is password");
-        ok(pt->creation - now < 3, "...and creation is okay");
+        ok(pt->creation - now < 5, "...and creation is okay");
         ok(pt->expiration > now, "...and expiration is sane");
     }
     is_string(username, response->subject, "...subject is correct");
@@ -193,7 +193,7 @@ main(void)
         is_string("p", token->token.id.session_factors,
                   "...result session factors is right");
         is_int(0, token->token.id.loa, "...and no LoA");
-        ok(token->token.id.creation - now < 3, "...and creation is sane");
+        ok(token->token.id.creation - now < 5, "...and creation is sane");
         is_int(pt->expiration, token->token.id.expiration,
                "...and expiration matches the expiration of the proxy token");
     }
@@ -273,7 +273,7 @@ main(void)
         is_string("p", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(0, token->token.proxy.loa, "...and no LoA");
-        ok(token->token.proxy.creation - now < 3, "...and creation is sane");
+        ok(token->token.proxy.creation - now < 5, "...and creation is sane");
         is_int(expiration, token->token.proxy.expiration,
                "...and expiration matches the expiration of the proxy token");
         status = webauth_token_decode_raw(ctx, WA_TOKEN_WEBKDC_PROXY,
@@ -292,7 +292,7 @@ main(void)
                "...and correct proxy subject identity");
             ok(pt->data != NULL, "...and data is not NULL");
             is_string("p", pt->initial_factors, "...and factors is password");
-            ok(pt->creation - now < 3, "...and creation is okay");
+            ok(pt->creation - now < 5, "...and creation is okay");
             ok(pt->expiration > now, "...and expiration is sane");
         }
     }
@@ -365,6 +365,10 @@ main(void)
     }
 
     /* Clean up. */
+    webauth_keyring_free(ring);
+    webauth_key_free(session_key);
+    test_file_path_free((char *) config.keytab_path);
+    free((char *) config.principal);
     kerberos_cleanup();
     apr_terminate();
     return 0;
