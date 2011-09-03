@@ -1,5 +1,8 @@
 webauth (4.0.0-2) UNRELEASED; urgency=low
 
+  * Fix a variety of uninitialized variables and memory leaks in the
+    libwebauth library and the test suite.  Thanks, Christoph Egger and
+    Aaron M. Ucko.  (Closes: #640259)
   * Don't attempt to chown files in libwebkdc-perl when doing a
     binary-only build.  Thanks, Aaron M. Ucko.  (Closes: #640268)
 
