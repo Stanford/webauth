@@ -135,6 +135,7 @@ kerberos_setup(void)
     krb5_kt_close(ctx, keytab);
     krb5_free_principal(ctx, kprinc);
     krb5_free_context(ctx);
+    krb5_get_init_creds_opt_free(ctx, opts);
     free(krbtgt);
     free(path);
 
