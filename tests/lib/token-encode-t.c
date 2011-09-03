@@ -705,6 +705,7 @@ main(void)
      */
     req.type = "id";
     req.auth = "webkdc";
+    req.proxy_type = NULL;
     req.state = "s=ome\0da;;ta";
     req.state_len = 12;
     req.return_url = "https://example.com/";
@@ -839,6 +840,7 @@ main(void)
     in.token.webkdc_service.subject = "testuser";
     in.token.webkdc_service.session_key = "so\0me";
     in.token.webkdc_service.session_key_len = 5;
+    in.token.webkdc_service.creation = 0;
     in.token.webkdc_service.expiration = now + 60;
     out = encode_decode_raw(ctx, &in, ring, "raw", 2);
     if (out != NULL)
