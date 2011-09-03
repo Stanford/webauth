@@ -687,6 +687,7 @@ webauth_token_decode_raw(struct webauth_context *ctx,
                           "unsupported token type %u while decoding", type);
         break;
     }
+    webauth_attr_list_free(alist);
     if (status == WA_ERR_NONE)
         *decoded = out;
     return status;
