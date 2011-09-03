@@ -131,8 +131,8 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
     if (app->creation > 0)
         is_int(app->creation, app2->creation, "...creation");
     else
-        ok((app2->creation > time(NULL) - 1)
-           && (app2->creation < time(NULL) + 1), "...creation");
+        ok((app2->creation >= time(NULL) - 1)
+           && (app2->creation <= time(NULL) + 1), "...creation");
     is_int(app->expiration, app2->expiration, "...expiration");
 }
 
@@ -162,8 +162,8 @@ check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
     if (cred->creation > 0)
         is_int(cred->creation, cred2->creation, "...creation");
     else
-        ok((cred2->creation > time(NULL) - 1)
-           && (cred2->creation < time(NULL) + 1), "...creation");
+        ok((cred2->creation >= time(NULL) - 1)
+           && (cred2->creation <= time(NULL) + 1), "...creation");
     is_int(cred->expiration, cred2->expiration, "...expiration");
 }
 
@@ -191,8 +191,8 @@ check_error_token(struct webauth_context *ctx,
     if (err->creation > 0)
         is_int(err->creation, err2->creation, "...creation");
     else
-        ok((err2->creation > time(NULL) - 1)
-           && (err2->creation < time(NULL) + 1), "...creation");
+        ok((err2->creation >= time(NULL) - 1)
+           && (err2->creation <= time(NULL) + 1), "...creation");
 }
 
 
@@ -226,8 +226,8 @@ check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
     if (id->creation > 0)
         is_int(id->creation, id2->creation, "...creation");
     else
-        ok((id2->creation > time(NULL) - 1)
-           && (id2->creation < time(NULL) + 1), "...creation");
+        ok((id2->creation >= time(NULL) - 1)
+           && (id2->creation <= time(NULL) + 1), "...creation");
     is_int(id->expiration, id2->expiration, "...expiration");
 }
 
@@ -256,8 +256,8 @@ check_login_token(struct webauth_context *ctx,
     if (login->creation > 0)
         is_int(login->creation, login2->creation, "...creation");
     else
-        ok((login2->creation > time(NULL) - 1)
-           && (login2->creation < time(NULL) + 1), "...creation");
+        ok((login2->creation >= time(NULL) - 1)
+           && (login2->creation <= time(NULL) + 1), "...creation");
 }
 
 
@@ -293,8 +293,8 @@ check_proxy_token(struct webauth_context *ctx,
     if (proxy->creation > 0)
         is_int(proxy->creation, proxy2->creation, "...creation");
     else
-        ok((proxy2->creation > time(NULL) - 1)
-           && (proxy2->creation < time(NULL) + 1), "...creation");
+        ok((proxy2->creation >= time(NULL) - 1)
+           && (proxy2->creation <= time(NULL) + 1), "...creation");
     is_int(proxy->expiration, proxy2->expiration, "...expiration");
 }
 
@@ -333,8 +333,8 @@ check_request_token(struct webauth_context *ctx,
     if (req->creation > 0)
         is_int(req->creation, req2->creation, "...creation");
     else
-        ok((req2->creation > time(NULL) - 1)
-           && (req2->creation < time(NULL) + 1), "...creation");
+        ok((req2->creation >= time(NULL) - 1)
+           && (req2->creation <= time(NULL) + 1), "...creation");
 }
 
 
@@ -373,8 +373,8 @@ check_webkdc_proxy_token(struct webauth_context *ctx,
     if (wkproxy->creation > 0)
         is_int(wkproxy->creation, wkproxy2->creation, "...creation");
     else
-        ok((wkproxy2->creation > time(NULL) - 1)
-           && (wkproxy2->creation < time(NULL) + 1), "...creation");
+        ok((wkproxy2->creation >= time(NULL) - 1)
+           && (wkproxy2->creation <= time(NULL) + 1), "...creation");
     is_int(wkproxy->expiration, wkproxy2->expiration, "...expiration");
 }
 
@@ -405,8 +405,8 @@ check_webkdc_service_token(struct webauth_context *ctx,
     if (service->creation > 0)
         is_int(service->creation, service2->creation, "...creation");
     else
-        ok((service2->creation > time(NULL) - 1)
-           && (service2->creation < time(NULL) + 1), "...creation");
+        ok((service2->creation >= time(NULL) - 1)
+           && (service2->creation <= time(NULL) + 1), "...creation");
     is_int(service->expiration, service2->expiration, "...expiration");
 }
 
