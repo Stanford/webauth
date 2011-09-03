@@ -807,6 +807,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         cancel.type = WA_TOKEN_ERROR;
         cancel.token.error.code = WA_PEC_LOGIN_CANCELED;
         cancel.token.error.message = "user canceled login";
+        cancel.token.error.creation = 0;
         status = webauth_token_encode(ctx, &cancel, session, &etoken);
         if (status != WA_ERR_NONE)
             return status;
