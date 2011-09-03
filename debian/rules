@@ -28,4 +28,6 @@ override_dh_installchangelogs:
 
 override_dh_fixperms:
 	dh_fixperms
-	chown www-data:www-data debian/libwebkdc-perl/var/cache/weblogin
+	set -e; if [ -d 'debian/libwebkdc-perl/var/cache/weblogin' ] ; then \
+	    chown www-data:www-data debian/libwebkdc-perl/var/cache/weblogin; \
+	fi
