@@ -263,8 +263,8 @@ encode_error(struct webauth_context *ctx,
     /* Encode the token attributes into the attribute list. */
     creation = (error->creation > 0) ? error->creation : time(NULL);
     code_string = apr_psprintf(ctx->pool, "%lu", error->code);
-    ADD_STR( WA_TK_ERROR_CODE,    code_string);
     ADD_STR( WA_TK_TOKEN_TYPE,    WA_TT_ERROR);
+    ADD_STR( WA_TK_ERROR_CODE,    code_string);
     ADD_STR( WA_TK_ERROR_MESSAGE, error->message);
     ADD_TIME(WA_TK_CREATION_TIME, creation);
     return WA_ERR_NONE;
