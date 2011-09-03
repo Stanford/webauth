@@ -235,6 +235,8 @@ main(void)
     is_string("testuser", response->subject, "...but we do know the subject");
 
     /* Clean up. */
+    webauth_keyring_free(ring);
+    webauth_key_free(session_key);
     apr_terminate();
     return 0;
 }
