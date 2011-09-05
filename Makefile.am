@@ -33,23 +33,24 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	conf/sample-webauth.conf conf/stanford-ldap.conf		    \
 	conf/stanford-webauth.conf conf/token.acl docs/design-pwchange	    \
 	docs/diagrams/weblogin-flow.dia docs/diagrams/weblogin-flow.png	    \
-	docs/diagrams/weblogin-flow.svg docs/install-spnego		    \
-	docs/install-stanford docs/install-webkdc docs/mod_webauth.html.en  \
-	docs/mod_webauth.xml docs/mod_webauthldap.html.en		    \
-	docs/mod_webauthldap.xml docs/mod_webkdc.html.en		    \
-	docs/mod_webkdc.xml docs/protocol.html docs/protocol.txt	    \
-	docs/protocol.xml docs/test-plan docs/userauth docs/weblogin-config \
-	docs/weblogin-cookies docs/weblogin-flow docs/weblogin-testing	    \
-	include/mkheader include/webauth/defines.h.in lib/internal.h	    \
-	lib/libwebauth.map lib/libwebauth.pc.in lib/libwebauth.sym	    \
-	perl/README perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/data/README tests/data/cmd-webkdc tests/data/conf-webkdc	    \
-	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
-	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+	docs/diagrams/weblogin-flow.svg docs/install-multifactor	    \
+	docs/install-spnego docs/install-stanford docs/install-webkdc	    \
+	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
+	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
+	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
+	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
+	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
+	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
+	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
+	lib/libwebauth.sym perl/README perl/MANIFEST perl/MANIFEST.SKIP	    \
+	tests/TESTS tests/data/README tests/data/cmd-webkdc		    \
+	tests/data/conf-webkdc tests/data/generate-tokens		    \
+	tests/data/keyring tests/data/tokens tests/data/xml		    \
+	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
