@@ -4,7 +4,7 @@
 <modulesynopsis metafile="mod_webkdc.xml.meta">
 
 <name>mod_webkdc</name>
-<description>WebAuth V3 WebKDC module</description>
+<description>WebAuth WebKDC module</description>
 <status>Contributed</status>
 <sourcefile>mod_webkdc.c</sourcefile>
 <identifier>webkdc_module</identifier>
@@ -12,7 +12,7 @@
 <summary>
 
 <p>This module implements the central authentication server for the
-WebAuth V3 protocol, also known as the WebKDC.</p>
+WebAuth protocol, also known as the WebKDC.</p>
 
 <p>The WebKDC authenticates the user based on information passed by the
 weblogin service (which should generally run on the same system) and
@@ -268,9 +268,9 @@ key=value.  The possible keys are:</p>
 
 <section><title>Setting up Multiple WebKDCs</title>
 
-<p>WebAuth V3 was designed so that it would be fairly easy to setup
-multiple WebKDCs for load balancing and redundancy. There are three pieces
-of information that need to be shared between WebKDC servers in order to
+<p>WebAuth was designed so that it would be fairly easy to setup multiple
+WebKDCs for load balancing and redundancy. There are three pieces of
+information that need to be shared between WebKDC servers in order to
 achieve this:</p>
 
 <ol>

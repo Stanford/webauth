@@ -23,13 +23,13 @@
 <div class="toplang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
-<table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth V3 protocol</td></tr>
+<table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth protocol</td></tr>
 <tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauth_module</td></tr>
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module implements the authentication component of a WebAuth V3
+<p>This module implements the authentication component of a WebAuth
 application server for Apache 2.x.  It should be used on each individual
 Apache server that wants to protect content with WebAuth.</p>
 
@@ -482,7 +482,7 @@ WebAuthDebug on
 <div class="section">
 <h2>Setting up load-balanced WebAuth servers</h2>
 
-<p>WebAuth V3 was designed so that it would be fairly easy to setup
+<p>WebAuth was designed so that it would be fairly easy to setup
 multiple WebAuth servers for load balancing and redundancy.  In order to
 achieve this, the WebAuth keyring has to be shared between the WebAuth
 servers.  The Kerberos keytab file does not have to be shared; each system
