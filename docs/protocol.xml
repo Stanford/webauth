@@ -1202,9 +1202,9 @@
     <!-- optional, included if the user's login history should be
          displayed (if, for example, it was suspicious) -->
     <loginHistory>
-      <!-- the timestamp information is optional -->
-      <loginLocation ip="{ip-address}" time="{timestamp}">
-        {hostname}
+      <!-- the name and timestamp information is optional -->
+      <loginLocation name="{hostname}" time="{timestamp}">
+        {ip-address}
       </loginLocation>
       <!-- repeat for site-defined length of login history -->
     </loginHistory>

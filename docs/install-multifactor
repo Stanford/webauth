@@ -222,10 +222,13 @@ User Information Service
         <multifactor-required />
 
         <!-- Optional.  If present, contains possibly suspicious recent
-             logins that the user should be notified of. -->
+             logins that the user should be notified of.  name and
+             timestamp may be omitted.  If present, {time} is the seconds
+             since epoch timestamp of the last login from that
+             location. -->
         <login-history>
-          <host ip="{ip}">{host}</host>
-          <host ip="{ip}">{host}</host>
+          <host name="{host}" timestamp="{time}">{ip}</host>
+          <host name="{host}" timestamp="{time}">{ip}</host>
         </login-history>
 
         <!-- If present, indicates that the user will not be able to

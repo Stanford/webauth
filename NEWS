@@ -2,6 +2,12 @@
 
 WebAuth 4.0.1 (unreleased)
 
+    The protocol for getting suspicious login information from the user
+    information service and conveying that information to WebLogin has
+    changed to use the IP address as the content of the tag and move the
+    hostname to an attribute, since the hostname is optional and may not
+    be available.
+
     Fix a memory leak in token decoding.
 
     Properly initialize the creation time of the error token returned to
