@@ -7,6 +7,10 @@ WebAuth 4.0.1 (unreleased)
     Properly initialize the creation time of the error token returned to
     the WAS when a login is canceled.
 
+    Update to rra-c-util 3.9:
+
+    * Use an atexit handler to clean up after Kerberos tests.
+
 WebAuth 4.0.0 (2011-09-02)
 
     WARNING: This release is a major revision with significant changes to

@@ -696,9 +696,7 @@ main(void)
     webauth_keyring_free(ring);
     webauth_key_free(session_key);
     test_file_path_free((char *) config.keytab_path);
-    free((char *) config.principal);
     remctld_stop(remctld);
-    kerberos_cleanup();
     apr_terminate();
     return 0;
 }
