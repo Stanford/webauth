@@ -1,4 +1,4 @@
-libwebkdc-perl (4.0.0~alpha1-1) UNRELEASED; urgency=low
+libwebkdc-perl (4.0.0-1) unstable; urgency=low
 
   WebLogin now uses Template Toolkit for page templating instead of
   HTML::Template.  All local templates must be modified to use the new
