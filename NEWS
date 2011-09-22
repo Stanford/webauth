@@ -15,6 +15,10 @@ WebAuth 4.0.1 (unreleased)
     Properly initialize the creation time of the error token returned to
     the WAS when a login is canceled.
 
+    Reduce the log level of the mod_webauth logging when retrieving
+    credentials from the WebKDC.  The full XML exchange is now only logged
+    when debug logging is enabled.
+
     Update to rra-c-util 3.9:
 
     * Use an atexit handler to clean up after Kerberos tests.
