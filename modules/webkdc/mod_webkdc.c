@@ -1892,11 +1892,13 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         ap_rvputs(rc->r, "<loginHistory>", NULL);
         for (i = 0; i < response->logins->nelts; i++) {
             login = &APR_ARRAY_IDX(response->logins, i, struct webauth_login);
-            ap_rvputs(rc->r, "<loginLocation ip=\"", login->ip, "\"", NULL);
+            ap_rvputs(rc->r, "<loginLocation", NULL);
+            if (login->hostname != NULL)
+                ap_rvputs(rc->r, " name=\"", login->hostname, "\"", NULL);
             if (login->timestamp != 0)
-                ap_rprintf(rc->r, "time=\"%lu\"",
+                ap_rprintf(rc->r, " time=\"%lu\"",
                            (unsigned long) login->timestamp);
-            ap_rvputs(rc->r, ">", login->hostname, "</loginLocation>", NULL);
+            ap_rvputs(rc->r, ">", login->ip, "</loginLocation>", NULL);
         }
         ap_rvputs(rc->r, "</loginHistory>", NULL);
     }
@@ -1910,10 +1912,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
+                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
                  rc->r->connection->remote_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
-                 response->requester,
+                 response->requester, log_escape(rc, response->return_url),
                  (response->subject == NULL ? "<unknown>" : response->subject),
                  request.request->type,
                  req_token_info,

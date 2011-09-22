@@ -224,7 +224,9 @@ CREDITS
   packages and Jonathan Pilat helped greatly with testing.  Xueshan Feng
   oversaw the project.
 
-  The WebAuth package is currently maintained by Russ Allbery.
+  The WebAuth package is currently maintained by Russ Allbery.  Jon
+  Robertson does most of the maintenance work on the WebLogin code,
+  including implementing password change and multifactor support.
 
   Thanks to pod for improvements, particularly to the WebKDC, to make it
   easier to package for a Linux distribution, for the initial Debian
@@ -234,6 +236,3 @@ CREDITS
   Thanks to Dmitri Priimak for work on cross-realm support, WebLogin
   improvements, and testing of unusual Kerberos realms and principal
   names.
-
-  Thanks to Jon Robertson for implementing password change support for
-  WebLogin.

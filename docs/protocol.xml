@@ -1202,9 +1202,9 @@
     <!-- optional, included if the user's login history should be
          displayed (if, for example, it was suspicious) -->
     <loginHistory>
-      <!-- the timestamp information is optional -->
-      <loginLocation ip="{ip-address}" time="{timestamp}">
-        {hostname}
+      <!-- the name and timestamp information is optional -->
+      <loginLocation name="{hostname}" time="{timestamp}">
+        {ip-address}
       </loginLocation>
       <!-- repeat for site-defined length of login history -->
     </loginHistory>
@@ -2257,112 +2257,6 @@
     <section anchor='history' title='Document Revision History'>
       <t>
         <list style='hanging' hangIndent='4'>
-          <t hangText='0.1 (2002-10-02, schemers)'>
-          <vspace blankLines='0'/>First draft.</t>
-
-          <t hangText='0.2 (2002-10-04, schemers)'>
-          <vspace blankLines='0'/>Fixed typos and added more text in
-          section 1.2.  Use SHA1 everywhere instead of MD5.  Change
-          attribute separator in tokes from "\n" to ';'.  Change time
-          attributes inside of tokens from four-byte binary network byte
-          order to ASCII strings.  Changed description of time prepended
-          to tokens from {creation-time} to {key-hint}.</t>
-
-          <t hangText='0.3 (2002-10-07, schemers)'>
-          <vspace blankLines='0'/>Major changes.  Combine LS and WKDC into
-          WebKDC.</t>
-
-          <t hangText='0.4 (2002-10-26, schemers)'>
-          <vspace blankLines='0'/>Change time attributes inside tokens
-          back to four byte binary network byte order.  Get rid of default
-          values for attributes.  Requested token is now contained within
-          the response token.  Got rid of unneeded or not fleshed out
-          token attributes (rth, san, ver).  Add new token attributes (rt,
-          rt-t, rt-et, sad).  Change the id token to use sad instead of s
-          for krb5.</t>
-
-          <t hangText='0.5 (2002-10-30, schemers)'>
-          <vspace blankLines='0'/>Use errorResponse message for indicating
-          errors.  Remove app names for now; will re-specify when
-          requirements are more clear.  Change et in it token to se to
-          indicate when the subject expires.</t>
-
-          <t hangText='0.6 (2002-11-01, schemers)'>
-          <vspace blankLines='0'/>Rename service token and proxy token to
-          webkdc-service token and webkdc-proxy token to signify that they
-          are only used by the WebKDC.  Remove response token and add
-          error token and new proxy token.  The response from a request
-          token is an error token, id token, or proxy token.  change se
-          back to et.  Expiration times in tokens indicate when the token
-          expires and when any data within the token (subject info, proxy
-          data, etc.)  expires.  Simplify XML messages by placing
-          base64-encoded data directly in &lt;requestCredential> and
-          &lt;subjectCredential> instead of having them in another tag.
-          Wrap tokens in &lt;tokens> element to make it easier to interate
-          through all the tokens in a &lt;getTokensRequest>.</t>
-
-          <t hangText='0.61 (2002-11-03, schemers)'>
-          <vspace blankLines='0'/>Add a new form of request token that is
-          sent in XML requests along with a webkdc-service token to
-          indicate which XML command is being requested.  Update
-          &lt;requesterCredential> for type "service" to include
-          &lt;serviceToken> and &lt;requestToken>.</t>
-
-          <t hangText='0.7 (2002-11-05, schemers)'>
-          <vspace blankLines='0'/>Rename prt/prd/pro attributes to
-          pt/pd/ps.  Formatting and clarification.</t>
-
-          <t hangText='0.8 (2002-11-07, schemers)'>
-          <vspace blankLines='0'/>Add a section on the security model and
-          support for sending application state in a request token to
-          enable server pools.</t>
-
-          <t hangText='0.85 (2002-11-08, schemers)'>
-          <vspace blankLines='0'/>Forgot to add a final WebAuth redirect
-          in the usage scenarios that sets the cookies and re-requests the
-          original URL.</t>
-
-          <t hangText='0.90 (2002-11-13, schemers)'>
-          <vspace blankLines='0'/>Undo 0.85, since after initial Apache
-          prototyping I think we can get away without doing the extra
-          redirect.  Add some text to the security model section
-          describing what happens if a user bookmarks or replays a URL
-          with a token in it.</t>
-
-          <t hangText='0.91 (2002-11-14, schemers)'>
-          <vspace blankLines='0'/>Don't rewrite proxy/cred tokens into app
-          tokens before storing them in cookies.  Just re-encrypt them
-          using the WAS private key.  This is so that they can't be used
-          as app tokens.  Change the name of proxy/webkdc-proxy
-          cookies.</t>
-
-          <t hangText='0.99 (2002-12-04, schemers)'>
-          <vspace blankLines='0'/>Document error codes for &lt;errorCode>.
-          Add new requestToken command for the WebKDC web front-end to use
-          to talk to the WebKDC.  Recommended URL for WebKDC POST is now
-          /webkdc-service/.  Remove line that says an &lt;errorCode> can
-          occur within a &lt;token> returned in a &lt;getTokensResponse>;
-          the whole request succeeds or fails.  Update format for
-          &lt;subjectCredential> to be consistent across XML commands.
-          Update format for &lt;requesterCredential> by moving
-          &lt;requestToken> out into enclosing element, which also removes
-          the need for the &lt;serviceToken> element.  Also consistent
-          across commands.  Only subject names in webkdc-service tokens
-          have the form "krb5:{principal}"; subject names referring to
-          users will have only the username (unless krb5 is used and the
-          call to krb5_aname_to_localname fails, in which case the
-          fully-qualified principal name is used).  Remove inactivity
-          timeout value from token.  Change rr (request reason) token
-          attribute to ro (request options).  Add lc (login cancelled) and
-          fa (forced authentication) to request options.  Add
-          &lt;loginCancelledToken> to requestToken command response.  Add
-          two new error codes for forced authentication and login
-          cancelled.</t>
-
-          <t hangText='1.00 (2002-12-06, schemers)'>
-          <vspace blankLines='0'/>Add &lt;loginErrorCode> and
-          &lt;loginErrorMessage> to &lt;requestTokenResponse>.</t>
-
           <t hangText='1.01 (2002-12-12, schemers)'>
           <vspace blankLines='0'/>Keys in the keyring no longer expire.
           The key with the most current (but not post-dated) valid_after
@@ -2440,6 +2334,11 @@
           request.  Add the type attribute to &lt;proxyToken>.  Include
           source factor information in &lt;proxyToken> elements sent to
           the WebKDC, used to derive session factor information.</t>
+
+          <t hangText='3.1.0 (2011-09-21, rra)'>
+          <vspace blankLines='0'/>Change the &lt;loginHistory> XML schema
+          to have the content of &lt;loginLocation be the IP address.  The
+          hostname is now an optional attribute.</t>
         </list>
       </t>
     </section>

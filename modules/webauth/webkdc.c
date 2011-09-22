@@ -1072,8 +1072,9 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
                               "</getTokensRequest>",
                               NULL);
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                 "mod_webauth: xml_request(%s)", xml_request);
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: xml_request(%s)", xml_request);
 
 
     xml_response = post_to_webkdc(xml_request, 0,
@@ -1082,8 +1083,9 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
     if (xml_response == NULL)
         return 0;
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                 "mod_webauth: xml_response(%s)", xml_response);
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: xml_response(%s)", xml_response);
 
 
     xp = apr_xml_parser_create(rc->r->pool);
@@ -1111,8 +1113,9 @@ mwa_get_creds_from_webkdc(MWA_REQ_CTXT *rc,
         return 0;
     }
 
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                 "mod_webauth: xml doc root(%s)", xd->root->name);
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: xml doc root(%s)", xd->root->name);
 
     return parse_get_creds_response(xd, rc, st, acquired_creds);
 }

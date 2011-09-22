@@ -10,7 +10,7 @@
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2009, 2010
+ * Copyright 2006, 2007, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,47 @@
 
 
 /*
+ * These variables hold the allocated strings for the principal and the
+ * environment to point to a different Kerberos ticket cache and keytab.  We
+ * store them so that we can free them on exit for cleaner valgrind output,
+ * making it easier to find real memory leaks in the tested programs.
+ */
+static char *principal = NULL;
+static char *krb5ccname = NULL;
+static char *krb5_ktname = NULL;
+
+
+/*
+ * Clean up at the end of a test.  This removes the ticket cache and resets
+ * and frees the memory allocated for the environment variables so that
+ * valgrind output on test suites is cleaner.
+ */
+void
+kerberos_cleanup(void)
+{
+    char *path;
+
+    path = concatpath(getenv("BUILD"), "data/test.cache");
+    unlink(path);
+    free(path);
+    if (principal != NULL) {
+        free(principal);
+        principal = NULL;
+    }
+    putenv((char *) "KRB5CCNAME=");
+    putenv((char *) "KRB5_KTNAME=");
+    if (krb5ccname != NULL) {
+        free(krb5ccname);
+        krb5ccname = NULL;
+    }
+    if (krb5_ktname != NULL) {
+        free(krb5_ktname);
+        krb5_ktname = NULL;
+    }
+}
+
+
+/*
  * Obtain Kerberos tickets for the principal specified in test.principal using
  * the keytab specified in test.keytab, both of which are presumed to be in
  * tests/data in either the build or the source tree.
@@ -55,13 +96,13 @@
  * the same logic as messages-krb5.c, which hasn't yet been imported into
  * rra-c-util.
  */
-char *
+const char *
 kerberos_setup(void)
 {
     char *path, *krbtgt;
     const char *build, *realm;
     FILE *file;
-    char principal[BUFSIZ];
+    char buffer[BUFSIZ];
     krb5_error_code code;
     krb5_context ctx;
     krb5_ccache ccache;
@@ -69,6 +110,10 @@ kerberos_setup(void)
     krb5_keytab keytab;
     krb5_get_init_creds_opt *opts;
     krb5_creds creds;
+
+    /* If we were called before, clean up after the previous run. */
+    if (principal != NULL)
+        kerberos_cleanup();
 
     /* Read the principal name and find the keytab file. */
     path = test_file_path("data/test.principal");
@@ -79,15 +124,15 @@ kerberos_setup(void)
         free(path);
         return NULL;
     }
-    if (fgets(principal, sizeof(principal), file) == NULL) {
+    if (fgets(buffer, sizeof(buffer), file) == NULL) {
         fclose(file);
         bail("cannot read %s", path);
     }
     fclose(file);
-    if (principal[strlen(principal) - 1] != '\n')
+    if (buffer[strlen(buffer) - 1] != '\n')
         bail("no newline in %s", path);
     free(path);
-    principal[strlen(principal) - 1] = '\0';
+    buffer[strlen(buffer) - 1] = '\0';
     path = test_file_path("data/test.keytab");
     if (path == NULL)
         return NULL;
@@ -96,8 +141,10 @@ kerberos_setup(void)
     build = getenv("BUILD");
     if (build == NULL)
         build = ".";
-    putenv(concat("KRB5CCNAME=", build, "/data/test.cache", (char *) 0));
-    putenv(concat("KRB5_KTNAME=", path, (char *) 0));
+    krb5ccname = concat("KRB5CCNAME=", build, "/data/test.cache", (char *) 0);
+    krb5_ktname = concat("KRB5_KTNAME=", path, (char *) 0);
+    putenv(krb5ccname);
+    putenv(krb5_ktname);
 
     /* Now do the Kerberos initialization. */
     code = krb5_init_context(&ctx);
@@ -106,9 +153,9 @@ kerberos_setup(void)
     code = krb5_cc_default(ctx, &ccache);
     if (code != 0)
         bail("error setting ticket cache");
-    code = krb5_parse_name(ctx, principal, &kprinc);
+    code = krb5_parse_name(ctx, buffer, &kprinc);
     if (code != 0)
-        bail("error parsing principal %s", principal);
+        bail("error parsing principal %s", buffer);
     realm = krb5_principal_get_realm(ctx, kprinc);
     krbtgt = concat("krbtgt/", realm, "@", realm, (char *) 0);
     code = krb5_kt_resolve(ctx, path, &keytab);
@@ -137,22 +184,16 @@ kerberos_setup(void)
     krb5_free_context(ctx);
     krb5_get_init_creds_opt_free(ctx, opts);
     free(krbtgt);
-    free(path);
+    test_file_path_free(path);
 
-    return xstrdup(principal);
-}
+    /*
+     * Register the cleanup function as an atexit handler so that the caller
+     * doesn't have to worry about cleanup.
+     */
+    if (atexit(kerberos_cleanup) != 0)
+        sysdiag("cannot register cleanup function");
 
-
-/*
- * Clean up at the end of a test.  Currently, all this does is remove the
- * ticket cache.
- */
-void
-kerberos_cleanup(void)
-{
-    char *path;
-
-    path = concatpath(getenv("BUILD"), "data/test.cache");
-    unlink(path);
-    free(path);
+    /* Store the principal and return it. */
+    principal = bstrdup(buffer);
+    return principal;
 }

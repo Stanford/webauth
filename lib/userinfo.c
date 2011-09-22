@@ -148,6 +148,7 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
     struct webauth_login *login;
     int status;
     size_t size;
+    unsigned long timestamp;
 
     for (child = root->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "host") != 0)
@@ -157,13 +158,17 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
             *logins = apr_array_make(ctx->pool, 5, size);
         }
         login = apr_array_push(*logins);
-        status = webauth_xml_content(ctx, child, &login->hostname);
+        status = webauth_xml_content(ctx, child, &login->ip);
         if (status != WA_ERR_NONE)
             return status;
         for (attr = child->attr; attr != NULL; attr = attr->next)
-            if (strcmp(attr->name, "ip") == 0) {
-                login->ip = attr->value;
-                break;
+            if (strcmp(attr->name, "name") == 0)
+                login->hostname = attr->value;
+            else if (strcmp(attr->name, "timestamp")) {
+                status = convert_number(ctx, attr->value, &timestamp);
+                if (status != WA_ERR_NONE)
+                    return status;
+                login->timestamp = timestamp;
             }
     }
     return WA_ERR_NONE;
