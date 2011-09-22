@@ -290,6 +290,11 @@ key=value.  The possible keys are:</p>
     WebLogin).</p>
 </dd>
 
+<dt>url</dt>
+<dd><p>For <code>requestToken</code>, this will contain the return URL to
+    which the browser will be sent after authentication.</p>
+</dd>
+
 <dt>type</dt>
 <dd><p>The type of token acquired by a <code>getTokens</code> call.</p>
 </dd>
@@ -310,9 +315,9 @@ key=value.  The possible keys are:</p>
 <div class="section">
 <h2>Setting up Multiple WebKDCs</h2>
 
-<p>WebAuth was designed so that it would be fairly easy to setup
-multiple WebKDCs for load balancing and redundancy. There are three pieces
-of information that need to be shared between WebKDC servers in order to
+<p>WebAuth was designed so that it would be fairly easy to setup multiple
+WebKDCs for load balancing and redundancy. There are three pieces of
+information that need to be shared between WebKDC servers in order to
 achieve this:</p>
 
 <ol>

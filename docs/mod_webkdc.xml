@@ -248,6 +248,11 @@ key=value.  The possible keys are:</p>
     WebLogin).</p>
 </dd>
 
+<dt>url</dt>
+<dd><p>For <code>requestToken</code>, this will contain the return URL to
+    which the browser will be sent after authentication.</p>
+</dd>
+
 <dt>type</dt>
 <dd><p>The type of token acquired by a <code>getTokens</code> call.</p>
 </dd>

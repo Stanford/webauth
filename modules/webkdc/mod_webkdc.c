@@ -1912,10 +1912,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
+                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
                  rc->r->connection->remote_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
-                 response->requester,
+                 response->requester, log_escape(rc, response->return_url),
                  (response->subject == NULL ? "<unknown>" : response->subject),
                  request.request->type,
                  req_token_info,

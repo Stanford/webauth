@@ -8,6 +8,8 @@ WebAuth 4.0.1 (unreleased)
     hostname to an attribute, since the hostname is optional and may not
     be available.
 
+    Log the return URL of authentication requests to the WebKDC.
+
     Fix a memory leak in token decoding.
 
     Properly initialize the creation time of the error token returned to
