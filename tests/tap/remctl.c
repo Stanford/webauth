@@ -108,7 +108,7 @@ remctld_start(const char *remctld, const char *principal, const char *config,
             execv(remctld, (char * const *) argv);
         _exit(1);
     } else {
-        for (n = 0; n < 100 && access(pidfile, F_OK) != 0; n++) {
+        for (n = 0; n < 1000 && access(pidfile, F_OK) != 0; n++) {
             tv.tv_sec = (getenv("VALGRIND") != NULL) ? 1 : 0;
             tv.tv_usec = 10000;
             select(0, NULL, NULL, NULL, &tv);

@@ -4,7 +4,7 @@
 <modulesynopsis metafile="mod_webauthldap.xml.meta">
 
 <name>mod_webauthldap</name>
-<description>LDAP authorization and lookup for WebAuth V3</description>
+<description>LDAP authorization and lookup for WebAuth</description>
 <status>Contributed</status>
 <sourcefile>mod_webauthldap.c</sourcefile>
 <identifier>webauthldap_module</identifier>

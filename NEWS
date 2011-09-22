@@ -1,5 +1,28 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.0.1 (unreleased)
+
+    The protocol for getting suspicious login information from the user
+    information service and conveying that information to WebLogin has
+    changed to use the IP address as the content of the tag and move the
+    hostname to an attribute, since the hostname is optional and may not
+    be available.
+
+    Log the return URL of authentication requests to the WebKDC.
+
+    Fix a memory leak in token decoding.
+
+    Properly initialize the creation time of the error token returned to
+    the WAS when a login is canceled.
+
+    Reduce the log level of the mod_webauth logging when retrieving
+    credentials from the WebKDC.  The full XML exchange is now only logged
+    when debug logging is enabled.
+
+    Update to rra-c-util 3.9:
+
+    * Use an atexit handler to clean up after Kerberos tests.
+
 WebAuth 4.0.0 (2011-09-02)
 
     WARNING: This release is a major revision with significant changes to

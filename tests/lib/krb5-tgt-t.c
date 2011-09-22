@@ -137,7 +137,8 @@ do_import(const char *keytab)
 int 
 main(void)
 {
-    char *principal, *keytab;
+    const char *principal;
+    char *keytab;
 
     /* Read the configuration information. */
     principal = kerberos_setup();
@@ -150,6 +151,5 @@ main(void)
     do_export(principal, getenv("KRB5CCNAME"));
     do_import(keytab);
 
-    kerberos_cleanup();
     return 0;
 }

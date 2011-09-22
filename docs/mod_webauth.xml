@@ -4,13 +4,13 @@
 <modulesynopsis metafile="mod_webauth.xml.meta">
 
 <name>mod_webauth</name>
-<description>Support for the WebAuth V3 protocol</description>
+<description>Support for the WebAuth protocol</description>
 <status>Contributed</status>
 <sourcefile>mod_webauth.c</sourcefile>
 <identifier>webauth_module</identifier>
 
 <summary>
-<p>This module implements the authentication component of a WebAuth V3
+<p>This module implements the authentication component of a WebAuth
 application server for Apache 2.x.  It should be used on each individual
 Apache server that wants to protect content with WebAuth.</p>
 
@@ -429,11 +429,11 @@ WebAuthDebug on
 
 <section><title>Setting up load-balanced WebAuth servers</title>
 
-<p>WebAuth V3 was designed so that it would be fairly easy to setup
-multiple WebAuth servers for load balancing and redundancy.  In order to
-achieve this, the WebAuth keyring has to be shared between the WebAuth
-servers.  The Kerberos keytab file does not have to be shared; each system
-can use a separate keytab file.</p>
+<p>WebAuth was designed so that it would be fairly easy to setup multiple
+WebAuth servers for load balancing and redundancy.  In order to achieve
+this, the WebAuth keyring has to be shared between the WebAuth servers.
+The Kerberos keytab file does not have to be shared; each system can use a
+separate keytab file.</p>
 
 <note><title>Note</title>
 <p>The keyring file should be securely transferred from the master to the

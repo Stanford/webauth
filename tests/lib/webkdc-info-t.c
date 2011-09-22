@@ -58,7 +58,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
 int
 main(void)
 {
-    char *principal, *keytab, *conf;
+    const char *principal;
+    char *keytab, *conf;
     pid_t remctld;
     struct webauth_context *ctx;
     struct webauth_user_config config;
@@ -201,6 +202,5 @@ main(void)
 
     /* Clean up. */
     remctld_stop(remctld);
-    kerberos_cleanup();
     return 0;
 }
