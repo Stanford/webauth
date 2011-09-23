@@ -1,8 +1,14 @@
-webauth (4.0.1-1~pre1) unstable; urgency=low
+webauth (4.0.1-1) unstable; urgency=low
 
   * New upstream release.
+    - Change user information service and WebKDC to WebLogin protocols for
+      conveying suspicious login information to use the IP address as the
+      CDATA and put the hostname in an attribute.
+    - Display suspicious logins in WebLogin, forcing a confirmation page.
+    - Log the return URL of authentication requests to the WebKDC.
+    - Reduce mod_webauth log level when retrieving credentials.
 
- -- Russ Allbery <rra@debian.org>  Thu, 22 Sep 2011 15:57:46 -0700
+ -- Russ Allbery <rra@debian.org>  Fri, 23 Sep 2011 13:42:17 -0700
 
 webauth (4.0.0-2) unstable; urgency=low
 
