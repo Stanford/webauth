@@ -8,6 +8,12 @@ WebAuth 4.0.1 (unreleased)
     hostname to an attribute, since the hostname is optional and may not
     be available.
 
+    If the user information service returns suspicious logins, WebLogin
+    now forces a confirmation page and displays those logins.  Full use of
+    this functionality will require an update to the local confirm
+    template to add the suspicious login display if the corresponding
+    template variable is set.
+
     Log the return URL of authentication requests to the WebKDC.
 
     Fix a memory leak in token decoding.
