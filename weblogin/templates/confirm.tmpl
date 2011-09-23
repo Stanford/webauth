@@ -56,6 +56,27 @@ pwchange_url           : URL for the password change form
             </td>
           </tr>
         [% END %]
+        [% IF history %]
+          <tr>
+            <td colspan="2">
+              <div class="errortext">
+                <p><strong>Warning: There were potentially suspicious logins
+                  from your account.  Here is a list of the last several
+                  logins you have made to WebAuth-protected
+                  resources.</strong></p>
+                <ul>
+                  [% FOREACH login IN history %]
+                    [% IF login.hostname %]
+                      <li>[% login.hostname %] ([% login.ip %])
+                    [% ELSE %]
+                      <li>[% login.ip %]
+                    [% END %]
+                  [% END %]
+                </ul>
+              </div>
+            </td>
+          </tr>
+        [% END %]
         <tr>
           <td><img alt="Confirm" src="/images/confirm.png"
                    width="160" height="160"/></td>

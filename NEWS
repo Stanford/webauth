@@ -1,12 +1,18 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.0.1 (unreleased)
+WebAuth 4.0.1 (2011-09-23)
 
     The protocol for getting suspicious login information from the user
     information service and conveying that information to WebLogin has
     changed to use the IP address as the content of the tag and move the
     hostname to an attribute, since the hostname is optional and may not
     be available.
+
+    If the user information service returns suspicious logins, WebLogin
+    now forces a confirmation page and displays those logins.  Full use of
+    this functionality will require an update to the local confirm
+    template to add the suspicious login display if the corresponding
+    template variable is set.
 
     Log the return URL of authentication requests to the WebKDC.
 

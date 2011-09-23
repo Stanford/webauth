@@ -95,7 +95,7 @@ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context,
 
 /* Heimdal-specific. */
 #ifndef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_DEFAULT_FLAGS
-#define krb5_get_init_creds_opt_set_default_flags(c, p, r, o) /* empty */
+# define krb5_get_init_creds_opt_set_default_flags(c, p, r, o) /* empty */
 #endif
 
 /*

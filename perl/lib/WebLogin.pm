@@ -589,10 +589,14 @@ sub print_confirm_page {
     # If the page was the target of the post, we'll return a 303 redirect
     # later on but present the regular confirmation page as the body in case
     # the browser doesn't support it.  We also skip the bypass if the user
-    # has an upcoming password expiration warning.
+    # has an upcoming password expiration warning, or if they have a login
+    # history from the WebKDC that needs to be displayed due to suspicious
+    # activity.
     my $post = ($q->request_method eq 'POST') ? 1 : 0;
+    my $history = $resp->login_history;
     my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
     $bypass = 0 if $expire_warning;
+    $bypass = 0 if $history;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
     }
@@ -607,6 +611,7 @@ sub print_confirm_page {
     $params->{username} = $resp->subject;
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
+    $params->{history} = $history;
 
     # If there is a login cancel option, handle creating the link for it.
     my $lc = $resp->login_canceled_token;
