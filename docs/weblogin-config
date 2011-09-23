@@ -71,12 +71,17 @@ Templates
       remuser           If set, the REMOTE_USER cookie is set
       script_name       Relative URL to which cookie change should be posted
 
-      token_rights      List (for TMPL_LOOP) of credentials WAS may request
+      token_rights      List (for FOREACH) of credentials WAS may request
         type              Type of credential (e.g. krb5)
         name              Credential (e.g. afs/example.com@EXAMPLE.COM)
         principal         First part of principal (e.g. afs)
         instance          Remaining part of principal (e.g. example.com)
         realm             Realm of credential (e.g. EXAMPLE.COM)
+
+      history           List (for FOREACH) of previous login hosts/IPs
+        ip                Originating IP (required)
+        hostname          Originating hostname (optional)
+        timestamp         Timestamp (required)
 
   token_rights will be a list, each member of which is a hash.  The keys
   of the hash are listed under token_rights above.  principal, instance,

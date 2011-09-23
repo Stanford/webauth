@@ -357,10 +357,11 @@ sub request_token_request($$) {
         my $login_history = $root->find_child('loginHistory');
         if (defined($login_history)) {
             foreach my $login (@{$login_history->children}) {
-                my $timestamp = $login->attr('time');
-                my $hostname = $login->attr('name');
-                my $ip = $login->content | '';
-                $wresp->login_history ([$timestamp, $ip, $hostname]);
+                my %hist;
+                $hist{timestamp} = $login->attr('time');
+                $hist{hostname} = $login->attr('name');
+                $hist{ip} = $login->content | '';
+                $wresp->login_history (\%hist);
             }
         }
 
