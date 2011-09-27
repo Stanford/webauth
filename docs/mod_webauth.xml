@@ -88,8 +88,18 @@ set.</p>
  <th>Description:</th>
 </tr>
 
-<tr><td><code>WEBAUTH_USER</code></td>
+<tr><td><code>AUTH_TYPE</code></td>
+<td>Will be set to <code>WebAuth</code></td></tr>
+
+<tr><td><code>REMOTE_USER</code></td>
 <td>Name of the WebAuth authenticated user</td></tr>
+
+<tr><td><code>WEBAUTH_FACTORS_INITIAL</code></td>
+<td>Authentication factors user authenticated with</td></tr>
+
+<tr><td><code>WEBAUTH_FACTORS_SESSION</code></td>
+<td>Authentication factors user authenticated with for this particular
+    site</td></tr>
 
 <tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>
 <td>When the token was created</td></tr>
@@ -104,11 +114,9 @@ set.</p>
     <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
     is non-zero</td></tr>
 
-<tr><td><code>REMOTE_USER</code></td>
+<tr><td><code>WEBAUTH_USER</code></td>
 <td>Name of the WebAuth authenticated user</td></tr>
 
-<tr><td><code>AUTH_TYPE</code></td>
-<td>Will be set to <code>WebAuth</code></td></tr>
 </table>
 
 <example><title>Example</title>
@@ -117,7 +125,9 @@ AUTH_TYPE=WebAuth<br/>
 WEBAUTH_USER=schemers<br/>
 WEBAUTH_TOKEN_CREATION=103872393<br/>
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br/>
-WEBAUTH_TOKEN_LASTUSED=103872393
+WEBAUTH_TOKEN_LASTUSED=103872393<br/>
+WEBAUTH_FACTORS_INITIAL=p,o,o2,m<br/>
+WEBAUTH_FACTORS_SESSION=c
 </example>
 
 <p>When checking for the authenticated username, use WEBAUTH_USER if you
@@ -128,6 +138,61 @@ REMOTE_USER, as this is the standard inside Apache.  Most web applications
 should use REMOTE_USER by preference so that they are independent of the
 authentication system used.</p>
 
+</section>
+
+<section><title><a name="sectionenv">Authentication Factors</a></title>
+
+ <p>There are a number of multifactor-specific authentication factors that can
+be required in WebAuth directives or queried from the <a
+href="#sectionenv">environmental variables</a> WEBAUTH_FACTORS_INITIAL and
+WEBAUTH_FACTORS_SESSION.</p>
+ 
+ <table border="1">
+ <tr>
+  <th>Factor Name:</th>
+  <th>Description:</th>
+ </tr>
+
+ <tr><td><code>c (cookie)</code></td>
+ <td>Session authentication via cookie</td></tr>
+
+ <tr><td><code>k (Kerberos)</code></td>
+ <td>Session authentication via Kerberos
+       authentication </td></tr>
+ 
+  <tr><td><code>m (multifactor)</code></td>
+ <td>Session and initial authentication via multiple independent authentication
+       factors (site-defined)</td></tr>
+ 
+  <tr><td><code>o (OTP)</code></td>
+ <td>Session and initial authentication via one-time password</td></tr>
+ 
+  <tr><td><code>o# (OTP)</code></td>
+  <td>A more specific subset of <code>o</code>. Number indicates a
+       specific OTP mechanism as defined by site, with higher numbers
+       indicating stronger methods</td></tr>
+ 
+  <tr><td><code>p (password)</code></td>
+ <td>Session and initial authentication via traditional password</td></tr>
+ 
+  <tr><td><code>rm (random multifactor)</code></td>
+ <td>User has a random chance of being challenged for a second factor.
+       Frequency of challenges is site-defined</td></tr>
+ 
+  <tr><td><code>u (unknown)</code></td>
+ <td>Session and initial authentication via an unknown method</td></tr>
+ 
+  <tr><td><code>x (X.509)</code></td>
+ <td>Session and initial authentication via some form of X.509
+       authentication</td></tr>
+ 
+  <tr><td><code>x# (X.509)</code></td>
+ <td>A more specific subset of <code>x</code>. Number indicates a
+       specific X.509 mechanism as defined by site, with higher numbers
+       indicating stronger methods</td></tr>
+
+ </table>
+ 
 </section>
 
 <section><title>Using WebAuth with Proxy Servers</title>
