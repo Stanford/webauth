@@ -82,6 +82,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
 <li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
 <li><img alt="" src="../images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> <a name="factors">Authentication Factors</a></li>
 <li><img alt="" src="../images/down.gif" /> Using WebAuth with Proxy Servers</li>
 <li><img alt="" src="../images/down.gif" /> Perl Integration</li>
 <li><img alt="" src="../images/down.gif" /> PHP 4.x and 5.x Integration</li>
@@ -159,8 +160,21 @@ set.</p>
  <th>Description:</th>
 </tr>
 
-<tr><td><code>WEBAUTH_USER</code></td>
+<tr><td><code>AUTH_TYPE</code></td>
+<td>Will be set to <code>WebAuth</code></td></tr>
+
+<tr><td><code>REMOTE_USER</code></td>
 <td>Name of the WebAuth authenticated user</td></tr>
+
+<tr><td><code>WEBAUTH_FACTORS_INITIAL</code></td>
+<td>Authentication factors user authenticated with</td></tr>
+
+<tr><td><code>WEBAUTH_FACTORS_SESSION</code></td>
+<td>Authentication factors user authenticated with for this particular
+    site</td></tr>
+
+<tr><td><code>WEBAUTH_LOA</code></td>
+<td>Level of Assurance of the user authentication</td></tr>
 
 <tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>
 <td>When the token was created</td></tr>
@@ -175,20 +189,21 @@ set.</p>
     <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
     is non-zero</td></tr>
 
-<tr><td><code>REMOTE_USER</code></td>
+<tr><td><code>WEBAUTH_USER</code></td>
 <td>Name of the WebAuth authenticated user</td></tr>
 
-<tr><td><code>AUTH_TYPE</code></td>
-<td>Will be set to <code>WebAuth</code></td></tr>
 </table>
 
 <div class="example"><h3>Example</h3><p><code>
-REMOTE_USER=schemers<br />
 AUTH_TYPE=WebAuth<br />
-WEBAUTH_USER=schemers<br />
+REMOTE_USER=schemers<br />
+WEBAUTH_FACTORS_INITIAL=p,o,o2,m<br />
+WEBAUTH_FACTORS_SESSION=c<br />
+WEBAUTH_LOA=2<br />
 WEBAUTH_TOKEN_CREATION=103872393<br />
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
-WEBAUTH_TOKEN_LASTUSED=103872393
+WEBAUTH_TOKEN_LASTUSED=103872393<br />
+WEBAUTH_USER=schemers<br />
 </code></p></div>
 
 <p>When checking for the authenticated username, use WEBAUTH_USER if you
@@ -198,6 +213,60 @@ application to be able to support any Apache authentication mechanism, use
 REMOTE_USER, as this is the standard inside Apache.  Most web applications
 should use REMOTE_USER by preference so that they are independent of the
 authentication system used.</p>
+
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2><a name="factors">Authentication Factors</a></h2>
+
+<p>Below are the authentication factors that can be required via WebAuth
+directives or queried from the <a href="#sectionenv">environmental
+variables</a> WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.</p>
+
+<table class="bordered">
+<tr>
+  <th>Code:</th>
+  <th>Factor Name:</th>
+  <th>Description:</th>
+</tr>
+
+<tr><td><code>c</code></td><td>cookie</td>
+<td>Session authentication via cookie</td></tr>
+
+<tr><td><code>k</code></td><td>Kerberos</td>
+<td>Session authentication via Kerberos authentication</td></tr>
+
+<tr><td><code>m</code></td><td>multifactor</td>
+<td>Session or initial authentication via multiple independent authentication
+    factors (site-defined)</td></tr>
+
+<tr><td><code>o</code></td><td>OTP</td>
+<td>Session or initial authentication via one-time password</td></tr>
+
+<tr><td><code>o#</code></td><td>OTP</td>
+<td>A more specific subset of <code>o</code>. Number indicates a specific
+    OTP mechanism as defined by the local site, with higher numbers
+    indicating stronger methods</td></tr>
+
+<tr><td><code>p</code></td><td>password</td>
+<td>Session or initial authentication via traditional password</td></tr>
+
+<tr><td><code>rm</code></td><td>random multifactor</td>
+<td>User has a random chance of being challenged for a second factor;
+    frequency of challenges is site-defined</td></tr>
+
+<tr><td><code>u</code></td><td>unknown</td>
+<td>Session or initial authentication via an unknown method</td></tr>
+
+<tr><td><code>x</code></td><td>X.509</td>
+<td>Session or initial authentication via some form of X.509
+    authentication</td></tr>
+
+<tr><td><code>x#</code></td><td>X.509</td>
+<td>A more specific subset of <code>x</code>. Number indicates a
+    specific X.509 mechanism as defined by site, with higher numbers
+    indicating stronger methods</td></tr>
+
+</table>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -482,11 +551,11 @@ WebAuthDebug on
 <div class="section">
 <h2>Setting up load-balanced WebAuth servers</h2>
 
-<p>WebAuth was designed so that it would be fairly easy to setup
-multiple WebAuth servers for load balancing and redundancy.  In order to
-achieve this, the WebAuth keyring has to be shared between the WebAuth
-servers.  The Kerberos keytab file does not have to be shared; each system
-can use a separate keytab file.</p>
+<p>WebAuth was designed so that it would be fairly easy to setup multiple
+WebAuth servers for load balancing and redundancy.  In order to achieve
+this, the WebAuth keyring has to be shared between the WebAuth servers.
+The Kerberos keytab file does not have to be shared; each system can use a
+separate keytab file.</p>
 
 <div class="note"><h3>Note</h3>
 <p>The keyring file should be securely transferred from the master to the

@@ -101,6 +101,9 @@ set.</p>
 <td>Authentication factors user authenticated with for this particular
     site</td></tr>
 
+<tr><td><code>WEBAUTH_LOA</code></td>
+<td>Level of Assurance of the user authentication</td></tr>
+
 <tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>
 <td>When the token was created</td></tr>
 
@@ -120,14 +123,15 @@ set.</p>
 </table>
 
 <example><title>Example</title>
-REMOTE_USER=schemers<br/>
 AUTH_TYPE=WebAuth<br/>
-WEBAUTH_USER=schemers<br/>
+REMOTE_USER=schemers<br/>
+WEBAUTH_FACTORS_INITIAL=p,o,o2,m<br/>
+WEBAUTH_FACTORS_SESSION=c<br/>
+WEBAUTH_LOA=2<br/>
 WEBAUTH_TOKEN_CREATION=103872393<br/>
 WEBAUTH_TOKEN_EXPIRATION=1038759389<br/>
 WEBAUTH_TOKEN_LASTUSED=103872393<br/>
-WEBAUTH_FACTORS_INITIAL=p,o,o2,m<br/>
-WEBAUTH_FACTORS_SESSION=c
+WEBAUTH_USER=schemers<br/>
 </example>
 
 <p>When checking for the authenticated username, use WEBAUTH_USER if you
@@ -140,59 +144,58 @@ authentication system used.</p>
 
 </section>
 
-<section><title><a name="sectionenv">Authentication Factors</a></title>
+<section><title><a name="factors">Authentication Factors</a></title>
 
- <p>There are a number of multifactor-specific authentication factors that can
-be required in WebAuth directives or queried from the <a
-href="#sectionenv">environmental variables</a> WEBAUTH_FACTORS_INITIAL and
-WEBAUTH_FACTORS_SESSION.</p>
- 
- <table border="1">
- <tr>
+<p>Below are the authentication factors that can be required via WebAuth
+directives or queried from the <a href="#sectionenv">environmental
+variables</a> WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.</p>
+
+<table border="1">
+<tr>
+  <th>Code:</th>
   <th>Factor Name:</th>
   <th>Description:</th>
- </tr>
+</tr>
 
- <tr><td><code>c (cookie)</code></td>
- <td>Session authentication via cookie</td></tr>
+<tr><td><code>c</code></td><td>cookie</td>
+<td>Session authentication via cookie</td></tr>
 
- <tr><td><code>k (Kerberos)</code></td>
- <td>Session authentication via Kerberos
-       authentication </td></tr>
- 
-  <tr><td><code>m (multifactor)</code></td>
- <td>Session and initial authentication via multiple independent authentication
-       factors (site-defined)</td></tr>
- 
-  <tr><td><code>o (OTP)</code></td>
- <td>Session and initial authentication via one-time password</td></tr>
- 
-  <tr><td><code>o# (OTP)</code></td>
-  <td>A more specific subset of <code>o</code>. Number indicates a
-       specific OTP mechanism as defined by site, with higher numbers
-       indicating stronger methods</td></tr>
- 
-  <tr><td><code>p (password)</code></td>
- <td>Session and initial authentication via traditional password</td></tr>
- 
-  <tr><td><code>rm (random multifactor)</code></td>
- <td>User has a random chance of being challenged for a second factor.
-       Frequency of challenges is site-defined</td></tr>
- 
-  <tr><td><code>u (unknown)</code></td>
- <td>Session and initial authentication via an unknown method</td></tr>
- 
-  <tr><td><code>x (X.509)</code></td>
- <td>Session and initial authentication via some form of X.509
-       authentication</td></tr>
- 
-  <tr><td><code>x# (X.509)</code></td>
- <td>A more specific subset of <code>x</code>. Number indicates a
-       specific X.509 mechanism as defined by site, with higher numbers
-       indicating stronger methods</td></tr>
+<tr><td><code>k</code></td><td>Kerberos</td>
+<td>Session authentication via Kerberos authentication</td></tr>
 
- </table>
- 
+<tr><td><code>m</code></td><td>multifactor</td>
+<td>Session or initial authentication via multiple independent authentication
+    factors (site-defined)</td></tr>
+
+<tr><td><code>o</code></td><td>OTP</td>
+<td>Session or initial authentication via one-time password</td></tr>
+
+<tr><td><code>o#</code></td><td>OTP</td>
+<td>A more specific subset of <code>o</code>. Number indicates a specific
+    OTP mechanism as defined by the local site, with higher numbers
+    indicating stronger methods</td></tr>
+
+<tr><td><code>p</code></td><td>password</td>
+<td>Session or initial authentication via traditional password</td></tr>
+
+<tr><td><code>rm</code></td><td>random multifactor</td>
+<td>User has a random chance of being challenged for a second factor;
+    frequency of challenges is site-defined</td></tr>
+
+<tr><td><code>u</code></td><td>unknown</td>
+<td>Session or initial authentication via an unknown method</td></tr>
+
+<tr><td><code>x</code></td><td>X.509</td>
+<td>Session or initial authentication via some form of X.509
+    authentication</td></tr>
+
+<tr><td><code>x#</code></td><td>X.509</td>
+<td>A more specific subset of <code>x</code>. Number indicates a
+    specific X.509 mechanism as defined by site, with higher numbers
+    indicating stronger methods</td></tr>
+
+</table>
+
 </section>
 
 <section><title>Using WebAuth with Proxy Servers</title>
