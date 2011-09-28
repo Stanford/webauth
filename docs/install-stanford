@@ -282,6 +282,10 @@ CONFIGURATION
         m       Two separate authentication methods used (password and code)
         rm      User could have been prompted for multifactor but wasn't
 
+     Usually these are the factors that you'll want to require using the
+     WebAuth directives rather than the more specific authentication
+     factors.
+
    WebAuthRequireInitialFactor
 
     When multifactor is configured with this directive, the user's
