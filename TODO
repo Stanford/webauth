@@ -195,6 +195,13 @@ WebLogin:
 
  * Set HttpOnly flag in the generated cookies.
 
+ * When going to a site with multiple pieces of content protected by
+   WebAuth, the browser seems to go to WebLogin multiple times, and for
+   some of those times there's an error "no cookie, even after
+   redirection" in the logs.  Figure out what's going on and fix it.
+
+ * Fix Perl warnings when going directly to the password change screen.
+
  * Display a message if the password prompt is forced in order to get a
    TGT for credential delegation to the destination site.
 
