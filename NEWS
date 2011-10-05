@@ -5,6 +5,9 @@ WebAuth 4.0.2 (unreleased)
     Fix a typo that caused the cookie tracking whether a user had
     requested REMOTE_USER authentication to be reset as a session cookie.
 
+    Ignore cookies with undefined values in WebLogin to avoid Perl
+    warnings in the Apache error log.
+
     Document factor codes in the mod_webauth manual.
 
     Add additional Stanford-specific documentation for how to enable

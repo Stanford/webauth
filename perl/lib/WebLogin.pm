@@ -1276,6 +1276,7 @@ sub setup_kdc_request {
     my $wpt_cookie;
     for (keys %cart) {
         next unless /^webauth_wpt/;
+        next if not defined $q->cookie ($_);
         next if $q->cookie ($_) eq $EXPIRED_COOKIE;
         my $type = $_;
         $type =~ s/^(webauth_wpt_)//;
