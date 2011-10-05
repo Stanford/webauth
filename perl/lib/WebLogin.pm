@@ -1247,10 +1247,14 @@ sub setup_kdc_request {
     my $q = $self->query;
 
     # Set up the parameters to the WebKDC request.
-    $self->{request}->service_token ($self->fix_token ($q->param ('ST')));
-    $self->{request}->request_token ($self->fix_token ($q->param ('RT')));
-    $self->{request}->pass ($q->param ('password')) if $q->param ('password');
-    $self->{request}->otp ($q->param ('otp')) if $q->param ('otp');
+    $self->{request}->service_token ($self->fix_token ($q->param ('ST')))
+        if $q->param ('ST');
+    $self->{request}->request_token ($self->fix_token ($q->param ('RT')))
+        if $q->param ('RT');
+    $self->{request}->pass ($q->param ('password'))
+        if $q->param ('password');
+    $self->{request}->otp ($q->param ('otp'))
+        if $q->param ('otp');
 
     # For the initial login page, we may need to map the username.  For OTP,
     # we've already done this, so we don't need to do it again.
