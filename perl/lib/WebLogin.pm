@@ -380,6 +380,7 @@ sub token_rights {
         }
         push (@$rights, $data);
     }
+    close ACL;
     return $rights;
 }
 
