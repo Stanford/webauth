@@ -264,7 +264,7 @@ sub print_headers {
         my $cookie = $q->cookie (-name    => $self->param ('remuser_cookie'),
                                  -value   => 1,
                                  -secure  => $secure,
-                                 -expires => $remuser_name);
+                                 -expires => $remuser_lifetime);
         push (@$ca, $cookie);
     }
 
