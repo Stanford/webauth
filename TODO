@@ -37,6 +37,12 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
+ * Provide a way to force reauthentication of a user who has valid
+   credentials but ones that are about to expire, and apply it only to
+   GET requests and not POST requests.  This would be useful for wikis,
+   for example, where expired credentials will usually destroy whatever
+   work the user is trying to save.
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
