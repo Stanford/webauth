@@ -20,7 +20,9 @@
 #include <apr_xml.h>
 #include <errno.h>
 #include <limits.h>
-#include <remctl.h>
+#ifdef HAVE_REMCTL
+# include <remctl.h>
+#endif
 #include <time.h>
 
 #include <lib/internal.h>

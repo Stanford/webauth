@@ -5,6 +5,8 @@ WebAuth 4.0.2 (unreleased)
     Fix a typo that caused the cookie tracking whether a user had
     requested REMOTE_USER authentication to be reset as a session cookie.
 
+    Fix compilation without remctl libraries.
+
     Ignore cookies with undefined values in WebLogin and tokens that
     aren't present in the password change page to avoid Perl warnings in
     the Apache error log.
