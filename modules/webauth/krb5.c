@@ -12,6 +12,7 @@
 
 #include <apr_base64.h>
 #include <apr_strings.h>
+#include <apr_tables.h>
 #include <httpd.h>
 #include <http_log.h>
 #include <unistd.h>
