@@ -137,15 +137,12 @@ CONFIGURATION
 
     An SSL certificate is required to use WebAuth.  Stanford users who
     need an SSL certificate for university applications can obtain one
-    from the university's SSL certificate vendor.  For more information,
-    see:
+    for free from the university's SSL certificate vendor.  For more
+    information, see:
 
         <http://www.stanford.edu/services/ssl/>
 
-    A PTA is required and will be charged the cost of the certificate that
-    the certificate vendor charges Stanford.
-
-    If you do not want to purchase an SSL certificate through this service
+    If you do not want to use an SSL certificate through this service
     or are not eligible, see the SSL Certificate section in the regular
     installation instructions for details on how to create a self-signed
     certificate.  Or, of course, you can purchase your own certificate
