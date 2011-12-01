@@ -9,9 +9,8 @@
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
-
-#include <apr_tables.h>
 
 #include <tests/tap/basic.h>
 #include <webauth/basic.h>

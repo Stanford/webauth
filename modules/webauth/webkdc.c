@@ -9,9 +9,9 @@
  */
 
 #include <modules/mod-config.h>
+#include <portable/apr.h>
 
 #include <apr_base64.h>
-#include <apr_strings.h>
 #include <apr_xml.h>
 #include <curl/curl.h>
 #include <httpd.h>

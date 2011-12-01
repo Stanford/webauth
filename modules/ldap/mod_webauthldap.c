@@ -9,6 +9,7 @@
  */
 
 #include <modules/mod-config.h>
+#include <portable/apr.h>
 #include <portable/krb5.h>
 
 #include <errno.h>
@@ -30,10 +31,7 @@
 #include <apr_file_info.h>
 #include <apr_file_io.h>
 #include <apr_lib.h>
-#include <apr_pools.h>
 #include <apr_signal.h>
-#include <apr_strings.h>
-#include <apr_tables.h>
 #include <apr_thread_mutex.h>
 #include <apr_xml.h>
 

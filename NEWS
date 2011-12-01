@@ -7,6 +7,9 @@ WebAuth 4.0.2 (unreleased)
 
     Fix compilation without remctl libraries.
 
+    Port to APR 0.9, which comes with Red Hat Enterprise 4 and
+    distributions derived from it.
+
     Ignore cookies with undefined values in WebLogin and tokens that
     aren't present in the password change page to avoid Perl warnings in
     the Apache error log.

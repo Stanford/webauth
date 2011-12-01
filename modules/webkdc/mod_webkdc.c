@@ -9,13 +9,11 @@
  */
 
 #include <modules/mod-config.h>
+#include <portable/apr.h>
 #include <portable/stdbool.h>
 
 #include <apr_base64.h>
 #include <apr_lib.h>
-#include <apr_pools.h>
-#include <apr_tables.h>
-#include <apr_strings.h>
 #include <apr_xml.h>
 #include <httpd.h>
 #include <http_config.h>
