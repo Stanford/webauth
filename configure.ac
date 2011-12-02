@@ -109,6 +109,8 @@ AC_TYPE_LONG_LONG_INT
 AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
+AC_CHECK_TYPES([ssize_t], [], [],
+    [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
 AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
 
