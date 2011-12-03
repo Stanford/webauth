@@ -1,3 +1,12 @@
+webauth (4.0.2-1) unstable; urgency=low
+
+  * New upstream release.
+    - Fix setting of the REMOTE_USER preference cookie in WebLogin.
+    - Ignore undefined cookies in WebLogin to reduce error logs.
+    - Document factor codes in the mod_webauth manual.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 02 Dec 2011 20:54:27 -0800
+
 webauth (4.0.1-1) unstable; urgency=low
 
   * New upstream release.
