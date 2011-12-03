@@ -12,15 +12,15 @@
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_pools.h>
-#include <apr_strings.h>
-#include <apr_tables.h>
 #include <apr_xml.h>
 #include <errno.h>
 #include <limits.h>
-#include <remctl.h>
+#ifdef HAVE_REMCTL
+# include <remctl.h>
+#endif
 #include <time.h>
 
 #include <lib/internal.h>

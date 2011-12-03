@@ -57,9 +57,9 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 AM_CPPFLAGS = -I$(srcdir)/include -I$(builddir)/include
 
 noinst_LTLIBRARIES = portable/libportable.la
-portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
-        portable/krb5.h portable/macros.h portable/stdbool.h		 \
-        portable/system.h
+portable_libportable_la_SOURCES = portable/apr.h portable/dummy.c	\
+        portable/krb5-extra.c portable/krb5.h portable/macros.h		\
+        portable/stdbool.h portable/system.h
 portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
 noinst_LIBRARIES = util/libutil.a
@@ -183,8 +183,7 @@ endif
 # Suppress some warnings for Perl code because the auto-generated code
 # doesn't pass them.
 if GCC
-    PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
-	-Wno-strict-prototypes -Wno-redundant-decls -Wno-shadow \
+    PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls \
 	-Wno-unused-variable
 else
     PERL_WARNINGS =

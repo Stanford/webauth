@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.0.1], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.0.2], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -109,6 +109,8 @@ AC_TYPE_LONG_LONG_INT
 AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_INTPTR_T
+AC_CHECK_TYPES([ssize_t], [], [],
+    [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
 AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
 

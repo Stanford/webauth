@@ -12,11 +12,10 @@
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
 
 #include <apr_base64.h>
-#include <apr_pools.h>
-#include <apr_strings.h>
 #include <time.h>
 
 #include <lib/internal.h>

@@ -9,9 +9,9 @@
  */
 
 #include <modules/mod-config.h>
+#include <portable/apr.h>
 
 #include <apr_base64.h>
-#include <apr_strings.h>
 #include <httpd.h>
 #include <http_log.h>
 #include <unistd.h>

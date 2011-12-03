@@ -20,6 +20,7 @@
 /modules/mod-config.h
 /modules/stamp-h2
 /perl/MANIFEST.bak
+/perl/MYMETA.yml
 /perl/Makefile.PL
 /perl/Makefile.old
 /perl/WebAuth.bs

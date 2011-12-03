@@ -137,15 +137,12 @@ CONFIGURATION
 
     An SSL certificate is required to use WebAuth.  Stanford users who
     need an SSL certificate for university applications can obtain one
-    from the university's SSL certificate vendor.  For more information,
-    see:
+    for free from the university's SSL certificate vendor.  For more
+    information, see:
 
         <http://www.stanford.edu/services/ssl/>
 
-    A PTA is required and will be charged the cost of the certificate that
-    the certificate vendor charges Stanford.
-
-    If you do not want to purchase an SSL certificate through this service
+    If you do not want to use an SSL certificate through this service
     or are not eligible, see the SSL Certificate section in the regular
     installation instructions for details on how to create a self-signed
     certificate.  Or, of course, you can purchase your own certificate
@@ -228,6 +225,167 @@ CONFIGURATION
     need to change the LoadModule line in that file if it's installed in
     some other path.  If you have moved the path to the keytab, you will
     need to also change the WebAuthLdapKeytab directive in this file.
+
+  Multifactor (Two-Step) Authentication
+
+    Two-step authentication is a term used internally at Stanford.  The
+    WebAuth documentation instead refers to multifactor authentication.
+    These are both the same thing; two-step authentication is Stanford's
+    implementation of multifactor authentication.  The WebAuth
+    documentation always refers to this as multifactor, so this section
+    will as well for consistency.
+
+    Multifactor authentication is a mechanism by which you can require the
+    user to present more than one "factor" to be authenticated:
+    "something the user knows" (a username and password) as well as
+    "something the user has" (an authentication code, generated from some
+    source like a smartphone).
+
+    Protecting a resource with multifactor is as simple as setting up one
+    of the WebAuthRequireInitialFactor, WebAuthRequireLOA or
+    WebAuthRequireSessionFactor directive for the resource in question.
+    The selected directive can be placed anywhere the Require directive
+    may be used (such as within a <Location> block, a <Directory> block,
+    or an .htaccess file).
+
+   Authentication Factors
+
+    The following authentication factors are in use at Stanford and can be
+    required for access to WebAuth-protected sites:
+
+        p       Traditional username and password authentication
+        o       Some multifactor authentication method was used
+        o1      Multifactor authentication with a printed list
+        o2      Multifactor authentication via SMS message
+        o3      Multifactor authentication using a smartphone
+
+    The multifactor authentication mechanisms are listed in order of
+    increasing security and preference.  We recommend users use the
+    smartphone multifactor authentication method whenever possible.
+
+    Two additional authentication factors are possible as session
+    authentication factors, but will not appear as initial authentication
+    factors:
+
+        c       Single sign-on cookie obtained earlier that session
+        k       Kerberos authentication via Negotiate-Auth
+
+    Normally, it doesn't make sense to require either of these factors,
+    but they will appear in the factor lists in environment variables.
+
+    You will also see the following "synthetic" factors, which indicate
+    other information about the user's authentication method:
+
+        m       Two separate authentication methods used (password and code)
+        rm      User could have been prompted for multifactor but wasn't
+
+     Usually these are the factors that you'll want to require using the
+     WebAuth directives rather than the more specific authentication
+     factors.
+
+   WebAuthRequireInitialFactor
+
+    When multifactor is configured with this directive, the user's
+    authentication is good for the lifetime of their session, once they
+    successfully log in using multifactor.
+
+    Stanford's recommended setup is to add:
+
+        WebAuthRequireInitialFactor rm
+
+    to the resource that you wish to protect.  With multifactor configured
+    in this way, WebAuth will only request a second factor from users who
+    have set up multifactor for themselves.  It will also challenge the
+    user for a second factor at random intervals rather than on every
+    login.
+
+    If you would rather require multifactor challenges every time a user
+    attempts to authenticate to your site (rather than randomly requiring
+    it), you may instead protect your resource with:
+
+        WebAuthRequireInitialFactor m
+
+    This will prevent a user who has not set up their multifactor from
+    accessing the resource.
+
+        WebAuthRequireSessionFactor
+
+    When multifactor is configured with this directive, the user will be
+    required to re-authenticate via multifactor when visiting the
+    protected resource, regardless of whether the user's session already
+    contains a successful and unexpired multifactor authentication.  The
+    syntax for WebAuthRequireSessionFactor is identical to that of
+    WebAuthRequireInitialFactor, so adding
+
+        WebAuthRequireInitialFactor rm
+
+    to a protected resource will randomly force users to re-authenticate
+    using multifactor.  This is similar to WebAuthForceLogin, except more
+    flexible.
+
+   WebAuthRequireLOA
+
+    Level of Assurance represents the confidence that WebAuth has in the
+    identity of the user currently authenticating to it and can be used
+    instead of requiring initial factors.  Unless you have specific
+    regulatory requirements which require you to meet a certain Level of
+    Assurance (LOA), you can most likely skip this section.
+
+    The levels of assurance that you can require to access a given
+    resource range from Level 1 (little or no confidence in the asserted
+    identity's validity) to Level 4 (very high confidence in the asserted
+    identity's validity).  Two-step authentication at Stanford can provide
+    up to an LOA of 3.  The levels used at Stanford attempt to align with
+    the Level of Assurance definitions produced by NIST, with some minor
+    changes for Stanford's specific circumstances.  See NIST Special
+    Publication 800-63 at:
+
+        <http://csrc.nist.gov/publications/nistpubs/800-63/SP800-63V1_0_2.pdf>
+
+    Level 1 requires almost no confidence in the asserted identity.  It
+    can be achieved with password challenge and any multifactor method.
+    Sponsored accounts are restricted to a maximum LOA of 1 since Stanford
+    does not verify the identity of holders of sponsored accounts against
+    a government-issued photo ID or similar document.  Requiring an LOA of
+    1 is equivalent to requiring an initial factor of "m".  Using
+    "WebAuthRequireInitialFactor m" instead is simpler and recommended.
+
+    An LOA of 2 requires a good degree of confidence that the identity as
+    asserted is accurate.  This level can only be reached by using a
+    multifactor mechanism in addition to the traditional password
+    challenge, and the user's account cannot be sponsored.  You can
+    require an LOA of 2 by including this directive:
+
+        WebAuthRequireLOA 2
+
+    in the block or .htaccess file protecting the indicated resource.
+
+    An LOA of 3 requires high confidence that the identity as asserted is
+    accurate.  It requires use of a cryptographic token in addition to the
+    traditional password challenge.  As implemented at Stanford, this can
+    only be achieved using Google Authenticator on a smartphone (iOS or
+    Android) and the account cannot be sponsored.  You can require an LOA
+    of 3 by including this directive:
+
+        WebAuthRequireLOA 3
+
+    in the block or .htaccess file protecting the indicated resource.
+
+   Multifactor Environmental Variables
+
+    WEBAUTH_FACTORS_INITIAL is set when the user authenticates.  It
+    contains the factors the user authenticated with as a comma-separated
+    list.  Please see the mod_webauth manual for information about the
+    factors.
+
+    WEBAUTH_FACTORS_SESSION contains the factors the user used to
+    authenticate to this particular site (as opposed to the factors used
+    to authenticate the user for the first time in this session).  It will
+    be the same as WEBAUTH_FACTORS_INITIAL if the user just authenticated
+    to the WebLogin server for the first time in this session; otherwise,
+    it may be something weaker (such as "c", which indicates the user
+    authenticated with a single sign-on cookie established earlier in that
+    browser session).
 
 TESTING
 

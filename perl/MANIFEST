@@ -24,6 +24,7 @@ t/data/templates/logout.tmpl
 t/data/templates/pwchange.tmpl
 t/data/token.acl
 t/data/webkdc.conf
+t/keyring.t
 t/krb5.t
 t/lib/Util.pm
 t/misc.t
@@ -33,7 +34,5 @@ t/TODO
 t/webauth.t
 t/webkdc.t
 t/weblogin.t
-test.pl
 typemap
-WebAuth.pm
 WebAuth.xs
