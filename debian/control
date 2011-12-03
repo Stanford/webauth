@@ -83,8 +83,7 @@ Package: libwebauth-dev
 Section: libdevel
 Priority: extra
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends},
- libwebauth5 (= ${binary:Version})
+Depends: ${misc:Depends}, libwebauth5 (= ${binary:Version})
 Suggests: libkrb5-dev
 Replaces: libwebauth1-dev (<< 3.7.0)
 Breaks: libwebauth1-dev (<< 3.7.0)
