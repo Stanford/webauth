@@ -264,7 +264,7 @@ sub print_headers {
         my $cookie = $q->cookie (-name    => $self->param ('remuser_cookie'),
                                  -value   => 1,
                                  -secure  => $secure,
-                                 -expires => $remuser_name);
+                                 -expires => $remuser_lifetime);
         push (@$ca, $cookie);
     }
 
@@ -380,6 +380,7 @@ sub token_rights {
         }
         push (@$rights, $data);
     }
+    close ACL;
     return $rights;
 }
 
@@ -1246,10 +1247,14 @@ sub setup_kdc_request {
     my $q = $self->query;
 
     # Set up the parameters to the WebKDC request.
-    $self->{request}->service_token ($self->fix_token ($q->param ('ST')));
-    $self->{request}->request_token ($self->fix_token ($q->param ('RT')));
-    $self->{request}->pass ($q->param ('password')) if $q->param ('password');
-    $self->{request}->otp ($q->param ('otp')) if $q->param ('otp');
+    $self->{request}->service_token ($self->fix_token ($q->param ('ST')))
+        if $q->param ('ST');
+    $self->{request}->request_token ($self->fix_token ($q->param ('RT')))
+        if $q->param ('RT');
+    $self->{request}->pass ($q->param ('password'))
+        if $q->param ('password');
+    $self->{request}->otp ($q->param ('otp'))
+        if $q->param ('otp');
 
     # For the initial login page, we may need to map the username.  For OTP,
     # we've already done this, so we don't need to do it again.
@@ -1276,6 +1281,7 @@ sub setup_kdc_request {
     my $wpt_cookie;
     for (keys %cart) {
         next unless /^webauth_wpt/;
+        next if not defined $q->cookie ($_);
         next if $q->cookie ($_) eq $EXPIRED_COOKIE;
         my $type = $_;
         $type =~ s/^(webauth_wpt_)//;

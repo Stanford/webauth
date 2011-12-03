@@ -14,11 +14,8 @@
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
-
-#include <apr_pools.h>
-#include <apr_strings.h>
-#include <apr_tables.h>
 
 #include <lib/internal.h>
 #include <webauth/basic.h>

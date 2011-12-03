@@ -14,9 +14,9 @@
  */
  
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_pools.h>
 #include <errno.h>
 #include <limits.h>
 

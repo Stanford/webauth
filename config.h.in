@@ -109,6 +109,9 @@
 /* Define if your system has a working snprintf function. */
 #undef HAVE_SNPRINTF
 
+/* Define to 1 if the system has the type `ssize_t'. */
+#undef HAVE_SSIZE_T
+
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H
 

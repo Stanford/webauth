@@ -69,7 +69,8 @@ dnl really link a remctl program.
 AC_DEFUN([_RRA_LIB_REMCTL_CHECK],
 [RRA_LIB_REMCTL_SWITCH
  AC_CHECK_FUNC([remctl_open], [],
-    [AC_MSG_FAILURE([unable to link with remctl library])])
+    [AS_IF([test x"$1" = xtrue],
+        [AC_MSG_FAILURE([unable to link with remctl library])])])
  RRA_LIB_REMCTL_RESTORE])
 
 dnl The core of the library checking, shared between RRA_LIB_REMCTL and
@@ -84,7 +85,7 @@ AC_DEFUN([_RRA_LIB_REMCTL_INTERNAL],
      REMCTL_CPPFLAGS="$REMCTL_CPPFLAGS $GSSAPI_CPPFLAGS"
      REMCTL_LDFLAGS="$REMCTL_LDFLAGS $GSSAPI_LDFLAGS"
      REMCTL_LIBS="-lremctl $GSSAPI_LIBS"])
- _RRA_LIB_REMCTL_CHECK])
+ _RRA_LIB_REMCTL_CHECK([$1])])
 
 dnl The main macro for packages with mandatory remctl support.
 AC_DEFUN([RRA_LIB_REMCTL],

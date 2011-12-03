@@ -1,5 +1,31 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.0.2 (2011-12-02)
+
+    Fix a typo that caused the cookie tracking whether a user had
+    requested REMOTE_USER authentication to be reset as a session cookie.
+
+    Fix compilation without remctl libraries.
+
+    Port to APR 0.9, which comes with Red Hat Enterprise 4 and
+    distributions derived from it.
+
+    Ignore cookies with undefined values in WebLogin and tokens that
+    aren't present in the password change page to avoid Perl warnings in
+    the Apache error log.
+
+    Document factor codes in the mod_webauth manual.
+
+    Add additional Stanford-specific documentation for how to enable
+    multifactor authentication on a WebAuth Application Server at
+    Stanford.
+
+    Update to rra-c-util 3.11:
+
+    * Check for a missing ssize_t.
+    * Correctly remove -I/usr/include from Kerberos and GSS-API flags.
+    * Fix message utility library compiler warnings on 64-bit systems.
+
 WebAuth 4.0.1 (2011-09-23)
 
     The protocol for getting suspicious login information from the user

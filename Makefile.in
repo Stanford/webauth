@@ -685,9 +685,9 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
 AM_CPPFLAGS = -I$(srcdir)/include -I$(builddir)/include
 noinst_LTLIBRARIES = portable/libportable.la
-portable_libportable_la_SOURCES = portable/dummy.c portable/krb5-extra.c \
-        portable/krb5.h portable/macros.h portable/stdbool.h		 \
-        portable/system.h
+portable_libportable_la_SOURCES = portable/apr.h portable/dummy.c	\
+        portable/krb5-extra.c portable/krb5.h portable/macros.h		\
+        portable/stdbool.h portable/system.h
 
 portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
@@ -795,8 +795,7 @@ BINDINGS_INSTALL = $(am__append_5)
 
 # Suppress some warnings for Perl code because the auto-generated code
 # doesn't pass them.
-@GCC_TRUE@PERL_WARNINGS = -Wno-write-strings -Wno-nested-externs \
-@GCC_TRUE@	-Wno-strict-prototypes -Wno-redundant-decls -Wno-shadow \
+@GCC_TRUE@PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls \
 @GCC_TRUE@	-Wno-unused-variable
 
 CLEANFILES = lib/libwebauth.pc
