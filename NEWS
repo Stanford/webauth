@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.0.2 (unreleased)
+WebAuth 4.0.2 (2011-12-02)
 
     Fix a typo that caused the cookie tracking whether a user had
     requested REMOTE_USER authentication to be reset as a session cookie.
