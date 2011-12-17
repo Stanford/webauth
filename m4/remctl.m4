@@ -70,7 +70,10 @@ AC_DEFUN([_RRA_LIB_REMCTL_CHECK],
 [RRA_LIB_REMCTL_SWITCH
  AC_CHECK_FUNC([remctl_open], [],
     [AS_IF([test x"$1" = xtrue],
-        [AC_MSG_FAILURE([unable to link with remctl library])])])
+        [AC_MSG_FAILURE([unable to link with remctl library])])
+     REMCTL_CPPFLAGS=
+     REMCTL_LDFLAGS=
+     REMCTL_LIBS=])
  RRA_LIB_REMCTL_RESTORE])
 
 dnl The core of the library checking, shared between RRA_LIB_REMCTL and

@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.0.3 (unreleased)
+
+    Really fix compilation without remctl libraries.  The previous change
+    would always define HAVE_REMCTL even if the libraries weren't found.
+
 WebAuth 4.0.2 (2011-12-02)
 
     Fix a typo that caused the cookie tracking whether a user had
