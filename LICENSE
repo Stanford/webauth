@@ -61,13 +61,13 @@ portable/system.h, tests/portable/strlcat-t.c, tests/portable/strlcpy-t.c,
 tests/util/concat-t.c, util/concat.c, util/concat.h, and util/macros.h are
 covered by the following statement:
 
-    The authors hereby relinquish any claim to any copyright that they may
-    have in this work, whether granted under contract or by operation of
-    law or international treaty, and hereby commit to the public, at
-    large, that they shall not, at any time in the future, seek to enforce
-    any copyright in this work against any person or entity, or prevent
-    any person or entity from copying, publishing, distributing or
-    creating derivative works of this work.
+  The authors hereby relinquish any claim to any copyright that they may
+  have in this work, whether granted under contract or by operation of law
+  or international treaty, and hereby commit to the public, at large, that
+  they shall not, at any time in the future, seek to enforce any copyright
+  in this work against any person or entity, or prevent any person or
+  entity from copying, publishing, distributing or creating derivative
+  works of this work.
 
 In other words, you can do anything you wish with this code, although I
 would strongly prefer that any improvements or modifications be sent to me
