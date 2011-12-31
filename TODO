@@ -170,6 +170,9 @@ mod_webauthldap:
    variables, which will help when using proxy_http to, for example, a
    Tomcat server.
 
+ * Support configuring multiple LDAP servers to query so that failover is
+   supported.  (WEBAUTH-2)
+
 mod_webkdc:
 
  * Return from a password login any additional information provided by
@@ -199,7 +202,7 @@ mod_webkdc:
 
 WebLogin:
 
- * Set HttpOnly flag in the generated cookies.
+ * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
 
  * When going to a site with multiple pieces of content protected by
    WebAuth, the browser seems to go to WebLogin multiple times, and for
@@ -234,8 +237,6 @@ WebLogin:
 
 Build System:
 
- * Make building with remctl optional.
-
  * Compile the WebAuth version into the modules rather than getting the
    version from the webauth library.  In the webauth and webkdc modules,
    warn if the versions don't match at runtime (but proceed anyway).
@@ -247,6 +248,9 @@ Test Suite:
    modules.
 
 Documentation:
+
+ * Document Tomcat security issue with different URL parsing compared to
+   Apache.  (WEBAUTH-5)
 
  * Rewrite the protocol specification to provide a better-structured and
    more complete introduction to the protocol and defining terms earlier
