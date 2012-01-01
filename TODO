@@ -26,7 +26,7 @@ Protocol:
    particular realm?) so that the WebLogin server knows to manage a
    different set of single sign-on credentials for that user.  This allows
    applications with specific credential requirements to not interfere
-   with a user's other logins.
+   with a user's other logins.  (WEBAUTH-6)
 
  * Rather than using our own Kerberos ticket serialization format, store
    tickets in the form that would be used when forwarding tickets, thus
@@ -61,7 +61,7 @@ libwebauth:
 
  * Convert the rest of the libwebauth interface to use APR and to set the
    error message in the WebAuth context instead of just returning error
-   codes.
+   codes.  (WEBAUTH-7)
 
  * The current library interface is very low-level.  Ideally, the library
    should treat particular WebAuth tokens as first-class objects with
@@ -69,7 +69,7 @@ libwebauth:
    marshal and unmarshal functions to clients.
 
  * Switch all the WebAuth library interfaces to using opaque structs
-   instead of typedefs, matching our current coding style.
+   instead of typedefs, matching our current coding style.  (WEBAUTH-7)
 
  * Investigate whether we can provide higher-level interfaces to the
    WebAuth library so that we don't have to provide as many different
@@ -200,6 +200,9 @@ mod_webkdc:
    username/password or via a single sign-on cookie, and find a way to
    differentiate between trusted Apache authentication and single sign-on.
 
+ * Investigate implementing the GSSAPI-RPC protocol for the WebKDC.
+   (WEBAUTH-12)
+
 WebLogin:
 
  * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
@@ -216,7 +219,7 @@ WebLogin:
 
  * Add a web services interface for the WebLogin login process and
    documentation for how to parse the redirect URL and make the login
-   request, returning the return URL.
+   request, returning the return URL.  (WEBAUTH-9)
 
  * The error page should return the appropriate HTTP error code instead of
    success.
@@ -226,14 +229,19 @@ WebLogin:
 
  * Add a replay cache for WebLogin interactions, possibly using memcached,
    so that one cannot use the browser back button to reply a password
-   login after the previous user has logged out.
+   login after the previous user has logged out.  (WEBAUTH-10)
 
  * Add a rate limit for WebLogin logins that blocks excessive failed
-   password attempts for a specific user.
+   password attempts for a specific user.  (WEBAUTH-11)
 
  * Separate the two functions of @REMUSER_REALMS so that people can
    configure a set of realms to be stripped separately from a set of
    realms that are permitted.
+
+Perl Modules:
+
+ * Refactor the Perl modules to match my Perl coding style and add POD
+   documentation to all of the modules.  (WEBAUTH-8)
 
 Build System:
 
