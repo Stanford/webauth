@@ -3,7 +3,7 @@
 # Tests for weblogin page handling after login responses.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -63,7 +63,7 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
     plan skip_all => 'no kerberos configuration found';
 } else {
-    plan tests => 254;
+    plan tests => 326;
 }
 
 # Set our method to not have password tests complain.
@@ -461,6 +461,114 @@ is ($output[0], 'error ', ' and error was not set');
 is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
 is ($output[2], 'err_username ', ' and err_username was not set');
 is ($output[3], 'err_password ', ' and err_password was not set');
+is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
+is ($output[5], 'err_forced ', ' and err_forced was not set');
+is ($output[6], 'err_rejected ', ' and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, ' and RT was set');
+ok ($output[8] =~ /ST \S+/, ' and ST was set');
+is ($output[9], 'LC ', ' and LC was not set');
+is ($output[10], "username $user", ' and username was set');
+is ($output[11], 'login_cancel ', ' and login_cancel was not set');
+is ($output[12], 'cancel_url ', ' and cancel_url was not set');
+is ($output[13], 'show_remuser ', ' and show_remuser was not set');
+is ($output[14], 'remuser_url ', ' and remuser_url was not set');
+is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
+is ($output[16], 'script_name /login', ' and script_name was set');
+
+# Test missing username and password.
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$weblogin->query->param ('login', 'yes');
+$weblogin->query->delete ('username', 'password');
+($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
+$WebKDC::Config::REMUSER_REDIRECT = '';
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
+    .'REMUSER_REDIRECT not set, not as an error handler');
+is ($output[0], 'error 1', ' and error is set');
+is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
+is ($output[2], 'err_username 1', ' and err_username is set');
+is ($output[3], 'err_password 1', ' and err_password is set');
+is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
+is ($output[5], 'err_forced ', ' and err_forced was not set');
+is ($output[6], 'err_rejected ', ' and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, ' and RT was set');
+ok ($output[8] =~ /ST \S+/, ' and ST was set');
+is ($output[9], 'LC ', ' and LC was not set');
+is ($output[10], 'username ', ' and username was not set');
+is ($output[11], 'login_cancel ', ' and login_cancel was not set');
+is ($output[12], 'cancel_url ', ' and cancel_url was not set');
+is ($output[13], 'show_remuser ', ' and show_remuser was not set');
+is ($output[14], 'remuser_url ', ' and remuser_url was not set');
+is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
+is ($output[16], 'script_name /login', ' and script_name was set');
+
+# Test missing username.
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$weblogin->query->param ('login', 'yes');
+$weblogin->query->delete ('username');
+($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
+$WebKDC::Config::REMUSER_REDIRECT = '';
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
+    .'REMUSER_REDIRECT not set, not as an error handler');
+is ($output[0], 'error 1', ' and error is set');
+is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
+is ($output[2], 'err_username 1', ' and err_username is set');
+is ($output[3], 'err_password ', ' and err_password is not set');
+is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
+is ($output[5], 'err_forced ', ' and err_forced was not set');
+is ($output[6], 'err_rejected ', ' and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, ' and RT was set');
+ok ($output[8] =~ /ST \S+/, ' and ST was set');
+is ($output[9], 'LC ', ' and LC was not set');
+is ($output[10], 'username ', ' and username was not set');
+is ($output[11], 'login_cancel ', ' and login_cancel was not set');
+is ($output[12], 'cancel_url ', ' and cancel_url was not set');
+is ($output[13], 'show_remuser ', ' and show_remuser was not set');
+is ($output[14], 'remuser_url ', ' and remuser_url was not set');
+is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
+is ($output[16], 'script_name /login', ' and script_name was set');
+
+# Test empty username.
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$weblogin->query->param ('login', 'yes');
+$weblogin->query->param ('username', '');
+($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
+$WebKDC::Config::REMUSER_REDIRECT = '';
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
+    .'REMUSER_REDIRECT not set, not as an error handler');
+is ($output[0], 'error 1', ' and error is set');
+is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
+is ($output[2], 'err_username 1', ' and err_username is set');
+is ($output[3], 'err_password ', ' and err_password is not set');
+is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
+is ($output[5], 'err_forced ', ' and err_forced was not set');
+is ($output[6], 'err_rejected ', ' and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, ' and RT was set');
+ok ($output[8] =~ /ST \S+/, ' and ST was set');
+is ($output[9], 'LC ', ' and LC was not set');
+is ($output[10], 'username ', ' and username was not set');
+is ($output[11], 'login_cancel ', ' and login_cancel was not set');
+is ($output[12], 'cancel_url ', ' and cancel_url was not set');
+is ($output[13], 'show_remuser ', ' and show_remuser was not set');
+is ($output[14], 'remuser_url ', ' and remuser_url was not set');
+is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
+is ($output[16], 'script_name /login', ' and script_name was set');
+
+# Test missing password.
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$weblogin->query->param ('login', 'yes');
+$weblogin->query->delete ('password');
+($status, $error) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
+$WebKDC::Config::REMUSER_REDIRECT = '';
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
+    .'REMUSER_REDIRECT not set, not as an error handler');
+is ($output[0], 'error 1', ' and error is set');
+is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
+is ($output[2], 'err_username ', ' and err_username is not set');
+is ($output[3], 'err_password 1', ' and err_password is set');
 is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
 is ($output[5], 'err_forced ', ' and err_forced was not set');
 is ($output[6], 'err_rejected ', ' and err_rejected was not set');
