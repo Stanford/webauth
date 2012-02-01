@@ -141,6 +141,12 @@ mod_webauth:
    variables, which will help when using proxy_http to, for example, a
    Tomcat server.
 
+ * Stop requiring the trailing ; at the end of the token when that's the
+   end of the URL.  It is stripped in some obscure situations by IE when
+   using header redirects, and in general ; is a separator rather than a
+   terminator.  If the token is truncated, we'll catch that anyway during
+   decoding.
+
 mod_webauthldap:
 
  * User request: There's no inherent reason why mod_webauthldap needs to
@@ -237,6 +243,10 @@ WebLogin:
  * Separate the two functions of @REMUSER_REALMS so that people can
    configure a set of realms to be stripped separately from a set of
    realms that are permitted.
+
+ * Add a checkbox to the login page indicating that the user is coming
+   from a public cluster.  If checked, don't set a single sign-on cookie.
+   (WEBAUTH-13)
 
 Perl Modules:
 
