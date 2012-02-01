@@ -1273,7 +1273,7 @@ sub setup_kdc_request {
         }
         $q->param ('username', $username);
     }
-    $self->{request}->user ($q->param ('username'));
+    $self->{request}->user ($q->param ('username')) if $q->param ('username');
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)

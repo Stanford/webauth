@@ -10,6 +10,10 @@ WebAuth 4.0.3 (unreleased)
     user at the login page, rather than giving the user a generic error
     page.  Thanks to Petr Grolmus for the report.
 
+    Display the correct WebLogin error when the user enters a password and
+    omits the username, and avoid attempting to authenticate with an empty
+    username.
+
 WebAuth 4.0.2 (2011-12-02)
 
     Fix a typo that caused the cookie tracking whether a user had
