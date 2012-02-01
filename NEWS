@@ -5,6 +5,11 @@ WebAuth 4.0.3 (unreleased)
     Really fix compilation without remctl libraries.  The previous change
     would always define HAVE_REMCTL even if the libraries weren't found.
 
+    Fix error handling in WebLogin when the password field on the login
+    form is left blank.  The correct error is now returned, leaving the
+    user at the login page, rather than giving the user a generic error
+    page.  Thanks to Petr Grolmus for the report.
+
 WebAuth 4.0.2 (2011-12-02)
 
     Fix a typo that caused the cookie tracking whether a user had

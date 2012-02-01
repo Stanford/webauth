@@ -217,7 +217,7 @@ sub request_token_request($$) {
     # we'll validate the request-token too the first time around...
     if (defined($user) || defined($proxy_cookies)) {
 
-        if (defined($user)) {
+        if (defined($user) && (defined($pass) || defined($otp))) {
             my $login_token = new WebKDC::LoginToken;
             $login_token->username($user);
             $login_token->creation_time(time());
