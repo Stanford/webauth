@@ -809,37 +809,46 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <div class="directive-section"><h2><a name="WebkdcTokenMaxTTL" id="WebkdcTokenMaxTTL">WebkdcTokenMaxTTL</a> <a name="webkdctokenmaxttl" id="webkdctokenmaxttl">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
-  How old tokens may be before they're considered stale
-</td></tr>
+    How request old tokens may be before they're considered stale
+  </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
+    <p>
+      This directive controls how old request tokens may be before they're
+      considered stale.  This establishes the limit on how long a user may
+      take while logging in via WebLogin.  It also sets a limit on how old
+      the request token used by the WAS to request other tokens via
+      getTokensRequest, but since this is generated with each request and
+      sent in combination with other tokens or authenticators that have
+      their own expirations, this second limit is generally not important.
+    </p>
 
-<p>This directive sets how old tokens may be before they're considered
-stale. It is used to help prevent tokens from being replayed and to ignore
-old tokens in cookies, URLs, etc.  It is important to keep the clocks of
-the web application servers and the WebKDC synchronized; if they aren't,
-all tokens from that application server may be considered stale.</p>
+    <p>
+      It is important to keep the clocks of the web application servers
+      and the WebKDC synchronized; if they aren't, all tokens from that
+      application server may be considered stale.  This directive should
+      be set to at least as long as the amount of clock skew between the
+      WAS and the WebKDC that should be tolerated.
+    </p>
 
-<p>In practice, this setting will also double as a limit on how long a
-user may take while logging in via weblogin.  If they take longer than
-this TTL, the request token will have timed out by the time they
-authenticate.</p>
+    <p>
+      The units for the TTL are specified by appending a single letter.
+      This letter may be one of <code>s</code>, <code>m</code>,
+      <code>h</code>, <code>d</code>, or <code>w</code>, which correspond
+      to seconds, minutes, hours, days, and weeks, respectively.
+    </p>
 
-<p>The units for the TTL are specified by appending a single letter.  This
-letter may be one of <code>s</code>, <code>m</code>, <code>h</code>,
-<code>d</code>, or <code>w</code>, which correspond to seconds, minutes,
-hours, days, and weeks, respectively.</p>
+    <div class="example"><h3>Example</h3><p><code>
+      
+# two hour TTL<br />
+WebKdcTokenMaxTTL 2h
+    </code></p></div>
 
-<div class="example"><h3>Example</h3><p><code>
-# ten minute TTL<br />
-WebKdcTokenMaxTTL 10m
-</code></p></div>
-
-
+  
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcUserInfoPrincipal" id="WebKdcUserInfoPrincipal">WebKdcUserInfoPrincipal</a> <a name="webkdcuserinfoprincipal" id="webkdcuserinfoprincipal">Directive</a></h2>
@@ -932,6 +941,6 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div id="footer">
-<p class="apache">Copyright 2011 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p class="apache">Copyright 2012 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="../faq/">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div>
 </body></html>
