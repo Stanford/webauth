@@ -273,7 +273,8 @@ tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
-	tests/tap/remctl.c tests/tap/remctl.h
+	tests/tap/remctl.c tests/tap/remctl.h tests/tap/string.c	\
+	tests/tap/string.h
 
 # All of the test programs.
 tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la

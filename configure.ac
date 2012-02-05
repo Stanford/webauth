@@ -86,13 +86,13 @@ AC_CHECK_FUNCS([krb5_data_free \
     krb5_xfree])
 AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
     [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
-AC_CHECK_DECLS([krb5_kt_free_entry], [], [], [#include <krb5.h>])
+AC_CHECK_DECLS([krb5_kt_free_entry], [], [], [RRA_INCLUDES_KRB5])
 AC_CHECK_MEMBER([krb5_creds.session],
     [AC_DEFINE([HAVE_KRB5_HEIMDAL], [1],
         [Define if your Kerberos implementation is Heimdal.])],
     [AC_DEFINE([HAVE_KRB5_MIT], [1],
         [Define if your Kerberos implementation is MIT.])],
-    [#include <krb5.h>])
+    [RRA_INCLUDES_KRB5])
 RRA_LIB_KRB5_RESTORE
 RRA_LIB_REMCTL_OPTIONAL
 RRA_LIB_SSL
