@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2003, 2006, 2009, 2010
+ * Copyright 2003, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -143,13 +143,14 @@ main(void)
     /* Read the configuration information. */
     principal = kerberos_setup();
     if (principal == NULL)
-        skip_all("No valid Kerberos ticket cache");
-    keytab = test_file_path("data/test.keytab");
+        skip_all("Kerberos tests not configured");
+    keytab = test_file_path("config/keytab");
 
     /* Do the tests. */
     plan(17);
     do_export(principal, getenv("KRB5CCNAME"));
     do_import(keytab);
 
+    test_file_path_free(keytab);
     return 0;
 }

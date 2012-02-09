@@ -5,7 +5,7 @@
  * service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -33,12 +33,12 @@ main(void)
     apr_pool_t *pool = NULL;
     WEBAUTH_KEYRING *ring, *session;
     WEBAUTH_KEY *session_key;
-    char key_data[WA_AES_128], username[BUFSIZ], password[BUFSIZ];
+    struct kerberos_password *user;
+    char key_data[WA_AES_128];
     int status;
-    char *realm, *path, *keyring, *conf;
+    char *keyring, *conf;
     time_t now;
     pid_t remctld;
-    FILE *file;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
     struct webauth_user_config user_config;
@@ -51,7 +51,7 @@ main(void)
     struct webauth_webkdc_proxy_data *pd;
 
 #ifndef HAVE_REMCTL
-    skip_all("built without remctl support");
+    skip_all("Built without remctl support");
 #endif
 
 #ifndef PATH_REMCTLD
@@ -65,6 +65,23 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
+    /* Load the Kerberos configuration. */
+    user = kerberos_config_password();
+    if (user == NULL)
+        skip_all("Kerberos tests not configured");
+    memset(&config, 0, sizeof(config));
+    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
+    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    memset(&user_config, 0, sizeof(user_config));
+    if (chdir(getenv("SOURCE")) < 0)
+        bail("can't chdir to SOURCE");
+    config.keytab_path = test_file_path("config/keytab");
+    if (config.keytab_path == NULL)
+        skip_all("Kerberos tests not configured");
+    config.principal = kerberos_setup();
+    if (config.principal == NULL)
+        skip_all("Kerberos tests not configured");
+
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
     status = webauth_keyring_read_file(keyring, &ring);
@@ -72,44 +89,6 @@ main(void)
         bail("cannot read %s: %s", keyring,
              webauth_error_message(NULL, status));
     test_file_path_free(keyring);
-
-    /* Ensure we have a username and password. */
-    path = test_file_path("data/test.password");
-    if (path == NULL)
-        skip_all("Kerberos tests not configured");
-    file = fopen(path, "r");
-    if (file == NULL)
-        sysbail("cannot open %s", path);
-    if (fgets(username, sizeof(username), file) == NULL)
-        bail("cannot read %s", path);
-    if (fgets(password, sizeof(password), file) == NULL)
-        bail("cannot read password from %s", path);
-    fclose(file);
-    if (username[strlen(username) - 1] != '\n')
-        bail("no newline in %s", path);
-    username[strlen(username) - 1] = '\0';
-    if (password[strlen(password) - 1] != '\n')
-        bail("username or password too long in %s", path);
-    password[strlen(password) - 1] = '\0';
-    test_file_path_free(path);
-
-    /* Ensure we have a basic configuration available. */
-    memset(&config, 0, sizeof(config));
-    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
-    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    memset(&user_config, 0, sizeof(user_config));
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    config.keytab_path = test_file_path("data/test.keytab");
-    if (config.keytab_path == NULL)
-        skip_all("Kerberos tests not configured");
-    config.principal = kerberos_setup();
-    if (config.principal == NULL)
-        skip_all("Kerberos tests not configured");
-    realm = strchr(config.principal, '@');
-    if (realm == NULL)
-        bail("Kerberos principal has no realm");
-    realm++;
 
     /* Start remctld. */
     if (chdir(getenv("SOURCE")) < 0)
@@ -150,8 +129,8 @@ main(void)
     /* Create some tokens. */
     memset(&login, 0, sizeof(login));
     login.type = WA_TOKEN_LOGIN;
-    login.token.login.username = username;
-    login.token.login.password = password;
+    login.token.login.username = user->principal;
+    login.token.login.password = user->password;
     login.token.login.creation = now;
     memset(&wkproxy, 0, sizeof(wkproxy));
     wkproxy.type = WA_TOKEN_WEBKDC_PROXY;

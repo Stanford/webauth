@@ -2,7 +2,7 @@
  * Test WebKDC user metadata retrieval.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -79,7 +79,7 @@ main(void)
     principal = kerberos_setup();
     if (principal == NULL)
         skip_all("Kerberos tests not configured");
-    keytab = test_file_path("data/test.keytab");
+    keytab = test_file_path("config/keytab");
     if (keytab == NULL)
         skip_all("Kerberos tests not configured");
 
@@ -202,5 +202,6 @@ main(void)
 
     /* Clean up. */
     remctld_stop(remctld);
+    test_file_path_free(keytab);
     return 0;
 }

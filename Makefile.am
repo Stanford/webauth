@@ -43,7 +43,7 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
 	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
 	lib/libwebauth.sym perl/README perl/MANIFEST perl/MANIFEST.SKIP	    \
-	tests/TESTS tests/data/README tests/data/cmd-webkdc		    \
+	tests/TESTS tests/config/README tests/data/cmd-webkdc		    \
 	tests/data/conf-webkdc tests/data/generate-tokens		    \
 	tests/data/keyring tests/data/tokens tests/data/xml		    \
 	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
@@ -277,24 +277,34 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/string.h
 
 # All of the test programs.
-tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la $(APR_LIBS)
-tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(APR_LIBS)
+tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
-tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a
+	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a
-tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+	util/libutil.a portable/libportable.la
+tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
 	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
