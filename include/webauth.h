@@ -850,7 +850,8 @@ int webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *, char **);
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *, char *server_principal,
+int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *,
+                               const char *server_principal,
                                char **ticket, size_t *ticket_len,
                                time_t *expiration);
 
