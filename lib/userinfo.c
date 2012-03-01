@@ -92,6 +92,7 @@ webauth_user_config(struct webauth_context *ctx,
     else
         ctx->user->principal = NULL;
     ctx->user->timeout = user->timeout;
+    ctx->user->ignore_failure = user->ignore_failure;
 
 done:
     return status;
@@ -476,6 +477,10 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     argv[5] = apr_psprintf(ctx->pool, "%d", random_multifactor ? 1 : 0);
     argv[6] = NULL;
     status = remctl_generic(ctx, argv, &doc);
+    if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
+        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
+        return WA_ERR_NONE;
+    }
     if (status != WA_ERR_NONE)
         return status;
     return parse_user_info(ctx, doc, info);

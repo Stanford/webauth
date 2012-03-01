@@ -129,6 +129,11 @@ enum webauth_user_protocol {
  *
  * The timeout will only be enforced if the library is built with remctl 3.1
  * or later (which have remctl_set_timeout).
+ *
+ * The ignore_failure flag only applies to user information queries.  If set
+ * and the remote call fails, webauth_user_info will return a minimal result
+ * saying that the user can only do password authentication.  The
+ * webauth_user_validate call ignores ignore_failure and always must succeed.
  */
 struct webauth_user_config {
     enum webauth_user_protocol protocol;
@@ -139,6 +144,7 @@ struct webauth_user_config {
     const char *keytab;         /* Kerberos keytab for authentication. */
     const char *principal;      /* Principal from keytab for authentication. */
     time_t timeout;             /* Network timeout, or 0 for no timeout. */
+    int ignore_failure;         /* Whether to continue despite remote fail. */
 };
 
 /*

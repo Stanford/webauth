@@ -51,8 +51,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
                       "...second is correct");
         }
         is_int(3, validate->loa, "...LoA is correct");
-    }        
-}    
+    }
+}
 
 
 int
@@ -72,7 +72,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(63);
+    plan(72);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -180,7 +180,7 @@ main(void)
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
     status = webauth_user_validate(ctx, "mini", NULL, "123456", &validate);
-    is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for invalid user fails");
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
               webauth_error_message(ctx, status), "...with correct error");
 
@@ -189,14 +189,37 @@ main(void)
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout");
     status = webauth_user_info(ctx, "delay", NULL, 0, &info);
-    is_int(status, WA_ERR_REMOTE_FAILURE, "Metadata for delay fails");
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Metadata for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
 
     /* Attempt a login for a user that should time out. */
     status = webauth_user_validate(ctx, "delay", NULL, "123456", &validate);
-    is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for delay fails");
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
+    is_string("a remote service call failed"
+              " (error receiving token: timed out)",
+              webauth_error_message(ctx, status), "...with correct error");
+
+    /* Try the query again with ignore_failure set. */
+    config.ignore_failure = 1;
+    status = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
+    status = webauth_user_info(ctx, "delay", NULL, 0, &info);
+    is_int(status, WA_ERR_NONE, "Metadata for delay now succeeds");
+    if (info == NULL)
+        ok_block(5, 0, "Metadata failed");
+    else {
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        ok(info->factors == NULL, "...factors is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* Attempt a login again, which should still fail. */
+    status = webauth_user_validate(ctx, "delay", NULL, "123456", &validate);
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
