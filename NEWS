@@ -2,6 +2,11 @@
 
 WebAuth 4.0.3 (unreleased)
 
+    Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which
+    sets the network timeout used for user information service queries and
+    multifactor authentications.  The default timeout is 30 seconds.
+    Timeout support requires compiling with remctl 3.1 or later.
+
     Really fix compilation without remctl libraries.  The previous change
     would always define HAVE_REMCTL even if the libraries weren't found.
 

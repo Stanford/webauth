@@ -62,6 +62,7 @@ struct config {
     const char *token_acl_path;
     struct webauth_user_config *userinfo_config;
     const char *userinfo_principal;
+    unsigned long userinfo_timeout;
     bool debug;
     bool keyring_auto_update;
     unsigned long key_lifetime;
@@ -78,6 +79,7 @@ struct config {
     bool key_lifetime_set;
     bool proxy_lifetime_set;
     bool token_max_ttl_set;
+    bool userinfo_timeout_set;
 
     /*
      * These aren't part of the Apache configuration, but they are loaded as

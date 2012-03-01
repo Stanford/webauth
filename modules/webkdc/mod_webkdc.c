@@ -2440,6 +2440,7 @@ handler_hook(request_rec *r)
     }
     if (rc.sconf->userinfo_config != NULL) {
         rc.sconf->userinfo_config->identity = rc.sconf->userinfo_principal;
+        rc.sconf->userinfo_config->timeout = rc.sconf->userinfo_timeout;
         rc.sconf->userinfo_config->keytab = rc.sconf->keytab_path;
         rc.sconf->userinfo_config->principal = rc.sconf->keytab_principal;
         status = webauth_user_config(rc.ctx, rc.sconf->userinfo_config);

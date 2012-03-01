@@ -914,7 +914,7 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
 
   <usage>
     <p>
-      This directive sets the principal of the remote user metatadata and
+      This directive sets the principal of the remote user metadata and
       multifactor authentication service.  This is the target principal of
       the WebKDC's authentication if using a user metadata protocol that
       uses Kerberos authentication (such as remctl).  It is not the
@@ -932,6 +932,69 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
     <example>
       <title>Example</title>
 WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
+  <name>WebKdcUserInfoTimeout</name>
+  <description>
+    Timeout for user metadata and multifactor queries
+  </description>
+  <syntax>WebKdcUserInfoTimeout <em>nnnn[s|m|h|d|w]</em></syntax>
+  <default>WebKdcUserInfoTimeout 30s</default>
+  <contextlist>
+    <context>server config</context>
+    <context>virtual host</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      Sets the timeout for user information service queries and for
+      multifactor authentication.  The timeout is enforced on each network
+      exchange with the remote service, not on the total elapsed time for
+      the query, so be aware that a query to a slowly-responding remote
+      service that hands back small bits of data at a time could still
+      take substantially longer in total than the timeout.
+    </p>
+
+    <p>
+      The timeout can be set to 0s to disable timeouts.  With this
+      setting, mod_webkdc will wait for the remote service for as long as
+      it takes to respond or for the underlying TCP session to time out.
+    </p>
+
+    <p>
+      Logins through the WebLogin server will block while the remote
+      service is queried, and this will block the Apache thread or process
+      that's attempting to handle that login.  Setting too long of a
+      timeout may therefore allow the WebLogin server to be overwhelmed if
+      a remote server is down or not responding.  The default timeout is
+      fairly generous.
+    </p>
+
+    <p>
+      For the remctl user information protocol method, setting a timeout
+      requires remctl 3.1 or later.  If WebAuth is built against an
+      earlier version, the timeout will be ignored.
+    </p>
+
+    <p>
+      The units for the time are specified by appending a single letter.
+      This letter may be one of <code>s</code>, <code>m</code>,
+      <code>h</code>, <code>d</code>, or <code>w</code>, which correspond
+      to seconds, minutes, hours, days, and weeks, respectively (although
+      the longer intervals are probably not useful).
+    </p>
+
+    <p>
+      This directive is only useful in combination with <a
+      href="$webkdcuserinfourl"><directive>WebKdcUserInfoURL</directive></a>.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebKdcUserInfoTimeout 5s
     </example>
   </usage>
 </directivesynopsis>
