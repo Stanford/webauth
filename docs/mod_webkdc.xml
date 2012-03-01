@@ -937,6 +937,52 @@ WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
 </directivesynopsis>
 
 <directivesynopsis>
+  <name>WebKdcUserInfoIgnoreFail</name>
+  <description>
+    Whether to allow password authentication despite user information
+    service failure
+  </description>
+  <syntax>WebKdcUserInfoIgnoreFail on|off</syntax>
+  <default>WebKdcUserInfoIgnoreFail off</default>
+  <contextlist>
+    <context>server config</context>
+    <context>virtual host</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      By default, if a user information service is configured but either
+      doesn't respond or returns an error, mod_webkdc returns an error and
+      no authentication is permitted.  This is the safest action from a
+      security perspective since the system fails closed, but it can
+      create a single point of failure in the user information service
+      that can bring down all web authentication.
+    </p>
+
+    <p>
+      If this option is turned on, users will still be able to do basic
+      password authentication (equivalent to what is possible without
+      configuring a user information service) if the user information
+      service doesn't respond or returns an error.  Only a password factor
+      will be permitted, and the user will not be able to establish a
+      level of assurance.  If the WAS requested any additional factors or
+      a level of assurance, the behavior will be the same as if the user
+      doesn't have those factors or LoA configured.
+    </p>
+
+    <p>
+      This directive is only useful in combination with <a
+      href="$webkdcuserinfourl"><directive>WebKdcUserInfoURL</directive></a>.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebKdcUserInfoIgnoreFail on
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
   <name>WebKdcUserInfoTimeout</name>
   <description>
     Timeout for user metadata and multifactor queries

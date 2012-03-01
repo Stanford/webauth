@@ -63,6 +63,7 @@ struct config {
     struct webauth_user_config *userinfo_config;
     const char *userinfo_principal;
     unsigned long userinfo_timeout;
+    bool userinfo_ignore_fail;
     bool debug;
     bool keyring_auto_update;
     unsigned long key_lifetime;
@@ -74,12 +75,13 @@ struct config {
     apr_array_header_t *kerberos_factors;       /* Array of const char * */
 
     /* Only used during configuration merging. */
+    bool userinfo_timeout_set;
+    bool userinfo_ignore_fail_set;
     bool debug_set;
     bool keyring_auto_update_set;
     bool key_lifetime_set;
     bool proxy_lifetime_set;
     bool token_max_ttl_set;
-    bool userinfo_timeout_set;
 
     /*
      * These aren't part of the Apache configuration, but they are loaded as

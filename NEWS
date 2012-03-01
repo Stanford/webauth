@@ -7,6 +7,17 @@ WebAuth 4.0.3 (unreleased)
     multifactor authentications.  The default timeout is 30 seconds.
     Timeout support requires compiling with remctl 3.1 or later.
 
+    Add new mod_webkdc configuration option WebKdcUserInfoIgnoreFail,
+    which if set tells mod_webkdc to not fail the login if a user
+    information service is configured but cannot be queried (either due to
+    timeout or due to some other error).  By default, all logins will be
+    rejected if a user information service is configured but returns an
+    error.  If this option is set, the login can proceed, but only a
+    password factor will be available and no level of assurance can be
+    set.  Be aware that setting this option may allow bypassing a
+    multifactor requirement expressed by the user information service
+    rather than the destination site.
+
     Really fix compilation without remctl libraries.  The previous change
     would always define HAVE_REMCTL even if the libraries weren't found.
 
