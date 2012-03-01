@@ -1,7 +1,7 @@
 # Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010, 2011
+# Copyright 2009, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -44,13 +44,12 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
 	lib/libwebauth.sym perl/README perl/MANIFEST perl/MANIFEST.SKIP	    \
 	tests/TESTS tests/config/README tests/data/cmd-webkdc		    \
-	tests/data/conf-webkdc tests/data/generate-tokens		    \
-	tests/data/keyring tests/data/tokens tests/data/xml		    \
-	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
+	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
+	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
@@ -269,7 +268,8 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
-tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
+tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests	\
+	-DPATH_REMCTLD='"$(PATH_REMCTLD)"' $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\

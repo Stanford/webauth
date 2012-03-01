@@ -1,9 +1,13 @@
 #!/bin/sh
 #
 # Fake remctl backend for WebKDC user metadata queries.  Just returns a stock
-# XML file from the data/xml directory based on the command given.
+# XML file from the data/xml directory based on the command given.  Assumes
+# that $SOURCE is set in the environment to the root of the tests directory
+# in the source.
 
 set -e
+
+cd "$SOURCE"
 
 # Verify that the front-end passed the correct data and determine the XML
 # directory to use for responses.

@@ -34,7 +34,7 @@ main(void)
     apr_pool_t *pool = NULL;
     WEBAUTH_KEYRING *ring, *session;
     WEBAUTH_KEY *session_key;
-    struct kerberos_password *user;
+    struct kerberos_config *krbconf;
     char key_data[WA_AES_128];
     int status;
     char *keyring;
@@ -60,21 +60,13 @@ main(void)
         bail("cannot initialize WebAuth context");
 
     /* Load the Kerberos configuration. */
-    user = kerberos_config_password();
-    if (user == NULL)
-        skip_all("Kerberos tests not configured");
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
     memset(&user_config, 0, sizeof(user_config));
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    config.keytab_path = test_file_path("config/keytab");
-    if (config.keytab_path == NULL)
-        skip_all("Kerberos tests not configured");
-    config.principal = kerberos_setup();
-    if (config.principal == NULL)
-        skip_all("Kerberos tests not configured");
+    config.keytab_path = krbconf->keytab;
+    config.principal = krbconf->principal;
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
@@ -119,8 +111,8 @@ main(void)
     APR_ARRAY_PUSH(config.local_realms, const char *) = "none";
     memset(&login, 0, sizeof(login));
     login.type = WA_TOKEN_LOGIN;
-    login.token.login.username = user->principal;
-    login.token.login.password = user->password;
+    login.token.login.username = krbconf->userprinc;
+    login.token.login.password = krbconf->password;
     login.token.login.creation = now;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -140,7 +132,7 @@ main(void)
                                       ring, &token);
         is_int(WA_ERR_NONE, status, "...which decodes properly");
         pt = &token->token.webkdc_proxy;
-        is_string(user->principal, pt->subject, "...with correct subject");
+        is_string(krbconf->userprinc, pt->subject, "...with correct subject");
         is_string("krb5", pt->proxy_type, "...and correct type");
         ok(strncmp("WEBKDC:krb5:", pt->proxy_subject, 12) == 0,
            "...and correct proxy subject prefix");
@@ -151,7 +143,7 @@ main(void)
         ok(pt->creation - now < 5, "...and creation is okay");
         ok(pt->expiration > now, "...and expiration is sane");
     }
-    is_string(user->principal, response->subject, "...subject is correct");
+    is_string(krbconf->userprinc, response->subject, "...subject is correct");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
     status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
@@ -161,7 +153,7 @@ main(void)
         ok_block(8, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
-        is_string(user->principal, token->token.id.subject,
+        is_string(krbconf->userprinc, token->token.id.subject,
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
@@ -200,7 +192,7 @@ main(void)
         ok_block(3, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
-        is_string(user->principal, token->token.id.subject,
+        is_string(krbconf->userprinc, token->token.id.subject,
                   "...result subject is right");
         is_string("krb5", token->token.id.auth,
                   "...result auth type is right");
@@ -219,7 +211,7 @@ main(void)
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
     ok(response->login_cancel == NULL, "...and there is no cancel token");
-    is_string(user->principal, response->subject, "...subject is correct");
+    is_string(krbconf->userprinc, response->subject, "...subject is correct");
     pt = NULL;
     if (response->proxies == NULL)
         ok_block(3, 0, "...no proxy tokens");
@@ -242,7 +234,7 @@ main(void)
         ok_block(7, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
-        is_string(user->principal, token->token.proxy.subject,
+        is_string(krbconf->userprinc, token->token.proxy.subject,
                   "...result subject is right");
         is_string("krb5", token->token.proxy.type,
                   "...result proxy type is right");
@@ -264,7 +256,8 @@ main(void)
                      webauth_error_message(ctx, status));
         else {
             pt = &token->token.webkdc_proxy;
-            is_string(user->principal, pt->subject, "...with correct subject");
+            is_string(krbconf->userprinc, pt->subject,
+                      "...with correct subject");
             is_string("krb5", pt->proxy_type, "...and correct type");
             ok(strcmp(request.service->subject, pt->proxy_subject) == 0,
                "...and correct proxy subject identity");
@@ -310,7 +303,7 @@ main(void)
      * information from the login token should dominate and we shouldn't get
      * the "c" cookie session information in the resulting id token.
      */
-    wkproxy.token.webkdc_proxy.subject = user->principal;
+    wkproxy.token.webkdc_proxy.subject = krbconf->userprinc;
     request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
@@ -332,7 +325,7 @@ main(void)
         ok_block(4, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
-        is_string(user->principal, token->token.id.subject,
+        is_string(krbconf->userprinc, token->token.id.subject,
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
@@ -345,7 +338,6 @@ main(void)
     /* Clean up. */
     webauth_keyring_free(ring);
     webauth_key_free(session_key);
-    test_file_path_free((char *) config.keytab_path);
     apr_terminate();
     return 0;
 }

@@ -14,18 +14,21 @@ WebAuth 4.0.3 (unreleased)
     omits the username, and avoid attempting to authenticate with an empty
     username.
 
-    Update to rra-c-util 4.1:
+    Update to rra-c-util 4.2:
 
+    * Improve the xstrndup utility function.
     * Kerberos test configuration now goes in tests/config.
     * The principal of the test keytab is determined automatically.
     * Build on systems where krb5/krb5.h exists but krb5.h does not.
     * Add bail_krb5 and diag_krb5 test utility functions.
+    * Simplify the test suite calls for Kerberos and remctl tests.
     * Ensure config.h is included for portable/stdbool.h.
     * Add test wrappers around asprintf and vasprintf.
 
-    Update to C TAP Harness 1.9:
+    Update to C TAP Harness 1.10:
 
     * Add test_tmpdir and test_tmpdir_free to TAP library.
+    * Add bstrndup function to the C TAP library.
     * runtests now frees all allocated resources on exit.
 
 WebAuth 4.0.2 (2011-12-02)

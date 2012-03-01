@@ -10,14 +10,11 @@
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <portable/system.h>
 
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
+#include <tests/tap/string.h>
 #include <webauth.h>
 #include <webauth/basic.h>
 
@@ -40,7 +37,7 @@ check_status(int s, WEBAUTH_KRB5_CTXT *c, const char *message,
 
    
 static void
-do_export(const char *principal, const char *cache)
+do_export(const char *principal, const char *cache, const char *path)
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
@@ -51,7 +48,7 @@ do_export(const char *principal, const char *cache)
     size_t b64_len;
     FILE *export;
 
-    export = fopen("test-cred", "w");
+    export = fopen(path, "w");
     if (export == NULL)
         sysbail("cannot create test-cred");
     s = webauth_krb5_new(&c);
@@ -84,7 +81,7 @@ do_export(const char *principal, const char *cache)
 
 
 static void
-do_import(const char *keytab)
+do_import(const char *keytab, const char *path)
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
@@ -95,7 +92,7 @@ do_import(const char *keytab)
     char *sprinc;
     FILE *data;
 
-    data = fopen("test-cred", "r");
+    data = fopen(path, "r");
     if (data == NULL)
         sysbail("cannot open test-cred");
     if (fgets(req, sizeof(req), data) == NULL)
@@ -109,7 +106,6 @@ do_import(const char *keytab)
         bail("newline not found in test-cred");
     tgt[strlen(tgt) - 1] = '\0';
     fclose(data);
-    unlink("test-cred");
 
     s = webauth_base64_decode(req, strlen(req), req, &req_len, strlen(req));
     CHECK(s, NULL, "base64-decode AP-REQ");
@@ -137,20 +133,23 @@ do_import(const char *keytab)
 int 
 main(void)
 {
-    const char *principal;
-    char *keytab;
+    struct kerberos_config *config;
+    char *tmpdir, *path;
 
     /* Read the configuration information. */
-    principal = kerberos_setup();
-    if (principal == NULL)
-        skip_all("Kerberos tests not configured");
-    keytab = test_file_path("config/keytab");
+    config = kerberos_setup(TAP_KRB_NEEDS_KEYTAB);
+    tmpdir = test_tmpdir();
+    basprintf(&path, "%s/test-cred", tmpdir);
 
     /* Do the tests. */
     plan(17);
-    do_export(principal, getenv("KRB5CCNAME"));
-    do_import(keytab);
+    do_export(config->principal, getenv("KRB5CCNAME"), path);
+    do_import(config->keytab, path);
 
-    test_file_path_free(keytab);
+    /* Clean up. */
+    unlink(path);
+    free(path);
+    test_tmpdir_free(tmpdir);
+
     return 0;
 }

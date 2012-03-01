@@ -37,6 +37,7 @@
 /stamp-h1
 /tests/config/keytab
 /tests/config/password
+/tests/data/conf-webkdc
 /tests/lib/attrs-t
 /tests/lib/base64-t
 /tests/lib/hex-t

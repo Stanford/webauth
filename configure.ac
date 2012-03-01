@@ -100,7 +100,7 @@ RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([strings.h sys/bittypes.h syslog.h])
+AC_CHECK_HEADERS([strings.h sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_FUNCS([setrlimit])
 RRA_C_C99_VAMACROS
@@ -127,7 +127,7 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
      DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h modules/mod-config.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],

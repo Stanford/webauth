@@ -33,12 +33,11 @@ main(void)
     apr_pool_t *pool = NULL;
     WEBAUTH_KEYRING *ring, *session;
     WEBAUTH_KEY *session_key;
-    struct kerberos_password *user;
+    struct kerberos_config *krbconf;
     char key_data[WA_AES_128];
     int status;
-    char *keyring, *conf;
+    char *keyring;
     time_t now;
-    pid_t remctld;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
     struct webauth_user_config user_config;
@@ -50,14 +49,6 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
 
-#ifndef HAVE_REMCTL
-    skip_all("Built without remctl support");
-#endif
-
-#ifndef PATH_REMCTLD
-    skip_all("remctld not found");
-#endif
-
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
@@ -66,21 +57,13 @@ main(void)
         bail("cannot initialize WebAuth context");
 
     /* Load the Kerberos configuration. */
-    user = kerberos_config_password();
-    if (user == NULL)
-        skip_all("Kerberos tests not configured");
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
     memset(&user_config, 0, sizeof(user_config));
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    config.keytab_path = test_file_path("config/keytab");
-    if (config.keytab_path == NULL)
-        skip_all("Kerberos tests not configured");
-    config.principal = kerberos_setup();
-    if (config.principal == NULL)
-        skip_all("Kerberos tests not configured");
+    config.keytab_path = krbconf->keytab;
+    config.principal = krbconf->principal;
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
@@ -91,10 +74,7 @@ main(void)
     test_file_path_free(keyring);
 
     /* Start remctld. */
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
-    remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
+    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
     plan(148);
 
@@ -129,8 +109,8 @@ main(void)
     /* Create some tokens. */
     memset(&login, 0, sizeof(login));
     login.type = WA_TOKEN_LOGIN;
-    login.token.login.username = user->principal;
-    login.token.login.password = user->password;
+    login.token.login.username = krbconf->userprinc;
+    login.token.login.password = krbconf->password;
     login.token.login.creation = now;
     memset(&wkproxy, 0, sizeof(wkproxy));
     wkproxy.type = WA_TOKEN_WEBKDC_PROXY;
@@ -672,8 +652,6 @@ main(void)
     /* Clean up. */
     webauth_keyring_free(ring);
     webauth_key_free(session_key);
-    test_file_path_free((char *) config.keytab_path);
-    remctld_stop(remctld);
     apr_terminate();
     return 0;
 }
