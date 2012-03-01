@@ -32,6 +32,14 @@ else
     exit 1
 fi
 
+# If the user is "delay", then sleep for three seconds and then exit with an
+# error.
+if [ "$2" = "delay" ] ; then
+    sleep 3
+    echo "unknown user $2" >&2
+    exit 1
+fi
+
 # See if the file exists, and if so, return it.
 if [ -f "data/xml/$dir/$2.xml" ] ; then
     if [ "$1" = "webkdc-userinfo" ] ; then

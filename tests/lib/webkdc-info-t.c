@@ -72,7 +72,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(58);
+    plan(63);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -182,6 +182,23 @@ main(void)
     status = webauth_user_validate(ctx, "mini", NULL, "123456", &validate);
     is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
+              webauth_error_message(ctx, status), "...with correct error");
+
+    /* Do a query for a user that should time out. */
+    config.timeout = 1;
+    status = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Config with timeout");
+    status = webauth_user_info(ctx, "delay", NULL, 0, &info);
+    is_int(status, WA_ERR_REMOTE_FAILURE, "Metadata for delay fails");
+    is_string("a remote service call failed"
+              " (error receiving token: timed out)",
+              webauth_error_message(ctx, status), "...with correct error");
+
+    /* Attempt a login for a user that should time out. */
+    status = webauth_user_validate(ctx, "delay", NULL, "123456", &validate);
+    is_int(status, WA_ERR_REMOTE_FAILURE, "Validate for delay fails");
+    is_string("a remote service call failed"
+              " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
 
     return 0;

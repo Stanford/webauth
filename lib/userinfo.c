@@ -5,7 +5,7 @@
  * about a user from the user metadata service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -32,6 +32,11 @@
 /* If remctl_set_ccache isn't available, pretend it always fails. */
 #ifndef HAVE_REMCTL_SET_CCACHE
 # define remctl_set_ccache(r, c) 0
+#endif
+
+/* If remctl_set_timeout isn't available, quietly do nothing. */
+#ifndef HAVE_REMCTL_SET_TIMEOUT
+# define remctl_set_timeout(r, t) /* empty */
 #endif
 
 
@@ -86,6 +91,7 @@ webauth_user_config(struct webauth_context *ctx,
         ctx->user->principal = apr_pstrdup(ctx->pool, user->principal);
     else
         ctx->user->principal = NULL;
+    ctx->user->timeout = user->timeout;
 
 done:
     return status;
@@ -272,9 +278,10 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
 
 /*
  * Issue a remctl command to the user metadata service.  Takes the argv-style
- * vector of the command to execute and stores the resulting XML document in
- * the provided argument.  On any error, including remote failure to execute
- * the command, sets the WebAuth error and returns a status code.
+ * vector of the command to execute and a timeout (which may be 0 to use no
+ * timeout), and stores the resulting XML document in the provided argument.
+ * On any error, including remote failure to execute the command, sets the
+ * WebAuth error and returns a status code.
  */
 #ifdef HAVE_REMCTL
 static int
@@ -339,6 +346,10 @@ remctl_generic(struct webauth_context *ctx, const char **command,
         }
     }
     free(cache);
+
+    /* Set a timeout if one was given. */
+    if (c->timeout > 0)
+        remctl_set_timeout(r, c->timeout);
 
     /* Set up and execute the command. */
     if (c->command == NULL) {
