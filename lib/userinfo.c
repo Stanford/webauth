@@ -29,6 +29,11 @@
 #include <webauth/webkdc.h>
 #include <util/macros.h>
 
+/* If remctl_set_ccache isn't available, pretend it always fails. */
+#ifndef HAVE_REMCTL_SET_CCACHE
+# define remctl_set_ccache(r, c) 0
+#endif
+
 
 /*
  * Configure how to access the user metadata service.  Takes the method, the
@@ -287,25 +292,33 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     char *cache;
     int status;
 
+    /* Initialize the remctl context. */
+    r = remctl_new();
+    if (r == NULL) {
+        webauth_error_set(ctx, WA_ERR_NO_MEM, "%s", strerror(errno));
+        return WA_ERR_NO_MEM;
+    }
+
     /*
      * Obtain authentication credentials from the configured keytab and
      * principal.
      *
-     * FIXME: This changes global process state to point to the correct
-     * Kerberos ticket cache.  Fix once remctl has a way of setting the
-     * Kerberos ticket cache to use.
+     * This changes the global GSS-API state to point to our ticket cache.
+     * Unfortunately, the GSS-API doesn't currently provide any way to avoid
+     * this.  When there is some way, it will be implemented in remctl.
      *
-     * FIXME: Leaks memory on every use.
+     * If remctl_set_ccache fails or doesn't exist, we fall back on just
+     * whacking the global KRB5CCNAME variable.
      */
     status = webauth_krb5_new(&kctx);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "initializing Kerberos context");
-        return status;
+        goto fail;
     }
     status = webauth_krb5_init_via_keytab(kctx, c->keytab, c->principal, NULL);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "%s", webauth_krb5_error_message(kctx));
-        return status;
+        goto fail;
     }
     status = webauth_krb5_get_cache(kctx, &cache);
     if (cache == NULL) {
@@ -315,25 +328,23 @@ remctl_generic(struct webauth_context *ctx, const char **command,
         else
             webauth_error_set(ctx, status, "%s",
                               webauth_error_message(NULL, status));
-        return status;
+        goto fail;
     }
-    if (setenv("KRB5CCNAME", cache, 1) < 0) {
-        status = WA_ERR_NO_MEM;
-        webauth_error_set(ctx, status, "setting KRB5CCNAME");
-        free(cache);
-        return status;
+    if (!remctl_set_ccache(r, cache)) {
+        if (setenv("KRB5CCNAME", cache, 1) < 0) {
+            status = WA_ERR_NO_MEM;
+            webauth_error_set(ctx, status, "setting KRB5CCNAME");
+            free(cache);
+            goto fail;
+        }
     }
     free(cache);
 
     /* Set up and execute the command. */
     if (c->command == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID, "no remctl command specified");
-        return WA_ERR_INVALID;
-    }
-    r = remctl_new();
-    if (r == NULL) {
-        webauth_error_set(ctx, WA_ERR_NO_MEM, "%s", strerror(errno));
-        return WA_ERR_NO_MEM;
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "no remctl command specified");
+        goto fail;
     }
     if (!remctl_open(r, c->host, c->port, c->identity)) {
         status = WA_ERR_REMOTE_FAILURE;

@@ -156,4 +156,5 @@ AC_DEFUN([RRA_LIB_REMCTL_OPTIONAL],
         [_RRA_LIB_REMCTL_INTERNAL([true])],
         [_RRA_LIB_REMCTL_INTERNAL([false])])])
  AS_IF([test x"$REMCTL_LIBS" != x],
-    [AC_DEFINE([HAVE_REMCTL], 1, [Define to enable remctl features.])])])
+    [rra_use_remctl=true
+     AC_DEFINE([HAVE_REMCTL], 1, [Define to enable remctl features.])])])
