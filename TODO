@@ -51,6 +51,10 @@ General:
 
 libwebauth:
 
+ * Provide a way to report diagnostic warnings in the library, and use
+   that to report user information service failures when ignore_failure is
+   set.
+
  * Deal with memory allocation failure in the library.  Set a default abort
    function that blows up the whole application if one isn't already set.
 
@@ -176,6 +180,9 @@ mod_webauthldap:
 
 mod_webkdc:
 
+ * Don't allow a failed user information service query to satisfy random
+   multifactor.
+
  * Return from a password login any additional information provided by
    the KDC, such as upcoming password expiration information.
 
@@ -261,6 +268,9 @@ Test Suite:
    modules.
 
 Documentation:
+
+ * Rename instances of user metadata service to user information service
+   to be consistent throughout.
 
  * Document Tomcat security issue with different URL parsing compared to
    Apache.  (WEBAUTH-5)
