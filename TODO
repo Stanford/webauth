@@ -32,11 +32,14 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
- * Provide a way to force reauthentication of a user who has valid
-   credentials but ones that are about to expire, and apply it only to
-   GET requests and not POST requests.  This would be useful for wikis,
-   for example, where expired credentials will usually destroy whatever
-   work the user is trying to save.
+ * User request: Currently, WebAuth always appends ?WEBAUTHR even if
+   there's already an ? in the URL, which means that applications that
+   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
+   Just changing this would break backward compatibility, so a new option
+   needs to be added to the request token allowing the implementation to
+   request proper CGI syntax be used in the URL.  This option should
+   probably be on by default with new versions of mod_webauth, since it's
+   cleaner and doesn't cause any harm.
 
 General:
 
@@ -69,10 +72,6 @@ libwebauth:
 
  * Switch all the WebAuth library interfaces to using opaque structs
    instead of typedefs, matching our current coding style.  (WEBAUTH-7)
-
- * Investigate whether we can provide higher-level interfaces to the
-   WebAuth library so that we don't have to provide as many different
-   functions.
 
  * Remove the local argument from webauth_krb5_rd_req_with_data.  It's not
    actually useful.
@@ -109,18 +108,11 @@ mod_webauth:
 
  * Support setting HttpOnly flag in the generated cookies.
 
- * User request: It would be nice to have a per-directory option to
-   recognize a login if the WebAuth cookie is available, but not force it
-   if the user isn't logged in.
-
- * User request: Currently, WebAuth always appends ?WEBAUTHR even if
-   there's already an ? in the URL, which means that applications that
-   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
-   Just changing this would break backward compatibility, so a new option
-   needs to be added to the request token allowing the implementation to
-   request proper CGI syntax be used in the URL.  This option should
-   probably be on by default with new versions of mod_webauth, since it's
-   cleaner and doesn't cause any harm.
+ * Provide a way to force reauthentication of a user who has valid
+   credentials but ones that are about to expire, and apply it only to
+   GET requests and not POST requests.  This would be useful for wikis,
+   for example, where expired credentials will usually destroy whatever
+   work the user is trying to save.
 
  * If mod_webauth obtains a proxy token instead of an id token and
    WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
