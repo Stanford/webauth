@@ -82,12 +82,16 @@ WEBAUTH_3 {
         webauth_token_parse_with_key;
         webauth_token_type_code;
         webauth_token_type_string;
+
+    local:
+        *;
+};
+
+WEBAUTH_4_1 {
+    global:
         webauth_user_config;
         webauth_user_info;
         webauth_user_validate;
         webauth_webkdc_config;
         webauth_webkdc_login;
-
-    local:
-        *;
-};
+} WEBAUTH_3;
