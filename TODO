@@ -41,6 +41,13 @@ Protocol:
    probably be on by default with new versions of mod_webauth, since it's
    cleaner and doesn't cause any harm.
 
+ * Validation of Kerberos authenticators in mod_webauth just blindly does
+   a krb5_aname_to_localname and then compares against the subject.  The
+   decision of whether to strip the realm may be more complex than that.
+   Figure out the right thing to do here, which is not obvious; perhaps
+   require that REMOTE_USER be a full principal name if krb5
+   authenticators are used?
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -72,9 +79,6 @@ libwebauth:
 
  * Switch all the WebAuth library interfaces to using opaque structs
    instead of typedefs, matching our current coding style.  (WEBAUTH-7)
-
- * Remove the local argument from webauth_krb5_rd_req_with_data.  It's not
-   actually useful.
 
  * webauth_attr_list_add_time assumes that timestamps are unsigned 32-bit
    values.
