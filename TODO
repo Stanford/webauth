@@ -255,12 +255,6 @@ Perl Modules:
  * Refactor the Perl modules to match my Perl coding style and add POD
    documentation to all of the modules.  (WEBAUTH-8)
 
-Build System:
-
- * Compile the WebAuth version into the modules rather than getting the
-   version from the webauth library.  In the webauth and webkdc modules,
-   warn if the versions don't match at runtime (but proceed anyway).
-
 Test Suite:
 
  * A test suite (and a redesign of the code so that it can be tested) is

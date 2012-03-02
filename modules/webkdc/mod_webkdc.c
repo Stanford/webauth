@@ -2518,7 +2518,6 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
 {
     struct config *sconf;
     server_rec *scheck;
-    char *version;
 
     sconf = ap_get_module_config(s->module_config, &webkdc_module);
 
@@ -2534,14 +2533,12 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         webkdc_config_init(scheck, sconf, ptemp);
     }
 
-    version = apr_pstrcat(ptemp, "WebKDC/", webauth_info_version(), NULL);
-    ap_add_version_component(pconf, version);
+    ap_add_version_component(pconf, "WebKDC/" PACKAGE_VERSION);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
-                     "mod_webkdc: initialized (%s) (%s)",
-                     webauth_info_version(),
-                     webauth_info_build());
+                     "mod_webkdc: initialized (%s) (%s)", VERSION,
+                     PACKAGE_BUILD_INFO);
 
     return OK;
 }

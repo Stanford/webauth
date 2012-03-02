@@ -35,6 +35,12 @@ WebAuth 4.0.3 (unreleased)
     omits the username, and avoid attempting to authenticate with an empty
     username.
 
+    Drop the webauth_info_build and webauth_info_version functions from
+    the libwebauth library and instead build the version and build
+    information directly into the modules.  These functions were only used
+    to get information for startup logging and reported versions in the
+    modules.
+
     Update to rra-c-util 4.2:
 
     * Improve the xstrndup utility function.

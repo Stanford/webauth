@@ -32,8 +32,6 @@ WEBAUTH_3 {
         webauth_hex_decoded_length;
         webauth_hex_encode;
         webauth_hex_encoded_length;
-        webauth_info_build;
-        webauth_info_version;
         webauth_key_copy;
         webauth_key_create;
         webauth_key_free;

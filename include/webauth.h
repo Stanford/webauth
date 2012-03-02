@@ -230,22 +230,6 @@ typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
 
 
 /*
- * INFORMATIONAL FUNCTIONS
- */
-
-/* Returns the package name and version number, separated by a space. */
-const char *webauth_info_version(void);
-
-/*
- * Returns a string describing the package build.
- *
- * Currently, this string contains the user and host on which the package was
- * built and the UTC timestamp of when it was configured.
- */
-const char *webauth_info_build(void);
-
-
-/*
  * BASE64 ENCODING AND DECODING
  */
 
