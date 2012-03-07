@@ -211,6 +211,10 @@ WebLogin:
 
  * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
 
+ * Pass the password expiration information to the templates as seconds
+   since epoch rather than as pre-formatted dates.  This will be
+   friendlier to localized interfaces.  (WEBAUTH-14)
+
  * When going to a site with multiple pieces of content protected by
    WebAuth, the browser seems to go to WebLogin multiple times, and for
    some of those times there's an error "no cookie, even after
