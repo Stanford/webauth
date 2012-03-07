@@ -1,18 +1,7 @@
 WEBAUTH_3 {
     global:
-        webauth_attr_list_add;
-        webauth_attr_list_add_int32;
-        webauth_attr_list_add_str;
-        webauth_attr_list_add_time;
-        webauth_attr_list_add_uint32;
         webauth_attr_list_find;
         webauth_attr_list_free;
-        webauth_attr_list_get;
-        webauth_attr_list_get_int32;
-        webauth_attr_list_get_str;
-        webauth_attr_list_get_time;
-        webauth_attr_list_get_uint32;
-        webauth_attr_list_new;
         webauth_attr_list_new;
         webauth_attrs_decode;
         webauth_attrs_encode;
@@ -87,6 +76,16 @@ WEBAUTH_3 {
 
 WEBAUTH_4_1 {
     global:
+        webauth_attr_list_add;
+        webauth_attr_list_add_int32;
+        webauth_attr_list_add_str;
+        webauth_attr_list_add_time;
+        webauth_attr_list_add_uint32;
+        webauth_attr_list_get;
+        webauth_attr_list_get_int32;
+        webauth_attr_list_get_str;
+        webauth_attr_list_get_time;
+        webauth_attr_list_get_uint32;
         webauth_user_config;
         webauth_user_info;
         webauth_user_validate;

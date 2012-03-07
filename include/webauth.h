@@ -164,8 +164,7 @@ typedef enum {
 #define WA_F_COPY_VALUE 0x01
 #define WA_F_COPY_NAME  0x02
 #define WA_F_FMT_STR    0x04
-#define WA_F_FMT_B64    0x08
-#define WA_F_FMT_HEX    0x10
+#define WA_F_FMT_HEX    0x08
 #define WA_F_COPY_BOTH  (WA_F_COPY_NAME | WA_F_COPY_VALUE)
 
 /* Flags for webauth_krb5_get_principal. */
@@ -369,9 +368,8 @@ int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *, const char *name,
  * Retrieve a specific attribute by name.  Stores its value in the value
  * parameter and its length in the value_len parameter.
  *
- * If flags contains WA_F_FMT_B64, base64-decode the value.  If flags contains
- * WA_F_FMT_HEX, hex-decode the value.  If flags contains WA_F_COPY_VALUE or
- * either of those previous flags, return a copy of the value rather than a
+ * If flags contains WA_F_FMT_HEX, hex-decode the value.  If flags contains
+ * WA_F_COPY_VALUE or WA_F_FMT_HEX, return a copy of the value rather than a
  * pointer into the attribute.
  *
  * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.

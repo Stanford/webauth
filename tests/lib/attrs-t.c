@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2006, 2009, 2010
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -37,7 +37,7 @@ main(void)
     char *temp_str;
     size_t temp_len;
 
-    plan(116);
+    plan(100);
 
     for (i = 0; i < sizeof(binary_data); i++)
         binary_data[i] = i % 256;
@@ -100,27 +100,19 @@ main(void)
 
     attrs_in = webauth_attr_list_new(32);
     webauth_attr_list_add_str(attrs_in, "0", "hello", 0, WA_F_NONE);
-    webauth_attr_list_add_str(attrs_in, "B0", "hello", 0, WA_F_FMT_B64);
     webauth_attr_list_add_str(attrs_in, "H0", "hello", 0, WA_F_FMT_HEX);
     webauth_attr_list_add_str(attrs_in, "1", "hello", 0, WA_F_NONE);
-    webauth_attr_list_add_str(attrs_in, "B1", "hello", 0, WA_F_FMT_B64);
     webauth_attr_list_add_str(attrs_in, "H1", "hello", 0, WA_F_FMT_HEX);
     webauth_attr_list_add_uint32(attrs_in, "UI0", 12345, WA_F_FMT_STR);
     webauth_attr_list_add_uint32(attrs_in, "HUI0", 12345,
                                  WA_F_FMT_STR | WA_F_FMT_HEX);
-    webauth_attr_list_add_uint32(attrs_in, "BUI0", 12345,
-                                 WA_F_FMT_STR | WA_F_FMT_B64);
     webauth_attr_list_add_uint32(attrs_in, "UI1", 12345, WA_F_NONE);
     webauth_attr_list_add_uint32(attrs_in, "HUI1", 12345, WA_F_FMT_HEX);
-    webauth_attr_list_add_uint32(attrs_in, "BUI1", 12345, WA_F_FMT_B64);
     webauth_attr_list_add_int32(attrs_in, "I0", -12345, WA_F_FMT_STR);
     webauth_attr_list_add_int32(attrs_in, "HI0", -12345,
                                  WA_F_FMT_STR | WA_F_FMT_HEX);
-    webauth_attr_list_add_int32(attrs_in, "BI0", -12345,
-                                 WA_F_FMT_STR | WA_F_FMT_B64);
     webauth_attr_list_add_int32(attrs_in, "I1", -12345, WA_F_NONE);
     webauth_attr_list_add_int32(attrs_in, "HI1", -12345, WA_F_FMT_HEX);
-    webauth_attr_list_add_int32(attrs_in, "BI1", -12345, WA_F_FMT_B64);
     rlen = webauth_attrs_encoded_length(attrs_in);
     buff = malloc(rlen + 1);
     if (buff == NULL)
@@ -138,14 +130,6 @@ main(void)
                                   WA_F_NONE);
     is_int(WA_ERR_NONE, s, "Retrieving attribute 0 works");
     is_string("hello", temp_str, "...with correct value");
-    s = webauth_attr_list_get_str(attrs_out, "B0", &temp_str, &temp_len,
-                                  WA_F_NONE);
-    is_int(WA_ERR_NONE, s, "Retrieving attribute B0 works");
-    is_string("aGVsbG8=", temp_str, "...and retrieves the base64 value");
-    s = webauth_attr_list_get_str(attrs_out, "B0", &temp_str, &temp_len,
-                                  WA_F_FMT_B64);
-    is_int(WA_ERR_NONE, s, "Retrieving attribute B0 with base64 works");
-    is_string("hello", temp_str, "...and retrieves the right value");
     s = webauth_attr_list_get_str(attrs_out, "H0", &temp_str, &temp_len,
                                   WA_F_NONE);
     is_int(WA_ERR_NONE, s, "Retriving attribute H0 works");
@@ -160,17 +144,6 @@ main(void)
     s = webauth_attr_list_get_str(attrs_out, "1", &temp_str, &temp_len,
                                   WA_F_NONE | WA_F_COPY_VALUE);
     is_int(WA_ERR_NONE, s, "Retriving attribute 1 with copy works");
-    is_string("hello", temp_str, "...with correct value");
-    free(temp_str);
-    s = webauth_attr_list_get_str(attrs_out, "B1", &temp_str, &temp_len,
-                                  WA_F_NONE | WA_F_COPY_VALUE);
-    is_int(WA_ERR_NONE, s, "Retrieving attribute B1 with copy works");
-    is_string("aGVsbG8=", temp_str, "...and retrieves base64 value");
-    free(temp_str);
-    s = webauth_attr_list_get_str(attrs_out, "B1", &temp_str, &temp_len,
-                                  WA_F_FMT_B64 | WA_F_COPY_VALUE);
-    is_int(WA_ERR_NONE, s,
-           "Retrieving attribute B1 with base64 and copy works");
     is_string("hello", temp_str, "...with correct value");
     free(temp_str);
     s = webauth_attr_list_get_str(attrs_out, "H1", &temp_str, &temp_len,
@@ -203,20 +176,12 @@ main(void)
                                      WA_F_FMT_STR | WA_F_FMT_HEX);
     is_int(WA_ERR_NONE, s, "Retrieving HUI0 as a number works");
     is_int(12345, temp_u32, "...with correct value");
-    s = webauth_attr_list_get_uint32(attrs_out, "BUI0", &temp_u32, 
-                                     WA_F_FMT_STR | WA_F_FMT_B64);
-    is_int(WA_ERR_NONE, s, "Retrieving BUI0 as a number works");
-    is_int(12345, temp_u32, "...with correct value");
     s = webauth_attr_list_get_uint32(attrs_out, "UI1", &temp_u32, WA_F_NONE);
     is_int(WA_ERR_NONE, s, "Retrieving UI1 as a number works");
     is_int(12345, temp_u32, "...with correct value");
     s = webauth_attr_list_get_uint32(attrs_out, "HUI1", &temp_u32, 
                                      WA_F_FMT_HEX);
     is_int(WA_ERR_NONE, s, "Retrieving HUI1 as a number works");
-    is_int(12345, temp_u32, "...with correct value");
-    s = webauth_attr_list_get_uint32(attrs_out, "BUI1", &temp_u32, 
-                                     WA_F_FMT_B64);
-    is_int(WA_ERR_NONE, s, "Retrieving BUI1 as a number works");
     is_int(12345, temp_u32, "...with correct value");
 
     /* Now check signed numbers, getting the string value first. */
@@ -231,18 +196,11 @@ main(void)
                                     WA_F_FMT_STR | WA_F_FMT_HEX);
     is_int(WA_ERR_NONE, s, "Retrieving HI0 as a number works");
     is_int(-12345, temp_32, "...with correct value");
-    s = webauth_attr_list_get_int32(attrs_out, "BI0", &temp_32, 
-                                    WA_F_FMT_STR | WA_F_FMT_B64);
-    is_int(WA_ERR_NONE, s, "Retrieving BI0 as a number works");
-    is_int(-12345, temp_32, "...with correct value");
     s = webauth_attr_list_get_int32(attrs_out, "I1", &temp_32, WA_F_NONE);
     is_int(WA_ERR_NONE, s, "Retrieving I1 as a number works");
     is_int(-12345, temp_32, "...with correct value");
     s = webauth_attr_list_get_int32(attrs_out, "HI1", &temp_32, WA_F_FMT_HEX);
     is_int(WA_ERR_NONE, s, "Retrieving HI1 as a number works");
-    is_int(-12345, temp_32, "...with correct value");
-    s = webauth_attr_list_get_int32(attrs_out, "BI1", &temp_32, WA_F_FMT_B64);
-    is_int(WA_ERR_NONE, s, "Retrieving BI1 as a number works");
     is_int(-12345, temp_32, "...with correct value");
 
     free(buff);

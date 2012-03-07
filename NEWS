@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.0.3 (unreleased)
+WebAuth 4.1.0 (unreleased)
 
     Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which
     sets the network timeout used for user information service queries and
@@ -34,6 +34,9 @@ WebAuth 4.0.3 (unreleased)
     Display the correct WebLogin error when the user enters a password and
     omits the username, and avoid attempting to authenticate with an empty
     username.
+
+    Drop library support for base64-encoded token attributes.  This was
+    never used in the WebAuth code.
 
     Drop the webauth_info_build and webauth_info_version functions from
     the libwebauth library and instead build the version and build
