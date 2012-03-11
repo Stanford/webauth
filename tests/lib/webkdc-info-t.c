@@ -72,7 +72,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(72);
+    plan(91);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -121,9 +121,10 @@ main(void)
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
         is_string("", webauth_error_message(ctx, status), "...no error");
-        ok_block(16, 0, "...info is not NULL");
+        ok_block(17, 0, "...info is not NULL");
     } else {
         is_int(1, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
         is_int(3, info->max_loa, "...max LoA");
         is_int(1310675733, info->password_expires, "...password expires");
         ok(info->factors != NULL, "...factors is not NULL");
@@ -163,9 +164,25 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
-        ok_block(5, 0, "Metadata failed");
+        ok_block(6, 0, "Metadata failed");
     else {
         is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(1, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        ok(info->factors == NULL, "...factors is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* The same query, but with random multifactor. */
+    status = webauth_user_info(ctx, "mini", NULL, 1, &info);
+    is_int(WA_ERR_NONE, status, "Metadata for mini w/random succeeded");
+    ok(info != NULL, "...mini is not NULL");
+    if (info == NULL)
+        ok_block(6, 0, "Metadata failed");
+    else {
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
@@ -208,9 +225,25 @@ main(void)
     status = webauth_user_info(ctx, "delay", NULL, 0, &info);
     is_int(status, WA_ERR_NONE, "Metadata for delay now succeeds");
     if (info == NULL)
-        ok_block(5, 0, "Metadata failed");
+        ok_block(6, 0, "Metadata failed");
     else {
         is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(0, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        ok(info->factors == NULL, "...factors is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* Try the query again with ignore_failure and random multifactor. */
+    is_int(WA_ERR_NONE, status, "Config with timeout, ignore, random");
+    status = webauth_user_info(ctx, "delay", NULL, 1, &info);
+    is_int(status, WA_ERR_NONE, "Metadata for delay w/random succeeds");
+    if (info == NULL)
+        ok_block(6, 0, "Metadata failed");
+    else {
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");

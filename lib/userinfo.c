@@ -477,10 +477,6 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     argv[5] = apr_psprintf(ctx->pool, "%d", random_multifactor ? 1 : 0);
     argv[6] = NULL;
     status = remctl_generic(ctx, argv, &doc);
-    if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
-        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
-        return WA_ERR_NONE;
-    }
     if (status != WA_ERR_NONE)
         return status;
     return parse_user_info(ctx, doc, info);
@@ -551,8 +547,11 @@ check_config(struct webauth_context *ctx)
  * random multifactor chance.
  *
  * On success, sets the info parameter to a new webauth_userinfo struct
- * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
- * error code and sets the info parameter to NULL.
+ * allocated from pool memory, sets random multifactor if we were asked to
+ * attempt it, and returns WA_ERR_NONE.  On failure, returns an error code and
+ * sets the info parameter to NULL, unless ignore_failure is set.  If
+ * ignore_failure was set and the failure was due to failure to contact the
+ * remote service, it instead returns an empty information struct.
  */
 int
 webauth_user_info(struct webauth_context *ctx, const char *user,
@@ -569,13 +568,27 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_info(ctx, user, ip, random_multifactor, info);
+        status = remctl_info(ctx, user, ip, random_multifactor, info);
+        break;
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
         webauth_error_set(ctx, WA_ERR_INVALID, "invalid protocol");
         return WA_ERR_INVALID;
     }
+
+    /*
+     * If the call succeeded and random_multifactor was set, say that the
+     * random multifactor check passed.  If the call failed but we were told
+     * to ignore failures, create a fake return struct.
+     */
+    if (status == WA_ERR_NONE && random_multifactor)
+        (*info)->random_multifactor = true;
+    else if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
+        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
+        status = WA_ERR_NONE;
+    }
+    return status;
 }
 
 

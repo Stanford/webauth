@@ -76,7 +76,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(148);
+    plan(168);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -516,7 +516,7 @@ main(void)
     else {
         is_string("p,rm", token->token.id.initial_factors,
                   "...result initial factors is right");
-        is_string("c", token->token.id.session_factors,
+        is_string("c,rm", token->token.id.session_factors,
                   "...result session factors is right");
     }
 
@@ -648,6 +648,83 @@ main(void)
         is_string("c,rm", token->token.id.session_factors,
                   "...result session factors is right");
     }
+
+    /*
+     * Add a timeout and then switch users to one for which the user
+     * information service won't return in time.  Now, authentication should
+     * fail since we can't contact the user information service.
+     */
+    user_config.timeout = 1;
+    status = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, status, "Setting user information timeout succeeds");
+    req.session_factors = NULL;
+    wkproxy.token.webkdc_proxy.subject = "delay";
+    wkproxy.token.webkdc_proxy.data = "delay";
+    wkproxy.token.webkdc_proxy.data_len = strlen("delay");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Random with timeout fails");
+    is_string("a remote service call failed (error receiving token:"
+              " timed out)", webauth_error_message(ctx, status),
+              "...with correct error");
+
+    /*
+     * If we say to ignore user information errors, random multifactor should
+     * succeed based on the existing proxy information that we have.
+     */
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    user_config.ignore_failure = true;
+    status = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, status, "Setting user information ignore succeeds");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Random with ignored timeout returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,o,o3,m", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
+    ok(response->proxies != NULL, "...and we have proxy tokens");
+    if (response->proxies == NULL)
+        ok_block(3, 0, "...no proxy tokens");
+    else {
+        is_int(1, response->proxies->nelts, "...one proxy token");
+        pd = &APR_ARRAY_IDX(response->proxies, 0,
+                            struct webauth_webkdc_proxy_data);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
+                                      ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        pt = &token->token.webkdc_proxy;
+        is_string("p,o,o3,m", pt->initial_factors,
+                  "...with correct initial factors");
+    }
+
+    /*
+     * But if we remove multifactor from the proxy token, random multifactor
+     * should now fail, since we were unable to contact the user information
+     * service.
+     */
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Random multifactor timeout returns success");
+    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
+           "...with the right error");
+    is_string("multifactor required but not configured",
+              response->login_message, "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
 
     /* Clean up. */
     webauth_keyring_free(ring);
