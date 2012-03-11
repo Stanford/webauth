@@ -24,7 +24,7 @@ WebAuth 4.1.0 (unreleased)
     If the remctl_set_ccache function is available, use it instead of
     setenv of KRB5CCNAME to set the ticket cache location when making user
     information service calls.  This at least only affects thread state
-    instead of global process state.
+    instead of global process state and doesn't leak memory.
 
     Fix error handling in WebLogin when the password field on the login
     form is left blank.  The correct error is now returned, leaving the
