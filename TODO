@@ -266,9 +266,6 @@ Documentation:
  * Rename instances of user metadata service to user information service
    to be consistent throughout.
 
- * Document Tomcat security issue with different URL parsing compared to
-   Apache.  (WEBAUTH-5)
-
  * Rewrite the protocol specification to provide a better-structured and
    more complete introduction to the protocol and defining terms earlier
    and more consistently.
