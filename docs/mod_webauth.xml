@@ -212,7 +212,7 @@ not secure and can easily be forged.  The target server should only accept
 connections from the proxy server running <code>mod_webauth</code>.</p>
 
 <p>To do this with a ProxyPass proxy, it's easiest to use
-<a href="http://httpd.apache.org/docs-2.0/mod/mod_headers.html">mod_headers</a>
+<a href="http://httpd.apache.org/docs-2.2/mod/mod_headers.html">mod_headers</a>
 to set extra headers based on the values of <code>WEBAUTH_</code>
 environment variables.  The remote web application then should pull its
 authentication information from those headers.</p>
