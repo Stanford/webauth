@@ -21,6 +21,8 @@ webauth (4.1.0-1) UNRELEASED; urgency=low
       the mod_webauth manual.  This affects any Apache security mechanism
       used in conjunction with Tomcat.
   * Bump libremctl-dev build dependency to >= 3.1 for consistent builds.
+  * Add Build-Depends-Package to the symbols file for better dependency
+    handling.
   * Update standards version to 3.9.3 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Thu, 15 Mar 2012 11:25:21 -0700
