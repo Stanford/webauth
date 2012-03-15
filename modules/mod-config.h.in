@@ -53,6 +53,12 @@
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
+/* Define to information about when and by whom the package was built. */
+#undef PACKAGE_BUILD_INFO
+
+/* Define to the version of this package. */
+#undef VERSION
+
 /* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE
 # define _ALL_SOURCE 1

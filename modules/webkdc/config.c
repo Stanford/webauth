@@ -8,7 +8,7 @@
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Based on original code by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -57,8 +57,10 @@ DIRN(ProxyTokenLifetime,  "lifetime of webkdc-proxy tokens")
 DIRN(ServiceTokenLifetime,"lifetime of webkdc-service tokens")
 DIRN(TokenAcl,            "path to the token ACL file")
 DIRD(TokenMaxTTL,         "max lifetime of recent tokens", int, 60 * 5)
-DIRN(UserInfoURL,         "URL to user metadata service")
-DIRN(UserInfoPrincipal,   "authentication identity of the metadata service")
+DIRN(UserInfoURL,         "URL to user information service")
+DIRN(UserInfoPrincipal,   "authentication identity of the information service")
+DIRD(UserInfoTimeout,     "timeout for user information queries", int, 30)
+DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
 
 enum {
     E_Debug,
@@ -75,6 +77,8 @@ enum {
     E_TokenMaxTTL,
     E_UserInfoURL,
     E_UserInfoPrincipal,
+    E_UserInfoTimeout,
+    E_UserInfoIgnoreFail
 };
 
 /*
@@ -128,6 +132,7 @@ webkdc_config_create(apr_pool_t *pool, server_rec *s UNUSED)
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->key_lifetime        = DF_KeyringKeyLifetime;
     sconf->token_max_ttl       = DF_TokenMaxTTL;
+    sconf->userinfo_timeout    = DF_UserInfoTimeout;
     sconf->local_realms        = apr_array_make(pool, 0, sizeof(const char *));
     sconf->permitted_realms    = apr_array_make(pool, 0, sizeof(const char *));
     sconf->kerberos_factors    = apr_array_make(pool, 0, sizeof(const char *));
@@ -158,6 +163,8 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(token_acl_path);
     MERGE_PTR(userinfo_config);
     MERGE_PTR(userinfo_principal);
+    MERGE_SET(userinfo_timeout);
+    MERGE_SET(userinfo_ignore_fail);
     MERGE_SET(debug);
     MERGE_SET(keyring_auto_update);
     MERGE_SET(key_lifetime);
@@ -359,6 +366,11 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     case E_UserInfoPrincipal:
         sconf->userinfo_principal = arg;
         break;
+    case E_UserInfoTimeout:
+        err = parse_interval(cmd, arg, &sconf->userinfo_timeout);
+        if (err == NULL)
+            sconf->userinfo_timeout_set = true;
+        break;
     case E_KerberosFactors:
         factor = apr_array_push(sconf->kerberos_factors);
         *factor = apr_pstrdup(cmd->pool, arg);
@@ -412,6 +424,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
     sconf = ap_get_module_config(cmd->server->module_config, &webkdc_module);
 
     switch (directive) {
+    case E_UserInfoIgnoreFail:
+        sconf->userinfo_ignore_fail = flag;
+        sconf->userinfo_ignore_fail_set = true;
+        break;
     case E_Debug:
         sconf->debug = flag;
         sconf->debug_set = 1;
@@ -451,5 +467,7 @@ const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   TokenMaxTTL),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoURL),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoPrincipal),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoTimeout),
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  UserInfoIgnoreFail),
     { NULL, { NULL }, NULL, OR_NONE, RAW_ARGS, NULL }
 };

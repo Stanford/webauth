@@ -3,25 +3,20 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <portable/system.h>
 
 #include <tests/tap/basic.h>
+#include <tests/tap/kerberos.h>
+#include <tests/tap/string.h>
 #include <webauth.h>
 #include <webauth/basic.h>
-
-#define BUFSIZE 4096
-#define MAX_ATTRS 128
 
 
 int
@@ -29,58 +24,18 @@ main(void)
 {
     int s;
     WEBAUTH_KRB5_CTXT *c;
-    char username[BUFSIZ], password[BUFSIZ], principal[BUFSIZ];
-    char *server_principal, *keytab, *path;
-    char *cp;
-    char *sa;
-    size_t salen;
-    char *tgt, *ticket, *prealm;
-    size_t tgtlen, ticketlen;
+    struct kerberos_config *config;
+    char *server_principal, *cp, *sa, *tgt, *ticket, *prealm, *cache, *tmpdir;
+    size_t salen, tgtlen, ticketlen;
     time_t expiration;
     char *cprinc = NULL;
     char *crealm = NULL;
     char *ccache = NULL;
-    FILE *file;
 
     /* Read the configuration information. */
-    path = test_file_path("data/test.principal");
-    if (path == NULL)
-        skip_all("Kerberos tests not configured");
-    keytab = test_file_path("data/test.keytab");
-    if (keytab == NULL)
-        skip_all("Kerberos tests not configured");
-    file = fopen(path, "r");
-    if (file == NULL)
-        sysbail("cannot open %s", path);
-    if (fgets(principal, sizeof(principal), file) == NULL) {
-        fclose(file);
-        bail("cannot read %s", path);
-    }
-    fclose(file);
-    if (principal[strlen(principal) - 1] != '\n')
-        bail("no newline in %s", path);
-    test_file_path_free(path);
-    principal[strlen(principal) - 1] = '\0';
-    path = test_file_path("data/test.password");
-    if (path == NULL)
-        skip_all("Kerberos tests not configured");
-    file = fopen(path, "r");
-    if (file == NULL)
-        sysbail("cannot open %s", path);
-    if (fgets(username, sizeof(username), file) == NULL)
-        bail("cannot read %s", path);
-    if (fgets(password, sizeof(password), file) == NULL)
-        bail("cannot read password from %s", path);
-    fclose(file);
-    if (username[strlen(username) - 1] != '\n')
-        bail("no newline in %s", path);
-    username[strlen(username) - 1] = '\0';
-    if (password[strlen(password) - 1] != '\n')
-        bail("username or password too long in %s", path);
-    password[strlen(password) - 1] = '\0';
-    test_file_path_free(path);
+    config = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     
-    plan(38);
+    plan(39);
 
     s = webauth_krb5_new(&c);
     is_int(WA_ERR_NONE, s, "Creating a context succeeds");
@@ -98,8 +53,9 @@ main(void)
            "Getting the cache fails with the right error");
 
     /* Do the authentication with the username and password. */
-    s = webauth_krb5_init_via_password(c, username, password, NULL, keytab,
-                                       NULL, NULL, &server_principal);
+    s = webauth_krb5_init_via_password(c, config->userprinc, config->password,
+                                       NULL, config->keytab, NULL, NULL,
+                                       &server_principal);
     is_int(WA_ERR_NONE, s, "Kerberos initialization succeeds");
     ok(server_principal != NULL, "...and returns the server principal");
 
@@ -114,9 +70,11 @@ main(void)
     is_int(WA_ERR_NONE, s, "Getting the realm");
     prealm = strchr(cprinc, '@');
     if (prealm == NULL)
-        skip("canonicalized principal has no realm");
-    else
+        skip_block(2, "canonicalized principal has no realm");
+    else {
         is_string(prealm + 1, crealm, "...and it matches principal");
+        is_string(config->realm, crealm, "...and the configuration");
+    }
     free(cprinc);
     free(crealm);
     s = webauth_krb5_get_principal(c, &cprinc, WA_KRB5_CANON_STRIP);
@@ -127,7 +85,7 @@ main(void)
     s = webauth_krb5_mk_req(c, server_principal, &sa, &salen);
     is_int(WA_ERR_NONE, s, "Building an AP-REQ");
     free(server_principal);
-    s = webauth_krb5_rd_req(c, sa, salen, keytab, NULL, &cp, 1);
+    s = webauth_krb5_rd_req(c, sa, salen, config->keytab, NULL, &cp, 1);
     is_int(WA_ERR_NONE, s, "...and it then validates");
     if (cp != NULL)
         free(cp);
@@ -137,7 +95,7 @@ main(void)
     tgt = NULL;
     s = webauth_krb5_export_tgt(c, &tgt, &tgtlen, &expiration);
     is_int(WA_ERR_NONE, s, "Exporting a TGT");
-    s = webauth_krb5_export_ticket(c, principal, &ticket, &ticketlen,
+    s = webauth_krb5_export_ticket(c, config->principal, &ticket, &ticketlen,
                                    &expiration);
     is_int(WA_ERR_NONE, s, "Exporting the service ticket");
 
@@ -179,7 +137,7 @@ main(void)
     s = webauth_krb5_new(&c);
     is_int(WA_ERR_NONE, s, "Creating a new context");
     ok(c != NULL, "...and the context is not NULL");
-    s = webauth_krb5_init_via_keytab(c, keytab, NULL, NULL);
+    s = webauth_krb5_init_via_keytab(c, config->keytab, NULL, NULL);
     is_int(WA_ERR_NONE, s, "Initializing with a keytab");
     s = webauth_krb5_free(c);
     is_int(WA_ERR_NONE, s, "Freeing the context");
@@ -188,14 +146,19 @@ main(void)
     s = webauth_krb5_new(&c);
     is_int(WA_ERR_NONE, s, "Creating a new context");
     ok(c != NULL, "...and the context is not NULL");
-    s = webauth_krb5_init_via_keytab(c, keytab, NULL, "FILE:tmp_krb5cc");
+    tmpdir = test_tmpdir();
+    basprintf(&cache, "FILE:%s/tmp_krb5cc", tmpdir);
+    s = webauth_krb5_init_via_keytab(c, config->keytab, NULL, cache);
     is_int(WA_ERR_NONE, s, "Initializing with a keytab");
     s = webauth_krb5_get_cache(c, &ccache);
     is_int(WA_ERR_NONE, s, "Retrieving the cache name");
-    is_string("FILE:tmp_krb5cc", ccache, "...and the name is correct");
+    is_string(cache, ccache, "...and the name is correct");
     free(ccache);
     s = webauth_krb5_free(c);
     is_int(WA_ERR_NONE, s, "Freeing the context");
+    unlink(cache);
+    free(cache);
+    test_tmpdir_free(tmpdir);
 
     if (cprinc != NULL)
         free(cprinc);

@@ -211,41 +211,32 @@ sub request_token_request($$) {
     $webkdc_doc->start('subjectCredential');
 
     # Create any login or proxy tokens for the user.  If there are none, we
-    # used to short-circuit here and raise WK_ER_USER_AND_PASS_REQUIRED, but
-    # now we go ahead with tokens to potentially get back a login-canceled
-    # token.  further note: its probably also better to go to the WebKDC as
-    # we'll validate the request-token too the first time around...
-    if (defined($user) || defined($proxy_cookies)) {
-
-        if (defined($user)) {
-            my $login_token = new WebKDC::LoginToken;
-            $login_token->username($user);
-            $login_token->creation_time(time());
-            if (defined $otp) {
-                $login_token->otp($otp);
-            } else {
-                $login_token->password($pass);
-            }
-
-            my $login_token_str =
-                base64_encode($login_token->to_token(get_keyring()));
-
-            $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
+    # still go ahead to validate the request token and to get a login cancel
+    # token, if any.
+    if (defined($user) && (defined($pass) || defined($otp))) {
+        my $login_token = new WebKDC::LoginToken;
+        $login_token->username($user);
+        $login_token->creation_time(time());
+        if (defined $otp) {
+            $login_token->otp($otp);
+        } else {
+            $login_token->password($pass);
         }
 
-        if (defined($proxy_cookies)) {
-            $webkdc_doc->current->attr('type','proxy');
-            for my $type (keys %$proxy_cookies) {
-                my $token = $proxy_cookies->{$type}{'cookie'};
-                my $source = $proxy_cookies->{$type}{'session_factor'};
-                $webkdc_doc->start('proxyToken',
-                                   {'type' => $type, 'source' => $source},
-                                   $token)->end;
-            }
-        }
+        my $login_token_str
+            = base64_encode($login_token->to_token(get_keyring()));
 
-	# FIXME: DEBUGGING!
-	#print STDERR $login_token;
+        $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
+    }
+    if (defined($proxy_cookies)) {
+        $webkdc_doc->current->attr('type','proxy');
+        for my $type (keys %$proxy_cookies) {
+            my $token = $proxy_cookies->{$type}{'cookie'};
+            my $source = $proxy_cookies->{$type}{'session_factor'};
+            $webkdc_doc->start('proxyToken',
+                               {'type' => $type, 'source' => $source},
+                               $token)->end;
+        }
     }
 
     $webkdc_doc->end('subjectCredential');

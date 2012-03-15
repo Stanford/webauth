@@ -5,7 +5,7 @@
  * service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -33,12 +33,11 @@ main(void)
     apr_pool_t *pool = NULL;
     WEBAUTH_KEYRING *ring, *session;
     WEBAUTH_KEY *session_key;
-    char key_data[WA_AES_128], username[BUFSIZ], password[BUFSIZ];
+    struct kerberos_config *krbconf;
+    char key_data[WA_AES_128];
     int status;
-    char *realm, *path, *keyring, *conf;
+    char *keyring;
     time_t now;
-    pid_t remctld;
-    FILE *file;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
     struct webauth_user_config user_config;
@@ -50,20 +49,21 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
 
-#ifndef HAVE_REMCTL
-    skip_all("built without remctl support");
-#endif
-
-#ifndef PATH_REMCTLD
-    skip_all("remctld not found");
-#endif
-
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
         bail("cannot create memory pool");
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
+
+    /* Load the Kerberos configuration. */
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
+    memset(&config, 0, sizeof(config));
+    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
+    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    memset(&user_config, 0, sizeof(user_config));
+    config.keytab_path = krbconf->keytab;
+    config.principal = krbconf->principal;
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
@@ -73,51 +73,10 @@ main(void)
              webauth_error_message(NULL, status));
     test_file_path_free(keyring);
 
-    /* Ensure we have a username and password. */
-    path = test_file_path("data/test.password");
-    if (path == NULL)
-        skip_all("Kerberos tests not configured");
-    file = fopen(path, "r");
-    if (file == NULL)
-        sysbail("cannot open %s", path);
-    if (fgets(username, sizeof(username), file) == NULL)
-        bail("cannot read %s", path);
-    if (fgets(password, sizeof(password), file) == NULL)
-        bail("cannot read password from %s", path);
-    fclose(file);
-    if (username[strlen(username) - 1] != '\n')
-        bail("no newline in %s", path);
-    username[strlen(username) - 1] = '\0';
-    if (password[strlen(password) - 1] != '\n')
-        bail("username or password too long in %s", path);
-    password[strlen(password) - 1] = '\0';
-    test_file_path_free(path);
-
-    /* Ensure we have a basic configuration available. */
-    memset(&config, 0, sizeof(config));
-    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
-    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    memset(&user_config, 0, sizeof(user_config));
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    config.keytab_path = test_file_path("data/test.keytab");
-    if (config.keytab_path == NULL)
-        skip_all("Kerberos tests not configured");
-    config.principal = kerberos_setup();
-    if (config.principal == NULL)
-        skip_all("Kerberos tests not configured");
-    realm = strchr(config.principal, '@');
-    if (realm == NULL)
-        bail("Kerberos principal has no realm");
-    realm++;
-
     /* Start remctld. */
-    if (chdir(getenv("SOURCE")) < 0)
-        bail("can't chdir to SOURCE");
-    conf = concatpath(getenv("SOURCE"), "data/conf-webkdc");
-    remctld = remctld_start(PATH_REMCTLD, config.principal, conf, NULL);
+    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(148);
+    plan(168);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -150,8 +109,8 @@ main(void)
     /* Create some tokens. */
     memset(&login, 0, sizeof(login));
     login.type = WA_TOKEN_LOGIN;
-    login.token.login.username = username;
-    login.token.login.password = password;
+    login.token.login.username = krbconf->userprinc;
+    login.token.login.password = krbconf->password;
     login.token.login.creation = now;
     memset(&wkproxy, 0, sizeof(wkproxy));
     wkproxy.type = WA_TOKEN_WEBKDC_PROXY;
@@ -557,7 +516,7 @@ main(void)
     else {
         is_string("p,rm", token->token.id.initial_factors,
                   "...result initial factors is right");
-        is_string("c", token->token.id.session_factors,
+        is_string("c,rm", token->token.id.session_factors,
                   "...result session factors is right");
     }
 
@@ -690,11 +649,86 @@ main(void)
                   "...result session factors is right");
     }
 
+    /*
+     * Add a timeout and then switch users to one for which the user
+     * information service won't return in time.  Now, authentication should
+     * fail since we can't contact the user information service.
+     */
+    user_config.timeout = 1;
+    status = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, status, "Setting user information timeout succeeds");
+    req.session_factors = NULL;
+    wkproxy.token.webkdc_proxy.subject = "delay";
+    wkproxy.token.webkdc_proxy.data = "delay";
+    wkproxy.token.webkdc_proxy.data_len = strlen("delay");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_REMOTE_FAILURE, status, "Random with timeout fails");
+    is_string("a remote service call failed (error receiving token:"
+              " timed out)", webauth_error_message(ctx, status),
+              "...with correct error");
+
+    /*
+     * If we say to ignore user information errors, random multifactor should
+     * succeed based on the existing proxy information that we have.
+     */
+    wkproxy.token.webkdc_proxy.session_factors = "c";
+    user_config.ignore_failure = true;
+    status = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, status, "Setting user information ignore succeeds");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Random with ignored timeout returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,o,o3,m", token->token.id.initial_factors,
+                  "...result initial factors is right");
+        is_string("c", token->token.id.session_factors,
+                  "...result session factors is right");
+    }
+    ok(response->proxies != NULL, "...and we have proxy tokens");
+    if (response->proxies == NULL)
+        ok_block(3, 0, "...no proxy tokens");
+    else {
+        is_int(1, response->proxies->nelts, "...one proxy token");
+        pd = &APR_ARRAY_IDX(response->proxies, 0,
+                            struct webauth_webkdc_proxy_data);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
+                                      ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        pt = &token->token.webkdc_proxy;
+        is_string("p,o,o3,m", pt->initial_factors,
+                  "...with correct initial factors");
+    }
+
+    /*
+     * But if we remove multifactor from the proxy token, random multifactor
+     * should now fail, since we were unable to contact the user information
+     * service.
+     */
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Random multifactor timeout returns success");
+    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
+           "...with the right error");
+    is_string("multifactor required but not configured",
+              response->login_message, "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+
     /* Clean up. */
     webauth_keyring_free(ring);
     webauth_key_free(session_key);
-    test_file_path_free((char *) config.keytab_path);
-    remctld_stop(remctld);
     apr_terminate();
     return 0;
 }

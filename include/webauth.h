@@ -164,8 +164,7 @@ typedef enum {
 #define WA_F_COPY_VALUE 0x01
 #define WA_F_COPY_NAME  0x02
 #define WA_F_FMT_STR    0x04
-#define WA_F_FMT_B64    0x08
-#define WA_F_FMT_HEX    0x10
+#define WA_F_FMT_HEX    0x08
 #define WA_F_COPY_BOTH  (WA_F_COPY_NAME | WA_F_COPY_VALUE)
 
 /* Flags for webauth_krb5_get_principal. */
@@ -227,22 +226,6 @@ typedef struct {
 
 /* A WebAuth Kerberos context for Kerberos support functions. */
 typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
-
-
-/*
- * INFORMATIONAL FUNCTIONS
- */
-
-/* Returns the package name and version number, separated by a space. */
-const char *webauth_info_version(void);
-
-/*
- * Returns a string describing the package build.
- *
- * Currently, this string contains the user and host on which the package was
- * built and the UTC timestamp of when it was configured.
- */
-const char *webauth_info_build(void);
 
 
 /*
@@ -385,9 +368,8 @@ int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *, const char *name,
  * Retrieve a specific attribute by name.  Stores its value in the value
  * parameter and its length in the value_len parameter.
  *
- * If flags contains WA_F_FMT_B64, base64-decode the value.  If flags contains
- * WA_F_FMT_HEX, hex-decode the value.  If flags contains WA_F_COPY_VALUE or
- * either of those previous flags, return a copy of the value rather than a
+ * If flags contains WA_F_FMT_HEX, hex-decode the value.  If flags contains
+ * WA_F_COPY_VALUE or WA_F_FMT_HEX, return a copy of the value rather than a
  * pointer into the attribute.
  *
  * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
@@ -850,7 +832,8 @@ int webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *, char **);
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
  */
-int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *, char *server_principal,
+int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *,
+                               const char *server_principal,
                                char **ticket, size_t *ticket_len,
                                time_t *expiration);
 

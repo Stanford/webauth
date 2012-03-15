@@ -842,7 +842,7 @@ webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *context, const char *cred,
  */
 int
 webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *context,
-                           char *server_principal, char **ticket,
+                           const char *server_principal, char **ticket,
                            size_t *ticket_len, time_t *expiration)
 {
     WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;

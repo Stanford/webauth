@@ -16,17 +16,12 @@ Protocol:
    redirect to the weblogin logout page might ameliorate some of the
    problems.
 
- * User request: Increase the timeout of the token sent by the WAS to the
-   WebLogin server for initial user login.  It doesn't contain security
-   information and therefore doesn't need to expire in five minutes.
-   (WEBAUTH-1)
-
  * Allow a WebAuth Application Server to specify that authentication
    should be done using a particular instance (and perhaps only a
    particular realm?) so that the WebLogin server knows to manage a
    different set of single sign-on credentials for that user.  This allows
    applications with specific credential requirements to not interfere
-   with a user's other logins.
+   with a user's other logins.  (WEBAUTH-6)
 
  * Rather than using our own Kerberos ticket serialization format, store
    tickets in the form that would be used when forwarding tickets, thus
@@ -37,11 +32,21 @@ Protocol:
  * Redo the WebKDC XML protocol to look more like a modern web services
    interface.
 
- * Provide a way to force reauthentication of a user who has valid
-   credentials but ones that are about to expire, and apply it only to
-   GET requests and not POST requests.  This would be useful for wikis,
-   for example, where expired credentials will usually destroy whatever
-   work the user is trying to save.
+ * User request: Currently, WebAuth always appends ?WEBAUTHR even if
+   there's already an ? in the URL, which means that applications that
+   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
+   Just changing this would break backward compatibility, so a new option
+   needs to be added to the request token allowing the implementation to
+   request proper CGI syntax be used in the URL.  This option should
+   probably be on by default with new versions of mod_webauth, since it's
+   cleaner and doesn't cause any harm.
+
+ * Validation of Kerberos authenticators in mod_webauth just blindly does
+   a krb5_aname_to_localname and then compares against the subject.  The
+   decision of whether to strip the realm may be more complex than that.
+   Figure out the right thing to do here, which is not obvious; perhaps
+   require that REMOTE_USER be a full principal name if krb5
+   authenticators are used?
 
 General:
 
@@ -56,12 +61,16 @@ General:
 
 libwebauth:
 
+ * Provide a way to report diagnostic warnings in the library, and use
+   that to report user information service failures when ignore_failure is
+   set.
+
  * Deal with memory allocation failure in the library.  Set a default abort
    function that blows up the whole application if one isn't already set.
 
  * Convert the rest of the libwebauth interface to use APR and to set the
    error message in the WebAuth context instead of just returning error
-   codes.
+   codes.  (WEBAUTH-7)
 
  * The current library interface is very low-level.  Ideally, the library
    should treat particular WebAuth tokens as first-class objects with
@@ -69,14 +78,7 @@ libwebauth:
    marshal and unmarshal functions to clients.
 
  * Switch all the WebAuth library interfaces to using opaque structs
-   instead of typedefs, matching our current coding style.
-
- * Investigate whether we can provide higher-level interfaces to the
-   WebAuth library so that we don't have to provide as many different
-   functions.
-
- * Remove the local argument from webauth_krb5_rd_req_with_data.  It's not
-   actually useful.
+   instead of typedefs, matching our current coding style.  (WEBAUTH-7)
 
  * webauth_attr_list_add_time assumes that timestamps are unsigned 32-bit
    values.
@@ -110,18 +112,11 @@ mod_webauth:
 
  * Support setting HttpOnly flag in the generated cookies.
 
- * User request: It would be nice to have a per-directory option to
-   recognize a login if the WebAuth cookie is available, but not force it
-   if the user isn't logged in.
-
- * User request: Currently, WebAuth always appends ?WEBAUTHR even if
-   there's already an ? in the URL, which means that applications that
-   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
-   Just changing this would break backward compatibility, so a new option
-   needs to be added to the request token allowing the implementation to
-   request proper CGI syntax be used in the URL.  This option should
-   probably be on by default with new versions of mod_webauth, since it's
-   cleaner and doesn't cause any harm.
+ * Provide a way to force reauthentication of a user who has valid
+   credentials but ones that are about to expire, and apply it only to
+   GET requests and not POST requests.  This would be useful for wikis,
+   for example, where expired credentials will usually destroy whatever
+   work the user is trying to save.
 
  * If mod_webauth obtains a proxy token instead of an id token and
    WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
@@ -140,6 +135,12 @@ mod_webauth:
  * Support setting request headers in addition to or instead of environment
    variables, which will help when using proxy_http to, for example, a
    Tomcat server.
+
+ * Stop requiring the trailing ; at the end of the token when that's the
+   end of the URL.  It is stripped in some obscure situations by IE when
+   using header redirects, and in general ; is a separator rather than a
+   terminator.  If the token is truncated, we'll catch that anyway during
+   decoding.
 
 mod_webauthldap:
 
@@ -170,7 +171,13 @@ mod_webauthldap:
    variables, which will help when using proxy_http to, for example, a
    Tomcat server.
 
+ * Support configuring multiple LDAP servers to query so that failover is
+   supported.  (WEBAUTH-2)
+
 mod_webkdc:
+
+ * Don't allow a failed user information service query to satisfy random
+   multifactor.
 
  * Return from a password login any additional information provided by
    the KDC, such as upcoming password expiration information.
@@ -197,9 +204,16 @@ mod_webkdc:
    username/password or via a single sign-on cookie, and find a way to
    differentiate between trusted Apache authentication and single sign-on.
 
+ * Investigate implementing the GSSAPI-RPC protocol for the WebKDC.
+   (WEBAUTH-12)
+
 WebLogin:
 
- * Set HttpOnly flag in the generated cookies.
+ * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
+
+ * Pass the password expiration information to the templates as seconds
+   since epoch rather than as pre-formatted dates.  This will be
+   friendlier to localized interfaces.  (WEBAUTH-14)
 
  * When going to a site with multiple pieces of content protected by
    WebAuth, the browser seems to go to WebLogin multiple times, and for
@@ -213,7 +227,7 @@ WebLogin:
 
  * Add a web services interface for the WebLogin login process and
    documentation for how to parse the redirect URL and make the login
-   request, returning the return URL.
+   request, returning the return URL.  (WEBAUTH-9)
 
  * The error page should return the appropriate HTTP error code instead of
    success.
@@ -223,22 +237,23 @@ WebLogin:
 
  * Add a replay cache for WebLogin interactions, possibly using memcached,
    so that one cannot use the browser back button to reply a password
-   login after the previous user has logged out.
+   login after the previous user has logged out.  (WEBAUTH-10)
 
  * Add a rate limit for WebLogin logins that blocks excessive failed
-   password attempts for a specific user.
+   password attempts for a specific user.  (WEBAUTH-11)
 
  * Separate the two functions of @REMUSER_REALMS so that people can
    configure a set of realms to be stripped separately from a set of
    realms that are permitted.
 
-Build System:
+ * Add a checkbox to the login page indicating that the user is coming
+   from a public cluster.  If checked, don't set a single sign-on cookie.
+   (WEBAUTH-13)
 
- * Make building with remctl optional.
+Perl Modules:
 
- * Compile the WebAuth version into the modules rather than getting the
-   version from the webauth library.  In the webauth and webkdc modules,
-   warn if the versions don't match at runtime (but proceed anyway).
+ * Refactor the Perl modules to match my Perl coding style and add POD
+   documentation to all of the modules.  (WEBAUTH-8)
 
 Test Suite:
 
@@ -247,6 +262,9 @@ Test Suite:
    modules.
 
 Documentation:
+
+ * Rename instances of user metadata service to user information service
+   to be consistent throughout.
 
  * Rewrite the protocol specification to provide a better-structured and
    more complete introduction to the protocol and defining terms earlier

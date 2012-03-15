@@ -1,0 +1,22 @@
+This directory contains configuration required to run the complete WebAuth
+test suite.  If there is no configuration in this directory, some of the
+tests will be skipped.  To enable the full test suite, create the
+following files:
+
+keytab
+
+    A valid Kerberos keytab for a principal, preferrably in your local
+    realm.  This will be used to test network interactions that require
+    Kerberos authentication.
+
+password
+
+    This file should contain two lines.  The first line is the
+    fully-qualified principal (including the realm) of a Kerberos
+    principal to use for testing authentication.  The second line is the
+    password for that principal.  The realm of the principal must be
+    configured in your system krb5.conf file or in DNS configuration
+    picked up by your Kerberos libraries, including the kpasswd server,
+    and must be in the same realm as the keytab above or have valid
+    cross-realm trust to it.
+

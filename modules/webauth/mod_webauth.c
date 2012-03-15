@@ -542,7 +542,6 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
 {
     MWA_SCONF *sconf;
     server_rec *scheck;
-    char *version;
 
     sconf = ap_get_module_config(s->module_config, &webauth_module);
 
@@ -561,15 +560,11 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         init_sconf(scheck, sconf, pconf, ptemp);
     }
 
-    version = apr_pstrcat(ptemp, "WebAuth/", webauth_info_version(), NULL);
-    ap_add_version_component(pconf, version);
+    ap_add_version_component(pconf, "WebAuth/" VERSION);
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, s,
-                 "mod_webauth: initialized (%s)%s",
-                 webauth_info_version(),
-                 sconf->debug ?
-                 apr_pstrcat(ptemp," (", webauth_info_build(), ")", NULL) :
-                 "");
+                 "mod_webauth: initialized (%s)%s", VERSION,
+                 sconf->debug ? " (" PACKAGE_BUILD_INFO ")" : "");
 
     return OK;
 }
@@ -870,8 +865,8 @@ handler_hook(request_rec *r)
 
     ap_rputs("<dl>", r);
 
-    dt_str("WebAuth Info Version", webauth_info_version(), r);
-    dt_str("WebAuth Info Build", webauth_info_build(), r);
+    dt_str("WebAuth Info Version", VERSION, r);
+    dt_str("WebAuth Info Build", PACKAGE_BUILD_INFO, r);
 
     ap_rputs("<dt><strong>Current Configuration (server directives only):</strong></dt>\n", r);
 

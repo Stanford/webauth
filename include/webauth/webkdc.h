@@ -6,7 +6,7 @@
  * in the shared library for ease of testing and custom development.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,6 +126,14 @@ enum webauth_user_protocol {
  * authentication purposes and may be NULL to use the default.  command is
  * protocol-specific command information, such as a partial URL or a remctl
  * command.
+ *
+ * The timeout will only be enforced if the library is built with remctl 3.1
+ * or later (which have remctl_set_timeout).
+ *
+ * The ignore_failure flag only applies to user information queries.  If set
+ * and the remote call fails, webauth_user_info will return a minimal result
+ * saying that the user can only do password authentication.  The
+ * webauth_user_validate call ignores ignore_failure and always must succeed.
  */
 struct webauth_user_config {
     enum webauth_user_protocol protocol;
@@ -135,6 +143,8 @@ struct webauth_user_config {
     const char *command;        /* Protocol-specific command. */
     const char *keytab;         /* Kerberos keytab for authentication. */
     const char *principal;      /* Principal from keytab for authentication. */
+    time_t timeout;             /* Network timeout, or 0 for no timeout. */
+    int ignore_failure;         /* Whether to continue despite remote fail. */
 };
 
 /*
@@ -156,6 +166,7 @@ struct webauth_login {
 struct webauth_user_info {
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
     int multifactor_required;           /* Whether multifactor is forced. */
+    int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */

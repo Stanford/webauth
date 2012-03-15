@@ -65,11 +65,13 @@ pwchange_url           : URL for the password change form
                   logins you have made to WebAuth-protected
                   resources.</strong></p>
                 <ul>
+                  [% USE date(format = '%Y-%m-%d %l:%M %p') %]
                   [% FOREACH login IN history %]
                     [% IF login.hostname %]
-                      <li>[% login.hostname %] ([% login.ip %])
+                      <li>[% date.format(login.time) %] - [% login.hostname %]
+                       ([% login.ip %])</li>
                     [% ELSE %]
-                      <li>[% login.ip %]
+                      <li>[% date.format(login.time) %] - [% login.ip %]</li>
                     [% END %]
                   [% END %]
                 </ul>

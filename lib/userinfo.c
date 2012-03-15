@@ -5,7 +5,7 @@
  * about a user from the user metadata service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -28,6 +28,16 @@
 #include <webauth/basic.h>
 #include <webauth/webkdc.h>
 #include <util/macros.h>
+
+/* If remctl_set_ccache isn't available, pretend it always fails. */
+#ifndef HAVE_REMCTL_SET_CCACHE
+# define remctl_set_ccache(r, c) 0
+#endif
+
+/* If remctl_set_timeout isn't available, quietly do nothing. */
+#ifndef HAVE_REMCTL_SET_TIMEOUT
+# define remctl_set_timeout(r, t) /* empty */
+#endif
 
 
 /*
@@ -81,6 +91,8 @@ webauth_user_config(struct webauth_context *ctx,
         ctx->user->principal = apr_pstrdup(ctx->pool, user->principal);
     else
         ctx->user->principal = NULL;
+    ctx->user->timeout = user->timeout;
+    ctx->user->ignore_failure = user->ignore_failure;
 
 done:
     return status;
@@ -267,9 +279,10 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
 
 /*
  * Issue a remctl command to the user metadata service.  Takes the argv-style
- * vector of the command to execute and stores the resulting XML document in
- * the provided argument.  On any error, including remote failure to execute
- * the command, sets the WebAuth error and returns a status code.
+ * vector of the command to execute and a timeout (which may be 0 to use no
+ * timeout), and stores the resulting XML document in the provided argument.
+ * On any error, including remote failure to execute the command, sets the
+ * WebAuth error and returns a status code.
  */
 #ifdef HAVE_REMCTL
 static int
@@ -287,25 +300,33 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     char *cache;
     int status;
 
+    /* Initialize the remctl context. */
+    r = remctl_new();
+    if (r == NULL) {
+        webauth_error_set(ctx, WA_ERR_NO_MEM, "%s", strerror(errno));
+        return WA_ERR_NO_MEM;
+    }
+
     /*
      * Obtain authentication credentials from the configured keytab and
      * principal.
      *
-     * FIXME: This changes global process state to point to the correct
-     * Kerberos ticket cache.  Fix once remctl has a way of setting the
-     * Kerberos ticket cache to use.
+     * This changes the global GSS-API state to point to our ticket cache.
+     * Unfortunately, the GSS-API doesn't currently provide any way to avoid
+     * this.  When there is some way, it will be implemented in remctl.
      *
-     * FIXME: Leaks memory on every use.
+     * If remctl_set_ccache fails or doesn't exist, we fall back on just
+     * whacking the global KRB5CCNAME variable.
      */
     status = webauth_krb5_new(&kctx);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "initializing Kerberos context");
-        return status;
+        goto fail;
     }
     status = webauth_krb5_init_via_keytab(kctx, c->keytab, c->principal, NULL);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "%s", webauth_krb5_error_message(kctx));
-        return status;
+        goto fail;
     }
     status = webauth_krb5_get_cache(kctx, &cache);
     if (cache == NULL) {
@@ -315,25 +336,27 @@ remctl_generic(struct webauth_context *ctx, const char **command,
         else
             webauth_error_set(ctx, status, "%s",
                               webauth_error_message(NULL, status));
-        return status;
+        goto fail;
     }
-    if (setenv("KRB5CCNAME", cache, 1) < 0) {
-        status = WA_ERR_NO_MEM;
-        webauth_error_set(ctx, status, "setting KRB5CCNAME");
-        free(cache);
-        return status;
+    if (!remctl_set_ccache(r, cache)) {
+        if (setenv("KRB5CCNAME", cache, 1) < 0) {
+            status = WA_ERR_NO_MEM;
+            webauth_error_set(ctx, status, "setting KRB5CCNAME");
+            free(cache);
+            goto fail;
+        }
     }
     free(cache);
 
+    /* Set a timeout if one was given. */
+    if (c->timeout > 0)
+        remctl_set_timeout(r, c->timeout);
+
     /* Set up and execute the command. */
     if (c->command == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID, "no remctl command specified");
-        return WA_ERR_INVALID;
-    }
-    r = remctl_new();
-    if (r == NULL) {
-        webauth_error_set(ctx, WA_ERR_NO_MEM, "%s", strerror(errno));
-        return WA_ERR_NO_MEM;
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "no remctl command specified");
+        goto fail;
     }
     if (!remctl_open(r, c->host, c->port, c->identity)) {
         status = WA_ERR_REMOTE_FAILURE;
@@ -524,8 +547,11 @@ check_config(struct webauth_context *ctx)
  * random multifactor chance.
  *
  * On success, sets the info parameter to a new webauth_userinfo struct
- * allocated from pool memory and returns WA_ERR_NONE.  On failure, returns an
- * error code and sets the info parameter to NULL.
+ * allocated from pool memory, sets random multifactor if we were asked to
+ * attempt it, and returns WA_ERR_NONE.  On failure, returns an error code and
+ * sets the info parameter to NULL, unless ignore_failure is set.  If
+ * ignore_failure was set and the failure was due to failure to contact the
+ * remote service, it instead returns an empty information struct.
  */
 int
 webauth_user_info(struct webauth_context *ctx, const char *user,
@@ -542,13 +568,27 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_info(ctx, user, ip, random_multifactor, info);
+        status = remctl_info(ctx, user, ip, random_multifactor, info);
+        break;
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
         webauth_error_set(ctx, WA_ERR_INVALID, "invalid protocol");
         return WA_ERR_INVALID;
     }
+
+    /*
+     * If the call succeeded and random_multifactor was set, say that the
+     * random multifactor check passed.  If the call failed but we were told
+     * to ignore failures, create a fake return struct.
+     */
+    if (status == WA_ERR_NONE && random_multifactor)
+        (*info)->random_multifactor = true;
+    else if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
+        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
+        status = WA_ERR_NONE;
+    }
+    return status;
 }
 
 
