@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.1.0 (unreleased)
+WebAuth 4.1.0 (2012-03-15)
 
     Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which
     sets the network timeout used for user information service queries and
