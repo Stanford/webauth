@@ -1,4 +1,4 @@
-libwebauth.so.5 libwebauth5 #MINVER#
+libwebauth.so.6 libwebauth6 #MINVER#
 * Build-Depends-Package: libwebauth-dev
  WEBAUTH_3@WEBAUTH_3 4.0.0
  WEBAUTH_4_1@WEBAUTH_4_1 4.1.0
