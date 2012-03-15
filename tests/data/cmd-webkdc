@@ -1,9 +1,13 @@
 #!/bin/sh
 #
 # Fake remctl backend for WebKDC user metadata queries.  Just returns a stock
-# XML file from the data/xml directory based on the command given.
+# XML file from the data/xml directory based on the command given.  Assumes
+# that $SOURCE is set in the environment to the root of the tests directory
+# in the source.
 
 set -e
+
+cd "$SOURCE"
 
 # Verify that the front-end passed the correct data and determine the XML
 # directory to use for responses.
@@ -25,6 +29,14 @@ elif [ "$1" = "webkdc-validate" ] ; then
     fi
 else
     echo "invalid command $1" >&2
+    exit 1
+fi
+
+# If the user is "delay", then sleep for three seconds and then exit with an
+# error.
+if [ "$2" = "delay" ] ; then
+    sleep 3
+    echo "unknown user $2" >&2
     exit 1
 fi
 

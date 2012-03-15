@@ -7,7 +7,7 @@
  * username and authentication credential, or both.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -89,9 +89,10 @@ canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
 
 /*
  * Check that the realm of the authenticated principal is in the list of
- * permitted realms, or that the list of realms is empty.  Returns MWK_OK if
- * the realm is permitted, MWK_ERROR otherwise.  Sets the error on a failure,
- * so the caller doesn't need to do so.
+ * permitted realms, or that the list of realms is empty.  Returns a WebAuth
+ * error code on failure to determine the realm.  If the user's realm is not
+ * permitted, sets the login error to WA_PEC_USER_REJECTED and the login
+ * message appropriately.
  */
 static int
 realm_permitted(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
@@ -441,6 +442,90 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
 
 
 /*
+ * Given the request, the response, our webkdc-proxy token, a flag saying
+ * whether we did a login, and a struct to fill in with the user information,
+ * determine if we're doing random multifactor and then call the user
+ * information service.  Add the data from the user information service and
+ * add the random multifactor factor if we did a random multifactor probe.
+ *
+ * For variables in this function, an initial "i" indicates they're for the
+ * initial factors and an initial "s" indicates that they're for the session
+ * factors.
+ */
+static int
+get_user_info(struct webauth_context *ctx,
+              struct webauth_webkdc_login_request *request,
+              struct webauth_webkdc_login_response **response,
+              struct webauth_token_webkdc_proxy *wkproxy, bool did_login,
+              struct webauth_user_info **info)
+{
+    bool randmf, irandmf, srandmf;
+    int status;
+    struct webauth_factors *ifactors = NULL, *iwkfactors = NULL;
+    struct webauth_factors *sfactors = NULL, *swkfactors = NULL;
+    struct webauth_token_request *req = request->request;
+
+    /*
+     * Determine if we're doing random multifactor.  Parse the initial
+     * factors from our webkdc-proxy token and those in the request and
+     * see if the request is not satisfied and contains random
+     * multifactor.  Then do the same for the session factors.  We do
+     * random multifactor if we need it for either the initial or session
+     * factors.
+     */
+    status = webauth_factors_parse(ctx, wkproxy->initial_factors, &iwkfactors);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = webauth_factors_parse(ctx, req->initial_factors, &ifactors);
+    if (status != WA_ERR_NONE)
+        return status;
+    irandmf = (!webauth_factors_subset(ctx, ifactors, iwkfactors)
+               && ifactors->random);
+    status = webauth_factors_parse(ctx, wkproxy->session_factors, &swkfactors);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = webauth_factors_parse(ctx, req->session_factors, &sfactors);
+    if (status != WA_ERR_NONE)
+        return status;
+    srandmf = (!webauth_factors_subset(ctx, sfactors, swkfactors)
+               && sfactors->random);
+    randmf = irandmf || srandmf;
+
+    /* Call the user information service. */
+    status = webauth_user_info(ctx, wkproxy->subject, request->remote_ip,
+                               randmf, info);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /* Add results from the user information service to the response. */
+    if (did_login)
+        (*response)->logins = (*info)->logins;
+    (*response)->password_expires = (*info)->password_expires;
+
+    /* Cap the user's LoA at the maximum allowed by the service. */
+    if (wkproxy->loa > (*info)->max_loa)
+        wkproxy->loa = (*info)->max_loa;
+
+    /*
+     * Add the random multifactor factor to the factors of our webkdc-proxy
+     * token if we did random multifactor and random multifactor was not
+     * already satisfied by existing factors.
+     */
+    if ((*info)->random_multifactor) {
+        if (!iwkfactors->multifactor && !iwkfactors->random)
+            wkproxy->initial_factors
+                = apr_pstrcat(ctx->pool, wkproxy->initial_factors, ",",
+                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
+        if (!swkfactors->multifactor && !swkfactors->random)
+            wkproxy->session_factors
+                = apr_pstrcat(ctx->pool, wkproxy->session_factors, ",",
+                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Given the request from the WebAuth Application Server, the current
  * accumulated response, the current merged webkdc-proxy token, and the user
  * metadata information (which may be NULL if there's no metadata configured),
@@ -750,7 +835,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
     struct webauth_token_webkdc_proxy *wkproxy = NULL;
     int i, status;
     struct webauth_user_info *info = NULL;
-    const char *ip;
     const char *etoken;
     bool did_login = false;
     size_t size;
@@ -766,7 +850,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /* Shorter names for things we'll be referring to often. */
-    ip = request->remote_ip;
     req = request->request;
 
     /* Fill in the basics of our response. */
@@ -928,54 +1011,19 @@ webauth_webkdc_login(struct webauth_context *ctx,
     /*
      * Determine the authenticated user.
      *
-     * If we have configuration for a user metadata service, we now know as
+     * If we have configuration for a user information service, we now know as
      * much as we're going to know about who the user is and should retrieve
      * that information if possible.  If we did a login, we should return
-     * login history if we have any.
+     * login history if we have any.  Here is also where we tell the user
+     * information service to do random multifactor if needed.
      */
     if (wkproxy != NULL)
         (*response)->subject = wkproxy->subject;
     if (ctx->user != NULL && wkproxy != NULL) {
-        bool randmf, irandmf, srandmf;
-        struct webauth_factors *factors = NULL, *wkfactors = NULL;
-
-        status = webauth_factors_parse(ctx, wkproxy->initial_factors,
-                                       &wkfactors);
+        status = get_user_info(ctx, request, response, wkproxy, did_login,
+                               &info);
         if (status != WA_ERR_NONE)
             return status;
-        status = webauth_factors_parse(ctx, req->initial_factors, &factors);
-        if (status != WA_ERR_NONE)
-            return status;
-        irandmf = (!webauth_factors_subset(ctx, factors, wkfactors)
-                   && factors->random);
-        factors = NULL;
-        wkfactors = NULL;
-        status = webauth_factors_parse(ctx, wkproxy->session_factors,
-                                       &wkfactors);
-        if (status != WA_ERR_NONE)
-            return status;
-        status = webauth_factors_parse(ctx, req->session_factors, &factors);
-        if (status != WA_ERR_NONE)
-            return status;
-        srandmf = (!webauth_factors_subset(ctx, factors, wkfactors)
-                   && factors->random);
-        randmf = irandmf || srandmf;
-        status = webauth_user_info(ctx, wkproxy->subject, ip, randmf, &info);
-        if (status != WA_ERR_NONE)
-            return status;
-        if (did_login)
-            (*response)->logins = info->logins;
-        if (wkproxy->loa > info->max_loa)
-            wkproxy->loa = info->max_loa;
-        (*response)->password_expires = info->password_expires;
-        if (irandmf)
-            wkproxy->initial_factors
-                = apr_pstrcat(ctx->pool, wkproxy->initial_factors, ",",
-                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
-        if (srandmf)
-            wkproxy->session_factors
-                = apr_pstrcat(ctx->pool, wkproxy->session_factors, ",",
-                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
     }
 
     /*

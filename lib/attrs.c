@@ -2,7 +2,7 @@
  * Functions to manipulate attribute lists.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009, 2010
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing term.s
@@ -103,21 +103,7 @@ webauth_attr_list_add(WEBAUTH_ATTR_LIST *list, const char *name, void *value,
     } else
         list->attrs[i].name = name;
 
-    if (FLAG_ISSET(flags, WA_F_FMT_B64)) {
-        size_t elen, blen = webauth_base64_encoded_length(length);
-
-        buff = malloc(blen);
-        if (buff == NULL)
-            return WA_ERR_NO_MEM;
-        s = webauth_base64_encode(value, length, buff, &elen, blen);
-        if (s != WA_ERR_NONE) {
-            free(buff);
-            return s;
-        }
-        value = buff;
-        length = elen;
-        flags |= WA_F_COPY_VALUE;
-    } else if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
+    if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
         size_t elen;
         size_t hlen = webauth_hex_encoded_length(length);
 
@@ -296,13 +282,7 @@ webauth_attr_list_get(WEBAUTH_ATTR_LIST *list, const char *name, void **value,
     if (s != WA_ERR_NONE)
         return s;
 
-    if (FLAG_ISSET(flags, WA_F_FMT_B64)) {
-        s = webauth_base64_decoded_length(list->attrs[i].value,
-                                          list->attrs[i].length,
-                                          value_len);
-        if (s!= WA_ERR_NONE)
-            return s;
-    } else if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
+    if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
         s = webauth_hex_decoded_length(list->attrs[i].length, value_len);
         if (s != WA_ERR_NONE)
             return s;
@@ -321,16 +301,7 @@ webauth_attr_list_get(WEBAUTH_ATTR_LIST *list, const char *name, void **value,
      * See if we have to decode or copy.  If copying, copy an extra byte to
      * get the trailing nul.
      */
-    if (FLAG_ISSET(flags, WA_F_FMT_B64)) {
-        s = webauth_base64_decode(list->attrs[i].value, list->attrs[i].length,
-                                  *value, value_len, *value_len);
-        if (s != WA_ERR_NONE) {
-            if (FLAG_ISSET(flags, WA_F_COPY_VALUE))
-                free(*value);
-            return s;
-        }
-        *((char *)(*value) + *value_len) = '\0';
-    } else if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
+    if (FLAG_ISSET(flags, WA_F_FMT_HEX)) {
         s = webauth_hex_decode(list->attrs[i].value, list->attrs[i].length,
                                *value, value_len, *value_len);
         if (s != WA_ERR_NONE) {

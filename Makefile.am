@@ -1,7 +1,7 @@
 # Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010, 2011
+# Copyright 2009, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -43,14 +43,13 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
 	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
 	lib/libwebauth.sym perl/README perl/MANIFEST perl/MANIFEST.SKIP	    \
-	tests/TESTS tests/data/README tests/data/cmd-webkdc		    \
-	tests/data/conf-webkdc tests/data/generate-tokens		    \
-	tests/data/keyring tests/data/tokens tests/data/xml		    \
-	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tests/TESTS tests/config/README tests/data/cmd-webkdc		    \
+	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
+	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
+	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
@@ -88,7 +87,7 @@ EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
 	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 5:0:0 $(VERSION_LDFLAGS)	    \
+lib_libwebauth_la_LDFLAGS = -version-info 6:0:0 $(VERSION_LDFLAGS)	    \
 	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)	\
@@ -269,31 +268,43 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
-tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
+tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests	\
+	-DPATH_REMCTLD='"$(PATH_REMCTLD)"' $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
-	tests/tap/remctl.c tests/tap/remctl.h
+	tests/tap/remctl.c tests/tap/remctl.h tests/tap/string.c	\
+	tests/tap/string.h
 
 # All of the test programs.
-tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la $(APR_LIBS)
-tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
-tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(APR_LIBS)
+tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
+tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
-tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+tests_lib_random_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a
+	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a
-tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la
+	util/libutil.a portable/libportable.la
+tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la
 tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
 	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)

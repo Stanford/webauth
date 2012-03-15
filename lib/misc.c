@@ -31,26 +31,6 @@ static char hex[] = "0123456789abcdef";
 
 
 /*
- * Return the build information for this copy of WebAuth.
- */
-const char *
-webauth_info_build(void)
-{
-    return PACKAGE_BUILD_INFO;
-}
-
-
-/*
- * Return the version of this build of WebAuth.
- */
-const char *
-webauth_info_version(void)
-{
-    return PACKAGE_VERSION;
-}
-
-
-/*
  * Given the length of data, return the length required to store that data
  * encoded in hex.
  */

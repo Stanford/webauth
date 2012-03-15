@@ -1,5 +1,72 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.1.0 (2012-03-15)
+
+    Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which
+    sets the network timeout used for user information service queries and
+    multifactor authentications.  The default timeout is 30 seconds.
+    Timeout support requires compiling with remctl 3.1 or later.
+
+    Add new mod_webkdc configuration option WebKdcUserInfoIgnoreFail,
+    which if set tells mod_webkdc to not fail the login if a user
+    information service is configured but cannot be queried (either due to
+    timeout or due to some other error).  By default, all logins will be
+    rejected if a user information service is configured but returns an
+    error.  If this option is set, the login can proceed, but only a
+    password factor will be available and no level of assurance can be
+    set.  Be aware that setting this option may allow bypassing a
+    multifactor requirement expressed by the user information service
+    rather than the destination site.
+
+    Really fix compilation without remctl libraries.  The previous change
+    would always define HAVE_REMCTL even if the libraries weren't found.
+
+    If the remctl_set_ccache function is available, use it instead of
+    setenv of KRB5CCNAME to set the ticket cache location when making user
+    information service calls.  This at least only affects thread state
+    instead of global process state and doesn't leak memory.
+
+    Fix error handling in WebLogin when the password field on the login
+    form is left blank.  The correct error is now returned, leaving the
+    user at the login page, rather than giving the user a generic error
+    page.  Thanks to Petr Grolmus for the report.
+
+    Display the correct WebLogin error when the user enters a password and
+    omits the username, and avoid attempting to authenticate with an empty
+    username.
+
+    Drop library support for base64-encoded token attributes.  This was
+    never used in the WebAuth code.
+
+    Drop the webauth_info_build and webauth_info_version functions from
+    the libwebauth library and instead build the version and build
+    information directly into the modules.  These functions were only used
+    to get information for startup logging and reported versions in the
+    modules.
+
+    Document in the mod_webauth manual a problematic interaction of URL
+    parsing between Apache and Tomcat that affects any Apache
+    authentication mechanism used to protect URLs that are proxied to
+    Tomcat.  Apache configuration to restrict access to proxied URLs needs
+    to allow for URI path parameters at the end of path segments.
+
+    Update to rra-c-util 4.2:
+
+    * Improve the xstrndup utility function.
+    * Kerberos test configuration now goes in tests/config.
+    * The principal of the test keytab is determined automatically.
+    * Build on systems where krb5/krb5.h exists but krb5.h does not.
+    * Add bail_krb5 and diag_krb5 test utility functions.
+    * Simplify the test suite calls for Kerberos and remctl tests.
+    * Ensure config.h is included for portable/stdbool.h.
+    * Add test wrappers around asprintf and vasprintf.
+
+    Update to C TAP Harness 1.10:
+
+    * Add test_tmpdir and test_tmpdir_free to TAP library.
+    * Add bstrndup function to the C TAP library.
+    * runtests now frees all allocated resources on exit.
+
 WebAuth 4.0.2 (2011-12-02)
 
     Fix a typo that caused the cookie tracking whether a user had

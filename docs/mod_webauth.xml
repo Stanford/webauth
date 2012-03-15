@@ -212,7 +212,7 @@ not secure and can easily be forged.  The target server should only accept
 connections from the proxy server running <code>mod_webauth</code>.</p>
 
 <p>To do this with a ProxyPass proxy, it's easiest to use
-<a href="http://httpd.apache.org/docs-2.0/mod/mod_headers.html">mod_headers</a>
+<a href="http://httpd.apache.org/docs-2.2/mod/mod_headers.html">mod_headers</a>
 to set extra headers based on the values of <code>WEBAUTH_</code>
 environment variables.  The remote web application then should pull its
 authentication information from those headers.</p>
@@ -401,6 +401,45 @@ never be used.
     acceptCount="10" debug="0"/&gt;
 </pre>
 </example>
+
+<p>Be aware that Apache and Tomcat parse semicolons in URLs differently.
+Without careful configuration, attackers can bypass WebAuth protection
+when accessing a resource in Tomcat by exploiting this difference.  In
+Apache, the URLs <code>/srvlet/secret</code> and
+<code>/srvlet/secret;hello</code> are different URLs, but Tomcat considers
+the part after a semicolon to be a URI path parameter, ignores it, and
+treats them both as the same URL.  Therefore, if only
+<code>/srvlet/secret</code> is protected in Apache (with a
+<code>&lt;Location&gt;</code> directive, for example), an attacker can
+bypass that protection but still access the same underlying URL in
+Tomcat.</p>
+
+<p>To protect against this, any <code>&lt;Location&gt;</code> directive
+protecting a specific URL within a larger URL namespace proxied to Tomcat
+should allow for any trailing URI path parameters, as in the following
+example:</p>
+
+<example><title>Access Control Example</title>
+<pre>
+# DO NOT USE THIS -- insecure!
+&lt;Location "/srvlet/secret"&gt;
+    AuthType WebAuth
+    require valid-user
+&lt;/Location&gt;
+
+# Instead, use this or some other regex that matches the path with URI
+# path parameters inserted anywhere.  Be aware that they can be in each
+# path component!  (But if JkMount refers to /srvlet, then /srvlet;hello
+# won't be sent to Tomcat by Apache and therefore is safe.)
+&lt;Location ~ "/srvlet/secret(;.*)?$"&gt;
+    AuthType WebAuth
+    require valid-user
+&lt;/Location&gt;
+</pre>
+</example>
+
+<p>This problem applies to any Apache authentication mechanism applied to
+URLs that are proxied to Tomcat.  It is not specific to WebAuth.</p>
 </section>
 
 <section><title>Requesting Credentials</title>
