@@ -1,3 +1,28 @@
+webauth (4.1.0-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - New mod_webkdc WebKdcUserInfoTimeout option to set a network timeout
+      for user information service queries.  The new default is 30
+      seconds.
+    - New mod_webkdc WebKdcUserInfoIgnoreFail error to allow users to
+      authenticate with password and use pre-existing single sign-on
+      cookies even if the user information service is down.  Be aware that
+      this can allow bypassing a centrally-mandated multifactor
+      requirement.
+    - Use remctl_set_ccache instead of setting KRB5CCNAME when available
+      to avoid memory leaks on calling the user information service and to
+      not leak settings across threads.
+    - Fix WebLogin error handling when the password field is left blank.
+    - Fix WebLogin error handling of empty usernames.
+    - Drop library support for base64-encoded token attributes (which was
+      never used by WebAuth).
+    - Drop webauth_info_{build,version} library APIs.
+    - Document Apache/Tomcat security interaction around URL parsing in
+      the mod_webauth manual.  This affects any Apache security mechanism
+      used in conjunction with Tomcat.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 15 Mar 2012 11:25:21 -0700
+
 webauth (4.0.2-1) unstable; urgency=low
 
   * New upstream release.
