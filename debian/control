@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 8), apache2-threaded-dev (>= 2.2),
  libcgi-fast-perl, libcurl4-openssl-dev, libipc-run-perl, libkrb5-dev,
  libldap2-dev, libremctl-dev, libssl-dev, libtemplate-perl,
  libtimedate-perl, liburi-perl, libwww-perl, libxml-parser-perl, perl
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
