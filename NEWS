@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.1.1 (unreleased)
+
+    Fix the sample confirm template to properly suppress the history and
+    token rights sections when there are no entries in the corresponding
+    arrays.  Thanks, Sam Morris.
+
 WebAuth 4.1.0 (2012-03-15)
 
     Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which

@@ -56,7 +56,7 @@ pwchange_url           : URL for the password change form
             </td>
           </tr>
         [% END %]
-        [% IF history %]
+        [% IF history.size %]
           <tr>
             <td colspan="2">
               <div class="errortext">
@@ -90,7 +90,7 @@ pwchange_url           : URL for the password change form
               requested:</p>
               <p><a href="[% return_url FILTER html %]">
                  [% pretty_return_url FILTER html %]</a></p>
-              [% IF token_rights %]
+              [% IF token_rights.size %]
                 <p>If you continue to this website, you will grant it
                 permission to obtain the following credentials on your
                 behalf:</p>
