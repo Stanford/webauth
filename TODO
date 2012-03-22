@@ -48,6 +48,25 @@ Protocol:
    require that REMOTE_USER be a full principal name if krb5
    authenticators are used?
 
+ * Provide a way to separate authentication identity and authorization
+   identity and convey both of those to the WAS, including configuration
+   on the WAS to use the authorization identity for access control instead
+   of the authentication identity.  This must satisfy the following
+   constraints:
+
+   + Backward-compatible so that existing WebAuth servers use the
+     authentication identity.
+
+   + Use of the authorization identity must be strictly opt-in.
+
+   Requires some sort of configuration database on the WebLogin server
+   to configure who can proxy as another user and to which sites (and to
+   which users), with logic in the WebLogin screen to allow the user to
+   choose an identity after authentication.  Requires sending the separate
+   authorization identity as a new protocol element in the id token.  Best
+   done after the proxy fix is complete so that we don't also have to
+   modify proxy tokens.  (WEBAUTH-16)
+
 General:
 
  * Currently, all module errors are logged with ap_log_error.  It looks
@@ -141,6 +160,12 @@ mod_webauth:
    using header redirects, and in general ; is a separator rather than a
    terminator.  If the token is truncated, we'll catch that anyway during
    decoding.
+
+ * User request: Provide a way to require additional factors only when
+   coming from a certain IP address or IP address range.  This allows
+   multifactor restrictions only for off-campus addresses, for example.
+   This may be easier with the Apache 2.4 rework of the authorization
+   infrastructure.  (WEBAUTH-15)
 
 mod_webauthldap:
 
