@@ -59,7 +59,9 @@ tokens and ticket caches.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcservicetokenlifetime">WebKdcServiceTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenacl">WebKdcTokenAcl</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdctokenmaxttl">WebkdcTokenMaxTTL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcuserinfoignorefail">WebKdcUserInfoIgnoreFail</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcuserinfoprincipal">WebKdcUserInfoPrincipal</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcuserinfotimeout">WebKdcUserInfoTimeout</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcuserinfourl">WebKdcUserInfoURL</a></li>
 </ul>
 <h3>Topics</h3>
@@ -851,6 +853,49 @@ WebKdcTokenMaxTTL 2h
   
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcUserInfoIgnoreFail" id="WebKdcUserInfoIgnoreFail">WebKdcUserInfoIgnoreFail</a> <a name="webkdcuserinfoignorefail" id="webkdcuserinfoignorefail">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+    Whether to allow password authentication despite user information
+    service failure
+  </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoIgnoreFail on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcUserInfoIgnoreFail off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+    <p>
+      By default, if a user information service is configured but either
+      doesn't respond or returns an error, mod_webkdc returns an error and
+      no authentication is permitted.  This is the safest action from a
+      security perspective since the system fails closed, but it can
+      create a single point of failure in the user information service
+      that can bring down all web authentication.
+    </p>
+
+    <p>
+      If this option is turned on, users will still be able to do basic
+      password authentication (equivalent to what is possible without
+      configuring a user information service) if the user information
+      service doesn't respond or returns an error.  Only a password factor
+      will be permitted, and the user will not be able to establish a
+      level of assurance.  If the WAS requested any additional factors or
+      a level of assurance, the behavior will be the same as if the user
+      doesn't have those factors or LoA configured.
+    </p>
+
+    <p>
+      This directive is only useful in combination with <a href="$webkdcuserinfourl"><code class="directive">WebKdcUserInfoURL</code></a>.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebKdcUserInfoIgnoreFail on
+    </code></p></div>
+  
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcUserInfoPrincipal" id="WebKdcUserInfoPrincipal">WebKdcUserInfoPrincipal</a> <a name="webkdcuserinfoprincipal" id="webkdcuserinfoprincipal">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
@@ -863,7 +908,7 @@ WebKdcTokenMaxTTL 2h
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
     <p>
-      This directive sets the principal of the remote user metatadata and
+      This directive sets the principal of the remote user metadata and
       multifactor authentication service.  This is the target principal of
       the WebKDC's authentication if using a user metadata protocol that
       uses Kerberos authentication (such as remctl).  It is not the
@@ -879,6 +924,66 @@ WebKdcTokenMaxTTL 2h
     <div class="example"><h3>Example</h3><p><code>
       
 WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
+    </code></p></div>
+  
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcUserInfoTimeout" id="WebKdcUserInfoTimeout">WebKdcUserInfoTimeout</a> <a name="webkdcuserinfotimeout" id="webkdcuserinfotimeout">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+    Timeout for user metadata and multifactor queries
+  </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcUserInfoTimeout 30s</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+    <p>
+      Sets the timeout for user information service queries and for
+      multifactor authentication.  The timeout is enforced on each network
+      exchange with the remote service, not on the total elapsed time for
+      the query, so be aware that a query to a slowly-responding remote
+      service that hands back small bits of data at a time could still
+      take substantially longer in total than the timeout.
+    </p>
+
+    <p>
+      The timeout can be set to 0s to disable timeouts.  With this
+      setting, mod_webkdc will wait for the remote service for as long as
+      it takes to respond or for the underlying TCP session to time out.
+    </p>
+
+    <p>
+      Logins through the WebLogin server will block while the remote
+      service is queried, and this will block the Apache thread or process
+      that's attempting to handle that login.  Setting too long of a
+      timeout may therefore allow the WebLogin server to be overwhelmed if
+      a remote server is down or not responding.  The default timeout is
+      fairly generous.
+    </p>
+
+    <p>
+      For the remctl user information protocol method, setting a timeout
+      requires remctl 3.1 or later.  If WebAuth is built against an
+      earlier version, the timeout will be ignored.
+    </p>
+
+    <p>
+      The units for the time are specified by appending a single letter.
+      This letter may be one of <code>s</code>, <code>m</code>,
+      <code>h</code>, <code>d</code>, or <code>w</code>, which correspond
+      to seconds, minutes, hours, days, and weeks, respectively (although
+      the longer intervals are probably not useful).
+    </p>
+
+    <p>
+      This directive is only useful in combination with <a href="$webkdcuserinfourl"><code class="directive">WebKdcUserInfoURL</code></a>.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebKdcUserInfoTimeout 5s
     </code></p></div>
   
 </div>

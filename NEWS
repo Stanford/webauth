@@ -17,6 +17,9 @@ WebAuth 4.1.1 (unreleased)
     instance of a variable interpolation ([% variable %]) and ensure that
     the HTML filter is applied ([% variable FILTER html %] instead).
 
+    Update the generated HTML version of the mod_webkdc manual to include
+    the new directives introduced in WebAuth 4.1.0.
+
 WebAuth 4.1.0 (2012-03-15)
 
     Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which
