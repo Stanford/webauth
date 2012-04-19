@@ -205,7 +205,7 @@ mod_webkdc:
    multifactor.
 
  * Return from a password login any additional information provided by
-   the KDC, such as upcoming password expiration information.
+   the KDC, such as upcoming password expiration information.  (WEBAUTH-17)
 
  * Ensure there is a proper return from a password login for an expired
    password so that it can be recognized and acted on by the WebLogin
