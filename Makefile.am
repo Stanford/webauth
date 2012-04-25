@@ -242,11 +242,13 @@ distclean-local:
 #
 #     -Wconversion	http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.6.1 (2011-05-04).
-WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self	\
-	-Wswitch-enum -Wdeclaration-after-statement -Wshadow		\
-	-Wpointer-arith -Wbad-function-cast -Wwrite-strings		\
-	-Wjump-misses-init -Wlogical-op -Wstrict-prototypes		\
+# Last checked against gcc 4.6.1 (2011-05-04).  -D_FORTIFY_SOURCE=2 enables
+# warn_unused_result attribute markings on glibc functions on Linux, which
+# catches a few more issues.
+WARNINGS = -g -O -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wendif-labels	    \
+	-Wformat=2 -Winit-self -Wswitch-enum -Wdeclaration-after-statement  \
+	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
+	-Wwrite-strings	-Wjump-misses-init -Wlogical-op -Wstrict-prototypes \
 	-Wmissing-prototypes -Wredundant-decls -Wnested-externs -Werror
 
 warnings:
@@ -268,8 +270,8 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
-tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests	\
-	-DPATH_REMCTLD='"$(PATH_REMCTLD)"' $(KRB5_CPPFLAGS)
+tests_tap_libtap_a_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
+	$(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
