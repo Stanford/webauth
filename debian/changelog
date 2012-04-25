@@ -4,7 +4,7 @@ webauth (4.1.1-1) UNRELEASED; urgency=low
     - Fix webauth_user_info bug in interpreting login history timestamps.
     - Fix login history timestamp handling in sample confirm template.
     - Suppress history and token rights in sample confirm template when
-      those data elements are empty.
+      those data elements are empty.  (Closes: #664735)
     - Add explicit HTML filters to all sample template variable
       interpolations as an additional security measure.
     - Update the mod_webkdc manual for changes in 4.1.0.
