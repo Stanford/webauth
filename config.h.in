@@ -27,6 +27,15 @@
 /* Define if the compiler supports GNU-style variadic macros. */
 #undef HAVE_GNU_VAMACROS
 
+/* Define to 1 if you have the <gssapi/gssapi.h> header file. */
+#undef HAVE_GSSAPI_GSSAPI_H
+
+/* Define to 1 if you have the <gssapi/gssapi_krb5.h> header file. */
+#undef HAVE_GSSAPI_GSSAPI_KRB5_H
+
+/* Define to 1 if the GSS-API library uses RFC-compliant OIDs. */
+#undef HAVE_GSS_RFC_OIDS
+
 /* Define to 1 if you have the <ibm_svc/krb5_svc.h> header file. */
 #undef HAVE_IBM_SVC_KRB5_SVC_H
 

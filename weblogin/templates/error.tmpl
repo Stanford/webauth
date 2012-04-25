@@ -84,16 +84,16 @@ cancel_url                : the specified cancel URL
                    multifactor than you have set up.</p>
                 <p>The site requires one of the following levels:<br />
                    [% FOREACH level IN multifactor_required %]
-                     [% level %]<br />
+                     [% level FILTER html %]<br />
                    [% END %]
                 </p>
                 <p>Your level of multifactor is only:<br />
                    [% FOREACH level IN multifactor_configured %]
-                     [% level %]<br />
+                     [% level FILTER html %]<br />
                    [% END %]
                 </p>
                 [% IF login_cancel %]
-                  <p><a href="[% cancel_url %]">Cancel</a>
+                  <p><a href="[% cancel_url FILTER html %]">Cancel</a>
                      logging on to this service</p>
                 [% END %]
               [% END %]
@@ -103,7 +103,7 @@ cancel_url                : the specified cancel URL
                 <p>Error: The destination site requires a higher level of
                    assurance than you have set up.</p>
                 [% IF login_cancel %]
-                  <p><a href="[% cancel_url %]">Cancel</a>
+                  <p><a href="[% cancel_url FILTER html %]">Cancel</a>
                      logging on to this service</p>
                 [% END %]
               [% END %]

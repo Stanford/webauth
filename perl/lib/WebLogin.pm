@@ -1307,8 +1307,7 @@ sub setup_kdc_request {
     # Otherwise, cobble up a proxy token using the value of REMOTE_USER and
     # add it to the request.  This allows the WebKDC to trust Apache
     # authentication mechanisms like SPNEGO or client-side certificates if so
-    # configured.  Either way, pass the REMOTE_USER into the WebKDC for
-    # logging purposes.
+    # configured.
     if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
         if ($ENV{KRB5CCNAME} && $WebKDC::Config::WEBKDC_PRINCIPAL) {
             $self->add_proxy_token;

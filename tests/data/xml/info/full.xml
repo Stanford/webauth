@@ -7,7 +7,7 @@
   </factors>
   <multifactor-required />
   <login-history>
-    <host name="example.com">127.0.0.2</host>
+    <host name="example.com" timestamp="1335373919">127.0.0.2</host>
     <host name="www.example.com">127.0.0.3</host>
   </login-history>
   <max-loa>3</max-loa>

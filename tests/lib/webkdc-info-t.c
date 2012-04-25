@@ -150,7 +150,8 @@ main(void)
             is_string("127.0.0.2", login->ip, "...first IP is correct");
             is_string("example.com", login->hostname,
                       "...first hostname is correct");
-            is_int(0, login->timestamp, "...first timestamp is correct");
+            is_int(1335373919, login->timestamp,
+                   "...first timestamp is correct");
             login = &APR_ARRAY_IDX(info->logins, 1, struct webauth_login);
             is_string("127.0.0.3", login->ip, "...second IP is correct");
             is_string("www.example.com", login->hostname,
