@@ -1,4 +1,4 @@
-webauth (4.1.1-1) UNRELEASED; urgency=low
+webauth (4.1.1-1) unstable; urgency=low
 
   * New upstream release (no Apache 2.4 support yet; that's next).
     - Fix webauth_user_info bug in interpreting login history timestamps.
@@ -15,7 +15,7 @@ webauth (4.1.1-1) UNRELEASED; urgency=low
     package.  This is at least arguably more correct for the various abort
     cases, is simpler, and shouldn't hurt.
 
- -- Russ Allbery <rra@debian.org>  Wed, 25 Apr 2012 13:33:20 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 25 Apr 2012 14:41:39 -0700
 
 webauth (4.1.0-1) unstable; urgency=low
 
