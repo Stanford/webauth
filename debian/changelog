@@ -1,3 +1,16 @@
+webauth (4.1.1-1) UNRELEASED; urgency=low
+
+  * New upstream release (no Apache 2.4 support yet; that's next).
+    - Fix webauth_user_info bug in interpreting login history timestamps.
+    - Fix login history timestamp handling in sample confirm template.
+    - Suppress history and token rights in sample confirm template when
+      those data elements are empty.
+    - Add explicit HTML filters to all sample template variable
+      interpolations as an additional security measure.
+    - Update the mod_webkdc manual for changes in 4.1.0.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 25 Apr 2012 13:33:20 -0700
+
 webauth (4.1.0-1) unstable; urgency=low
 
   * New upstream release.
