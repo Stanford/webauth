@@ -1,5 +1,45 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.1.1 (2012-04-25)
+
+    Fix a bug in webauth_user_info that misparsed timestamp attributes
+    from the user information query results, causing timestamps to be
+    ignored and always set to 0 in user login history information and
+    causing the function to fail if any unknown attributes were returned.
+
+    Fix the sample confirm template to use the correct attribute for login
+    history timestamps and to suppress the timestamp section if that
+    history entry had no associated timestamp.
+
+    Fix the sample confirm template to properly suppress the history and
+    token rights sections when there are no entries in the corresponding
+    arrays.  Thanks, Sam Morris.
+
+    Add explicit HTML filters to all interpolated variables in the
+    sample WebLogin templates.  Previous versions of the sample templates
+    (since the conversion to Template Toolkit in 4.0) did not uniformly
+    apply the HTML filter, which could cause rendering problems or even
+    cross-site scripting vulnerabilities in some corner cases.  For most
+    attributes missing this filter there was no chance of HTML special
+    characters, but now the filter is applied uniformly for consistency.
+    Sites with custom templates should check their templates for any
+    instance of a variable interpolation ([% variable %]) and ensure that
+    the HTML filter is applied ([% variable FILTER html %] instead).
+
+    Update the generated HTML version of the mod_webkdc manual to include
+    the new directives introduced in WebAuth 4.1.0.
+
+    Update to rra-c-util 4.3:
+
+    * Update the set of flags enabled by make warnings.
+
+    Update to C TAP Harness 1.11:
+
+    * Only use feature-test macros when requested or built with gcc -ansi.
+    * New tests/tap/macros.h header with some common definitions.
+    * Drop is_double from the C TAP library to avoid requiring -lm.
+    * Avoid using local in the shell libtap.sh library.
+
 WebAuth 4.1.0 (2012-03-15)
 
     Add new mod_webkdc configuration option WebKdcUserInfoTimeout, which

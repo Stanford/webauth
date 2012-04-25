@@ -317,7 +317,7 @@ CONFIGURATION
     syntax for WebAuthRequireSessionFactor is identical to that of
     WebAuthRequireInitialFactor, so adding
 
-        WebAuthRequireInitialFactor rm
+        WebAuthRequireSessionFactor rm
 
     to a protected resource will randomly force users to re-authenticate
     using multifactor.  This is similar to WebAuthForceLogin, except more

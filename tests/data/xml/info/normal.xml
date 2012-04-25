@@ -6,8 +6,8 @@
     <factor>o2</factor>
   </factors>
   <login-history>
-    <host name="example.com">127.0.0.2</host>
-    <host name="www.example.com">127.0.0.3</host>
+    <host name="example.com" timestamp="1335373900">127.0.0.2</host>
+    <host name="www.example.com" timestamp="1335365436">127.0.0.3</host>
   </login-history>
   <max-loa>3</max-loa>
   <password-expires>1310675733</password-expires>

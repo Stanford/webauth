@@ -78,7 +78,7 @@ expired                : set when sent here for expired password login fail
 
           [% IF err_pwchange %]
             <!-- Error: password change attempted, failed. -->
-            Error: [% err_msg %].
+            Error: [% err_msg FILTER html %].
           [% END %]
 
         </strong></p>
