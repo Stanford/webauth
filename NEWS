@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.1.1 (unreleased)
+WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
     from the user information query results, causing timestamps to be
