@@ -7,6 +7,10 @@ WebAuth 4.1.1 (unreleased)
     ignored and always set to 0 in user login history information and
     causing the function to fail if any unknown attributes were returned.
 
+    Fix the sample confirm template to use the correct attribute for login
+    history timestamps and to suppress the timestamp section if that
+    history entry had no associated timestamp.
+
     Fix the sample confirm template to properly suppress the history and
     token rights sections when there are no entries in the corresponding
     arrays.  Thanks, Sam Morris.

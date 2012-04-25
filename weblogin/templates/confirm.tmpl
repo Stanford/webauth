@@ -68,11 +68,17 @@ pwchange_url           : URL for the password change form
                   [% USE date(format = '%Y-%m-%d %l:%M %p') %]
                   [% FOREACH login IN history %]
                     [% IF login.hostname %]
-                      <li>[% date.format(login.time) %] -
+                      <li>
+                        [% IF login.timestamp %]
+                          [% date.format(login.timestamp) %] -
+                        [% END %]
                         [% login.hostname FILTER html %]
                         ([% login.ip FILTER html %])</li>
                     [% ELSE %]
-                      <li>[% date.format(login.time) %] -
+                      <li>
+                        [% IF login.timestamp %]
+                          [% date.format(login.timestamp) %] -
+                        [% END %]
                         [% login.ip FILTER html %]</li>
                     [% END %]
                   [% END %]
