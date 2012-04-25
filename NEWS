@@ -2,6 +2,11 @@
 
 WebAuth 4.1.1 (unreleased)
 
+    Fix a bug in webauth_user_info that misparsed timestamp attributes
+    from the user information query results, causing timestamps to be
+    ignored and always set to 0 in user login history information and
+    causing the function to fail if any unknown attributes were returned.
+
     Fix the sample confirm template to properly suppress the history and
     token rights sections when there are no entries in the corresponding
     arrays.  Thanks, Sam Morris.

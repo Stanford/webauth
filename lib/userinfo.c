@@ -176,7 +176,7 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
         for (attr = child->attr; attr != NULL; attr = attr->next)
             if (strcmp(attr->name, "name") == 0)
                 login->hostname = attr->value;
-            else if (strcmp(attr->name, "timestamp")) {
+            else if (strcmp(attr->name, "timestamp") == 0) {
                 status = convert_number(ctx, attr->value, &timestamp);
                 if (status != WA_ERR_NONE)
                     return status;
