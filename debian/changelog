@@ -8,6 +8,12 @@ webauth (4.1.1-1) UNRELEASED; urgency=low
     - Add explicit HTML filters to all sample template variable
       interpolations as an additional security measure.
     - Update the mod_webkdc manual for changes in 4.1.0.
+  * If Apache is running and has the module loaded, restart Apache on
+    configure of libapache2-webauth or libapache2-webkdc.
+  * Remove the conditional around the postinst actions for
+    libapache2-webauth and libapache2-webkdc and just always configure the
+    package.  This is at least arguably more correct for the various abort
+    cases, is simpler, and shouldn't hurt.
 
  -- Russ Allbery <rra@debian.org>  Wed, 25 Apr 2012 13:33:20 -0700
 
