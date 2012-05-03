@@ -298,7 +298,7 @@ mwk_cache_keyring(server_rec *serv, struct config *sconf)
          * keyring file.
          */
         if (geteuid() == 0)
-            if (chown(sconf->keyring_path, unixd_config.user_id, -1) < 0)
+            if (chown(sconf->keyring_path, ap_unixd_config.user_id, -1) < 0)
                 ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
                              "mod_webkdc: %s: cannot chown keyring: %s",
                              mwk_func, sconf->keyring_path);

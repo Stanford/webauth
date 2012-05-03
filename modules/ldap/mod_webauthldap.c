@@ -43,6 +43,7 @@
 #include <http_log.h>
 #include <http_protocol.h>
 #include <http_request.h>
+#include <mod_auth.h>
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
@@ -1116,9 +1117,10 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
 
 
 static int
-webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
+webauthldap_docompare(MWAL_LDAP_CTXT* lc, const char* value)
 {
-    int i, rc;
+    int rc;
+    size_t i;
     char* dn, *attr;
     const char *cached;
     struct berval bvalue = { 0, NULL };
@@ -1134,7 +1136,7 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, char* value)
         return strcmp(cached, "TRUE") ? LDAP_COMPARE_FALSE : LDAP_COMPARE_TRUE;
     }
 
-    bvalue.bv_val = value;
+    bvalue.bv_val = (char *) value;
     bvalue.bv_len = strlen(bvalue.bv_val);
 
     for (i=0; i<lc->numEntries; i++) {
@@ -1334,7 +1336,43 @@ webauthldap_exportprivgroup(void* lcp, const char *key,
 }
 
 
-static int
+/*
+ * Check whether a user is authorized by a list of privgroups.  Currently,
+ * this takes the rest of the require line as a string and has to do parsing
+ * itself.  Returns an authz_status.
+ *
+ * FIXME: Should pre-parse the require privgroup lines and pass in the
+ * privgroups already parsed out.
+ */
+static authz_status
+webauthldap_check_privgroups(MWAL_LDAP_CTXT *lc, const char *line)
+{
+    const char *group;
+    request_rec *r = lc->r;
+    int rc;
+
+    while ((group = ap_getword_conf(r->pool, &line)) && group[0] != '\0') {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                         "webauthldap(%s): found require privgroup %s",
+                         r->user, group);
+        rc = webauthldap_docompare(lc, group);
+        if (rc == LDAP_COMPARE_TRUE) {
+            lc->authrule = apr_psprintf(lc->r->pool, "privgroup %s", group);
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                             "webauthldap(%s): authorizing via privgroup %s",
+                             r->user, group);
+            return AUTHZ_GRANTED;
+        }
+    }
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server,
+                 "webauthldap: user %s UNAUTHORIZED", r->user);
+    return AUTHZ_DENIED;
+}
+
+
+static int UNUSED
 webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                                 const apr_array_header_t *reqs_arr,
                                 int* needs_further_handling)
@@ -1453,7 +1491,6 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
 }
 
 
-
 /**
  * This is the API hook for this module, it gets called first in the
  * auth_check stage, and is only invoked if some require directive was
@@ -1465,7 +1502,8 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
  * @return the HTTP code in case of an error, HTTP_UNAUTHORIZED is access is
  * not allowed, or OK if access is confirmed.
  */
-static int
+#if 0
+static int UNUSED
 auth_checker_hook(request_rec * r)
 {
     MWAL_LDAP_CTXT* lc;
@@ -1659,18 +1697,217 @@ auth_checker_hook(request_rec * r)
 
     return (needs_further_handling ? DECLINED : OK);
 }
+#endif
+
+
+/*
+ * The authorization provider for this module, and therefore the heart of the
+ * module.  This callback function is called for each require privgroup
+ * directive found in the Apache configuration.
+ *
+ * We initialize the module, bind to the LDAP server, and search for the
+ * user's record, and then check whether the user has a privilege group
+ * attribute whose value matches one of the groups we're looking for.  If
+ * access is granted, it also sets specified attributes in environment
+ * variables.
+ *
+ * We don't specify a require line parser, so the parsed_require_line argument
+ * is always NULL.  We expect the arguments in the require line to be a list
+ * of privgroups granting access.
+ */
+static authz_status
+privgroup_check_authorization(request_rec *r, const char *line,
+                              const void *parsed_require_line UNUSED)
+{
+    MWAL_LDAP_CTXT *lc;
+    int rc;
+#ifdef SIGPIPE
+# if APR_HAVE_SIGACTION
+    apr_sigfunc_t *old_signal;
+# else
+    void *old_signal;
+# endif
+#endif
+
+    /* Decline to authorize anyone who didn't use WebAuth. */
+    if (r->user == NULL)
+        return AUTHZ_DENIED_NO_USER;
+    if (apr_table_get(r->subprocess_env, "WEBAUTH_USER") == NULL)
+        return AUTHZ_DENIED;
+
+    /* Get our module configuration. */
+    lc = ap_get_module_config(r->request_config, &webauthldap_module);
+    if (lc == NULL) {
+        lc = apr_pcalloc(r->pool, sizeof(MWAL_LDAP_CTXT));
+        lc->r = r;
+        lc->dconf = ap_get_module_config(r->per_dir_config,
+                                         &webauthldap_module);
+        lc->sconf = ap_get_module_config(r->server->module_config,
+                                         &webauthldap_module);
+        ap_set_module_config(r->request_config, &webauthldap_module, lc);
+    }
+
+    /* Initialize, get a connection, and search. */
+    apr_thread_mutex_lock(lc->sconf->totalmutex); /****** LOCKING! ***********/
+    webauthldap_init(lc);
+
+    /* Get an available connection from the pool or bind a new one. */
+    if (webauthldap_getcachedconn(lc) != 0) {
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /*** ERR UNLOCKING! **/
+        return AUTHZ_GENERAL_ERROR;
+    }
+    rc = webauthldap_dosearch(lc);
+
+    /* Handle errors on our search.  We may have to rebind and try again. */
+    if (rc == HTTP_SERVICE_UNAVAILABLE) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                         "webauthldap(%s): this connection expired",
+                         lc->r->user);
+
+        /*
+         * Set this to ignore broken pipes that always happen when unbinding
+         * expired ldap connections.
+         */
+#ifdef SIGPIPE
+        old_signal = apr_signal(SIGPIPE, SIG_IGN);
+        if (old_signal == SIG_ERR) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
+                         "webauthldap(%s): can't set SIGPIPE signals to"
+                         " SIG_IGN: %s (%d)", r->user, strerror(errno), errno);
+            return AUTHZ_GENERAL_ERROR;
+        }
+#endif
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                         "webauthldap(%s): unbinding the expired connection",
+                         r->user);
+        ldap_unbind_ext(lc->ld, NULL, NULL);
+        lc->ld = NULL;
+#ifdef SIGPIPE
+        apr_signal(SIGPIPE, old_signal);
+#endif
+        if (webauthldap_managedbind(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING */
+            return AUTHZ_GENERAL_ERROR;
+        }
+        if (webauthldap_dosearch(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING */
+            return AUTHZ_GENERAL_ERROR;
+        }
+    } else if (rc != 0) {
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /** ERR UNLOCKING! ***/
+        return AUTHZ_GENERAL_ERROR;
+    }
+
+    /* Validate privgroups. */
+    rc = webauthldap_check_privgroups(lc, line);
+    webauthldap_returnconn(lc);
+    apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
+    ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                 "webauthldap(%s): returning %d", r->user, rc);
+    return rc;
+}
+
+
+/*
+ * The LDAP module fixups hook.
+ *
+ * This is where we set our environment variables and do lookups for any
+ * supplemental privgroups.
+ *
+ * Returns OK or DECLINED.
+ */
+static
+int fixups_hook(request_rec *r)
+{
+    MWAL_LDAP_CTXT *lc;
+    size_t i;
+
+    lc = ap_get_module_config(r->request_config, &webauthldap_module);
+    if (lc == NULL) {
+        lc = apr_pcalloc(r->pool, sizeof(MWAL_LDAP_CTXT));
+        lc->r = r;
+        lc->dconf = ap_get_module_config(r->per_dir_config,
+                                         &webauthldap_module);
+        lc->sconf = ap_get_module_config(r->server->module_config,
+                                         &webauthldap_module);
+        webauthldap_init(lc);
+        apr_thread_mutex_lock(lc->sconf->totalmutex); /****** LOCKING! *******/
+        if (webauthldap_getcachedconn(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING */
+            return DECLINED;
+        }
+        if (webauthldap_dosearch(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* ERR UNLOCKING */
+            return DECLINED;
+        }
+        webauthldap_returnconn(lc);
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /** FINAL UNLOCKING! */
+        ap_set_module_config(r->request_config, &webauthldap_module, lc);
+    }
+
+    /* Set the rule that caused authorization to succeed, if desired. */
+    if (lc->sconf->set_authrule && lc->authrule != NULL)
+        apr_table_set(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE",
+                      lc->authrule);
+
+    /* Set the environment variables for our query results. */
+    for (i = 0; i < lc->numEntries; i++)
+        apr_table_do(webauthldap_exportattrib, lc, lc->entries[i], NULL);
+    apr_table_do(webauthldap_attribnotfound, lc, lc->envvars, NULL);
+
+    /*
+     * If configured to perform additional privgroup checks, get our
+     * connection again and do those queries.  We ideally should retry our
+     * connection here if we get a failure, but we just did that validation
+     * while processing the main require directive.
+     *
+     * FIXME: Retry handling should be in webauthldap_getcachedconn.
+     */
+    apr_thread_mutex_lock(lc->sconf->totalmutex); /****** LOCKING! ***********/
+    if (webauthldap_getcachedconn(lc) != 0) {
+        apr_thread_mutex_unlock(lc->sconf->totalmutex); /*** ERR UNLOCKING! **/
+        return DECLINED;
+    }
+    apr_table_do(webauthldap_exportprivgroup, lc, lc->privgroups, NULL);
+    webauthldap_returnconn(lc);
+    apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
+
+    /* All done. */
+    if (lc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server, "%s %s",
+                     "webauthldap: finished for user", lc->r->user);
+    return OK;
+}
+
+/* Authorization group provider struct. */
+static const authz_provider authz_privgroup_provider = {
+    &privgroup_check_authorization,
+    NULL,
+};
 
 /**
  * Standard hook registration function
  */
 static void
-webauthldap_register_hooks(apr_pool_t *p UNUSED)
+webauthldap_register_hooks(apr_pool_t *p)
 {
     /* get this module called after webauth */
+#if 0
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
+#endif
 
     ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
+#if 0
     ap_hook_auth_checker(auth_checker_hook, NULL, mods, APR_HOOK_FIRST);
+#else
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "privgroup",
+                              AUTHZ_PROVIDER_VERSION,
+                              &authz_privgroup_provider,
+                              AP_AUTH_INTERNAL_PER_CONF);
+    ap_hook_fixups(fixups_hook, NULL, NULL, APR_HOOK_MIDDLE);
+#endif
 }
 
 /* Dispatch list for API hooks */

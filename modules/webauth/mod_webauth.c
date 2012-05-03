@@ -17,6 +17,7 @@
 #include <http_log.h>
 #include <http_protocol.h>
 #include <http_request.h>
+#include <mod_auth.h>
 #include <unistd.h>
 
 #include <modules/webauth/mod_webauth.h>
@@ -855,7 +856,7 @@ handler_hook(request_rec *r)
     ap_rputs("<hr/>", r);
 
     ap_rputs("<dl>", r);
-    dt_str("Server Version", ap_get_server_version(), r);
+    dt_str("Server Version", ap_get_server_description(), r);
     dt_str("Server Built",   ap_get_server_built(), r);
     dt_str("Hostname/port",
            apr_psprintf(r->pool, "%s:%u",

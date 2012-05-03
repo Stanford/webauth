@@ -1327,7 +1327,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                      "mod_webkdc: event=getTokens from=%s "
                      "server=%s user=%s%s",
-                     rc->r->connection->remote_ip,
+                     rc->r->useragent_ip,
                      *req_subject_out,
                      rtokens[i].subject,
                      rtokens[i].info);
@@ -1911,7 +1911,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
                  "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
-                 rc->r->connection->remote_ip,
+                 rc->r->useragent_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
                  response->requester, log_escape(rc, response->return_url),
                  (response->subject == NULL ? "<unknown>" : response->subject),
@@ -2178,7 +2178,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=webkdcProxyToken from=%s user=%s",
-                 rc->r->connection->remote_ip,
+                 rc->r->useragent_ip,
                  *subject_out);
     ms = MWK_OK;
 
@@ -2251,7 +2251,7 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
     *subject_out = pt.subject;
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=webkdcProxyTokenInfo from=%s user=%s",
-                 rc->r->connection->remote_ip,
+                 rc->r->useragent_ip,
                  *subject_out);
     ms = MWK_OK;
     return ms;
@@ -2327,7 +2327,7 @@ parse_request(MWK_REQ_CTXT *rc)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                          "mod_webkdc: event=getTokens from=%s "
                          "server=%s user=%s%s%s",
-                         rc->r->connection->remote_ip,
+                         rc->r->useragent_ip,
                          req,
                          sub,
                          rc->error_code == 0 ? "" :
@@ -2346,7 +2346,7 @@ parse_request(MWK_REQ_CTXT *rc)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                          "mod_webkdc: event=requestToken from=%s "
                          "server=%s user=%s%s%s",
-                         rc->r->connection->remote_ip,
+                         rc->r->useragent_ip,
                          req,
                          sub,
                          rc->error_code == 0 ? "" :
@@ -2365,7 +2365,7 @@ parse_request(MWK_REQ_CTXT *rc)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                          "mod_webkdc: event=webkdcProxyToken from=%s "
                          "user=%s%s%s",
-                         rc->r->connection->remote_ip,
+                         rc->r->useragent_ip,
                          sub,
                          rc->error_code == 0 ? "" :
                          apr_psprintf(rc->r->pool,
@@ -2383,7 +2383,7 @@ parse_request(MWK_REQ_CTXT *rc)
             ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                          "mod_webkdc: event=webkdcProxyTokenInfo from=%s "
                          "user=%s%s%s",
-                         rc->r->connection->remote_ip,
+                         rc->r->useragent_ip,
                          sub,
                          rc->error_code == 0 ? "" :
                          apr_psprintf(rc->r->pool,
@@ -2398,7 +2398,7 @@ parse_request(MWK_REQ_CTXT *rc)
                                xd->root->name);
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webkdc: %s: %s (from %s)", mwk_func, m,
-                     rc->r->connection->remote_ip);
+                     rc->r->useragent_ip);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, m, mwk_func, false);
         generate_errorResponse(rc);
         return OK;

@@ -153,7 +153,7 @@ typedef struct {
     MWAL_DCONF *dconf;
 
     apr_table_t **entries;  /* retrieved ldap entries */
-    int numEntries;
+    size_t numEntries;
 
     apr_table_t *envvars;    /* which attributes to place into environment */
     apr_table_t *privgroups; /* which privgroups to check and place into
