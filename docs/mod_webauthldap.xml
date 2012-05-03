@@ -15,7 +15,7 @@
 groups.  It also allows retrieving adhoc LDAP attributes and places them
 in environment variables.  The module was designed for use with an LDAP
 server that supports LDAP version 3 and allows binds authenticated using
-SASL GSSAPI Kerberos 5.</p>
+GSS-API Kerberos via SASL.</p>
 
 <p>For other WebAuth documentation see the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
@@ -371,7 +371,7 @@ WebAuthLdapFilter (&amp;(objectClass=superson)(uid=USER))
 </contextlist>
 
 <usage>
-<p>The LDAP server must support SASL GSSAPI Kerberos V binds.  No other
+<p>The LDAP server must support GSS-API Kerberos SASL binds.  No other
 bind type is supported by mod_webauthldap at this time.</p>
 
 <note><title>Note</title> 

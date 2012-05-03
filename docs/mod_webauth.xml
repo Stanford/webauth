@@ -78,7 +78,7 @@ to have additional environment variables set.
 </p>
 
 <p>Additionally, requesting credentials for a particular request may cause
-environment variables to get set.  For example, request Kerberos V5
+environment variables to get set.  For example, requesting Kerberos
 credentials will result in the KRB5CCNAME environment variable being
 set.</p>
 
@@ -469,7 +469,7 @@ control which requests will actually go through this process.</p>
 
 <p>The following example shows one scenario where every page under /myapp/
 is WebAuth-protected, and every page under /myapp/commands/ requires the
-use of two Kerberos V5 credentials.</p>
+use of two Kerberos credentials.</p>
 
 <example><title>Example</title>
 <pre>
@@ -659,8 +659,8 @@ by <em>type</em>:</p>
 <li><code>krb5</code>
     <p>
     When this type of subject authenticator is used, the WebKDC will use
-    the user's Kerberos V5 credentials to make a <code>krb5_mk_req</code>
-    call, using the requesting web server's Kerberos V5 principal. When
+    the user's Kerberos credentials to make a <code>krb5_mk_req</code>
+    call, using the requesting web server's Kerberos principal. When
     mod_webauth gets back the id-token, it will then use it's keytab to
     verify the subject authenticator using <code>krb5_rd_req</code>.</p>
     <p>This basically means that even if the WebKDC is compromised, a
@@ -797,7 +797,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 
 <directivesynopsis>
 <name>WebAuthWebKdcPrincipal</name>
-<description>The Kerberos V5 principal name of the WebKDC
+<description>The Kerberos principal name of the WebKDC
 </description>
 <syntax>WebAuthWebKdcPrincipal <em>principal</em></syntax>
 <default>(none)</default>
@@ -806,7 +806,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 
 <usage>
 <p>
-This is the name of the Kerberos V5 Principal to use when communicating with
+This is the name of the Kerberos principal to use when communicating with
 the WebKDC. It used to request a service-token from the WebKDC. </p>
 
 <note><title>Note</title>
@@ -938,7 +938,7 @@ WebAuthKeyRing conf/webauth/keyring
 
 <directivesynopsis>
 <name>WebAuthKeytab</name>
-<description>Name of the Kerberos V5 keytab file
+<description>Name of the Kerberos keytab file
 </description>
 <syntax>WebAuthKeytab <em>path</em> [<em>principal</em>]</syntax>
 <default>(none)</default>
@@ -947,7 +947,7 @@ WebAuthKeyRing conf/webauth/keyring
 
 <usage>
 <p>
-This is the name of the Kerberos V5 keytab file. If principal is not
+This is the name of the Kerberos keytab file. If principal is not
 specified, then the first principal in the keytab file be used.</p>
 
 <p>If the path

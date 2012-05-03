@@ -97,7 +97,7 @@ sub get_child_value {
     }
 }
 
-# Takes the Kerberos V5 request and the exported TGT and makes a
+# Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  A wrapper around proxy_token_request, which
 # does the actual work.  This just handles exceptions.
 sub make_proxy_token_request($$) {
@@ -137,7 +137,7 @@ sub make_request_token_request($$) {
     }
 }
 
-# Takes the Kerberos V5 request and the exported TGT and makes a
+# Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  Throws an exception on failure.
 sub proxy_token_request($$) {
     my ($req, $tgt) = @_;

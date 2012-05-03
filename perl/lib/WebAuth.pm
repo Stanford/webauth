@@ -574,13 +574,13 @@ raised the exception.
 =item krb5_error_code()
 
 If the status of the exception is WA_ERR_KRB5, then this function
-will return the Kerberos V5 error code that caused the exception.
+will return the Kerberos error code that caused the exception.
 There are currently no constants defined for these error codes.
 
 =item krb5_error_message()
 
 If the status of the exception is WA_ERR_KRB5, then this function
-will return the Kerberos V5 error message corresponding to the
+will return the Kerberos error message corresponding to the
 krb5_error_code.
 
 =item verbose_message()

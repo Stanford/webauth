@@ -34,7 +34,7 @@ for the Kerberos principal used by the WebKDC to authenticate requests
 from application servers, and the <code>token.acl</code> file that
 specifies what tokens application servers are permitted to request.</p>
 
-<p>The keytab must be a Kerberos V5 keytab for the principal referenced in
+<p>The keytab must be a Kerberos keytab for the principal referenced in
 the <directive>WebAuthWebKdcPrincipal</directive> configuration directive
 on the application servers.  How to obtain a keytab will depend on one's
 local Kerberos infrastructure; it may be via <code>kadmin</code> or via
@@ -302,11 +302,11 @@ copied to other WebKDCs.</p>
 
 <p>The Kerberos keytab file is specified using the
 <a href="$kwebkdckeytab"><directive>WebKdcKeytab</directive></a>
-directive.  This is a standard Kerberos V5 keytab file containing the
+directive.  This is a standard Kerberos keytab file containing the
 principal used by WebAuth servers to initially communicate with the
 WebKDC.  This is a binary file that should be kept consistent across all
 the WebKDC servers.  Normally this means that you will need to download it
-once and then copy it between systems, since Kerberos V5 generally changes
+once and then copy it between systems, since Kerberos generally changes
 the key of a principal when downloading a new keytab for it.</p>
 
 <p>The WebKDC keyring file is specified using the
@@ -541,7 +541,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 
 <directivesynopsis>
 <name>WebKdcKeytab</name>
-<description>Name of the Kerberos V5 keytab file</description>
+<description>Name of the Kerberos keytab file</description>
 <syntax>WebKdcKeytab <em>path</em> [<em>principal</em>]</syntax>
 <default>(none)</default>
 <contextlist>
@@ -551,7 +551,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 
 <usage>
 
-<p>This is the name of the Kerberos V5 keytab file, used by the WebKDC to
+<p>This is the name of the Kerberos keytab file, used by the WebKDC to
 authenticate initial requests from application servers.  The principal is
 optional and can be used to specify a particular principal in a keytab
 file that contains several.  If it is not specified, then the first
@@ -677,7 +677,7 @@ hours, days, and weeks, respectively.</p>
 <note><title>Note</title>
   <p>The upper bound of the webkdc-proxy token is always bounded by the
   expiration time of the underlying proxied credential.  For example, if
-  the Kerberos V5 TGT expires in 25 hours, then the WebKDC will not create
+  the Kerberos TGT expires in 25 hours, then the WebKDC will not create
   a webkdc-proxy token with a lifetime greater then 25 hours, even if this
   directive is set higher then 25 hours.</p>
 </note>
