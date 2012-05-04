@@ -72,6 +72,12 @@ AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
     [$PATH$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/usr/local/sbin])
 
 RRA_LIB_APACHE
+RRA_LIB_APACHE_SWITCH
+AC_CHECK_DECLS([ap_get_server_description, ap_register_auth_provider,
+    ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
+AC_CHECK_MEMBERS([request_rec.useragent_ip], [], [],
+    [RRA_INCLUDES_APACHE])
+RRA_LIB_APACHE_RESTORE
 RRA_LIB_APR
 RRA_LIB_APRUTIL
 RRA_LIB_KRB5
@@ -132,7 +138,7 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
 AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
-AC_CONFIG_HEADERS([config.h modules/mod-config.h])
+AC_CONFIG_HEADERS([config.h config-mod.h])
 AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],

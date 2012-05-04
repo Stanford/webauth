@@ -2,20 +2,19 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
 
 #include <apr_base64.h>
 #include <apr_xml.h>
 #include <curl/curl.h>
-#include <httpd.h>
-#include <http_log.h>
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>

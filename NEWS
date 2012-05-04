@@ -1,5 +1,17 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.2.0 (unreleased)
+
+    Port to Apache 2.4 (tested with Apache 2.4.1).
+
+    Support for AuthType StanfordAuth in mod_webauthldap is not available
+    when built with Apache 2.4.  This includes treating "require group"
+    directives where the group contains a colon as "require privgroup" and
+    setting the SU_AUTH_DIRMAIL, SU_AUTH_DIRNAME, and SU_AUTH_UNIVID
+    environment variables.  This behavior is still supported for now when
+    built with Apache 2.2 or earlier, but is deprecated and will be
+    removed for all versions of Apache in a later release.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes

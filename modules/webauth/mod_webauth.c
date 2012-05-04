@@ -2,21 +2,16 @@
  * Core WebAuth Apache module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
 
-#include <httpd.h>
-#include <http_config.h>
-#include <http_core.h>
-#include <http_log.h>
-#include <http_protocol.h>
-#include <http_request.h>
 #include <mod_auth.h>
 #include <unistd.h>
 

@@ -2,23 +2,20 @@
  * Utility functions for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2009, 2011
+ * Copyright 2002, 2003, 2009, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
 
 #include <apr_errno.h>
 #include <apr_thread_mutex.h>
-#include <ap_config.h>
-#include <httpd.h>
-#include <http_log.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <unixd.h>
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>

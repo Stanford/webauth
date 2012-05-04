@@ -11,7 +11,7 @@
 #ifndef MOD_WEBKDC_H
 #define MOD_WEBKDC_H
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
 #include <portable/stdbool.h>
 
 #include <httpd.h>

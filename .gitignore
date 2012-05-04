@@ -1,6 +1,7 @@
 /Makefile.in
 /aclocal.m4
 /build-aux/
+/config-mod.h
 /config.h
 /config.h.in
 /config.h.in~
@@ -17,8 +18,6 @@
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
-/modules/mod-config.h
-/modules/stamp-h2
 /perl/MANIFEST.bak
 /perl/MYMETA.yml
 /perl/Makefile.PL
@@ -35,6 +34,7 @@
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1
+/stamp-h2
 /tests/config/keytab
 /tests/config/password
 /tests/data/conf-webkdc

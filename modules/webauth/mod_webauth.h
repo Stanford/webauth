@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -11,7 +11,7 @@
 #ifndef MOD_WEBAUTH_H
 #define MOD_WEBAUTH_H
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
 
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_tables.h>         /* apr_array_header_t */

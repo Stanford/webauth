@@ -12,6 +12,18 @@
  */
 #define CONFIG_H_INCLUDED 1
 
+/* Define to 1 if you have the declaration of `ap_get_server_description', and
+   to 0 if you don't. */
+#undef HAVE_DECL_AP_GET_SERVER_DESCRIPTION
+
+/* Define to 1 if you have the declaration of `ap_register_auth_provider', and
+   to 0 if you don't. */
+#undef HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
+
+/* Define to 1 if you have the declaration of `ap_unixd_config', and to 0 if
+   you don't. */
+#undef HAVE_DECL_AP_UNIXD_CONFIG
+
 /* Define to 1 if you have the declaration of `krb5_kt_free_entry', and to 0
    if you don't. */
 #undef HAVE_DECL_KRB5_KT_FREE_ENTRY
@@ -46,6 +58,9 @@
 
 /* Define to 1 if you have the `krb5_xfree' function. */
 #undef HAVE_KRB5_XFREE
+
+/* Define to 1 if `useragent_ip' is a member of `request_rec'. */
+#undef HAVE_REQUEST_REC_USERAGENT_IP
 
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H

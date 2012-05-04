@@ -2,28 +2,16 @@
  * Core WebAuth LDAP Apache module code.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
+ * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
 #include <portable/krb5.h>
-
-#include <errno.h>
-#ifdef HAVE_ET_COM_ERR_H
-# include <et/com_err.h>
-#else
-# include <com_err.h>
-#endif
-#include <krb5.h>
-#include <ldap.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include <apr.h>
 #include <apr_base64.h>
@@ -34,16 +22,19 @@
 #include <apr_signal.h>
 #include <apr_thread_mutex.h>
 #include <apr_xml.h>
-
-/* httpd.h must be included before http_config.h. */
-#include <ap_config.h>
-#include <httpd.h>
-#include <http_config.h>
-#include <http_core.h>
-#include <http_log.h>
-#include <http_protocol.h>
-#include <http_request.h>
+#include <errno.h>
+#ifdef HAVE_ET_COM_ERR_H
+# include <et/com_err.h>
+#else
+# include <com_err.h>
+#endif
+#include <krb5.h>
+#include <ldap.h>
 #include <mod_auth.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
@@ -1344,6 +1335,7 @@ webauthldap_exportprivgroup(void* lcp, const char *key,
  * FIXME: Should pre-parse the require privgroup lines and pass in the
  * privgroups already parsed out.
  */
+#if HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
 static authz_status
 webauthldap_check_privgroups(MWAL_LDAP_CTXT *lc, const char *line)
 {
@@ -1370,8 +1362,10 @@ webauthldap_check_privgroups(MWAL_LDAP_CTXT *lc, const char *line)
                  "webauthldap: user %s UNAUTHORIZED", r->user);
     return AUTHZ_DENIED;
 }
+#endif /* HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
 
 
+#if !HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
 static int UNUSED
 webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
                                 const apr_array_header_t *reqs_arr,
@@ -1489,6 +1483,7 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
 
     return 0;
 }
+#endif /* !HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
 
 
 /**
@@ -1502,13 +1497,13 @@ webauthldap_validate_privgroups(MWAL_LDAP_CTXT* lc,
  * @return the HTTP code in case of an error, HTTP_UNAUTHORIZED is access is
  * not allowed, or OK if access is confirmed.
  */
-#if 0
+#if !HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
 static int UNUSED
 auth_checker_hook(request_rec * r)
 {
     MWAL_LDAP_CTXT* lc;
-    int rc, i;
-
+    int rc;
+    size_t i;
     const apr_array_header_t *reqs_arr = ap_requires(r);
     require_line *reqs;
     const char *t;
@@ -1561,7 +1556,7 @@ auth_checker_hook(request_rec * r)
     else if (reqs_arr) {
         reqs = (require_line *)reqs_arr->elts;
 
-        for (i = 0; i < reqs_arr->nelts; i++) {
+        for (i = 0; (ssize_t) i < reqs_arr->nelts; i++) {
             if (!(reqs[i].method_mask & (AP_METHOD_BIT << m))) {
                 continue;
             }
@@ -1697,7 +1692,7 @@ auth_checker_hook(request_rec * r)
 
     return (needs_further_handling ? DECLINED : OK);
 }
-#endif
+#endif /* !HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
 
 
 /*
@@ -1715,6 +1710,7 @@ auth_checker_hook(request_rec * r)
  * is always NULL.  We expect the arguments in the require line to be a list
  * of privgroups granting access.
  */
+#if HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
 static authz_status
 privgroup_check_authorization(request_rec *r, const char *line,
                               const void *parsed_require_line UNUSED)
@@ -1808,6 +1804,7 @@ privgroup_check_authorization(request_rec *r, const char *line,
                  "webauthldap(%s): returning %d", r->user, rc);
     return rc;
 }
+#endif /* HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
 
 
 /*
@@ -1818,8 +1815,9 @@ privgroup_check_authorization(request_rec *r, const char *line,
  *
  * Returns OK or DECLINED.
  */
-static
-int fixups_hook(request_rec *r)
+#if HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
+static int
+fixups_hook(request_rec *r)
 {
     MWAL_LDAP_CTXT *lc;
     size_t i;
@@ -1880,26 +1878,28 @@ int fixups_hook(request_rec *r)
                      "webauthldap: finished for user", lc->r->user);
     return OK;
 }
+#endif /* HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
+
 
 /* Authorization group provider struct. */
+#if HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
 static const authz_provider authz_privgroup_provider = {
     &privgroup_check_authorization,
     NULL,
 };
+#endif /* HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
+
 
 /**
  * Standard hook registration function
  */
 static void
-webauthldap_register_hooks(apr_pool_t *p)
+webauthldap_register_hooks(apr_pool_t *p UNUSED)
 {
+#if !HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
     /* get this module called after webauth */
-#if 0
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
-#endif
 
-    ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
-#if 0
     ap_hook_auth_checker(auth_checker_hook, NULL, mods, APR_HOOK_FIRST);
 #else
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "privgroup",
@@ -1908,6 +1908,7 @@ webauthldap_register_hooks(apr_pool_t *p)
                               AP_AUTH_INTERNAL_PER_CONF);
     ap_hook_fixups(fixups_hook, NULL, NULL, APR_HOOK_MIDDLE);
 #endif
+    ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
 /* Dispatch list for API hooks */

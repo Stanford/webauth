@@ -14,12 +14,9 @@
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
-
-#include <httpd.h>
-#include <http_config.h>
-#include <http_log.h>
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
