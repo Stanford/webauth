@@ -114,9 +114,10 @@ modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS) $(KRB5_LDFLAGS) $(LDAP_LDFLAGS)
 modules_ldap_mod_webauthldap_la_LIBADD = portable/libportable.la \
 	$(APACHE_LIBS) $(KRB5_LIBS) $(LDAP_LIBS)
-modules_webauth_mod_webauth_la_SOURCES = modules/webauth/krb5.c \
-	modules/webauth/mod_webauth.c modules/webauth/mod_webauth.h \
-	modules/webauth/util.c modules/webauth/webkdc.c
+modules_webauth_mod_webauth_la_SOURCES = modules/webauth/config.c	\
+	modules/webauth/krb5.c modules/webauth/mod_webauth.c		\
+	modules/webauth/mod_webauth.h modules/webauth/util.c		\
+	modules/webauth/webkdc.c
 modules_webauth_mod_webauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
 	$(CURL_CPPFLAGS)
 modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \

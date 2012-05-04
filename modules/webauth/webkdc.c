@@ -11,6 +11,7 @@
 #include <config-mod.h>
 #include <portable/apache.h>
 #include <portable/apr.h>
+#include <portable/stdbool.h>
 
 #include <apr_base64.h>
 #include <apr_xml.h>
@@ -87,7 +88,7 @@ new_service_token(apr_pool_t *pool,
 
 
 static MWA_SERVICE_TOKEN *
-read_service_token_cache(server_rec *server, MWA_SCONF *sconf,
+read_service_token_cache(server_rec *server, struct server_config *sconf,
                          apr_pool_t *pool)
 {
     MWA_SERVICE_TOKEN *token;
@@ -197,7 +198,7 @@ read_service_token_cache(server_rec *server, MWA_SCONF *sconf,
 
 
 static int
-write_service_token_cache(server_rec *server, MWA_SCONF *sconf,
+write_service_token_cache(server_rec *server, struct server_config *sconf,
                           apr_pool_t *pool, MWA_SERVICE_TOKEN *token)
 {
     apr_file_t *cache;
@@ -380,7 +381,7 @@ post_gather(char *in_data, size_t size, size_t nmemb, void *string)
  */
 static char *
 post_to_webkdc(char *post_data, size_t post_data_len,
-               server_rec *server, MWA_SCONF *sconf,
+               server_rec *server, struct server_config *sconf,
                apr_pool_t *pool)
 {
     CURL *curl;
@@ -617,7 +618,7 @@ parse_service_token_response(apr_xml_doc *xd,
  */
 static MWA_SERVICE_TOKEN *
 request_service_token(server_rec *server,
-                      MWA_SCONF *sconf,
+                      struct server_config *sconf,
                       apr_pool_t *pool,
                       time_t curr)
 {
@@ -695,7 +696,7 @@ request_service_token(server_rec *server,
  * generate our app-state blob once and re-use it
  */
 static void
-set_app_state(server_rec *server, MWA_SCONF *sconf,
+set_app_state(server_rec *server, struct server_config *sconf,
               MWA_SERVICE_TOKEN *token, time_t curr)
 {
     WEBAUTH_ATTR_LIST *alist;
@@ -753,7 +754,7 @@ set_app_state(server_rec *server, MWA_SCONF *sconf,
  */
 static void
 set_service_token(MWA_SERVICE_TOKEN *new_token,
-                  MWA_SCONF *sconf)
+                  struct server_config *sconf)
 {
     apr_pool_t *p;
 
@@ -781,7 +782,7 @@ set_service_token(MWA_SERVICE_TOKEN *new_token,
  *
  */
 MWA_SERVICE_TOKEN *
-mwa_get_service_token(server_rec *server, MWA_SCONF *sconf,
+mwa_get_service_token(server_rec *server, struct server_config *sconf,
                       apr_pool_t *pool, int local_cache_only)
 {
     MWA_SERVICE_TOKEN *token;

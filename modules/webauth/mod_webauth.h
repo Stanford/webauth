@@ -12,6 +12,7 @@
 #define MOD_WEBAUTH_H
 
 #include <config-mod.h>
+#include <portable/stdbool.h>
 
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_tables.h>         /* apr_array_header_t */
@@ -20,6 +21,12 @@
 
 #include <webauth.h>
 #include <webauth/tokens.h>
+
+/* The module initialization struct, used to retrieve configuration. */
+extern module webauth_module;
+
+/* Command table provided by the configuration handling code. */
+extern const command_rec webauth_cmds[];
 
 /* how long to wait between trying for a new token when
  * a renewal attempt fails
@@ -48,211 +55,11 @@
 #define ENV_WEBAUTH_LOA "WEBAUTH_LOA"
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
-/* defines for config directives */
-#define CD_WebKdcPrincipal "WebAuthWebKdcPrincipal"
-#define CM_WebKdcPrincipal "K5 WebKDC principal name"
-
-#define CD_WebKdcSSLCertFile "WebAuthWebKdcSSLCertFile"
-#define CM_WebKdcSSLCertFile "cert file containing the WebKDC's certificate"
-
-#define CD_WebKdcSSLCertCheck "WebAuthWebKdcSSLCertCheck"
-#define CM_WebKdcSSLCertCheck "whether or not to perform security checks on the SSL cert used by the WebKDC"
-#define DF_WebKdcSSLCertCheck 1
-
-#define CD_WebKdcURL "WebAuthWebKdcURL"
-#define CM_WebKdcURL "URL for the WebKdc XML service"
-
-#define CD_LoginURL "WebAuthLoginURL"
-#define CM_LoginURL "URL for the login page"
-
-#define CD_AuthType "WebAuthAuthType"
-#define CM_AuthType "additional AuthType alias"
-
-#define CD_FailureURL "WebAuthFailureURL"
-#define CM_FailureURL "URL for serious webauth failures"
-
-#define CD_Keyring "WebAuthKeyring"
-#define CM_Keyring "path to the keyring file"
-
-#define CD_KeyringKeyLifetime "WebAuthKeyringKeyLifetime"
-#define CM_KeyringKeyLifetime "lifetime of keys we create"
-#define DF_KeyringKeyLifetime (60*60*24*30) /* 30 days */
-
-#define CD_KeyringAutoUpdate "WebAuthKeyringAutoUpdate"
-#define CM_KeyringAutoUpdate "whether or not to automatically update keyring"
-#define DF_KeyringAutoUpdate 1
-
-#define CD_Keytab "WebAuthKeytab"
-#define CM_Keytab "path to the K5 keytab file"
-
-#define CD_CredCacheDir "WebAuthCredCacheDir"
-#define CM_CredCacheDir "path to the credential cache directory"
-
-#define CD_ServiceTokenCache "WebAuthServiceTokenCache"
-#define CM_ServiceTokenCache "path to the service token cache file"
-
-#define CD_VarPrefix "WebAuthVarPrefix"
-#define CM_VarPrefix "prefix to prepend to env variables"
-
-#define CD_Debug "WebAuthDebug"
-#define CM_Debug "turn debugging on or off"
-
-#define CD_DoLogout "WebAuthDoLogout"
-#define CM_DoLogout "nuke all WebAuth cookies"
-
-#define CD_RequireSSL "WebAuthRequireSSL"
-#define CM_RequireSSL "whether or not SSL is required"
-#define DF_RequireSSL 1
-
-#define CD_SSLReturn "WebAuthSSLReturn"
-#define CM_SSLReturn "whether or not to force return url to be https"
-
-#define CD_SSLRedirect "WebAuthSSLRedirect"
-#define CM_SSLRedirect "redirect to SSL when accessing a webauth-protected page"
-
-#define CD_SSLRedirectPort "WebAuthSSLRedirectPort"
-#define CM_SSLRedirectPort "used to specify SSL-port if not 443"
-
-#define CD_AppTokenLifetime "WebAuthAppTokenLifetime"
-#define CM_AppTokenLifetime "lifetime of app-tokens"
-
-#define CD_Cred "WebAuthCred"
-#define CM_Cred "credential to obtain"
-
-#define CD_TokenMaxTTL "WebAuthTokenMaxTTL"
-#define CM_TokenMaxTTL "max ttl of tokens that are supposed to be \"recent\""
-#define DF_TokenMaxTTL 300
-
-#define CD_SubjectAuthType "WebAuthSubjectAuthType"
-#define CM_SubjectAuthType "type of subject authenticator returned in id-token"
-#define DF_SubjectAuthType "webkdc"
-
-#define CD_StripURL "WebAuthStripURL"
-#define CM_StripURL "strip returned webkdc tokens from URL"
-#define DF_StripURL 1
-
-#define CD_ExtraRedirect "WebAuthExtraRedirect"
-#define CM_ExtraRedirect "do extra redirect after getting returned from WebKDC"
-#define DF_ExtraRedirect 1
-
-#define CD_InactiveExpire "WebAuthInactiveExpire"
-#define CM_InactiveExpire "duration of inactivity before an app-token expires"
-
-#define CD_LastUseUpdateInterval "WebAuthLastUseUpdateInterval"
-#define CM_LastUseUpdateInterval "how often to update last-used-time in cookie"
-
-#define CD_ForceLogin "WebAuthForceLogin"
-#define CM_ForceLogin "having no valid app-token forces a "\
-                      "username/password prompt"
-
-#define CD_UseCreds "WebAuthUseCreds"
-#define CM_UseCreds "whether or not to create a cred cache file"
-
-#define CD_ReturnURL "WebAuthReturnURL"
-#define CM_ReturnURL "url to return to after logging in"
-
-#define CD_PostReturnURL "WebAuthPostReturnURL"
-#define CM_PostReturnURL "url to return to after a weblogin redirect on a POST"
-
-#define CD_LoginCanceledURL "WebAuthLoginCanceledURL"
-#define CM_LoginCanceledURL "url to return if user cancel's out of login"
-
-#define CD_DontCache "WebAuthDontCache"
-#define CM_DontCache "sets Expires header to current date"
-
-#define CD_Optional "WebAuthOptional"
-#define CM_Optional "authentication is optional, user will not be redirected"
-
-#define CD_InitialFactor "WebAuthRequireInitialFactor"
-#define CM_InitialFactor "required factors for initial authentication"
-
-#define CD_SessionFactor "WebAuthRequireSessionFactor"
-#define CM_SessionFactor "required factors for session authentication"
-
-#define CD_LOA "WebAuthRequireLOA"
-#define CM_LOA "required level of assurance for authentication"
-
-#ifndef NO_STANFORD_SUPPORT
-
-/* Stanford WebAuth 2.5 compat */
-#define SCD_ConfirmMsg "StanfordAuthConfirmMsg"
-#define SCM_ConfirmMsg "unsupported WebAuth 2.5 option"
-
-#define SCD_DoConfirm "StanfordAuthDoConfirm"
-#define SCM_DoConfirm "unsupported WebAuth 2.5 option"
-
-#define SCD_DontCache "StanfordAuthDontCache"
-#define SCM_DontCache "ignored"
-
-#define SCD_ForceReload "StanfordAuthForceReload"
-#define SCM_ForceReload "maps to WebAuthExtraRedirect"
-
-#define SCD_Groups "StanfordAuthGroups"
-#define SCM_Groups "unsupported WebAuth 2.5 option"
-
-#define SCD_Life "StanfordAuthLife"
-#define SCM_Life "maps to WebAuthAppTokenLifetime and enables WebAuthForceLogin"
-#define SCD_ReturnURL "StanfordAuthReturnURL"
-#define SCM_ReturnURL "maps to WebAuthReturnURL"
-
-#endif
-
 /* r->notes keys */
 #define N_WEBAUTHR "mod_webauth_WEBAUTHR"
 #define N_WEBAUTHS "mod_webauth_WEBAUTHS"
 #define N_SUBJECT  "mod_webauth_SUBJECT"
 
-/* enums for config directives */
-
-enum {
-    E_AuthType,
-    E_AppTokenLifetime,
-    E_Cred,
-    E_CredCacheDir,
-    E_Debug,
-    E_DontCache,
-    E_DoLogout,
-    E_ExtraRedirect,
-    E_FailureURL,
-    E_ForceLogin,
-    E_InactiveExpire,
-    E_Keyring,
-    E_KeyringAutoUpdate,
-    E_KeyringKeyLifetime,
-    E_Keytab,
-    E_LastUseUpdateInterval,
-    E_LoginURL,
-    E_LoginCanceledURL,
-    E_Optional,
-    E_PostReturnURL,
-    E_ReturnURL,
-    E_RequireInitialFactor,
-    E_RequireLOA,
-    E_RequireSessionFactor,
-    E_RequireSSL,
-    E_SSLReturn,
-    E_SSLRedirect,
-    E_SSLRedirectPort,
-    E_UseCreds,
-    E_ServiceTokenCache,
-    E_StripURL,
-    E_SubjectAuthType,
-    E_TokenMaxTTL,
-    E_VarPrefix,
-    E_WebKdcPrincipal,
-    E_WebKdcSSLCertFile,
-    E_WebKdcSSLCertCheck,
-    E_WebKdcURL,
-#ifndef NO_STANFORD_SUPPORT
-    SE_ConfirmMsg,
-    SE_DoConfirm,
-    SE_DontCache,
-    SE_ForceReload,
-    SE_Life,
-    SE_ReturnURL,
-    SE_Groups,
-#endif
-};
 
 /* a service token and associated data, all memory (including key)
  * is allocated from a pool
@@ -269,80 +76,96 @@ typedef struct {
     size_t app_state_len;
 } MWA_SERVICE_TOKEN;
 
-/* server conf stuff */
-typedef struct {
-    char *auth_type;
-    char *webkdc_url;
-    char *webkdc_principal;
-    char *webkdc_cert_file;
-    int webkdc_cert_check;
-    int webkdc_cert_check_ex;
-    char *login_url;
-    char *keyring_path;
-    char *keytab_path;
-    char *keytab_principal;
-    char *cred_cache_dir;
-    char *st_cache_path;
-    int debug;
-    int debug_ex;
-    int require_ssl;
-    int require_ssl_ex;
-    int ssl_redirect;
-    int ssl_redirect_ex;
-    int ssl_redirect_port;
-    int ssl_redirect_port_ex;
-    int extra_redirect;
-    int extra_redirect_ex; /* if it was explicitly specified in conf file */
+/*
+ * Server configuration.  For parameters where there's no obvious designated
+ * value for when the directive hasn't been set, there's a corresponding _set
+ * variable that holds whether that directive is set in a particular scope.
+ */
+struct server_config {
+    const char *auth_type;
+    const char *cred_cache_dir;
+    bool debug;
+    bool extra_redirect;
+    bool keyring_auto_update;
+    unsigned long keyring_key_lifetime;
+    const char *keyring_path;
+    const char *keytab_path;
+    const char *keytab_principal;
+    const char *login_url;
+    bool require_ssl;
+    const char *st_cache_path;
+    bool ssl_redirect;
+    unsigned long ssl_redirect_port;
+    bool strip_url;
     const char *subject_auth_type;
-    int strip_url;
-    int strip_url_ex;
-    int keyring_auto_update;
-    int keyring_auto_update_ex;
-    int keyring_key_lifetime;
-    int keyring_key_lifetime_ex;
-    int subject_auth_type_ex;
-    int token_max_ttl;
-    int token_max_ttl_ex;
-    /* stuff we need to clean up on restarts and what not */
-    WEBAUTH_KEYRING *ring; /* our keyring */
-    int free_ring;         /* set if we should free ring */
-    MWA_SERVICE_TOKEN *service_token; /*cached service_token, always free */
-    apr_thread_mutex_t *mutex; /* mutex to use when modfiying sconf stuff */
-} MWA_SCONF;
+    unsigned long token_max_ttl;
+    bool webkdc_cert_check;
+    const char *webkdc_cert_file;
+    const char *webkdc_principal;
+    const char *webkdc_url;
 
-/* directory conf stuff */
-typedef struct {
-    int app_token_lifetime;
-    int inactive_expire;
-    int last_use_update_interval;
-    int do_logout;
-    int do_logout_ex;
-    int dont_cache;
-    int dont_cache_ex;
-    int extra_redirect;
-    int extra_redirect_ex;
-    int force_login;
-    int force_login_ex;
-    int optional;
-    int optional_ex;
+    /* Only used during configuration merging. */
+    bool debug_set;
+    bool extra_redirect_set;
+    bool keyring_auto_update_set;
+    bool keyring_key_lifetime_set;
+    bool require_ssl_set;
+    bool ssl_redirect_set;
+    bool ssl_redirect_port_set;
+    bool strip_url_set;
+    bool subject_auth_type_set;
+    bool token_max_ttl_set;
+    bool webkdc_cert_check_set;
+
+    /*
+     * These aren't part of the Apache configuration, but they are loaded as
+     * part of reading the configuration, are global to the module, and need
+     * to be reset when the module is reloaded, so we store them here.
+     */
+    WEBAUTH_KEYRING *ring;
+    bool free_ring;
+    MWA_SERVICE_TOKEN *service_token;
+
+    /* Mutex to hold when modifying the server configuration. */
+    apr_thread_mutex_t *mutex;
+};
+
+/* The same, but for the directory configuration. */
+struct dir_config {
+    unsigned long app_token_lifetime;
+    bool do_logout;
+    bool dont_cache;
+    bool extra_redirect;
+    const char *failure_url;
+    bool force_login;
+    unsigned long inactive_expire;
+    unsigned long last_use_update_interval;
     unsigned long loa;
-    int loa_ex;
-    int ssl_return;
-    int ssl_return_ex;
-    int use_creds;
-    int use_creds_ex;
-    char *return_url;
-    char *post_return_url;
-    char *failure_url;
-    char *login_canceled_url;
-    char *var_prefix;
-    apr_array_header_t *creds; /* array of MWA_WACRED's */
-    apr_array_header_t *initial_factors; /* array of char *'s */
-    apr_array_header_t *session_factors; /* array of char *'s */
+    const char *login_canceled_url;
+    bool optional;
+    const char *post_return_url;
+    const char *return_url;
+    bool ssl_return;
+    bool use_creds;
+    const char *var_prefix;
+    apr_array_header_t *creds;           /* Array of MWA_WACRED */
+    apr_array_header_t *initial_factors; /* Array of const char * */
+    apr_array_header_t *session_factors; /* Array of const char * */
+
 #ifndef NO_STANFORD_SUPPORT
     char *su_authgroups;
 #endif
-} MWA_DCONF;
+
+    /* Only used during configuration merging. */
+    bool do_logout_set;
+    bool dont_cache_set;
+    bool extra_redirect_set;
+    bool force_login_set;
+    bool loa_set;
+    bool optional_set;
+    bool ssl_return_set;
+    bool use_creds_set;
+};
 
 /* a cred, used to keep track of WebAuthCred directives. */
 typedef struct {
@@ -353,8 +176,8 @@ typedef struct {
 /* handy bunch of bits to pass around during a request */
 typedef struct {
     request_rec *r;
-    MWA_SCONF *sconf;
-    MWA_DCONF *dconf;
+    struct server_config *sconf;
+    struct dir_config *dconf;
     struct webauth_context *ctx;
     struct webauth_token_app *at;
     char *needed_proxy_type; /* set if we are redirecting for a proxy-token */
@@ -387,17 +210,31 @@ typedef struct {
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
     const char *(*webkdc_credential)(server_rec *server,
-                                     MWA_SCONF *sconf,
+                                     struct server_config *sconf,
                                      apr_pool_t *pool);
 
 } MWA_CRED_INTERFACE;
+
+
+/* config.c */
+
+/* Create a new server or directory configuration, used in the module hooks. */
+void *mwa_dir_config_create(apr_pool_t *, char *path);
+void *mwa_server_config_create(apr_pool_t *, server_rec *s);
+
+/* Merge two server or directory configurations, used in the module hooks. */
+void *mwa_dir_config_merge(apr_pool_t *, void *, void *);
+void *mwa_server_config_merge(apr_pool_t *, void *, void *);
+
+/* Perform final checks on the configuration (called from post_config hook). */
+void mwa_config_init(server_rec *, struct server_config *, apr_pool_t *);
 
 
 /* webkdc.c */
 
 MWA_SERVICE_TOKEN *
 mwa_get_service_token(server_rec *server,
-                      MWA_SCONF *sconf, apr_pool_t *pool,
+                      struct server_config *sconf, apr_pool_t *pool,
                       int local_cache_only);
 
 
@@ -456,7 +293,7 @@ mwa_log_webauth_error(server_rec *r,
  * this should only be called in the module init routine
  */
 int
-mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf);
+mwa_cache_keyring(server_rec *serv, struct server_config *sconf);
 
 /*
  * get all cookies that start with webauth_
@@ -485,7 +322,7 @@ mwa_log_apr_error(server_rec *server,
 
 void
 mwa_register_cred_interface(server_rec *server,
-                            MWA_SCONF *sconf,
+                            struct server_config *sconf,
                             apr_pool_t *pool,
                             MWA_CRED_INTERFACE *interface);
 

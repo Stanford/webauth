@@ -11,6 +11,7 @@
 #include <config-mod.h>
 #include <portable/apache.h>
 #include <portable/apr.h>
+#include <portable/stdbool.h>
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
@@ -164,7 +165,7 @@ mwa_log_webauth_error(server_rec *s,
 
 
 int
-mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
+mwa_cache_keyring(server_rec *serv, struct server_config *sconf)
 {
     int status;
     WEBAUTH_KAU_STATUS kau_status;
@@ -294,7 +295,7 @@ static apr_array_header_t *cred_interfaces = NULL;
 
 void
 mwa_register_cred_interface(server_rec *server,
-                            MWA_SCONF *sconf,
+                            struct server_config *sconf,
                             apr_pool_t *pool,
                             MWA_CRED_INTERFACE *interface)
 {

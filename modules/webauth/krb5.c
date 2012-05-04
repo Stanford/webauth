@@ -11,6 +11,7 @@
 #include <config-mod.h>
 #include <portable/apache.h>
 #include <portable/apr.h>
+#include <portable/stdbool.h>
 
 #include <apr_base64.h>
 #include <unistd.h>
@@ -137,8 +138,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 
     if (rc->sconf->cred_cache_dir == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: %s: cred_cache_dir is not set (%s)",
-                     mwa_func, CM_CredCacheDir);
+                     "mod_webauth: WebAuthCredCacheDir is not set");
         return 0;
     }
 
@@ -216,7 +216,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 
 static const char *
 krb5_webkdc_credential(server_rec *server,
-                       MWA_SCONF *sconf,
+                       struct server_config *sconf,
                        apr_pool_t *pool)
 {
     WEBAUTH_KRB5_CTXT *ctxt;
