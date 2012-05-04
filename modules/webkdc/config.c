@@ -102,7 +102,8 @@ enum {
 #define MERGE_PTR_OTHER(field, other)                                   \
     conf->field = (oconf->other != NULL) ? oconf->field : bconf->field
 #define MERGE_SET(field)                                                \
-    conf->field = (oconf->field ## _set) ? oconf->field : bconf->field
+    conf->field = (oconf->field ## _set) ? oconf->field : bconf->field; \
+    conf->field ## _set = oconf->field ## _set || bconf->field ## _set
 
 /*
  * Macro used for checking if a directive is set.  Takes the struct attribute,

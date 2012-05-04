@@ -12,6 +12,9 @@ WebAuth 4.2.0 (unreleased)
     built with Apache 2.2 or earlier, but is deprecated and will be
     removed for all versions of Apache in a later release.
 
+    Fix merging of mod_webkdc Apache directives in some corner cases where
+    the directive has a default value or is explicitly set to off.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
