@@ -343,6 +343,85 @@ int webauth_token_encode_raw(struct webauth_context *,
                              size_t *length)
     __attribute__((__nonnull__));
 
+/*
+ * FIXME: The following interfaces should be internal-only, but significant
+ * changes are required to the Perl modules before that can happen.
+ */
+
+/*
+ * Returns the space required to encode and encrypt a token, not including
+ * nul-termination.  The padding length is stored in the provided argument.
+ */
+size_t webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *, size_t *)
+    __attribute__((__nonnull__));
+
+/*
+ * Encodes and encrypts attributes into a token, using the key from the
+ * keyring that has the most recent valid valid_from time.  If hint is 0 then
+ * the current time will be used.  The encoded token will be stored in newly
+ * pool-allocated memory in the provided output argument, with its length
+ * stored in output_len.
+ *
+ * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if no suitable
+ * and valid encryption key could be found in the keyring.
+ */
+int webauth_token_create(struct webauth_context *, const WEBAUTH_ATTR_LIST *,
+                         time_t hint, char **output, size_t *output_len,
+                         const WEBAUTH_KEYRING *)
+    __attribute__((__nonnull__));
+
+/*
+ * The same as webauth_token_create, but takes an encryption key to use
+ * instead of a keyring.
+ *
+ * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if the key is
+ * not a valid encryption key.
+ */
+int webauth_token_create_with_key(struct webauth_context *,
+                                  const WEBAUTH_ATTR_LIST *, time_t hint,
+                                  char **output, size_t *output_len,
+                                  const WEBAUTH_KEY *)
+    __attribute__((__nonnull__));
+
+/*
+ * Decrypts and decodes attributes from a token.  The best decryption key on
+ * the ring will be tried first, and if that fails all the remaining keys will
+ * be tried.  input is modified and the returned attrs in list point into
+ * input.
+ *
+ * The following checks are made:
+ *
+ * * If the token has a WA_TK_EXPIRATION_TIME attribute, it must be 4 bytes
+ *   long and is assumed to be the expiration time of the token in network
+ *   byte order.  It is compared against the current time, and
+ *   WA_ERR_TOKEN_EXPIRED is returned if the token has expired.
+ *
+ * * WA_TK_CREATION_TIME is checked if and only if the token doesn't have an
+ *   explicit expiration time and ttl is non-zero.  In that case, if the token
+ *   has a WA_TK_CREATION_TIME attribute, it must be 4 bytes long and is
+ *   assumed to be the creation time of the token in network byte order.  The
+ *   creation time is compared against the current time + ttl and
+ *   WA_ERR_TOKEN_STALE is returned if the token is stale.
+ *
+ * The list will point to the dynamically-allocated list of attributes and
+ * must be freed when no longer needed.  If WA_ERR_TOKEN_EXPIRED or
+ * WA_ERR_TOKEN_STALE are returned, an attribute list is still allocated and
+ * needs to be freed.
+ *
+ * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC,
+ * WA_ERR_BAD_KEY, WA_ERR_TOKEN_EXPIRED, or WA_ERR_TOKEN_STALE.
+ */
+int webauth_token_parse(struct webauth_context *, const char *input,
+                        size_t input_len, unsigned long ttl,
+                        const WEBAUTH_KEYRING *, WEBAUTH_ATTR_LIST **)
+    __attribute__((__nonnull__));
+
+/* Same as webauth_token_parse but takes a key instead of a keyring. */
+int webauth_token_parse_with_key(struct webauth_context *, const char *input,
+                                 size_t input_len, unsigned long ttl,
+                                 const WEBAUTH_KEY *, WEBAUTH_ATTR_LIST **)
+    __attribute__((__nonnull__));
+
 END_DECLS
 
 #endif /* !WEBAUTH_TOKENS_H */

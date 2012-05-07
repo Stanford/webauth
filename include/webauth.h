@@ -8,7 +8,7 @@
  * functions to generate random numbers or new AES keys.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2008, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -578,75 +578,6 @@ int webauth_keyring_auto_update(const char *path, int create, int lifetime,
                                 WEBAUTH_KEYRING **ring,
                                 WEBAUTH_KAU_STATUS *kau_status,
                                 int *update_status);
-
-/*
- * TOKEN MANIPULATION
- */
-
-/*
- * Returns the space required to encode and encrypt a token, not including
- * nul-termination.
- */
-size_t webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *);
-
-/*
- * Encodes and encrypts attributes into a token, using the key from the
- * keyring that has the most recent valid valid_from time.  If hint is 0 then
- * the current time will be used.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, WA_ERR_NO_MEM, or WA_ERR_BAD_KEY.
- */
-int webauth_token_create(const WEBAUTH_ATTR_LIST *, time_t hint, char *output,
-                         size_t *output_len, size_t max_output_len,
-                         const WEBAUTH_KEYRING *);
-
-/*
- * Encodes and encrypts attributes into a token using the specified key.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, WA_ERR_NO_MEM, or WA_ERR_BAD_KEY.
- *
- */
-int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *, time_t hint,
-                                  char *output, size_t *output_len,
-                                  size_t max_output_len, const WEBAUTH_KEY *);
-
-/*
- * Decrypts and decodes attributes from a token.  The best decryption key on
- * the ring will be tried first, and if that fails all the remaining keys will
- * be tried.  input is modified and the returned attrs in list point into
- * input.
- *
- * The following checks are made:
- *
- * * If the token has a WA_TK_EXPIRATION_TIME attribute, it must be 4 bytes
- *   long and is assumed to be the expiration time of the token in network
- *   byte order.  It is compared against the current time, and
- *   WA_ERR_TOKEN_EXPIRED is returned if the token has expired.
- *
- * * WA_TK_CREATION_TIME is checked if and only if the token doesn't have an
- *   explicit expiration time and ttl is non-zero.
- *
- * * If the token has a WA_TK_CREATION_TIME attribute, it must be 4 bytes long
- *   and is assumed to be the creation time of the token in network byte
- *   order.  The creation time is compared against the current time + ttl and
- *   WA_ERR_TOKEN_STALE is returned if the token is stale.
- *
- * The list will point to the dynamically-allocated list of attributes and
- * must be freed when no longer needed.
- *
- * Note: If WA_ERR_TOKEN_EXPIRED or WA_ERR_TOKEN_STALE are returned, an
- * attribute list is still allocated and needs to be freed.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC,
- * WA_ERR_BAD_KEY, WA_ERR_TOKEN_EXPIRED, or WA_ERR_TOKEN_STALE.
- */
-int webauth_token_parse(char *input, size_t input_len, unsigned long ttl,
-                        const WEBAUTH_KEYRING *, WEBAUTH_ATTR_LIST **);
-
-/* Same as webauth_token_parse but takes a key instead of a keyring. */
-int webauth_token_parse_with_key(char *input, size_t input_len,
-                                 unsigned long ttl, const WEBAUTH_KEY *,
-                                 WEBAUTH_ATTR_LIST **);
 
 
 /*

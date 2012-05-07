@@ -232,11 +232,11 @@ main(void)
 
     /* Test decoding error cases for app tokens. */
     check_error(ctx, WA_TOKEN_APP, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "bad app token");
+                "HMAC check failed while decrypting token");
     check_error(ctx, WA_TOKEN_APP, "app-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad app token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type cred while decoding app token");
 
@@ -258,7 +258,7 @@ main(void)
     check_error(ctx, WA_TOKEN_CRED, "cred-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_CRED, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad cred token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type error while decoding cred token");
 
@@ -321,7 +321,7 @@ main(void)
 
     /* Test decoding error cases for id tokens. */
     check_error(ctx, WA_TOKEN_ID, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad id token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_ID, "login-pass", ring, WA_ERR_CORRUPT,
                 "wrong token type login while decoding id token");
 
@@ -369,7 +369,7 @@ main(void)
     check_error(ctx, WA_TOKEN_PROXY, "proxy-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_PROXY, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad proxy token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
                 "wrong token type req while decoding proxy token");
 
@@ -492,7 +492,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-proxy tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "bad webkdc-proxy token");
+                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app while decoding webkdc-proxy token");
 
@@ -511,7 +511,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-service tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "bad webkdc-service token");
+                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app while decoding webkdc-service token");
 
@@ -580,12 +580,9 @@ main(void)
                   "...subject");
     }
 
-    /*
-     * And test basic error handling with generic decoding.  We won't bother
-     * to test the error message; that was previously tested.
-     */
+    /* And test basic error handling with generic decoding. */
     check_error(ctx, WA_TOKEN_ANY, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "bad token");
+                "HMAC check failed while decrypting token");
 
     /* Test decoding of a raw app token. */
     result = check_decode_raw(ctx, WA_TOKEN_APP, "app-raw", ring, 9);

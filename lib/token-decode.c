@@ -5,7 +5,7 @@
  * representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior Univerity
  *
  * See LICENSE for licensing terms.
@@ -74,7 +74,6 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
             WEBAUTH_ATTR_LIST **alist)
 {
     char *value;
-    void *input;
     const char *type_string = NULL;
     int status;
 
@@ -86,14 +85,10 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
         return WA_ERR_INVALID;
     }
 
-    /* FIXME: Fix webauth_token_parse to not be destructive. */
-    input = apr_palloc(ctx->pool, length);
-    memcpy(input, token, length);
-
     /* Parse the token. */
-    status = webauth_token_parse(input, length, 0, keyring, alist);
+    status = webauth_token_parse(ctx, token, length, 0, keyring, alist);
     if (status != WA_ERR_NONE)
-        goto error;
+        goto fail;
 
     /* Check the token type to see if it's what we expect. */
     status = webauth_attr_list_get_str(*alist, WA_TK_TOKEN_TYPE, &value,

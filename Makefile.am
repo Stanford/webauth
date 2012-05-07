@@ -306,6 +306,7 @@ tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
+tests_lib_token_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_token_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \

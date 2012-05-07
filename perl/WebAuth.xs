@@ -14,7 +14,7 @@
  * rather than through error returns.
  *
  * Written by Roland Schemers
- * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011
+ * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -26,6 +26,7 @@
 
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 /*
  * These typedefs are needed for xsubpp to work its magic with type
@@ -441,55 +442,59 @@ webauth_token_create(attrs, hint, key_or_ring)
 {
     HV *h;
     SV *sv_val;
-    size_t num_attrs, out_len, out_max;
+    size_t num_attrs, out_len, plen;
     int s;
-    char *akey, *val, *buff;
+    char *akey, *val, *buff, *out;
     I32 klen;
     STRLEN vlen;
     WEBAUTH_ATTR_LIST *list;
     SV *output = NULL;
     int iskey;
+    struct webauth_context *ctx;
 
     if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV))
         croak("attrs must be reference to a hash");
     h = (HV *) SvRV(attrs);
 
+    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
+        croak("cannot initialize WebAuth context");
+
     num_attrs = hv_iterinit(h);
     list = webauth_attr_list_new(num_attrs);
-    if (list == NULL)
+    if (list == NULL) {
+        webauth_context_free(ctx);
         croak("can't malloc attrs");
+    }
 
     while ((sv_val = hv_iternextsv(h, &akey, &klen)) != NULL) {
         val = SvPV(sv_val, vlen);
         webauth_attr_list_add(list, akey, val, vlen, WA_F_NONE);
     }
 
-    out_max = webauth_token_encoded_length(list);
-    buff = malloc(out_max);
-    if (buff == NULL)
-        croak("can't malloc token buffer");
     if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
         WEBAUTH_KEYRING *ring;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_create(list, hint, buff, &out_len, out_max, ring);
+        s = webauth_token_create(ctx, list, hint, &buff, &out_len, ring);
         iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         key = INT2PTR(WEBAUTH_KEY *, tmp);
-        s = webauth_token_create_with_key(list, hint, buff, &out_len,
-                                          out_max, key);
+        s = webauth_token_create_with_key(ctx, list, hint, &buff, &out_len,
+                                          key);
         iskey = 1;
-    } else
+    } else {
+        webauth_context_free(ctx);
         croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
+    }
 
     webauth_attr_list_free(list);
 
     if (s != WA_ERR_NONE) {
-        free(buff);
+        webauth_context_free(ctx);
         webauth_croak(iskey ?
                       "webauth_token_create_with_key" : "webauth_token_create",
                       s, NULL);
@@ -497,7 +502,7 @@ webauth_token_create(attrs, hint, key_or_ring)
         output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
     }
-    free(buff);
+    webauth_context_free(ctx);
     EXTEND(SP,1);
     PUSHs(output);
 }
@@ -519,25 +524,32 @@ webauth_token_parse(buffer, ttl, key_or_ring)
     HV *hv;
     SV *output = NULL;
     SV *copy = sv_2mortal(newSVsv(buffer));
+    struct webauth_context *ctx;
 
     p_input = SvPV(copy, n_input);
+
+    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
+        croak("cannot initialize WebAuth context");
 
     if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
         WEBAUTH_KEYRING *ring;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_parse(p_input, n_input, ttl, ring, &list);
+        s = webauth_token_parse(ctx, p_input, n_input, ttl, ring, &list);
         iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         key = INT2PTR(WEBAUTH_KEY *,tmp);
-        s = webauth_token_parse_with_key(p_input, n_input, ttl, key, &list);
+        s = webauth_token_parse_with_key(ctx, p_input, n_input, ttl, key,
+                                         &list);
         iskey = 1;
-    } else
+    } else {
+        webauth_context_free(ctx);
         croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
+    }
 
     if (s == WA_ERR_NONE) {
         hv = newHV();
@@ -548,10 +560,13 @@ webauth_token_parse(buffer, ttl, key_or_ring)
                                      list->attrs[i].length), 0);
         output = sv_2mortal(newRV_noinc((SV *) hv));
         webauth_attr_list_free(list);
-    } else
+    } else {
+        webauth_context_free(ctx);
         webauth_croak(iskey ?
                       "webauth_token_parse_with_key" : "webauth_token_parse",
                       s, NULL);
+    }
+    webauth_context_free(ctx);
     EXTEND(SP,1);
     PUSHs(output);
 }

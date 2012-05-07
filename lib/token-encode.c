@@ -5,7 +5,7 @@
  * tokens representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior Univerity
  *
  * See LICENSE for licensing terms.
@@ -142,19 +142,9 @@ finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
     char *rtoken;
     int status;
 
-    /*
-     * Encode the token.  First, we encode the binary form into newly
-     * allocated memory, and then we allocate an additional block of memory
-     * for the base64-encoded form.  The first block is temporary memory that
-     * we could reclaim faster if it ever looks worthwhile.
-     */
-    *length = webauth_token_encoded_length(alist);
-    rtoken = apr_palloc(ctx->pool, *length);
-    status = webauth_token_create(alist, 0, rtoken, length, *length, keyring);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "error encoding app token");
+    status = webauth_token_create(ctx, alist, 0, &rtoken, length, keyring);
+    if (status != WA_ERR_NONE)
         return status;
-    }
     *token = rtoken;
     return WA_ERR_NONE;
 }
@@ -646,6 +636,12 @@ webauth_token_encode(struct webauth_context *ctx,
     char *btoken;
     size_t length;
 
+    /*
+     * First, we encode the binary form into newly allocated memory, and then
+     * we allocate an additional block of memory for the base64-encoded form.
+     * The first block is temporary memory that we could reclaim faster if it
+     * ever looks worthwhile.
+     */
     *token = NULL;
     status = webauth_token_encode_raw(ctx, data, ring, &raw, &length);
     if (status != WA_ERR_NONE)
