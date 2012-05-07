@@ -72,7 +72,7 @@ typedef struct {
     time_t created; /* when we first obtained this token */
     time_t next_renewal_attempt; /* next time we try to renew */
     time_t last_renewal_attempt; /* time we last tried to renew */
-    void *app_state; /* used as "as" attribute in request tokens */
+    const void *app_state; /* used as "as" attribute in request tokens */
     size_t app_state_len;
 } MWA_SERVICE_TOKEN;
 

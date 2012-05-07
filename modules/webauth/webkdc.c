@@ -20,6 +20,7 @@
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
+#include <webauth/tokens.h>
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA
@@ -696,52 +697,28 @@ request_service_token(server_rec *server,
  * generate our app-state blob once and re-use it
  */
 static void
-set_app_state(server_rec *server, struct server_config *sconf,
-              MWA_SERVICE_TOKEN *token, time_t curr)
+set_app_state(struct webauth_context *ctx, server_rec *server,
+              struct server_config *sconf, MWA_SERVICE_TOKEN *token)
 {
-    WEBAUTH_ATTR_LIST *alist;
-    size_t tlen, olen;
+    struct webauth_token app;
     int status;
-    void *as;
-
-    status = WA_ERR_NONE;
+    const void *as;
+    size_t length;
 
     token->app_state = NULL;
     token->app_state_len = 0;
-
-    alist = webauth_attr_list_new(10);
-
-    if (alist == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, server,
-                     "mod_webauth: set_app_state: "
-                     "webauth_attr_list_new failed");
-        return;
-    }
-
-    webauth_attr_list_add_str(alist, WA_TK_TOKEN_TYPE, WA_TT_APP, 0,
-                              WA_F_NONE);
-    webauth_attr_list_add(alist, WA_TK_SESSION_KEY,
-                          token->key.data, token->key.length, WA_F_NONE);
-    webauth_attr_list_add_time(alist, WA_TK_EXPIRATION_TIME,
-                               token->expires, WA_F_NONE);
-
-    tlen = webauth_token_encoded_length(alist);
-
-    as = (char*)apr_palloc(token->pool, tlen);
-
-    if (sconf->ring == NULL)
-        return;
-
-    status = webauth_token_create(alist, curr, as, &olen, tlen, sconf->ring);
-
-    webauth_attr_list_free(alist);
-
-    if (status != WA_ERR_NONE) {
+    memset(&app, 0, sizeof(app));
+    app.type = WA_TOKEN_APP;
+    app.token.app.session_key = token->key.data;
+    app.token.app.session_key_len = token->key.length;
+    app.token.app.expiration = token->expires;
+    status = webauth_token_encode_raw(ctx, &app, sconf->ring, &as, &length);
+    if (status != WA_ERR_NONE)
         mwa_log_webauth_error(server, status, "set_app_state",
-                              "webauth_token_create", NULL);
-    } else {
+                              "webauth_token_encode", NULL);
+    else {
         token->app_state = as;
-        token->app_state_len = tlen;
+        token->app_state_len = length;
     }
     return;
 }
@@ -785,10 +762,15 @@ MWA_SERVICE_TOKEN *
 mwa_get_service_token(server_rec *server, struct server_config *sconf,
                       apr_pool_t *pool, int local_cache_only)
 {
+    struct webauth_context *ctx;
     MWA_SERVICE_TOKEN *token;
     time_t curr = time(NULL);
     static const char *mwa_func = "mwa_get_service_token";
+
     apr_thread_mutex_lock(sconf->mutex); /****** LOCKING! ************/
+
+    /* FIXME: Eventually this should be passed around everywhere. */
+    webauth_context_init_apr(&ctx, pool);
 
     if (sconf->service_token != NULL) {
         /* return the current one, unless we should attempt a renewal */
@@ -821,7 +803,7 @@ mwa_get_service_token(server_rec *server, struct server_config *sconf,
         if (token->next_renewal_attempt > curr) {
             /* app state is generated on read so it always uses
                the current keying */
-            set_app_state(server, sconf, token, curr);
+            set_app_state(ctx, server, sconf, token);
             /* copy into its own pool for future use */
             set_service_token(token, sconf);
             goto done;
@@ -863,13 +845,12 @@ mwa_get_service_token(server_rec *server, struct server_config *sconf,
 
         /* got a new one, lets right it out*/
         write_service_token_cache(server, sconf, pool, token);
-        set_app_state(server, sconf, token, curr);
+        set_app_state(ctx, server, sconf, token);
         set_service_token(token, sconf);
         goto done;
     }
 
- done:
-
+done:
     apr_thread_mutex_unlock(sconf->mutex); /****** UNLOCKING! ************/
 
     if (token == NULL && !local_cache_only) {
