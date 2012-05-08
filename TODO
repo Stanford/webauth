@@ -87,6 +87,11 @@ General:
    there a way for us to query if that log level is enabled?)
    (WEBAUTH-36)
 
+ * Generalize the option parsing code so that all three modules can use
+   the same infrastructure.  The best way to do this is probably to
+   auto-generate most of the code from a separate description of the
+   options.  (WEBAUTH-86)
+
 libwebauth:
 
  * Provide a way to report diagnostic warnings in the library, and use
@@ -206,6 +211,8 @@ mod_webauthldap:
 
  * Support configuring multiple LDAP servers to query so that failover is
    supported.  (WEBAUTH-2)
+
+ * Convert mod_webauthldap to the new option parsing code.  (WEBAUTH-85)
 
 mod_webkdc:
 
