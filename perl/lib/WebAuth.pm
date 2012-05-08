@@ -196,8 +196,7 @@ sub krb5_error_message {
 
 sub error_message {
     my ($self) = @_;
-    my $s = $self->{'status'};
-    return WebAuth::error_message($s);
+    return $self->{'message'};
 }
 
 sub detail_message {
@@ -210,9 +209,9 @@ sub verbose_message {
     my $s = $self->{'status'};
     my $line = $self->{'line'};
     my $file = $self->{'file'};
-    my $msg = WebAuth::error_message($s);
+    my $msg = $self->{'message'};
     my $detail = $self->{'detail'};
-    if (defined($detail)) {
+    if (defined $detail) {
         $msg = "WebAuth::Exception $detail: $msg";
     }
     if ($s == &WebAuth::WA_ERR_KRB5) {
@@ -220,7 +219,7 @@ sub verbose_message {
         my $kem = $self->{'krb5_em'};
         $msg .= ": $kem ($kec)";
     }
-    if (defined($line)) {
+    if (defined $line) {
         $msg .= " at $file line $line";
     }
     return $msg;

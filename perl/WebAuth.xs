@@ -44,15 +44,18 @@ typedef WEBAUTH_KEYRING_ENTRY * WebAuth__KeyringEntry;
  * Turn a WebAuth error into a Perl exception.
  */
 static void
-webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
+webauth_croak(struct webauth_context *ctx, const char *detail, int s,
+              WEBAUTH_KRB5_CTXT *c)
 {
     HV *hv;
     SV *rv;
 
     hv = newHV();
     (void) hv_store(hv, "status", 6, newSViv(s), 0);
+    (void) hv_store(hv, "message", 7,
+                    newSVpv(webauth_error_message(ctx, s), 0), 0);
     if (detail != NULL)
-        (void) hv_store(hv, "detail", 6, newSVpv(detail,0), 0);
+        (void) hv_store(hv, "detail", 6, newSVpv(detail, 0), 0);
     if (s == WA_ERR_KRB5 && c != NULL) {
         (void) hv_store(hv, "krb5_ec", 7,
                         newSViv(webauth_krb5_error_code(c)), 0);
@@ -64,7 +67,7 @@ webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
         (void) hv_store(hv, "line", 4, newSViv(CopLINE(PL_curcop)), 0);
         (void) hv_store(hv, "file", 4, newSVpv(CopFILE(PL_curcop), 0), 0);
     }
-    rv = newRV_noinc((SV*)hv);
+    rv = newRV_noinc((SV *) hv);
     sv_bless(rv, gv_stashpv("WebAuth::Exception", TRUE));
     sv_setsv(get_sv("@", TRUE), sv_2mortal(rv));
     croak(Nullch);
@@ -164,12 +167,12 @@ BOOT:
 }
 
 
-char *
+const char *
 webauth_error_message(status)
     int status
   PROTOTYPE: $
   CODE:
-    RETVAL = (char*) webauth_error_message(NULL, status);
+    RETVAL = webauth_error_message(NULL, status);
   OUTPUT:
     RETVAL
 
@@ -194,7 +197,7 @@ webauth_base64_encode(input)
                               out_max);
 
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_base64_encode", s, NULL);
+        webauth_croak(NULL, "webauth_base64_encode", s, NULL);
 
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
@@ -225,7 +228,7 @@ webauth_base64_decode(input)
     if (s != WA_ERR_NONE) {
        if (buff != NULL)
             free(buff);
-       webauth_croak("webauth_base64_decode", s, NULL);
+       webauth_croak(NULL, "webauth_base64_decode", s, NULL);
     }
 
     EXTEND(SP,1);
@@ -254,7 +257,7 @@ webauth_hex_encode(input)
     ST(0) = sv_2mortal(NEWSV(0, out_max));
     s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_hex_encode", s, NULL);
+        webauth_croak(NULL, "webauth_hex_encode", s, NULL);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
@@ -276,7 +279,7 @@ webauth_hex_decode(input)
     p_input = SvPV(input, n_input);
     s = webauth_hex_decoded_length(n_input, &out_max);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_hex_decoded_length", s, NULL);
+        webauth_croak(NULL, "webauth_hex_decoded_length", s, NULL);
     buff = malloc(out_max);
     if (buff == NULL)
         croak("can't create buffer");
@@ -284,7 +287,7 @@ webauth_hex_decode(input)
     if (s != WA_ERR_NONE) {
         if (buff != NULL)
             free(buff);
-        webauth_croak("webauth_hex_decode", s, NULL);
+        webauth_croak(NULL, "webauth_hex_decode", s, NULL);
     }
 
     EXTEND(SP,1);
@@ -332,7 +335,7 @@ webauth_attrs_encode(attrs)
     s = webauth_attrs_encode(list, SvPVX(output), &out_len, out_max);
     webauth_attr_list_free(list);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_attrs_encode", s, NULL);
+        webauth_croak(NULL, "webauth_attrs_encode", s, NULL);
     else {
         SvCUR_set(output, out_len);
         SvPOK_only(output);
@@ -361,7 +364,7 @@ webauth_attrs_decode(buffer)
     p_input = SvPV(copy, n_input);
     s = webauth_attrs_decode(p_input, n_input, &list);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_attrs_decode", s, NULL);
+        webauth_croak(NULL, "webauth_attrs_decode", s, NULL);
 
     hv = newHV();
     for (i = 0; i < list->num_attrs; i++)
@@ -386,7 +389,7 @@ webauth_random_bytes(length)
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_bytes(SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_random_bytes", s, NULL);
+        webauth_croak(NULL, "webauth_random_bytes", s, NULL);
     else {
         SvCUR_set(ST(0), length);
         SvPOK_only(ST(0));
@@ -405,7 +408,7 @@ webauth_random_key(length)
     ST(0) = sv_2mortal(NEWSV(0, length));
     s = webauth_random_key(SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE) {
-        webauth_croak("webauth_random_key", s, NULL);
+        webauth_croak(NULL, "webauth_random_key", s, NULL);
     } else {
         SvCUR_set(ST(0), length);
         SvPOK_only(ST(0));
@@ -426,7 +429,7 @@ webauth_key_create(type, key_material)
     p_input = SvPV(key_material, n_input);
     RETVAL = webauth_key_create(type, p_input, n_input);
     if (RETVAL == NULL)
-        webauth_croak("webauth_key_create", WA_ERR_BAD_KEY, NULL);
+        webauth_croak(NULL, "webauth_key_create", WA_ERR_BAD_KEY, NULL);
 }
   OUTPUT:
     RETVAL
@@ -494,10 +497,10 @@ webauth_token_create(attrs, hint, key_or_ring)
     webauth_attr_list_free(list);
 
     if (s != WA_ERR_NONE) {
-        webauth_context_free(ctx);
-        webauth_croak(iskey ?
+        webauth_croak(ctx, iskey ?
                       "webauth_token_create_with_key" : "webauth_token_create",
                       s, NULL);
+        webauth_context_free(ctx);
     } else {
         output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
@@ -561,10 +564,10 @@ webauth_token_parse(buffer, ttl, key_or_ring)
         output = sv_2mortal(newRV_noinc((SV *) hv));
         webauth_attr_list_free(list);
     } else {
-        webauth_context_free(ctx);
-        webauth_croak(iskey ?
+        webauth_croak(ctx, iskey ?
                       "webauth_token_parse_with_key" : "webauth_token_parse",
                       s, NULL);
+        webauth_context_free(ctx);
     }
     webauth_context_free(ctx);
     EXTEND(SP,1);
@@ -585,9 +588,9 @@ webauth_krb5_new()
     output = sv_newmortal();
     sv_setref_pv(output, "WEBAUTH_KRB5_CTXTPtr", (void*)ctxt);
     if (ctxt == NULL)
-        webauth_croak("webauth_krb5_new", WA_ERR_NO_MEM, NULL);
+        webauth_croak(NULL, "webauth_krb5_new", WA_ERR_NO_MEM, NULL);
     else if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_new", s, ctxt);
+        webauth_croak(NULL, "webauth_krb5_new", s, ctxt);
     EXTEND(SP,1);
     PUSHs(output);
 }
@@ -643,7 +646,7 @@ webauth_krb5_init_via_password(c, name, password, get_principal, keytab, \
                                        keytab, server_principal, cred,
                                        &server_princ_out);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_password", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_password", s, c);
     else if (get_principal == NULL || keytab != NULL) {
         SV *out = sv_newmortal();
         sv_setpv(out, server_princ_out);
@@ -665,7 +668,7 @@ webauth_krb5_change_password(c, pass, ...)
 
     s = webauth_krb5_change_password(c, pass);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_change_password", s, c);
+        webauth_croak(NULL, "webauth_krb5_change_password", s, c);
 }
 
 
@@ -689,7 +692,7 @@ webauth_krb5_init_via_keytab(c, keytab, server_principal, ...)
 
     s = webauth_krb5_init_via_keytab(c, keytab, server_principal, cred);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_keytab", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_keytab", s, c);
 }
 
 
@@ -713,7 +716,7 @@ webauth_krb5_init_via_cred(c, cred, ...)
         cc = NULL;
     s = webauth_krb5_init_via_cred(c, pcred, cred_len, cc);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_cred", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_cred", s, c);
 }
 
 
@@ -732,7 +735,7 @@ webauth_krb5_init_via_cache(c, ...)
         cc = NULL;
     s = webauth_krb5_init_via_cache(c, cc);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_cache", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_cache", s, c);
 }
 
 
@@ -750,7 +753,7 @@ webauth_krb5_import_cred(c, cred)
     pticket = SvPV(cred, ticket_len);
     s = webauth_krb5_import_cred(c, pticket, ticket_len);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_import_cred", s, c);
+        webauth_croak(NULL, "webauth_krb5_import_cred", s, c);
 }
 
 
@@ -776,7 +779,7 @@ webauth_krb5_export_tgt(c)
         PUSHs(sv_2mortal(newSViv(expiration)));
     } else {
         free(tgt);
-        webauth_croak("webauth_krb5_export_tgt", s, c);
+        webauth_croak(NULL, "webauth_krb5_export_tgt", s, c);
     }
 }
 
@@ -801,7 +804,7 @@ webauth_krb5_get_principal(c, local)
         free(princ);
     } else {
         free(princ);
-        webauth_croak("webauth_krb5_get_principal", s, c);
+        webauth_croak(NULL, "webauth_krb5_get_principal", s, c);
     }
 }
 
@@ -831,7 +834,7 @@ webauth_krb5_export_ticket(c, princ)
     } else {
         if (ticket != NULL)
             free(ticket);
-        webauth_croak("webauth_krb5_export_ticket", s, c);
+        webauth_croak(NULL, "webauth_krb5_export_ticket", s, c);
     }
 }
 
@@ -870,7 +873,7 @@ webauth_krb5_mk_req(c, princ, ...)
             PUSHs(data_out);
         }
     } else
-        webauth_croak("webauth_krb5_mk_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_mk_req", s, c);
 }
 
 
@@ -919,7 +922,7 @@ webauth_krb5_rd_req(c, request, keytab, server_principal, local, ...)
         }
     } else {
         free(client_princ);
-        webauth_croak("webauth_krb5_rd_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_rd_req", s, c);
     }
 }
 
@@ -934,7 +937,7 @@ webauth_krb5_keep_cred_cache(c)
 
     s = webauth_krb5_keep_cred_cache(c);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_rd_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_rd_req", s, c);
 }
 
 
@@ -964,7 +967,7 @@ new(class, capacity = 1)
   CODE:
     RETVAL = webauth_keyring_new(capacity);
     if (RETVAL == NULL)
-        webauth_croak("webauth_keyring_new", WA_ERR_NO_MEM, NULL);
+        webauth_croak(NULL, "webauth_keyring_new", WA_ERR_NO_MEM, NULL);
   OUTPUT:
     RETVAL
 
@@ -980,7 +983,7 @@ read_file(class, path)
   CODE:
     s = webauth_keyring_read_file(path, &ring);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_read_file", s, NULL);
+        webauth_croak(NULL, "webauth_keyring_read_file", s, NULL);
     RETVAL = ring;
   OUTPUT:
     RETVAL
@@ -998,7 +1001,7 @@ add(self, creation_time, valid_after, key)
   PPCODE:
     s = webauth_keyring_add(self, creation_time, valid_after, key);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_add", s, NULL);
+        webauth_croak(NULL, "webauth_keyring_add", s, NULL);
     XSRETURN_YES;
 
 
@@ -1019,7 +1022,7 @@ best_key(self, encryption, hint)
         XSRETURN_UNDEF;
     RETVAL = webauth_key_copy(key);
     if (RETVAL == NULL)
-        webauth_croak("webauth_keyring_best_key", WA_ERR_NO_MEM, NULL);
+        webauth_croak(NULL, "webauth_keyring_best_key", WA_ERR_NO_MEM, NULL);
   OUTPUT:
     RETVAL
 
@@ -1066,7 +1069,7 @@ remove(self, n)
   PPCODE:
     s = webauth_keyring_remove(self, n);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_remove", s, NULL);
+        webauth_croak(NULL, "webauth_keyring_remove", s, NULL);
     XSRETURN_YES;
 
 
@@ -1080,7 +1083,7 @@ write_file(self, path)
   PPCODE:
     s = webauth_keyring_write_file(self, path);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_write_file", s, NULL);
+        webauth_croak(NULL, "webauth_keyring_write_file", s, NULL);
     XSRETURN_YES;
 
 
@@ -1116,7 +1119,7 @@ key(self)
   CODE:
     RETVAL = webauth_key_copy(self->key);
     if (RETVAL == NULL)
-        webauth_croak("webauth_key_copy", WA_ERR_NO_MEM, NULL);
+        webauth_croak(NULL, "webauth_key_copy", WA_ERR_NO_MEM, NULL);
   OUTPUT:
     RETVAL
 
