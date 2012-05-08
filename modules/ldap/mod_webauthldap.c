@@ -1358,8 +1358,9 @@ webauthldap_check_privgroups(MWAL_LDAP_CTXT *lc, const char *line)
             return AUTHZ_GRANTED;
         }
     }
-    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server,
-                 "webauthldap: user %s UNAUTHORIZED", r->user);
+    if (lc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                     "webauthldap: user %s AUTHZ_DENIED", r->user);
     return AUTHZ_DENIED;
 }
 #endif /* HAVE_DECL_AP_REGISTER_AUTH_PROVIDER */
