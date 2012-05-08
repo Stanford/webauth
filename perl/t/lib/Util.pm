@@ -2,7 +2,7 @@
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Parts from Russ Allbery <rra@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -13,12 +13,12 @@ require 5.006;
 use strict;
 use vars qw(@ISA @EXPORT $VERSION);
 
-use WebAuth qw (:const);
+use WebAuth qw (3.00 :const);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '1.00';
 
 use Exporter ();
 @ISA    = qw(Exporter);
@@ -121,8 +121,9 @@ sub create_keyring {
     my ($fname) = @_;
     return if -f $fname;
 
-    my $key = WebAuth::key_create (WebAuth::WA_AES_KEY,
-                                   WebAuth::random_key (WebAuth::WA_AES_128));
+    my $wa = WebAuth->new;
+    my $key = $wa->key_create (WebAuth::WA_AES_KEY,
+                               $wa->random_key (WebAuth::WA_AES_128));
     my $ring = WebAuth::Keyring->new (32);
     my $curr = time();
     $ring->add ($curr, $curr, $key);

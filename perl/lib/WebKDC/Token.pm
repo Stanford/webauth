@@ -11,7 +11,7 @@ package WebKDC::Token;
 use strict;
 use warnings;
 
-use WebAuth qw(:const :hex :token);
+use WebAuth qw(3.00 :const :hex :token);
 use WebKDC::WebKDCException;
 
 use Carp;
@@ -23,7 +23,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.01;
+    $VERSION     = 2.00;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -93,7 +93,7 @@ sub to_string {
 		 $key eq WA_TK_PROXY_DATA ||
 		 $key eq WA_TK_SUBJECT_AUTH_DATA ||
 		 $key eq WA_TK_WEBKDC_TOKEN) {
-	    $val = hex_encode($val);
+	    $val = $self->{webauth}->hex_encode($val);
         } elsif ($key eq WA_TK_LOA) {
             $val = unpack("N", $val);
 	} elsif ($key eq WA_TK_PASSWORD) {
@@ -108,12 +108,13 @@ sub to_string {
 sub to_token {
     my ($self, $key) = @_;
     $self->validate_token();
-    return token_create($self->{'attrs'}, 0, $key);
+    return $self->{webauth}->token_create($self->{'attrs'}, 0, $key);
 }
 
 sub new {
     my $type = shift;
-    my $self = { "attrs" => {}};
+    my $wa = WebAuth->new;
+    my $self = { "attrs" => {}, 'webauth' => $wa };
     bless $self, $type;
     if (@_) {
 	$self->init_from_token(@_);
@@ -125,7 +126,8 @@ sub new {
 
 sub parse {
     my ($token, $key, $ttl) = @_;
-    my $attrs = token_parse($token, $ttl, $key);
+    my $wa = WebAuth->new;
+    my $attrs = $wa->token_parse($token, $ttl, $key);
     my $tt = $$attrs{&WA_TK_TOKEN_TYPE};
     my $c;
 
@@ -146,7 +148,7 @@ sub parse {
 
 sub init_from_token {
     my ($self, $token, $key, $ttl) = @_;
-    $self->{'attrs'} = token_parse($token, $ttl, $key);
+    $self->{'attrs'} = $self->{webauth}->token_parse($token, $ttl, $key);
     $self->validate_token();
 }
 

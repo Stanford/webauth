@@ -134,7 +134,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
                    );
 
 our @EXPORT = qw ();
-our $VERSION = '2.00';
+our $VERSION = '3.00';
 
 bootstrap WebAuth $VERSION;
 
@@ -154,7 +154,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 2.00;
+    $VERSION     = 3.00;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -249,8 +249,9 @@ WebAuth - Perl extension for WebAuth (version 3)
 
   use WebAuth;
 
+  my $wa = WebAuth->new;
   eval {
-    $key = WebAuth::random_key(WebAuth::WA_AES_128);
+    $key = $wa->random_key(WebAuth::WA_AES_128);
     ...
   };
   if (WebAuth::Exception::match($@)) {
@@ -271,6 +272,10 @@ WebAuth::Exception section for more information.
 Nearly all of the functionality is directly in the WebAuth namespace for
 right now.  The exceptions are WebAuth::Exception, WebAuth::Keyring, and
 WebAuth::KeyringEntry objects, described in L</SUBCLASSES> below.
+
+Before calling any of the functions, obtain a new WebAuth object with
+C<< WebAuth->new >>.  All subsequent functions take that object as their
+first parameter, or should be called as methods on that object.
 
 =head1 EXPORT
 
@@ -294,75 +299,75 @@ For example:
 
 =over 4
 
-=item error_message(status)
+=item error_message(self, status)
 
-$message = error_message($status)
+ $message = $wa->error_message($status)
 
 Returns an error message for the specified status, which should
 be one of the WA_ERR_* values.
 
-=item base64_encode(input);
+=item base64_encode(self, input);
 
-$output = base64_encode($input);
+ $output = $wa->base64_encode($input);
 
 base64 encodes the $input string and returns the result.
 
-=item base64_decode(input)
+=item base64_decode(self, input)
 
- $output = base64_decode($input);
+ $output = $wa->base64_decode($input);
 
 base64 decodes the $input string and returns the result in $output,
 or undef if unable to parse $input.
 
-=item hex_encode(input);
+=item hex_encode(self, input);
 
-$output = hex_encode($input);
+ $output = $wa->hex_encode($input);
 
 hex encodes the $input string and returns the result.
 
-=item hex_decode(input)
+=item hex_decode(self, input)
 
- $output = hex_decode($input);
+ $output = $wa->hex_decode($input);
 
 hex decodes the $input string and returns the result in $output,
 or undef if unable to decode $input.
 
-=item attrs_encode(attrs);
+=item attrs_encode(self, attrs);
 
- $output = attrs_encode($attrs);
+ $output = $wa->attrs_encode($attrs);
 
 Takes as input $attrs (which must be a reference to a hash) and returns
 a string of the encoded attributes in $output.  The values in the $attrs
 hash table get converted to strings if they aren't already.
 
-=item attrs_decode(input);
+=item attrs_decode(self, input);
 
- $attrs = attrs_decode($input);
+ $attrs = $wa->attrs_decode($input);
 
 attr decodes the $input string and returns the result in $attrs as
 a reference to a hash, or croaks in case of an error.
 
-=item random_bytes(length)
+=item random_bytes(self, length)
 
- $bytes = random_bytes($length);
+ $bytes = $wa->random_bytes($length);
 
 Returns the specified number of random bytes, or undef if
 random data was unavailable. The returned data is suitable
 for nonces, but not necessarily for keys. Use random_key to
 generate a suitable random key.
 
-=item random_key(length)
+=item random_key(self, length)
 
- $key_material = random_key($length);
+ $key_material = $wa->random_key($length);
 
 Returns the specified number of random bytes, or undef if
 random data was unavailable. The returned data is suitable
 for use as a key. Use the constants WA_AES_128, WA_AES_192, and
 WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
 
-=item key_create(type, key_material)
+=item key_create(self, type, key_material)
 
- $key = key_create($type, $key_material);
+ $key = $wa->key_create($type, $key_material);
 
 Creates a reference to a WEBAUTH_KEYPtr object, or undef
 on error. $type must be WA_AES_KEY, and $key_material must
@@ -370,9 +375,9 @@ be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
 
-=item token_create(attrs, hint, key_or_ring)
+=item token_create(self, attrs, hint, key_or_ring)
 
-  $token = token_create($attrs, $hint, $key_or_ring);
+  $token = $wa->token_create($attrs, $hint, $key_or_ring);
 
 Takes as input $attrs (which must be a reference to a hash) and
 $key_or_ring (created with keyring_new or key_create) and returns
@@ -381,16 +386,16 @@ the encrypted token. If hint is 0, the current time will be used.
 The values in the $attrs hash table get converted to strings if they
 aren't already.
 
-=item token_parse(token, ttl, key_or_ring)
+=item token_parse(self, token, ttl, key_or_ring)
 
-  $attrs = token_parse($token, $ttl, $key_or_ring);
+  $attrs = $wa->token_parse($token, $ttl, $key_or_ring);
 
 Takes as input an encrypted token and a key_or_ring (created with
 keyring_new or key_create) and returns the attributes.
 
-=item krb5_new()
+=item krb5_new(self)
 
-  $context = krb5_new();
+  $context = $wa->krb5_new();
 
 Creates a new WEBAUTH_KRB5_CTXT reference in $context.
 

@@ -11,8 +11,6 @@ package WebKDC::WebKDCException;
 use strict;
 use warnings;
 
-use WebAuth;
-
 use overload '""' => \&to_string;
 
 BEGIN {

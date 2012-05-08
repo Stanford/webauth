@@ -11,6 +11,7 @@ TYPEMAP
 WEBAUTH_KEY *           T_PTROBJ
 WEBAUTH_KRB5_CTXT *     T_PTROBJ
 
+WebAuth                 T_PTROBJ_NU
 WebAuth::Keyring        T_PTROBJ_NU
 WebAuth::KeyringEntry   T_PTROBJ_NU
 

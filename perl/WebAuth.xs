@@ -32,8 +32,9 @@
  * These typedefs are needed for xsubpp to work its magic with type
  * translation to Perl objects.
  */
-typedef WEBAUTH_KEYRING *       WebAuth__Keyring;
-typedef WEBAUTH_KEYRING_ENTRY * WebAuth__KeyringEntry;
+typedef struct webauth_context *        WebAuth;
+typedef WEBAUTH_KEYRING *               WebAuth__Keyring;
+typedef WEBAUTH_KEYRING_ENTRY *         WebAuth__KeyringEntry;
 
 /* Used to generate the Perl glue for WebAuth constants. */
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
@@ -167,20 +168,46 @@ BOOT:
 }
 
 
-const char *
-webauth_error_message(status)
-    int status
-  PROTOTYPE: $
+WebAuth
+new(class)
+    const char *class
+  PROTOTYPE: ;$
+  PREINIT:
+    struct webauth_context *ctx;
+    int status;
   CODE:
-    RETVAL = webauth_error_message(NULL, status);
+    status = webauth_context_init(&ctx, NULL);
+    if (status != WA_ERR_NONE)
+        webauth_croak(NULL, "webauth_context_init", status, NULL);
+    RETVAL = ctx;
   OUTPUT:
     RETVAL
 
 
 void
-webauth_base64_encode(input)
+DESTROY(self)
+   WebAuth self
+ CODE:
+   if (self != NULL)
+       webauth_context_free(self);
+
+
+const char *
+webauth_error_message(self, status)
+    WebAuth self
+    int status
+  PROTOTYPE: $$
+  CODE:
+    RETVAL = webauth_error_message(self, status);
+  OUTPUT:
+    RETVAL
+
+
+void
+webauth_base64_encode(self, input)
+    WebAuth self
     SV *input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   CODE:
 {
     STRLEN n_input;
@@ -205,9 +232,10 @@ webauth_base64_encode(input)
 
 
 void
-webauth_base64_decode(input)
+webauth_base64_decode(self, input)
+    WebAuth self
     SV * input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     STRLEN n_input;
@@ -241,9 +269,10 @@ webauth_base64_decode(input)
 
 
 void
-webauth_hex_encode(input)
+webauth_hex_encode(self, input)
+    WebAuth self
     SV * input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   CODE:
 {
     STRLEN n_input;
@@ -264,7 +293,8 @@ webauth_hex_encode(input)
 
 
 void
-webauth_hex_decode(input)
+webauth_hex_decode(self, input)
+    WebAuth self
     SV * input
   PROTOTYPE: $
   PPCODE:
@@ -301,9 +331,10 @@ webauth_hex_decode(input)
 
 
 void
-webauth_attrs_encode(attrs)
+webauth_attrs_encode(self, attrs)
+    WebAuth self
     SV *attrs
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     HV *h;
@@ -347,9 +378,10 @@ webauth_attrs_encode(attrs)
 
 
 void
-webauth_attrs_decode(buffer)
+webauth_attrs_decode(self, buffer)
+    WebAuth self
     SV *buffer
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     size_t n_input;
@@ -379,9 +411,10 @@ webauth_attrs_decode(buffer)
 
 
 void
-webauth_random_bytes(length)
+webauth_random_bytes(self, length)
+    WebAuth self
     int length
-  PROTOTYPE: $
+  PROTOTYPE: $$
   CODE:
 {
     int s;
@@ -398,7 +431,8 @@ webauth_random_bytes(length)
 
 
 void
-webauth_random_key(length)
+webauth_random_key(self, length)
+    WebAuth self
     int length
   PROTOTYPE: $
   CODE:
@@ -417,7 +451,8 @@ webauth_random_key(length)
 
 
 WEBAUTH_KEY *
-webauth_key_create(type, key_material)
+webauth_key_create(self, type, key_material)
+    WebAuth self
     int type
     SV *key_material
   PROTOTYPE: $$
@@ -436,11 +471,12 @@ webauth_key_create(type, key_material)
 
 
 void
-webauth_token_create(attrs, hint, key_or_ring)
+webauth_token_create(self, attrs, hint, key_or_ring)
+    WebAuth self
     SV *attrs
     time_t hint
     SV *key_or_ring
-  PROTOTYPE: $$$
+  PROTOTYPE: $$$$
   PPCODE:
 {
     HV *h;
@@ -453,21 +489,15 @@ webauth_token_create(attrs, hint, key_or_ring)
     WEBAUTH_ATTR_LIST *list;
     SV *output = NULL;
     int iskey;
-    struct webauth_context *ctx;
 
     if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV))
         croak("attrs must be reference to a hash");
     h = (HV *) SvRV(attrs);
 
-    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
-        croak("cannot initialize WebAuth context");
-
     num_attrs = hv_iterinit(h);
     list = webauth_attr_list_new(num_attrs);
-    if (list == NULL) {
-        webauth_context_free(ctx);
+    if (list == NULL)
         croak("can't malloc attrs");
-    }
 
     while ((sv_val = hv_iternextsv(h, &akey, &klen)) != NULL) {
         val = SvPV(sv_val, vlen);
@@ -479,44 +509,41 @@ webauth_token_create(attrs, hint, key_or_ring)
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_create(ctx, list, hint, &buff, &out_len, ring);
+        s = webauth_token_create(self, list, hint, &buff, &out_len, ring);
         iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         key = INT2PTR(WEBAUTH_KEY *, tmp);
-        s = webauth_token_create_with_key(ctx, list, hint, &buff, &out_len,
+        s = webauth_token_create_with_key(self, list, hint, &buff, &out_len,
                                           key);
         iskey = 1;
-    } else {
-        webauth_context_free(ctx);
+    } else
         croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-    }
 
     webauth_attr_list_free(list);
 
-    if (s != WA_ERR_NONE) {
-        webauth_croak(ctx, iskey ?
+    if (s != WA_ERR_NONE)
+        webauth_croak(self, iskey ?
                       "webauth_token_create_with_key" : "webauth_token_create",
                       s, NULL);
-        webauth_context_free(ctx);
-    } else {
+    else {
         output = sv_newmortal();
         sv_setpvn(output, buff, out_len);
     }
-    webauth_context_free(ctx);
     EXTEND(SP,1);
     PUSHs(output);
 }
 
 
 void
-webauth_token_parse(buffer, ttl, key_or_ring)
+webauth_token_parse(self, buffer, ttl, key_or_ring)
+    WebAuth self
     SV *buffer
     int ttl
     SV *key_or_ring
-  PROTOTYPE: $$$
+  PROTOTYPE: $$$$
   PPCODE:
 {
     STRLEN n_input;
@@ -527,32 +554,26 @@ webauth_token_parse(buffer, ttl, key_or_ring)
     HV *hv;
     SV *output = NULL;
     SV *copy = sv_2mortal(newSVsv(buffer));
-    struct webauth_context *ctx;
 
     p_input = SvPV(copy, n_input);
-
-    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
-        croak("cannot initialize WebAuth context");
 
     if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
         WEBAUTH_KEYRING *ring;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_parse(ctx, p_input, n_input, ttl, ring, &list);
+        s = webauth_token_parse(self, p_input, n_input, ttl, ring, &list);
         iskey = 0;
     } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
         WEBAUTH_KEY *key;
         IV tmp = SvIV((SV *) SvRV(key_or_ring));
 
         key = INT2PTR(WEBAUTH_KEY *,tmp);
-        s = webauth_token_parse_with_key(ctx, p_input, n_input, ttl, key,
+        s = webauth_token_parse_with_key(self, p_input, n_input, ttl, key,
                                          &list);
         iskey = 1;
-    } else {
-        webauth_context_free(ctx);
+    } else
         croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-    }
 
     if (s == WA_ERR_NONE) {
         hv = newHV();
@@ -563,21 +584,19 @@ webauth_token_parse(buffer, ttl, key_or_ring)
                                      list->attrs[i].length), 0);
         output = sv_2mortal(newRV_noinc((SV *) hv));
         webauth_attr_list_free(list);
-    } else {
-        webauth_croak(ctx, iskey ?
+    } else
+        webauth_croak(self, iskey ?
                       "webauth_token_parse_with_key" : "webauth_token_parse",
                       s, NULL);
-        webauth_context_free(ctx);
-    }
-    webauth_context_free(ctx);
     EXTEND(SP,1);
     PUSHs(output);
 }
 
 
 void
-webauth_krb5_new()
-  PROTOTYPE:
+webauth_krb5_new(self)
+    WebAuth self
+  PROTOTYPE: $
   PPCODE:
 {
     WEBAUTH_KRB5_CTXT *ctxt = NULL;

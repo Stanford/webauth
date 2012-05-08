@@ -17,6 +17,7 @@ use WebAuth qw (:const);
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
+    my $wa = WebAuth->new;
     my $keyring = WebAuth::Keyring->new;
     isa_ok ($keyring, 'WebAuth::Keyring');
     is ($keyring->capacity, 1, 'New keyring has a capacity of 1');
@@ -28,8 +29,8 @@ eval {
     #
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
-    my $bytes = WebAuth::random_key (WA_AES_256);
-    my $key = WebAuth::key_create (WA_AES_KEY, $bytes);
+    my $bytes = $wa->random_key (WA_AES_256);
+    my $key = $wa->key_create (WA_AES_KEY, $bytes);
     my $now = time - 20;
     eval { $keyring->add ($now, $now + 5, $key) };
     is ($@, '', 'Adding a key works');
@@ -44,8 +45,8 @@ eval {
     #
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
-    $bytes = WebAuth::random_key (WA_AES_256);
-    my $key2 = WebAuth::key_create (WA_AES_KEY, $bytes);
+    $bytes = $wa->random_key (WA_AES_256);
+    my $key2 = $wa->key_create (WA_AES_KEY, $bytes);
     $now = $now + 10;
     is ($keyring->add ($now, $now + 5, $key), 1, 'Adding a second key works');
     is ($keyring->capacity, 2, ' and capacity is now 2');

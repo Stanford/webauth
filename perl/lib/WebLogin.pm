@@ -27,7 +27,7 @@ use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
 use Template ();
-use WebAuth qw(:base64 :const :krb5 :key);
+use WebAuth qw(3.00 :base64 :const :krb5 :key);
 use WebKDC ();
 use WebKDC::Config ();
 use WebKDC::WebKDCException;
@@ -80,7 +80,10 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 sub setup {
     my ($self) = @_;
 
-    # Configure the template
+    # Create a WebAuth object for our API calls.
+    $self->{webauth} = WebAuth->new;
+
+    # Configure the template.
     $self->tt_config(
                      TEMPLATE_OPTIONS => {
                          STAT_TTL     => 60,
@@ -832,12 +835,12 @@ sub add_proxy_token {
     my ($kreq, $data);
     my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
     eval {
-        my $context = krb5_new;
+        my $context = $self->{webauth}->krb5_new;
         krb5_init_via_cache ($context);
         my ($tgt, $expires) = krb5_export_tgt ($context);
         ($kreq, $data) = krb5_mk_req ($context, $principal, $tgt);
-        $kreq = base64_encode ($kreq);
-        $data = base64_encode ($data);
+        $kreq = $self->{webauth}->base64_encode ($kreq);
+        $data = $self->{webauth}->base64_encode ($data);
     };
     if ($@) {
         print STDERR "failed to create proxy token request for"
@@ -921,7 +924,8 @@ sub add_remuser_token {
     }
 
     # Add the token to the WebKDC request.
-    my $token_string = base64_encode ($token->to_token ($keyring));
+    my $wa = $self->{webauth};
+    my $token_string = $wa->base64_encode ($token->to_token ($keyring));
     $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
 }
 
@@ -933,6 +937,7 @@ sub add_remuser_token {
 # true on success and false on failure.
 sub add_changepw_token {
     my ($self) = @_;
+    my $wa = $self->{webauth};
     my $q = $self->query;
     my $username = $q->param ('username');
     my $password = $q->param ('password');
@@ -946,7 +951,7 @@ sub add_changepw_token {
     # Create a ticket for kadmin/changepw with the user name and password.
     my ($ticket, $expires);
     eval {
-        my $context = krb5_new;
+        my $context = $wa->krb5_new;
         my $changepw = 'kadmin/changepw';
         if ($WebKDC::Config::DEFAULT_REALM) {
             $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
@@ -980,13 +985,14 @@ sub add_changepw_token {
             . " $WebKDC::Config::KEYRING_PATH\n";
         return;
     }
-    $self->param ('CPT', base64_encode ($token->to_token ($keyring)));
+    $self->param ('CPT', $wa->base64_encode ($token->to_token ($keyring)));
     return 1;
 }
 
 # Attempt to change the user password using the changepw token.
 sub change_user_password {
     my ($self) = @_;
+    my $wa = $self->{webauth};
     my $q = $self->query;
     my ($status, $error);
 
@@ -1019,7 +1025,7 @@ sub change_user_password {
     }
     my $token;
     eval {
-        $token = new WebKDC::CredToken (base64_decode ($cpt), $keyring, 0);
+        $token = new WebKDC::CredToken ($wa->base64_decode ($cpt), $keyring, 0);
     };
     if ($@) {
         $self->param ('CPT', '');
@@ -1053,7 +1059,7 @@ sub change_user_password {
 
     # Change the password and return any error status plus exception object.
     eval {
-        my $context = krb5_new;
+        my $context = $wa->krb5_new;
         krb5_init_via_cred ($context, $token->cred_data);
         krb5_change_password ($context, $password);
     };

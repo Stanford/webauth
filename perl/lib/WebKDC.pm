@@ -1,7 +1,7 @@
 # Interact with the WebAuth WebKDC service.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011
+# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -13,7 +13,7 @@ use warnings;
 
 use LWP::UserAgent;
 
-use WebAuth qw(:base64 :krb5 :const);
+use WebAuth qw(3.00 :base64 :krb5 :const);
 use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
@@ -27,7 +27,7 @@ BEGIN {
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
     # set the version for version checking
-    $VERSION     = 1.02;
+    $VERSION     = 2.00;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
@@ -202,6 +202,7 @@ sub request_token_request($$) {
     my $proxy_cookies = $wreq->proxy_cookies_rich();
 
     my $webkdc_doc = new WebKDC::XmlDoc;
+    my $wa = WebAuth->new;
     my $root;
 
     $webkdc_doc->start('requestTokenRequest');
@@ -224,7 +225,7 @@ sub request_token_request($$) {
         }
 
         my $login_token_str
-            = base64_encode($login_token->to_token(get_keyring()));
+            = $wa->base64_encode($login_token->to_token(get_keyring()));
 
         $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
     }

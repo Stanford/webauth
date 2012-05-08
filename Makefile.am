@@ -182,9 +182,12 @@ endif
 
 # Suppress some warnings for Perl code because the auto-generated code
 # doesn't pass them.
+#
+# FIXME: -Wno-unused-but-set-variable is temporary until the context
+# conversion is complete.
 if GCC
     PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls \
-	-Wno-unused-variable
+	-Wno-unused-variable -Wno-unused-but-set-variable
 else
     PERL_WARNINGS =
 endif
