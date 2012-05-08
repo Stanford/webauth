@@ -242,6 +242,9 @@ mod_webkdc:
  * Investigate implementing the GSSAPI-RPC protocol for the WebKDC.
    (WEBAUTH-12)
 
+ * Support forcing a user to only go to a particular destination based on
+   information from the user information service.  (WEBAUTH-84)
+
 WebLogin:
 
  * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
