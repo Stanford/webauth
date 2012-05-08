@@ -1822,6 +1822,17 @@ fixups_hook(request_rec *r)
     MWAL_LDAP_CTXT *lc;
     size_t i;
 
+    /* We can only do lookups if the user authenticated with WebAuth. */
+    if (r->user == NULL)
+        return OK;
+    if (apr_table_get(r->subprocess_env, "WEBAUTH_USER") == NULL)
+        return OK;
+
+    /*
+     * Obtain our cached configuration if we have one.  Otherwise, open a new
+     * one, since we may be looking up attributes without having checked a
+     * privgroup and therefore never done setup.
+     */
     lc = ap_get_module_config(r->request_config, &webauthldap_module);
     if (lc == NULL) {
         lc = apr_pcalloc(r->pool, sizeof(MWAL_LDAP_CTXT));
