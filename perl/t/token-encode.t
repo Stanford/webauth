@@ -22,11 +22,12 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
-use Test::More tests => 5;
+use Test::More tests => 10;
 
 use WebAuth ();
 BEGIN {
     use_ok ('WebAuth::Token::App');
+    use_ok ('WebAuth::Token::Cred');
 }
 
 # Encode a token and then decode it again and confirm that the resulting
@@ -51,7 +52,7 @@ my $key = $wa->key_create (WebAuth::WA_AES_KEY,
 my $keyring = WebAuth::Keyring->new (1);
 $keyring->add ($now, $now, $key);
 
-# WebAuth::Token::App normal
+# WebAuth::Token::App full
 my $app = WebAuth::Token::App->new;
 $app->subject ('testuser');
 $app->last_used ($now);
@@ -61,3 +62,13 @@ $app->loa (3);
 $app->creation ($now - 10);
 $app->expiration ($now + 60);
 encode_decode ($wa, $app, $keyring);
+
+# WebAuth::Token::Cred full
+my $cred = WebAuth::Token::Cred->new;
+$cred->subject ('testuser');
+$cred->type ('krb5');
+$cred->service ('webauth/example.com@EXAMPLE.COM');
+$cred->data ("s=ome\0da;;ta");
+$cred->creation ($now);
+$cred->expiration ($now + 60);
+encode_decode ($wa, $cred, $keyring);

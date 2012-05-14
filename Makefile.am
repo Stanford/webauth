@@ -9,21 +9,21 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
-	perl/lib/WebAuth/Token/App.pm perl/lib/WebKDC.pm		    \
-	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		    \
-	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm    \
-	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	    \
-	perl/lib/WebKDC/XmlElement.pm perl/lib/WebLogin.pm perl/t/TODO	    \
-	perl/t/changepw.t perl/t/config.t perl/t/data/README		    \
-	perl/t/data/kadmin-fake perl/t/data/kadmin.conf			    \
+PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebAuth/Token.pm  \
+	perl/lib/WebAuth/Token/App.pm perl/lib/WebAuth/Token/Cred.pm	    \
+	perl/lib/WebKDC.pm perl/lib/WebKDC/Config.pm			    \
+	perl/lib/WebKDC/Token.pm perl/lib/WebKDC/WebKDCException.pm	    \
+	perl/lib/WebKDC/WebRequest.pm perl/lib/WebKDC/WebResponse.pm	    \
+	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
+	perl/lib/WebLogin.pm perl/t/TODO perl/t/changepw.t perl/t/config.t  \
+	perl/t/data/README perl/t/data/kadmin-fake perl/t/data/kadmin.conf  \
 	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
 	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
-	perl/t/pending-expire.t perl/t/webauth.t perl/t/webkdc.t	    \
-	perl/t/weblogin.t perl/typemap
+	perl/t/pending-expire.t perl/t/token-decode.t perl/t/token-encode.t \
+	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/typemap
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4

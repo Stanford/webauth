@@ -75,6 +75,13 @@ struct token_mapping {
 /* Used to make the tables more readable. */
 #define M(s, n, t) { (#n), offsetof(struct s, n), TYPE_ ## t }
 
+/* Used to store or extract data from the struct. */
+#define DATA_STRING(d, o)       *(const char **)  ((char *) (d) + (o))
+#define DATA_TIME(d, o)         *(time_t *)       ((char *) (d) + (o))
+#define DATA_DATA(d, o)         *(const void **)  ((char *) (d) + (o))
+#define DATA_DATALEN(d, o)      *(size_t *)       ((char *) (d) + (o))
+#define DATA_ULONG(d, o)        *(unsigned long *)((char *) (d) + (o))
+
 /* App tokens. */
 struct token_mapping token_mapping_app[] = {
     M(webauth_token_app, subject,         STRING),
@@ -89,12 +96,17 @@ struct token_mapping token_mapping_app[] = {
     { NULL, 0, 0 }
 };
 
-/* Used to store or extract data from the struct. */
-#define DATA_STRING(d, o)       *(const char **)  ((char *) (d) + (o))
-#define DATA_TIME(d, o)         *(time_t *)       ((char *) (d) + (o))
-#define DATA_DATA(d, o)         *(const void **)  ((char *) (d) + (o))
-#define DATA_DATALEN(d, o)      *(size_t *)       ((char *) (d) + (o))
-#define DATA_ULONG(d, o)        *(unsigned long *)((char *) (d) + (o))
+/* Cred tokens. */
+struct token_mapping token_mapping_cred[] = {
+    M(webauth_token_cred, subject,    STRING),
+    M(webauth_token_cred, type,       STRING),
+    M(webauth_token_cred, service,    STRING),
+    M(webauth_token_cred, data,       DATA),
+    M(webauth_token_cred, data_len,   DATALEN),
+    M(webauth_token_cred, creation, TIME),
+    M(webauth_token_cred, expiration, TIME),
+    { NULL, 0, 0 }
+};
 
 
 /*
@@ -710,6 +722,9 @@ token_decode(self, input, ring)
         map_token_to_hash(token_mapping_app, &token->token.app, hash);
         break;
     case WA_TOKEN_CRED:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Cred", GV_ADD));
+        map_token_to_hash(token_mapping_cred, &token->token.cred, hash);
+        break;
     case WA_TOKEN_ERROR:
     case WA_TOKEN_ID:
     case WA_TOKEN_LOGIN:
@@ -747,6 +762,9 @@ token_encode(self, input, ring)
     if (sv_derived_from(input, "WebAuth::Token::App")) {
         token.type = WA_TOKEN_APP;
         map_hash_to_token(token_mapping_app, hash, &token.token.app);
+    } else if (sv_derived_from(input, "WebAuth::Token::Cred")) {
+        token.type = WA_TOKEN_CRED;
+        map_hash_to_token(token_mapping_cred, hash, &token.token.cred);
     } else {
         croak("token is not a supported WebAuth::Token::* object");
     }

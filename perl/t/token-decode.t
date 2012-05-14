@@ -15,11 +15,12 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 10;
+use Test::More tests => 18;
 
 use WebAuth ();
 BEGIN {
     use_ok ('WebAuth::Token::App');
+    use_ok ('WebAuth::Token::Cred');
 }
 
 sub read_token {
@@ -46,3 +47,15 @@ is ($object->session_factors, 'c', '... app-ok session factors');
 is ($object->loa, 1, '... app-ok loa');
 is ($object->creation, 1308777900, '... app-ok creation');
 is ($object->expiration, 2147483600, '... app-ok expiration');
+
+# WebAuth::Token::Cred cred-ok
+$data = read_token ('cred-ok');
+$object = $wa->token_decode ($data, $keyring);
+isa_ok ($object, 'WebAuth::Token::Cred');
+is ($object->subject, 'testuser', '... cred-ok subject');
+is ($object->type, 'krb5', '... cred-ok type');
+is ($object->service, 'webauth/example.com@EXAMPLE.COM',
+    '... cred-ok service');
+is ($object->data, "some\0cred;da;;ta", '... cred-ok data');
+is ($object->creation, 1308777900, '... cred-ok creation');
+is ($object->expiration, 2147483600, '... cred-ok expiration');
