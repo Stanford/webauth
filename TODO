@@ -343,7 +343,3 @@ Style:
  * All of WebAuth needs a general dead code removal pass and evaluation of
    all the places marked FIXME, spawning either entries for this list or
    removal as unimportant.  (WEBAUTH-81)
-
- * Change all header guards prefixed with an underscore and a capital
-   letter.  Those identifiers are reserved by the C standard.
-   (WEBAUTH-82)
