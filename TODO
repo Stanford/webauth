@@ -303,6 +303,10 @@ Perl Modules:
  * Refactor the Perl modules to match my Perl coding style and add POD
    documentation to all of the modules.  (WEBAUTH-8)
 
+ * Attempting is() on a WebAuth::Exception object produces the error
+   message 'Operation "eq": no method found'.  Figure out what is required
+   and add the necessary method.  (WEBAUTH-87)
+
 Test Suite:
 
  * A test suite (and a redesign of the code so that it can be tested) is
