@@ -133,8 +133,10 @@ dnl dependencies that libwebauth may need, but don't do so if
 dnl --enable-reduced-depends was specified.
 AS_IF([test x"$rra_reduced_depends" = xtrue],
     [DEPEND_LIBS=],
-    [DEPEND_LIBS="$KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
-     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS"])
+    [DEPEND_LIBS="$APR_LDFLAGS $APR_LIBS $APRUTIL_LDFLAGS $APRUTIL_LIBS"
+     DEPEND_LIBS="$DEPEND_LIBS $REMCTL_LDFLAGS $REMCTL_LIBS"
+     DEPEND_LIBS="$DEPEND_LIBS $KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
+     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
