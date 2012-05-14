@@ -23,7 +23,7 @@ $VERSION = '1.00';
 use Exporter ();
 @ISA    = qw(Exporter);
 @EXPORT = qw(contents get_userinfo remctld_spawn remctld_stop create_keyring
-    getcreds);
+             getcreds);
 
 ##############################################################################
 # General utility functions
@@ -49,35 +49,6 @@ sub contents {
     close FILE;
     chomp $data;
     return $data;
-}
-
-##############################################################################
-# User test configuration
-##############################################################################
-
-# Set up the database configuration parameters.  Use a local SQLite database
-# for testing by default, but support t/data/test.database as a configuration
-# file to use another database backend.
-sub db_setup {
-    if (-f 't/data/test.database') {
-        open (DB, '<', 't/data/test.database')
-            or die "cannot open t/data/test.database: $!";
-        my $driver = <DB>;
-        my $info = <DB>;
-        my $user = <DB>;
-        my $password = <DB>;
-        chomp ($driver, $info);
-        chomp $user if $user;
-        chomp $password if $password;
-        $Wallet::Config::DB_DRIVER = $driver;
-        $Wallet::Config::DB_INFO = $info;
-        $Wallet::Config::DB_USER = $user if $user;
-        $Wallet::Config::DB_PASSWORD = $password if $password;
-    } else {
-        $Wallet::Config::DB_DRIVER = 'SQLite';
-        $Wallet::Config::DB_INFO = 'wallet-db';
-        unlink 'wallet-db';
-    }
 }
 
 ##############################################################################

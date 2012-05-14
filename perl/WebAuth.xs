@@ -40,6 +40,110 @@ typedef WEBAUTH_KEYRING_ENTRY *         WebAuth__KeyringEntry;
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
 #define STR_CONST(X) newCONSTSUB(stash, #X, newSVpv(X, 0))
 
+/*
+ * Encoding and decoding magic for tokens.
+ *
+ * There are significant memory management challenges for how to handle the
+ * token structs as Perl objects directly.  (For example, the structs
+ * allocated via webauth_token_decode would be allocated entirely differently
+ * than values set from Perl.)  It's therefore easier to have the Perl
+ * expression of the token structs be Perl hash tables, which we can bless and
+ * wrap with getters and setters written in Perl instead of XS.
+ *
+ * In order to avoid vast amounts of duplicate code, we define coding tables
+ * for each token.  This maps the attribute names in the form of the hash keys
+ * used in the Perl object to offsets into the relevant token struct and types
+ * of the C data structure.  We can then use some (scary) C code to handle the
+ * transcoding from C structs to Perl objects generically for all token types.
+ *
+ * All TYPE_DATA entries in the table must be followed by TYPE_DATALEN
+ * entries.
+ */
+enum token_mapping_type {
+    TYPE_STRING,
+    TYPE_TIME,
+    TYPE_DATA,
+    TYPE_DATALEN,
+    TYPE_ULONG
+};
+struct token_mapping {
+    const char *key;
+    size_t offset;
+    enum token_mapping_type type;
+};
+
+/* Used to make the tables more readable. */
+#define M(s, n, t) { (#n), offsetof(struct s, n), TYPE_ ## t }
+
+/* App tokens. */
+struct token_mapping token_mapping_app[] = {
+    M(webauth_token_app, subject,         STRING),
+    M(webauth_token_app, last_used,       TIME),
+    M(webauth_token_app, session_key,     DATA),
+    M(webauth_token_app, session_key_len, DATALEN),
+    M(webauth_token_app, initial_factors, STRING),
+    M(webauth_token_app, session_factors, STRING),
+    M(webauth_token_app, loa,             ULONG),
+    M(webauth_token_app, creation,        TIME),
+    M(webauth_token_app, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* Used to extract data types from the struct. */
+#define DATA_STRING(d, o)       *(const char **)  ((char *) (d) + (o))
+#define DATA_TIME(d, o)         *(time_t *)       ((char *) (d) + (o))
+#define DATA_DATA(d, o)         *(const void **)  ((char *) (d) + (o))
+#define DATA_DATALEN(d, o)      *(size_t *)       ((char *) (d) + (o))
+#define DATA_ULONG(d, o)        *(unsigned long *)((char *) (d) + (o))
+
+
+/*
+ * Decode a token into a Perl hash.  This function doesn't know what type of
+ * token is being decoded; it just takes an array of struct token_mapping, a
+ * pointer to the token struct, and a Perl HV, and uses the rules in
+ * token_mapping to move data into the HV.
+ */
+static void
+map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
+{
+    size_t i, length;
+    struct token_mapping *map;
+    SV *value;
+    const char *string;
+    const void *data;
+
+    for (i = 0; mapping[i].key != NULL; i++) {
+        map = &mapping[i];
+        value = NULL;
+        switch (map->type) {
+        case TYPE_STRING:
+            string = DATA_STRING(token, map->offset);
+            if (string != NULL)
+                value = newSVpv(string, 0);
+            break;
+        case TYPE_TIME:
+            value = newSViv(DATA_TIME(token, map->offset));
+            break;
+        case TYPE_DATA:
+            data = DATA_DATA(token, map->offset);
+            if (data != NULL) {
+                length = DATA_DATALEN(token, mapping[i + 1].offset);
+                value = newSVpvn(data, length);
+            }
+            break;
+        case TYPE_DATALEN:
+            /* Handled as part of TYPE_DATA. */
+            break;
+        case TYPE_ULONG:
+            value = newSViv(DATA_ULONG(token, map->offset));
+            break;
+        }
+        if (value != NULL)
+            if (hv_store(hash, map->key, strlen(map->key), value, 0) == NULL)
+                croak("cannot store %s in hash", map->key);
+    }
+}
+            
 
 /*
  * Turn a WebAuth error into a Perl exception.
@@ -73,6 +177,7 @@ webauth_croak(struct webauth_context *ctx, const char *detail, int s,
     sv_setsv(get_sv("@", TRUE), sv_2mortal(rv));
     croak(Nullch);
 }
+
 
 /* XS code below this point. */
 
@@ -535,6 +640,48 @@ webauth_token_create(self, attrs, hint, key_or_ring)
     EXTEND(SP,1);
     PUSHs(output);
 }
+
+
+SV *
+token_decode(self, input, ring)
+    WebAuth self
+    SV *input
+    WebAuth::Keyring ring
+  PROTOTYPE: $$$
+  PREINIT:
+    struct webauth_token *token;
+    int status;
+    HV *hash;
+    SV *object;
+  CODE:
+    status = webauth_token_decode(self, WA_TOKEN_ANY, SvPV_nolen(input),
+                                  ring, &token);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_token_decode", status, NULL);
+    hash = newHV();
+    object = newRV_noinc((SV *) hash);
+    switch (token->type) {
+    case WA_TOKEN_APP:
+        sv_bless(object, gv_stashpv("WebAuth::Token::App", GV_ADD));
+        map_token_to_hash(token_mapping_app, &token->token.app, hash);
+        break;
+    case WA_TOKEN_CRED:
+    case WA_TOKEN_ERROR:
+    case WA_TOKEN_ID:
+    case WA_TOKEN_LOGIN:
+    case WA_TOKEN_PROXY:
+    case WA_TOKEN_REQUEST:
+    case WA_TOKEN_WEBKDC_PROXY:
+    case WA_TOKEN_WEBKDC_SERVICE:
+    case WA_TOKEN_UNKNOWN:
+    case WA_TOKEN_ANY:
+    default:
+        croak("unknown token type %d", token->type);
+        break;
+    }
+    RETVAL = object;
+  OUTPUT:
+    RETVAL
 
 
 void

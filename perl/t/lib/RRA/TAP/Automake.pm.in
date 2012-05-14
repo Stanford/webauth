@@ -1,0 +1,43 @@
+# Auxilliary Perl functions for testing inside Automake projects.
+#
+# Collects useful utility functions analogous to the C and shell TAP libraries
+# distributed by C TAP Harness that are useful for writing Perl test cases for
+# Perl modules embedded in Automake projects.
+#
+# This file needs to be processed by configure to substitute the source and
+# build paths.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+require 5.006;
+use strict;
+use warnings;
+
+BEGIN {
+    use Exporter ();
+
+    # This version should be increased on any code change to this module.
+    # Always use two digits for the minor version with a leading zero if
+    # necessary so that it will sort properly.
+    our $VERSION = '1.00';
+
+    our @ISA    = qw(Exporter);
+    our @EXPORT = qw(test_file_path);
+}
+
+our $SOURCE = '@abs_top_srcdir@/tests';
+our $BUILD  = '@abs_top_builddir@/tests';
+
+# Given a partial file path, see if that path exists under $BUILD and then
+# under $SOURCE and return the full file path.  Returns undef if the file
+# couldn't be found.  We don't call BAIL_OUT since the file we're searching
+# for may be an optional configuration file.
+sub test_file_path {
+    my ($file) = @_;
+    if    (-f "$BUILD/$file")  { return "$BUILD/$file"  }
+    elsif (-f "$SOURCE/$file") { return "$SOURCE/$file" }
+}

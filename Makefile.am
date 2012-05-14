@@ -9,7 +9,8 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebKDC.pm	    \
+PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
+	perl/lib/WebAuth/Token/App.pm perl/lib/WebKDC.pm		    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		    \
 	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm    \
 	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	    \
@@ -198,13 +199,13 @@ endif
 # sure they're up to date since Perl can't handle VPATH builds.
 perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
 		$(srcdir)/perl/typemap
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    for d in lib lib/WebKDC ; do \
-		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ; \
-	    done ; \
-	    for f in $(PERL_FILES) ; do \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
-	    done \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
+	    for d in lib lib/WebAuth lib/WebAuth/Token lib/WebKDC ; do	\
+		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
+	    done ;							\
+	    for f in $(PERL_FILES) ; do					\
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
+	    done							\
 	fi
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE) OPTIMIZE="$(CFLAGS) $(PERL_WARNINGS)"
