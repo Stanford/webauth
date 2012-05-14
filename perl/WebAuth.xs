@@ -89,7 +89,7 @@ struct token_mapping token_mapping_app[] = {
     { NULL, 0, 0 }
 };
 
-/* Used to extract data types from the struct. */
+/* Used to store or extract data from the struct. */
 #define DATA_STRING(d, o)       *(const char **)  ((char *) (d) + (o))
 #define DATA_TIME(d, o)         *(time_t *)       ((char *) (d) + (o))
 #define DATA_DATA(d, o)         *(const void **)  ((char *) (d) + (o))
@@ -143,7 +143,51 @@ map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
                 croak("cannot store %s in hash", map->key);
     }
 }
-            
+
+
+/*
+ * Encode a Perl hash into a token struct.  This function doesn't know what
+ * type of token is being encoded; it just takes an array of struct
+ * token_mapping, a pointer to the token struct, and a Perl HV, and uses the
+ * rules in token_mapping to move data from the HV into the struct.
+ *
+ * This does not check for attributes in the HV that don't correspond to valid
+ * members of the struct.
+ */
+static void
+map_hash_to_token(struct token_mapping mapping[], HV *hash, const void *token)
+{
+    size_t i;
+    struct token_mapping *map;
+    SV **value;
+    STRLEN length;
+
+    for (i = 0; mapping[i].key != NULL; i++) {
+        map = &mapping[i];
+        value = hv_fetch(hash, map->key, strlen(map->key), 0);
+        if (value == NULL)
+            continue;
+        switch (map->type) {
+        case TYPE_STRING:
+            DATA_STRING(token, map->offset) = SvPV_nolen(*value);
+            break;
+        case TYPE_TIME:
+            DATA_TIME(token, map->offset) = SvIV(*value);
+            break;
+        case TYPE_DATA:
+            DATA_DATA(token, map->offset) = SvPV(*value, length);
+            DATA_DATALEN(token, mapping[i + 1].offset) = length;
+            break;
+        case TYPE_DATALEN:
+            /* Handled as part of TYPE_DATA. */
+            break;
+        case TYPE_ULONG:
+            DATA_ULONG(token, map->offset) = SvIV(*value);
+            break;
+        }
+    }
+}
+
 
 /*
  * Turn a WebAuth error into a Perl exception.
@@ -680,6 +724,36 @@ token_decode(self, input, ring)
         break;
     }
     RETVAL = object;
+  OUTPUT:
+    RETVAL
+
+
+const char *
+token_encode(self, input, ring)
+    WebAuth self
+    SV *input
+    WebAuth::Keyring ring
+  PROTOTYPE: $$$
+  PREINIT:
+    HV *hash;
+    struct webauth_token token;
+    int status;
+    const char *output;
+  CODE:
+    if (!sv_isobject(input) || SvTYPE(SvRV(input)) != SVt_PVHV)
+        croak("token is not a WebAuth::Token::* object");
+    hash = (HV *) SvRV(input);
+    memset(&token, 0, sizeof(token));
+    if (sv_derived_from(input, "WebAuth::Token::App")) {
+        token.type = WA_TOKEN_APP;
+        map_hash_to_token(token_mapping_app, hash, &token.token.app);
+    } else {
+        croak("token is not a supported WebAuth::Token::* object");
+    }
+    status = webauth_token_encode(self, &token, ring, &output);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_token_encode", status, NULL);
+    RETVAL = output;
   OUTPUT:
     RETVAL
 

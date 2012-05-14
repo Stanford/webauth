@@ -13,6 +13,14 @@ use warnings;
 
 use WebAuth qw(3.00);
 
+# Constructor.
+sub new {
+    my $type = shift;
+    my $self = {};
+    bless ($self, $type);
+    return $self;
+}
+
 # Shared code for all accessor methods.  Takes the object, the attribute name,
 # and the value.  Sets the value if one was given, and returns the current
 # value of that attribute.
