@@ -8,27 +8,16 @@
 
 package WebAuth::Token::App;
 
+require 5.006;
 use strict;
 use warnings;
 
-use WebAuth qw(3.00);
+use base qw(WebAuth::Token);
 
-# Constructor.
-sub new {
-    my $type = shift;
-    my $self = {};
-    bless ($self, $type);
-    return $self;
-}
-
-# Shared code for all accessor methods.  Takes the object, the attribute name,
-# and the value.  Sets the value if one was given, and returns the current
-# value of that attribute.
-sub _attr {
-    my ($self, $attr, $value) = @_;
-    $self->{$attr} = $value if defined ($value);
-    return $self->{$attr};
-}
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION = '1.00';
 
 # Accessor methods.
 sub subject         { my $self = shift; $self->_attr ('subject',         @_) }
