@@ -899,7 +899,7 @@ WebKdcUserInfoIgnoreFail on
 <div class="directive-section"><h2><a name="WebKdcUserInfoPrincipal" id="WebKdcUserInfoPrincipal">WebKdcUserInfoPrincipal</a> <a name="webkdcuserinfoprincipal" id="webkdcuserinfoprincipal">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
-    Remote principal for user metadata and multifactor queries
+    Remote principal for user information and multifactor queries
   </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
@@ -908,10 +908,10 @@ WebKdcUserInfoIgnoreFail on
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
     <p>
-      This directive sets the principal of the remote user metadata and
+      This directive sets the principal of the remote user information and
       multifactor authentication service.  This is the target principal of
-      the WebKDC's authentication if using a user metadata protocol that
-      uses Kerberos authentication (such as remctl).  It is not the
+      the WebKDC's authentication if using a user information protocol
+      that uses Kerberos authentication (such as remctl).  It is not the
       principal used by the WebKDC; that's set with <a href="#webkdckeytab"><code class="directive">WebKdcKeytab</code></a>.
       Rather, it's the principal of the remote service, required if the
       host principal of the system on which it's running is not used.
@@ -931,7 +931,7 @@ WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
 <div class="directive-section"><h2><a name="WebKdcUserInfoTimeout" id="WebKdcUserInfoTimeout">WebKdcUserInfoTimeout</a> <a name="webkdcuserinfotimeout" id="webkdcuserinfotimeout">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
-    Timeout for user metadata and multifactor queries
+    Timeout for user information and multifactor queries
   </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcUserInfoTimeout 30s</code></td></tr>
@@ -990,7 +990,7 @@ WebKdcUserInfoTimeout 5s
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebKdcUserInfoURL" id="WebKdcUserInfoURL">WebKdcUserInfoURL</a> <a name="webkdcuserinfourl" id="webkdcuserinfourl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL for user metadata and multifactor queries</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL for user information and multifactor queries</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
@@ -998,16 +998,17 @@ WebKdcUserInfoTimeout 5s
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
     <p>
-      The WebKDC supports a user metadata and multifactor authentication
-      service which, if configured, is checked for the user's configured
-      authentication factors, level of assurance, and password expiration
-      time.  If this service is available and the user's list of
-      configured factors indicate that they are capable of authenticating
-      with a second factor (besides password), the WebKDC will also
-      trigger multifactor authentication for sites that require it or if
-      the user metadata service says it's required.  This service is also
-      used to determine whether an account requiring random multifactor
-      should have that requirement trigger for this site visit.
+      The WebKDC supports a user information and multifactor
+      authentication service which, if configured, is checked for the
+      user's configured authentication factors, level of assurance, and
+      password expiration time.  If this service is available and the
+      user's list of configured factors indicate that they are capable of
+      authenticating with a second factor (besides password), the WebKDC
+      will also trigger multifactor authentication for sites that require
+      it or if the user information service says it's required.  This
+      service is also used to determine whether an account requiring
+      random multifactor should have that requirement trigger for this
+      site visit.
     </p>
 
     <p>
@@ -1023,15 +1024,15 @@ WebKdcUserInfoTimeout 5s
 
     <p>
       The subcommand sent to the remctl server will be
-      <code>webkdc-userinfo</code> for the metadata query during login and
-      <code>webkdc-validate</code> to validate a one-time password
-      authentication.
+      <code>webkdc-userinfo</code> for the user information query during
+      login and <code>webkdc-validate</code> to validate a one-time
+      password authentication.
     </p>
 
     <p>
       For specific details of the protocol used to talk to the user
-      metadata and multifactor authentication service, see the additional
-      protocol documentation that comes with the WebAuth source
+      information and multifactor authentication service, see the
+      additional protocol documentation that comes with the WebAuth source
       distribution.
     </p>
 

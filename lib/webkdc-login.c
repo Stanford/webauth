@@ -138,7 +138,7 @@ done:
 
 /*
  * Attempt an OTP authentication, which is a user authentication validatation
- * via the user metadata service.  On success, generate a new webkdc-proxy
+ * via the user information service.  On success, generate a new webkdc-proxy
  * token based on that information and store it in the token argument.  On
  * login failure, store the error code and message in the response.  On a more
  * fundamental failure, return an error code.
@@ -528,9 +528,10 @@ get_user_info(struct webauth_context *ctx,
 /*
  * Given the request from the WebAuth Application Server, the current
  * accumulated response, the current merged webkdc-proxy token, and the user
- * metadata information (which may be NULL if there's no metadata configured),
- * check whether multifactor authentication and a level of assurance
- * restriction is already satisfied or unnecessary, required, or impossible.
+ * information (which may be NULL if there's no information service
+ * configured), check whether multifactor authentication and a level of
+ * assurance restriction is already satisfied or unnecessary, required, or
+ * impossible.
  *
  * Returns WA_ERR_NONE and leaves request->login_error unchanged if any
  * multifactor requirements are satisfied.  Sets request->login_error if
@@ -617,7 +618,7 @@ check_multifactor(struct webauth_context *ctx,
      * factors configured by the user.  We have to do a bit of work here to
      * turn the user's configured factors into a webauth_factors struct.
      *
-     * Assume we can do password authentication even without user metadata.
+     * Assume we can do password authentication even without user information.
      */
     memset(&configured, 0, sizeof(configured));
     if (info != NULL && info->factors != NULL && info->factors->nelts > 0) {
@@ -1052,8 +1053,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
         }
 
     /*
-     * If the user metadata service says that multifactor is required, reject
-     * the login with either multifactor required or with multifactor
+     * If the user information service says that multifactor is required,
+     * reject the login with either multifactor required or with multifactor
      * unavailable, depending on whether the user has multifactor configured.
      */
     status = check_multifactor(ctx, request, *response, wkproxy, info);

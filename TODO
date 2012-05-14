@@ -311,9 +311,6 @@ Test Suite:
 
 Documentation:
 
- * Rename instances of user metadata service to user information service
-   to be consistent throughout.  (WEBAUTH-72)
-
  * Rewrite the protocol specification to provide a better-structured and
    more complete introduction to the protocol and defining terms earlier
    and more consistently.  (WEBAUTH-73)

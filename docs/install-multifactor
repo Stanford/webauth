@@ -181,7 +181,7 @@ User Information Service
   used only if the remctl server uses an authentication Kerberos principal
   other than the host principal for the system on which it's running.
 
-  The user metadata service must provide a remctl command with a
+  The user information service must provide a remctl command with a
   subcommand of "webkdc-userinfo" that takes the following arguments in
   order:
 
@@ -290,7 +290,7 @@ OTP Validation
   a separate appliance, check a web service, or whatever else is required
   to integrate with a local OTP system.
 
-  To do OTP validation, the user metadata service must provide a remctl
+  To do OTP validation, the user information service must provide a remctl
   command with a subcommand of "webkdc-validate" that takes the following
   arguments in order:
 

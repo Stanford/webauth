@@ -3,7 +3,7 @@
  *
  * Perform the full set of WebKDC login tests that we can perform with a
  * keytab, username, and password.  This does not include the multifactor or
- * user metadata tests.
+ * user information tests.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011, 2012

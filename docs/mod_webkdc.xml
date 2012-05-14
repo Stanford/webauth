@@ -843,7 +843,7 @@ WebKdcKerberosFactors p<br/>
 
 <directivesynopsis>
   <name>WebKdcUserInfoURL</name>
-  <description>URL for user metadata and multifactor queries</description>
+  <description>URL for user information and multifactor queries</description>
   <syntax>WebKdcUserInfoURL <em>url</em></syntax>
   <default>(none)</default>
   <contextlist>
@@ -853,16 +853,17 @@ WebKdcKerberosFactors p<br/>
 
   <usage>
     <p>
-      The WebKDC supports a user metadata and multifactor authentication
-      service which, if configured, is checked for the user's configured
-      authentication factors, level of assurance, and password expiration
-      time.  If this service is available and the user's list of
-      configured factors indicate that they are capable of authenticating
-      with a second factor (besides password), the WebKDC will also
-      trigger multifactor authentication for sites that require it or if
-      the user metadata service says it's required.  This service is also
-      used to determine whether an account requiring random multifactor
-      should have that requirement trigger for this site visit.
+      The WebKDC supports a user information and multifactor
+      authentication service which, if configured, is checked for the
+      user's configured authentication factors, level of assurance, and
+      password expiration time.  If this service is available and the
+      user's list of configured factors indicate that they are capable of
+      authenticating with a second factor (besides password), the WebKDC
+      will also trigger multifactor authentication for sites that require
+      it or if the user information service says it's required.  This
+      service is also used to determine whether an account requiring
+      random multifactor should have that requirement trigger for this
+      site visit.
     </p>
 
     <p>
@@ -880,15 +881,15 @@ WebKdcKerberosFactors p<br/>
 
     <p>
       The subcommand sent to the remctl server will be
-      <code>webkdc-userinfo</code> for the metadata query during login and
-      <code>webkdc-validate</code> to validate a one-time password
-      authentication.
+      <code>webkdc-userinfo</code> for the user information query during
+      login and <code>webkdc-validate</code> to validate a one-time
+      password authentication.
     </p>
 
     <p>
       For specific details of the protocol used to talk to the user
-      metadata and multifactor authentication service, see the additional
-      protocol documentation that comes with the WebAuth source
+      information and multifactor authentication service, see the
+      additional protocol documentation that comes with the WebAuth source
       distribution.
     </p>
 
@@ -903,7 +904,7 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
 <directivesynopsis>
   <name>WebKdcUserInfoPrincipal</name>
   <description>
-    Remote principal for user metadata and multifactor queries
+    Remote principal for user information and multifactor queries
   </description>
   <syntax>WebKdcUserInfoPrincipal <em>principal</em></syntax>
   <default>(none)</default>
@@ -914,10 +915,10 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
 
   <usage>
     <p>
-      This directive sets the principal of the remote user metadata and
+      This directive sets the principal of the remote user information and
       multifactor authentication service.  This is the target principal of
-      the WebKDC's authentication if using a user metadata protocol that
-      uses Kerberos authentication (such as remctl).  It is not the
+      the WebKDC's authentication if using a user information protocol
+      that uses Kerberos authentication (such as remctl).  It is not the
       principal used by the WebKDC; that's set with <a
       href="#webkdckeytab"><directive>WebKdcKeytab</directive></a>.
       Rather, it's the principal of the remote service, required if the
@@ -985,7 +986,7 @@ WebKdcUserInfoIgnoreFail on
 <directivesynopsis>
   <name>WebKdcUserInfoTimeout</name>
   <description>
-    Timeout for user metadata and multifactor queries
+    Timeout for user information and multifactor queries
   </description>
   <syntax>WebKdcUserInfoTimeout <em>nnnn[s|m|h|d|w]</em></syntax>
   <default>WebKdcUserInfoTimeout 30s</default>

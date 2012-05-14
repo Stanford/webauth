@@ -259,9 +259,9 @@ parse_interval(cmd_parms *cmd, const char *arg, unsigned long *value)
 
 
 /*
- * Utility function for parsing a user metadata service URL.  This also does
- * validation of the URL and the protocol to ensure that it represents a
- * supported user metadata service.  Returns an error string or NULL on
+ * Utility function for parsing a user information service URL.  This also
+ * does validation of the URL and the protocol to ensure that it represents a
+ * supported user information service.  Returns an error string or NULL on
  * success.  The URL will be of the form:
  *
  *     remctl://hostname.example.com:4373/oath
@@ -277,11 +277,12 @@ parse_userinfo_url(cmd_parms *cmd, const char *arg,
 
     status = apr_uri_parse(cmd->pool, arg, &uri);
     if (status != APR_SUCCESS)
-        return apr_psprintf(cmd->pool, "Invalid user metadata service URL"
+        return apr_psprintf(cmd->pool, "Invalid user information service URL"
                             " \"%s\" for %s", arg, cmd->directive->directive);
     if (strcmp(uri.scheme, "remctl") != 0)
-        return apr_psprintf(cmd->pool, "Unknown user metadata protocol \"%s\""
-                            " for %s", uri.scheme, cmd->directive->directive);
+        return apr_psprintf(cmd->pool, "Unknown user information protocol"
+                            " \"%s\" for %s", uri.scheme,
+                            cmd->directive->directive);
     config->protocol = WA_PROTOCOL_REMCTL;
     config->host = uri.hostname;
     config->port = uri.port;

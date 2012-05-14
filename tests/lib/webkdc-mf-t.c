@@ -1,7 +1,7 @@
 /*
  * Test WebKDC login support with multifactor.
  *
- * WebKDC login tests that use either multifactor or the user metadata
+ * WebKDC login tests that use either multifactor or the user information
  * service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
@@ -170,7 +170,7 @@ main(void)
     /*
      * Request an X.509 factor and try again.  This should still work even
      * though this user doesn't have password listed as a supported factor in
-     * the metadata.
+     * their user information.
      */
     req.initial_factors = "x";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
