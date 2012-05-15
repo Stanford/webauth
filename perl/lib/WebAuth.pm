@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009, 2011
+# Copyright 2003, 2005, 2008, 2009, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -15,6 +15,19 @@ package WebAuth;
 use 5.006;
 use strict;
 use warnings;
+
+# Our C code also creates WebAuth::Token::* objects, and callers expect to be
+# able to call methods on those objects.  Load all of the Perl classes for the
+# caller so that the caller doesn't have to remember to do so.
+use WebAuth::Token::App;
+use WebAuth::Token::Cred;
+use WebAuth::Token::Error;
+use WebAuth::Token::Id;
+use WebAuth::Token::Login;
+use WebAuth::Token::Proxy;
+use WebAuth::Token::Request;
+use WebAuth::Token::WebKDCProxy;
+use WebAuth::Token::WebKDCService;
 
 require Exporter;
 require DynaLoader;
