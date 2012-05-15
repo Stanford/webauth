@@ -26,12 +26,15 @@ our $VERSION = '1.00';
 
 # Constructor.  Reject attempts to create this class directly.  This is only
 # intended for use by subclasses.
-sub new {
-    my $type = shift;
+sub new ($$) {
+    my ($type, $ctx) = @_;
     if ($type eq 'WebAuth::Token') {
         croak ('WebAuth::Token cannot be used directly');
     }
-    my $self = {};
+    unless (ref ($ctx) eq 'WebAuth') {
+        croak ('second argument to constructor must be a WebAuth object');
+    }
+    my $self = { ctx => $ctx };
     bless ($self, $type);
     return $self;
 }

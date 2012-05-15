@@ -53,7 +53,7 @@ our %TOKENS_BAD;
 sub encode_decode {
     my ($wa, $token, $keyring) = @_;
     eval {
-        my $encoded = $wa->token_encode ($token, $keyring);
+        my $encoded = $token->encode ($token, $keyring);
         ok (length ($encoded) > 1, 'Encoded ' . ref ($token));
         my $result = $wa->token_decode ($encoded, $keyring);
         isa_ok ($result, ref $token);
@@ -82,7 +82,7 @@ require $path or BAIL_OUT ("cannot load data/tokens.conf");
 # class, encode it, decode it, and check that the results match.
 for my $name (sort keys %TOKENS_GOOD) {
     my ($class, $attrs) = @{ $TOKENS_GOOD{$name} };
-    my $token = $class->new;
+    my $token = $class->new ($wa);
     isa_ok ($token, $class);
     for my $attr (sort keys %$attrs) {
         is ($token->$attr ($attrs->{$attr}), $attrs->{$attr},

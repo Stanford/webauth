@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 130;
+use Test::More tests => 133;
 
 use WebAuth ();
 BEGIN {
@@ -62,3 +62,11 @@ for my $name (sort keys %TOKENS_GOOD) {
         is ($object->$attr, $attrs->{$attr}, "... $name $attr");
     }
 }
+
+# Check that a decoded token contains the WebAuth context.  Do this by poking
+# around inside the hash, since there's no public accessor.
+my $data = read_token ('app-ok');
+my $object = $wa->token_decode ($data, $keyring);
+isa_ok ($object, 'WebAuth::Token');
+ok (defined ($object->{ctx}), '... and has a context');
+is (ref ($object->{ctx}), 'WebAuth', '... which is the correct type');
