@@ -22,7 +22,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
-use Test::More tests => 10;
+use Test::More tests => 41;
 
 use WebAuth ();
 BEGIN {
@@ -30,9 +30,19 @@ BEGIN {
     use_ok ('WebAuth::Token::Cred');
 }
 
+# These will be loaded from the configuration file.
+our %TOKENS_GOOD;
+our %TOKENS_ERROR;
+our %TOKENS_BAD;
+
 # Encode a token and then decode it again and confirm that the resulting
 # contents match the original token.  Takes the WebAuth object, the token to
 # encode, and a keyring to use for encoding and decoding.
+#
+# Special-case a creation attribute if it exists.  If it's not set in our
+# data, the encoding process should set it to the current time.  Note that the
+# time can change while we're running the test, so we check it separately and
+# then make it match before calling isa_deeply.
 sub encode_decode {
     my ($wa, $token, $keyring) = @_;
     eval {
@@ -40,35 +50,37 @@ sub encode_decode {
         ok (length ($encoded) > 1, 'Encoded ' . ref ($token));
         my $result = $wa->token_decode ($encoded, $keyring);
         isa_ok ($result, ref $token);
-        is_deeply ($result, $token, '... and decoded token matches');
+        if ($token->can ('creation') && !defined ($token->creation)) {
+            my $creation = $result->creation;
+            my $delta = time - ($result->creation || 0);
+            ok ($delta >= 0 && $delta <= 0, '... generated creation');
+            $token->creation ($result->creation);
+        }
+        is_deeply ($result, $token, '... decoded token matches');
     };
     is ($@, '', '... with no exceptions');
 }
 
+# General setup.
 my $wa = WebAuth->new;
 my $now = time;
 my $key = $wa->key_create (WebAuth::WA_AES_KEY,
                            $wa->random_key (WebAuth::WA_AES_128));
 my $keyring = WebAuth::Keyring->new (1);
 $keyring->add ($now, $now, $key);
+my $path = test_file_path ("data/tokens.conf");
+require $path or BAIL_OUT ("cannot load data/tokens.conf");
 
-# WebAuth::Token::App full
-my $app = WebAuth::Token::App->new;
-$app->subject ('testuser');
-$app->last_used ($now);
-$app->initial_factors ('p,o3,o,m');
-$app->session_factors ('c');
-$app->loa (3);
-$app->creation ($now - 10);
-$app->expiration ($now + 60);
-encode_decode ($wa, $app, $keyring);
-
-# WebAuth::Token::Cred full
-my $cred = WebAuth::Token::Cred->new;
-$cred->subject ('testuser');
-$cred->type ('krb5');
-$cred->service ('webauth/example.com@EXAMPLE.COM');
-$cred->data ("s=ome\0da;;ta");
-$cred->creation ($now);
-$cred->expiration ($now + 60);
-encode_decode ($wa, $cred, $keyring);
+# Loop through the good tokens, construct a matching token using the Perl
+# class, encode it, decode it, and check that the results match.
+for my $name (sort keys %TOKENS_GOOD) {
+    next unless $name =~ /^(app|cred)-/;
+    my ($class, $attrs) = @{ $TOKENS_GOOD{$name} };
+    my $token = $class->new;
+    isa_ok ($token, $class);
+    for my $attr (sort keys %$attrs) {
+        is ($token->$attr ($attrs->{$attr}), $attrs->{$attr},
+            "... setting $name $attr");
+    }
+    encode_decode ($wa, $token, $keyring);
+}

@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 18;
+use Test::More tests => 23;
 
 use WebAuth ();
 BEGIN {
@@ -23,6 +23,12 @@ BEGIN {
     use_ok ('WebAuth::Token::Cred');
 }
 
+# These will be loaded from the configuration file.
+our %TOKENS_GOOD;
+our %TOKENS_ERROR;
+our %TOKENS_BAD;
+
+# Read a token from a test file and return it without the trailing newline.
 sub read_token {
     my ($token) = @_;
     my $path = test_file_path ("data/tokens/$token")
@@ -30,32 +36,23 @@ sub read_token {
     return contents ($path);
 }
 
+# General setup.
 my $wa = WebAuth->new;
 my $path = test_file_path ("data/keyring")
     or BAIL_OUT ('cannot find data/keyring');
 my $keyring = WebAuth::Keyring->read_file ($path);
+$path = test_file_path ("data/tokens.conf");
+require $path or BAIL_OUT ("cannot load data/tokens.conf");
 
-# WebAuth::Token::App app-ok
-my $data = read_token ('app-ok');
-my $object = $wa->token_decode ($data, $keyring);
-isa_ok ($object, 'WebAuth::Token::App');
-is ($object->subject, 'testuser', '... app-ok subject');
-is ($object->last_used, 1308777930, '... app-ok last used');
-is ($object->session_key, undef, '... app-ok session key');
-is ($object->initial_factors, 'p', '... app-ok initial factors');
-is ($object->session_factors, 'c', '... app-ok session factors');
-is ($object->loa, 1, '... app-ok loa');
-is ($object->creation, 1308777900, '... app-ok creation');
-is ($object->expiration, 2147483600, '... app-ok expiration');
-
-# WebAuth::Token::Cred cred-ok
-$data = read_token ('cred-ok');
-$object = $wa->token_decode ($data, $keyring);
-isa_ok ($object, 'WebAuth::Token::Cred');
-is ($object->subject, 'testuser', '... cred-ok subject');
-is ($object->type, 'krb5', '... cred-ok type');
-is ($object->service, 'webauth/example.com@EXAMPLE.COM',
-    '... cred-ok service');
-is ($object->data, "some\0cred;da;;ta", '... cred-ok data');
-is ($object->creation, 1308777900, '... cred-ok creation');
-is ($object->expiration, 2147483600, '... cred-ok expiration');
+# Loop through the good tokens, load the named token, and check its attributes
+# against the expected attributes from the configuration file.
+for my $name (sort keys %TOKENS_GOOD) {
+    next unless $name =~ /^(app|cred)-/;
+    my $data = read_token ($name);
+    my $object = $wa->token_decode ($data, $keyring);
+    isa_ok ($object, $TOKENS_GOOD{$name}[0]);
+    my $attrs = $TOKENS_GOOD{$name}[1];
+    for my $attr (sort keys %$attrs) {
+        is ($object->$attr, $attrs->{$attr}, "... $name $attr");
+    }
+}
