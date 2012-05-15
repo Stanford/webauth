@@ -146,6 +146,9 @@ libwebauth:
  * Format times properly when reporting errors about expired or stale
    tokens from token decoding.  (WEBAUTH-48)
 
+ * Validate that only the correct attributes are present for the two types
+   of app tokens when decoding.  (WEBAUTH-90)
+
 mod_webauth:
 
  * Support setting HttpOnly flag in the generated cookies.  (WEBAUTH-4)
@@ -343,6 +346,13 @@ Documentation:
  * API documentation for libwebauth.  (WEBAUTH-79)
 
  * Write a full WebAuth manual.  (WEBAUTH-83)
+
+ * The protocol says that the subject should not be included in id tokens
+   with a subject authenticator type of krb5, but we've always sent a
+   subject and just ignored it in mod_webauth.  Modify the protocol to
+   indicate that the subject can be included in this case and the WAS may
+   choose to trust it rather than validating the authenticator (since the
+   choice of requested credentials was the WAS's anyway.)  (WEBAUTH-89)
 
 Style:
 
