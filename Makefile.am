@@ -11,12 +11,17 @@
 # builddir != srcdir builds.
 PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebAuth/Token.pm  \
 	perl/lib/WebAuth/Token/App.pm perl/lib/WebAuth/Token/Cred.pm	    \
-	perl/lib/WebKDC.pm perl/lib/WebKDC/Config.pm			    \
-	perl/lib/WebKDC/Token.pm perl/lib/WebKDC/WebKDCException.pm	    \
-	perl/lib/WebKDC/WebRequest.pm perl/lib/WebKDC/WebResponse.pm	    \
-	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
-	perl/lib/WebLogin.pm perl/t/TODO perl/t/changepw.t perl/t/config.t  \
-	perl/t/data/README perl/t/data/kadmin-fake perl/t/data/kadmin.conf  \
+	perl/lib/WebAuth/Token/Error.pm perl/lib/WebAuth/Token/Id.pm	    \
+	perl/lib/WebAuth/Token/Login.pm perl/lib/WebAuth/Token/Proxy.pm	    \
+	perl/lib/WebAuth/Token/Request.pm				    \
+	perl/lib/WebAuth/Token/WebKDCProxy.pm				    \
+	perl/lib/WebAuth/Token/WebKDCService.pm perl/lib/WebKDC.pm	    \
+	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/Token.pm		    \
+	perl/lib/WebKDC/WebKDCException.pm perl/lib/WebKDC/WebRequest.pm    \
+	perl/lib/WebKDC/WebResponse.pm perl/lib/WebKDC/XmlDoc.pm	    \
+	perl/lib/WebKDC/XmlElement.pm perl/lib/WebLogin.pm perl/t/TODO	    \
+	perl/t/changepw.t perl/t/config.t perl/t/data/README		    \
+	perl/t/data/kadmin-fake perl/t/data/kadmin.conf			    \
 	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \

@@ -22,12 +22,19 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
-use Test::More tests => 41;
+use Test::More tests => 208;
 
 use WebAuth ();
 BEGIN {
     use_ok ('WebAuth::Token::App');
     use_ok ('WebAuth::Token::Cred');
+    use_ok ('WebAuth::Token::Error');
+    use_ok ('WebAuth::Token::Id');
+    use_ok ('WebAuth::Token::Login');
+    use_ok ('WebAuth::Token::Proxy');
+    use_ok ('WebAuth::Token::Request');
+    use_ok ('WebAuth::Token::WebKDCProxy');
+    use_ok ('WebAuth::Token::WebKDCService');
 }
 
 # These will be loaded from the configuration file.
@@ -74,7 +81,6 @@ require $path or BAIL_OUT ("cannot load data/tokens.conf");
 # Loop through the good tokens, construct a matching token using the Perl
 # class, encode it, decode it, and check that the results match.
 for my $name (sort keys %TOKENS_GOOD) {
-    next unless $name =~ /^(app|cred)-/;
     my ($class, $attrs) = @{ $TOKENS_GOOD{$name} };
     my $token = $class->new;
     isa_ok ($token, $class);

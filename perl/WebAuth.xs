@@ -103,8 +103,94 @@ struct token_mapping token_mapping_cred[] = {
     M(webauth_token_cred, service,    STRING),
     M(webauth_token_cred, data,       DATA),
     M(webauth_token_cred, data_len,   DATALEN),
-    M(webauth_token_cred, creation, TIME),
+    M(webauth_token_cred, creation,   TIME),
     M(webauth_token_cred, expiration, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Error tokens. */
+struct token_mapping token_mapping_error[] = {
+    M(webauth_token_error, code,     ULONG),
+    M(webauth_token_error, message,  STRING),
+    M(webauth_token_error, creation, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Id tokens. */
+struct token_mapping token_mapping_id[] = {
+    M(webauth_token_id, subject,         STRING),
+    M(webauth_token_id, auth,            STRING),
+    M(webauth_token_id, auth_data,       DATA),
+    M(webauth_token_id, auth_data_len,   DATALEN),
+    M(webauth_token_id, initial_factors, STRING),
+    M(webauth_token_id, session_factors, STRING),
+    M(webauth_token_id, loa,             ULONG),
+    M(webauth_token_id, creation,        TIME),
+    M(webauth_token_id, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* Login tokens. */
+struct token_mapping token_mapping_login[] = {
+    M(webauth_token_login, username, STRING),
+    M(webauth_token_login, password, STRING),
+    M(webauth_token_login, otp,      STRING),
+    M(webauth_token_login, creation, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Proxy tokens. */
+struct token_mapping token_mapping_proxy[] = {
+    M(webauth_token_proxy, subject,          STRING),
+    M(webauth_token_proxy, type,             STRING),
+    M(webauth_token_proxy, webkdc_proxy,     DATA),
+    M(webauth_token_proxy, webkdc_proxy_len, DATALEN),
+    M(webauth_token_proxy, initial_factors,  STRING),
+    M(webauth_token_proxy, session_factors,  STRING),
+    M(webauth_token_proxy, loa,              ULONG),
+    M(webauth_token_proxy, creation,         TIME),
+    M(webauth_token_proxy, expiration,       TIME),
+    { NULL, 0, 0 }
+};
+
+/* Request tokens. */
+struct token_mapping token_mapping_request[] = {
+    M(webauth_token_request, type,            STRING),
+    M(webauth_token_request, auth,            STRING),
+    M(webauth_token_request, proxy_type,      STRING),
+    M(webauth_token_request, state,           DATA),
+    M(webauth_token_request, state_len,       DATALEN),
+    M(webauth_token_request, return_url,      STRING),
+    M(webauth_token_request, options,         STRING),
+    M(webauth_token_request, initial_factors, STRING),
+    M(webauth_token_request, session_factors, STRING),
+    M(webauth_token_request, loa,             ULONG),
+    M(webauth_token_request, command,         STRING),
+    M(webauth_token_request, creation,        TIME),
+    { NULL, 0, 0 }
+};
+
+/* WebKDC proxy tokens. */
+struct token_mapping token_mapping_webkdc_proxy[] = {
+    M(webauth_token_webkdc_proxy, subject,         STRING),
+    M(webauth_token_webkdc_proxy, proxy_type,      STRING),
+    M(webauth_token_webkdc_proxy, proxy_subject,   STRING),
+    M(webauth_token_webkdc_proxy, data,            DATA),
+    M(webauth_token_webkdc_proxy, data_len,        DATALEN),
+    M(webauth_token_webkdc_proxy, initial_factors, STRING),
+    M(webauth_token_webkdc_proxy, loa,             ULONG),
+    M(webauth_token_webkdc_proxy, creation,        TIME),
+    M(webauth_token_webkdc_proxy, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* WebKDC service tokens. */
+struct token_mapping token_mapping_webkdc_service[] = {
+    M(webauth_token_webkdc_service, subject,         STRING),
+    M(webauth_token_webkdc_service, session_key,     DATA),
+    M(webauth_token_webkdc_service, session_key_len, DATALEN),
+    M(webauth_token_webkdc_service, creation,        TIME),
+    M(webauth_token_webkdc_service, expiration,      TIME),
     { NULL, 0, 0 }
 };
 
@@ -731,12 +817,35 @@ token_decode(self, input, ring)
         map_token_to_hash(token_mapping_cred, &token->token.cred, hash);
         break;
     case WA_TOKEN_ERROR:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Error", GV_ADD));
+        map_token_to_hash(token_mapping_error, &token->token.error, hash);
+        break;
     case WA_TOKEN_ID:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Id", GV_ADD));
+        map_token_to_hash(token_mapping_id, &token->token.id, hash);
+        break;
     case WA_TOKEN_LOGIN:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Login", GV_ADD));
+        map_token_to_hash(token_mapping_login, &token->token.login, hash);
+        break;
     case WA_TOKEN_PROXY:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Proxy", GV_ADD));
+        map_token_to_hash(token_mapping_proxy, &token->token.proxy, hash);
+        break;
     case WA_TOKEN_REQUEST:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Request", GV_ADD));
+        map_token_to_hash(token_mapping_request, &token->token.request, hash);
+        break;
     case WA_TOKEN_WEBKDC_PROXY:
+        sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCProxy", GV_ADD));
+        map_token_to_hash(token_mapping_webkdc_proxy,
+                          &token->token.webkdc_proxy, hash);
+        break;
     case WA_TOKEN_WEBKDC_SERVICE:
+        sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCService", GV_ADD));
+        map_token_to_hash(token_mapping_webkdc_service,
+                          &token->token.webkdc_service, hash);
+        break;
     case WA_TOKEN_UNKNOWN:
     case WA_TOKEN_ANY:
     default:
@@ -770,6 +879,29 @@ token_encode(self, input, ring)
     } else if (sv_derived_from(input, "WebAuth::Token::Cred")) {
         token.type = WA_TOKEN_CRED;
         map_hash_to_token(token_mapping_cred, hash, &token.token.cred);
+    } else if (sv_derived_from(input, "WebAuth::Token::Error")) {
+        token.type = WA_TOKEN_ERROR;
+        map_hash_to_token(token_mapping_error, hash, &token.token.error);
+    } else if (sv_derived_from(input, "WebAuth::Token::Id")) {
+        token.type = WA_TOKEN_ID;
+        map_hash_to_token(token_mapping_id, hash, &token.token.id);
+    } else if (sv_derived_from(input, "WebAuth::Token::Login")) {
+        token.type = WA_TOKEN_LOGIN;
+        map_hash_to_token(token_mapping_login, hash, &token.token.login);
+    } else if (sv_derived_from(input, "WebAuth::Token::Proxy")) {
+        token.type = WA_TOKEN_PROXY;
+        map_hash_to_token(token_mapping_proxy, hash, &token.token.proxy);
+    } else if (sv_derived_from(input, "WebAuth::Token::Request")) {
+        token.type = WA_TOKEN_REQUEST;
+        map_hash_to_token(token_mapping_request, hash, &token.token.request);
+    } else if (sv_derived_from(input, "WebAuth::Token::WebKDCProxy")) {
+        token.type = WA_TOKEN_WEBKDC_PROXY;
+        map_hash_to_token(token_mapping_webkdc_proxy, hash,
+                          &token.token.webkdc_proxy);
+    } else if (sv_derived_from(input, "WebAuth::Token::WebKDCService")) {
+        token.type = WA_TOKEN_WEBKDC_SERVICE;
+        map_hash_to_token(token_mapping_webkdc_service, hash,
+                          &token.token.webkdc_service);
     } else {
         croak("token is not a supported WebAuth::Token::* object");
     }

@@ -15,12 +15,19 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 23;
+use Test::More tests => 130;
 
 use WebAuth ();
 BEGIN {
     use_ok ('WebAuth::Token::App');
     use_ok ('WebAuth::Token::Cred');
+    use_ok ('WebAuth::Token::Error');
+    use_ok ('WebAuth::Token::Id');
+    use_ok ('WebAuth::Token::Login');
+    use_ok ('WebAuth::Token::Proxy');
+    use_ok ('WebAuth::Token::Request');
+    use_ok ('WebAuth::Token::WebKDCProxy');
+    use_ok ('WebAuth::Token::WebKDCService');
 }
 
 # These will be loaded from the configuration file.
@@ -47,7 +54,6 @@ require $path or BAIL_OUT ("cannot load data/tokens.conf");
 # Loop through the good tokens, load the named token, and check its attributes
 # against the expected attributes from the configuration file.
 for my $name (sort keys %TOKENS_GOOD) {
-    next unless $name =~ /^(app|cred)-/;
     my $data = read_token ($name);
     my $object = $wa->token_decode ($data, $keyring);
     isa_ok ($object, $TOKENS_GOOD{$name}[0]);
