@@ -1503,11 +1503,10 @@ key(self)
 MODULE = WebAuth        PACKAGE = WebAuth::Token
 
 const char *
-encode(self, input, ring)
+encode(self, ring)
     SV *self
-    SV *input
     WebAuth::Keyring ring
-  PROTOTYPE: $$$
+  PROTOTYPE: $$
   PREINIT:
     HV *hash;
     SV **ctx_sv;
@@ -1518,9 +1517,9 @@ encode(self, input, ring)
     const char *output;
   CODE:
 {
-    if (!sv_isobject(input) || SvTYPE(SvRV(input)) != SVt_PVHV)
-        croak("token is not a WebAuth::Token::* object");
-    hash = (HV *) SvRV(input);
+    if (!sv_derived_from(self, "WebAuth::Token"))
+        croak("self is not of type WebAuth::Token");
+    hash = (HV *) SvRV(self);
 
     /*
      * Pull the context from the hash.  Our typemap wraps the context by
@@ -1534,37 +1533,37 @@ encode(self, input, ring)
 
     /* Copy our hash contents to the appropriate struct. */
     memset(&token, 0, sizeof(token));
-    if (sv_derived_from(input, "WebAuth::Token::App")) {
+    if (sv_derived_from(self, "WebAuth::Token::App")) {
         token.type = WA_TOKEN_APP;
         map_hash_to_token(token_mapping_app, hash, &token.token.app);
-    } else if (sv_derived_from(input, "WebAuth::Token::Cred")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Cred")) {
         token.type = WA_TOKEN_CRED;
         map_hash_to_token(token_mapping_cred, hash, &token.token.cred);
-    } else if (sv_derived_from(input, "WebAuth::Token::Error")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Error")) {
         token.type = WA_TOKEN_ERROR;
         map_hash_to_token(token_mapping_error, hash, &token.token.error);
-    } else if (sv_derived_from(input, "WebAuth::Token::Id")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Id")) {
         token.type = WA_TOKEN_ID;
         map_hash_to_token(token_mapping_id, hash, &token.token.id);
-    } else if (sv_derived_from(input, "WebAuth::Token::Login")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Login")) {
         token.type = WA_TOKEN_LOGIN;
         map_hash_to_token(token_mapping_login, hash, &token.token.login);
-    } else if (sv_derived_from(input, "WebAuth::Token::Proxy")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Proxy")) {
         token.type = WA_TOKEN_PROXY;
         map_hash_to_token(token_mapping_proxy, hash, &token.token.proxy);
-    } else if (sv_derived_from(input, "WebAuth::Token::Request")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::Request")) {
         token.type = WA_TOKEN_REQUEST;
         map_hash_to_token(token_mapping_request, hash, &token.token.request);
-    } else if (sv_derived_from(input, "WebAuth::Token::WebKDCProxy")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::WebKDCProxy")) {
         token.type = WA_TOKEN_WEBKDC_PROXY;
         map_hash_to_token(token_mapping_webkdc_proxy, hash,
                           &token.token.webkdc_proxy);
-    } else if (sv_derived_from(input, "WebAuth::Token::WebKDCService")) {
+    } else if (sv_derived_from(self, "WebAuth::Token::WebKDCService")) {
         token.type = WA_TOKEN_WEBKDC_SERVICE;
         map_hash_to_token(token_mapping_webkdc_service, hash,
                           &token.token.webkdc_service);
     } else {
-        croak("token is not a supported WebAuth::Token::* object");
+        croak("self is not a supported WebAuth::Token::* object");
     }
 
     /* Do the actual encoding. */

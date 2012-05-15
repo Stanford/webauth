@@ -53,7 +53,7 @@ our %TOKENS_BAD;
 sub encode_decode {
     my ($wa, $token, $keyring) = @_;
     eval {
-        my $encoded = $token->encode ($token, $keyring);
+        my $encoded = $token->encode ($keyring);
         ok (length ($encoded) > 1, 'Encoded ' . ref ($token));
         my $result = $wa->token_decode ($encoded, $keyring);
         isa_ok ($result, ref $token);
