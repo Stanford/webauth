@@ -40,6 +40,9 @@ WebAuth 4.2.0 (unreleased)
     been removed from the Perl API in favor of the new token_decode method
     and WebAuth::Token::* classes.
 
+    The Perl WebKDC::Token module and the classes it defined have been
+    removed.  Use the new WebAuth::Token::* classes instead.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
