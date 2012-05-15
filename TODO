@@ -319,6 +319,11 @@ Documentation:
    more complete introduction to the protocol and defining terms earlier
    and more consistently.  (WEBAUTH-73)
 
+ * Document that numeric values of 0 are equivalent to the attribute not
+   being set for all tokens on the wire.  This is the assumption made by
+   the Perl API, and it seems like it should be generally valid for all
+   tokens.  (WEBAUTH-88)
+
  * Describe the multifactor design and implementation in the protocol
    specification, particularly including the criteria used when deciding
    whether to merge factors together as initial factors.  (WEBAUTH-74)
