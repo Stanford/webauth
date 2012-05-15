@@ -78,13 +78,6 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
 
 /*
- * Returns the space required to encode and encrypt a token, not including
- * nul-termination.  The padding length is stored in the provided argument.
- */
-size_t webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *, size_t *)
-    __attribute__((__nonnull__));
-
-/*
  * Encodes and encrypts attributes into a token, using the key from the
  * keyring that has the most recent valid valid_from time.  If hint is 0 then
  * the current time will be used.  The encoded token will be stored in newly

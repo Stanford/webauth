@@ -54,8 +54,8 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
  * Given an attribute list, calculate the encoded binary length.  The length
  * of the padding needed is stored in plen.
  */
-size_t
-webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
+static size_t
+encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
 {
     size_t elen, modulo;
 
@@ -119,7 +119,7 @@ create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
     }
 
     /* {key-hint}{nonce}{hmac}{attr}{padding} */
-    elen = webauth_token_encoded_length(list, &plen);
+    elen = encoded_length(list, &plen);
     result = apr_palloc(ctx->pool, elen);
     p = result;
 
