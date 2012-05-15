@@ -13,8 +13,8 @@ at a production KDC!  Then, create the following files:
                                 second
     test.keyring.path           File containing path to a server keyring
     test.kadmin-remctl.server   File containing name of a server running the
-                                kadmin-remctl package with test.principal
-                                allowed to access
+                                kadmin-remctl package that the user running
+                                the tests is allowed to access
 
 For test.keyring.path, some tests have us create our own keyring, but one
 set of tests for login requires running on a working WebKDC server, and
