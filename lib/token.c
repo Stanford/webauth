@@ -140,11 +140,10 @@ webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
  *
  * Returns a WA_ERR code.
  */
-int
-webauth_token_create_with_key(struct webauth_context *ctx,
-                              const WEBAUTH_ATTR_LIST *list, time_t hint,
-                              char **output, size_t *output_len,
-                              const WEBAUTH_KEY *key)
+static int
+create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
+                time_t hint, char **output, size_t *output_len,
+                const WEBAUTH_KEY *key)
 {
     size_t elen, plen, alen, i;
     int status;
@@ -244,8 +243,7 @@ webauth_token_create(struct webauth_context *ctx,
                           "unable to find usable encryption key");
         return WA_ERR_BAD_KEY;
     }
-    return webauth_token_create_with_key(ctx, list, hint, output, output_len,
-                                         key);
+    return create_with_key(ctx, list, hint, output, output_len, key);
 }
 
 
@@ -450,55 +448,6 @@ webauth_token_parse(struct webauth_context *ctx, const char *input,
      * status is WA_ERR_NONE if we found a working key.  Decode the attributes
      * and then check for errors.
      */
-    if (status == WA_ERR_NONE) {
-        status = webauth_attrs_decode((char *) buf + T_ATTR_O, dlen, list);
-        if (status != WA_ERR_NONE)
-            webauth_error_set(ctx, status, "error decoding token attributes");
-    }
-    if (status != WA_ERR_NONE)
-        return status;
-
-    /*
-     * If the token had an expiration/creation time that wasn't in the right
-     * format, treat the key as invalid and free the list.  If it's just
-     * expired or stale, keep the list and just return the error code, since
-     * we may want to use the token anyway.
-     */
-    status = check_token(ctx, *list, ttl);
-    if (status == WA_ERR_NONE
-        || status == WA_ERR_TOKEN_EXPIRED
-        || status == WA_ERR_TOKEN_STALE)
-        return status;
-    else {
-        webauth_attr_list_free(*list);
-        return status;
-    }
-}
-
-
-/*
- * The same as webauth_token_parse, but use a specific key rather than a
- * keyring.
- *
- * Decrypts and decodes attributes from a token, given the token as input and
- * its length as input_len.  If ttl is not zero, the token is treated as
- * invalid if its creation time is more than ttl ago.  Takes a keyr to use for
- * decryption and list, into which the new attribute list is put.  Returns a
- * WA_ERR code.
- */
-int
-webauth_token_parse_with_key(struct webauth_context *ctx, const char *input,
-                             size_t input_len, unsigned long ttl,
-                             const WEBAUTH_KEY *key, WEBAUTH_ATTR_LIST **list)
-{
-    unsigned char *buf;
-    size_t dlen;
-    int status;
-
-    *list = NULL;
-    buf = apr_palloc(ctx->pool, input_len);
-    memcpy(buf, input, input_len);
-    status = decrypt_token(ctx, key, buf, input_len, &dlen);
     if (status == WA_ERR_NONE) {
         status = webauth_attrs_decode((char *) buf + T_ATTR_O, dlen, list);
         if (status != WA_ERR_NONE)

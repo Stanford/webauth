@@ -100,19 +100,6 @@ int webauth_token_create(struct webauth_context *, const WEBAUTH_ATTR_LIST *,
     __attribute__((__nonnull__));
 
 /*
- * The same as webauth_token_create, but takes an encryption key to use
- * instead of a keyring.
- *
- * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if the key is
- * not a valid encryption key.
- */
-int webauth_token_create_with_key(struct webauth_context *,
-                                  const WEBAUTH_ATTR_LIST *, time_t hint,
-                                  char **output, size_t *output_len,
-                                  const WEBAUTH_KEY *)
-    __attribute__((__nonnull__));
-
-/*
  * Decrypts and decodes attributes from a token.  The best decryption key on
  * the ring will be tried first, and if that fails all the remaining keys will
  * be tried.  input is modified and the returned attrs in list point into
@@ -143,12 +130,6 @@ int webauth_token_create_with_key(struct webauth_context *,
 int webauth_token_parse(struct webauth_context *, const char *input,
                         size_t input_len, unsigned long ttl,
                         const WEBAUTH_KEYRING *, WEBAUTH_ATTR_LIST **)
-    __attribute__((__nonnull__));
-
-/* Same as webauth_token_parse but takes a key instead of a keyring. */
-int webauth_token_parse_with_key(struct webauth_context *, const char *input,
-                                 size_t input_len, unsigned long ttl,
-                                 const WEBAUTH_KEY *, WEBAUTH_ATTR_LIST **)
     __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
