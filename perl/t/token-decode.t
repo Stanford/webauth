@@ -15,10 +15,11 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 133;
+use Test::More tests => 135;
 
 use WebAuth ();
 BEGIN {
+    use_ok ('WebAuth::Token');
     use_ok ('WebAuth::Token::App');
     use_ok ('WebAuth::Token::Cred');
     use_ok ('WebAuth::Token::Error');
@@ -55,7 +56,7 @@ require $path or BAIL_OUT ("cannot load data/tokens.conf");
 # against the expected attributes from the configuration file.
 for my $name (sort keys %TOKENS_GOOD) {
     my $data = read_token ($name);
-    my $object = $wa->token_decode ($data, $keyring);
+    my $object = WebAuth::Token->new ($wa, $data, $keyring);
     isa_ok ($object, $TOKENS_GOOD{$name}[0]);
     my $attrs = $TOKENS_GOOD{$name}[1];
     for my $attr (sort keys %$attrs) {
@@ -68,5 +69,6 @@ for my $name (sort keys %TOKENS_GOOD) {
 my $data = read_token ('app-ok');
 my $object = $wa->token_decode ($data, $keyring);
 isa_ok ($object, 'WebAuth::Token');
+isa_ok ($object, 'WebAuth::Token::App');
 ok (defined ($object->{ctx}), '... and has a context');
 is (ref ($object->{ctx}), 'WebAuth', '... which is the correct type');

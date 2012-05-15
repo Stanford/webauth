@@ -18,24 +18,35 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
+use WebAuth ();
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
 our $VERSION = '1.00';
 
-# Constructor.  Reject attempts to create this class directly.  This is only
-# intended for use by subclasses.
-sub new ($$) {
-    my ($type, $ctx) = @_;
-    if ($type eq 'WebAuth::Token') {
+# Constructor.  Requires a WebAuth context and optionally can take an encoded
+# token and keyring to create a new object via decoding.
+#
+# Reject attempts to create this class directly except via an existing token,
+# which will return one of our subclasses.  Constructing an empty object is
+# only intended for use by subclasses, since an empty generic WebAuth::Token
+# has no meaning.
+sub new ($$;$$) {
+    my ($type, $ctx, $token, $keyring) = @_;
+    if ($type eq 'WebAuth::Token' && !defined ($token)) {
         croak ('WebAuth::Token cannot be used directly');
     }
     unless (ref ($ctx) eq 'WebAuth') {
-        croak ('second argument to constructor must be a WebAuth object');
+        croak ('second argument must be a WebAuth object');
     }
-    my $self = { ctx => $ctx };
-    bless ($self, $type);
+    my $self;
+    if (defined $token) {
+        $self = $ctx->token_decode ($token, $keyring);
+    } else {
+        $self = { ctx => $ctx };
+        bless ($self, $type);
+    }
     return $self;
 }
 
