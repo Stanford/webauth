@@ -78,18 +78,17 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
 
 /*
- * Encodes and encrypts attributes into a token, using the key from the
- * keyring that has the most recent valid valid_from time.  If hint is 0 then
- * the current time will be used.  The encoded token will be stored in newly
- * pool-allocated memory in the provided output argument, with its length
- * stored in output_len.
+ * Encrypts an input buffer (normally encoded attributes) into a token, using
+ * the key from the keyring that has the most recent valid valid_from time.
+ * The encoded token will be stored in newly pool-allocated memory in the
+ * provided output argument, with its length stored in output_len.
  *
  * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if no suitable
  * and valid encryption key could be found in the keyring.
  */
-int webauth_token_create(struct webauth_context *, const WEBAUTH_ATTR_LIST *,
-                         time_t hint, char **output, size_t *output_len,
-                         const WEBAUTH_KEYRING *)
+int webauth_token_encrypt(struct webauth_context *, const char *input,
+                          size_t len, char **output, size_t *output_len,
+                          const WEBAUTH_KEYRING *)
     __attribute__((__nonnull__));
 
 /*

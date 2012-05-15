@@ -139,10 +139,18 @@ finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
               const WEBAUTH_ATTR_LIST *alist, const void **token,
               size_t *length)
 {
-    char *rtoken;
+    size_t alen;
+    char *attrs, *rtoken;
     int status;
 
-    status = webauth_token_create(ctx, alist, 0, &rtoken, length, keyring);
+    alen = webauth_attrs_encoded_length(alist);
+    attrs = apr_palloc(ctx->pool, alen);
+    status = webauth_attrs_encode(alist, attrs, &alen, alen);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "error encoding attributes");
+        return status;
+    }
+    status = webauth_token_encrypt(ctx, attrs, alen, &rtoken, length, keyring);
     if (status != WA_ERR_NONE)
         return status;
     *token = rtoken;

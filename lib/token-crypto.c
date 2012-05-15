@@ -51,17 +51,16 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
 
 
 /*
- * Given an attribute list, calculate the encoded binary length.  The length
- * of the padding needed is stored in plen.
+ * Given the length of the encoded attributes, calculate the encoded binary
+ * length.  The length of the padding needed is stored in plen.
  */
 static size_t
-encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
+encoded_length(size_t alen, size_t *plen)
 {
     size_t elen, modulo;
 
     /* The header and the attributes. */
-    elen = T_NONCE_S + T_HMAC_S;
-    elen += webauth_attrs_encoded_length(list);
+    elen = T_NONCE_S + T_HMAC_S + alen;
 
     /*
      * Add in padding length.  Tokens are padded to the AES block size.
@@ -83,24 +82,22 @@ encoded_length(const WEBAUTH_ATTR_LIST *list, size_t *plen)
 
 
 /*
- * Encode and encrypt attributes into a token, storing the encoded string in a
- * new pool-allocated output buffer and the length in output_len.  The token
- * is *not* base64-encoded.  key is the key in which to encrypt the token, and
- * hint is the hint to use for decoders to find the key.  If hint is 0, use
- * the current time.
+ * Encode and encrypt an input buffer into a token, storing the encoded string
+ * in a new pool-allocated output buffer and the length in output_len.  The
+ * token is *not* base64-encoded.  key is the key in which to encrypt the
+ * token.  The token hint will be set to the current time.
  *
  * Returns a WA_ERR code.
  */
 static int
-create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
-                time_t hint, char **output, size_t *output_len,
-                const WEBAUTH_KEY *key)
+create_with_key(struct webauth_context *ctx, const char *input, size_t len,
+                char **output, size_t *output_len, const WEBAUTH_KEY *key)
 {
-    size_t elen, plen, alen, i;
+    size_t elen, plen, i;
     int status;
     char *result, *p;
     AES_KEY aes_key;
-    uint32_t hint_buf;
+    uint32_t hint;
 
     /* Clear our output paramters in case of error. */
     *output = NULL;
@@ -119,15 +116,13 @@ create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
     }
 
     /* {key-hint}{nonce}{hmac}{attr}{padding} */
-    elen = encoded_length(list, &plen);
+    elen = encoded_length(len, &plen);
     result = apr_palloc(ctx->pool, elen);
     p = result;
 
     /* {key-hint} */
-    if (hint == 0)
-        hint = time(NULL);
-    hint_buf = htonl(hint);
-    memcpy(p, &hint_buf, T_HINT_S);
+    hint = htonl(time(NULL));
+    memcpy(p, &hint, T_HINT_S);
     p += T_HINT_S;
 
     /* {nonce} */
@@ -140,12 +135,8 @@ create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
     p += T_HMAC_S;
 
     /* {attr} */
-    status = webauth_attrs_encode(list, p, &alen, elen - (p - result) - plen);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "error encoding attributes");
-        return status;
-    }
-    p += alen;
+    memcpy(p, input, len);
+    p += len;
 
     /* {padding} */
     for (i = 0; i < plen; i++)
@@ -157,7 +148,7 @@ create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
      * error.
      */
     HMAC(EVP_sha1(), key->data, key->length,
-         (unsigned char *) result + T_ATTR_O, alen + plen,   /* data, len */
+         (unsigned char *) result + T_ATTR_O, len + plen,    /* data, len */
          (unsigned char *) result + T_HMAC_O, NULL);         /* hmac, len */
 
     /*
@@ -181,10 +172,9 @@ create_with_key(struct webauth_context *ctx, const WEBAUTH_ATTR_LIST *list,
  * results in the same way that webauth_token_create_with_key does.
  */
 int
-webauth_token_create(struct webauth_context *ctx,
-                     const WEBAUTH_ATTR_LIST *list, time_t hint,
-                     char **output, size_t *output_len,
-                     const WEBAUTH_KEYRING *ring)
+webauth_token_encrypt(struct webauth_context *ctx, const char *input,
+                      size_t len, char **output, size_t *output_len,
+                      const WEBAUTH_KEYRING *ring)
 {
     WEBAUTH_KEY *key;
 
@@ -194,7 +184,7 @@ webauth_token_create(struct webauth_context *ctx,
                           "unable to find usable encryption key");
         return WA_ERR_BAD_KEY;
     }
-    return create_with_key(ctx, list, hint, output, output_len, key);
+    return create_with_key(ctx, input, len, output, output_len, key);
 }
 
 
