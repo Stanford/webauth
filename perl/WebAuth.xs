@@ -13,6 +13,10 @@
  * All abnormal errors are handled as exceptions, generated via webauth_croak,
  * rather than through error returns.
  *
+ * Wrap all CODE and PPCODE segments in this file longer than a single line in
+ * braces to reduce Emacs's c-mode confusion when trying to understand XS
+ * constructs.
+ *
  * Written by Roland Schemers
  * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
@@ -428,10 +432,12 @@ new(class)
     struct webauth_context *ctx;
     int status;
   CODE:
+{
     status = webauth_context_init(&ctx, NULL);
     if (status != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_context_init", status, NULL);
     RETVAL = ctx;
+}
   OUTPUT:
     RETVAL
 
@@ -440,8 +446,10 @@ void
 DESTROY(self)
    WebAuth self
  CODE:
+{
    if (self != NULL)
        webauth_context_free(self);
+}
 
 
 const char *
@@ -802,6 +810,7 @@ token_decode(self, input, ring)
     HV *hash;
     SV *object;
   CODE:
+{
     encoded = SvPV_nolen(input);
     status = webauth_token_decode(self, WA_TOKEN_ANY, encoded, ring, &token);
     if (status != WA_ERR_NONE)
@@ -853,10 +862,18 @@ token_decode(self, input, ring)
         croak("unknown token type %d", token->type);
         break;
     }
+
+    /*
+     * Stash a reference to the context in the generated hash.  XS will have
+     * automatically unwrapped a struct webauth_context from an SV for us in
+     * the preamble, but we want to reuse the SV used by Perl, so store the
+     * contents of our first argument directly.
+     */
     if (hv_stores(hash, "ctx", ST(0)) == NULL)
         croak("cannot store context in hash");
     SvREFCNT_inc(ST(0));
     RETVAL = object;
+}
   OUTPUT:
     RETVAL
 
@@ -1308,9 +1325,11 @@ new(class, capacity = 1)
     size_t capacity
   PROTOTYPE: ;$
   CODE:
+{
     RETVAL = webauth_keyring_new(capacity);
     if (RETVAL == NULL)
         webauth_croak(NULL, "webauth_keyring_new", WA_ERR_NO_MEM, NULL);
+}
   OUTPUT:
     RETVAL
 
@@ -1324,10 +1343,12 @@ read_file(class, path)
     WEBAUTH_KEYRING *ring;
     int s;
   CODE:
+{
     s = webauth_keyring_read_file(path, &ring);
     if (s != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_keyring_read_file", s, NULL);
     RETVAL = ring;
+}
   OUTPUT:
     RETVAL
 
@@ -1342,10 +1363,12 @@ add(self, creation_time, valid_after, key)
   PREINIT:
     int s;
   PPCODE:
+{
     s = webauth_keyring_add(self, creation_time, valid_after, key);
     if (s != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_keyring_add", s, NULL);
     XSRETURN_YES;
+}
 
 
 # Must return a copy of the key rather than the actual key, since Perl really
@@ -1360,12 +1383,14 @@ best_key(self, encryption, hint)
   PREINIT:
     WEBAUTH_KEY *key;
   CODE:
+{
     key = webauth_keyring_best_key(self, encryption, hint);
     if (key == NULL)
         XSRETURN_UNDEF;
     RETVAL = webauth_key_copy(key);
     if (RETVAL == NULL)
         webauth_croak(NULL, "webauth_keyring_best_key", WA_ERR_NO_MEM, NULL);
+}
   OUTPUT:
     RETVAL
 
@@ -1385,6 +1410,7 @@ entries(self)
     WebAuth::Keyring self
   PROTOTYPE: $
   PPCODE:
+{
     if (GIMME_V == G_ARRAY) {
         SV *entry;
         size_t i;
@@ -1400,6 +1426,7 @@ entries(self)
         sv_2mortal(ST(0));
         XSRETURN(1);
     }
+}
 
 
 void
@@ -1410,10 +1437,12 @@ remove(self, n)
   PREINIT:
     int s;
   PPCODE:
+{
     s = webauth_keyring_remove(self, n);
     if (s != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_keyring_remove", s, NULL);
     XSRETURN_YES;
+}
 
 
 void
@@ -1424,10 +1453,12 @@ write_file(self, path)
   PREINIT:
     int s;
   PPCODE:
+{
     s = webauth_keyring_write_file(self, path);
     if (s != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_keyring_write_file", s, NULL);
     XSRETURN_YES;
+}
 
 
 MODULE = WebAuth        PACKAGE = WebAuth::KeyringEntry
@@ -1460,9 +1491,11 @@ key(self)
     WebAuth::KeyringEntry self
   PROTOTYPE: $
   CODE:
+{
     RETVAL = webauth_key_copy(self->key);
     if (RETVAL == NULL)
         webauth_croak(NULL, "webauth_key_copy", WA_ERR_NO_MEM, NULL);
+}
   OUTPUT:
     RETVAL
 
@@ -1484,14 +1517,22 @@ encode(self, input, ring)
     int status;
     const char *output;
   CODE:
+{
     if (!sv_isobject(input) || SvTYPE(SvRV(input)) != SVt_PVHV)
         croak("token is not a WebAuth::Token::* object");
     hash = (HV *) SvRV(input);
+
+    /*
+     * Pull the context from the hash.  Our typemap wraps the context by
+     * storing it as the IV of the scalar, so we undo that wrapping here.
+     */
     ctx_sv = hv_fetch(hash, "ctx", strlen("ctx"), 0);
     if (ctx_sv == NULL)
         croak("no WebAuth context in WebAuth::Token object");
     ctx_iv = SvIV((SV *) SvRV(*ctx_sv));
     ctx = INT2PTR(struct webauth_context *, ctx_iv);
+
+    /* Copy our hash contents to the appropriate struct. */
     memset(&token, 0, sizeof(token));
     if (sv_derived_from(input, "WebAuth::Token::App")) {
         token.type = WA_TOKEN_APP;
@@ -1525,10 +1566,13 @@ encode(self, input, ring)
     } else {
         croak("token is not a supported WebAuth::Token::* object");
     }
+
+    /* Do the actual encoding. */
     status = webauth_token_encode(ctx, &token, ring, &output);
     if (status != WA_ERR_NONE)
         webauth_croak(ctx, "webauth_token_encode", status, NULL);
     RETVAL = output;
+}
   OUTPUT:
     RETVAL
 
