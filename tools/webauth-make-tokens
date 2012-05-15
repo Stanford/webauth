@@ -105,6 +105,10 @@ for my $tokens (\%TOKENS_GOOD, \%TOKENS_ERROR) {
 # FIXME: %TOKENS_BAD not yet supported and will require generic token encoding
 # or some other way to create tokens while bypassing sanity checks.
 
+# FIXME: Restore the ability to generate app-bad-hmac (which replaces one
+# character of the encoded token) and app-raw (a valid token that isn't
+# base64-encoded).
+
 ##############################################################################
 # Documentation
 ##############################################################################
