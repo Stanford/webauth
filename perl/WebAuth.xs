@@ -123,6 +123,7 @@ map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
     SV *value;
     const char *string;
     const void *data;
+    unsigned long number;
 
     for (i = 0; mapping[i].key != NULL; i++) {
         map = &mapping[i];
@@ -134,7 +135,9 @@ map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
                 value = newSVpv(string, 0);
             break;
         case TYPE_TIME:
-            value = newSViv(DATA_TIME(token, map->offset));
+            number = DATA_TIME(token, map->offset);
+            if (number != 0)
+                value = newSViv(number);
             break;
         case TYPE_DATA:
             data = DATA_DATA(token, map->offset);
@@ -147,7 +150,9 @@ map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
             /* Handled as part of TYPE_DATA. */
             break;
         case TYPE_ULONG:
-            value = newSViv(DATA_ULONG(token, map->offset));
+            number = DATA_ULONG(token, map->offset);
+            if (number != 0)
+                value = newSViv(DATA_ULONG(token, map->offset));
             break;
         }
         if (value != NULL)
