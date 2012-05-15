@@ -473,7 +473,7 @@ main(void)
     struct webauth_token in;
     struct webauth_token *out;
 
-    plan(409);
+    plan(422);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -592,7 +592,6 @@ main(void)
                       "missing message for error token");
 
     /* Flesh out an id token, and then encode and decode it. */
-    id.subject = "testuser";
     id.auth = "krb5";
     id.auth_data = "s=ome\0da;;ta";
     id.auth_data_len = 12;
@@ -601,6 +600,8 @@ main(void)
     id.loa = 2;
     id.creation = now;
     id.expiration = now + 60;
+    check_id_token(ctx, &id, ring, "krb5");
+    id.subject = "testuser";
     check_id_token(ctx, &id, ring, "full");
     id.auth = "webkdc";
     id.auth_data = NULL;

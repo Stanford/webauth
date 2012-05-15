@@ -272,7 +272,6 @@ encode_id(struct webauth_context *ctx, const struct webauth_token_id *id,
     time_t creation;
 
     /* Sanity-check the token attributes. */
-    CHECK_STR(id, subject);
     CHECK_STR(id, auth);
     CHECK_NUM(id, expiration);
     if (strcmp(id->auth, "krb5") != 0 && strcmp(id->auth, "webkdc") != 0) {
@@ -280,16 +279,19 @@ encode_id(struct webauth_context *ctx, const struct webauth_token_id *id,
                           "unknown subject auth %s for id token", id->auth);
         goto corrupt;
     }
+    if (strcmp(id->auth, "webkdc") == 0)
+        CHECK_STR(id, subject);
     if (strcmp(id->auth, "krb5") == 0)
         CHECK_DATA(id, auth_data);
 
     /* Encode the token attributes into the attribute list. */
     creation = (id->creation > 0) ? id->creation : time(NULL);
     ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_ID);
-    ADD_STR( WA_TK_SUBJECT,         id->subject);
     ADD_STR( WA_TK_SUBJECT_AUTH,    id->auth);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, id->expiration);
+    if (id->subject != NULL)
+        ADD_STR(WA_TK_SUBJECT, id->subject);
     if (id->auth_data != NULL)
         ADD_DATA(WA_TK_SUBJECT_AUTH_DATA, id->auth_data, id->auth_data_len);
     if (id->initial_factors != NULL)

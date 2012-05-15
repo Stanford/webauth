@@ -30,6 +30,10 @@ WebAuth 4.2.0 (unreleased)
     default and is normally only used to generate test data, but it may be
     useful in some other cases of manual token generation.
 
+    webauth_token_encode now correctly allows id tokens of type krb5 to
+    omit the subject attribute.  The receiver is supposed to determine the
+    subject via the Kerberos authenticator.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
