@@ -219,9 +219,6 @@ mod_webauthldap:
 
 mod_webkdc:
 
- * Don't allow a failed user information service query to satisfy random
-   multifactor.  (WEBAUTH-59)
-
  * Return from a password login any additional information provided by
    the KDC, such as upcoming password expiration information.  (WEBAUTH-17)
 
