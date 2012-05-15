@@ -25,6 +25,11 @@ WebAuth 4.2.0 (unreleased)
     module from this release and vice versa, so be careful of partial
     upgrades.
 
+    Add new tools/webauth-make-tokens script to generate WebAuth tokens
+    given a configuration file and keyring.  This is not installed by
+    default and is normally only used to generate test data, but it may be
+    useful in some other cases of manual token generation.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
