@@ -865,6 +865,7 @@ sub add_proxy_token {
 # reason, log an error and don't do anything else.
 sub add_remuser_token {
     my ($self) = @_;
+    my $wa = $self->{webauth};
 
     print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
         if $self->param ('debug');
@@ -900,13 +901,13 @@ sub add_remuser_token {
     }
 
     # Create a proxy token.
-    my $token = new WebKDC::WebKDCProxyToken;
-    $token->creation_time (time);
-    $token->expiration_time (time + $WebKDC::Config::REMUSER_EXPIRES);
-    $token->proxy_data ($user);
-    $token->proxy_subject ('WEBKDC:remuser');
-    $token->proxy_type ('remuser');
+    my $token = WebAuth::Token::WebKDCProxy->new ($wa);
     $token->subject ($user);
+    $token->proxy_type ('remuser');
+    $token->proxy_subject ('WEBKDC:remuser');
+    $token->data ($user);
+    $token->creation (time);
+    $token->expiration (time + $WebKDC::Config::REMUSER_EXPIRES);
 
     # If there's a callback defined for determining the initial and session
     # factors and level of assurance, make that callback and store the results
@@ -924,8 +925,7 @@ sub add_remuser_token {
     }
 
     # Add the token to the WebKDC request.
-    my $wa = $self->{webauth};
-    my $token_string = $wa->base64_encode ($token->to_token ($keyring));
+    my $token_string = $token->encode ($keyring);
     $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
 }
 
@@ -950,12 +950,12 @@ sub add_changepw_token {
 
     # Create a ticket for kadmin/changepw with the user name and password.
     my ($ticket, $expires);
+    my $changepw = 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM) {
+        $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
+    }
     eval {
         my $context = $wa->krb5_new;
-        my $changepw = 'kadmin/changepw';
-        if ($WebKDC::Config::DEFAULT_REALM) {
-            $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
-        }
         krb5_init_via_password ($context, $username, $password, $changepw,
                                 '', '');
         ($ticket, $expires) = krb5_export_ticket ($context, $changepw);
@@ -971,12 +971,13 @@ sub add_changepw_token {
     $expires = $expires_limit if $expires_limit < $expires;
 
     # Create the token to contain the credential.
-    my $token = new WebKDC::CredToken;
-    $token->creation_time (time);
-    $token->expiration_time ($expires);
-    $token->cred_type ('krb5');
-    $token->cred_data ($ticket);
+    my $token = WebAuth::Token::Cred->new ($wa);
     $token->subject ($username);
+    $token->type ('krb5');
+    $token->service ($changepw);
+    $token->data ($ticket);
+    $token->creation (time);
+    $token->expiration ($expires);
 
     # Add the token to the web page.
     my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
@@ -985,7 +986,7 @@ sub add_changepw_token {
             . " $WebKDC::Config::KEYRING_PATH\n";
         return;
     }
-    $self->param ('CPT', $wa->base64_encode ($token->to_token ($keyring)));
+    $self->param ('CPT', $token->encode ($keyring));
     return 1;
 }
 
@@ -1023,10 +1024,7 @@ sub change_user_password {
         }
         $cpt = $self->param ('CPT');
     }
-    my $token;
-    eval {
-        $token = new WebKDC::CredToken ($wa->base64_decode ($cpt), $keyring, 0);
-    };
+    my $token = eval { $wa->token_decode ($cpt, $keyring) };
     if ($@) {
         $self->param ('CPT', '');
         my $msg = "internal error";
@@ -1045,12 +1043,16 @@ sub change_user_password {
         } elsif ($e) {
             return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $msg);
         }
-
+    } elsif (!$token->isa ('WebAuth::Token::Cred')) {
+        my $e = "failed to change password for $username: "
+            . 'CPT parameter is not a cred token';
+        print STDERR $e, "\n" if $self->param ('logging');
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } elsif ($token->subject ne $username) {
         my $e = "failed to change password for $username: invalid username";
         print STDERR $e, "\n" if $self->param ('logging');
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
-    } elsif ($token->cred_type ne 'krb5') {
+    } elsif ($token->type ne 'krb5') {
         my $e = "failed to change password for $username: "
             . "invalid credential type";
         print STDERR $e, "\n" if $self->param ('logging');
@@ -1060,7 +1062,7 @@ sub change_user_password {
     # Change the password and return any error status plus exception object.
     eval {
         my $context = $wa->krb5_new;
-        krb5_init_via_cred ($context, $token->cred_data);
+        krb5_init_via_cred ($context, $token->data);
         krb5_change_password ($context, $password);
     };
     my $e = $@;

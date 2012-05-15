@@ -18,7 +18,6 @@ use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
 use WebKDC::WebKDCException;
-use WebKDC::Token;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
@@ -215,18 +214,15 @@ sub request_token_request($$) {
     # still go ahead to validate the request token and to get a login cancel
     # token, if any.
     if (defined($user) && (defined($pass) || defined($otp))) {
-        my $login_token = new WebKDC::LoginToken;
+        my $login_token = WebAuth::Token::Login->new ($wa);
         $login_token->username($user);
-        $login_token->creation_time(time());
+        $login_token->creation(time());
         if (defined $otp) {
             $login_token->otp($otp);
         } else {
             $login_token->password($pass);
         }
-
-        my $login_token_str
-            = $wa->base64_encode($login_token->to_token(get_keyring()));
-
+        my $login_token_str = $login_token->encode(get_keyring());
         $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
     }
     if (defined($proxy_cookies)) {
@@ -484,7 +480,6 @@ Roland Schemers (schemers@stanford.edu)
 =head1 SEE ALSO
 
 L<WebKDC::WebKDCException>
-L<WebKDC::Token>
 L<WebKDC::WebRequest>
 L<WebKDC::WebRespsonse>
 L<WebAuth>.

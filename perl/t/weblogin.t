@@ -179,21 +179,23 @@ my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
 # Create the ST for testing.
 my $wa = WebAuth->new;
 my $random = $wa->random_key (WebAuth::WA_AES_128);
-my $key = $wa->key_create (WebAuth::WA_AES_KEY, $random);
-my $st = WebKDC::WebKDCServiceToken->new;
-$st->session_key ($random);
+my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
-$st->creation_time (time);
-$st->expiration_time (time + 3600);
-my $st_base64 = $wa->base64_encode ($st->to_token ($keyring));
+$st->session_key ($random);
+$st->creation (time);
+$st->expiration (time + 3600);
+my $st_base64 = $st->encode ($keyring);
 
 # Create the RT for testing.
-my $rt = WebKDC::RequestToken->new;
-$rt->creation_time (time);
-$rt->subject_auth ('webkdc');
-$rt->requested_token_type ('id');
+my $client_keyring = WebAuth::Keyring->new (1);
+my $key = $wa->key_create (WebAuth::WA_AES_KEY, $random);
+$client_keyring->add (time, time, $key);
+my $rt = WebAuth::Token::Request->new ($wa);
+$rt->type ('id');
+$rt->auth ('webkdc');
 $rt->return_url ('https://test.example.org/');
-my $rt_base64 = $wa->base64_encode ($rt->to_token ($key));
+$rt->creation (time);
+my $rt_base64 = $st->encode ($client_keyring);
 
 #############################################################################
 # Tests
