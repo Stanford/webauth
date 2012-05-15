@@ -20,13 +20,13 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub subject         { my $self = shift; $self->_attr ('subject',         @_) }
-sub auth            { my $self = shift; $self->_attr ('auth',            @_) }
-sub auth_data       { my $self = shift; $self->_attr ('auth_data',       @_) }
-sub initial_factors { my $self = shift; $self->_attr ('initial_factors', @_) }
-sub session_factors { my $self = shift; $self->_attr ('session_factors', @_) }
-sub loa             { my $self = shift; $self->_attr ('loa',             @_) }
-sub creation        { my $self = shift; $self->_attr ('creation',        @_) }
-sub expiration      { my $self = shift; $self->_attr ('expiration',      @_) }
+sub subject         ($;$) { my $t = shift; $t->_attr ('subject',         @_) }
+sub auth            ($;$) { my $t = shift; $t->_attr ('auth',            @_) }
+sub auth_data       ($;$) { my $t = shift; $t->_attr ('auth_data',       @_) }
+sub initial_factors ($;$) { my $t = shift; $t->_attr ('initial_factors', @_) }
+sub session_factors ($;$) { my $t = shift; $t->_attr ('session_factors', @_) }
+sub loa             ($;$) { my $t = shift; $t->_attr ('loa',             @_) }
+sub creation        ($;$) { my $t = shift; $t->_attr ('creation',        @_) }
+sub expiration      ($;$) { my $t = shift; $t->_attr ('expiration',      @_) }
 
 1;

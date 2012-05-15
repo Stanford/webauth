@@ -53,7 +53,7 @@ sub new ($$;$$) {
 # Shared code for all accessor methods.  Takes the object, the attribute name,
 # and the value.  Sets the value if one was given, and returns the current
 # value of that attribute.
-sub _attr {
+sub _attr ($$;$) {
     my ($self, $attr, $value) = @_;
     $self->{$attr} = $value if defined ($value);
     return $self->{$attr};

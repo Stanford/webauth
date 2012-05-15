@@ -20,8 +20,8 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub code     { my $self = shift; $self->_attr ('code',     @_) }
-sub message  { my $self = shift; $self->_attr ('message',  @_) }
-sub creation { my $self = shift; $self->_attr ('creation', @_) }
+sub code     ($;$) { my $t = shift; $t->_attr ('code',     @_) }
+sub message  ($;$) { my $t = shift; $t->_attr ('message',  @_) }
+sub creation ($;$) { my $t = shift; $t->_attr ('creation', @_) }
 
 1;

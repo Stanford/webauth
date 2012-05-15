@@ -20,13 +20,13 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub subject         { my $self = shift; $self->_attr ('subject',         @_) }
-sub type            { my $self = shift; $self->_attr ('type',            @_) }
-sub webkdc_proxy    { my $self = shift; $self->_attr ('webkdc_proxy',    @_) }
-sub initial_factors { my $self = shift; $self->_attr ('initial_factors', @_) }
-sub session_factors { my $self = shift; $self->_attr ('session_factors', @_) }
-sub loa             { my $self = shift; $self->_attr ('loa',             @_) }
-sub creation        { my $self = shift; $self->_attr ('creation',        @_) }
-sub expiration      { my $self = shift; $self->_attr ('expiration',      @_) }
+sub subject         ($;$) { my $t = shift; $t->_attr ('subject',         @_) }
+sub type            ($;$) { my $t = shift; $t->_attr ('type',            @_) }
+sub webkdc_proxy    ($;$) { my $t = shift; $t->_attr ('webkdc_proxy',    @_) }
+sub initial_factors ($;$) { my $t = shift; $t->_attr ('initial_factors', @_) }
+sub session_factors ($;$) { my $t = shift; $t->_attr ('session_factors', @_) }
+sub loa             ($;$) { my $t = shift; $t->_attr ('loa',             @_) }
+sub creation        ($;$) { my $t = shift; $t->_attr ('creation',        @_) }
+sub expiration      ($;$) { my $t = shift; $t->_attr ('expiration',      @_) }
 
 1;

@@ -20,11 +20,11 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub subject    { my $self = shift; $self->_attr ('subject',    @_) }
-sub type       { my $self = shift; $self->_attr ('type',       @_) }
-sub service    { my $self = shift; $self->_attr ('service',    @_) }
-sub data       { my $self = shift; $self->_attr ('data',       @_) }
-sub creation   { my $self = shift; $self->_attr ('creation',   @_) }
-sub expiration { my $self = shift; $self->_attr ('expiration', @_) }
+sub subject    ($;$) { my $t = shift; $t->_attr ('subject',    @_) }
+sub type       ($;$) { my $t = shift; $t->_attr ('type',       @_) }
+sub service    ($;$) { my $t = shift; $t->_attr ('service',    @_) }
+sub data       ($;$) { my $t = shift; $t->_attr ('data',       @_) }
+sub creation   ($;$) { my $t = shift; $t->_attr ('creation',   @_) }
+sub expiration ($;$) { my $t = shift; $t->_attr ('expiration', @_) }
 
 1;

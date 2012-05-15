@@ -20,9 +20,9 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub subject     { my $self = shift; $self->_attr ('subject',     @_) }
-sub session_key { my $self = shift; $self->_attr ('session_key', @_) }
-sub creation    { my $self = shift; $self->_attr ('creation',    @_) }
-sub expiration  { my $self = shift; $self->_attr ('expiration',  @_) }
+sub subject     ($;$) { my $t = shift; $t->_attr ('subject',     @_) }
+sub session_key ($;$) { my $t = shift; $t->_attr ('session_key', @_) }
+sub creation    ($;$) { my $t = shift; $t->_attr ('creation',    @_) }
+sub expiration  ($;$) { my $t = shift; $t->_attr ('expiration',  @_) }
 
 1;
