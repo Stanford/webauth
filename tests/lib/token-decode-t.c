@@ -152,8 +152,11 @@ check_error(struct webauth_context *ctx, enum webauth_token_type type,
 int
 main(void)
 {
-    WEBAUTH_KEYRING *ring;
+    WEBAUTH_KEYRING *ring, *bad_ring;
+    WEBAUTH_KEY *key;
     char *keyring;
+    char key_material[WA_AES_128];
+    time_t now;
     int status;
     struct webauth_context *ctx;
     struct webauth_token *result;
@@ -167,7 +170,7 @@ main(void)
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
-    plan(293);
+    plan(295);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -239,6 +242,30 @@ main(void)
                 "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type cred while decoding app token");
+
+    /*
+     * Create a different keyring and test decoding a token using a keyring
+     * that does not contain a usable key.
+     */
+    status = webauth_random_key(key_material, WA_AES_128);
+    if (status != WA_ERR_NONE)
+        bail("cannot create random key: %s",
+             webauth_error_message(ctx, status));
+    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+    if (key == NULL)
+        bail("cannot create key");
+    bad_ring = webauth_keyring_new(1);
+    if (bad_ring == NULL)
+        bail("cannot create keyring");
+    now = time(NULL);
+    status = webauth_keyring_add(bad_ring, now, now, key);
+    if (status != WA_ERR_NONE)
+        bail("cannot add key to keyring: %s",
+             webauth_error_message(ctx, status));
+    webauth_key_free(key);
+    check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC,
+                "HMAC check failed while decrypting token");
+    webauth_keyring_free(bad_ring);
 
     /* Test decoding of a credential token. */
     result = check_decode(ctx, WA_TOKEN_CRED, "cred-ok", ring, 7);

@@ -34,6 +34,12 @@ WebAuth 4.2.0 (unreleased)
     omit the subject attribute.  The receiver is supposed to determine the
     subject via the Kerberos authenticator.
 
+    The old webauth_token_create and webauth_token_parse functions have
+    been removed from the public API in favor of the new _encode and
+    _decode functions.  The token_create and token_parse methods have also
+    been removed from the Perl API in favor of the new token_decode method
+    and WebAuth::Token::* classes.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes

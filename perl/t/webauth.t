@@ -16,7 +16,7 @@ use Test::More;
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (3.00 :const);
 
-BEGIN { plan tests => 39 }
+BEGIN { plan tests => 35 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -107,35 +107,14 @@ eval {
     ok ($@->isa ('WebAuth::Exception'),
         ' and creating one of invalid length fails');
 
-    # Token tests
-    $key = $wa->key_create (WebAuth::WA_AES_KEY,
-                            $wa->random_key (WebAuth::WA_AES_128));
-    my $attrs = { 'a' => '1', 'b' => 'hello', 'c' => 'world' };
-    my $ring = WebAuth::Keyring->new (32);
-    ok (defined ($ring), 'creating a token works');
-    ok ($ring->isa ('WebAuth::Keyring'), ' and is of the right type');
-
-    my $curr = time();
-    $ring->add ($curr, $curr, $key);
-
-    $key = undef;
-    my $token = $wa->token_create ($attrs, 0, $ring);
-    isnt (length ($token), 0, 'creating a token works');
-
-    my $attrs2 = $wa->token_parse ($token, 0, $ring);
-    is (compareHashes ($attrs, $attrs2), 1, ' as does parsing the token');
-
-    $key = $wa->key_create (WebAuth::WA_AES_KEY,
-                            $wa->random_key (WebAuth::WA_AES_128));
-    $attrs = { 'a' => '1', 'b' => 'hello', 'c' => 'world' };
-
-    $token = $wa->token_create ($attrs, 0, $key);
-    isnt (length ($token), 0, 'creating a token with complex attrs works');
-
-    $attrs2 = $wa->token_parse ($token, 0, $key);
-    is (compareHashes ($attrs, $attrs2), 1, ' as does parsing the token');
-
     # Test reading a new keyring file.
+    $key = $wa->key_create (WebAuth::WA_AES_KEY,
+                            $wa->random_key (WebAuth::WA_AES_128));
+    my $ring = WebAuth::Keyring->new (32);
+    ok (defined ($ring), 'creating a keyring works');
+    ok ($ring->isa ('WebAuth::Keyring'), ' and is of the right type');
+    my $curr = time;
+    $ring->add ($curr, $curr, $key);
     $ring->write_file ('webauth_keyring');
     my $ring2 = WebAuth::Keyring->read_file ('webauth_keyring');
     ok ($ring2->isa ('WebAuth::Keyring'), 'reading a new keyring works');

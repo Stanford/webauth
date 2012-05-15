@@ -51,7 +51,6 @@
 /tests/lib/random-t
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
-/tests/lib/token-t
 /tests/lib/webkdc-info-t
 /tests/lib/webkdc-krb-t
 /tests/lib/webkdc-login-t

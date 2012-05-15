@@ -67,15 +67,10 @@ webauth_krb5_rd_req_with_data
 webauth_parse_interval
 webauth_random_bytes
 webauth_random_key
-webauth_token_create
-webauth_token_create_with_key
 webauth_token_decode
 webauth_token_decode_raw
 webauth_token_encode
 webauth_token_encode_raw
-webauth_token_encoded_length
-webauth_token_parse
-webauth_token_parse_with_key
 webauth_token_type_code
 webauth_token_type_string
 webauth_user_config

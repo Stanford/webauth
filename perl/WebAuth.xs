@@ -730,73 +730,6 @@ webauth_key_create(self, type, key_material)
     RETVAL
 
 
-void
-webauth_token_create(self, attrs, hint, key_or_ring)
-    WebAuth self
-    SV *attrs
-    time_t hint
-    SV *key_or_ring
-  PROTOTYPE: $$$$
-  PPCODE:
-{
-    HV *h;
-    SV *sv_val;
-    size_t num_attrs, out_len, plen;
-    int s;
-    char *akey, *val, *buff, *out;
-    I32 klen;
-    STRLEN vlen;
-    WEBAUTH_ATTR_LIST *list;
-    SV *output = NULL;
-    int iskey;
-
-    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV))
-        croak("attrs must be reference to a hash");
-    h = (HV *) SvRV(attrs);
-
-    num_attrs = hv_iterinit(h);
-    list = webauth_attr_list_new(num_attrs);
-    if (list == NULL)
-        croak("can't malloc attrs");
-
-    while ((sv_val = hv_iternextsv(h, &akey, &klen)) != NULL) {
-        val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, akey, val, vlen, WA_F_NONE);
-    }
-
-    if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
-        WEBAUTH_KEYRING *ring;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_create(self, list, hint, &buff, &out_len, ring);
-        iskey = 0;
-    } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
-        WEBAUTH_KEY *key;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        key = INT2PTR(WEBAUTH_KEY *, tmp);
-        s = webauth_token_create_with_key(self, list, hint, &buff, &out_len,
-                                          key);
-        iskey = 1;
-    } else
-        croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-
-    webauth_attr_list_free(list);
-
-    if (s != WA_ERR_NONE)
-        webauth_croak(self, iskey ?
-                      "webauth_token_create_with_key" : "webauth_token_create",
-                      s, NULL);
-    else {
-        output = sv_newmortal();
-        sv_setpvn(output, buff, out_len);
-    }
-    EXTEND(SP,1);
-    PUSHs(output);
-}
-
-
 SV *
 token_decode(self, input, ring)
     WebAuth self
@@ -876,62 +809,6 @@ token_decode(self, input, ring)
 }
   OUTPUT:
     RETVAL
-
-
-void
-webauth_token_parse(self, buffer, ttl, key_or_ring)
-    WebAuth self
-    SV *buffer
-    int ttl
-    SV *key_or_ring
-  PROTOTYPE: $$$$
-  PPCODE:
-{
-    STRLEN n_input;
-    char *p_input;
-    WEBAUTH_ATTR_LIST *list;
-    int s, iskey;
-    size_t i;
-    HV *hv;
-    SV *output = NULL;
-    SV *copy = sv_2mortal(newSVsv(buffer));
-
-    p_input = SvPV(copy, n_input);
-
-    if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
-        WEBAUTH_KEYRING *ring;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_parse(self, p_input, n_input, ttl, ring, &list);
-        iskey = 0;
-    } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
-        WEBAUTH_KEY *key;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        key = INT2PTR(WEBAUTH_KEY *,tmp);
-        s = webauth_token_parse_with_key(self, p_input, n_input, ttl, key,
-                                         &list);
-        iskey = 1;
-    } else
-        croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-
-    if (s == WA_ERR_NONE) {
-        hv = newHV();
-        for (i = 0; i < list->num_attrs; i++)
-            (void) hv_store(hv, list->attrs[i].name,
-                            strlen(list->attrs[i].name),
-                            newSVpvn(list->attrs[i].value,
-                                     list->attrs[i].length), 0);
-        output = sv_2mortal(newRV_noinc((SV *) hv));
-        webauth_attr_list_free(list);
-    } else
-        webauth_croak(self, iskey ?
-                      "webauth_token_parse_with_key" : "webauth_token_parse",
-                      s, NULL);
-    EXTEND(SP,1);
-    PUSHs(output);
-}
 
 
 void
