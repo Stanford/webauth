@@ -19,9 +19,29 @@
 #include <time.h>
 
 #include <lib/internal.h>
+#include <util/macros.h>
 #include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
+
+/*
+ * The mapping of token types to token names.  Note that WA_TOKEN_ANY cannot
+ * be used with this array and has to be handled specially so that its value
+ * won't be used by any new token type.  This must be kept in sync with the
+ * enum webauth_token_type definition in webauth/tokens.h.
+ */
+static const char * const token_name[] = {
+    "unknown",
+    WA_TT_APP,
+    WA_TT_CRED,
+    WA_TT_ERROR,
+    WA_TT_ID,
+    WA_TT_LOGIN,
+    WA_TT_PROXY,
+    WA_TT_REQUEST,
+    WA_TT_WEBKDC_PROXY,
+    WA_TT_WEBKDC_SERVICE
+};
 
 /*
  * Macros for decoding attributes, which make code easier to read and audit.
@@ -58,6 +78,36 @@
 
 /* Abbreviates some long chains of string comparisons. */
 #define EQn(a, b, n) (strlen(b) == (n) && strncmp((a), (b), (n)) == 0)
+
+
+/*
+ * Map a token type string to one of the enum token_type constants.  Returns
+ * WA_TOKEN_UNKNOWN on error.  This would arguably be faster as a binary
+ * search, but there aren't enough cases to worry about it.
+ */
+enum webauth_token_type
+webauth_token_type_code(const char *type)
+{
+    size_t i;
+
+    for (i = 0; i < ARRAY_SIZE(token_name); i++)
+        if (strcmp(type, token_name[i]) == 0)
+            return i;
+    return WA_TOKEN_UNKNOWN;
+}
+
+
+/*
+ * Map a token type code to the corresponding string representation used in
+ * tokens.  Returns NULL for an invalid code.
+ */
+const char *
+webauth_token_type_string(enum webauth_token_type type)
+{
+    if (type >= ARRAY_SIZE(token_name))
+        return NULL;
+    return token_name[type];
+}
 
 
 /*
