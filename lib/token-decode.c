@@ -123,8 +123,10 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
             const void *token, size_t length, const WEBAUTH_KEYRING *keyring,
             WEBAUTH_ATTR_LIST **alist)
 {
-    char *value;
+    char *attrs, *value;
+    size_t alen;
     const char *type_string = NULL;
+    time_t expiration, now;
     int status;
 
     /* Do some initial sanity checking. */
@@ -135,10 +137,17 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
         return WA_ERR_INVALID;
     }
 
-    /* Parse the token. */
-    status = webauth_token_parse(ctx, token, length, 0, keyring, alist);
+    /* Decrypt the token. */
+    status = webauth_token_decrypt(ctx, token, length, &attrs, &alen, keyring);
     if (status != WA_ERR_NONE)
-        goto fail;
+        return status;
+
+    /* Decode the attributes. */
+    status = webauth_attrs_decode(attrs, alen, alist);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "error decoding token attributes");
+        return status;
+    }
 
     /* Check the token type to see if it's what we expect. */
     status = webauth_attr_list_get_str(*alist, WA_TK_TOKEN_TYPE, &value,
@@ -159,6 +168,23 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
                           " %s token", value, type_string);
         goto fail;
     }
+
+    /* See if the token has an explicit expiration. */
+    status = webauth_attr_list_get_time(*alist, WA_TK_EXPIRATION_TIME,
+                                        &expiration, WA_F_NONE);
+    if (status == WA_ERR_NONE) {
+        now = time(NULL);
+        if (expiration < now) {
+            status = WA_ERR_TOKEN_EXPIRED;
+            webauth_error_set(ctx, status, "token expired at %lu",
+                              (unsigned long) expiration);
+            goto fail;
+        }
+    } else if (status != WA_ERR_NOT_FOUND) {
+        webauth_error_set(ctx, status, "error retrieving expiration time");
+        return status;
+    }
+
     return WA_ERR_NONE;
 
 error:

@@ -174,16 +174,16 @@ webauth_token_encrypt(struct webauth_context *ctx, const char *input,
 
 
 /*
- * Given a key, a token, and its length, decrypt it in place with that key and
- * return the decrypted length in dlen.  Returns a WA_ERR code.  On error, the
- * input data may have been partially decrypted and should not be used.
+ * Given a token and its length, decrypt it into the provided output buffer
+ * with the length stored in output_len.  The output buffer must be at least
+ * as large as the input length.  Uses the provided decryption key.
  *
- * FIXME: No need to decrypt in place.  We can have it take separate input and
- * output buffers.
+ * Returns a WA_ERR code.
  */
 static int
-decrypt_token(struct webauth_context *ctx, const WEBAUTH_KEY *key,
-              unsigned char *input, size_t elen, size_t *dlen)
+decrypt_token(struct webauth_context *ctx, const unsigned char *input,
+              size_t length, unsigned char *output, size_t *output_len,
+              const WEBAUTH_KEY *key)
 {
     unsigned char computed_hmac[T_HMAC_S];
     size_t plen, i;
@@ -191,7 +191,7 @@ decrypt_token(struct webauth_context *ctx, const WEBAUTH_KEY *key,
     AES_KEY aes_key;
 
     /* Basic sanity check. */
-    if (elen < T_HINT_S + T_NONCE_S + T_HMAC_S + AES_BLOCK_SIZE) {
+    if (length < T_HINT_S + T_NONCE_S + T_HMAC_S + AES_BLOCK_SIZE) {
         webauth_error_set(ctx, WA_ERR_CORRUPT,
                           "token too short while decoding");
         return WA_ERR_CORRUPT;
@@ -210,112 +210,70 @@ decrypt_token(struct webauth_context *ctx, const WEBAUTH_KEY *key,
     }
 
     /*
-     * Decrypt everything except the time at the front.  AES_cbc_encrypt
-     * doesn't return anything useful.
+     * Decrypt everything except the time at the front.  We intentionally skip
+     * the same number of bytes at the start of the output buffer as we skip
+     * at the start of the input buffer to make the offsets line up and be
+     * less annoying.
+     *
+     * AES_cbc_encrypt doesn't return anything useful.
      */
-    AES_cbc_encrypt(input + T_NONCE_O, input + T_NONCE_O,
-                    elen - T_HINT_S, &aes_key, aes_ivec, AES_DECRYPT);
+    AES_cbc_encrypt(input + T_NONCE_O, output + T_NONCE_O, length - T_HINT_S,
+                    &aes_key, aes_ivec, AES_DECRYPT);
 
     /*
      * We now need to compute the HMAC over data and padding to see if
      * decryption succeeded.  HMAC doesn't return anything.
      */
-    HMAC(EVP_sha1(), key->data, key->length, input + T_ATTR_O,
-         elen - T_ATTR_O, computed_hmac, NULL);
-    if (memcmp(input + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
+    HMAC(EVP_sha1(), key->data, key->length, output + T_ATTR_O,
+         length - T_ATTR_O, computed_hmac, NULL);
+    if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
         webauth_error_set(ctx, WA_ERR_BAD_HMAC,
                           "HMAC check failed while decrypting token");
         return WA_ERR_BAD_HMAC;
     }
 
     /* Check padding length and data validity. */
-    plen = input[elen - 1];
-    if (plen > AES_BLOCK_SIZE || plen > elen)
+    plen = output[length - 1];
+    if (plen > AES_BLOCK_SIZE || plen > length)
         return WA_ERR_CORRUPT;
-    for (i = elen - plen; i < elen - 1; i++)
-        if (input[i] != plen) {
+    for (i = length - plen; i < length - 1; i++)
+        if (output[i] != plen) {
             webauth_error_set(ctx, WA_ERR_CORRUPT,
                               "token padding corrupt while decrypting token");
             return WA_ERR_CORRUPT;
         }
 
-    /* Store the decoded length and return. */
-    *dlen = elen - T_ATTR_O - plen;
+    /*
+     * Shift the interersting data up to the start of the output buffer, store
+     * the decoded length and return.
+     */
+    *output_len = length - T_ATTR_O - plen;
+    memmove(output, output + T_ATTR_O, *output_len);
     return WA_ERR_NONE;
 }
 
 
 /*
- * Check a token for basic validity.  This only checks the expiration time
- * and, if ttl is not zero, whether the creation time is more than ttl ago.
- */
-static int
-check_token(struct webauth_context *ctx, WEBAUTH_ATTR_LIST *list,
-            unsigned long ttl)
-{
-    int status;
-    time_t t;
-    time_t now = 0;
-
-    /* See if the token has an explicit expiration. */
-    status = webauth_attr_list_get_time(list, WA_TK_EXPIRATION_TIME, &t,
-                                        WA_F_NONE);
-    if (status == WA_ERR_NONE) {
-        now = time(NULL);
-        if (t < now) {
-            status = WA_ERR_TOKEN_EXPIRED;
-            webauth_error_set(ctx, status, "token expired at %lu",
-                              (unsigned long) t);
-            return status;
-        }
-    } else if (status != WA_ERR_NOT_FOUND) {
-        webauth_error_set(ctx, status, "error retrieving expiration time");
-        return status;
-    }
-
-    /* A ttl of 0 means don't check the creation time. */
-    if (ttl == 0)
-        return WA_ERR_NONE;
-
-    /* See if token has creation time.  If it doesn't, it's always valid. */
-    status = webauth_attr_list_get_time(list, WA_TK_CREATION_TIME, &t,
-                                        WA_F_NONE);
-    if (status == WA_ERR_NONE) {
-        if (now == 0)
-            now = time(NULL);
-        if ((time_t) (t + ttl) < now) {
-            status = WA_ERR_TOKEN_STALE;
-            webauth_error_set(ctx, status, "token became stale at %lu",
-                              t + ttl);
-            return status;
-        }
-    } else if (status != WA_ERR_NOT_FOUND) {
-        webauth_error_set(ctx, status, "error retrieving creation time");
-        return status;
-    }
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Decrypts and decodes attributes from a token, given the token as input and
- * its length as input_len.  If ttl is not zero, the token is treated as
- * invalid if its creation time is more than ttl ago.  Takes a keyring to use
- * for decryption and list, into which the new attribute list is put.  Returns
- * a WA_ERR code.
+ * Decrypts a token into new pool-allocated memory, given the token as input
+ * and its length as input_len, and stores the results in output and
+ * output_len.  Takes a keyring to use for decryption.  Returns a WA_ERR code.
  */
 int
-webauth_token_parse(struct webauth_context *ctx, const char *input,
-                    size_t input_len, unsigned long ttl,
-                    const WEBAUTH_KEYRING *ring, WEBAUTH_ATTR_LIST **list)
+webauth_token_decrypt(struct webauth_context *ctx, const char *input,
+                      size_t input_len, char **output, size_t *output_len,
+                      const WEBAUTH_KEYRING *ring)
 {
     size_t dlen, i;
     int status;
     WEBAUTH_KEY *key;
-    unsigned char *buf;
-    bool input_dirty;
+    const unsigned char *inbuf = (unsigned char *) input;
+    unsigned char *outbuf;
 
-    *list = NULL;
+    /* Clear our output parameters in case of an error. */
+    *output = NULL;
+    *output_len = 0;
+
+    /* Sanity-check our keyring. */
     if (ring->num_entries == 0) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY,
                           "empty keyring when decoding token");
@@ -323,78 +281,47 @@ webauth_token_parse(struct webauth_context *ctx, const char *input,
     }
 
     /*
-     * Make a copy of the input so that decoding doesn't destroy the original
-     * string.  This also lets us restore the decoder input to its original
-     * state each time decrypting fails.
+     * Create a buffer to hold the decrypted output.  We don't need to include
+     * the hint in this buffer, but keeping the same offsets in the input and
+     * output buffer during decryption makes the code much easier to read.
      */
-    buf = apr_palloc(ctx->pool, input_len);
-    memcpy(buf, input, input_len);
-    input_dirty = false;
+    dlen = input_len;
+    outbuf = apr_palloc(ctx->pool, dlen);
 
     /*
      * Find the decryption key.  If there's only one entry in the keyring,
      * this is easy: we use that key.  Otherwise, we try the hinted key.
      * Failing that, we try all keys.
      */
-    if (ring->num_entries == 1)
-        status = decrypt_token(ctx, ring->entries[0].key, buf, input_len,
-                               &dlen);
-    else {
+    if (ring->num_entries == 1) {
+        key = ring->entries[0].key;
+        status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
+    } else {
         uint32_t hint_buf;
         time_t hint;
 
         /* First, try the hint. */
-        memcpy(&hint_buf, buf, sizeof(hint_buf));
+        memcpy(&hint_buf, inbuf, sizeof(hint_buf));
         hint = ntohl(hint_buf);
         key = webauth_keyring_best_key(ring, 0, hint);
         if (key == NULL)
             status = WA_ERR_BAD_HMAC;
-        else {
-            status = decrypt_token(ctx, key, buf, input_len, &dlen);
-            input_dirty = true;
-        }
+        else
+            status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
 
         /*
          * Now, as long as we didn't decode successfully, try each key in the
          * keyring in turn.  If the input is dirty, we have to replace the
          * input with our temporary buffer and try again.
          */
-        for (i = 0; status != WA_ERR_NONE && i < ring->num_entries; i++) {
-            if (ring->entries[i].key != key) {
-                if (input_dirty)
-                    memcpy(buf, input, input_len);
-                status = decrypt_token(ctx, ring->entries[i].key, buf,
-                                       input_len, &dlen);
-                input_dirty = true;
-            }
-        }
+        for (i = 0; status == WA_ERR_BAD_HMAC && i < ring->num_entries; i++)
+            if (ring->entries[i].key != key)
+                status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen,
+                                       ring->entries[i].key);
     }
-
-    /*
-     * status is WA_ERR_NONE if we found a working key.  Decode the attributes
-     * and then check for errors.
-     */
     if (status == WA_ERR_NONE) {
-        status = webauth_attrs_decode((char *) buf + T_ATTR_O, dlen, list);
-        if (status != WA_ERR_NONE)
-            webauth_error_set(ctx, status, "error decoding token attributes");
+        *output = (char *) outbuf;
+        *output_len = dlen;
     }
-    if (status != WA_ERR_NONE)
-        return status;
-
-    /*
-     * If the token had an expiration/creation time that wasn't in the right
-     * format, treat the key as invalid and free the list.  If it's just
-     * expired or stale, keep the list and just return the error code, since
-     * we may want to use the token anyway.
-     */
-    status = check_token(ctx, *list, ttl);
-    if (status == WA_ERR_NONE
-        || status == WA_ERR_TOKEN_EXPIRED
-        || status == WA_ERR_TOKEN_STALE)
-        return status;
-    else {
-        webauth_attr_list_free(*list);
-        return status;
-    }
+    return status;
 }

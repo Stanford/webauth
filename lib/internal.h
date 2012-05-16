@@ -16,7 +16,7 @@
 
 #include <apr_xml.h>
 
-#include <webauth.h>            /* WEBAUTH_ATTR_LIST, WEBAUTH_KEY* */
+#include <webauth.h>            /* WEBAUTH_KEYRING */
 
 /*
  * The internal context struct, which holds any state information required for
@@ -92,36 +92,16 @@ int webauth_token_encrypt(struct webauth_context *, const char *input,
     __attribute__((__nonnull__));
 
 /*
- * Decrypts and decodes attributes from a token.  The best decryption key on
- * the ring will be tried first, and if that fails all the remaining keys will
- * be tried.  input is modified and the returned attrs in list point into
- * input.
+ * Decrypts a token.  The best decryption key on the ring will be tried first,
+ * and if that fails all the remaining keys will be tried.  Returns the
+ * decrypted data in output and its length in output_len.
  *
- * The following checks are made:
- *
- * * If the token has a WA_TK_EXPIRATION_TIME attribute, it must be 4 bytes
- *   long and is assumed to be the expiration time of the token in network
- *   byte order.  It is compared against the current time, and
- *   WA_ERR_TOKEN_EXPIRED is returned if the token has expired.
- *
- * * WA_TK_CREATION_TIME is checked if and only if the token doesn't have an
- *   explicit expiration time and ttl is non-zero.  In that case, if the token
- *   has a WA_TK_CREATION_TIME attribute, it must be 4 bytes long and is
- *   assumed to be the creation time of the token in network byte order.  The
- *   creation time is compared against the current time + ttl and
- *   WA_ERR_TOKEN_STALE is returned if the token is stale.
- *
- * The list will point to the dynamically-allocated list of attributes and
- * must be freed when no longer needed.  If WA_ERR_TOKEN_EXPIRED or
- * WA_ERR_TOKEN_STALE are returned, an attribute list is still allocated and
- * needs to be freed.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC,
- * WA_ERR_BAD_KEY, WA_ERR_TOKEN_EXPIRED, or WA_ERR_TOKEN_STALE.
+ * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC, or
+ * WA_ERR_BAD_KEY.
  */
-int webauth_token_parse(struct webauth_context *, const char *input,
-                        size_t input_len, unsigned long ttl,
-                        const WEBAUTH_KEYRING *, WEBAUTH_ATTR_LIST **)
+int webauth_token_decrypt(struct webauth_context *, const char *input,
+                          size_t input_len, char **output, size_t *output_len,
+                          const WEBAUTH_KEYRING *)
     __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
