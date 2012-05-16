@@ -82,17 +82,16 @@ encoded_length(size_t alen, size_t *plen)
 
 
 /*
- * Encode and encrypt an input buffer into a token, storing the encoded string
- * in a new pool-allocated output buffer and the length in output_len.  The
- * token is *not* base64-encoded.  key is the key in which to encrypt the
- * token.  The token hint will be set to the current time.
- *
- * Returns a WA_ERR code.
+ * A wrapper around webauth_token_create_with_key that first finds the best
+ * key from the given keyring and then encodes with that key, returning the
+ * results in the same way that webauth_token_create_with_key does.
  */
-static int
-create_with_key(struct webauth_context *ctx, const char *input, size_t len,
-                char **output, size_t *output_len, const WEBAUTH_KEY *key)
+int
+webauth_token_encrypt(struct webauth_context *ctx, const char *input,
+                      size_t len, char **output, size_t *output_len,
+                      const WEBAUTH_KEYRING *ring)
 {
+    WEBAUTH_KEY *key;
     size_t elen, plen, i;
     int status;
     char *result, *p;
@@ -102,6 +101,14 @@ create_with_key(struct webauth_context *ctx, const char *input, size_t len,
     /* Clear our output paramters in case of error. */
     *output = NULL;
     *output_len = 0;
+
+    /* Find the encryption key to use. */
+    key = webauth_keyring_best_key(ring, 1, 0);
+    if (key == NULL) {
+        webauth_error_set(ctx, WA_ERR_BAD_KEY,
+                          "unable to find usable encryption key");
+        return WA_ERR_BAD_KEY;
+    }
 
     /*
      * Create our encryption key.
@@ -163,28 +170,6 @@ create_with_key(struct webauth_context *ctx, const char *input, size_t len,
     *output = result;
     *output_len = elen;
     return WA_ERR_NONE;
-}
-
-
-/*
- * A wrapper around webauth_token_create_with_key that first finds the best
- * key from the given keyring and then encodes with that key, returning the
- * results in the same way that webauth_token_create_with_key does.
- */
-int
-webauth_token_encrypt(struct webauth_context *ctx, const char *input,
-                      size_t len, char **output, size_t *output_len,
-                      const WEBAUTH_KEYRING *ring)
-{
-    WEBAUTH_KEY *key;
-
-    key = webauth_keyring_best_key(ring, 1, 0);
-    if (key == NULL) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY,
-                          "unable to find usable encryption key");
-        return WA_ERR_BAD_KEY;
-    }
-    return create_with_key(ctx, input, len, output, output_len, key);
 }
 
 
