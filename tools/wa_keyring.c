@@ -2,13 +2,14 @@
  * Command-line utility for manipulating WebAuth keyrings.
  *
  * Written by Roland Schemers and Russ Allbery
- * Copyright 2002, 2003, 2006, 2009, 2010
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/stdbool.h>
 #include <portable/system.h>
 
@@ -20,6 +21,7 @@
 #include <util/xmalloc.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 
 /* Usage message. */
 static const char usage_message[] = "\
@@ -48,7 +50,7 @@ useful with gc.\n";
  * interface and behavior of the messages library as closely as possible.
  */
 static void
-die_webauth(int s, const char *fmt, ...)
+die_webauth(struct webauth_context *ctx, int s, const char *fmt, ...)
 {
     va_list args;
 
@@ -57,7 +59,7 @@ die_webauth(int s, const char *fmt, ...)
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     if (s != 0)
-        fprintf(stderr, ": %s", webauth_error_message(NULL, s));
+        fprintf(stderr, ": %s", webauth_error_message(ctx, s));
     fprintf(stderr, "\n");
     exit(message_fatal_cleanup ? (*message_fatal_cleanup)() : 1);
 }
@@ -143,7 +145,7 @@ print_time(time_t t)
  * whether two keys are the same without exposing the actual key value.
  */
 static void
-print_fingerprint(WEBAUTH_KEY *key)
+print_fingerprint(struct webauth_context *ctx, struct webauth_key *key)
 {
     char md5[MD5_DIGEST_LENGTH];
     char *hex;
@@ -158,7 +160,7 @@ print_fingerprint(WEBAUTH_KEY *key)
     hex = xmalloc(maxlen + 1);
     s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &length, maxlen);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot encode fingerprint of key");
+        die_webauth(ctx, s, "cannot encode fingerprint of key");
     hex[length] = '\0';
     printf("%s", hex);
     free(hex);
@@ -177,14 +179,15 @@ print_fingerprint(WEBAUTH_KEY *key)
  * used as the key ID.
  */
 static void
-print_short(WEBAUTH_KEYRING_ENTRY *e, size_t i)
+print_short(struct webauth_context *ctx, struct webauth_keyring_entry *e,
+            size_t i)
 {
     printf("%2lu  ", (unsigned long) i);
-    print_time(e->creation_time);
+    print_time(e->creation);
     printf("  ");
     print_time(e->valid_after);
     printf("  ");
-    print_fingerprint(e->key);
+    print_fingerprint(ctx, e->key);
     printf("\n");
 }
 
@@ -203,11 +206,12 @@ print_short(WEBAUTH_KEYRING_ENTRY *e, size_t i)
  * Takes the keyring entry and its index, which is used as the key ID.
  */
 static void
-print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
+print_long(struct webauth_context *ctx, struct webauth_keyring_entry *e,
+           size_t i)
 {
     printf("       Key-Id: %lu\n", (unsigned long) i);
     printf("      Created: ");
-    print_time(e->creation_time);
+    print_time(e->creation);
     printf("\n");
     printf("  Valid-After: ");
     print_time(e->valid_after);
@@ -222,9 +226,9 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
         break;
     }
     printf(")\n");
-    printf("   Key-Length: %lu bits\n", (unsigned long) e->key->length * 8);
+    printf("   Key-Length: %d bits\n", e->key->length * 8);
     printf("  Fingerprint: ");
-    print_fingerprint(e->key);
+    print_fingerprint(ctx, e->key);
     printf("\n\n");
 }
 
@@ -252,29 +256,31 @@ print_long(WEBAUTH_KEYRING_ENTRY *e, size_t i)
  * Takes the path to the keyring and the verbose flag.
  */
 static void
-list_keyring(const char *keyring, bool verbose)
+list_keyring(struct webauth_context *ctx, const char *keyring, bool verbose)
 {
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
+    struct webauth_keyring_entry *entry;
     int s;
     size_t i;
 
-    s = webauth_keyring_read_file(keyring, &ring);
+    s = webauth_keyring_read(ctx, keyring, &ring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot read keyring %s", keyring);
+        die_webauth(ctx, s, "cannot read keyring %s", keyring);
     if (verbose) {
         printf("         Path: %s\n", keyring);
-        printf("     Num-Keys: %lu\n\n", (unsigned long) ring->num_entries);
+        printf("     Num-Keys: %d\n\n", ring->entries->nelts);
     } else {
         printf("Path: %s\n", keyring);
         printf("\n");
         printf("id  Created              Valid after          Fingerprint\n");
     }
-    for (i = 0; i < ring->num_entries; i++)
+    for (i = 0; i < (size_t) ring->entries->nelts; i++) {
+        entry = &APR_ARRAY_IDX(ring->entries, i, struct webauth_keyring_entry);
         if (verbose)
-            print_long(&ring->entries[i], i);
+            print_long(ctx, entry, i);
         else
-            print_short(&ring->entries[i], i);
-    webauth_keyring_free(ring);
+            print_short(ctx, entry, i);
+    }
 }
 
 
@@ -283,30 +289,26 @@ list_keyring(const char *keyring, bool verbose)
  * in seconds at which the new key should become valid.
  */
 static void
-add_key(const char *keyring, long valid_after)
+add_key(struct webauth_context *ctx, const char *keyring, long valid_after)
 {
-    WEBAUTH_KEY *key;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_key *key;
+    struct webauth_keyring *ring;
     int s;
     time_t now;
-    char key_material[WA_AES_128];
 
-    s = webauth_keyring_read_file(keyring, &ring);
+    s = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
     if (s != WA_ERR_NONE)
-        ring = webauth_keyring_new(32);
-    s = webauth_random_key(key_material, WA_AES_128);
+        die_webauth(ctx, s, "cannot generate new random key");
+
+    /* FIXME: Don't generate a new keyring on any error. */
+    s = webauth_keyring_read(ctx, keyring, &ring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot generate new random key");
-    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+        ring = webauth_keyring_new(ctx, 1);
     now = time(NULL);
-    s = webauth_keyring_add(ring, now, now + valid_after, key);
+    webauth_keyring_add(ctx, ring, now, now + valid_after, key);
+    s = webauth_keyring_write(ctx, ring, keyring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot add new key to the keyring");
-    webauth_key_free(key);
-    s = webauth_keyring_write_file(ring, keyring);
-    if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot write keyring to %s", keyring);
-    webauth_keyring_free(ring);
+        die_webauth(ctx, s, "cannot write keyring to %s", keyring);
 }
 
 
@@ -315,21 +317,20 @@ add_key(const char *keyring, long valid_after)
  * remove.
  */
 static void
-remove_key(const char *keyring, unsigned long n)
+remove_key(struct webauth_context *ctx, const char *keyring, unsigned long n)
 {
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
     int s;
 
-    s = webauth_keyring_read_file(keyring, &ring);
+    s = webauth_keyring_read(ctx, keyring, &ring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot read keyring %s", keyring);
-    s = webauth_keyring_remove(ring, n);
+        die_webauth(ctx, s, "cannot read keyring %s", keyring);
+    s = webauth_keyring_remove(ctx, ring, n);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot remove key %lu from keyring", n);
-    s = webauth_keyring_write_file(ring, keyring);
+        die_webauth(ctx, s, "cannot remove key %lu from keyring", n);
+    s = webauth_keyring_write(ctx, ring, keyring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot write keyring to %s", keyring);
-    webauth_keyring_free(ring);
+        die_webauth(ctx, s, "cannot write keyring to %s", keyring);
 }
 
 
@@ -339,46 +340,51 @@ remove_key(const char *keyring, unsigned long n)
  * removed from the keyring.
  */
 static void
-gc_keys(const char *keyring, long offset)
+gc_keys(struct webauth_context *ctx, const char *keyring, long offset)
 {
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
+    struct webauth_keyring_entry *entry;
     int s;
     bool removed;
     size_t i;
     time_t now, earliest;
 
-    s = webauth_keyring_read_file(keyring, &ring);
+    s = webauth_keyring_read(ctx, keyring, &ring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot read keyring %s", keyring);
+        die_webauth(ctx, s, "cannot read keyring %s", keyring);
     now = time(NULL);
     earliest = now + offset;
     do {
         removed = false;
-        for (i = 0; i < ring->num_entries; i++)
-            if (ring->entries[i].valid_after < earliest) {
-                s = webauth_keyring_remove(ring, i);
+        for (i = 0; i < (size_t) ring->entries->nelts; i++) {
+            entry = &APR_ARRAY_IDX(ring->entries, i,
+                                   struct webauth_keyring_entry);
+            if (entry->valid_after < earliest) {
+                s = webauth_keyring_remove(ctx, ring, i);
                 if (s != WA_ERR_NONE)
-                    die_webauth(s, "cannot remove key %lu from keyring", i);
+                    die_webauth(ctx, s, "cannot remove key %lu from keyring",
+                                i);
                 removed = true;
             }
+        }
     } while (removed);
-    s = webauth_keyring_write_file(ring, keyring);
+    s = webauth_keyring_write(ctx, ring, keyring);
     if (s != WA_ERR_NONE)
-        die_webauth(s, "cannot write keyring to %s", keyring);
-    webauth_keyring_free(ring);
+        die_webauth(ctx, s, "cannot write keyring to %s", keyring);
 }
 
 
 int
 main(int argc, char **argv)
 {
-    int option;
+    int option, status;
     bool verbose = false;
     unsigned long id;
     long offset;
     char *end;
     const char *keyring = NULL;
     const char *command = "list";
+    struct webauth_context *ctx;
 
     message_program_name = argv[0];
 
@@ -415,20 +421,23 @@ main(int argc, char **argv)
         argv++;
     }
 
+    status = webauth_context_init(&ctx, NULL);
+    if (status != WA_ERR_NONE)
+        die_webauth(NULL, status, "cannot initialize WebAuth");
     if (strcmp(command, "list") == 0) {
         if (argc > 0)
             usage(1);
-        list_keyring(keyring, verbose);
+        list_keyring(ctx, keyring, verbose);
     } else if (strcmp(command, "add") == 0) {
         if (argc != 1)
             usage(1);
         offset = seconds(argv[0]);
-        add_key(keyring, offset);
+        add_key(ctx, keyring, offset);
     } else if (strcmp(command, "gc") == 0) {
         if (argc != 1)
             usage(1);
         offset = seconds(argv[0]);
-        gc_keys(keyring, offset);
+        gc_keys(ctx, keyring, offset);
     } else if (strcmp(command, "remove") == 0) {
         if (argc != 1)
             usage(1);
@@ -436,7 +445,7 @@ main(int argc, char **argv)
         id = strtoul(argv[0], &end, 10);
         if (errno != 0 || *end != '\0')
             die("invalid key id: %s", argv[0]);
-        remove_key(keyring, id);
+        remove_key(ctx, keyring, id);
     } else {
         usage(1);
     }

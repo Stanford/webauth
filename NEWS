@@ -34,6 +34,38 @@ WebAuth 4.2.0 (unreleased)
     omit the subject attribute.  The receiver is supposed to determine the
     subject via the Kerberos authenticator.
 
+    All key and keyring functions in the WebAuth library API have changed
+    to take the WebAuth context and use APR memory management and
+    new-style error message handling.  All the *_free functions have
+    therefore been removed.  Keyrings are now represented by an APR array;
+    callers that want to walk through the keyring entries will need the
+    relevant APR headers.  Functions that could only fail if memory
+    allocation failed now either return new objects directly or are
+    declared void, since APR code assumes memory allocation does not fail.
+    The API now uses named structs instead of typedefs.
+
+    webauth_key_create will now create a random key if passed NULL for the
+    key material.  It also now returns a status code so that better error
+    messages can be reported.
+
+    webauth_keyring_read_file has been renamed to webauth_keyring_read.
+    webauth_keyring_write_file has been renamed to webauth_keyring_write.
+
+    The webauth_keyring_encode and webauth_keyring_decode functions have
+    been removed from the public API.
+
+    webauth_keyring_best_key now takes a WA_KEY_DECRYPT or WA_KEY_ENCRYPT
+    argument instead of a boolean.  This makes the meaning clearer at the
+    call site.
+
+    The Perl API for manipulating keyrings has been modified to include
+    the WebAuth context.  The read_file method in the WebAuth::Keyring
+    class has been replaced with a keyring_read method in the WebAuth
+    class and the WebAuth::Keyring new constructor has been replaced with
+    a keyring_new method in the WebAuth class so that the WebAuth context
+    can be tracked.  The capacity method on a WebAuth::Keyring object has
+    been removed since it's not part of the abstraction.
+
     The old webauth_token_create and webauth_token_parse functions have
     been removed from the public API in favor of the new _encode and
     _decode functions.  The token_create and token_parse methods have also

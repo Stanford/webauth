@@ -870,7 +870,7 @@ sub add_remuser_token {
 
     print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
         if $self->param ('debug');
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -981,7 +981,7 @@ sub add_changepw_token {
     $token->expiration ($expires);
 
     # Add the token to the web page.
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -1005,7 +1005,7 @@ sub change_user_password {
     print STDERR "changing password for $username\n"
         if $self->param ('debug');
 
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";

@@ -347,6 +347,7 @@ void
 mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
 {
     struct server_config *sconf;
+    int status;
 
     sconf = ap_get_module_config(server->module_config, &webauth_module);
     CHECK_DIRECTIVE(keyring_path,     Keyring,           NULL);
@@ -356,26 +357,37 @@ mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
     CHECK_DIRECTIVE(webkdc_principal, WebKdcPrincipal,   NULL);
     CHECK_DIRECTIVE(webkdc_url,       WebKdcURL,         NULL);
 
+    /*
+     * Create a WebAuth context that will last for the life of the server
+     * configuration.  We need this because there is some data, such as the
+     * main server keyring, that needs to live as long as the server, although
+     * most operations will be done on the per-request context.
+     */
+    status = webauth_context_init_apr(&sconf->ctx, p);
+    if (status != WA_ERR_NONE) {
+        const char *msg = webauth_error_message(NULL, status);
+
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, server,
+                     "mod_webauth: fatal error: %s", msg);
+        fprintf(stderr, "mod_webauth: fatal error: %s\n", msg);
+        exit(1);
+    }
+
     /* Initialize the mutex. */
     if (sconf->mutex == NULL)
         apr_thread_mutex_create(&sconf->mutex, APR_THREAD_MUTEX_DEFAULT, p);
 
     /*
      * Load the keyring into the configuration struct.  If the configuration
-     * we're passed in has a keyring loaded and it matches ours, use that and
-     * mark it to not be freed.  Otherwise, initialize the keyring with our
-     * configuration settings.
+     * we're passed in has a keyring loaded and it matches ours, use that.
+     * Otherwise, initialize the keyring with our configuration settings.
      */
     if (sconf->ring == NULL) {
         if (bconf->ring != NULL
-            && strcmp(sconf->keyring_path, bconf->keyring_path) == 0) {
+            && strcmp(sconf->keyring_path, bconf->keyring_path) == 0)
             sconf->ring = bconf->ring;
-            sconf->free_ring = false;
-        } else {
+        else
             mwa_cache_keyring(server, sconf);
-            if (sconf->ring != NULL)
-                sconf->free_ring = true;
-        }
     }
 
     /* Unlink any existing service token cache so that we'll get a new one. */

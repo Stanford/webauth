@@ -401,16 +401,6 @@ mod_webauth_cleanup(void *data)
         struct server_config *tconf;
 
         tconf = ap_get_module_config(t->module_config, &webauth_module);
-        if (tconf->ring && tconf->free_ring) {
-            if (sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
-                             "mod_webauth: cleanup ring: %s",
-                             tconf->keyring_path);
-            }
-            webauth_keyring_free(tconf->ring);
-            tconf->ring = NULL;
-            tconf->free_ring = 0;
-        }
 
         /* service_token is currently never set in the parent,
          * add it here in case we change caching strategy.
@@ -553,6 +543,15 @@ handler_hook(request_rec *r)
         return DECLINED;
 
     sconf = ap_get_module_config(r->server->module_config, &webauth_module);
+/*
+    status = webauth_context_init_apr(&ctx, r->pool);
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
+                     "mod_webauth: webauth_context_init failed: %s",
+                     webauth_error_message(NULL, status));
+        return DECLINED;
+    }
+*/
 
     r->content_type = "text/html";
 
@@ -633,14 +632,17 @@ handler_hook(request_rec *r)
                  "problem with the keyring file."
                  "</dd>", r);
     } else {
-        unsigned long i;
+        int i;
+        struct webauth_keyring_entry *entry;
 
-        dd_dir_int("num_entries", sconf->ring->num_entries, r);
-        for (i = 0; i < sconf->ring->num_entries; i++) {
-            dd_dir_time(apr_psprintf(r->pool, "entry %lu creation time", i),
-                        sconf->ring->entries[i].creation_time, r);
-            dd_dir_time(apr_psprintf(r->pool, "entry %lu valid after", i),
-                        sconf->ring->entries[i].valid_after, r);
+        dd_dir_int("num_entries", sconf->ring->entries->nelts, r);
+        for (i = 0; i < sconf->ring->entries->nelts; i++) {
+            entry = &APR_ARRAY_IDX(sconf->ring->entries, i,
+                                   struct webauth_keyring_entry);
+            dd_dir_time(apr_psprintf(r->pool, "entry %d creation time", i),
+                        entry->creation, r);
+            dd_dir_time(apr_psprintf(r->pool, "entry %d valid after", i),
+                        entry->valid_after, r);
         }
     }
 
@@ -1030,12 +1032,12 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
 }
 
 
-static WEBAUTH_KEY *
+static struct webauth_key *
 get_session_key(char *token, MWA_REQ_CTXT *rc)
 {
     struct webauth_token *data;
     struct webauth_token_app *app;
-    WEBAUTH_KEY *key;
+    struct webauth_key *key;
     size_t klen;
     int status;
     const char *mwa_func = "get_session_key";
@@ -1060,11 +1062,14 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
                      (unsigned long) klen);
         return NULL;
     }
-    key = apr_palloc(rc->r->pool, sizeof(WEBAUTH_KEY));
-    key->type = WA_AES_KEY;
-    key->data = apr_palloc(rc->r->pool, app->session_key_len);
-    memcpy(key->data, app->session_key, app->session_key_len);
-    key->length = klen;
+    status = webauth_key_create(rc->ctx, WA_AES_KEY, klen, app->session_key,
+                                &key);
+    if (status != WA_ERR_NONE) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: get_session_key: %s",
+                     webauth_error_message(rc->ctx, status));
+        return NULL;
+    }
     return key;
 }
 
@@ -1190,10 +1195,10 @@ handle_error_token(const struct webauth_token_error *err, MWA_REQ_CTXT *rc)
  * return OK or an HTTP_* code.
  */
 static int
-parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
+parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
 {
     static const char *mwa_func = "parse_returned_token";
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
     enum webauth_token_type type = WA_TOKEN_ANY;
     struct webauth_token *data;
     int status, code;
@@ -1203,9 +1208,8 @@ parse_returned_token(char *token, WEBAUTH_KEY *key, MWA_REQ_CTXT *rc)
 
     /* if we successfully parse an id-token, write out new webauth_at cookie */
     ap_unescape_url(token);
-    status = webauth_keyring_from_key(rc->ctx, key, &ring);
-    if (status == WA_ERR_NONE)
-        status = webauth_token_decode(rc->ctx, type, token, ring, &data);
+    ring = webauth_keyring_from_key(rc->ctx, key);
+    status = webauth_token_decode(rc->ctx, type, token, ring, &data);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_decode", NULL);
@@ -1258,7 +1262,7 @@ static int
 check_url(MWA_REQ_CTXT *rc, int *in_url)
 {
     char *wr, *ws;
-    WEBAUTH_KEY *key = NULL;
+    struct webauth_key *key = NULL;
 
     wr = mwa_remove_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {
@@ -1282,9 +1286,9 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
             return OK;
         return parse_returned_token(wr, key, rc);
     } else {
-        MWA_SERVICE_TOKEN *st = mwa_get_service_token(rc->r->server,
-                                                      rc->sconf,
-                                                      rc->r->pool, 0);
+        MWA_SERVICE_TOKEN *st;
+
+        st = mwa_get_service_token(rc->r->server, rc->sconf, rc->r->pool, 0);
         if (st != NULL)
             return parse_returned_token(wr, &st->key, rc);
     }
@@ -1339,7 +1343,7 @@ redirect_request_token(MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "redirect_request_token";
     MWA_SERVICE_TOKEN *st;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
     struct webauth_token data;
     struct webauth_token_request *req;
     char *redirect_url, *return_url;
@@ -1442,9 +1446,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: return_url(%s)", mwa_func, return_url);
 
-    status = webauth_keyring_from_key(rc->ctx, &st->key, &ring);
-    if (status == WA_ERR_NONE)
-        status = webauth_token_encode(rc->ctx, &data, ring, &token);
+    ring = webauth_keyring_from_key(rc->ctx, &st->key);
+    status = webauth_token_encode(rc->ctx, &data, ring, &token);
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
                               "webauth_token_encode_request", NULL);

@@ -20,6 +20,7 @@
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
+#include <webauth/basic.h>
 #include <webauth/util.h>
 #include <webauth/webkdc.h>
 
@@ -114,7 +115,7 @@ enum {
  */
 #define CHECK_DIRECTIVE(field, dir, value)      \
     if (sconf->field == value)                  \
-        fatal_config(server, CD_ ## dir, ptemp)
+        fatal_config(server, CD_ ## dir, p)
 
 
 /*
@@ -211,15 +212,32 @@ fatal_config(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * from an Apache configuration directive.
  */
 void
-webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *ptemp)
+webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *p)
 {
     struct config *sconf;
+    int status;
 
     sconf = ap_get_module_config(server->module_config, &webkdc_module);
     CHECK_DIRECTIVE(keyring_path,     Keyring,              NULL);
     CHECK_DIRECTIVE(keytab_path,      Keytab,               NULL);
     CHECK_DIRECTIVE(service_lifetime, ServiceTokenLifetime, 0);
     CHECK_DIRECTIVE(token_acl_path,   TokenAcl,             NULL);
+
+    /*
+     * Create a WebAuth context that will last for the life of the server
+     * configuration.  We need this because there is some data, such as the
+     * main server keyring, that needs to live as long as the server, although
+     * most operations will be done on the per-request context.
+     */
+    status = webauth_context_init_apr(&sconf->ctx, p);
+    if (status != WA_ERR_NONE) {
+        const char *msg = webauth_error_message(NULL, status);
+
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, server,
+                     "mod_webauth: fatal error: %s", msg);
+        fprintf(stderr, "mod_webauth: fatal error: %s\n", msg);
+        exit(1);
+    }
 
     /*
      * Load the keyring into the configuration struct.  If the configuration
@@ -232,11 +250,8 @@ webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *ptemp)
     if (bconf->ring != NULL
         && strcmp(sconf->keyring_path, bconf->keyring_path) == 0) {
         sconf->ring = bconf->ring;
-        sconf->free_ring = false;
     } else {
         mwk_cache_keyring(server, sconf);
-        if (sconf->ring != NULL)
-            sconf->free_ring = true;
     }
 }
 

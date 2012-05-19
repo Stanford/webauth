@@ -16,7 +16,7 @@ use Test::More;
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (3.00 :const);
 
-BEGIN { plan tests => 35 }
+BEGIN { plan tests => 36 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -95,30 +95,31 @@ eval {
         WebAuth::WA_AES_256, ' and one for AES 256');
 
     # Key tests.
-    my $key = $wa->key_create (WebAuth::WA_AES_KEY,
+    my $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128,
                                $wa->random_key (WebAuth::WA_AES_128));
     ok (defined ($key), 'creating a key works');
-    ok ($key->isa ('WEBAUTH_KEYPtr'), ' and is of the right type');
+    ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
+    $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128);
+    ok (defined ($key), ' and creating a random key also works');
 
     # Invalid key material length
     eval {
-        $key = $wa->key_create (WebAuth::WA_AES_KEY, $wa->random_key (2));
+        $key = $wa->key_create (WebAuth::WA_AES_KEY, 2, $wa->random_key (2));
     };
     ok ($@->isa ('WebAuth::Exception'),
         ' and creating one of invalid length fails');
 
     # Test reading a new keyring file.
-    $key = $wa->key_create (WebAuth::WA_AES_KEY,
-                            $wa->random_key (WebAuth::WA_AES_128));
-    my $ring = WebAuth::Keyring->new (32);
+    $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128);
+    my $ring = $wa->keyring_new (32);
     ok (defined ($ring), 'creating a keyring works');
     ok ($ring->isa ('WebAuth::Keyring'), ' and is of the right type');
     my $curr = time;
     $ring->add ($curr, $curr, $key);
-    $ring->write_file ('webauth_keyring');
-    my $ring2 = WebAuth::Keyring->read_file ('webauth_keyring');
+    $ring->write ('webauth_keyring');
+    my $ring2 = $wa->keyring_read ('webauth_keyring');
     ok ($ring2->isa ('WebAuth::Keyring'), 'reading a new keyring works');
-    $ring->write_file ('webauth_keyring2');
+    $ring->write ('webauth_keyring2');
 
     unlink ('webauth_keyring') if -f 'webauth_keyring';
     unlink ('webauth_keyring2') if -f 'webauth_keyring2';

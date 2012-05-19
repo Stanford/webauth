@@ -48,7 +48,7 @@ sub read_token {
 my $wa = WebAuth->new;
 my $path = test_file_path ("data/keyring")
     or BAIL_OUT ('cannot find data/keyring');
-my $keyring = WebAuth::Keyring->read_file ($path);
+my $keyring = $wa->keyring_read ($path);
 $path = test_file_path ("data/tokens.conf");
 require $path or BAIL_OUT ("cannot load data/tokens.conf");
 

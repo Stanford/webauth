@@ -16,7 +16,7 @@
 
 #include <apr_xml.h>
 
-#include <webauth.h>            /* WEBAUTH_KEYRING */
+struct webauth_keyring;
 
 /*
  * The internal context struct, which holds any state information required for
@@ -86,9 +86,9 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
  * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if no suitable
  * and valid encryption key could be found in the keyring.
  */
-int webauth_token_encrypt(struct webauth_context *, const char *input,
-                          size_t len, char **output, size_t *output_len,
-                          const WEBAUTH_KEYRING *)
+int webauth_token_encrypt(struct webauth_context *, const void *input,
+                          size_t len, void **output, size_t *output_len,
+                          const struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 /*
@@ -99,9 +99,9 @@ int webauth_token_encrypt(struct webauth_context *, const char *input,
  * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC, or
  * WA_ERR_BAD_KEY.
  */
-int webauth_token_decrypt(struct webauth_context *, const char *input,
-                          size_t input_len, char **output, size_t *output_len,
-                          const WEBAUTH_KEYRING *)
+int webauth_token_decrypt(struct webauth_context *, const void *input,
+                          size_t input_len, void **output, size_t *output_len,
+                          const struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */

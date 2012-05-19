@@ -120,10 +120,11 @@ webauth_token_type_string(enum webauth_token_type type)
  */
 static int
 parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
-            const void *token, size_t length, const WEBAUTH_KEYRING *keyring,
-            WEBAUTH_ATTR_LIST **alist)
+            const void *token, size_t length,
+            const struct webauth_keyring *keyring, WEBAUTH_ATTR_LIST **alist)
 {
-    char *attrs, *value;
+    void *attrs;
+    char *value;
     size_t alen;
     const char *type_string = NULL;
     time_t expiration, now;
@@ -708,7 +709,7 @@ fail:
 int
 webauth_token_decode_raw(struct webauth_context *ctx,
                          enum webauth_token_type type, const void *token,
-                         size_t length, const WEBAUTH_KEYRING *ring,
+                         size_t length, const struct webauth_keyring *ring,
                          struct webauth_token **decoded)
 {
     WEBAUTH_ATTR_LIST *alist = NULL;
@@ -774,7 +775,7 @@ webauth_token_decode_raw(struct webauth_context *ctx,
 int
 webauth_token_decode(struct webauth_context *ctx,
                      enum webauth_token_type type, const char *token,
-                     const WEBAUTH_KEYRING *ring,
+                     const struct webauth_keyring *ring,
                      struct webauth_token **decoded)
 {
     size_t length;

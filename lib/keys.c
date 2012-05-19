@@ -13,36 +13,74 @@
 #include <portable/system.h>
 
 #include <lib/internal.h>
+#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 
 
 /*
- * Given a key, wrap a keyring around it.  The keyring and its data structures
- * are allocated from the pool.
+ * Construct a new WebAuth key.  Takes the key type and key size and optional
+ * key material (which must be at least as long as the key size).  If the key
+ * material is given, it's copied into the key.  If it's NULL, a random key
+ * will be created.
  *
- * FIXME: Resizing this keyring will do horrible things since it's
- * pool-allocated memory that can't be resized without using APR.
+ * Returns WA_ERR_INVALID if the key type or size are not supported, or
+ * WA_ERR_RAND_FAILURE on failure to generate random material.
  */
 int
-webauth_keyring_from_key(struct webauth_context *ctx, const WEBAUTH_KEY *key,
-                         WEBAUTH_KEYRING **ring)
+webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
+                   enum webauth_key_size size,
+                   const unsigned char *key_material,
+                   struct webauth_key **output)
 {
-    WEBAUTH_KEY *copy;
-    WEBAUTH_KEYRING_ENTRY *entry;
+    struct webauth_key *key;
+    int status;
 
-    copy = apr_palloc(ctx->pool, sizeof(WEBAUTH_KEY));
+    /* Return NULL on invalid key types and sizes. */
+    if (type != WA_AES_KEY) {
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "unsupported key type %d", type);
+        return status;
+    }
+    if (size != WA_AES_128 && size != WA_AES_192 && size != WA_AES_256) {
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "unsupported key size %d", size);
+        return status;
+    }
+
+    /* Create the basic key structure. */
+    key = apr_palloc(ctx->pool, sizeof(struct webauth_key));
+    key->type = type;
+    key->length = size;
+    key->data = apr_palloc(ctx->pool, size);
+
+    /* Either copy in the given key material or get new random material. */
+    if (key_material != NULL)
+        memcpy(key->data, key_material, size);
+    else {
+        status = webauth_random_key(key->data, size);
+        if (status != WA_ERR_NONE) {
+            webauth_error_set(ctx, status, "cannot generate random key");
+            return status;
+        }
+    }
+    *output = key;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Create a deep copy of a key structure.  Returns the newly allocated key.
+ */
+struct webauth_key *
+webauth_key_copy(struct webauth_context *ctx, const struct webauth_key *key)
+{
+    struct webauth_key *copy;
+
+    copy = apr_palloc(ctx->pool, sizeof(struct webauth_key));
     copy->type = key->type;
+    copy->length = key->length;
     copy->data = apr_palloc(ctx->pool, key->length);
     memcpy(copy->data, key->data, key->length);
-    copy->length = key->length;
-    entry = apr_palloc(ctx->pool, sizeof(WEBAUTH_KEYRING_ENTRY));
-    entry->creation_time = 0;
-    entry->valid_after = 0;
-    entry->key = copy;
-    *ring = apr_palloc(ctx->pool, sizeof(WEBAUTH_KEYRING));
-    (*ring)->num_entries = 1;
-    (*ring)->capacity = 1;
-    (*ring)->entries = entry;
-    return WA_ERR_NONE;
+    return copy;
 }

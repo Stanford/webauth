@@ -13,12 +13,12 @@ require 5.006;
 use strict;
 use vars qw(@ISA @EXPORT $VERSION);
 
-use WebAuth qw (3.00 :const);
+use WebAuth qw(3.00 WA_AES_KEY WA_AES_128);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '1.00';
+$VERSION = '2.00';
 
 use Exporter ();
 @ISA    = qw(Exporter);
@@ -93,12 +93,9 @@ sub create_keyring {
     return if -f $fname;
 
     my $wa = WebAuth->new;
-    my $key = $wa->key_create (WebAuth::WA_AES_KEY,
-                               $wa->random_key (WebAuth::WA_AES_128));
-    my $ring = WebAuth::Keyring->new (32);
-    my $curr = time();
-    $ring->add ($curr, $curr, $key);
-    $ring->write_file ($fname);
+    my $key = $wa->key_create (WA_AES_KEY, WA_AES_128);
+    my $ring = $wa->keyring_from_key ($key);
+    $ring->write ($fname);
 }
 
 ##############################################################################

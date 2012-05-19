@@ -98,16 +98,16 @@ $ENV{SCRIPT_NAME} = '/login';
 
 # Make sure we have the path to the actual KDC keyring.  Required since these
 # tests must be run on a working KDC.
+my $wa = WebAuth->new;
 $WebKDC::Config::KEYRING_PATH = contents ('t/data/test.keyring.path');
 unless (-r $WebKDC::Config::KEYRING_PATH) {
     BAIL_OUT ("cannot read $WebKDC::Config::KEYRING_PATH");
 }
-my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
-my $wa = WebAuth->new;
 my $random = $wa->random_key (WebAuth::WA_AES_128);
-my $key = $wa->key_create (WebAuth::WA_AES_KEY, $random);
+my $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128, $random);
 my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
 $st->session_key ($random);
@@ -116,9 +116,7 @@ $st->expiration (time + 3600);
 my $st_base64 = $st->encode ($keyring);
 
 # Create the RT for testing.
-my $client_keyring = WebAuth::Keyring->new (1);
-$key = $wa->key_create (WebAuth::WA_AES_KEY, $random);
-$client_keyring->add (time, time, $key);
+my $client_keyring = $wa->keyring_from_key ($key);
 my $rt = WebAuth::Token::Request->new ($wa);
 $rt->type ('id');
 $rt->auth ('webkdc');

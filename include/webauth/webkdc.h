@@ -35,9 +35,8 @@
 
 #include <sys/types.h>
 
-#include <webauth.h>
-
 struct webauth_context;
+struct webauth_keyring;
 
 /*
  * General configuration information for the WebKDC functions.  The WebKDC
@@ -260,7 +259,7 @@ int webauth_webkdc_config(struct webauth_context *,
 int webauth_webkdc_login(struct webauth_context *,
                          struct webauth_webkdc_login_request *,
                          struct webauth_webkdc_login_response **,
-                         WEBAUTH_KEYRING *keyring)
+                         struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 END_DECLS

@@ -2,7 +2,7 @@
  * Test token decoding.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -15,6 +15,7 @@
 #include <util/xmalloc.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 
@@ -53,7 +54,7 @@ read_token(const char *filename)
  */
 static struct webauth_token *
 check_decode(struct webauth_context *ctx, enum webauth_token_type type,
-             const char *name, WEBAUTH_KEYRING *ring, int count)
+             const char *name, const struct webauth_keyring *ring, int count)
 {
     char *path, *token;
     int status;
@@ -84,7 +85,8 @@ check_decode(struct webauth_context *ctx, enum webauth_token_type type,
  */
 static struct webauth_token *
 check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
-                 const char *name, WEBAUTH_KEYRING *ring, int count)
+                 const char *name, const struct webauth_keyring *ring,
+                 int count)
 {
     char *filename, *path;
     FILE *token;
@@ -127,7 +129,7 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
  */
 static void
 check_error(struct webauth_context *ctx, enum webauth_token_type type,
-            const char *name, WEBAUTH_KEYRING *ring, int code,
+            const char *name, const struct webauth_keyring *ring, int code,
             const char *message)
 {
     int s;
@@ -152,11 +154,9 @@ check_error(struct webauth_context *ctx, enum webauth_token_type type,
 int
 main(void)
 {
-    WEBAUTH_KEYRING *ring, *bad_ring;
-    WEBAUTH_KEY *key;
+    struct webauth_keyring *ring, *bad_ring;
+    struct webauth_key *key;
     char *keyring;
-    char key_material[WA_AES_128];
-    time_t now;
     int status;
     struct webauth_context *ctx;
     struct webauth_token *result;
@@ -181,10 +181,10 @@ main(void)
      * that's stored in that directory.  So start by loading that keyring.
      */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read_file(keyring, &ring);
+    status = webauth_keyring_read(ctx, keyring, &ring);
     if (status != WA_ERR_NONE)
         bail("cannot read %s: %s", keyring,
-             webauth_error_message(NULL, status));
+             webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
     /*
@@ -247,25 +247,12 @@ main(void)
      * Create a different keyring and test decoding a token using a keyring
      * that does not contain a usable key.
      */
-    status = webauth_random_key(key_material, WA_AES_128);
-    if (status != WA_ERR_NONE)
-        bail("cannot create random key: %s",
-             webauth_error_message(ctx, status));
-    key = webauth_key_create(WA_AES_KEY, key_material, WA_AES_128);
+    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
     if (key == NULL)
-        bail("cannot create key");
-    bad_ring = webauth_keyring_new(1);
-    if (bad_ring == NULL)
-        bail("cannot create keyring");
-    now = time(NULL);
-    status = webauth_keyring_add(bad_ring, now, now, key);
-    if (status != WA_ERR_NONE)
-        bail("cannot add key to keyring: %s",
-             webauth_error_message(ctx, status));
-    webauth_key_free(key);
+        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    bad_ring = webauth_keyring_from_key(ctx, key);
     check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC,
                 "HMAC check failed while decrypting token");
-    webauth_keyring_free(bad_ring);
 
     /* Test decoding of a credential token. */
     result = check_decode(ctx, WA_TOKEN_CRED, "cred-ok", ring, 7);
@@ -627,7 +614,6 @@ main(void)
     }
 
     /* Clean up. */
-    webauth_keyring_free(ring);
     webauth_context_free(ctx);
     return 0;
 }

@@ -74,16 +74,6 @@ typedef enum {
     WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
 } WEBAUTH_ET_ERR;
 
-/*
- * Status for webauth_keyring_auto_update, indicating whether the keyring was
- * newly created, updated, or left alone.
- */
-typedef enum {
-    WA_KAU_NONE = 0,
-    WA_KAU_CREATE,
-    WA_KAU_UPDATE
-} WEBAUTH_KAU_STATUS;
-
 
 /*
  * PROTOCOL CONSTANTS
@@ -151,14 +141,6 @@ typedef enum {
  * API CONSTANTS
  */
 
-/* Supported key types. */
-#define WA_AES_KEY 1
-
-/* Supported AES key sizes. */
-#define WA_AES_128 16
-#define WA_AES_192 24
-#define WA_AES_256 32
-
 /* Flags to webauth_attr_list_add functions. */
 #define WA_F_NONE       0x00
 #define WA_F_COPY_VALUE 0x01
@@ -202,27 +184,6 @@ typedef struct {
     size_t capacity;
     WEBAUTH_ATTR *attrs;
 } WEBAUTH_ATTR_LIST;
-
-/* A crypto key for encryption or decryption. */
-typedef struct {
-    unsigned int type;
-    char *data;
-    size_t length;
-} WEBAUTH_KEY;
-
-/* An entry in a keyring, holding a WEBAUTH_KEY with timestamps. */
-typedef struct {
-    time_t creation_time;
-    time_t valid_after;
-    WEBAUTH_KEY *key;
-} WEBAUTH_KEYRING_ENTRY;
-
-/* A keyring, holding encryption keys.  Can be serialized to disk. */
-typedef struct {
-    size_t num_entries;
-    size_t capacity;
-    WEBAUTH_KEYRING_ENTRY *entries;
-} WEBAUTH_KEYRING;
 
 /* A WebAuth Kerberos context for Kerberos support functions. */
 typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
@@ -451,7 +412,7 @@ int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **);
  *
  * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
-int webauth_random_bytes(char *, size_t);
+int webauth_random_bytes(unsigned char *, size_t);
 
 /*
  * Used to create random bytes suitable for use as a key.  The number of bytes
@@ -460,124 +421,7 @@ int webauth_random_bytes(char *, size_t);
  *
  * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
  */
-int webauth_random_key(char *, size_t);
-
-
-/*
- * KEY AND KEYRING MANIPULATION
- */
-
-/*
- * Construct new key.  key_type is the key type; currently the only supported
- * type is WA_AES_KEY.  key_material points to the key material and will get
- * copied into the new key.  key_len is the length of the key material and
- * should be WA_AES_128, WA_AES_192, or WA_AES_256.
- *
- * Returns a newly allocated key or NULL on error.
- */
-WEBAUTH_KEY *webauth_key_create(unsigned int key_type,
-                                const char *key_material, size_t key_len);
-
-/* Make a copy of a key.  Returns the new key or NULL on error. */
-WEBAUTH_KEY *webauth_key_copy(const WEBAUTH_KEY *);
-
-/* Free a key, zeroing out the key material memory first. */
-void webauth_key_free(WEBAUTH_KEY *);
-
-/* Create a new keyring, returning the new keyring or NULL on error. */
-WEBAUTH_KEYRING * webauth_keyring_new(size_t initial_capacity);
-
-/* Free a keyring and any keys in it. */
-void webauth_keyring_free(WEBAUTH_KEYRING *);
-
-/*
- * Add a new entry to a keyring.  The key is copied and the copy will be freed
- * when the keyring is freed.  If creation_time or valid_after time is 0, then
- * the current time is used.
- *
- * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_keyring_add(WEBAUTH_KEYRING *, time_t creation_time,
-                        time_t valid_after, WEBAUTH_KEY *);
-
-/*
- * Removes (and frees) the key at the specified index, shifting the remaining
- * keys down.
- *
- * Returns WA_ERR_NONE or WA_ERR_NOT_FOUND.
- */
-int webauth_keyring_remove(WEBAUTH_KEYRING *, size_t index);
-
-/*
- * Given a keyring, return the best key on the ring for either encryption or
- * decryption.  The best key for encryption is the key with the most current
- * valid valid_after time.  The best key for decryption is the key with the
- * the valid_after time closest to but not more current then hint.
- *
- * Returns the key or NULL on error.
- */
-WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *,
-                                      int encryption, time_t hint);
-
-/*
- * Encodes a keyring into a buffer and returns the encoded length.  buffer
- * should be freed when no longer needed.
- *
- * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_keyring_encode(WEBAUTH_KEYRING *, char **, size_t *);
-
-/*
- * Deecodes a keyring from a buffer.  ring should be freed with
- * webauth_keyring_free when no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or
- * WA_ERR_KEYRING_VERSION.
- */
-int webauth_keyring_decode(char *, size_t, WEBAUTH_KEYRING **);
-
-/*
- * Write a keyring to a file in encoded form.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_KEYRING_OPENWRITE, or
- * WA_ERR_KEYRING_WRITE.
- */
-int webauth_keyring_write_file(WEBAUTH_KEYRING *, const char *);
-
-/*
- * Reads a keyring from a file in encoded form.  The newly allocated keyring
- * should be freed with webauth_keyring_Free when no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_KEYRING_READ, or
- * WA_ERR_KEYRING_OPENREAD.
- */
-int webauth_keyring_read_file(const char *, WEBAUTH_KEYRING **);
-
-/*
- * Attempts to read a keyring file.  If create is non-zero, it will create the
- * file if it doesn't exist.  If lifetime is non-zero, there must be at least
- * one key in the ring where valid_after + lifetime is greater then the
- * current time; otherwise, a new key will be created with valid_after set to
- * the current time and the key ring file will be updated.
- *
- * This function does no file locking.
- *
- * kau_status will be set to WA_KAU_NONE if we didn't create or update the
- * ring, WA_KAU_CREATE if we attempted to create it, and WA_KAU_UPDATE if we
- * attempted to update it.
- *
- * The return code applies to only the open and/or create.  If the open and/or
- * create succeed, then WA_ERR_NONE will always be returned, even if the
- * update fails.  If the update fails, then update_status will be set to
- * someting other then WA_ERR_NONE.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_KEYRING_READ, or
- * WA_ERR_KEYRING_OPENREAD.
- */
-int webauth_keyring_auto_update(const char *path, int create, int lifetime,
-                                WEBAUTH_KEYRING **ring,
-                                WEBAUTH_KAU_STATUS *kau_status,
-                                int *update_status);
+int webauth_random_key(unsigned char *, size_t);
 
 
 /*

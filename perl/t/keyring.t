@@ -10,7 +10,7 @@
 
 use strict;
 
-use Test::More tests => 33;
+use Test::More tests => 29;
 
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (:const);
@@ -18,9 +18,8 @@ use WebAuth qw (:const);
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
     my $wa = WebAuth->new;
-    my $keyring = WebAuth::Keyring->new;
+    my $keyring = $wa->keyring_new (1);
     isa_ok ($keyring, 'WebAuth::Keyring');
-    is ($keyring->capacity, 1, 'New keyring has a capacity of 1');
     is (scalar ($keyring->entries), 0, ' and contains no keys');
     my @entries = $keyring->entries;
     is (scalar (@entries), 0, ' and no keys are returned');
@@ -30,11 +29,10 @@ eval {
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
     my $bytes = $wa->random_key (WA_AES_256);
-    my $key = $wa->key_create (WA_AES_KEY, $bytes);
+    my $key = $wa->key_create (WA_AES_KEY, WA_AES_256, $bytes);
     my $now = time - 20;
     eval { $keyring->add ($now, $now + 5, $key) };
     is ($@, '', 'Adding a key works');
-    is ($keyring->capacity, 1, ' and capacity is still 1');
     is (scalar ($keyring->entries), 1, ' and now there is one key');
     @entries = $keyring->entries;
     is (scalar (@entries), 1, ' which is returned in an array');
@@ -46,10 +44,9 @@ eval {
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
     $bytes = $wa->random_key (WA_AES_256);
-    my $key2 = $wa->key_create (WA_AES_KEY, $bytes);
+    my $key2 = $wa->key_create (WA_AES_KEY, WA_AES_256, $bytes);
     $now = $now + 10;
     is ($keyring->add ($now, $now + 5, $key), 1, 'Adding a second key works');
-    is ($keyring->capacity, 2, ' and capacity is now 2');
     is (scalar ($keyring->entries), 2, ' and now there are two keys');
     @entries = $keyring->entries;
     is ($entries[1]->creation, $now, 'The second key has the right creation');
@@ -60,12 +57,12 @@ eval {
     # FIXME: We can't test that the keys are the same when we read them back
     # in from the file until we have a better data structure for keys.  Right
     # now, keys are opaque pointers, and the pointer will change.
-    eval { $keyring->write_file ('webauth_keyring') };
+    eval { $keyring->write ('webauth_keyring') };
     is ($@, '', 'Writing the key out to a file works');
     ok (-f 'webauth_keyring', ' and the file exists');
     is ((stat 'webauth_keyring')[2] & 07777, 0600,
         ' and has the correct mode');
-    my $keyring2 = eval { WebAuth::Keyring->read_file ('webauth_keyring') };
+    my $keyring2 = eval { $wa->keyring_read ('webauth_keyring') };
     is ($@, '', 'Reading the keyring back in works');
     unlink ('webauth_keyring');
     my @entries2 = $keyring2->entries;
@@ -105,8 +102,7 @@ eval {
     # Test removing keys from the keyring.
     eval { $keyring->remove (0) };
     is ($@, '', 'Removing the first key of the keyring works');
-    is ($keyring->capacity, 2, ' and the capacity is still 2');
-    is ($keyring->entries, 1, ' but the entry count is 1');
+    is (scalar ($keyring->entries), 1, ' and the entry count is 1');
     @entries2 = $keyring->entries;
     is ($entries2[0]->creation, $entries[1]->creation,
         'The remaining key has the expecte creation');

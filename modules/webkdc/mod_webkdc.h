@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -20,8 +20,10 @@
 #include <sys/types.h>
 
 #include <webauth.h>
-#include <webauth/basic.h>
 #include <webauth/tokens.h>
+
+struct webauth_context;
+struct webauth_keyring;
 
 /* defines for config directives */
 
@@ -88,8 +90,8 @@ struct config {
      * part of reading the configuration, are global to the module, and need
      * to be reset when the module is reloaded, so we store them here.
      */
-    WEBAUTH_KEYRING *ring;
-    bool free_ring;
+    struct webauth_context *ctx;
+    struct webauth_keyring *ring;
 };
 
 /* requestInfo */

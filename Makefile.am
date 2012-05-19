@@ -85,7 +85,7 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attrs.c lib/base64.c	\
-	lib/context.c lib/factors.c lib/key.c lib/keys.c lib/krb5.c	\
+	lib/context.c lib/factors.c lib/keyring.c lib/keys.c lib/krb5.c	\
 	lib/internal.h lib/misc.c lib/random.c lib/token-crypto.c	\
 	lib/token-decode.c lib/token-encode.c lib/userinfo.c lib/util.c	\
 	lib/webkdc-config.c lib/webkdc-login.c lib/xml.c
@@ -139,6 +139,7 @@ modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
+tools_wa_keyring_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
@@ -300,8 +301,10 @@ tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_key_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_keys_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \

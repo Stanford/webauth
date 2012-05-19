@@ -22,6 +22,7 @@
 #include <lib/internal.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 /*
@@ -87,14 +88,14 @@ encoded_length(size_t alen, size_t *plen)
  * results in the same way that webauth_token_create_with_key does.
  */
 int
-webauth_token_encrypt(struct webauth_context *ctx, const char *input,
-                      size_t len, char **output, size_t *output_len,
-                      const WEBAUTH_KEYRING *ring)
+webauth_token_encrypt(struct webauth_context *ctx, const void *input,
+                      size_t len, void **output, size_t *output_len,
+                      const struct webauth_keyring *ring)
 {
-    WEBAUTH_KEY *key;
+    const struct webauth_key *key;
     size_t elen, plen, i;
     int status;
-    char *result, *p;
+    unsigned char *result, *p;
     AES_KEY aes_key;
     uint32_t hint;
 
@@ -103,20 +104,16 @@ webauth_token_encrypt(struct webauth_context *ctx, const char *input,
     *output_len = 0;
 
     /* Find the encryption key to use. */
-    key = webauth_keyring_best_key(ring, 1, 0);
-    if (key == NULL) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY,
-                          "unable to find usable encryption key");
-        return WA_ERR_BAD_KEY;
-    }
+    status = webauth_keyring_best_key(ctx, ring, WA_KEY_ENCRYPT, 0, &key);
+    if (status != WA_ERR_NONE)
+        return status;
 
     /*
      * Create our encryption key.
      *
      * FIXME: Get the actual OpenSSL error.
      */
-    status = AES_set_encrypt_key((unsigned char *) key->data, key->length * 8,
-                                 &aes_key);
+    status = AES_set_encrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY, "error setting encryption key");
         return WA_ERR_BAD_KEY;
@@ -155,16 +152,15 @@ webauth_token_encrypt(struct webauth_context *ctx, const char *input,
      * error.
      */
     HMAC(EVP_sha1(), key->data, key->length,
-         (unsigned char *) result + T_ATTR_O, len + plen,    /* data, len */
-         (unsigned char *) result + T_HMAC_O, NULL);         /* hmac, len */
+         result + T_ATTR_O, len + plen,         /* data, len */
+         result + T_HMAC_O, NULL);              /* hmac, len */
 
     /*
      * Now AES-encrypt in place everything but the time at the front.
      * AES_cbc_encrypt doesn't return anything.
      */
-    AES_cbc_encrypt((unsigned char *) result + T_NONCE_O,
-                    (unsigned char *) result + T_NONCE_O,
-                    elen - T_HINT_S, &aes_key, aes_ivec, AES_ENCRYPT);
+    AES_cbc_encrypt(result + T_NONCE_O, result + T_NONCE_O, elen - T_HINT_S,
+                    &aes_key, aes_ivec, AES_ENCRYPT);
 
     /* All done.  Return the result. */
     *output = result;
@@ -183,7 +179,7 @@ webauth_token_encrypt(struct webauth_context *ctx, const char *input,
 static int
 decrypt_token(struct webauth_context *ctx, const unsigned char *input,
               size_t length, unsigned char *output, size_t *output_len,
-              const WEBAUTH_KEY *key)
+              const struct webauth_key *key)
 {
     unsigned char computed_hmac[T_HMAC_S];
     size_t plen, i;
@@ -202,8 +198,7 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
      *
      * FIXME: Get the actual OpenSSL error.
      */
-    status = AES_set_decrypt_key((unsigned char *) key->data, key->length * 8,
-                                 &aes_key);
+    status = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY, "error setting decryption key");
         return WA_ERR_BAD_KEY;
@@ -259,22 +254,23 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
  * output_len.  Takes a keyring to use for decryption.  Returns a WA_ERR code.
  */
 int
-webauth_token_decrypt(struct webauth_context *ctx, const char *input,
-                      size_t input_len, char **output, size_t *output_len,
-                      const WEBAUTH_KEYRING *ring)
+webauth_token_decrypt(struct webauth_context *ctx, const void *input,
+                      size_t input_len, void **output, size_t *output_len,
+                      const struct webauth_keyring *ring)
 {
     size_t dlen, i;
     int status;
-    WEBAUTH_KEY *key;
-    const unsigned char *inbuf = (unsigned char *) input;
+    const struct webauth_key *key;
+    const unsigned char *inbuf = input;
     unsigned char *outbuf;
+    const struct webauth_keyring_entry *entry;
 
     /* Clear our output parameters in case of an error. */
     *output = NULL;
     *output_len = 0;
 
     /* Sanity-check our keyring. */
-    if (ring->num_entries == 0) {
+    if (ring->entries->nelts == 0) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY,
                           "empty keyring when decoding token");
         return WA_ERR_BAD_KEY;
@@ -293,34 +289,42 @@ webauth_token_decrypt(struct webauth_context *ctx, const char *input,
      * this is easy: we use that key.  Otherwise, we try the hinted key.
      * Failing that, we try all keys.
      */
-    if (ring->num_entries == 1) {
-        key = ring->entries[0].key;
+    if (ring->entries->nelts == 1) {
+        entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
+        key = entry->key;
         status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
     } else {
         uint32_t hint_buf;
-        time_t hint;
+        time_t h;
 
         /* First, try the hint. */
         memcpy(&hint_buf, inbuf, sizeof(hint_buf));
-        hint = ntohl(hint_buf);
-        key = webauth_keyring_best_key(ring, 0, hint);
-        if (key == NULL)
-            status = WA_ERR_BAD_HMAC;
-        else
+        h = ntohl(hint_buf);
+        status = webauth_keyring_best_key(ctx, ring, WA_KEY_DECRYPT, h, &key);
+        if (status == WA_ERR_NONE)
             status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
+        else
+            status = WA_ERR_BAD_HMAC;
 
         /*
          * Now, as long as we didn't decode successfully, try each key in the
          * keyring in turn.  If the input is dirty, we have to replace the
          * input with our temporary buffer and try again.
          */
-        for (i = 0; status == WA_ERR_BAD_HMAC && i < ring->num_entries; i++)
-            if (ring->entries[i].key != key)
+        if (status == WA_ERR_BAD_HMAC)
+            for (i = 0; i < (size_t) ring->entries->nelts; i++) {
+                entry = &APR_ARRAY_IDX(ring->entries, i,
+                                       struct webauth_keyring_entry);
+                if (entry->key == key)
+                    continue;
                 status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen,
-                                       ring->entries[i].key);
+                                       entry->key);
+                if (status != WA_ERR_BAD_HMAC)
+                    break;
+            }
     }
     if (status == WA_ERR_NONE) {
-        *output = (char *) outbuf;
+        *output = outbuf;
         *output_len = dlen;
     }
     return status;

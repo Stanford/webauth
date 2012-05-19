@@ -109,11 +109,11 @@
  * sets the WebAuth error.
  */
 static int
-prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
+prep_encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
             const void **token, WEBAUTH_ATTR_LIST **alist)
 {
     *token = NULL;
-    if (keyring == NULL) {
+    if (ring == NULL) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY,
                           "keyring is NULL when encoding token");
         return WA_ERR_BAD_KEY;
@@ -135,12 +135,13 @@ prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
  * token is not set on error.
  */
 static int
-finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
+finish_encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
               const WEBAUTH_ATTR_LIST *alist, const void **token,
               size_t *length)
 {
     size_t alen;
-    char *attrs, *rtoken;
+    char *attrs;
+    void *rtoken;
     int status;
 
     alen = webauth_attrs_encoded_length(alist);
@@ -150,7 +151,7 @@ finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
         webauth_error_set(ctx, status, "error encoding attributes");
         return status;
     }
-    status = webauth_token_encrypt(ctx, attrs, alen, &rtoken, length, keyring);
+    status = webauth_token_encrypt(ctx, attrs, alen, &rtoken, length, ring);
     if (status != WA_ERR_NONE)
         return status;
     *token = rtoken;
@@ -570,8 +571,8 @@ corrupt:
 int
 webauth_token_encode_raw(struct webauth_context *ctx,
                          const struct webauth_token *data,
-                         const WEBAUTH_KEYRING *ring, const void **token,
-                         size_t *length)
+                         const struct webauth_keyring *ring,
+                         const void **token, size_t *length)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;
@@ -639,7 +640,7 @@ fail:
 int
 webauth_token_encode(struct webauth_context *ctx,
                      const struct webauth_token *data,
-                     const WEBAUTH_KEYRING *ring, const char **token)
+                     const struct webauth_keyring *ring, const char **token)
 {
     int status;
     const void *raw;

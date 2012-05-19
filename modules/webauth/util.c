@@ -168,19 +168,15 @@ int
 mwa_cache_keyring(server_rec *serv, struct server_config *sconf)
 {
     int status;
-    WEBAUTH_KAU_STATUS kau_status;
+    enum webauth_kau_status kau_status;
     int update_status;
 
     static const char *mwa_func = "mwa_cache_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path,
-                                         sconf->keyring_auto_update,
-                                         sconf->keyring_auto_update ?
-                                         sconf->keyring_key_lifetime :
-                                         0,
-                                         &sconf->ring,
-                                         &kau_status,
-                                         &update_status);
+    status = webauth_keyring_auto_update(sconf->ctx, sconf->keyring_path,
+                 sconf->keyring_auto_update,
+                 sconf->keyring_auto_update ? sconf->keyring_key_lifetime : 0,
+                 &sconf->ring, &kau_status, &update_status);
 
     if (status != WA_ERR_NONE) {
             mwa_log_webauth_error(serv, status, mwa_func,
@@ -256,8 +252,8 @@ mwa_get_webauth_cookies(request_rec *r)
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
 struct webauth_token_cred *
-mwa_parse_cred_token(char *token, WEBAUTH_KEYRING *ring, WEBAUTH_KEY *key,
-                     MWA_REQ_CTXT *rc)
+mwa_parse_cred_token(char *token, struct webauth_keyring *ring,
+                     struct webauth_key *key, MWA_REQ_CTXT *rc)
 {
     int status;
     struct webauth_token *data;
@@ -268,14 +264,9 @@ mwa_parse_cred_token(char *token, WEBAUTH_KEYRING *ring, WEBAUTH_KEY *key,
     /* parse the token, TTL is zero because cred-tokens don't have ttl,
      * just expiration
      */
-    if (key != NULL) {
-        status = webauth_keyring_from_key(rc->ctx, key, &ring);
-        if (status != WA_ERR_NONE) {
-            mwa_log_webauth_error(rc->r->server, status,
-                                  mwa_func, "webauth_keyring_from_key", NULL);
-            return NULL;
-        }
-    } else if (ring == NULL) {
+    if (key != NULL)
+        ring = webauth_keyring_from_key(rc->ctx, key);
+    else if (ring == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: callled with NULL key and ring!",
                      mwa_func);

@@ -516,7 +516,7 @@ make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
                const void **token, size_t *length, const char *mwk_func)
 {
     int status;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
 
     if (rc->sconf->ring == NULL)
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
@@ -532,24 +532,24 @@ make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
     return MWK_OK;
 }
 
-/* FIXME: The key argument here is an ugly hack. */
+
 static enum mwk_status
 make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
                     struct webauth_token *data, const char **token,
                     const char *mwk_func)
 {
     int status;
-    WEBAUTH_KEYRING *ring;
-    WEBAUTH_KEY wkey;
+    struct webauth_keyring *ring;
+    struct webauth_key *wkey;
 
-    wkey.type = WA_AES_KEY;
-    wkey.length = key_len;
-    wkey.data = (void *) key;
-    status = webauth_keyring_from_key(rc->ctx, &wkey, &ring);
+    status = webauth_key_create(rc->ctx, WA_AES_KEY, key_len, key, &wkey);
     if (status != WA_ERR_NONE)
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_key_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "cannot create keyring from key",
+                                 "invalid key while creating token",
                                  mwk_func, true);
+    ring = webauth_keyring_from_key(rc->ctx, wkey);
     status = webauth_token_encode(rc->ctx, data, ring, token);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
@@ -565,13 +565,13 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                               MWK_REQUESTER_CREDENTIAL *req_cred,
                               MWK_RETURNED_TOKEN *rtoken)
 {
-    static const char *mwk_func="create_service_token_from_req";
-    char session_key[WA_AES_128];
+    static const char *mwk_func = "create_service_token_from_req";
     int status;
     size_t len;
     enum mwk_status ms;
     time_t expiration;
     struct webauth_token token;
+    struct webauth_key *key;
 
     ms = MWK_ERROR;
 
@@ -589,11 +589,10 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, true);
     }
 
-    status = webauth_random_key(session_key, sizeof(session_key));
-
+    status = webauth_key_create(rc->ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
-                              "webauth_random_key", NULL);
+                              "webauth_create_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "can't generate session key", mwk_func,
                                  false);
@@ -603,8 +602,8 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     expiration = time(NULL) + rc->sconf->service_lifetime;
     token.type = WA_TOKEN_WEBKDC_SERVICE;
     token.token.webkdc_service.subject = req_cred->subject;
-    token.token.webkdc_service.session_key = session_key;
-    token.token.webkdc_service.session_key_len = sizeof(session_key);
+    token.token.webkdc_service.session_key = key->data;
+    token.token.webkdc_service.session_key_len = key->length;
     token.token.webkdc_service.expiration = expiration;
     ms = make_token(rc, &token, &rtoken->token_data, mwk_func);
 
@@ -614,9 +613,9 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     rtoken->expires = apr_psprintf(rc->r->pool, "%lu",
                                    (unsigned long) expiration);
 
-    len = sizeof(session_key);
+    len = key->length;
     rtoken->session_key = apr_palloc(rc->r->pool, apr_base64_encode_len(len));
-    apr_base64_encode(rtoken->session_key, session_key, len);
+    apr_base64_encode(rtoken->session_key, (char *) key->data, len);
 
     rtoken->subject = req_cred->subject;
     rtoken->info = " type=service";
@@ -1064,29 +1063,28 @@ parse_request_token(MWK_REQ_CTXT *rc,
 {
     int status;
     struct webauth_token *data;
-    WEBAUTH_KEY key;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_key *key;
+    const struct webauth_keyring *ring;
     time_t expiration;
-    static const char *mwk_func = "parse_xml_request_token";
+    static const char *mwk_func = "parse_request_token";
 
     if (token == NULL) {
         return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
                                  "request token is NULL", mwk_func, true);
     }
-
-    /* FIXME: This is a horrible hack. */
-    key.type = WA_AES_KEY;
-    key.length = st->session_key_len;
-    key.data = (void *) st->session_key;
-    status = webauth_keyring_from_key(rc->ctx, &key, &ring);
-    if (status != WA_ERR_NONE)
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "cannot generate keyring", mwk_func, true);
+    status = webauth_key_create(rc->ctx, WA_AES_KEY, st->session_key_len,
+                                st->session_key, &key);
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+                              "webauth_key_create", NULL);
+        return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
+                                 "invalid service token key", mwk_func, true);
+    }
+    ring = webauth_keyring_from_key(rc->ctx, key);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_REQUEST, token, ring,
                                   &data);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL,
-                              "parse_xml_request_token",
+        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_token_parse", NULL);
         if (status == WA_ERR_BAD_HMAC) {
             set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
@@ -2472,46 +2470,11 @@ handler_hook(request_rec *r)
 
 
 /*
- * called on restarts
- */
-static apr_status_t
-mod_webkdc_cleanup(void *data)
-{
-    server_rec *s = (server_rec*) data;
-    server_rec *t;
-    struct config *sconf;
-
-    sconf = ap_get_module_config(s->module_config, &webkdc_module);
-
-    if (sconf->debug) {
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, "mod_webkdc: cleanup");
-    }
-
-    /* walk through list of services and clean up */
-    for (t=s; t; t=t->next) {
-        struct config *tconf;
-
-        tconf = ap_get_module_config(t->module_config, &webkdc_module);
-        if (tconf->ring && tconf->free_ring) {
-            if (sconf->debug) {
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
-                             "mod_webkdc: cleanup ring: %s",
-                             tconf->keyring_path);
-            }
-            webauth_keyring_free(tconf->ring);
-            tconf->ring = NULL;
-            tconf->free_ring = 0;
-        }
-    }
-    return APR_SUCCESS;
-}
-
-/*
  * called after config has been loaded in parent process
  */
 static int
 mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
-                apr_pool_t *ptemp, server_rec *s)
+                apr_pool_t *ptemp UNUSED, server_rec *s)
 {
     struct config *sconf;
     server_rec *scheck;
@@ -2522,12 +2485,8 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
                      "mod_webkdc: initializing");
 
-    apr_pool_cleanup_register(pconf, s,
-                              mod_webkdc_cleanup,
-                              apr_pool_cleanup_null);
-
     for (scheck=s; scheck; scheck=scheck->next) {
-        webkdc_config_init(scheck, sconf, ptemp);
+        webkdc_config_init(scheck, sconf, pconf);
     }
 
     ap_add_version_component(pconf, "WebKDC/" PACKAGE_VERSION);

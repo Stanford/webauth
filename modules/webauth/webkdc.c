@@ -48,10 +48,9 @@ copy_service_token(apr_pool_t *pool, MWA_SERVICE_TOKEN *orig)
     copy->next_renewal_attempt = orig->next_renewal_attempt;
     copy->last_renewal_attempt = orig->last_renewal_attempt;
     copy->key.type = orig->key.type;
-    copy->key.data = apr_pstrmemdup(pool, orig->key.data, orig->key.length);
+    copy->key.data = apr_pmemdup(pool, orig->key.data, orig->key.length);
     copy->key.length = orig->key.length;
-    copy->app_state = apr_pstrmemdup(pool, orig->app_state,
-                                     orig->app_state_len);
+    copy->app_state = apr_pmemdup(pool, orig->app_state, orig->app_state_len);
     copy->app_state_len = orig->app_state_len;
     return copy;
 }
@@ -82,7 +81,7 @@ new_service_token(apr_pool_t *pool,
     token->last_renewal_attempt = last_renewal_attempt;
     token->key.type = key_type;
 
-    token->key.data = apr_pstrmemdup(pool, kdata, kd_len);
+    token->key.data = apr_pmemdup(pool, kdata, kd_len);
     token->key.length = kd_len;
     return token;
 }
@@ -869,15 +868,9 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
     const char *token;
     int status;
     struct webauth_token req;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring;
 
-    status = webauth_keyring_from_key(rc->ctx, &st->key, &ring);
-    if (status != WA_ERR_NONE) {
-        ap_log_error(APLOG_MARK, APLOG_EMERG, 0, rc->r->server,
-                     "mod_webauth: %s: webauth_keyring_from_key failed",
-                     mwa_func);
-        return NULL;
-    }
+    ring = webauth_keyring_from_key(rc->ctx, &st->key);
     memset(&req, 0, sizeof(req));
     req.type = WA_TOKEN_REQUEST;
     req.token.request.command = cmd;

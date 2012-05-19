@@ -18,6 +18,7 @@
 #include <tests/tap/basic.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 
 #define BUFSIZE 2048
 
@@ -25,7 +26,7 @@
 int
 main(void)
 {
-    char orig_buffer[BUFSIZE];
+    unsigned char orig_buffer[BUFSIZE];
     int s;
 
     plan(2);

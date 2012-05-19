@@ -24,21 +24,34 @@
  * See LICENSE for licensing terms.
  */
 
+/* We cannot include config.h here because it conflicts with Perl. */
+#include <portable/apr.h>
+
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
 
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 /*
  * These typedefs are needed for xsubpp to work its magic with type
  * translation to Perl objects.
  */
-typedef struct webauth_context *        WebAuth;
-typedef WEBAUTH_KEYRING *               WebAuth__Keyring;
-typedef WEBAUTH_KEYRING_ENTRY *         WebAuth__KeyringEntry;
+typedef struct webauth_context *                WebAuth;
+typedef const struct webauth_key *              WebAuth__Key;
+typedef const struct webauth_keyring_entry *    WebAuth__KeyringEntry;
+
+/*
+ * For WebAuth::Keyring, we need to stash a copy of the parent context
+ * somewhere so that we don't require it as an argument to all methods.
+ */
+typedef struct {
+    struct webauth_context *ctx;
+    struct webauth_keyring *ring;
+} *WebAuth__Keyring;
 
 /* Used to generate the Perl glue for WebAuth constants. */
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
@@ -680,7 +693,7 @@ webauth_random_bytes(self, length)
     int s;
 
     ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_bytes(SvPVX(ST(0)), length);
+    s = webauth_random_bytes((unsigned char *) SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_random_bytes", s, NULL);
     else {
@@ -700,7 +713,7 @@ webauth_random_key(self, length)
     int s;
 
     ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_key(SvPVX(ST(0)), length);
+    s = webauth_random_key((unsigned char *) SvPVX(ST(0)), length);
     if (s != WA_ERR_NONE) {
         webauth_croak(NULL, "webauth_random_key", s, NULL);
     } else {
@@ -710,21 +723,85 @@ webauth_random_key(self, length)
 }
 
 
-WEBAUTH_KEY *
-webauth_key_create(self, type, key_material)
+WebAuth::Key
+key_create(self, type, size, key_material = NULL)
     WebAuth self
-    int type
-    SV *key_material
-  PROTOTYPE: $$
+    enum webauth_key_type type
+    enum webauth_key_size size
+    const unsigned char *key_material
+  PROTOTYPE: $$$;$
+  PREINIT:
+    struct webauth_key *key;
+    int status;
   CODE:
 {
-    STRLEN n_input;
-    char *p_input;
+    status = webauth_key_create(self, type, size, key_material, &key);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_key_create", status, NULL);
+    RETVAL = key;
+}
+  OUTPUT:
+    RETVAL
 
-    p_input = SvPV(key_material, n_input);
-    RETVAL = webauth_key_create(type, p_input, n_input);
-    if (RETVAL == NULL)
-        webauth_croak(NULL, "webauth_key_create", WA_ERR_BAD_KEY, NULL);
+
+WebAuth::Keyring
+keyring_new(self, capacity)
+    WebAuth self
+    size_t capacity
+  PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
+  CODE:
+{
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    ring->ring = webauth_keyring_new(self, capacity);
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+WebAuth::Keyring
+keyring_from_key(self, key)
+    WebAuth self
+    WebAuth::Key key
+  PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
+  CODE:
+{
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    ring->ring = webauth_keyring_from_key(self, key);
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+WebAuth::Keyring
+keyring_read(self, file)
+    WebAuth self
+    const char *file
+  PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
+    int status;
+  CODE:
+{
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    status = webauth_keyring_read(self, file, &ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_keyring_read", status, NULL);
+    ring->ctx = self;
+    RETVAL = ring;
 }
   OUTPUT:
     RETVAL
@@ -745,7 +822,8 @@ token_decode(self, input, ring)
   CODE:
 {
     encoded = SvPV_nolen(input);
-    status = webauth_token_decode(self, WA_TOKEN_ANY, encoded, ring, &token);
+    status = webauth_token_decode(self, WA_TOKEN_ANY, encoded, ring->ring,
+                                  &token);
     if (status != WA_ERR_NONE)
         webauth_croak(self, "webauth_token_decode", status, NULL);
     hash = newHV();
@@ -1178,106 +1256,51 @@ webauth_krb5_keep_cred_cache(c)
 }
 
 
-MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
-
-void
-webauth_DESTROY(key)
-    WEBAUTH_KEY *key
-  CODE:
-    webauth_key_free(key);
-
-
 MODULE = WebAuth  PACKAGE = WebAuth::Keyring  PREFIX = webauth_keyring_
 
 void
 DESTROY(self)
     WebAuth::Keyring self
-  CODE:
-    webauth_keyring_free(self);
-
-
-WebAuth::Keyring
-new(class, capacity = 1)
-    const char *class
-    size_t capacity
-  PROTOTYPE: ;$
-  CODE:
-{
-    RETVAL = webauth_keyring_new(capacity);
-    if (RETVAL == NULL)
-        webauth_croak(NULL, "webauth_keyring_new", WA_ERR_NO_MEM, NULL);
-}
-  OUTPUT:
-    RETVAL
-
-
-WebAuth::Keyring
-read_file(class, path)
-    const char *class
-    const char *path
   PROTOTYPE: $
-  PREINIT:
-    WEBAUTH_KEYRING *ring;
-    int s;
   CODE:
-{
-    s = webauth_keyring_read_file(path, &ring);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_keyring_read_file", s, NULL);
-    RETVAL = ring;
-}
-  OUTPUT:
-    RETVAL
+    free(self);
 
 
 void
-add(self, creation_time, valid_after, key)
+add(self, creation, valid_after, key)
     WebAuth::Keyring self
-    time_t creation_time
+    time_t creation
     time_t valid_after
-    WEBAUTH_KEY *key
+    WebAuth::Key key
   PROTOTYPE: $$$$
   PREINIT:
     int s;
   PPCODE:
 {
-    s = webauth_keyring_add(self, creation_time, valid_after, key);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_keyring_add", s, NULL);
+    webauth_keyring_add(self->ctx, self->ring, creation, valid_after, key);
     XSRETURN_YES;
 }
 
 
-# Must return a copy of the key rather than the actual key, since Perl really
-# wants to free these objects and we don't have a good way of detecting in
-# the destructor that we can't free them.
-WEBAUTH_KEY *
-best_key(self, encryption, hint)
+WebAuth::Key
+best_key(self, usage, hint)
     WebAuth::Keyring self
-    int encryption
+    enum webauth_key_usage usage
     time_t hint
   PROTOTYPE: $$$
   PREINIT:
-    WEBAUTH_KEY *key;
+    const struct webauth_key *key;
+    int s;
   CODE:
 {
-    key = webauth_keyring_best_key(self, encryption, hint);
-    if (key == NULL)
+    s = webauth_keyring_best_key(self->ctx, self->ring, usage, hint, &key);
+    if (s == WA_ERR_NONE)
+        RETVAL = key;
+    else if (s == WA_ERR_NOT_FOUND)
         XSRETURN_UNDEF;
-    RETVAL = webauth_key_copy(key);
-    if (RETVAL == NULL)
-        webauth_croak(NULL, "webauth_keyring_best_key", WA_ERR_NO_MEM, NULL);
+    else
+        webauth_croak(self->ctx, "webauth_keyring_best_key", s, NULL);
 }
-  OUTPUT:
-    RETVAL
-
-
-int
-capacity(self)
-    WebAuth::Keyring self
-  PROTOTYPE: $
-  CODE:
-    RETVAL = self->capacity;
   OUTPUT:
     RETVAL
 
@@ -1286,20 +1309,25 @@ void
 entries(self)
     WebAuth::Keyring self
   PROTOTYPE: $
+  PREINIT:
+    struct webauth_keyring *ring;
   PPCODE:
 {
+    ring = self->ring;
     if (GIMME_V == G_ARRAY) {
+        struct webauth_keyring_entry *e;
         SV *entry;
         size_t i;
 
-        for (i = 0; i < self->num_entries; i++) {
+        for (i = 0; i < (size_t) ring->entries->nelts; i++) {
+            e = &APR_ARRAY_IDX(ring->entries, i, struct webauth_keyring_entry);
             entry = sv_newmortal();
-            sv_setref_pv(entry, "WebAuth::KeyringEntry", &self->entries[i]);
+            sv_setref_pv(entry, "WebAuth::KeyringEntry", e);
             SvREADONLY_on(entry);
             XPUSHs(entry);
         }
     } else {
-        ST(0) = newSViv(self->num_entries);
+        ST(0) = newSViv(ring->entries->nelts);
         sv_2mortal(ST(0));
         XSRETURN(1);
     }
@@ -1315,15 +1343,15 @@ remove(self, n)
     int s;
   PPCODE:
 {
-    s = webauth_keyring_remove(self, n);
+    s = webauth_keyring_remove(self->ctx, self->ring, n);
     if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_keyring_remove", s, NULL);
+        webauth_croak(self->ctx, "webauth_keyring_remove", s, NULL);
     XSRETURN_YES;
 }
 
 
 void
-write_file(self, path)
+write(self, path)
     WebAuth::Keyring self
     char *path
   PROTOTYPE: $$
@@ -1331,9 +1359,9 @@ write_file(self, path)
     int s;
   PPCODE:
 {
-    s = webauth_keyring_write_file(self, path);
+    s = webauth_keyring_write(self->ctx, self->ring, path);
     if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_keyring_write_file", s, NULL);
+        webauth_croak(self->ctx, "webauth_keyring_write_file", s, NULL);
     XSRETURN_YES;
 }
 
@@ -1345,7 +1373,7 @@ creation(self)
     WebAuth::KeyringEntry self
   PROTOTYPE: $
   CODE:
-    RETVAL = self->creation_time;
+    RETVAL = self->creation;
   OUTPUT:
     RETVAL
 
@@ -1360,19 +1388,12 @@ valid_after(self)
     RETVAL
 
 
-# Must return a copy of the key rather than the actual key, since Perl really
-# wants to free these objects and we don't have a good way of detecting in
-# the destructor that we can't free them.
-WEBAUTH_KEY *
+WebAuth::Key
 key(self)
     WebAuth::KeyringEntry self
   PROTOTYPE: $
   CODE:
-{
-    RETVAL = webauth_key_copy(self->key);
-    if (RETVAL == NULL)
-        webauth_croak(NULL, "webauth_key_copy", WA_ERR_NO_MEM, NULL);
-}
+    RETVAL = self->key;
   OUTPUT:
     RETVAL
 
@@ -1444,7 +1465,7 @@ encode(self, ring)
     }
 
     /* Do the actual encoding. */
-    status = webauth_token_encode(ctx, &token, ring, &output);
+    status = webauth_token_encode(ctx, &token, ring->ring, &output);
     if (status != WA_ERR_NONE)
         webauth_croak(ctx, "webauth_token_encode", status, NULL);
     RETVAL = output;

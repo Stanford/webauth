@@ -2,14 +2,17 @@
  * Test key and keyring handling.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
+
+#include <time.h>
 
 #include <tests/tap/basic.h>
 #include <webauth.h>
@@ -22,30 +25,28 @@ main(void)
 {
     struct webauth_context *ctx;
     int status;
-    char bytes[WA_AES_128];
-    WEBAUTH_KEY *key;
-    WEBAUTH_KEYRING *ring;
+    struct webauth_key *key;
+    struct webauth_keyring *ring;
+    struct webauth_keyring_entry *entry;
 
-    plan(10);
+    plan(9);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
     /* Create a key to use for testing. */
-    if (webauth_random_key(bytes, sizeof(bytes)) != WA_ERR_NONE)
-        bail("cannot generate random key");
-    key = webauth_key_create(WA_AES_KEY, bytes, sizeof(bytes));
-    ok(key != NULL, "Key created successfully");
-    status = webauth_keyring_from_key(ctx, key, &ring);
-    is_int(WA_ERR_NONE, status, "Creating keyring worked");
-    is_int(1, ring->num_entries, "...with one entry");
-    is_int(1, ring->capacity, "...and one capacity");
-    is_int(0, ring->entries->creation_time, "Key has 0 creation time");
-    is_int(0, ring->entries->valid_after, "...and 0 valid after");
-    ok(ring->entries->key != key, "Key in the ring is a copy");
-    is_int(key->type, ring->entries->key->type, "...with correct type");
-    is_int(key->length, ring->entries->key->length, "...and length");
-    ok(memcmp(key->data, ring->entries->key->data, key->length) == 0,
+    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    is_int(WA_ERR_NONE, status, "Key created successfully");
+    ring = webauth_keyring_from_key(ctx, key);
+    ok(ring->entries != NULL, "Keyring created successfully");
+    is_int(1, ring->entries->nelts, "... with one entry");
+    entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
+    is_int(0, entry->creation, "Key has 0 creation time");
+    is_int(0, entry->valid_after, "...and 0 valid after");
+    ok(entry->key != key, "Key in the ring is a copy");
+    is_int(key->type, entry->key->type, "...with correct type");
+    is_int(key->length, entry->key->length, "...and length");
+    ok(memcmp(key->data, entry->key->data, key->length) == 0,
        "...and correct data");
 
     webauth_context_free(ctx);

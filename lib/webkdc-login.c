@@ -719,7 +719,7 @@ create_id_token(struct webauth_context *ctx,
                 struct webauth_webkdc_login_request *request,
                 struct webauth_token_webkdc_proxy *wkproxy,
                 struct webauth_webkdc_login_response *response,
-                WEBAUTH_KEYRING *keyring)
+                const struct webauth_keyring *ring)
 {
     int status;
     void *krb5_auth;
@@ -753,7 +753,7 @@ create_id_token(struct webauth_context *ctx,
 
     /* Encode the token and store the resulting string. */
     response->result_type = "id";
-    return webauth_token_encode(ctx, &token, keyring, &response->result);
+    return webauth_token_encode(ctx, &token, ring, &response->result);
 }
 
 
@@ -774,7 +774,8 @@ create_proxy_token(struct webauth_context *ctx,
                    struct webauth_webkdc_login_request *request,
                    struct webauth_token_webkdc_proxy *wkproxy,
                    struct webauth_webkdc_login_response *response,
-                   WEBAUTH_KEYRING *session, WEBAUTH_KEYRING *keyring)
+                   struct webauth_keyring *session,
+                   struct webauth_keyring *ring)
 {
     int status;
     struct webauth_token token, subtoken;
@@ -799,7 +800,7 @@ create_proxy_token(struct webauth_context *ctx,
     subtoken.token.webkdc_proxy = *wkproxy;
     subtoken.token.webkdc_proxy.proxy_subject = request->service->subject;
     subtoken.token.webkdc_proxy.creation = 0;
-    status = webauth_token_encode_raw(ctx, &subtoken, keyring,
+    status = webauth_token_encode_raw(ctx, &subtoken, ring,
                                       &proxy->webkdc_proxy,
                                       &proxy->webkdc_proxy_len);
     if (status != WA_ERR_NONE)
@@ -827,7 +828,7 @@ int
 webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_request *request,
                      struct webauth_webkdc_login_response **response,
-                     WEBAUTH_KEYRING *keyring)
+                     struct webauth_keyring *ring)
 {
     struct webauth_token *cred, *newproxy;
     struct webauth_token **token;
@@ -839,8 +840,9 @@ webauth_webkdc_login(struct webauth_context *ctx,
     const char *etoken;
     bool did_login = false;
     size_t size;
-    WEBAUTH_KEY key;
-    WEBAUTH_KEYRING *session;
+    const void *key_data;
+    struct webauth_key *key;
+    struct webauth_keyring *session;
 
     /* Basic sanity checking. */
     if (request->service == NULL || request->creds == NULL
@@ -865,14 +867,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * have to be encrypted in the session key rather than in the WebKDC
      * private key, since they're meant to be readable by the WAS.  Create a
      * keyring containing the session key we can use for those.
-     *
-     * FIXME: The conversion from the webkdc-service token to a key is an ugly
-     * hack.
      */
-    key.type = WA_AES_KEY;
-    key.length = request->service->session_key_len;
-    key.data = (void *) request->service->session_key;
-    status = webauth_keyring_from_key(ctx, &key, &session);
+    size = request->service->session_key_len;
+    key_data = request->service->session_key;
+    status = webauth_key_create(ctx, WA_AES_KEY, size, key_data, &key);
+    if (status != WA_ERR_NONE)
+        return status;
+    session = webauth_keyring_from_key(ctx, key);
     if (status != WA_ERR_NONE)
         return status;
 
@@ -1004,7 +1005,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         (*response)->proxies = apr_array_make(ctx->pool, 1, size);
         data = apr_array_push((*response)->proxies);
         data->type = wkproxy->proxy_type;
-        status = webauth_token_encode(ctx, newproxy, keyring, &data->token);
+        status = webauth_token_encode(ctx, newproxy, ring, &data->token);
         if (status != WA_ERR_NONE)
             return status;
     }
@@ -1106,7 +1107,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         status = create_id_token(ctx, request, wkproxy, *response, session);
     else if (strcmp(req->type, "proxy") == 0)
         status = create_proxy_token(ctx, request, wkproxy, *response, session,
-                                    keyring);
+                                    ring);
     else {
         status = WA_ERR_CORRUPT;
         webauth_error_set(ctx, status, "unsupported requested token type %s",

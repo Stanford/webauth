@@ -24,7 +24,7 @@ use Util qw(create_keyring);
 
 use Test::More tests => 208;
 
-use WebAuth ();
+use WebAuth qw(3.00 WA_AES_KEY WA_AES_128);
 BEGIN {
     use_ok ('WebAuth::Token::App');
     use_ok ('WebAuth::Token::Cred');
@@ -71,10 +71,8 @@ sub encode_decode {
 # General setup.
 my $wa = WebAuth->new;
 my $now = time;
-my $key = $wa->key_create (WebAuth::WA_AES_KEY,
-                           $wa->random_key (WebAuth::WA_AES_128));
-my $keyring = WebAuth::Keyring->new (1);
-$keyring->add ($now, $now, $key);
+my $key = $wa->key_create (WA_AES_KEY, WA_AES_128);
+my $keyring = $wa->keyring_from_key ($key);
 my $path = test_file_path ("data/tokens.conf");
 require $path or BAIL_OUT ("cannot load data/tokens.conf");
 

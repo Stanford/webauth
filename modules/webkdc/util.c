@@ -19,6 +19,7 @@
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>
+#include <webauth/keys.h>
 #include <webauth/basic.h>
 
 /* Initiaized in child. */
@@ -277,11 +278,11 @@ int
 mwk_cache_keyring(server_rec *serv, struct config *sconf)
 {
     int status;
-    WEBAUTH_KAU_STATUS kau_status;
+    enum webauth_kau_status kau_status;
     int update_status;
     static const char *mwk_func = "mwk_init_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path,
+    status = webauth_keyring_auto_update(sconf->ctx, sconf->keyring_path,
                  sconf->keyring_auto_update,
                  sconf->keyring_auto_update ? sconf->key_lifetime : 0,
                  &sconf->ring, &kau_status, &update_status);

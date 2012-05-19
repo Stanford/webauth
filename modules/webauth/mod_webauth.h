@@ -20,6 +20,7 @@
 #include <sys/types.h>          /* size_t, etc. */
 
 #include <webauth.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 /* The module initialization struct, used to retrieve configuration. */
@@ -66,7 +67,7 @@ extern const command_rec webauth_cmds[];
  */
 typedef struct {
     apr_pool_t *pool; /* pool this token belongs to */
-    WEBAUTH_KEY key;
+    struct webauth_key key;
     time_t expires;
     char *token;
     time_t created; /* when we first obtained this token */
@@ -122,8 +123,8 @@ struct server_config {
      * part of reading the configuration, are global to the module, and need
      * to be reset when the module is reloaded, so we store them here.
      */
-    WEBAUTH_KEYRING *ring;
-    bool free_ring;
+    struct webauth_context *ctx;
+    struct webauth_keyring *ring;
     MWA_SERVICE_TOKEN *service_token;
 
     /* Mutex to hold when modifying the server configuration. */
@@ -307,8 +308,8 @@ mwa_get_webauth_cookies(request_rec *r);
  */
 struct webauth_token_cred *
 mwa_parse_cred_token(char *token,
-                     WEBAUTH_KEYRING *ring,
-                     WEBAUTH_KEY *key,
+                     struct webauth_keyring *ring,
+                     struct webauth_key *key,
                      MWA_REQ_CTXT *rc);
 
 void
