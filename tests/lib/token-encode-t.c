@@ -458,7 +458,8 @@ CHECK_FUNCTION(webkdc_service, WEBKDC_SERVICE)
 int
 main(void)
 {
-    struct webauth_keyring *ring;
+    struct webauth_keyring *ring, *bad_ring;
+    struct webauth_key *key;
     char *keyring;
     time_t now;
     int status;
@@ -474,8 +475,9 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_token in;
     struct webauth_token *out;
+    const char *result;
 
-    plan(422);
+    plan(424);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -849,6 +851,18 @@ main(void)
     if (out != NULL)
         is_int(5, out->token.webkdc_service.session_key_len,
                "...session key length");
+
+    /* Create a keyring with an invalid key and then try encoding a token. */
+    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    if (status != WA_ERR_NONE)
+        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    key->length = 2;
+    bad_ring = webauth_keyring_from_key(ctx, key);
+    status = webauth_token_encode(ctx, &in, bad_ring, &result);
+    is_int(WA_ERR_BAD_KEY, status, "Encoding with invalid key fails");
+    is_string("unable to use key (error setting encryption key)",
+              webauth_error_message(ctx, status),
+              "...with correct error message");
 
     /* Clean up. */
     webauth_context_free(ctx);

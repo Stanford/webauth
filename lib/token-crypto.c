@@ -75,8 +75,12 @@ openssl_error(struct webauth_context *ctx, int status, const char *format, ...)
     buf = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
     err = ERR_get_error();
-    ERR_error_string_n(err, errbuf, sizeof(errbuf));
-    webauth_error_set(ctx, status, "%s: %s", buf, errbuf);
+    if (err == 0)
+        webauth_error_set(ctx, status, "%s", buf);
+    else {
+        ERR_error_string_n(err, errbuf, sizeof(errbuf));
+        webauth_error_set(ctx, status, "%s: %s", buf, errbuf);
+    }
     return status;
 }
 
