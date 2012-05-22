@@ -28,8 +28,7 @@ eval {
     #
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
-    my $bytes = $wa->random_key (WA_AES_256);
-    my $key = $wa->key_create (WA_AES_KEY, WA_AES_256, $bytes);
+    my $key = $wa->key_create (WA_AES_KEY, WA_AES_256);
     my $now = time - 20;
     eval { $keyring->add ($now, $now + 5, $key) };
     is ($@, '', 'Adding a key works');
@@ -43,8 +42,7 @@ eval {
     #
     # FIXME: We can't compare keys until we have a proper OO interface to keys
     # as well.
-    $bytes = $wa->random_key (WA_AES_256);
-    my $key2 = $wa->key_create (WA_AES_KEY, WA_AES_256, $bytes);
+    my $key2 = $wa->key_create (WA_AES_KEY, WA_AES_256);
     $now = $now + 10;
     is ($keyring->add ($now, $now + 5, $key), 1, 'Adding a second key works');
     is (scalar ($keyring->entries), 2, ' and now there are two keys');

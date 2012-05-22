@@ -7,7 +7,6 @@ lib/key
 lib/keys
 lib/krb5
 lib/krb5-tgt
-lib/random
 lib/token-decode
 lib/token-encode
 lib/webkdc-info

@@ -178,7 +178,7 @@ create_keyring ($WebKDC::Config::KEYRING_PATH);
 my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
-my $random = $wa->random_key (WebAuth::WA_AES_128);
+my $random = 'b' x WebAuth::WA_AES_128;
 my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
 $st->session_key ($random);

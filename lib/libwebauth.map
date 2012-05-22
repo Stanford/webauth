@@ -42,8 +42,6 @@ WEBAUTH_3 {
         webauth_krb5_rd_req;
         webauth_krb5_rd_req_with_data;
         webauth_parse_interval;
-        webauth_random_bytes;
-        webauth_random_key;
         webauth_token_decode;
         webauth_token_decode_raw;
         webauth_token_encode;

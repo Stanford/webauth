@@ -683,46 +683,6 @@ webauth_attrs_decode(self, buffer)
 }
 
 
-void
-webauth_random_bytes(self, length)
-    WebAuth self
-    int length
-  PROTOTYPE: $$
-  CODE:
-{
-    int s;
-
-    ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_bytes((unsigned char *) SvPVX(ST(0)), length);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_random_bytes", s, NULL);
-    else {
-        SvCUR_set(ST(0), length);
-        SvPOK_only(ST(0));
-    }
-}
-
-
-void
-webauth_random_key(self, length)
-    WebAuth self
-    int length
-  PROTOTYPE: $
-  CODE:
-{
-    int s;
-
-    ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_key((unsigned char *) SvPVX(ST(0)), length);
-    if (s != WA_ERR_NONE) {
-        webauth_croak(NULL, "webauth_random_key", s, NULL);
-    } else {
-        SvCUR_set(ST(0), length);
-        SvPOK_only(ST(0));
-    }
-}
-
-
 WebAuth::Key
 key_create(self, type, size, key_material = NULL)
     WebAuth self

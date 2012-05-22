@@ -400,31 +400,6 @@ int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **);
 
 
 /*
- * RANDOM DATA
- */
-
-/*
- * Returns pseudo random bytes, suitable for use a nonce or random data, but
- * not necessarily suitable for use as an encryption key.  Use
- * webauth_random_key for that.  The number of bytes specified is placed in
- * the output buffer, which must contain enough room to contain the requested
- * number of bytes.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
- */
-int webauth_random_bytes(unsigned char *, size_t);
-
-/*
- * Used to create random bytes suitable for use as a key.  The number of bytes
- * specified is placed in the output buffer, which must contain enough room to
- * hold that many bytes.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
- */
-int webauth_random_key(unsigned char *, size_t);
-
-
-/*
  * KERBEROS
  */
 

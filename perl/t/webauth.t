@@ -16,7 +16,7 @@ use Test::More;
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw (3.00 :const);
 
-BEGIN { plan tests => 36 }
+BEGIN { plan tests => 32 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -83,29 +83,18 @@ eval {
     is ($@->status (), WebAuth::WA_ERR_CORRUPT,
         ' also with the right error');
 
-    # Tests against random functions.
-    is (length ($wa->random_bytes (16)), 16,
-        'getting a short set of random bytes works');
-    is (length ($wa->random_bytes (1024)), 1024, ' and a longer one');
-    is (length ($wa->random_key (WebAuth::WA_AES_128)),
-        WebAuth::WA_AES_128, ' and one for AES 128');
-    is (length ($wa->random_key (WebAuth::WA_AES_192)),
-        WebAuth::WA_AES_192, ' and one for AES 192');
-    is (length ($wa->random_key (WebAuth::WA_AES_256)),
-        WebAuth::WA_AES_256, ' and one for AES 256');
-
     # Key tests.
+    my $bytes = 'a' x WebAuth::WA_AES_128;
     my $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128,
-                               $wa->random_key (WebAuth::WA_AES_128));
+                               $bytes);
     ok (defined ($key), 'creating a key works');
     ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
     $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128);
     ok (defined ($key), ' and creating a random key also works');
+    ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
 
     # Invalid key material length
-    eval {
-        $key = $wa->key_create (WebAuth::WA_AES_KEY, 2, $wa->random_key (2));
-    };
+    $key = eval { $wa->key_create (WebAuth::WA_AES_KEY, 2, $bytes) };
     ok ($@->isa ('WebAuth::Exception'),
         ' and creating one of invalid length fails');
 

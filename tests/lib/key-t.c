@@ -35,22 +35,21 @@ main(void)
     char hex[2048];
     time_t curr;
 
-    plan(12);
+    plan(13);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
     ring = webauth_keyring_new(ctx, 32);
     ok(ring != NULL, "Creating a keyring succeeds");
-    s = webauth_random_key(key_material, sizeof(key_material));
-    is_int(WA_ERR_NONE, s, "Generating random key material succeeds");
-    s = webauth_hex_encode((char *) key_material, sizeof(key_material), hex,
-                           &len, sizeof(hex));
-    hex[len] = '\0';
+    memset(key_material, 2, sizeof(key_material));
     s = webauth_key_create(ctx, WA_AES_KEY, sizeof(key_material),
                            key_material, &key);
     is_int(WA_ERR_NONE, s, "Creating a key with known key material succeeds");
     ok(key != NULL, "... and key is not NULL");
+    ok(key->data != key_material, "... and the data was copied");
+    ok(memcmp(key->data, key_material, sizeof(key_material)) == 0,
+       "... and the key data matches");
     time(&curr);
     webauth_keyring_add(ctx, ring, curr, curr, key);
 

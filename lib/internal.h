@@ -78,6 +78,26 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
 
 /*
+ * Returns pseudo random bytes, suitable for use a nonce or random data, but
+ * not necessarily suitable for use as an encryption key.  Use
+ * webauth_random_key for that.  The number of bytes specified is placed in
+ * the output buffer, which must contain enough room to contain the requested
+ * number of bytes.
+ *
+ * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
+ */
+int webauth_random_bytes(unsigned char *, size_t);
+
+/*
+ * Used to create random bytes suitable for use as a key.  The number of bytes
+ * specified is placed in the output buffer, which must contain enough room to
+ * hold that many bytes.
+ *
+ * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
+ */
+int webauth_random_key(unsigned char *, size_t);
+
+/*
  * Encrypts an input buffer (normally encoded attributes) into a token, using
  * the key from the keyring that has the most recent valid valid_from time.
  * The encoded token will be stored in newly pool-allocated memory in the
