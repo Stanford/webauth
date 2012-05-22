@@ -54,6 +54,9 @@ WebAuth 4.2.0 (unreleased)
     The webauth_keyring_encode and webauth_keyring_decode functions have
     been removed from the public API.
 
+    The webauth_random_bytes and webauth_random_key functions have been
+    removed from the public API.
+
     webauth_keyring_best_key now takes a WA_KEY_DECRYPT or WA_KEY_ENCRYPT
     argument instead of a boolean.  This makes the meaning clearer at the
     call site.
