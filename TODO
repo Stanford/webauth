@@ -2,59 +2,59 @@
 
 Protocol:
 
- * Currently, there is no good logout strategy other than closing the
-   browser, since the user remains logged in to each web site they've
-   visited even if they go to the logout page on the weblogin server and
-   destroy their global credentials.  The best solution to this proposed
-   so far is to maintain global state on the WebKDC servers (shared
-   between them somehow) and to have the WebAuth servers query the WebKDC
-   to see whether the credentials are still valid.  This is a lot of work
-   and raises some basic questions (such as, is HTTPS too slow for that
-   query from the WebAuth server).  (WEBAUTH-27)
+ * WEBAUTH-27: Currently, there is no good logout strategy other than
+   closing the browser, since the user remains logged in to each web site
+   they've visited even if they go to the logout page on the weblogin
+   server and destroy their global credentials.  The best solution to this
+   proposed so far is to maintain global state on the WebKDC servers
+   (shared between them somehow) and to have the WebAuth servers query the
+   WebKDC to see whether the credentials are still valid.  This is a lot
+   of work and raises some basic questions (such as, is HTTPS too slow for
+   that query from the WebAuth server).
 
-   In the meantime, having the WebAuth logout handler automatically
-   redirect to the weblogin logout page might ameliorate some of the
-   problems.  (WEBAUTH-28)
+ * WEBAUTH-28: In the meantime, having the WebAuth logout handler
+   automatically redirect to the weblogin logout page might ameliorate
+   some of the problems.
 
- * Allow a WebAuth Application Server to specify that authentication
-   should be done using a particular instance (and perhaps only a
-   particular realm?) so that the WebLogin server knows to manage a
+ * WEBAUTH-6: Allow a WebAuth Application Server to specify that
+   authentication should be done using a particular instance (and perhaps
+   only a particular realm?) so that the WebLogin server knows to manage a
    different set of single sign-on credentials for that user.  This allows
    applications with specific credential requirements to not interfere
-   with a user's other logins.  (WEBAUTH-6)
+   with a user's other logins.
 
- * Rather than using our own Kerberos ticket serialization format, store
-   tickets in the form that would be used when forwarding tickets, thus
-   letting the Kerberos library do the encoding and decoding for us.
-   (WEBAUTH-29)
+ * WEBAUTH-29: Rather than using our own Kerberos ticket serialization
+   format, store tickets in the form that would be used when forwarding
+   tickets, thus letting the Kerberos library do the encoding and decoding
+   for us.
 
- * Use a better key for the HMAC than the encryption key of the token.
-   (WEBAUTH-30)
+ * WEBAUTH-30: Use a better key for the HMAC than the encryption key of
+   the token.
 
- * Redo the WebKDC XML protocol to look more like a modern web services
-   interface.  (WEBAUTH-31)
+ * WEBAUTH-31: Redo the WebKDC XML protocol to look more like a modern web
+   services interface.
 
- * User request: Currently, WebAuth always appends ?WEBAUTHR even if
-   there's already an ? in the URL, which means that applications that
-   want to do WebAuth themselves cannot do normal CGI parsing of the URL.
-   Just changing this would break backward compatibility, so a new option
-   needs to be added to the request token allowing the implementation to
-   request proper CGI syntax be used in the URL.  This option should
-   probably be on by default with new versions of mod_webauth, since it's
-   cleaner and doesn't cause any harm.  (WEBAUTH-32)
+ * WEBAUTH-32: User request: Currently, WebAuth always appends ?WEBAUTHR
+   even if there's already an ? in the URL, which means that applications
+   that want to do WebAuth themselves cannot do normal CGI parsing of the
+   URL.  Just changing this would break backward compatibility, so a new
+   option needs to be added to the request token allowing the
+   implementation to request proper CGI syntax be used in the URL.  This
+   option should probably be on by default with new versions of
+   mod_webauth, since it's cleaner and doesn't cause any harm.
 
- * Validation of Kerberos authenticators in mod_webauth just blindly does
-   a krb5_aname_to_localname and then compares against the subject.  The
-   decision of whether to strip the realm may be more complex than that.
-   Figure out the right thing to do here, which is not obvious; perhaps
-   require that REMOTE_USER be a full principal name if krb5
-   authenticators are used?  (WEBAUTH-33)
+ * WEBAUTH-33: Validation of Kerberos authenticators in mod_webauth just
+   blindly does a krb5_aname_to_localname and then compares against the
+   subject.  The decision of whether to strip the realm may be more
+   complex than that.  Figure out the right thing to do here, which is not
+   obvious; perhaps require that REMOTE_USER be a full principal name if
+   krb5 authenticators are used?
 
- * Provide a way to separate authentication identity and authorization
-   identity and convey both of those to the WAS, including configuration
-   on the WAS to use the authorization identity for access control instead
-   of the authentication identity.  This must satisfy the following
-   constraints:
+ * WEBAUTH-16: Provide a way to separate authentication identity and
+   authorization identity and convey both of those to the WAS, including
+   configuration on the WAS to use the authorization identity for access
+   control instead of the authentication identity.  This must satisfy the
+   following constraints:
 
    + Backward-compatible so that existing WebAuth servers use the
      authentication identity.
@@ -67,295 +67,329 @@ Protocol:
    choose an identity after authentication.  Requires sending the separate
    authorization identity as a new protocol element in the id token.  Best
    done after the proxy fix is complete so that we don't also have to
-   modify proxy tokens.  (WEBAUTH-16)
+   modify proxy tokens.
 
 General:
 
- * Currently, all module errors are logged with ap_log_error.  It looks
-   like we should be using ap_log_rerror when there's a request available
-   and ap_log_cerror (but only with Apache 2.0.55 and later) when there's
-   a connection available.  This would probably include more useful
-   details in the logs.  (WEBAUTH-34)
+ * WEBAUTH-34: Currently, all module errors are logged with ap_log_error.
+   It looks like we should be using ap_log_rerror when there's a request
+   available and ap_log_cerror (but only with Apache 2.0.55 and later)
+   when there's a connection available.  This would probably include more
+   useful details in the logs.
 
- * We're always passing a status of zero to all calls to ap_log_error, but
-   in some cases we do have an error status that we should be passing in.
-   (WEBAUTH-35)
+ * WEBAUTH-35: We're always passing a status of zero to all calls to
+   ap_log_error, but in some cases we do have an error status that we
+   should be passing in.
 
- * Support Apache 2.4 TRACE log levels and deprecate WebAuthDebug,
-   WebAuthLdapDebug, and WebKdcDebug in favor of TRACE unless there are
-   places where they really go to a lot of extra work.  (And even then, is
-   there a way for us to query if that log level is enabled?)
-   (WEBAUTH-36)
+ * WEBAUTH-36: Support Apache 2.4 TRACE log levels and deprecate
+   WebAuthDebug, WebAuthLdapDebug, and WebKdcDebug in favor of TRACE
+   unless there are places where they really go to a lot of extra work.
+   (And even then, is there a way for us to query if that log level is
+   enabled?)
 
- * Generalize the option parsing code so that all three modules can use
-   the same infrastructure.  The best way to do this is probably to
-   auto-generate most of the code from a separate description of the
-   options.  (WEBAUTH-86)
+ * WEBAUTH-86: Generalize the option parsing code so that all three
+   modules can use the same infrastructure.  The best way to do this is
+   probably to auto-generate most of the code from a separate description
+   of the options.
 
 libwebauth:
 
- * Provide a way to report diagnostic warnings in the library, and use
-   that to report user information service failures when ignore_failure is
-   set.  (WEBAUTH-37)
+ * WEBAUTH-37: Provide a way to report diagnostic warnings in the library,
+   and use that to report user information service failures when
+   ignore_failure is set.
 
- * Deal with memory allocation failure in the library.  Set a default abort
-   function that blows up the whole application if one isn't already set.
-   (WEBAUTH-38)
+ * WEBAUTH-38: Deal with memory allocation failure in the library.  Set a
+   default abort function that blows up the whole application if one isn't
+   already set.
 
- * Convert the rest of the libwebauth interface to use APR and to set the
-   error message in the WebAuth context instead of just returning error
-   codes.  (WEBAUTH-7)
+ * WEBAUTH-7: Convert the rest of the libwebauth interface to use APR and
+   to set the error message in the WebAuth context instead of just
+   returning error codes.
 
- * The current library interface is very low-level.  Ideally, the library
-   should treat particular WebAuth tokens as first-class objects with
-   their own manipulation functions and not expose all of the low-level
-   marshal and unmarshal functions to clients.  (WEBAUTH-7)
+ * WEBAUTH-7: The current library interface is very low-level.  Ideally,
+   the library should treat particular WebAuth tokens as first-class
+   objects with their own manipulation functions and not expose all of the
+   low-level marshal and unmarshal functions to clients.
 
- * Switch all the WebAuth library interfaces to using opaque structs
-   instead of typedefs, matching our current coding style.  (WEBAUTH-7)
+ * WEBAUTH-7: Switch all the WebAuth library interfaces to using opaque
+   structs instead of typedefs, matching our current coding style.
 
- * webauth_attr_list_add_time assumes that timestamps are unsigned 32-bit
-   values.  (WEBAUTH-39)
+ * WEBAUTH-39: webauth_attr_list_add_time assumes that timestamps are
+   unsigned 32-bit values.
 
- * String to number conversion in the WebAuth library is being done with
-   atol instead of with strtol and with error checking.  (WEBAUTH-40)
+ * WEBAUTH-40: String to number conversion in the WebAuth library is being
+   done with atol instead of with strtol and with error checking.
 
- * Add locking to the code reading and writing keyrings so that two
-   processes don't simultaneously update a keyring.  (WEBAUTH-41)
+ * WEBAUTH-41: Add locking to the code reading and writing keyrings so
+   that two processes don't simultaneously update a keyring.
 
- * Stop including addresses in serialized Kerberos tickets and figure out
-   what to do about the is_skey attribute.  (WEBAUTH-42)
+ * WEBAUTH-42: Stop including addresses in serialized Kerberos tickets and
+   figure out what to do about the is_skey attribute.
 
- * Once logging is available, log better error messages when reading
-   keytabs and obtaining initial credentials fails.  (WEBAUTH-43)
+ * WEBAUTH-43: Once logging is available, log better error messages when
+   reading keytabs and obtaining initial credentials fails.
 
- * Replace the internal verify_tgt function with krb5_verify_init_creds.
-   (WEBAUTH-44)
+ * WEBAUTH-44: Replace the internal verify_tgt function with
+   krb5_verify_init_creds.
 
- * The code to get a Kerberos error message always just uses com_err right
-   now.  This needs modification to call the appropriate Kerberos error
-   message function.  (WEBAUTH-45)
+ * WEBAUTH-45: The code to get a Kerberos error message always just uses
+   com_err right now.  This needs modification to call the appropriate
+   Kerberos error message function.
 
- * Support configuration of options for initial Kerberos tickets, such as
-   ticket lifetime.  We also probably want to suppress some options by
-   default that we never use.  (WEBAUTH-46)
+ * WEBAUTH-46: Support configuration of options for initial Kerberos
+   tickets, such as ticket lifetime.  We also probably want to suppress
+   some options by default that we never use.
 
- * Do proper error handling in the case where random number initialization
-   fails.  (WEBAUTH-47)
+ * WEBAUTH-47: Do proper error handling in the case where random number
+   initialization fails.
 
- * Format times properly when reporting errors about expired or stale
-   tokens from token decoding.  (WEBAUTH-48)
+ * WEBAUTH-48: Format times properly when reporting errors about expired
+   or stale tokens from token decoding.
 
- * Validate that only the correct attributes are present for the two types
-   of app tokens when decoding.  (WEBAUTH-90)
+ * WEBAUTH-90: Validate that only the correct attributes are present for
+   the two types of app tokens when decoding.
+
+ * WEBAUTH-91: Use APR file open and read commands instead of directly
+   using UNIX utilities, since they provide us some nice functionality
+   (like reading the entirety of a file).
+
+ * WEBAUTH-92: Provide a way of appending a context to an error message
+   thrown by a lower-level function without changing the error message.
+
+ * WEBAUTH-93: The WA_AES_KEY enum should start with WA_KEY instead.
 
 mod_webauth:
 
- * Support setting HttpOnly flag in the generated cookies.  (WEBAUTH-4)
+ * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
+   clearer about object lifetimes.
 
- * Provide a way to force reauthentication of a user who has valid
-   credentials but ones that are about to expire, and apply it only to
-   GET requests and not POST requests.  This would be useful for wikis,
+ * WEBAUTH-4: Support setting HttpOnly flag in the generated cookies.
+
+ * WEBAUTH-49: Provide a way to force reauthentication of a user who has
+   valid credentials but ones that are about to expire, and apply it only
+   to GET requests and not POST requests.  This would be useful for wikis,
    for example, where expired credentials will usually destroy whatever
-   work the user is trying to save.  (WEBAUTH-49)
+   work the user is trying to save.
 
- * If mod_webauth obtains a proxy token instead of an id token and
-   WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request an
-   id token from the WebKDC and then verify it rather than simply trusting
-   the identity in the proxy token.  (WEBAUTH-50)
+ * WEBAUTH-50: If mod_webauth obtains a proxy token instead of an id token
+   and WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request
+   an id token from the WebKDC and then verify it rather than simply
+   trusting the identity in the proxy token.
 
- * Add support for WebAuthDoLogout in an .htaccess file.  (WEBAUTH-51)
+ * WEBAUTH-51: Add support for WebAuthDoLogout in an .htaccess file.
 
- * Check the Cookie header for multiple webauth_at cookies and try each of
-   them.  This works around a bug in IE 7 where bar.com cookies are sent
-   to foo.bar.com as well as the foo.bar.com cookies.  (WEBAUTH-52)
+ * WEBAUTH-52: Check the Cookie header for multiple webauth_at cookies and
+   try each of them.  This works around a bug in IE 7 where bar.com
+   cookies are sent to foo.bar.com as well as the foo.bar.com cookies.
 
- * Support setting request headers in addition to or instead of environment
-   variables, which will help when using proxy_http to, for example, a
-   Tomcat server.  (WEBAUTH-53)
+ * WEBAUTH-53: Support setting request headers in addition to or instead
+   of environment variables, which will help when using proxy_http to, for
+   example, a Tomcat server.
 
- * Stop requiring the trailing ; at the end of the token when that's the
-   end of the URL.  It is stripped in some obscure situations by IE when
-   using header redirects, and in general ; is a separator rather than a
-   terminator.  If the token is truncated, we'll catch that anyway during
-   decoding.  (WEBAUTH-54)
+ * WEBAUTH-54: Stop requiring the trailing ; at the end of the token when
+   that's the end of the URL.  It is stripped in some obscure situations
+   by IE when using header redirects, and in general ; is a separator
+   rather than a terminator.  If the token is truncated, we'll catch that
+   anyway during decoding.
 
- * User request: Provide a way to require additional factors only when
-   coming from a certain IP address or IP address range.  This allows
-   multifactor restrictions only for off-campus addresses, for example.
-   This may be easier with the Apache 2.4 rework of the authorization
-   infrastructure.  (WEBAUTH-15)
+ * WEBAUTH-15: User request: Provide a way to require additional factors
+   only when coming from a certain IP address or IP address range.  This
+   allows multifactor restrictions only for off-campus addresses, for
+   example.  This may be easier with the Apache 2.4 rework of the
+   authorization infrastructure.
 
 mod_webauthldap:
 
- * User request: There's no inherent reason why mod_webauthldap needs to
-   be limited to working with mod_webauth.  Allow additional auth types to
-   be processed, or remove auth-type restrictions entirely and just rely
-   on require privgroup.  This will also require using REMOTE_USER instead
-   of WEBAUTH_USER and, for use with mod_auth_kerb, dealing with a
-   REMOTE_USER that's qualified with the realm.
+ * WEBAUTH-55: User request: There's no inherent reason why
+   mod_webauthldap needs to be limited to working with mod_webauth.  Allow
+   additional auth types to be processed, or remove auth-type restrictions
+   entirely and just rely on require privgroup.  This will also require
+   using REMOTE_USER instead of WEBAUTH_USER and, for use with
+   mod_auth_kerb, dealing with a REMOTE_USER that's qualified with the
+   realm.
 
- * User request: It would be nice to support multiple keytabs and different
-   credentials in different virtual hosts so that the server would switch
-   credentials and see different data depending on the context.  This would
-   require a significant reworking of the internals.  (WEBAUTH-56)
+ * WEBAUTH-56: User request: It would be nice to support multiple keytabs
+   and different credentials in different virtual hosts so that the server
+   would switch credentials and see different data depending on the
+   context.  This would require a significant reworking of the internals.
 
- * Currently, WebAuthLdapKeytab is defined to be acceptable in virtual
-   hosts.  A caution should be added that it's not reasonable to define
-   multiple keytabs, since the implementation currently only supports one
-   set of authentication credentials.  (WEBAUTH-57)
+ * WEBAUTH-57: Currently, WebAuthLdapKeytab is defined to be acceptable in
+   virtual hosts.  A caution should be added that it's not reasonable to
+   define multiple keytabs, since the implementation currently only
+   supports one set of authentication credentials.
 
- * Support listing multiple privgroups on the same line in the
-   mod_webauthldap module using the iterate flag.  (WEBAUTH-58)
+ * WEBAUTH-58: Support listing multiple privgroups on the same line in the
+   mod_webauthldap module using the iterate flag.
 
- * Support setting request headers in addition to or instead of environment
-   variables, which will help when using proxy_http to, for example, a
-   Tomcat server.  (WEBAUTH-53)
+ * WEBAUTH-53: Support setting request headers in addition to or instead
+   of environment variables, which will help when using proxy_http to, for
+   example, a Tomcat server.
 
- * Support configuring multiple LDAP servers to query so that failover is
-   supported.  (WEBAUTH-2)
+ * WEBAUTH-2: Support configuring multiple LDAP servers to query so that
+   failover is supported.
 
- * Convert mod_webauthldap to the new option parsing code.  (WEBAUTH-85)
+ * WEBAUTH-85: Convert mod_webauthldap to the new option parsing code.
 
 mod_webkdc:
 
- * Return from a password login any additional information provided by
-   the KDC, such as upcoming password expiration information.  (WEBAUTH-17)
+ * WEBAUTH-17: Return from a password login any additional information
+   provided by the KDC, such as upcoming password expiration information.
 
- * Ensure there is a proper return from a password login for an expired
-   password so that it can be recognized and acted on by the WebLogin
-   server.  (WEBAUTH-60)
+ * WEBAUTH-60: Ensure there is a proper return from a password login for
+   an expired password so that it can be recognized and acted on by the
+   WebLogin server.
 
- * A better error message when one talks to the WebKDC directly with a
-   browser would be nice.  The current message is rather baffling, and it
-   would be good to tell the naive user to set up an application server or
-   weblogin server.  (WEBAUTH-61)
+ * WEBAUTH-61: A better error message when one talks to the WebKDC
+   directly with a browser would be nice.  The current message is rather
+   baffling, and it would be good to tell the naive user to set up an
+   application server or weblogin server.
 
- * Write a custom merging function for WebKdcLocalRealms so that the
-   keywords are preserved properly.  If a keyword is set, that should
-   override any list of realms, but if both the old and new configuration
-   contain list of realms, they should be combined.  (WEBAUTH-62)
+ * WEBAUTH-62: Write a custom merging function for WebKdcLocalRealms so
+   that the keywords are preserved properly.  If a keyword is set, that
+   should override any list of realms, but if both the old and new
+   configuration contain list of realms, they should be combined.
 
- * Support an "any" option for WebKdcPermittedRealms so that the default
-   can be explicitly set (possibly overriding an earlier explicit list).
-   (WEBAUTH-63)
+ * WEBAUTH-63: Support an "any" option for WebKdcPermittedRealms so that
+   the default can be explicitly set (possibly overriding an earlier
+   explicit list).
 
- * Improve logging for better metrics analysis.  More clearly indicate
-   success versus failure, log clearly whether authentication was via
-   username/password or via a single sign-on cookie, and find a way to
+ * WEBAUTH-64: Improve logging for better metrics analysis.  More clearly
+   indicate success versus failure, log clearly whether authentication was
+   via username/password or via a single sign-on cookie, and find a way to
    differentiate between trusted Apache authentication and single sign-on.
-   (WEBAUTH-64)
 
- * Investigate implementing the GSSAPI-RPC protocol for the WebKDC.
-   (WEBAUTH-12)
+ * WEBAUTH-12: Investigate implementing the GSSAPI-RPC protocol for the
+   WebKDC.
 
- * Support forcing a user to only go to a particular destination based on
-   information from the user information service.  (WEBAUTH-84)
+ * WEBAUTH-84: Support forcing a user to only go to a particular
+   destination based on information from the user information service.
 
 WebLogin:
 
- * Set HttpOnly flag in the generated cookies.  (WEBAUTH-4)
+ * WEBAUTH-95: Limit the lifetime of the WebAuth context used by WebLogin.
 
- * Pass the password expiration information to the templates as seconds
-   since epoch rather than as pre-formatted dates.  This will be
-   friendlier to localized interfaces.  (WEBAUTH-14)
+ * WEBAUTH-4: Set HttpOnly flag in the generated cookies.
 
- * When going to a site with multiple pieces of content protected by
-   WebAuth, the browser seems to go to WebLogin multiple times, and for
-   some of those times there's an error "no cookie, even after
-   redirection" in the logs.  Figure out what's going on and fix it.
-   (WEBAUTH-65)
+ * WEBAUTH-14: Pass the password expiration information to the templates
+   as seconds since epoch rather than as pre-formatted dates.  This will
+   be friendlier to localized interfaces.
 
- * Fix Perl warnings when going directly to the password change screen.
-   (WEBAUTH-66)
+ * WEBAUTH-65: When going to a site with multiple pieces of content
+   protected by WebAuth, the browser seems to go to WebLogin multiple
+   times, and for some of those times there's an error "no cookie, even
+   after redirection" in the logs.  Figure out what's going on and fix it.
 
- * Display a message if the password prompt is forced in order to get a
-   TGT for credential delegation to the destination site.  (WEBAUTH-67)
+ * WEBAUTH-66: Fix Perl warnings when going directly to the password
+   change screen.
 
- * Add a web services interface for the WebLogin login process and
-   documentation for how to parse the redirect URL and make the login
-   request, returning the return URL.  (WEBAUTH-9)
+ * WEBAUTH-67: Display a message if the password prompt is forced in order
+   to get a TGT for credential delegation to the destination site.
 
- * The error page should return the appropriate HTTP error code instead of
-   success.  (WEBAUTH-68)
+ * WEBAUTH-9: Add a web services interface for the WebLogin login process
+   and documentation for how to parse the redirect URL and make the login
+   request, returning the return URL.
 
- * Incorporate the Stanford advanced settings page into the included
-   WebLogin scripts, used to set the cookie saying to use Negotiate-Auth.
-   (WEBAUTH-69)
+ * WEBAUTH-68: The error page should return the appropriate HTTP error
+   code instead of success.
 
- * Add a replay cache for WebLogin interactions, possibly using memcached,
-   so that one cannot use the browser back button to reply a password
-   login after the previous user has logged out.  (WEBAUTH-10)
+ * WEBAUTH-69: Incorporate the Stanford advanced settings page into the
+   included WebLogin scripts, used to set the cookie saying to use
+   Negotiate-Auth.
 
- * Add a rate limit for WebLogin logins that blocks excessive failed
-   password attempts for a specific user.  (WEBAUTH-11)
+ * WEBAUTH-10: Add a replay cache for WebLogin interactions, possibly
+   using memcached, so that one cannot use the browser back button to
+   reply a password login after the previous user has logged out.
 
- * Separate the two functions of @REMUSER_REALMS so that people can
-   configure a set of realms to be stripped separately from a set of
-   realms that are permitted.  (WEBAUTH-70)
+ * WEBAUTH-11: Add a rate limit for WebLogin logins that blocks excessive
+   failed password attempts for a specific user.
 
- * Add a checkbox to the login page indicating that the user is coming
-   from a public cluster.  If checked, don't set a single sign-on cookie.
-   (WEBAUTH-13)
+ * WEBAUTH-70: Separate the two functions of @REMUSER_REALMS so that
+   people can configure a set of realms to be stripped separately from a
+   set of realms that are permitted.
+
+ * WEBAUTH-13: Add a checkbox to the login page indicating that the user
+   is coming from a public cluster.  If checked, don't set a single
+   sign-on cookie.
 
 Perl Modules:
 
- * Refactor the Perl modules to match my Perl coding style and add POD
-   documentation to all of the modules.  (WEBAUTH-8)
+ * WEBAUTH-8: Refactor the Perl modules to match my Perl coding style and
+   add POD documentation to all of the modules.
 
- * Attempting is() on a WebAuth::Exception object produces the error
-   message 'Operation "eq": no method found'.  Figure out what is required
-   and add the necessary method.  (WEBAUTH-87)
+ * WEBAUTH-87: Attempting is() on a WebAuth::Exception object produces the
+   error message 'Operation "eq": no method found'.  Figure out what is
+   required and add the necessary method.
+
+ * WEBAUTH-96: Add build dependencies on Makefile.PL and libwebauth.la.
+
+ * WEBAUTH-97: keyring_from_key should be a different form of keyring_new
+   instead of a separate method.
+
+ * WEBAUTH-98: Add WebAuth::Keyring read and new constructors that take a
+   WebAuth context and call the appropriate functions in WebAuth.
+
+ * WEBAUTH-99: Add accessor functions so that the internals of a
+   WebAuth::Key can be inspected.
+
+ * WEBAUTH-100: Add documentation for all of the new classes and update
+   the WebAuth module documentation to remove all the deleted methods and
+   add the new interfaces.
+
+ * WEBAUTH-101: Remove all of the Exporter configuration in the WebAuth
+   module.
 
 Test Suite:
 
- * A test suite (and a redesign of the code so that it can be tested) is
-   desperately needed for all the code currently embedded in Apache
-   modules.  (WEBAUTH-71)
+ * WEBAUTH-102: Add more complete tests for keyring operations, including
+   keyring_auto_update.
+
+ * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
+   tested) is desperately needed for all the code currently embedded in
+   Apache modules.
 
 Documentation:
 
- * Rewrite the protocol specification to provide a better-structured and
-   more complete introduction to the protocol and defining terms earlier
-   and more consistently.  (WEBAUTH-73)
+ * WEBAUTH-73: Rewrite the protocol specification to provide a
+   better-structured and more complete introduction to the protocol and
+   defining terms earlier and more consistently.
 
- * Document that numeric values of 0 are equivalent to the attribute not
-   being set for all tokens on the wire.  This is the assumption made by
-   the Perl API, and it seems like it should be generally valid for all
-   tokens.  (WEBAUTH-88)
+ * WEBAUTH-88: Document that numeric values of 0 are equivalent to the
+   attribute not being set for all tokens on the wire.  This is the
+   assumption made by the Perl API, and it seems like it should be
+   generally valid for all tokens.
 
- * Describe the multifactor design and implementation in the protocol
-   specification, particularly including the criteria used when deciding
-   whether to merge factors together as initial factors.  (WEBAUTH-74)
+ * WEBAUTH-74: Describe the multifactor design and implementation in the
+   protocol specification, particularly including the criteria used when
+   deciding whether to merge factors together as initial factors.
 
- * Add POD documentation for all Perl modules.  Many of the WebKDC modules
-   currently don't have documentation.  (WEBAUTH-75)
+ * WEBAUTH-75: Add POD documentation for all Perl modules.  Many of the
+   WebKDC modules currently don't have documentation.
 
- * Write design notes / internals documentation for how WebAuth is put
-   together.  (WEBAUTH-76)
+ * WEBAUTH-76: Write design notes / internals documentation for how
+   WebAuth is put together.
 
- * Update the docs/test-plan document and check it against the current
-   implementation and the set of things that can be tested (such as SPNEGO
-   and advanced configuration).  (WEBAUTH-77)
+ * WEBAUTH-77: Update the docs/test-plan document and check it against the
+   current implementation and the set of things that can be tested (such
+   as SPNEGO and advanced configuration).
 
- * Document the multifactor page flow in docs/weblogin-flow.  (WEBAUTH-78)
+ * WEBAUTH-78: Document the multifactor page flow in docs/weblogin-flow.
 
- * API documentation for libwebauth.  (WEBAUTH-79)
+ * WEBAUTH-79: API documentation for libwebauth.
 
- * Write a full WebAuth manual.  (WEBAUTH-83)
+ * WEBAUTH-83: Write a full WebAuth manual.
 
- * The protocol says that the subject should not be included in id tokens
-   with a subject authenticator type of krb5, but we've always sent a
-   subject and just ignored it in mod_webauth.  Modify the protocol to
-   indicate that the subject can be included in this case and the WAS may
-   choose to trust it rather than validating the authenticator (since the
-   choice of requested credentials was the WAS's anyway.)  (WEBAUTH-89)
+ * WEBAUTH-89: The protocol says that the subject should not be included
+   in id tokens with a subject authenticator type of krb5, but we've
+   always sent a subject and just ignored it in mod_webauth.  Modify the
+   protocol to indicate that the subject can be included in this case and
+   the WAS may choose to trust it rather than validating the authenticator
+   (since the choice of requested credentials was the WAS's anyway.)
 
 Style:
 
- * The mod_webauthldap module needs a lot of formatting and coding style
-   cleanup.  (WEBAUTH-80)
+ * WEBAUTH-80: The mod_webauthldap module needs a lot of formatting and
+   coding style cleanup.
 
- * All of WebAuth needs a general dead code removal pass and evaluation of
-   all the places marked FIXME, spawning either entries for this list or
-   removal as unimportant.  (WEBAUTH-81)
+ * WEBAUTH-81: All of WebAuth needs a general dead code removal pass and
+   evaluation of all the places marked FIXME, spawning either entries for
+   this list or removal as unimportant.
