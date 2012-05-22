@@ -543,15 +543,6 @@ handler_hook(request_rec *r)
         return DECLINED;
 
     sconf = ap_get_module_config(r->server->module_config, &webauth_module);
-/*
-    status = webauth_context_init_apr(&ctx, r->pool);
-    if (status != WA_ERR_NONE) {
-        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
-                     "mod_webauth: webauth_context_init failed: %s",
-                     webauth_error_message(NULL, status));
-        return DECLINED;
-    }
-*/
 
     r->content_type = "text/html";
 
