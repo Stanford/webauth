@@ -140,9 +140,6 @@ libwebauth:
    tickets, such as ticket lifetime.  We also probably want to suppress
    some options by default that we never use.
 
- * WEBAUTH-47: Do proper error handling in the case where random number
-   initialization fails.
-
  * WEBAUTH-48: Format times properly when reporting errors about expired
    or stale tokens from token decoding.
 
