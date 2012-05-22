@@ -12,6 +12,9 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <openssl/err.h>
+#include <openssl/rand.h>
+
 #include <lib/internal.h>
 #include <webauth.h>
 #include <webauth/basic.h>
@@ -35,6 +38,8 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
 {
     struct webauth_key *key;
     int status;
+    unsigned long err;
+    char errbuf[BUFSIZ];
 
     /* Return NULL on invalid key types and sizes. */
     if (type != WA_AES_KEY) {
@@ -58,9 +63,17 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
     if (key_material != NULL)
         memcpy(key->data, key_material, size);
     else {
-        status = webauth_random_key(key->data, size);
-        if (status != WA_ERR_NONE) {
-            webauth_error_set(ctx, status, "cannot generate random key");
+        status = RAND_bytes(key->data, size);
+        if (status < 1) {
+            status = WA_ERR_RAND_FAILURE;
+            err = ERR_get_error();
+            if (err == 0)
+                webauth_error_set(ctx, status, "cannot generate random key");
+            else {
+                ERR_error_string_n(err, errbuf, sizeof(errbuf));
+                webauth_error_set(ctx, status,
+                                  "cannot generate random key: %s", errbuf);
+            }
             return status;
         }
     }
