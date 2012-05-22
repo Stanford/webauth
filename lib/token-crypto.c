@@ -9,14 +9,17 @@
  */
 
 #include <config.h>
+#include <portable/apr.h>
 #include <portable/system.h>
 
 #include <apr_pools.h>
 #include <netinet/in.h>
 #include <openssl/aes.h>
-#include <openssl/sha.h>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
+#include <openssl/sha.h>
 #include <time.h>
 
 #include <lib/internal.h>
@@ -49,6 +52,33 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
 #define T_NONCE_O (T_HINT_O  + T_HINT_S)
 #define T_HMAC_O  (T_NONCE_O + T_NONCE_S)
 #define T_ATTR_O  (T_HMAC_O  + T_HMAC_S)
+
+
+/*
+ * Set the internal error for an OpenSSL error.  Takes the WebAuth context to
+ * use to store the error, the WebAuth return status to use, and a
+ * printf-style format.  Obtains the first error in the OpenSSL error stack
+ * and its corresponding message, sets the WebAuth error to the result of the
+ * format with a colon, space, and the OpenSSL error appended, and then
+ * returns the WebAuth error code (so that the calling function can just
+ * return the result of this function).
+ */
+static int
+openssl_error(struct webauth_context *ctx, int status, const char *format, ...)
+{
+    va_list args;
+    char *buf;
+    char errbuf[BUFSIZ];
+    unsigned long err;
+
+    va_start(args, format);
+    buf = apr_pvsprintf(ctx->pool, format, args);
+    va_end(args);
+    err = ERR_get_error();
+    ERR_error_string_n(err, errbuf, sizeof(errbuf));
+    webauth_error_set(ctx, status, "%s: %s", buf, errbuf);
+    return status;
+}
 
 
 /*
@@ -95,7 +125,7 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     const struct webauth_key *key;
     size_t elen, plen, i;
     int status;
-    unsigned char *result, *p;
+    unsigned char *result, *p, *hmac;
     AES_KEY aes_key;
     uint32_t hint;
 
@@ -108,15 +138,11 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     if (status != WA_ERR_NONE)
         return status;
 
-    /*
-     * Create our encryption key.
-     *
-     * FIXME: Get the actual OpenSSL error.
-     */
+    /* Create our encryption key. */
     status = AES_set_encrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY, "error setting encryption key");
-        return WA_ERR_BAD_KEY;
+        status = WA_ERR_BAD_KEY;
+        return openssl_error(ctx, status, "error setting encryption key");
     }
 
     /* {key-hint}{nonce}{hmac}{attr}{padding} */
@@ -130,9 +156,11 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     p += T_HINT_S;
 
     /* {nonce} */
-    status = webauth_random_bytes(p, T_NONCE_S);
-    if (status != WA_ERR_NONE)
-        return status;
+    status = RAND_pseudo_bytes(p, T_NONCE_S);
+    if (status < 0) {
+        status = WA_ERR_RAND_FAILURE;
+        return openssl_error(ctx, status, "cannot generate random nonce");
+    }
     p += T_NONCE_S;
 
     /* Leave room for HMAC, which we'll add later. */
@@ -148,12 +176,13 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
 
     /*
      * Calculate the HMAC over the data and padding.  We should use something
-     * better than this for the HMAC key.  The HMAC function doesn't return an
-     * error.
+     * better than this for the HMAC key.
      */
-    HMAC(EVP_sha1(), key->data, key->length,
-         result + T_ATTR_O, len + plen,         /* data, len */
-         result + T_HMAC_O, NULL);              /* hmac, len */
+    hmac = HMAC(EVP_sha1(), key->data, key->length,
+                result + T_ATTR_O, len + plen,         /* data, len */
+                result + T_HMAC_O, NULL);              /* hmac, len */
+    if (hmac == NULL)
+        return openssl_error(ctx, WA_ERR_CORRUPT, "cannot compute HMAC");
 
     /*
      * Now AES-encrypt in place everything but the time at the front.
@@ -184,6 +213,7 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
     unsigned char computed_hmac[T_HMAC_S];
     size_t plen, i;
     int status;
+    unsigned char *hmac;
     AES_KEY aes_key;
 
     /* Basic sanity check. */
@@ -193,15 +223,11 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
         return WA_ERR_CORRUPT;
     }
 
-    /*
-     * Create our decryption key.
-     *
-     * FIXME: Get the actual OpenSSL error.
-     */
+    /* Create our decryption key. */
     status = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY, "error setting decryption key");
-        return WA_ERR_BAD_KEY;
+        status = WA_ERR_BAD_KEY;
+        return openssl_error(ctx, status, "error setting encryption key");
     }
 
     /*
@@ -217,10 +243,12 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
 
     /*
      * We now need to compute the HMAC over data and padding to see if
-     * decryption succeeded.  HMAC doesn't return anything.
+     * decryption succeeded.
      */
-    HMAC(EVP_sha1(), key->data, key->length, output + T_ATTR_O,
-         length - T_ATTR_O, computed_hmac, NULL);
+    hmac = HMAC(EVP_sha1(), key->data, key->length, output + T_ATTR_O,
+                length - T_ATTR_O, computed_hmac, NULL);
+    if (hmac == NULL)
+        return openssl_error(ctx, WA_ERR_CORRUPT, "cannot compute HMAC");
     if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
         webauth_error_set(ctx, WA_ERR_BAD_HMAC,
                           "HMAC check failed while decrypting token");
@@ -229,8 +257,11 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
 
     /* Check padding length and data validity. */
     plen = output[length - 1];
-    if (plen > AES_BLOCK_SIZE || plen > length)
+    if (plen > AES_BLOCK_SIZE || plen > length) {
+        webauth_error_set(ctx, WA_ERR_CORRUPT,
+                          "token padding corrupt while decrypting token");
         return WA_ERR_CORRUPT;
+    }
     for (i = length - plen; i < length - 1; i++)
         if (output[i] != plen) {
             webauth_error_set(ctx, WA_ERR_CORRUPT,
