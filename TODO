@@ -317,9 +317,6 @@ Perl Modules:
 
  * WEBAUTH-96: Add build dependencies on Makefile.PL and libwebauth.la.
 
- * WEBAUTH-98: Add WebAuth::Keyring read and new constructors that take a
-   WebAuth context and call the appropriate functions in WebAuth.
-
  * WEBAUTH-99: Add accessor functions so that the internals of a
    WebAuth::Key can be inspected.
 

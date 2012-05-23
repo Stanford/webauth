@@ -65,11 +65,12 @@ WebAuth 4.2.0 (unreleased)
 
     The Perl API for manipulating keyrings has been modified to include
     the WebAuth context.  The read_file method in the WebAuth::Keyring
-    class has been replaced with a keyring_read method in the WebAuth
-    class and the WebAuth::Keyring new constructor has been replaced with
-    a keyring_new method in the WebAuth class so that the WebAuth context
-    can be tracked.  The capacity method on a WebAuth::Keyring object has
-    been removed since it's not part of the abstraction.
+    class has been renamed to read, calling an underlying keyring_read
+    method in the WebAuth class.  The WebAuth::Keyring new constructor now
+    takes a WebAuth context and calls a keyring_new method in the WebAuth
+    class so that the WebAuth context can be tracked.  The capacity method
+    on a WebAuth::Keyring object has been removed since it's not part of
+    the abstraction.
 
     The old webauth_token_create and webauth_token_parse functions have
     been removed from the public API in favor of the new _encode and
