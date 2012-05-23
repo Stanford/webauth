@@ -315,9 +315,6 @@ Perl Modules:
    error message 'Operation "eq": no method found'.  Figure out what is
    required and add the necessary method.
 
- * WEBAUTH-99: Add accessor functions so that the internals of a
-   WebAuth::Key can be inspected.
-
  * WEBAUTH-100: Add documentation for all of the new classes and update
    the WebAuth module documentation to remove all the deleted methods and
    add the new interfaces.

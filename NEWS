@@ -72,6 +72,10 @@ WebAuth 4.2.0 (unreleased)
     on a WebAuth::Keyring object has been removed since it's not part of
     the abstraction.
 
+    The Perl WebAuth::Key class now supports type, length, and data
+    accessor methods so that Perl programs can inspect the contents of
+    keys.
+
     The old webauth_token_create and webauth_token_parse functions have
     been removed from the public API in favor of the new _encode and
     _decode functions.  The token_create and token_parse methods have also
