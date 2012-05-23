@@ -317,9 +317,6 @@ Perl Modules:
 
  * WEBAUTH-96: Add build dependencies on Makefile.PL and libwebauth.la.
 
- * WEBAUTH-97: keyring_from_key should be a different form of keyring_new
-   instead of a separate method.
-
  * WEBAUTH-98: Add WebAuth::Keyring read and new constructors that take a
    WebAuth context and call the appropriate functions in WebAuth.
 
