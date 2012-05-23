@@ -72,7 +72,7 @@ sub encode_decode {
 my $wa = WebAuth->new;
 my $now = time;
 my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
-my $keyring = $wa->keyring_from_key ($key);
+my $keyring = $wa->keyring_new ($key);
 my $path = test_file_path ("data/tokens.conf");
 require $path or BAIL_OUT ("cannot load data/tokens.conf");
 

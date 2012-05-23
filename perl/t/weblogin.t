@@ -188,7 +188,7 @@ my $st_base64 = $st->encode ($keyring);
 
 # Create the RT for testing.
 my $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128, $random);
-my $client_keyring = $wa->keyring_from_key ($key);
+my $client_keyring = $wa->keyring_new ($key);
 my $rt = WebAuth::Token::Request->new ($wa);
 $rt->type ('id');
 $rt->auth ('webkdc');

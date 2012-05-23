@@ -705,9 +705,9 @@ key_create(self, type, size, key_material = NULL)
 
 
 WebAuth::Keyring
-keyring_new(self, capacity)
+keyring_new(self, ks)
     WebAuth self
-    size_t capacity
+    SV *ks
   PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
@@ -716,27 +716,14 @@ keyring_new(self, capacity)
     ring = malloc(sizeof(WebAuth__Keyring));
     if (ring == NULL)
         croak("cannot allocate memory");
-    ring->ring = webauth_keyring_new(self, capacity);
-    ring->ctx = self;
-    RETVAL = ring;
-}
-  OUTPUT:
-    RETVAL
+    if (sv_isobject(ks) && sv_derived_from(ks, "WebAuth::Key")) {
+        struct webauth_key *key;
 
-
-WebAuth::Keyring
-keyring_from_key(self, key)
-    WebAuth self
-    WebAuth::Key key
-  PROTOTYPE: $$
-  PREINIT:
-    WebAuth__Keyring ring;
-  CODE:
-{
-    ring = malloc(sizeof(WebAuth__Keyring));
-    if (ring == NULL)
-        croak("cannot allocate memory");
-    ring->ring = webauth_keyring_from_key(self, key);
+        key = INT2PTR(struct webauth_key *, SvIV((SV *) SvRV(ks)));
+        ring->ring = webauth_keyring_from_key(self, key);
+    } else {
+        ring->ring = webauth_keyring_new(self, SvIV(ks));
+    }
     ring->ctx = self;
     RETVAL = ring;
 }

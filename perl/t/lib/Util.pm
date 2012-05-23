@@ -94,7 +94,7 @@ sub create_keyring {
 
     my $wa = WebAuth->new;
     my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
-    my $ring = $wa->keyring_from_key ($key);
+    my $ring = $wa->keyring_new ($key);
     $ring->write ($fname);
 }
 
