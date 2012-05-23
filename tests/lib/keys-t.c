@@ -35,7 +35,7 @@ main(void)
         bail("cannot initialize WebAuth context");
 
     /* Create a key to use for testing. */
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     is_int(WA_ERR_NONE, status, "Key created successfully");
     ring = webauth_keyring_from_key(ctx, key);
     ok(ring->entries != NULL, "Keyring created successfully");

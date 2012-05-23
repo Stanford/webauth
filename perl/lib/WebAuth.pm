@@ -85,7 +85,7 @@ our %EXPORT_TAGS = (
                                     WA_PEC_MULTIFACTOR_UNAVAILABLE
                                     WA_PEC_LOGIN_REJECTED
                                     WA_PEC_LOA_UNAVAILABLE
-                                    WA_AES_KEY
+                                    WA_KEY_AES
                                     WA_AES_128
                                     WA_AES_192
                                     WA_AES_256
@@ -383,7 +383,7 @@ WA_AES_256 to specify a 128 bit, 192 bit, or 256 bit AES key respectively.
  $key = $wa->key_create($type, $key_material);
 
 Creates a reference to a WEBAUTH_KEYPtr object, or undef
-on error. $type must be WA_AES_KEY, and $key_material must
+on error. $type must be WA_KEY_AES, and $key_material must
 be a string with a length of
 WA_AES_128, WA_AES_192, or WA_AES_256 bytes. $key should be set
 to undef when the key is no longer needed.
@@ -770,7 +770,7 @@ The following constants from webauth.h are available:
   WA_PEC_LOGIN_REJECTED
   WA_PEC_LOA_UNAVAILABLE
 
-  WA_AES_KEY
+  WA_KEY_AES
   WA_AES_128
   WA_AES_192
   WA_AES_256

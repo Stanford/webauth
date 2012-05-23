@@ -600,7 +600,7 @@ parse_service_token_response(apr_xml_doc *xd,
         curr + ((expiration - curr) * START_RENEWAL_ATTEMPT_PERCENT);
 
     st = new_service_token(pool,
-                           WA_AES_KEY, /* FIXME: hardcoded for now */
+                           WA_KEY_AES, /* FIXME: hardcoded for now */
                            bskey,
                            bskey_len,
                            token_data,

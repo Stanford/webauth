@@ -1053,7 +1053,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
                      (unsigned long) klen);
         return NULL;
     }
-    status = webauth_key_create(rc->ctx, WA_AES_KEY, klen, app->session_key,
+    status = webauth_key_create(rc->ctx, WA_KEY_AES, klen, app->session_key,
                                 &key);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,

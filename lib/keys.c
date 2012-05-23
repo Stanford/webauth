@@ -42,7 +42,7 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
     char errbuf[BUFSIZ];
 
     /* Return NULL on invalid key types and sizes. */
-    if (type != WA_AES_KEY) {
+    if (type != WA_KEY_AES) {
         status = WA_ERR_INVALID;
         webauth_error_set(ctx, status, "unsupported key type %d", type);
         return status;

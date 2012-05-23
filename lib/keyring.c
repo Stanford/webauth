@@ -565,7 +565,7 @@ new_ring(struct webauth_context *ctx, const char *path,
     int status;
     time_t now;
 
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE)
         return status;
     *ring = webauth_keyring_new(ctx, 1);
@@ -606,7 +606,7 @@ check_ring(struct webauth_context *ctx, const char *path,
 
     /* We don't have a recent enough key.  Add a new one. */
     *updated = WA_KAU_UPDATE;
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE)
         return status;
     webauth_keyring_add(ctx, ring, now, now, key);

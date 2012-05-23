@@ -542,7 +542,7 @@ make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
     struct webauth_keyring *ring;
     struct webauth_key *wkey;
 
-    status = webauth_key_create(rc->ctx, WA_AES_KEY, key_len, key, &wkey);
+    status = webauth_key_create(rc->ctx, WA_KEY_AES, key_len, key, &wkey);
     if (status != WA_ERR_NONE)
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_key_create", NULL);
@@ -589,7 +589,7 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
                                  mwk_func, true);
     }
 
-    status = webauth_key_create(rc->ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(rc->ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_create_key", NULL);
@@ -1072,7 +1072,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
         return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
                                  "request token is NULL", mwk_func, true);
     }
-    status = webauth_key_create(rc->ctx, WA_AES_KEY, st->session_key_len,
+    status = webauth_key_create(rc->ctx, WA_KEY_AES, st->session_key_len,
                                 st->session_key, &key);
     if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,

@@ -870,7 +870,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      */
     size = request->service->session_key_len;
     key_data = request->service->session_key;
-    status = webauth_key_create(ctx, WA_AES_KEY, size, key_data, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, size, key_data, &key);
     if (status != WA_ERR_NONE)
         return status;
     session = webauth_keyring_from_key(ctx, key);

@@ -85,21 +85,21 @@ eval {
 
     # Key tests.
     my $bytes = 'a' x WebAuth::WA_AES_128;
-    my $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128,
+    my $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128,
                                $bytes);
     ok (defined ($key), 'creating a key works');
     ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
-    $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128);
+    $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128);
     ok (defined ($key), ' and creating a random key also works');
     ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
 
     # Invalid key material length
-    $key = eval { $wa->key_create (WebAuth::WA_AES_KEY, 2, $bytes) };
+    $key = eval { $wa->key_create (WebAuth::WA_KEY_AES, 2, $bytes) };
     ok ($@->isa ('WebAuth::Exception'),
         ' and creating one of invalid length fails');
 
     # Test reading a new keyring file.
-    $key = $wa->key_create (WebAuth::WA_AES_KEY, WebAuth::WA_AES_128);
+    $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128);
     my $ring = $wa->keyring_new (32);
     ok (defined ($ring), 'creating a keyring works');
     ok ($ring->isa ('WebAuth::Keyring'), ' and is of the right type');

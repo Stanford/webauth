@@ -247,7 +247,7 @@ main(void)
      * Create a different keyring and test decoding a token using a keyring
      * that does not contain a usable key.
      */
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (key == NULL)
         bail("cannot create key: %s", webauth_error_message(ctx, status));
     bad_ring = webauth_keyring_from_key(ctx, key);

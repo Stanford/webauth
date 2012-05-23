@@ -86,7 +86,7 @@ main(void)
     memset(&request, 0, sizeof(request));
     memset(&service, 0, sizeof(service));
     service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL,
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
                                 &session_key);
     if (status != WA_ERR_NONE)
         bail("cannot create key: %s", webauth_error_message(ctx, status));

@@ -218,7 +218,7 @@ print_long(struct webauth_context *ctx, struct webauth_keyring_entry *e,
     printf("\n");
     printf("     Key-Type: %d (", e->key->type);
     switch (e->key->type) {
-    case WA_AES_KEY:
+    case WA_KEY_AES:
         printf("AES");
         break;
     default:
@@ -296,7 +296,7 @@ add_key(struct webauth_context *ctx, const char *keyring, long valid_after)
     int s;
     time_t now;
 
-    s = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (s != WA_ERR_NONE)
         die_webauth(ctx, s, "cannot generate new random key");
 

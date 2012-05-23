@@ -43,7 +43,7 @@ main(void)
     ring = webauth_keyring_new(ctx, 32);
     ok(ring != NULL, "Creating a keyring succeeds");
     memset(key_material, 2, sizeof(key_material));
-    s = webauth_key_create(ctx, WA_AES_KEY, sizeof(key_material),
+    s = webauth_key_create(ctx, WA_KEY_AES, sizeof(key_material),
                            key_material, &key);
     is_int(WA_ERR_NONE, s, "Creating a key with known key material succeeds");
     ok(key != NULL, "... and key is not NULL");
@@ -53,7 +53,7 @@ main(void)
     time(&curr);
     webauth_keyring_add(ctx, ring, curr, curr, key);
 
-    s = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     is_int(WA_ERR_NONE, s, "Creating a new random key succeeds");
     s = webauth_hex_encode((char *) key->data, key->length, hex, &len,
                            sizeof(hex));

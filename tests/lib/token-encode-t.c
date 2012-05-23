@@ -853,7 +853,7 @@ main(void)
                "...session key length");
 
     /* Create a keyring with an invalid key and then try encoding a token. */
-    status = webauth_key_create(ctx, WA_AES_KEY, WA_AES_128, NULL, &key);
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE)
         bail("cannot create key: %s", webauth_error_message(ctx, status));
     key->length = 2;

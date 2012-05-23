@@ -38,7 +38,7 @@ struct webauth_context;
 
 /* Supported key types. */
 enum webauth_key_type {
-    WA_AES_KEY = 1
+    WA_KEY_AES = 1
 };
 
 /* Supported key sizes (in bytes, not bits). */
