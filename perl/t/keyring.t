@@ -3,17 +3,18 @@
 # Test suite for keyring manipulation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2011
+# Copyright 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
 
-use Test::More tests => 29;
+use Test::More tests => 36;
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use WebAuth qw (:const);
+use WebAuth qw(:const);
+use WebAuth::Keyring;
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -106,5 +107,22 @@ eval {
         'The remaining key has the expecte creation');
     is ($entries2[0]->valid_after, $entries[1]->valid_after,
         ' and valid after');
+
+    # Test the alternative constructors for keyrings.
+    $keyring = WebAuth::Keyring->new ($wa, 1);
+    isa_ok ($keyring, 'WebAuth::Keyring');
+    is (scalar ($keyring->entries), 0, ' and contains no keys');
+    $key = $wa->key_create (WA_KEY_AES, WA_AES_256);
+    $keyring = WebAuth::Keyring->new ($wa, $key);
+    isa_ok ($keyring, 'WebAuth::Keyring');
+    is (scalar ($keyring->entries), 1, ' and contains one key');
+
+    # Write it to a file and then test reading it back in.
+    eval { $keyring->write ('webauth_keyring') };
+    is ($@, '', 'Writing the key out to a file works');
+    $keyring2 = eval { WebAuth::Keyring->read ($wa, 'webauth_keyring') };
+    is ($@, '', 'Reading the keyring back in works');
+    unlink ('webauth_keyring');
+    is (scalar ($keyring2->entries), 1, ' and contains one key');
 };
 is ($@, '', 'No unexpected exceptions');
