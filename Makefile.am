@@ -203,8 +203,8 @@ endif
 # complexity is here to handle building outside of the source directory, in
 # which case we need to copy various files from the source directory and make
 # sure they're up to date since Perl can't handle VPATH builds.
-perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs \
-		$(srcdir)/perl/typemap
+perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs	  \
+		$(srcdir)/perl/typemap lib/libwebauth.la perl/Makefile.PL
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
 	    for d in lib lib/WebAuth lib/WebAuth/Token lib/WebKDC ; do	\
 		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
