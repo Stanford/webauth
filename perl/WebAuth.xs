@@ -1203,7 +1203,37 @@ webauth_krb5_keep_cred_cache(c)
 }
 
 
-MODULE = WebAuth  PACKAGE = WebAuth::Keyring  PREFIX = webauth_keyring_
+MODULE = WebAuth  PACKAGE = WebAuth::Key
+
+enum webauth_key_type
+type(self)
+    WebAuth::Key self
+  PROTOTYPE: $
+  CODE:
+    RETVAL = self->type;
+  OUTPUT:
+    RETVAL
+
+enum webauth_key_size
+length(self)
+    WebAuth::Key self
+  PROTOTYPE: $
+  CODE:
+    RETVAL = self->length;
+  OUTPUT:
+    RETVAL
+
+SV *
+data(self)
+    WebAuth::Key self
+  PROTOTYPE: $
+  CODE:
+    RETVAL = newSVpvn((const void *) self->data, self->length);
+  OUTPUT:
+    RETVAL
+
+
+MODULE = WebAuth  PACKAGE = WebAuth::Keyring
 
 void
 DESTROY(self)
