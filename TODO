@@ -315,8 +315,6 @@ Perl Modules:
    error message 'Operation "eq": no method found'.  Figure out what is
    required and add the necessary method.
 
- * WEBAUTH-96: Add build dependencies on Makefile.PL and libwebauth.la.
-
  * WEBAUTH-99: Add accessor functions so that the internals of a
    WebAuth::Key can be inspected.
 
