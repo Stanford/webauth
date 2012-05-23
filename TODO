@@ -153,8 +153,6 @@ libwebauth:
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
 
- * WEBAUTH-93: The WA_AES_KEY enum should start with WA_KEY instead.
-
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be

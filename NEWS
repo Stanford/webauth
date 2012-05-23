@@ -54,6 +54,8 @@ WebAuth 4.2.0 (unreleased)
     The webauth_keyring_encode and webauth_keyring_decode functions have
     been removed from the public API.
 
+    The constant WA_AES_KEY has been renamed to WA_KEY_AES.
+
     The webauth_random_bytes and webauth_random_key functions have been
     removed from the public API.
 
