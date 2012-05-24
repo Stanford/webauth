@@ -17,7 +17,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
 use WebAuth::Key ();
 
-BEGIN { plan tests => 46 }
+BEGIN { plan tests => 50 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -42,8 +42,7 @@ eval {
     # Test failure by feeding a bad base64 string.
     eval { $wa->base64_decode ('axc') };
     ok ($@->isa ('WebAuth::Exception'), 'Decoding a bad base64 string fails');
-    ok (WebAuth::Exception::match ($@, WA_ERR_CORRUPT),
-        ' with corrupt string error');
+    is ($@->status, WA_ERR_CORRUPT, ' with corrupt string error');
 
     # Hex tests
     is ($wa->hex_encode ('\000\001\002\003\004\005'),
@@ -58,8 +57,7 @@ eval {
     # Hex failure by giving a bad Hex value.
     eval { $wa->hex_decode ('FOOBAR') };
     ok ($@->isa ('WebAuth::Exception'), 'hex decoding fails');
-    ok (WebAuth::Exception::match ($@, WA_ERR_CORRUPT),
-        ' of the correct type');
+    is ($@->status, WA_ERR_CORRUPT, ' with the correct error');
 
     # Attr tests
     is ($wa->attrs_encode ({'x' => '1' }), 'x=1;',
@@ -113,10 +111,17 @@ eval {
     is ($key->type, WebAuth::WA_KEY_AES, ' and the right key type');
     is ($key->length, WebAuth::WA_AES_128, ' and the right key length');
 
-    # Invalid key material length
+    # Invalid key material length (and test WebAuth::Exception).
     $key = eval { $wa->key_create (WebAuth::WA_KEY_AES, 2, $bytes) };
     ok ($@->isa ('WebAuth::Exception'),
         ' and creating one of invalid length fails');
+    like ($@, qr/^webauth_key_create:\ invalid\ argument\ to\ function
+          \ \(unsupported\ key\ size\ 2\)\ at\ /x, ' with correct exception');
+    is ($@->status, WebAuth::WA_ERR_INVALID, ' and correct status');
+    is ($@->error_message,
+        'invalid argument to function (unsupported key size 2)',
+        ' and correct error message');
+    is ($@->detail_message, 'webauth_key_create', ' and correct detail');
 
     # Test reading a new keyring file.
     $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128);
