@@ -42,10 +42,6 @@ WEBAUTH_3 {
         webauth_krb5_rd_req;
         webauth_krb5_rd_req_with_data;
         webauth_parse_interval;
-        webauth_token_decode;
-        webauth_token_decode_raw;
-        webauth_token_encode;
-        webauth_token_encode_raw;
         webauth_token_type_code;
         webauth_token_type_string;
 
@@ -69,7 +65,6 @@ WEBAUTH_4_1 {
         webauth_user_info;
         webauth_user_validate;
         webauth_webkdc_config;
-        webauth_webkdc_login;
 } WEBAUTH_3;
 
 WEBAUTH_4_2 {
@@ -84,4 +79,9 @@ WEBAUTH_4_2 {
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
+        webauth_token_decode;
+        webauth_token_decode_raw;
+        webauth_token_encode;
+        webauth_token_encode_raw;
+        webauth_webkdc_login;
 } WEBAUTH_4_1;
