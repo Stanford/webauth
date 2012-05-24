@@ -74,7 +74,8 @@ WebAuth 4.2.0 (unreleased)
 
     The Perl WebAuth::Key class now supports type, length, and data
     accessor methods so that Perl programs can inspect the contents of
-    keys.
+    keys.  It also supports a convenience new constructor that calls
+    WebAuth::key_create.
 
     The old webauth_token_create and webauth_token_parse functions have
     been removed from the public API in favor of the new _encode and
