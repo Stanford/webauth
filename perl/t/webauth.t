@@ -15,8 +15,9 @@ use Test::More;
 
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
+use WebAuth::Key ();
 
-BEGIN { plan tests => 32 }
+BEGIN { plan tests => 46 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -89,9 +90,28 @@ eval {
                                $bytes);
     ok (defined ($key), 'creating a key works');
     ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
+    is ($key->type, WebAuth::WA_KEY_AES, ' and the right key type');
+    is ($key->length, WebAuth::WA_AES_128, ' and the right key length');
+    is ($key->data, $bytes, ' and the right key data');
     $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128);
     ok (defined ($key), ' and creating a random key also works');
     ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
+    is ($key->type, WebAuth::WA_KEY_AES, ' and the right key type');
+    is ($key->length, WebAuth::WA_AES_128, ' and the right key length');
+
+    # Try using the helper constructor instead.
+    $key = WebAuth::Key->new ($wa, WebAuth::WA_KEY_AES, WebAuth::WA_AES_128,
+                              $bytes);
+    ok (defined ($key), 'creating a key works');
+    ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
+    is ($key->type, WebAuth::WA_KEY_AES, ' and the right key type');
+    is ($key->length, WebAuth::WA_AES_128, ' and the right key length');
+    is ($key->data, $bytes, ' and the right key data');
+    $key = WebAuth::Key->new ($wa, WebAuth::WA_KEY_AES, WebAuth::WA_AES_128);
+    ok (defined ($key), 'creating a key works');
+    ok ($key->isa ('WebAuth::Key'), ' and is of the right type');
+    is ($key->type, WebAuth::WA_KEY_AES, ' and the right key type');
+    is ($key->length, WebAuth::WA_AES_128, ' and the right key length');
 
     # Invalid key material length
     $key = eval { $wa->key_create (WebAuth::WA_KEY_AES, 2, $bytes) };
