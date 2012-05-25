@@ -13,7 +13,7 @@ use warnings;
 
 use LWP::UserAgent;
 
-use WebAuth qw(3.00 :base64 :krb5 :const);
+use WebAuth qw(3.00 :const :krb5);
 use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;

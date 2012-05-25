@@ -29,8 +29,6 @@ BEGIN {
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 BEGIN {
     our %EXPORT_TAGS = (
-                        'attrs' => [ qw(attrs_encode attrs_decode) ],
-                        'base64' => [ qw(base64_encode base64_decode) ],
                         'const' => [ qw(WA_ERR_NONE
                                         WA_ERR_NO_ROOM
                                         WA_ERR_CORRUPT
@@ -86,8 +84,6 @@ BEGIN {
                                         WA_AES_192
                                         WA_AES_256
                                        )],
-                        'hex' => [ qw(hex_encode hex_decode) ],
-                        'key' => [ qw(key_create) ],
                         'krb5' => [ qw(krb5_new
                                        krb5_error_code
                                        krb5_err_message
@@ -101,20 +97,12 @@ BEGIN {
                                        krb5_export_ticket
                                        krb5_change_password
                                        krb5_mk_req krb5_rd_req
-                                       krb5_keep_cred_cache)],
-                        'random' => [ qw(random_bytes random_key) ],
-                        'token' => [ qw(token_create token_parse) ],
+                                       krb5_keep_cred_cache
+                                      )],
                        );
 
-    our @EXPORT_OK = ( @{ $EXPORT_TAGS{'attrs'} },
-                       @{ $EXPORT_TAGS{'base64'} },
-                       @{ $EXPORT_TAGS{'const'} },
-                       @{ $EXPORT_TAGS{'hex'} },
-                       @{ $EXPORT_TAGS{'key'} },
-                       @{ $EXPORT_TAGS{'krb5'} },
-                       @{ $EXPORT_TAGS{'random'} },
-                       @{ $EXPORT_TAGS{'token'} },
-                     );
+    our @EXPORT_OK = ( @{ $EXPORT_TAGS{'const'} },
+                       @{ $EXPORT_TAGS{'krb5'} } );
     our @EXPORT = qw ();
 }
 
@@ -180,14 +168,8 @@ first parameter, or should be called as methods on that object.
 Nothing is exported by default, but the following %EXPORT_TAGS are
 available:
 
-  attrs     the attr_* functions
-  base64    the base64_* functions
-  const     the wA_* constants
-  hex       the hex_* functions
-  key       the key_* functions
+  const     the WA_* constants
   krb5      the krb5_* functions
-  random    the random_* functions
-  token     the token_* functions
 
 For example:
 

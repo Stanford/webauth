@@ -28,7 +28,7 @@ use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
 use Template ();
-use WebAuth qw(3.00 :base64 :const :krb5 :key);
+use WebAuth qw(3.00 :const :krb5);
 use WebKDC ();
 use WebKDC::Config ();
 use WebKDC::WebKDCException;
