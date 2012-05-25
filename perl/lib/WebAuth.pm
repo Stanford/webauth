@@ -49,7 +49,13 @@ BEGIN {
                                         WA_ERR_LOGIN_FAILED
                                         WA_ERR_TOKEN_EXPIRED
                                         WA_ERR_TOKEN_STALE
+                                        WA_ERR_CREDS_EXPIRED
+                                        WA_ERR_USER_REJECTED
+                                        WA_ERR_APR
+                                        WA_ERR_UNIMPLEMENTED
                                         WA_ERR_INVALID
+                                        WA_ERR_REMOTE_FAILURE
+
                                         WA_PEC_SERVICE_TOKEN_EXPIRED
                                         WA_PEC_SERVICE_TOKEN_INVALID
                                         WA_PEC_PROXY_TOKEN_EXPIRED
@@ -73,10 +79,13 @@ BEGIN {
                                         WA_PEC_MULTIFACTOR_UNAVAILABLE
                                         WA_PEC_LOGIN_REJECTED
                                         WA_PEC_LOA_UNAVAILABLE
+
                                         WA_KEY_AES
+
                                         WA_AES_128
                                         WA_AES_192
                                         WA_AES_256
+
                                         WA_TK_APP_STATE
                                         WA_TK_COMMAND
                                         WA_TK_CRED_DATA
@@ -556,7 +565,7 @@ Returns the valid after time of the key in seconds since epoch.
 
 =head1 CONSTANTS
 
-The following constants from webauth.h are available:
+The following API constants for the WebAuth library are available:
 
   WA_ERR_NONE
   WA_ERR_NO_ROOM
@@ -576,6 +585,12 @@ The following constants from webauth.h are available:
   WA_ERR_LOGIN_FAILED
   WA_ERR_TOKEN_EXPIRED
   WA_ERR_TOKEN_STALE
+  WA_ERR_CREDS_EXPIRED
+  WA_ERR_USER_REJECTED
+  WA_ERR_APR
+  WA_ERR_UNIMPLEMENTED
+  WA_ERR_INVALID
+  WA_ERR_REMOTE_FAILURE
 
   WA_PEC_SERVICE_TOKEN_EXPIRED
   WA_PEC_SERVICE_TOKEN_INVALID
@@ -602,6 +617,7 @@ The following constants from webauth.h are available:
   WA_PEC_LOA_UNAVAILABLE
 
   WA_KEY_AES
+
   WA_AES_128
   WA_AES_192
   WA_AES_256
