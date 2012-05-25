@@ -643,7 +643,7 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
     *update_status = WA_ERR_NONE;
     status = webauth_keyring_read(ctx, path, ring);
     if (status != WA_ERR_NONE) {
-        if (!create)
+        if (!create || status != WA_ERR_KEYRING_OPENREAD)
             return status;
         *updated = WA_KAU_CREATE;
         return new_ring(ctx, path, ring);
