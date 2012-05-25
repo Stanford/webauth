@@ -113,7 +113,7 @@ webauth_keyring_remove(struct webauth_context *ctx,
     apr_array_header_t *entries = ring->entries;
     struct webauth_keyring_entry *entry;
 
-    if (n > (size_t) entries->nelts) {
+    if (n >= (size_t) entries->nelts) {
         webauth_error_set(ctx, WA_ERR_NOT_FOUND,
                           "keyring index %lu out of range",
                           (unsigned long) n);
@@ -164,7 +164,7 @@ webauth_keyring_best_key(struct webauth_context *ctx,
             if (best == NULL || valid > best->valid_after)
                 best = entry;
         } else {
-            if (best == NULL || (hint >= valid && valid >= best->valid_after))
+            if (hint >= valid && (best == NULL || valid >= best->valid_after))
                 best = entry;
         }
     }
