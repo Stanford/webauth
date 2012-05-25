@@ -17,7 +17,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
 use WebAuth::Key ();
 
-BEGIN { plan tests => 50 }
+BEGIN { plan tests => 49 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -29,7 +29,6 @@ eval {
     is (WA_AES_128, 16, 'Check for constant WA_AES_128 works');
     is (WebAuth::WA_AES_192, 24, ' and WA_AES_192');
     is (WebAuth::WA_AES_256, 32, ' and WA_AES_256');
-    is ('t', WebAuth::WA_TK_TOKEN_TYPE, ' and WA_TK_TOKEN_TYPE');
 
     # base64 tests
     is ($wa->base64_encode ('hello'), 'aGVsbG8=',

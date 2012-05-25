@@ -85,35 +85,6 @@ BEGIN {
                                         WA_AES_128
                                         WA_AES_192
                                         WA_AES_256
-
-                                        WA_TK_APP_STATE
-                                        WA_TK_COMMAND
-                                        WA_TK_CRED_DATA
-                                        WA_TK_CRED_SERVICE
-                                        WA_TK_CRED_TYPE
-                                        WA_TK_CREATION_TIME
-                                        WA_TK_ERROR_CODE
-                                        WA_TK_ERROR_MESSAGE
-                                        WA_TK_EXPIRATION_TIME
-                                        WA_TK_INITIAL_FACTORS
-                                        WA_TK_SESSION_KEY
-                                        WA_TK_LOA
-                                        WA_TK_LASTUSED_TIME
-                                        WA_TK_OTP
-                                        WA_TK_PASSWORD
-                                        WA_TK_PROXY_DATA
-                                        WA_TK_PROXY_SUBJECT
-                                        WA_TK_PROXY_TYPE
-                                        WA_TK_REQUEST_OPTIONS
-                                        WA_TK_REQUESTED_TOKEN_TYPE
-                                        WA_TK_RETURN_URL
-                                        WA_TK_SUBJECT
-                                        WA_TK_SUBJECT_AUTH
-                                        WA_TK_SUBJECT_AUTH_DATA
-                                        WA_TK_SESSION_FACTORS
-                                        WA_TK_TOKEN_TYPE
-                                        WA_TK_USERNAME
-                                        WA_TK_WEBKDC_TOKEN
                                        )],
                         'hex' => [ qw(hex_encode hex_decode) ],
                         'key' => [ qw(key_create) ],
@@ -621,35 +592,6 @@ The following API constants for the WebAuth library are available:
   WA_AES_128
   WA_AES_192
   WA_AES_256
-
-  WA_TK_APP_STATE
-  WA_TK_COMMAND
-  WA_TK_CRED_DATA
-  WA_TK_CRED_SERVICE
-  WA_TK_CRED_TYPE
-  WA_TK_CREATION_TIME
-  WA_TK_ERROR_CODE
-  WA_TK_ERROR_MESSAGE
-  WA_TK_EXPIRATION_TIME
-  WA_TK_INITIAL_FACTORS
-  WA_TK_SESSION_KEY
-  WA_TK_LOA
-  WA_TK_LASTUSED_TIME
-  WA_TK_OTP
-  WA_TK_PASSWORD
-  WA_TK_PROXY_DATA
-  WA_TK_PROXY_SUBJECT
-  WA_TK_PROXY_TYPE
-  WA_TK_REQUEST_OPTIONS
-  WA_TK_REQUESTED_TOKEN_TYPE
-  WA_TK_RETURN_URL
-  WA_TK_SUBJECT
-  WA_TK_SUBJECT_AUTH
-  WA_TK_SUBJECT_AUTH_DATA
-  WA_TK_SESSION_FACTORS
-  WA_TK_TOKEN_TYPE
-  WA_TK_USERNAME
-  WA_TK_WEBKDC_TOKEN
 
 =head1 AUTHOR
 
