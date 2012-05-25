@@ -1,8 +1,8 @@
 /*
- * Test key and keyring handling.
+ * Test key handling.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -24,30 +24,55 @@ int
 main(void)
 {
     struct webauth_context *ctx;
-    int status;
-    struct webauth_key *key;
-    struct webauth_keyring *ring;
-    struct webauth_keyring_entry *entry;
+    struct webauth_key *key, *copy;
+    unsigned char bytes[WA_AES_256];
+    int s;
+    size_t i;
 
-    plan(9);
+    plan(20);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    /* Create a key to use for testing. */
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
-    is_int(WA_ERR_NONE, status, "Key created successfully");
-    ring = webauth_keyring_from_key(ctx, key);
-    ok(ring->entries != NULL, "Keyring created successfully");
-    is_int(1, ring->entries->nelts, "... with one entry");
-    entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
-    is_int(0, entry->creation, "Key has 0 creation time");
-    is_int(0, entry->valid_after, "...and 0 valid after");
-    ok(entry->key != key, "Key in the ring is a copy");
-    is_int(key->type, entry->key->type, "...with correct type");
-    is_int(key->length, entry->key->length, "...and length");
-    ok(memcmp(key->data, entry->key->data, key->length) == 0,
-       "...and correct data");
+    /* Test random key creation. */
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    is_int(WA_ERR_NONE, s, "Key created successfully");
+    is_int(WA_KEY_AES, key->type, "... with correct type");
+    is_int(WA_AES_128, key->length, "... and correct length");
+    ok(key->data != NULL, "... and data is not NULL");
+
+    /* Test key creation with known material. */
+    for (i = 0; i < sizeof(bytes); i++)
+        bytes[i] = i;
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_256, bytes, &key);
+    is_int(WA_ERR_NONE, s, "Creating a key with known key material succeeds");
+    is_int(WA_KEY_AES, key->type, "... with correct type");
+    is_int(WA_AES_256, key->length, "... and correct length");
+    ok(key->data != bytes, "... and the data was copied");
+    ok(memcmp(key->data, bytes, sizeof(bytes)) == 0,
+       "... and the key data matches");
+
+    /* Test key creation using only part of the material. */
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_192, bytes, &key);
+    is_int(WA_ERR_NONE, s, "Creating with partial key material succeeds");
+    is_int(WA_KEY_AES, key->type, "... with correct type");
+    is_int(WA_AES_192, key->length, "... and correct length");
+    ok(key->data != bytes, "... and the data was copied");
+    ok(memcmp(key->data, bytes, key->length) == 0,
+       "... and the first section of key data matches");
+
+    /* Test key copying. */
+    copy = webauth_key_copy(ctx, key);
+    is_int(key->type, copy->type, "Copied key has correct type");
+    is_int(key->length, copy->length, "... and correct length");
+    ok(key->data != copy->data, "... and data was copied");
+    ok(memcmp(key->data, copy->data, key->length) == 0, "... and matches");
+
+    /* Errors on key creation. */
+    s = webauth_key_create(ctx, 2, WA_AES_128, NULL, &key);
+    is_int(WA_ERR_INVALID, s, "Invalid key type fails");
+    s = webauth_key_create(ctx, WA_KEY_AES, 14, NULL, &key);
+    is_int(WA_ERR_INVALID, s, "Invalid key size fails");
 
     webauth_context_free(ctx);
     return 0;

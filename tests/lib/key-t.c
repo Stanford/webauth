@@ -29,17 +29,34 @@ main(void)
     struct webauth_key *key;
     struct webauth_keyring *ring;
     struct webauth_keyring *ring2;
+    struct webauth_keyring_entry *entry;
     int s, fd;
     size_t len, i;
     unsigned char key_material[WA_AES_128];
     char hex[2048];
     time_t curr;
 
-    plan(13);
+    plan(22);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
+    /* Create a random key and then create a keyring from that key. */
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    is_int(WA_ERR_NONE, s, "Key created successfully");
+    ring = webauth_keyring_from_key(ctx, key);
+    ok(ring->entries != NULL, "Keyring created successfully");
+    is_int(1, ring->entries->nelts, "... with one entry");
+    entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
+    is_int(0, entry->creation, "Key has 0 creation time");
+    is_int(0, entry->valid_after, "...and 0 valid after");
+    ok(entry->key != key, "Key in the ring is a copy");
+    is_int(key->type, entry->key->type, "...with correct type");
+    is_int(key->length, entry->key->length, "...and length");
+    ok(memcmp(key->data, entry->key->data, key->length) == 0,
+       "...and correct data");
+
+    /* Create a ring with a specific capacity. */
     ring = webauth_keyring_new(ctx, 32);
     ok(ring != NULL, "Creating a keyring succeeds");
     memset(key_material, 2, sizeof(key_material));
