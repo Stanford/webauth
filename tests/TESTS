@@ -3,7 +3,7 @@ lib/base64
 lib/factors
 lib/hex
 lib/interval
-lib/key
+lib/keyring
 lib/keys
 lib/krb5
 lib/krb5-tgt

@@ -9,7 +9,6 @@
  */
 
 #include <config.h>
-#include <portable/apr.h>
 #include <portable/system.h>
 
 #include <time.h>

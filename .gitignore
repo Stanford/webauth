@@ -44,7 +44,7 @@
 /tests/lib/hex-t
 /tests/lib/factors-t
 /tests/lib/interval-t
-/tests/lib/key-t
+/tests/lib/keyring-t
 /tests/lib/keys-t
 /tests/lib/krb5-t
 /tests/lib/krb5-tgt-t

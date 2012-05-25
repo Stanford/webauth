@@ -269,7 +269,7 @@ warnings:
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
-	tests/lib/key-t tests/lib/keys-t tests/lib/krb5-t		   \
+	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		   \
 	tests/lib/krb5-tgt-t tests/lib/token-decode-t			   \
 	tests/lib/token-encode-t tests/lib/webkdc-info-t		   \
 	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
@@ -301,10 +301,9 @@ tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
-tests_lib_key_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_key_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+tests_lib_keyring_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_keyring_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
-tests_lib_keys_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
