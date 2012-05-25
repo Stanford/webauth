@@ -29,13 +29,14 @@ main(void)
     struct webauth_key *key;
     const struct webauth_key *best;
     struct webauth_keyring *ring, *ring2;
-    struct webauth_keyring_entry *entry;
+    struct webauth_keyring_entry *entry, *entry2;
     char *tmpdir, *keyring;
-    int s, fd;
+    int s, ks, fd;
     size_t i;
     time_t now;
+    enum webauth_kau_status kau;
 
-    plan(58);
+    plan(90);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -168,6 +169,64 @@ main(void)
     close(fd);
     s = webauth_keyring_read(ctx, keyring, &ring);
     is_int(WA_ERR_KEYRING_READ, s, "Correct error from reading empty keyring");
+
+    /* Test creating a new keyring with keyring_auto_update. */
+    unlink(keyring);
+    s = webauth_keyring_auto_update(ctx, keyring, false, 0, &ring, &kau, &ks);
+    is_int(WA_ERR_KEYRING_OPENREAD, s,
+           "keyring_auto_update fails with no ring and no creation");
+    is_int(WA_KAU_NONE, kau, "... with correct kau_status");
+    s = webauth_keyring_auto_update(ctx, keyring, true, 0, &ring, &kau, &ks);
+    is_int(WA_ERR_NONE, s, "keyring_auto_update creates a new ring");
+    is_int(WA_KAU_CREATE, kau, "... with correct kau_status");
+    is_int(WA_ERR_NONE, ks, "... and correct update status");
+    is_int(1, ring->entries->nelts, "... and new ring has one entry");
+    entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
+    ok(entry->creation - now < 2, "... with correct creation");
+    ok(entry->valid_after - now < 2, "... and correct valid_after");
+    is_int(WA_KEY_AES, entry->key->type, "... and correct key type");
+    is_int(WA_AES_128, entry->key->length, "... and is 128-bit AES");
+    s = webauth_keyring_read(ctx, keyring, &ring2);
+    is_int(WA_ERR_NONE, s, "... and the new ring can be read from disk");
+    is_int(1, ring2->entries->nelts, "... and has one entry");
+    entry2 = &APR_ARRAY_IDX(ring2->entries, 0, struct webauth_keyring_entry);
+    is_int(entry->creation, entry2->creation, "... and creation matches");
+    is_int(entry->valid_after, entry2->valid_after, "... and valid matches");
+    ok(memcmp(entry->key->data, entry2->key->data, entry->key->length) == 0,
+       "... and key data matches");
+
+    /*
+     * Backdate the key in our ring and write it back out, then test the
+     * automatic update part.
+     */
+    entry->creation = now - 3600;
+    entry->valid_after = now - 3600;
+    s = webauth_keyring_write(ctx, ring, keyring);
+    is_int(WA_ERR_NONE, s, "Successfully overwrote keyring");
+    s = webauth_keyring_auto_update(ctx, keyring, false, 0, &ring, &kau, &ks);
+    is_int(WA_ERR_NONE, s, "Read updated keyring with keyring_auto_update");
+    is_int(WA_KAU_NONE, kau, "... and keyring was not updated");
+    is_int(1, ring->entries->nelts, "... and still has one entry");
+    s = webauth_keyring_auto_update(ctx, keyring, false, 3600, &ring, &kau,
+                                    &ks);
+    is_int(WA_ERR_NONE, s,
+           "Read keyring with keyring_auto_update with update");
+    is_int(WA_KAU_UPDATE, kau, "... and keyring was updated");
+    is_int(WA_ERR_NONE, ks, "... successfully");
+    is_int(2, ring->entries->nelts, "... and the keyring now has two entries");
+    entry = &APR_ARRAY_IDX(ring->entries, 1, struct webauth_keyring_entry);
+    ok(entry->creation - now < 2, "... with correct new creation");
+    ok(entry->valid_after - now < 2, "... and correct new valid_after");
+    is_int(WA_KEY_AES, entry->key->type, "... and correct key type");
+    is_int(WA_AES_128, entry->key->length, "... and is 128-bit AES");
+    s = webauth_keyring_read(ctx, keyring, &ring2);
+    is_int(WA_ERR_NONE, s, "... and the new ring can be read from disk");
+    is_int(2, ring2->entries->nelts, "... and has two entries");
+    entry2 = &APR_ARRAY_IDX(ring2->entries, 1, struct webauth_keyring_entry);
+    is_int(entry->creation, entry2->creation, "... and creation matches");
+    is_int(entry->valid_after, entry2->valid_after, "... and valid matches");
+    ok(memcmp(entry->key->data, entry2->key->data, entry->key->length) == 0,
+       "... and key data matches");
 
     /* Clean up. */
     unlink(keyring);
