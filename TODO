@@ -69,6 +69,10 @@ Protocol:
    done after the proxy fix is complete so that we don't also have to
    modify proxy tokens.
 
+ * WEBAUTH-103: Switch to URL-safe base-64 encoding for tokens.  This
+   should be done in combination with some of the other changes for use of
+   ? in URLs as a bundle of new-format token changes.
+
 General:
 
  * WEBAUTH-34: Currently, all module errors are logged with ap_log_error.
