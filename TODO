@@ -323,9 +323,6 @@ Perl Modules:
    the WebAuth module documentation to remove all the deleted methods and
    add the new interfaces.
 
- * WEBAUTH-101: Remove all of the Exporter configuration in the WebAuth
-   module.
-
 Test Suite:
 
  * WEBAUTH-102: Add more complete tests for keyring operations, including
