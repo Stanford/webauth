@@ -109,6 +109,14 @@ RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
+dnl If we have libkeyutils, we can support tighter permissions on keyring
+dnl caches.
+KEYUTILS_LIBS=
+AC_CHECK_LIB([keyutils], [keyctl_search],
+    [KEYUTILS_LIBS=-lkeyutils
+     AC_DEFINE([HAVE_LIBKEYUTILS], [1],
+        [Define to 1 if you have the `keyutils' library (-lkeyutils).])])
+
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([strings.h sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
@@ -136,10 +144,8 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [DEPEND_LIBS="$APR_LDFLAGS $APR_LIBS $APRUTIL_LDFLAGS $APRUTIL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $REMCTL_LDFLAGS $REMCTL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
-     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS"])
+     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
 AC_SUBST([DEPEND_LIBS])
-
-AC_CHECK_LIB([keyutils], [add_key, keyctl_search, keyctl_setperm])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])

@@ -20,7 +20,7 @@
  * probably need to modify both.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -807,11 +807,11 @@ webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *context, const void *cred,
         return WA_ERR_NONE;
 }
 
+
 /*
  * Initialize a context from a passed, delegated credential, but do
  * not import the credential.
  */
-
 int
 webauth_krb5_prepare_via_cred(WEBAUTH_KRB5_CTXT *context, const void *cred,
                               size_t cred_len, const char *cache_name)
@@ -828,24 +828,18 @@ webauth_krb5_prepare_via_cred(WEBAUTH_KRB5_CTXT *context, const void *cred,
         snprintf(ccname, sizeof(ccname), "MEMORY:%p", c);
         cache_name = ccname;
     }
-
     s = cred_from_attr_encoding(c, cred, cred_len, &creds);
-
     if (s != WA_ERR_NONE)
         return s;
-
     c->code = krb5_cc_resolve(c->ctx, cache_name, &c->cc);
     if (c->code != 0)
         return WA_ERR_KRB5;
-
     c->code = krb5_copy_principal(c->ctx, creds.client, &c->princ);
     if (c->code != 0)
         return WA_ERR_KRB5;
-
     c->code = krb5_cc_initialize(c->ctx, c->cc, c->princ);
     if (c->code != 0)
         return WA_ERR_KRB5;
-
     return WA_ERR_NONE;
 }
 

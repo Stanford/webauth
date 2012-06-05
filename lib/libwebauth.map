@@ -33,7 +33,6 @@ WEBAUTH_3 {
         webauth_krb5_import_cred;
         webauth_krb5_init_via_cache;
         webauth_krb5_init_via_cred;
-        webauth_krb5_prepare_via_cred;
         webauth_krb5_init_via_keytab;
         webauth_krb5_init_via_password;
         webauth_krb5_keep_cred_cache;
@@ -80,6 +79,7 @@ WEBAUTH_4_2 {
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
+        webauth_krb5_prepare_via_cred;
         webauth_token_decode;
         webauth_token_decode_raw;
         webauth_token_encode;
