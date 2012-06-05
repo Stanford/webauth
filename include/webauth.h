@@ -518,6 +518,16 @@ int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
                                size_t cred_len, const char *cache_name);
 
 /*
+ * Initialize a context from a credential that was created via
+ * webauth_krb5_export_tgt or webauth_krb5_export_ticket, but do not import
+ * the credential.
+ *
+ * Returns WA_ERR_NONE or WA_ERR_KRB5.
+ */
+int webauth_krb5_prepare_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
+                                  size_t cred_len, const char *cache_name);
+
+/*
  * Export the TGT from the context and also store the expiration time.  This
  * is used to construct a proxy-token after a call to
  * webauth_krb5_init_via_password or webauth_krb5_init_via_tgt.  Memory

@@ -475,6 +475,12 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
         sconf->auth_type = apr_pstrdup(cmd->pool, arg);
         break;
     case E_CredCacheDir:
+#ifdef HAVE_LIBKEYUTILS
+        if (strncmp(arg, "KEYRING:", 8) == 0) {
+            sconf->cred_cache_dir = apr_pstrdup(cmd->pool, arg);
+            break;
+        }
+#endif
         sconf->cred_cache_dir = ap_server_root_relative(cmd->pool, arg);
         break;
     case E_Keyring:

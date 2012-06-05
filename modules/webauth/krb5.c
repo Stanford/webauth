@@ -20,6 +20,10 @@
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
 
+#ifdef HAVE_LIBKEYUTILS
+#include <keyutils.h>
+#endif
+
 
 static void
 log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
@@ -106,41 +110,27 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, const void *sad, size_t sad_len)
  * called when the request pool gets cleaned up
  */
 static apr_status_t
-cred_cache_destroy(void *data)
+krb5_cleanup_context(void *data)
 {
-    char *path = (char*)data;
+    WEBAUTH_KRB5_CTXT *ctxt = (WEBAUTH_KRB5_CTXT *)data;
     /*
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                 "mod_webauth: cleanup cred: %s", path);
+                 "mod_webauth: cleanup ctxt: %p", ctxt);
     */
-    if (unlink(path) == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL,
-                     "mod_webauth: cleanup cred: unlink(%s) errno(%d)",
-                     path, errno);
-    }
+    webauth_krb5_free(ctxt);
     return APR_SUCCESS;
 }
 
-
-/*
- * prepare any krb5 creds
- */
 static int
-krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
+krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 {
-    const char *mwa_func="krb5_prepare_creds";
+    const char *mwa_func="krb5_prepare_file_creds";
     WEBAUTH_KRB5_CTXT *ctxt;
     size_t i;
     int status;
     char *temp_cred_file;
     apr_file_t *fp;
     apr_status_t astatus;
-
-    if (rc->sconf->cred_cache_dir == NULL) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
-                     "mod_webauth: WebAuthCredCacheDir is not set");
-        return 0;
-    }
 
     astatus = apr_filepath_merge(&temp_cred_file,
                                  rc->sconf->cred_cache_dir,
@@ -166,7 +156,7 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
     }
 
     apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
-                              cred_cache_destroy,
+                              krb5_cleanup_context,
                               apr_pool_cleanup_null);
 
     if (rc->sconf->debug)
@@ -177,8 +167,6 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
     if (ctxt == NULL)
         return 0;
-
-    webauth_krb5_keep_cred_cache(ctxt);
 
     for (i = 0; i < (size_t) creds->nelts; i++) {
         struct webauth_token_cred *cred;
@@ -213,6 +201,130 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
     return 1;
 }
 
+#ifdef HAVE_LIBKEYUTILS
+static int
+krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
+{
+    const char *mwa_func="krb5_prepare_keyring_creds";
+    WEBAUTH_KRB5_CTXT *ctxt;
+    size_t i;
+    int status;
+    const char *kr_ccache_name;
+    key_serial_t kr_ccache = 0;
+    key_serial_t key;
+
+    kr_ccache_name = rc->sconf->cred_cache_dir;
+
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                     "mod_webauth: %s: krb5 keyring cache %s)",
+                     mwa_func, kr_ccache_name);
+
+    ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
+    if (ctxt == NULL)
+        return 0;
+
+    /* register a pool cleanup handler */
+    apr_pool_cleanup_register(rc->r->pool, ctxt,
+                              krb5_cleanup_context,
+                              apr_pool_cleanup_null);
+
+    for (i = 0; i < (size_t) creds->nelts; i++) {
+        struct webauth_token_cred *cred;
+
+        cred = APR_ARRAY_IDX(creds, i, struct webauth_token_cred *);
+
+        // sanity
+        if (strcmp(cred->type, "krb5") != 0)
+            continue;
+
+        /* In order to enforce possessor only permissions on our keyring
+         * ccache, create the keys and set permissions before krb5 fills the
+         * keys.  There is still a window between add_key and setperm where
+         * other procs can link the key to become a "possessor"..
+         */
+
+        if (kr_ccache == 0) {
+            if (rc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
+                             "mod_webauth: %s: prepare (%s) for (%s)",
+                             mwa_func, cred->service, cred->subject);
+
+            kr_ccache = add_key("keyring", (const char *)kr_ccache_name + 8,
+                                NULL, 0, KEY_SPEC_SESSION_KEYRING);
+            if (kr_ccache < 0) {
+                status = errno;
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                      "mod_webauth: %s: failed to create ccache keyring %s: %s",
+                       mwa_func, kr_ccache_name, strerror(status));
+                return 0;
+            }
+
+            keyctl_setperm(kr_ccache, KEY_POS_ALL);
+
+            status = webauth_krb5_prepare_via_cred(ctxt,
+                                                   (void *) cred->data,
+                                                   cred->data_len,
+                                                   kr_ccache_name);
+            if (status != WA_ERR_NONE) {
+                log_webauth_error(rc->r->server, status, ctxt, mwa_func,
+                                  "webauth_krb5_prepare_via_cred", NULL);
+                return 0;
+            }
+
+            key = keyctl_search(kr_ccache, "user", "__krb5_princ__", 0);
+            if (key < 0) {
+                status = errno;
+                ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                      "mod_webauth: %s: failed to find princ in keyring %d: %s",
+                       mwa_func, kr_ccache, strerror(status));
+                return 0;
+            }
+
+            keyctl_setperm(key, KEY_POS_ALL);
+         }
+
+        key = add_key("user", cred->service, "null", 4, kr_ccache);
+        if (key < 0) {
+            status = errno;
+            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                  "mod_webauth: %s: add_key failed for %s, keyring %d: %s",
+                   mwa_func, cred->service, kr_ccache, strerror(status));
+            continue;
+        }
+
+        keyctl_setperm(key, KEY_POS_ALL);
+
+        status = webauth_krb5_import_cred(ctxt, (void *) cred->data,
+                                          cred->data_len);
+        if (status != WA_ERR_NONE)
+            log_webauth_error(rc->r->server, status, ctxt, mwa_func,
+                              "webauth_krb5_import_cred", NULL);
+    }
+
+    /* set environment variable */
+    apr_table_setn(rc->r->subprocess_env, ENV_KRB5CCNAME, kr_ccache_name);
+    return 1;
+}
+#endif
+
+/*
+ * prepare any krb5 creds
+ */
+static int
+krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
+{
+    if (rc->sconf->cred_cache_dir == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                     "mod_webauth: WebAuthCredCacheDir is not set");
+        return 0;
+    }
+#ifdef HAVE_LIBKEYUTILS
+    if (strncmp(rc->sconf->cred_cache_dir, "KEYRING:", 8) == 0)
+        return krb5_prepare_keyring_creds(rc, creds);
+#endif
+    return krb5_prepare_file_creds(rc, creds);
+}
 
 static const char *
 krb5_webkdc_credential(server_rec *server,

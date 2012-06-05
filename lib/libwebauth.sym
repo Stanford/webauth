@@ -52,6 +52,7 @@ webauth_krb5_get_realm
 webauth_krb5_import_cred
 webauth_krb5_init_via_cache
 webauth_krb5_init_via_cred
+webauth_krb5_prepare_via_cred
 webauth_krb5_init_via_keytab
 webauth_krb5_init_via_password
 webauth_krb5_keep_cred_cache

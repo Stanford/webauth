@@ -139,6 +139,8 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
      DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
+AC_CHECK_LIB([keyutils], [add_key, keyctl_search, keyctl_setperm])
+
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
 AS_IF([test x"$build_perl" = xtrue],
