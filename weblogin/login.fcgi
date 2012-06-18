@@ -56,8 +56,6 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 # Main routine
 ##############################################################################
 
-# Exit safely if we get a SIGTERM.
-
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
