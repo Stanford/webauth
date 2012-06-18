@@ -81,7 +81,9 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 sub setup {
     my ($self) = @_;
 
-    # Create a WebAuth object for our API calls.
+    # Initial context.  This is used only in setup and in test cases that call
+    # underlying functions directly.  We will replace this context with a
+    # fresh one in cgiapp_prerun after receiving each query.
     $self->{webauth} = WebAuth->new;
 
     # Configure the template.
@@ -142,13 +144,15 @@ sub setup {
         if $self->param ('debug');
 }
 
-# Prerunning the application, make sure rm works if you're using GET or POST.
-# http://www.perlmonks.org/?node_id=748939
+# Hook called before processing of each query.  Make sure rm works if you're
+# using GET or POST (see <http://www.perlmonks.org/?node_id=748939>) and limit
+# the lifetime of the WebAuth context to a single run mode.
 sub cgiapp_prerun {
     my ($self) = @_;
     if (!defined $self->query->param ('rm')) {
         $self->prerun_mode ($self->query->url_param ('rm'));
     }
+    $self->{webauth} = WebAuth->new;
 }
 
 # Wrapper to help store current template settings.  We need to set template
