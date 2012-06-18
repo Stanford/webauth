@@ -4,13 +4,16 @@ WebAuth 4.2.0 (unreleased)
 
     Port to Apache 2.4 (tested with Apache 2.4.1).
 
+    Support for AuthType StanfordAuth has been deprecated and will be
+    removed from mod_webauth and mod_webauthldap in a subsequent release.
+
     Support for AuthType StanfordAuth in mod_webauthldap is not available
     when built with Apache 2.4.  This includes treating "require group"
     directives where the group contains a colon as "require privgroup" and
     setting the SU_AUTH_DIRMAIL, SU_AUTH_DIRNAME, and SU_AUTH_UNIVID
-    environment variables.  This behavior is still supported for now when
-    built with Apache 2.2 or earlier, but is deprecated and will be
-    removed for all versions of Apache in a later release.
+    environment variables.  This behavior is currently still supported for
+    now when built with Apache 2.2 or earlier, but is deprecated as
+    mentioned above.
 
     Support Kerberos keyring ticket caches for passing delegated
     credentials from mod_webauth to CGI and embedded code.  Set possessor

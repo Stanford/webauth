@@ -2058,6 +2058,10 @@ check_user_id_hook(request_rec *r)
     }
 
     if (strcmp(at, "StanfordAuth") == 0) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+                     "AuthType StanfordAuth (URL: %s) is deprecated and"
+                     " will be removed in a subsequent release",
+                     r->uri == NULL ? "UNKNOWN" : r->uri);
         mwa_setenv(&rc, "SU_AUTH_USER", r->user);
         if (rc.at != NULL && rc.at->creation > 0) {
             time_t age = time(NULL) - rc.at->creation;
