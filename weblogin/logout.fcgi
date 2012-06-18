@@ -9,7 +9,7 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jeanmarie Lucker <jlucker@stanford.edu>
-# Copyright 2002, 2003, 2004
+# Copyright 2002, 2003, 2004, 2009, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -32,7 +32,6 @@ our %PAGES = (login    => 'login.tmpl',
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
 while (my $q = new CGI::Fast) {
-    # Could try $weblogin->start_mode ('logout'); if following doesn't work.
     $q->param ('rm', 'logout') unless defined $q->param ('rm');
     my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
                                   QUERY  => $q);
