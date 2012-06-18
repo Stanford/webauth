@@ -24,6 +24,11 @@ WebAuth 4.2.0 (unreleased)
     Fix merging of mod_webkdc Apache directives in some corner cases where
     the directive has a default value or is explicitly set to off.
 
+    WebLogin now only sets a SIGTERM handler to defer exit while
+    processing a request.  This will hopefully fix orphaned login.fcgi
+    processes due to SIGTERM arriving while waiting in the FastCGI listen
+    loop and then never being woken up again.
+
     The WebAuth Perl module API now requires creating a WebAuth object
     first and passing that object as the first argument to all other
     functions except the krb5_* functions.  This is the first step in
