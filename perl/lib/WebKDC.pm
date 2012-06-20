@@ -14,6 +14,7 @@ use warnings;
 use LWP::UserAgent;
 
 use WebAuth qw(3.00 :const :krb5);
+use WebAuth::Keyring ();
 use WebKDC::Config;
 use WebKDC::WebRequest;
 use WebKDC::WebResponse;
@@ -39,8 +40,6 @@ BEGIN {
 our @EXPORT_OK;
 
 our $DEBUG = 1;
-
-our $our_keyring = undef;
 
 # Map protocol error codes to the error codes that we're going to use internal
 # to the WebLogin code and other WebKDC::* modules.
@@ -75,12 +74,9 @@ our %pec_mapping = (
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
 );
 
-sub get_keyring {
-    if (!defined($our_keyring)) {
-	$our_keyring =
-            WebAuth::Keyring->read_file($WebKDC::Config::KEYRING_PATH);
-    }
-    return $our_keyring;
+sub get_keyring($) {
+    my ($wa) = @_;
+    return WebAuth::Keyring->read ($wa, $WebKDC::Config::KEYRING_PATH);
 }
 
 sub get_child_value {
@@ -222,7 +218,7 @@ sub request_token_request($$) {
         } else {
             $login_token->password($pass);
         }
-        my $login_token_str = $login_token->encode(get_keyring());
+        my $login_token_str = $login_token->encode(get_keyring($wa));
         $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
     }
     if (defined($proxy_cookies)) {
