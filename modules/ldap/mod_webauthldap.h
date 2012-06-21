@@ -12,6 +12,7 @@
 #define MOD_WEBAUTHLDAP_H
 
 #include <config-mod.h>
+#include <portable/stdbool.h>
 
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
@@ -19,8 +20,15 @@
 # include <stdint.h>
 #endif
 
-#include <apr_tables.h>
+#include <apr_tables.h>         /* apr_array_header_t */
 #include <apr_thread_mutex.h>
+#include <httpd.h>              /* server_rec, request_rec, command_rec */
+
+/* The module initialization struct, used to retrieve configuration. */
+extern module webauthldap_module;
+
+/* Command table provided by the configuration handling code. */
+extern const command_rec webauthldap_cmds[];
 
 /* constants */
 #define MAX_ENV_VALUES 128
@@ -28,75 +36,10 @@
 #define PRIVGROUP_DIRECTIVE "privgroup"
 #define DN_ATTRIBUTE "dn"
 #define MAX_LDAP_CONN 16
+#define FILTER_MATCH "USER"
 
 /* environment variables */
 #define ENV_KRB5_TICKET "KRB5CCNAME"
-
-/* defines for config directives */
-#define CD_Base "WebAuthLdapBase"
-#define CM_Base "Search base for LDAP lookup"
-
-#define CD_Binddn "WebAuthLdapBindDN"
-#define CM_Binddn "bind DN for the LDAP connection"
-
-#define CD_Debug "WebAuthLdapDebug"
-#define CM_Debug "Turn ldap module debugging on or off"
-#define DF_Debug 0
-
-#define CD_Filter_templ "WebAuthLdapFilter"
-#define CM_Filter_templ "ldap search filter to use"
-#define DF_Filter_templ "uid=USER"
-#define FILTER_MATCH "USER"
-
-#define CD_Privgroupattr "WebAuthLdapAuthorizationAttribute"
-#define CM_Privgroupattr "ldap attribute to use for privilege groups"
-
-#define CD_Attribs "WebAuthLdapAttribute"
-#define CM_Attribs "additional ldap attributes to place into the environment"
-
-#define CD_Privgroups "WebAuthLdapPrivgroup"
-#define CM_Privgroups "additional privilege groups to check membership in"
-
-#define CD_Host "WebAuthLdapHost"
-#define CM_Host "LDAP Host for LDAP lookup"
-
-#define CD_Keytab "WebAuthLdapKeytab"
-#define CM_Keytab "keytab and the principal to bind as"
-
-#define CD_Separator "WebAuthLdapSeparator"
-#define CM_Separator "separator for multivalued attributes"
-
-#define CD_Tktcache "WebAuthLdapTktCache"
-#define CM_Tktcache "K5 ticket cache for ldap"
-
-#define CD_Port "WebAuthLdapPort"
-#define CM_Port "ldap port to bind to"
-#define DF_Port "0"
-
-#define CD_SSL "WebAuthLdapSSL"
-#define CM_SSL "use ssl or not"
-#define DF_SSL 0
-
-#define CD_Authrule "WebAuthLdapAuthrule"
-#define CM_Authrule "display the rule used to authorize user"
-#define DF_Authrule 1
-
-enum {
-    E_Attribs,
-    E_Authrule,
-    E_Base,
-    E_Binddn,
-    E_Debug,
-    E_Filter_templ,
-    E_Host,
-    E_Keytab,
-    E_Port,
-    E_Privgroupattr,
-    E_Privgroups,
-    E_Separator,
-    E_SSL,
-    E_Tktcache
-};
 
 /* defaults struct passed to SASL */
 typedef struct {
@@ -107,50 +50,57 @@ typedef struct {
     char *authzid;
 } MWAL_SASL_DEFAULTS;
 
+/*
+ * Server configuration.  For parameters where there's no obvious designated
+ * value for when the directive hasn't been set, there's a corresponding _set
+ * variable that holds whether that directive is set in a particular scope.
+ */
+struct server_config {
+    const char *auth_attr;
+    bool authrule;
+    const char *base;
+    const char *binddn;
+    bool debug;
+    const char *filter;
+    const char *host;
+    const char *keytab_path;
+    const char *keytab_principal;
+    unsigned long port;
+    const char *separator;
+    bool ssl;
+    const char *tktcache;
 
-/* server conf stuff */
-typedef struct {
+    /* Only used during configuration merging. */
+    bool authrule_set;
+    bool debug_set;
+    bool filter_set;
+    bool ssl_set;
 
-    char *base;
-    char *binddn;           /* not used with the Stanford openldap server */
-    int   debug;
-    const char *filter_templ;
-    int   filter_templ_ex;
-    char *host;
-    char *keytab;
-    const char *port;
-    int   port_ex;
-    char *principal;
-    char *privgroupattr;
-    char *separator;
-    int   set_authrule;
-    int   set_authrule_ex;
-    int   ssl;
-    char *tktcache;
+    /*
+     * These aren't part of the Apache configuration, but they are loaded as
+     * part of reading the configuration, are global to the module, and need
+     * to be reset when the module is reloaded, so we store them here.
+     */
     int ldapversion;
     int scope;
-
     int ldcount;
     apr_array_header_t *ldarray;
     apr_thread_mutex_t *ldmutex;
     apr_thread_mutex_t *totalmutex;
+};
 
-} MWAL_SCONF;
-
-
-/* directory conf stuff - looks like nothing so far*/
-typedef struct {
-    apr_array_header_t *attribs;
-    apr_array_header_t *privgroups;
-} MWAL_DCONF;
-
+/* The same, but for the directory configuration. */
+struct dir_config {
+    apr_array_header_t *attribs;        /* Array of const char * */
+    apr_array_header_t *privgroups;     /* Array of const char * */
+};
 
 /* Used for passing things around */
 typedef struct {
     request_rec *r; /* apache request struct */
 
-    MWAL_SCONF *sconf;
-    MWAL_DCONF *dconf;
+    struct server_config *sconf;
+    struct dir_config *dconf;
 
     apr_table_t **entries;  /* retrieved ldap entries */
     size_t numEntries;
@@ -174,5 +124,18 @@ typedef struct {
                                 privgroup names; values should be "TRUE" or
                                 "FALSE" */
 } MWAL_LDAP_CTXT;
+
+/* config.c */
+
+/* Create a new server or directory configuration, used in the module hooks. */
+void *mwl_dir_config_create(apr_pool_t *, char *path);
+void *mwl_server_config_create(apr_pool_t *, server_rec *s);
+
+/* Merge two server or directory configurations, used in the module hooks. */
+void *mwl_dir_config_merge(apr_pool_t *, void *, void *);
+void *mwl_server_config_merge(apr_pool_t *, void *, void *);
+
+/* Perform final checks on the configuration (called from post_config hook). */
+void mwl_config_init(server_rec *, struct server_config *, apr_pool_t *);
 
 #endif

@@ -41,39 +41,6 @@
 
 module AP_MODULE_DECLARE_DATA webauthldap_module;
 
-/**
- *  Stolen from mod_webauth
- */
-static int
-die(const char *message, server_rec *s)
-{
-    if (s) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "webauthldap: fatal error: %s", message);
-    }
-    printf("webauthldap: fatal error: %s\n", message);
-    exit(1);
-}
-
-/**
- *  Stolen from mod_webauth
- */
-static void
-die_directive(server_rec *s, const char *dir, apr_pool_t *ptemp)
-{
-    char *msg;
-
-    if (s->is_virtual) {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set for virtual host %s:%d",
-                          dir, s->defn_name, s->defn_line_number);
-    } else {
-        msg = apr_psprintf(ptemp,
-                          "directive %s must be set in main config",
-                          dir);
-    }
-    die(msg, s);
-}
 
 /**
  * This gets called by SASL to handle the user "auth interaction", like
@@ -87,369 +54,28 @@ sasl_interact_stub(LDAP *ld UNUSED, unsigned flags UNUSED,
     return LDAP_SUCCESS;
 }
 
-/**
- * Standard conf directive parser for strings
- */
-static const char *
-cfg_str(cmd_parms * cmd, void *mconf UNUSED, const char *arg)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-    /* MWAL_DCONF *dconf = (MWAL_DCONF *) mconf; */
-
-    MWAL_SCONF *sconf = (MWAL_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauthldap_module);
-
-    switch (e) {
-        /* server configs */
-    case E_Host:
-        sconf->host = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Base:
-        sconf->base = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Binddn:
-        sconf->binddn = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Filter_templ:
-        sconf->filter_templ = apr_pstrdup(cmd->pool, arg);
-        sconf->filter_templ_ex = 1;
-        break;
-    case E_Port:
-        sconf->port = apr_pstrdup(cmd->pool, arg);
-        sconf->port_ex = 1;
-        break;
-    case E_Privgroupattr:
-        sconf->privgroupattr = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Separator:
-        sconf->separator = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Tktcache:
-        sconf->tktcache = ap_server_root_relative(cmd->pool, arg);
-        break;
-
-    default:
-        error_str =
-            apr_psprintf(cmd->pool,
-                         "Invalid value cmd->info(%d) for directive %s",
-                         (int) e, cmd->directive->directive);
-        break;
-
-    }
-    return error_str;
-}
-
-/**
- * Standard conf directive parser for flags
- */
-static const char *
-cfg_flag(cmd_parms * cmd, void *mconfig UNUSED, int flag)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-    /* MWAL_DCONF *dconf = (MWAL_DCONF *) mconfig; */
-
-    MWAL_SCONF *sconf = (MWAL_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauthldap_module);
-
-    switch (e) {
-        /* server configs */
-    case E_SSL:
-        sconf->ssl = flag;
-        break;
-    case E_Debug:
-        sconf->debug = flag;
-        break;
-    case E_Authrule:
-        sconf->set_authrule = flag;
-        sconf->set_authrule_ex = 1;
-        break;
-    default:
-        error_str =
-            apr_psprintf(cmd->pool,
-                         "Invalid value cmd->info(%d) for directive %s",
-                         (int) e, cmd->directive->directive);
-        break;
-
-    }
-    return error_str;
-}
-
-/**
- * Standard conf directive parser for multiple string values
- */
-static const char *
-cfg_multistr(cmd_parms * cmd, void *mconf, const char *arg)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-    MWAL_DCONF *dconf = (MWAL_DCONF *) mconf;
-    char** attrib, **privgroup;
-
-    switch (e) {
-        /* server configs */
-    case E_Attribs:
-        if (dconf->attribs == NULL) {
-            dconf->attribs = apr_array_make(cmd->pool, 5, sizeof(char*));
-        }
-        attrib = apr_array_push(dconf->attribs);
-        *attrib = apr_pstrdup(cmd->pool, arg);
-        break;
-    case E_Privgroups:
-        if (dconf->privgroups == NULL) {
-            dconf->privgroups = apr_array_make(cmd->pool, 5, sizeof(char*));
-        }
-        privgroup = apr_array_push(dconf->privgroups);
-        *privgroup = apr_pstrdup(cmd->pool, arg);
-        break;
-    default:
-        error_str =
-            apr_psprintf(cmd->pool,
-                         "Invalid value cmd->info(%d) for directive %s",
-                         (int) e, cmd->directive->directive);
-        break;
-
-    }
-    return error_str;
-}
-
-static const char *
-cfg_take12(cmd_parms *cmd, void *mconfig UNUSED, const char *w1,
-           const char *w2)
-{
-    intptr_t e = (intptr_t) cmd->info;
-    char *error_str = NULL;
-
-    MWAL_SCONF *sconf = (MWAL_SCONF *)
-        ap_get_module_config(cmd->server->module_config, &webauthldap_module);
-
-    switch (e) {
-        /* server configs */
-        case E_Keytab:
-            sconf->keytab = ap_server_root_relative(cmd->pool, w1);
-            sconf->principal= (w2 != NULL) ? apr_pstrdup(cmd->pool, w2) : NULL;
-            break;
-        default:
-            error_str =
-                apr_psprintf(cmd->pool,
-                             "Invalid value cmd->info(%d) for directive %s",
-                             (int) e, cmd->directive->directive);
-            break;
-    }
-    return error_str;
-}
-
-
-#define SSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_str,(void*)mconfig, RSRC_CONF, TAKE1, help}
-
-#define SSTR12(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_take12,(void*)mconfig, RSRC_CONF, TAKE12, help}
-
-#define SFLAG(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_flag,(void*)mconfig, RSRC_CONF, FLAG, help}
-
-#define ADSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_str,(void*)mconfig, ACCESS_CONF, TAKE1, help}
-
-#define ADFLAG(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_flag,(void*)mconfig, ACCESS_CONF, FLAG, help}
-
-#define DITSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_multistr,(void*)mconfig, OR_AUTHCFG, ITERATE, help}
-
-#define SITSTR(dir,mconfig,help) \
-  {dir, (cmd_func)cfg_multistr,(void*)mconfig, RSRC_CONF, TAKE1, help}
-
-static const command_rec cmds[] = {
-    /* server/vhost */
-    SSTR(CD_Host, E_Host, CM_Host),
-    SSTR(CD_Base, E_Base, CM_Base),
-    SSTR(CD_Binddn, E_Binddn, CM_Binddn),
-    SSTR(CD_Filter_templ, E_Filter_templ, CM_Filter_templ),
-    SSTR12(CD_Keytab, E_Keytab, CM_Keytab),
-    SSTR(CD_Tktcache, E_Tktcache, CM_Tktcache),
-    SSTR(CD_Port, E_Port, CM_Port),
-    SSTR(CD_Privgroupattr, E_Privgroupattr, CM_Privgroupattr),
-    SSTR(CD_Separator, E_Separator, CM_Separator),
-
-    SFLAG(CD_SSL, E_SSL, CM_SSL),
-    SFLAG(CD_Debug, E_Debug, CM_Debug),
-    SFLAG(CD_Authrule, E_Authrule, CM_Authrule),
-
-    DITSTR(CD_Attribs, E_Attribs, CM_Attribs),
-    DITSTR(CD_Privgroups, E_Privgroups, CM_Privgroups),
-    { NULL, { NULL }, NULL, 0, 0, NULL }
-};
-
-#undef SSTR
-#undef SFLAG
-#undef ADSTR
-#undef ADFLAG
-#undef DITSTR
-#undef SITSTR
-
-
-/**
- * Handler for creating a server conf structure
- */
-static void *
-config_server_create(apr_pool_t * p, server_rec * s UNUSED)
-{
-    MWAL_SCONF *sconf;
-
-    sconf = (MWAL_SCONF *) apr_pcalloc(p, sizeof(MWAL_SCONF));
-
-    /* init defaults */
-
-    sconf->debug = DF_Debug;
-    sconf->filter_templ = DF_Filter_templ;
-    sconf->port = DF_Port;
-    sconf->ssl = DF_SSL;
-    sconf->set_authrule = DF_Authrule;
-
-    return (void *)sconf;
-}
-
-/**
- * Handler for creating a per-directory conf structure
- */
-static void *
-config_dir_create(apr_pool_t * p, char *path UNUSED)
-{
-    MWAL_DCONF *dconf;
-    dconf = (MWAL_DCONF *) apr_pcalloc(p, sizeof(MWAL_DCONF));
-    /* init defaults */
-
-    return (void *)dconf;
-}
-
-
-#define MERGE(field) \
-    conf->field = oconf->field ? oconf->field : bconf->field
-
-/**
- * Handler for merging server conf structures
- */
-static void *
-config_server_merge(apr_pool_t *p, void *basev, void *overv)
-{
-    MWAL_SCONF *conf, *bconf, *oconf;
-
-    conf = (MWAL_SCONF*) apr_pcalloc(p, sizeof(MWAL_SCONF));
-    bconf = (MWAL_SCONF*) basev;
-    oconf = (MWAL_SCONF*) overv;
-
-    MERGE(base);
-    MERGE(binddn);
-    MERGE(debug);
-    conf->filter_templ = oconf->filter_templ_ex ?
-        oconf->filter_templ : bconf->filter_templ;
-    conf->filter_templ_ex = oconf->filter_templ_ex || bconf->filter_templ_ex;
-    MERGE(host);
-    MERGE(keytab);
-    conf->port = oconf->port_ex ? oconf->port : bconf->port;
-    conf->port_ex = oconf->port_ex || bconf->port_ex;
-    MERGE(principal);
-    MERGE(privgroupattr);
-    MERGE(tktcache);
-    MERGE(ssl);
-    MERGE(separator);
-    conf->set_authrule = oconf->set_authrule_ex ?
-        oconf->set_authrule : bconf->set_authrule;
-    conf->set_authrule_ex = oconf->set_authrule_ex || bconf->set_authrule_ex;
-
-    return (void *)conf;
-}
-
-/**
- * Handler for merging per-directory conf structures
- */
-static void *
-config_dir_merge(apr_pool_t *p, void *basev, void *overv)
-{
-    MWAL_DCONF *conf, *bconf, *oconf;
-
-    conf = (MWAL_DCONF*) apr_pcalloc(p, sizeof(MWAL_DCONF));
-    bconf = (MWAL_DCONF*) basev;
-    oconf = (MWAL_DCONF*) overv;
-
-    if (bconf->attribs == NULL) {
-        conf->attribs = oconf->attribs;
-    } else if (oconf->attribs == NULL) {
-        conf->attribs = bconf->attribs;
-    } else {
-        /* dups here are OK */
-        conf->attribs = apr_array_append(p, bconf->attribs, oconf->attribs);
-    }
-
-    if (bconf->privgroups == NULL) {
-        conf->privgroups = oconf->privgroups;
-    } else if (oconf->privgroups == NULL) {
-        conf->privgroups = bconf->privgroups;
-    } else {
-        /* dups here are OK */
-        conf->privgroups = apr_array_append(p, bconf->privgroups, oconf->privgroups);
-    }
-
-    return (void *)conf;
-}
-
-#undef MERGE
-
 
 /**
  * Called during server startup to initialize this module.
  */
 static int
 post_config_hook(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
-                 apr_pool_t *ptemp, server_rec *s)
+                 apr_pool_t *ptemp UNUSED, server_rec *s)
 {
     server_rec *scheck;
-    MWAL_SCONF *sconf;
+    struct server_config *sconf;
     char *tktenv;
-    char *tktcache = NULL;
+    const char *tktcache = NULL;
     size_t size;
 
-    for (scheck=s; scheck; scheck=scheck->next) {
-        sconf = (MWAL_SCONF*)ap_get_module_config(scheck->module_config,
-                                                  &webauthldap_module);
-        /* These all must be non-null: */
-#define NULCHECK(val, label) \
-    if (val == NULL) die_directive(scheck, label, ptemp);
+    sconf = ap_get_module_config(s->module_config, &webauthldap_module);
+    for (scheck = s; scheck != NULL; scheck = scheck->next) {
+        mwl_config_init(scheck, sconf, pconf);
 
-        NULCHECK(sconf->keytab, CD_Keytab);
-        NULCHECK(sconf->tktcache, CD_Tktcache);
-        NULCHECK(sconf->host, CD_Host);
-        NULCHECK(sconf->base, CD_Base);
-        NULCHECK(sconf->privgroupattr, CD_Privgroupattr);
-#undef NULCHECK
-
-        /* Global settings */
-        sconf->ldapversion = LDAP_VERSION3;
-        sconf->scope = LDAP_SCOPE_SUBTREE;
-
-        /* Mutex for storing ldap connections */
-        if (sconf->ldmutex == NULL) {
-            apr_thread_mutex_create(&sconf->ldmutex,
-                                    APR_THREAD_MUTEX_DEFAULT,
-                                    pconf);
-        }
-
-        if (sconf->totalmutex == NULL) {
-            apr_thread_mutex_create(&sconf->totalmutex,
-                                    APR_THREAD_MUTEX_DEFAULT,
-                                    pconf);
-        }
-
-        if (sconf->ldarray == NULL) {
-            sconf->ldcount = 0;
-            sconf->ldarray = apr_array_make(pconf, 10, sizeof(LDAP *));
-        }
-
-        /* This has to be the same for all server configuration.  For the sake
-           of convenience, grab the last one. */
+        /*
+         * This has to be the same for all server configuration.  For the sake
+         * of convenience, grab the last one.
+         */
         tktcache = sconf->tktcache;
     }
 
@@ -478,6 +104,8 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
 
     return OK;
 }
+
+
 /**
  * This inserts the userid in every marked spot in the filter string. So
  * e.g. if the marker is the string "USER", a filter like
@@ -487,15 +115,14 @@ post_config_hook(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
  * @return new filter string with userid substituted
  */
 static char *
-webauthldap_make_filter(MWAL_LDAP_CTXT* lc)
+webauthldap_make_filter(MWAL_LDAP_CTXT *lc)
 {
     apr_pool_t * p = lc->r->pool;
-    char* userid = lc->r->user;
-    char* filter_template = apr_pstrdup(lc->r->pool, lc->sconf->filter_templ);
-    char* beg = filter_template;
-    char* end = filter_template;
-    char* filter = NULL;
-
+    char *userid = lc->r->user;
+    char *filter_template = apr_pstrdup(lc->r->pool, lc->sconf->filter);
+    char *beg = filter_template;
+    char *end = filter_template;
+    char *filter = NULL;
     int match_length = strlen(FILTER_MATCH);
 
     if (lc->sconf->debug)
@@ -547,7 +174,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_error_code code;
     char *kt, *cc_path;
 
-    kt = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->keytab, NULL);
+    kt = apr_pstrcat(lc->r->pool, "FILE:", lc->sconf->keytab_path, NULL);
 
     /* initialize the main struct that holds kerberos context */
     if ((code = krb5_init_context(&ctx)) != 0)
@@ -559,8 +186,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     /* if the principal has been specified via directives, use it,
        otherwise just read the first entry out of the keytab. */
-    if (lc->sconf->principal) {
-        code = krb5_parse_name(ctx, lc->sconf->principal, &princ);
+    if (lc->sconf->keytab_principal) {
+        code = krb5_parse_name(ctx, lc->sconf->keytab_principal, &princ);
     } else {
         if ((code = krb5_kt_start_seq_get(ctx, keytab, &cursor)) != 0) {
             krb5_kt_close(ctx, keytab);
@@ -647,7 +274,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
 
     /* These come with defaults: */
     lc->filter = webauthldap_make_filter(lc);
-    lc->port = atoi(lc->sconf->port);
+    lc->port = lc->sconf->port;
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
@@ -717,7 +344,7 @@ webauthldap_bind(MWAL_LDAP_CTXT* lc, int print_local_error)
     /* Initialize the connection */
     memset(&url, 0, sizeof(url));
     url.lud_scheme = (char *) "ldap";
-    url.lud_host = lc->sconf->host;
+    url.lud_host = (char *) lc->sconf->host;
     url.lud_port = lc->port;
     url.lud_scope = LDAP_SCOPE_DEFAULT;
     ldapuri = ldap_url_desc2str(&url);
@@ -838,25 +465,25 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
                          "webauthldap(%s): getting new ticket", lc->r->user);
 
         /* so let's get a new ticket */
-        if (stat(lc->sconf->keytab, &keytab_stat) < 0) {
+        if (stat(lc->sconf->keytab_path, &keytab_stat) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): cannot stat the keytab: %s %s (%d)",
                          lc->r->user,
-                         lc->sconf->keytab, strerror(errno), errno);
+                         lc->sconf->keytab_path, strerror(errno), errno);
             return -1;
         }
 
-        if ((fd = open(lc->sconf->keytab, O_RDONLY, 0)) < 0) {
+        if ((fd = open(lc->sconf->keytab_path, O_RDONLY, 0)) < 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                          "webauthldap(%s): cannot read the keytab %s: %s (%d)",
-                         lc->r->user, lc->sconf->keytab,
+                         lc->r->user, lc->sconf->keytab_path,
                          strerror(errno), errno);
             close(fd);
             return -1;
         }
         close(fd);
 
-        princ_specified = lc->sconf->principal? 1:0;
+        princ_specified = lc->sconf->keytab_principal? 1:0;
 
         rc = webauthldap_get_ticket(lc);
 
@@ -865,13 +492,13 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                              "webauthldap(%s): cannot get ticket: %s %s %s",
                              lc->r->user, "check if the keytab",
-                             lc->sconf->keytab,
+                             lc->sconf->keytab_path,
                              "is valid for the specified principal");
             else
                 ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
                              "webauthldap(%s): cannot get ticket: %s %s %s",
                              lc->r->user, "check if the keytab",
-                             lc->sconf->keytab,
+                             lc->sconf->keytab_path,
                              "is valid and only contains the right principal");
 
             return -1;
@@ -1004,7 +631,7 @@ webauthldap_parse_entry(MWAL_LDAP_CTXT* lc, LDAPMessage * entry, apr_table_t * a
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
                          "webauthldap(%s): got attrib: %s", lc->r->user, a);
 
-        is_privgroupattr = !strcasecmp(a, lc->sconf->privgroupattr);
+        is_privgroupattr = !strcasecmp(a, lc->sconf->auth_attr);
 
         if ((bvals = ldap_get_values_len(lc->ld, entry, a)) != NULL) {
             for (i = 0; bvals[i] != NULL; i++) {
@@ -1112,11 +739,11 @@ webauthldap_docompare(MWAL_LDAP_CTXT* lc, const char* value)
 {
     int rc;
     size_t i;
-    char* dn, *attr;
-    const char *cached;
+    char *dn;
+    const char *attr, *cached;
     struct berval bvalue = { 0, NULL };
 
-    attr = lc->sconf->privgroupattr;
+    attr = lc->sconf->auth_attr;
 
     /* Return cached result if we've performed this comparison already */
     if ((cached = apr_table_get(lc->privgroup_cache, value)) != NULL) {
@@ -1858,7 +1485,7 @@ fixups_hook(request_rec *r)
     }
 
     /* Set the rule that caused authorization to succeed, if desired. */
-    if (lc->sconf->set_authrule && lc->authrule != NULL)
+    if (lc->sconf->authrule && lc->authrule != NULL)
         apr_table_set(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE",
                       lc->authrule);
 
@@ -1923,22 +1550,14 @@ webauthldap_register_hooks(apr_pool_t *p UNUSED)
     ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
+
 /* Dispatch list for API hooks */
 module AP_MODULE_DECLARE_DATA webauthldap_module = {
     STANDARD20_MODULE_STUFF,
-    config_dir_create,               /* create per-dir config structures */
-    config_dir_merge,                /* merge  per-dir    config structures */
-    config_server_create,            /* create per-server config structures */
-    config_server_merge,             /* merge  per-server config structures */
-    cmds,                            /* table of config file commands */
-    webauthldap_register_hooks       /* register hooks */
+    mwl_dir_config_create,      /* create per-dir    config structures */
+    mwl_dir_config_merge,       /* merge  per-dir    config structures */
+    mwl_server_config_create,   /* create per-server config structures */
+    mwl_server_config_merge,    /* merge  per-server config structures */
+    webauthldap_cmds,           /* table of config file commands       */
+    webauthldap_register_hooks  /* register hooks                      */
 };
-
-
-/*
-** Local variables:
-** mode: c
-** c-basic-offset: 4
-** indent-tabs-mode: nil
-** end:
-*/

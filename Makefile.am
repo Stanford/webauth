@@ -112,8 +112,8 @@ if BUILD_WEBKDC
     apache_LTLIBRARIES += modules/webkdc/mod_webkdc.la
 endif
 
-modules_ldap_mod_webauthldap_la_SOURCES = modules/ldap/mod_webauthldap.c \
-	modules/ldap/mod_webauthldap.h
+modules_ldap_mod_webauthldap_la_SOURCES = modules/ldap/config.c		\
+	modules/ldap/mod_webauthldap.c modules/ldap/mod_webauthldap.h
 modules_ldap_mod_webauthldap_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS) \
 	$(KRB5_CPPFLAGS) $(LDAP_CPPFLAGS)
 modules_ldap_mod_webauthldap_la_LDFLAGS = -module -shared -avoid-version \
