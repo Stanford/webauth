@@ -99,6 +99,15 @@ SADIRN(ReturnURL,   "mapped to WebAuthReturnURL")
 #endif /* !NO_STANFORD_SUPPORT */
 
 enum {
+#ifndef NO_STANFORD_SUPPORT
+    SE_ConfirmMsg,
+    SE_DoConfirm,
+    SE_DontCache,
+    SE_ForceReload,
+    SE_Groups,
+    SE_Life,
+    SE_ReturnURL,
+#endif
     E_AppTokenLifetime,
     E_AuthType,
     E_Cred,
@@ -136,16 +145,7 @@ enum {
     E_WebKdcPrincipal,
     E_WebKdcSSLCertCheck,
     E_WebKdcSSLCertFile,
-    E_WebKdcURL,
-#ifndef NO_STANFORD_SUPPORT
-    SE_ConfirmMsg,
-    SE_DoConfirm,
-    SE_DontCache,
-    SE_ForceReload,
-    SE_Groups,
-    SE_Life,
-    SE_ReturnURL,
-#endif
+    E_WebKdcURL
 };
 
 /*
@@ -174,7 +174,6 @@ enum {
 #define MERGE_SET(field)                                                \
     conf->field = (oconf->field ## _set) ? oconf->field : bconf->field; \
     conf->field ## _set = oconf->field ## _set || bconf->field ## _set
-        
 
 /*
  * Macro used for checking if a directive is set.  Takes the struct attribute,
