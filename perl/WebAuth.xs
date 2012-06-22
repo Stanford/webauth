@@ -416,6 +416,10 @@ BOOT:
     IV_CONST(WA_AES_128);
     IV_CONST(WA_AES_192);
     IV_CONST(WA_AES_256);
+
+    /* Key usages. */
+    IV_CONST(WA_KEY_DECRYPT);
+    IV_CONST(WA_KEY_ENCRYPT);
 }
 
 
