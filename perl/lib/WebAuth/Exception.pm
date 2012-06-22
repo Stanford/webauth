@@ -99,7 +99,7 @@ WebAuth::Exception - Rich exception for errors from WebAuth API methods
 =head1 DESCRIPTION
 
 All WebAuth methods, and most methods in WebAuth::Key, WebAuth::Keyring,
-WebAuth::Keyring::Entry, and WebAuth::Token::* classes, will throw an
+WebAuth::KeyringEntry, and WebAuth::Token::* classes, will throw an
 exception on error.  Exceptions produced by the underlying C API call will
 be represented by a WebAuth::Exception object.
 

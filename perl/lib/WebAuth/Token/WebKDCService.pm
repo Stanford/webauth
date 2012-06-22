@@ -26,3 +26,97 @@ sub creation    ($;$) { my $t = shift; $t->_attr ('creation',    @_) }
 sub expiration  ($;$) { my $t = shift; $t->_attr ('expiration',  @_) }
 
 1;
+
+__END__
+
+=head1 NAME
+
+WebAuth::Token::WebKDCService - WebAuth webkdc-service tokens
+
+=head1 SYNOPSIS
+
+    my $token = WebAuth::Token::WebKDCService->new;
+    $token->subject ('user');
+    $token->session_key ($key);
+    $token->expiration (time + 3600);
+    print $token->encode ($keyring), "\n";
+
+=head1 DESCRIPTION
+
+A WebAuth webkdc-service token, sent by the WebKDC to a WAS and returned
+by the WAS to the WebKDC as part of the request token.  The purpose of
+this token is to store the session key used for encrypting the request
+token and its responses.  It's encrypted in the WebKDC's long-term key,
+and is therefore used by the WebKDC to recover the session key without
+having local state.
+
+=head1 CLASS METHODS
+
+=over 4
+
+=item new ()
+
+Create a new, empty WebAuth::Token::WebKDCService.  At least some
+attributes will have to be set using the accessor methods described below
+before the token can be used.
+
+=back
+
+=head1 INSTANCE METHODS
+
+As with WebAuth module functions, failures are signalled by throwing
+WebAuth::Exception rather than by return status.
+
+=head1 General Methods
+
+=over 4
+
+=item encode (KEYRING)
+
+Generate the encoded and encrypted form of this token using the provided
+KEYRING.  The encryption key used will be the one returned by the
+best_key() method of WebAuth::Keyring on that KEYRING.
+
+=back
+
+=head1 Accessor Methods
+
+=over 4
+
+=item subject ([SUBJECT])
+
+Get or set the subject, which holds the authenticated identity of the
+bearer of this token.  This will normally be C<krb5:> followed by the
+fully-qualified Kerberos principal of the WebAuth Application Server that
+requested this token.
+
+=item session_key ([KEY])
+
+Get or set the session key, which will be used for encrypted communication
+with the entity presenting this token.  This contains only the raw key
+data, not a full WebAuth::Key object.
+
+=item creation ([TIMESTAMP])
+
+Get or set the creation timestamp for this token in seconds since epoch.
+If not set, the encoded token will have a creation time set to the time
+of encoding.
+
+=item expiration ([TIMESTAMP])
+
+Get or set the expiration timestamp for this token in seconds since epoch.
+
+=back
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 SEE ALSO
+
+WebAuth(3), WebAuth::Keyring(3), WebAuth::Token(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut

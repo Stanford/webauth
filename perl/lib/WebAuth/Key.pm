@@ -45,3 +45,93 @@ sub new ($$$$;$) {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+WebAuth::Key - WebAuth encryption and decryption key
+
+=head1 SYNOPSIS
+
+    use WebAuth qw(WA_KEY_AES WA_AES_128);
+    use WebAuth::Key;
+
+    my $wa = WebAuth->new;
+    eval {
+        $key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
+        ...
+    };
+    if ($@) {
+        # handle exception
+    }
+
+=head1 DESCRIPTION
+
+A WebAuth::Key object represents a single WebAuth key, which can be used
+for encryption or decryption.  Keys are normally stored in
+WebAuth::Keyring objects, and token encoding and decoding requires a
+keyring rather than a key.
+
+To convert a key to a keyring, see the WebAuth keyring_new() method or
+C<< WebAuth::Keyring->new >>.
+
+A WebAuth::Key object will be destroyed when the WebAuth context used to
+create it is destroyed, and subsequent accesses to it may cause memory
+access errors or other serious bugs.  Be careful not to retain a copy of a
+WebAuth::Key object after the WebAuth object that created it has been
+destroyed.
+
+=head1 CLASS METHODS
+
+As with WebAuth module functions, failures are signalled by throwing
+WebAuth::Exception rather than by return status.
+
+=over 4
+
+=item new (WEBAUTH, TYPE, SIZE[, KEY_MATERIAL])
+
+Create a new WebAuth::Key object within the provided WebAuth context,
+which must be a valid WebAuth object.  TYPE currently must be WA_KEY_AES,
+and SIZE must be one of WA_AES_128, WA_AES_192, or WA_AES_256.  This may
+change in the future if WebAuth gains support for additional key types.
+
+If KEY_MATERIAL is given, it should contain SIZE bytes of data, which
+will be used as the key.  If KEY_MATERIAL is not given or is undef, a
+new random key of the specified TYPE and SIZE will be generated.
+
+This is a convenience wrapper around the WebAuth key_create() method.
+
+=back
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item data ()
+
+Returns the binary key data.
+
+=item length ()
+
+Returns the length of the key, which will currently be one of WA_AES_128,
+WA_AES_192, or WA_AES_256.  This is the length of the key in bytes.
+
+=item type ()
+
+Returns the type of the key, which currently will always be WA_KEY_AES.
+
+=back
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 SEE ALSO
+
+WebAuth(3), WebAuth::Keyring(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut
