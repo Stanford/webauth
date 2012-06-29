@@ -217,17 +217,12 @@ mod_webauthldap:
    define multiple keytabs, since the implementation currently only
    supports one set of authentication credentials.
 
- * WEBAUTH-58: Support listing multiple privgroups on the same line in the
-   mod_webauthldap module using the iterate flag.
-
  * WEBAUTH-53: Support setting request headers in addition to or instead
    of environment variables, which will help when using proxy_http to, for
    example, a Tomcat server.
 
  * WEBAUTH-2: Support configuring multiple LDAP servers to query so that
    failover is supported.
-
- * WEBAUTH-85: Convert mod_webauthldap to the new option parsing code.
 
 mod_webkdc:
 
@@ -264,8 +259,6 @@ mod_webkdc:
    destination based on information from the user information service.
 
 WebLogin:
-
- * WEBAUTH-95: Limit the lifetime of the WebAuth context used by WebLogin.
 
  * WEBAUTH-4: Set HttpOnly flag in the generated cookies.
 
@@ -312,21 +305,14 @@ WebLogin:
 
 Perl Modules:
 
- * WEBAUTH-8: Refactor the Perl modules to match my Perl coding style and
-   add POD documentation to all of the modules.
+ * WEBAUTH-8: Refactor the WebKDC::* Perl modules to match my Perl coding
+   style.
 
  * WEBAUTH-87: Attempting is() on a WebAuth::Exception object produces the
    error message 'Operation "eq": no method found'.  Figure out what is
    required and add the necessary method.
 
- * WEBAUTH-100: Add documentation for all of the new classes and update
-   the WebAuth module documentation to remove all the deleted methods and
-   add the new interfaces.
-
 Test Suite:
-
- * WEBAUTH-102: Add more complete tests for keyring operations, including
-   keyring_auto_update.
 
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
    tested) is desperately needed for all the code currently embedded in
