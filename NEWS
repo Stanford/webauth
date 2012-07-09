@@ -101,6 +101,8 @@ WebAuth 4.2.0 (unreleased)
     The Perl WebKDC::Token module and the classes it defined have been
     removed.  Use the new WebAuth::Token::* classes instead.
 
+    All WebKDC::* Perl modules now have POD documentation.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
