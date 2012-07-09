@@ -8,6 +8,7 @@
 
 package WebKDC;
 
+use 5.006;
 use strict;
 use warnings;
 
@@ -22,24 +23,13 @@ use WebKDC::WebKDCException;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
 BEGIN {
-    use Exporter   ();
-    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
-
-    # set the version for version checking
-    $VERSION     = 2.00;
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw();
-    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-
-    # your exported package globals go here,
-    # as well as any optionally exported functions
-    @EXPORT_OK   = qw();
+    $VERSION = '2.01';
 }
-
-our @EXPORT_OK;
-
-our $DEBUG = 1;
 
 # Map protocol error codes to the error codes that we're going to use internal
 # to the WebLogin code and other WebKDC::* modules.
@@ -74,38 +64,48 @@ our %pec_mapping = (
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
 );
 
-sub get_keyring($) {
+# Get a keyring from the configured WebLogin keyring path.  This used to
+# cache, but we have to tie the lifetime to the WebAuth context, so it's not
+# easy to cache.
+sub get_keyring ($) {
     my ($wa) = @_;
     return WebAuth::Keyring->read ($wa, $WebKDC::Config::KEYRING_PATH);
 }
 
+# Throw a WebKDCException with the given error code and error message and
+# optional protocol error code.
+sub throw ($$;$) {
+    my ($code, $error, $pec) = @_;
+    die WebKDC::WebKDCException->new ($code, $error, $pec);
+}
+
+# Get the value of the given child of an element or throw an exception if
+# the child can't be found.
 sub get_child_value {
     my ($e, $name, $opt) = @_;
 
-    my $child = $e->find_child($name);
-    if (!defined($child)) {
-	return undef if $opt;
-	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-					"webkdc response missing: <$name>");
+    my $child = $e->find_child ($name);
+    unless (defined $child) {
+        return undef if $opt;
+        throw (WK_ERR_UNRECOVERABLE_ERROR, "webkdc response missing: <$name>");
     } else {
-	return $child->content;
+        return $child->content;
     }
 }
 
 # Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  A wrapper around proxy_token_request, which
 # does the actual work.  This just handles exceptions.
-sub make_proxy_token_request($$) {
+#
+# Returns the status code, the exception (if any), the token (on success), and
+# the subject (on success).
+sub make_proxy_token_request ($$) {
     my ($req, $tgt) = @_;
-
     my ($token, $subject);
-    eval {
-        ($token, $subject) = WebKDC::proxy_token_request($req, $tgt);
-    };
-
+    ($token, $subject) = eval { WebKDC::proxy_token_request ($req, $tgt) };
     my $e = $@;
-    if (ref $e and $e->isa('WebKDC::WebKDCException')) {
-        return ($e->status(), $e);
+    if (ref $e and $e->isa ('WebKDC::WebKDCException')) {
+        return ($e->status, $e);
     } elsif ($e) {
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } else {
@@ -113,267 +113,239 @@ sub make_proxy_token_request($$) {
     }
 }
 
-# takes a WebKDC::WebRequest and WebKDC::WebResponse
-sub make_request_token_request($$) {
+# Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
+# on success.  Returns a status code and the exception as a list.
+sub make_request_token_request ($$) {
     my ($req, $resp) = @_;
-
-    eval {
-	WebKDC::request_token_request($req, $resp);
-      };
-
+    eval { WebKDC::request_token_request($req, $resp) };
     my $e = $@;
-
-    if (ref $e and $e->isa("WebKDC::WebKDCException")) {
-	return ($e->status(), $e);
+    if (ref $e and $e->isa ("WebKDC::WebKDCException")) {
+        return ($e->status, $e);
     } elsif ($e) {
-	return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } else {
-	return (WebKDC::WK_SUCCESS, undef);
+        return (WebKDC::WK_SUCCESS, undef);
     }
 }
 
 # Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  Throws an exception on failure.
-sub proxy_token_request($$) {
+sub proxy_token_request ($$) {
     my ($req, $tgt) = @_;
 
     # Build the XML request.
-    my $webkdc_doc = new WebKDC::XmlDoc;
-    $webkdc_doc->start('webkdcProxyTokenRequest');
-    $webkdc_doc->start('subjectCredential', {'type' => 'krb5'}, $req)->end;
-    $webkdc_doc->start('proxyData', undef, $tgt)->end;
-    $webkdc_doc->end('webkdcProxyTokenRequest');
+    my $webkdc_doc = WebKDC::XmlDoc->new;
+    $webkdc_doc->start ('webkdcProxyTokenRequest');
+    $webkdc_doc->start ('subjectCredential', {'type' => 'krb5'}, $req)->end;
+    $webkdc_doc->start ('proxyData', undef, $tgt)->end;
+    $webkdc_doc->end ('webkdcProxyTokenRequest');
 
     # Send the request to the WebKDC.
-    my $ua = new LWP::UserAgent;
-    my $http_req = new HTTP::Request(POST => $WebKDC::Config::URL);
-    $http_req->content_type('text/xml');
-    $http_req->content($webkdc_doc->root->to_string());
+    my $ua = LWP::UserAgent->new;
+    my $http_req = HTTP::Request->new (POST => $WebKDC::Config::URL);
+    $http_req->content_type ('text/xml');
+    $http_req->content ($webkdc_doc->root->to_string);
 
     # Get the response.
-    my $http_res = $ua->request($http_req);
+    my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
         # FIXME: Better error reporting needed here.
         print STDERR "post failed\n";
         print STDERR $http_res->as_string . "\n";
         print STDERR $http_res->content . "\n";
-        die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-                                        "post to webkdc failed");
+        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
     }
-    my $root;
-    eval {
-        $root = new WebKDC::XmlElement($http_res->content);
-    };
+    my $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-	my $msg = "unable to parse response from webkdc: $@";
-	print STDERR "$msg ".$http_res->content."\n";
-	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR, $msg);
+        my $msg = "unable to parse response from webkdc: $@";
+        print STDERR "$msg " . $http_res->content . "\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
-    if ($root->name() eq 'errorResponse') {
-	my $error_code = get_child_value($root, 'errorCode', 1);
-	my $error_message = get_child_value($root, 'errorMessage', 0);
-	my $wk_err = $pec_mapping{$error_code} || WK_ERR_UNRECOVERABLE_ERROR;
-	die new WebKDC::WebKDCException($wk_err,
-					"WebKDC error: $error_message ".
-					"($error_code)", $error_code);
+    if ($root->name eq 'errorResponse') {
+        my $error_code = get_child_value ($root, 'errorCode', 1);
+        my $error_message = get_child_value ($root, 'errorMessage', 0);
+        my $wk_err = $pec_mapping{$error_code} || WK_ERR_UNRECOVERABLE_ERROR;
+        throw ($wk_err, "WebKDC error: $error_message ($error_code)",
+               $error_code);
     } elsif ($root->name eq 'webkdcProxyTokenResponse') {
-        my $token = get_child_value($root, 'webkdcProxyToken', 0);
-        my $subject = get_child_value($root, 'subject', 0);
+        my $token = get_child_value ($root, 'webkdcProxyToken', 0);
+        my $subject = get_child_value ($root, 'subject', 0);
         return ($token, $subject);
     } else {
-        die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-                                        "unknown response from WebKDC: "
-                                        . $root->name);
+        throw (WK_ERR_UNRECOVERABLE_ERROR,
+               "unknown response from WebKDC: " . $root->name);
     }
 }
 
-# takes a WebKDC::WebRequest and WebKDC::WebResponse
-sub request_token_request($$) {
+# Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
+# on success.  Throws an exception on failure.
+sub request_token_request ($$) {
     my ($wreq, $wresp) = @_;
+    my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
+    my $request_token = $wreq->request_token;
+    my $service_token = $wreq->service_token;
+    my $proxy_cookies = $wreq->proxy_cookies_rich;
 
-    my ($user, $pass, $otp) = ($wreq->user(), $wreq->pass(), $wreq->otp());
-    my $request_token = $wreq->request_token();
-    my $service_token = $wreq->service_token();
-    my $proxy_cookies = $wreq->proxy_cookies_rich();
-
-    my $webkdc_doc = new WebKDC::XmlDoc;
+    my $webkdc_doc = WebKDC::XmlDoc->new;
     my $wa = WebAuth->new;
     my $root;
 
-    $webkdc_doc->start('requestTokenRequest');
-    $webkdc_doc->start('requesterCredential',
-		       {'type' => 'service'},
-		       $service_token)->end;
-    $webkdc_doc->start('subjectCredential');
+    $webkdc_doc->start ('requestTokenRequest');
+    $webkdc_doc->start ('requesterCredential', {'type' => 'service'},
+                        $service_token)->end;
 
     # Create any login or proxy tokens for the user.  If there are none, we
     # still go ahead to validate the request token and to get a login cancel
     # token, if any.
-    if (defined($user) && (defined($pass) || defined($otp))) {
+    $webkdc_doc->start ('subjectCredential');
+    if (defined ($user) && (defined ($pass) || defined ($otp))) {
         my $login_token = WebAuth::Token::Login->new ($wa);
-        $login_token->username($user);
-        $login_token->creation(time());
+        $login_token->username ($user);
+        $login_token->creation (time);
         if (defined $otp) {
-            $login_token->otp($otp);
+            $login_token->otp ($otp);
         } else {
-            $login_token->password($pass);
+            $login_token->password ($pass);
         }
-        my $login_token_str = $login_token->encode(get_keyring($wa));
-        $webkdc_doc->start('loginToken', undef, $login_token_str)->end;
+        my $login_token_str = $login_token->encode (get_keyring ($wa));
+        $webkdc_doc->start ('loginToken', undef, $login_token_str)->end;
     }
-    if (defined($proxy_cookies)) {
-        $webkdc_doc->current->attr('type','proxy');
+    if (defined $proxy_cookies) {
+        $webkdc_doc->current->attr ('type','proxy');
         for my $type (keys %$proxy_cookies) {
             my $token = $proxy_cookies->{$type}{'cookie'};
             my $source = $proxy_cookies->{$type}{'session_factor'};
-            $webkdc_doc->start('proxyToken',
-                               {'type' => $type, 'source' => $source},
-                               $token)->end;
+            $webkdc_doc->start ('proxyToken',
+                                {'type' => $type, 'source' => $source},
+                                $token)->end;
         }
     }
-
     $webkdc_doc->end('subjectCredential');
-    $webkdc_doc->start('requestToken',  undef, $request_token)->end;
-    if ($wreq->local_ip_addr() || $wreq->remote_user()) {
-	$webkdc_doc->start('requestInfo');
-        if ($wreq->local_ip_addr()) {
-            $webkdc_doc->add('localIpAddr', undef, $wreq->local_ip_addr());
-            $webkdc_doc->add('localIpPort', undef, $wreq->local_ip_port());
-            $webkdc_doc->add('remoteIpAddr', undef, $wreq->remote_ip_addr());
-            $webkdc_doc->add('remoteIpPort', undef, $wreq->remote_ip_port());
+
+    # Add the request token and request information.
+    $webkdc_doc->start ('requestToken',  undef, $request_token)->end;
+    if ($wreq->local_ip_addr || $wreq->remote_user) {
+        $webkdc_doc->start('requestInfo');
+        if ($wreq->local_ip_addr) {
+            $webkdc_doc->add ('localIpAddr', undef, $wreq->local_ip_addr);
+            $webkdc_doc->add ('localIpPort', undef, $wreq->local_ip_port);
+            $webkdc_doc->add ('remoteIpAddr', undef, $wreq->remote_ip_addr);
+            $webkdc_doc->add ('remoteIpPort', undef, $wreq->remote_ip_port);
         }
-        if ($wreq->remote_user()) {
-            $webkdc_doc->add('remoteUser', undef, $wreq->remote_user());
+        if ($wreq->remote_user) {
+            $webkdc_doc->add ('remoteUser', undef, $wreq->remote_user());
         }
-	$webkdc_doc->end('requestInfo');
+        $webkdc_doc->end ('requestInfo');
     }
-    $webkdc_doc->end('requestTokenRequest');
+    $webkdc_doc->end ('requestTokenRequest');
 
-    # send the request to the webkdc
-
-    my $xml = $webkdc_doc->root->to_string(1);
-    #print STDERR "-------- generated --------\n";
-    #print STDERR "$xml\n";
-    #print STDERR "-------- generated --------\n";
-
-
-    my $ua = new LWP::UserAgent;
-
-    my $http_req = new HTTP::Request(POST=> $WebKDC::Config::URL);
-    $http_req->content_type('text/xml');
-    $http_req->content($webkdc_doc->root->to_string());
-
-    my $http_res = $ua->request($http_req);
-
+    # Send the request to the webkdc
+    my $xml = $webkdc_doc->root->to_string (1);
+    my $ua = LWP::UserAgent->new;
+    my $http_req = HTTP::Request->new (POST => $WebKDC::Config::URL);
+    $http_req->content_type ('text/xml');
+    $http_req->content ($webkdc_doc->root->to_string);
+    my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
-	# FIXME: get more details out of $http_res
-	print STDERR "post failed\n";
-	print STDERR $http_res->as_string."\n";
-	print STDERR $http_res->content."\n";
-	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-					"post to webkdc failed");
+        # FIXME: get more details out of $http_res
+        print STDERR "post failed\n";
+        print STDERR $http_res->as_string . "\n";
+        print STDERR $http_res->content . "\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
     }
 
-    eval {
-	$root = new WebKDC::XmlElement($http_res->content);
-    };
+    # Parse the response.
+    $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-	my $msg = "unable to parse response from webkdc: $@";
-	print STDERR "$msg ".$http_res->content."\n";
-	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR, $msg);
+        my $msg = "unable to parse response from webkdc: $@";
+        print STDERR "$msg " . $http_res->content . "\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
 
-    #print STDERR $http_res->content;
+    if ($root->name eq 'errorResponse') {
+        my $error_code = get_child_value ($root, 'errorCode', 1);
+        my $error_message = get_child_value ($root, 'errorMessage', 0);
+        my $wk_err = $pec_mapping{$error_code} || WK_ERR_UNRECOVERABLE_ERROR;
 
-    if ($root->name() eq 'errorResponse') {
-	my $error_code = get_child_value($root, 'errorCode', 1);
-	my $error_message = get_child_value($root, 'errorMessage', 0);
-	my $wk_err = $pec_mapping{$error_code} || WK_ERR_UNRECOVERABLE_ERROR;
+        # Dump any existing webkdc-proxy tokens if we are logging in.
+        if ($wk_err == WK_ERR_USER_AND_PASS_REQUIRED) {
+            my $proxy_cookies = $wreq->proxy_cookies;
+            if (defined $proxy_cookies) {
+                while (my ($name, $token) = each %{$proxy_cookies}) {
+                    $wresp->proxy_cookie ($name, '');
+                }
+            }
+        }
+        throw ($wk_err, "WebKDC error: $error_message ($error_code)",
+               $error_code);
 
-	# dump any existing proxy-tokens if we are logging in
-	if ($wk_err == WK_ERR_USER_AND_PASS_REQUIRED) {
-	    my $proxy_cookies = $wreq->proxy_cookies();
-	    if (defined($proxy_cookies)) {
-		while (my($name,$token) = each(%{$proxy_cookies})) {
-		    $wresp->proxy_cookie($name, '');
-		}
-	    }
-	}
-	die new WebKDC::WebKDCException($wk_err,
-					"WebKDC error: $error_message ".
-					"($error_code)", $error_code);
+    } elsif ($root->name eq 'requestTokenResponse') {
+        my $return_url = get_child_value ($root, 'returnUrl', 0);
+        my $requester_sub = get_child_value ($root, 'requesterSubject', 0);
+        my $subject = get_child_value ($root, 'subject', 1);
+        my $returned_token = get_child_value ($root, 'requestedToken', 1);
+        my $returned_token_type
+            = get_child_value ($root, 'requestedTokenType', 1);
+        my $app_state = get_child_value ($root, 'appState', 1);
+        my $login_canceled_token
+            = get_child_value ($root, 'loginCanceledToken', 1);
+        my $proxy_tokens = $root->find_child ('proxyTokens');
+        my $error_code = get_child_value ($root, 'loginErrorCode', 1);
+        my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
 
-    } elsif ($root->name() eq 'requestTokenResponse') {
-	my $return_url = get_child_value($root, 'returnUrl', 0);
-	my $requester_sub = get_child_value($root, 'requesterSubject', 0);
-	my $subject = get_child_value($root, 'subject', 1);
-	my $returned_token = get_child_value($root, 'requestedToken', 1);
-	my $returned_token_type = get_child_value($root, 'requestedTokenType',
-						  1);
-	my $app_state = get_child_value($root, 'appState', 1);
-	my $login_canceled_token = get_child_value($root, 'loginCanceledToken',
-						   1);
-	my $proxy_tokens = $root->find_child('proxyTokens');
-	my $error_code = get_child_value($root, 'loginErrorCode', 1);
-	my $error_message = get_child_value($root, 'loginErrorMessage', 1);
+        if (defined $proxy_tokens) {
+            for my $token (@{ $proxy_tokens->children }) {
+                my $type = $token->attr ('type');
+                my $cname = "webauth_wpt_$type";
+                my $cvalue  = $token->content || '';
+                $wresp->proxy_cookie ($cname, $cvalue);
+            }
+        }
 
-	if (defined($proxy_tokens)) {
-	    foreach my $token (@{$proxy_tokens->children}) {
-		my $type = $token->attr('type');
-		my $cname = "webauth_wpt_$type";
-		my $cvalue  = $token->content || '';
-		$wresp->proxy_cookie($cname, $cvalue);
-	    }
-	}
-
-        my $multifactor = $root->find_child('multifactorRequired');
-        if (defined($multifactor)) {
-            foreach my $mf_setting (@{$multifactor->children}) {
+        my $multifactor = $root->find_child ('multifactorRequired');
+        if (defined $multifactor) {
+            for my $mf_setting (@{$multifactor->children}) {
                 my $factor = $mf_setting->content;
                 if ($mf_setting->name eq 'factor') {
-                    $wresp->factor_needed($factor);
+                    $wresp->factor_needed ($factor);
                 } elsif ($mf_setting->name eq 'configuredFactor') {
-                    $wresp->factor_configured($factor);
+                    $wresp->factor_configured ($factor);
                 }
             }
         }
 
-        my $login_history = $root->find_child('loginHistory');
-        if (defined($login_history)) {
-            foreach my $login (@{$login_history->children}) {
+        my $login_history = $root->find_child ('loginHistory');
+        if (defined $login_history) {
+            for my $login (@{ $login_history->children }) {
                 my %hist;
-                $hist{timestamp} = $login->attr('time');
-                $hist{hostname} = $login->attr('name');
-                $hist{ip} = $login->content | '';
+                $hist{timestamp} = $login->attr ('time');
+                $hist{hostname} = $login->attr ('name');
+                $hist{ip} = $login->content || '';
                 $wresp->login_history (\%hist);
             }
         }
 
-        $wresp->return_url($return_url);
-	$wresp->response_token($returned_token);
-	$wresp->response_token_type($returned_token_type);
-	$wresp->requester_subject($requester_sub);
-	$wresp->app_state($app_state) if defined($app_state);
-	$wresp->login_canceled_token($login_canceled_token)
-	    if defined($login_canceled_token);
-	$wresp->subject($subject) if defined($subject);
+        $wresp->return_url ($return_url);
+        $wresp->response_token ($returned_token);
+        $wresp->response_token_type ($returned_token_type);
+        $wresp->requester_subject ($requester_sub);
+        $wresp->app_state ($app_state) if defined $app_state;
+        $wresp->login_canceled_token ($login_canceled_token)
+            if defined $login_canceled_token;
+        $wresp->subject ($subject) if defined $subject;
 
-	if ($error_code) {
-	    my $wk_err = $pec_mapping{$error_code} ||
-		WK_ERR_UNRECOVERABLE_ERROR;
-	    die new WebKDC::WebKDCException($wk_err,
-					    "Login error: $error_message ".
-					    "($error_code)", $error_code);
-	}
-	return;
+        if ($error_code) {
+            my $wk_err = $pec_mapping{$error_code}
+                || WK_ERR_UNRECOVERABLE_ERROR;
+            throw ($wk_err, "Login error: $error_message ($error_code)",
+                   $error_code);
+        }
+        return;
     } else {
-	die new WebKDC::WebKDCException(WK_ERR_UNRECOVERABLE_ERROR,
-					"unknown response from WebKDC: ".
-					$root->name());
+        throw (WK_ERR_UNRECOVERABLE_ERROR,
+               "unknown response from WebKDC: " . $root->name);
     }
 }
-
-END { }       # module clean-up code here (global destructor)
 
 1;
 
@@ -381,103 +353,76 @@ __END__
 
 =head1 NAME
 
-WebKDC - functions to support the WebKDC
+WebKDC - Send requests to a WebAuth WebKDC
 
 =head1 SYNOPSIS
 
-  use WebAuth;
-  use WebKDC;
-  use WebKDC::Exception;
-  use WebKDC::WebRequest;
-  use WebKDC::WebResponse;
+    use WebKDC;
+    use WebKDC::Exception;
+    use WebKDC::WebRequest;
+    use WebKDC::WebResponse;
 
-  my ($status, $exception) =
-         WebKDC::make_request_token_request($req, $resp);
+    my ($status, $exception)
+        = WebKDC::make_request_token_request ($req, $resp);
+    my ($token, $subject);
+    ($status, $exception, $token, $subject)
+        = WebKDC::make_proxy_token_request ($krbreq, $tgt);
 
 =head1 DESCRIPTION
 
-WebKDC is a set of convenience functions built on top of mod WebAuth
-to implement the WebKDC.
-
-All functions have the potential to throw either a WebKDC::WebKDCException
-or WebAuth::Exception.
-
-=head1 EXPORT
-
-None
+This module provides functions to make a <requestToken> and a
+<webkdcProxyToken> call to a WebAuth WebKDC.  These functions encapsulate
+the XML protocol and HTTP requests.  This module is primarily intended for
+use by the WebLogin server to process requests from WebAuth Application
+Servers.
 
 =head1 FUNCTIONS
 
 =over 4
 
-=item make_request_token_request(req,resp)
+=item make_proxy_token_request (AUTH, TGT)
 
-  ($status, $e) = WebKDC::make_request_token_request($req, $resp);
+Makes a <webkdcProxyToken> request to the WebKDC.  The result, if
+successful, will be a webkdc-proxy token that can be passed into a
+subsequent call to make_request_token_request.
 
-Used to handle an incoming request token. It should be used in the
-following fashion:
+AUTH is a Kerberos authenticator for the WebKDC's Kerberos principal, as
+generated by the WebAuth krb5_mk_req function.  TGT is a Kerberos
+ticket-granting ticket, exported with the WebAuth krb5_export_tgt
+function, and then encrypted in the same call to krb5_mk_req as the DATA
+argument.  Both must already be base64-encoded.
 
-  my $req = new WebKDC::WebRequest;
-  my $resp = new WebKDC::WebResponse;
+The return value is a four-element list.  The first value will be the
+status.  On error, the second value is an exception object and the
+remaining values are undef.  On success, the second value is undef, the
+third value is the webkdc-proxy token (base64-encoded), and the fourth
+value is the subject (the identity) represented by the webkdc-proxy token.
 
-  # if the user just submitted their username/password, include them
-  if ($username && $password) {
-    $req->user($username);
-    $req->pass($password);
-  }
+=item make_request_token_request (REQUEST, RESPONSE)
 
-  # pass in any proxy-tokens we have from a cookies
-  # i.e., enumerate through all cookies that start with webauth_wpt
-  # and put them into a hash:
-  # $cookies = { "webauth_wpt_krb5" => $cookie_value }
+Used to handle an incoming request token.  REQUEST is a populated
+WebKDC::WebRequest object, and RESPONSE should be a newly-created
+WebKDC::WebResponse object.  The request will be handled off to the
+configured WebKDC (see L<WebKDC::Config>) and the results stored in the
+response object.
 
-  $req->proxy_cookies($cookies);
-
-  # $req_token_str and $service_token_str would normally get
-  # passed in via query/post parameters
-
-  $req->request_token($req_token_str);
-  $req->service_token($service_token_str);
-
-  my ($status, $e) = WebKDC::make_request_token_request($req, $resp);
-
-  # for all these cases, check if $resp->proxy_cookies() has any
-  # proxy cookies we need to update when sending back a page to
-  # the browser
-
-  if ($status == WK_SUCCESS) {
-     # ok, request successful
-  } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
-           || $status == WK_LOGIN_FORCED) {
-     # prompt for user/pass
-  } elsif ($status == WK_ERR_LOGIN_FAILED) {
-     # supplied user/pass was invalid, try again
-  } else {
-    # use this if/elsif/else to pick the error message
-    if ($status == WK_ERR_UNRECOVERABLE_ERROR) {
-       # something nasty happened.
-    } elsif ($status == WK_ERR_REQUEST_TOKEN_STATLE) {
-       # user took too long to login, original request token is stale
-    } elsif ($status == WK_ERR_WEBAUTH_SERVER_ERROR) {
-       # like WK_ERR_UNRECOVERABLE_ERROR, but indicates the error
-       # most likely is due to the webauth server making the request,
-    } else {
-       # treat like WK_ERROR_UNRECOVERABLE ERROR
-    }
-    # display the error message and don't prompt anymore
-  }
+The return value is a list of the status and the exception object, if any.
+The status will be WK_SUCCESS on success and some other WK_ERR_* status
+code on failure.  See L<WebKDC::WebKDCException> for the other status
+codes.
 
 =back
 
 =head1 AUTHOR
 
-Roland Schemers (schemers@stanford.edu)
+Roland Schemers and Russ Allbery <rra@stanford.edu>.
 
 =head1 SEE ALSO
 
-L<WebKDC::WebKDCException>
-L<WebKDC::WebRequest>
-L<WebKDC::WebRespsonse>
-L<WebAuth>.
+WebAuth(3), WebKDC::WebKDCException(3), WebKDC::WebRequest(3),
+WebKDC::WebRespsonse(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
 
 =cut

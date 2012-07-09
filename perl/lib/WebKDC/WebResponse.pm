@@ -1,7 +1,7 @@
 # An object encapsulating a response from a WebKDC.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2009
+# Copyright 2002, 2003, 2009, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -11,100 +11,210 @@ package WebKDC::WebResponse;
 use strict;
 use warnings;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
 BEGIN {
-    use Exporter   ();
-    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
-
-    # set the version for version checking
-    $VERSION     = 1.00;
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw();
-    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-
-    # your exported package globals go here,
-    # as well as any optionally exported functions
-    @EXPORT_OK   = qw();
+    $VERSION = '1.01';
 }
 
-our @EXPORT_OK;
-
+# Create a new, empty request.
 sub new {
-    my $type = shift;
+    my ($type) = @_;
     my $self = {};
-    bless $self, $type;
+    bless ($self, $type);
     return $self;
 }
 
-sub return_url {
-    my $self = shift;
-    $self->{'return_url'} = shift if @_;
-    return $self->{'return_url'};
+# Shared code for all simple accessor methods.  Takes the object, the
+# attribute name, and the value.  Sets the value if one was given, and returns
+# the current value of that attribute.
+sub _attr ($$;$) {
+    my ($self, $attr, $value) = @_;
+    $self->{$attr} = $value if defined ($value);
+    return $self->{$attr};
 }
 
+# Simple accessor methods.
+sub app_state            ($;$) { my $r = shift; $r->_attr ('app_state',  @_) }
+sub login_canceled_token ($;$) { my $r = shift; $r->_attr ('lc_token',   @_) }
+sub return_url           ($;$) { my $r = shift; $r->_attr ('return_url', @_) }
+sub subject              ($;$) { my $r = shift; $r->_attr ('subject',    @_) }
+sub requester_subject ($;$) {
+    my $r = shift;
+    $r->_attr ('requester_subject', @_);
+}
+sub response_token ($;$) {
+    my $r = shift;
+    $r->_attr ('response_token', @_);
+}
+sub response_token_type ($;$) {
+    my $r = shift;
+    $r->_attr ('response_token_type', @_);
+}
+
+# Cookies are stored by type in a hash.  Use proxy_cookies to retrieve the
+# complete hash of cookies.
 sub proxy_cookie {
-    my $self = shift;
-    my $type = shift;
-    $self->{'cookies'}{$type} = shift if @_;
-    return $self->{'cookies'}{$type};
+    my ($self, $type, $value) = @_;
+    if (defined $value) {
+        $self->{cookies}{$type} = $value;
+    }
+    return $self->{cookies}{$type};
 }
 
+# Return the proxy cookies as a hash.
 sub proxy_cookies {
-    my $self = shift;
+    my ($self) = @_;
     return $self->{'cookies'};
 }
 
-sub response_token {
-    my $self = shift;
-    $self->{'response_token'} = shift if @_;
-    return $self->{'response_token'};
-}
-
-sub response_token_type {
-    my $self = shift;
-    $self->{'response_token_type'} = shift if @_;
-    return $self->{'response_token_type'};
-}
-
-sub login_canceled_token {
-    my $self = shift;
-    $self->{'lc_token'} = shift if @_;
-    return $self->{'lc_token'};
-}
-
-sub requester_subject {
-    my $self = shift;
-    $self->{'requester_subject'} = shift if @_;
-    return $self->{'requester_subject'};
-}
-
-sub subject {
-    my $self = shift;
-    $self->{'subject'} = shift if @_;
-    return $self->{'subject'};
-}
-
-sub app_state {
-    my $self = shift;
-    $self->{'app_state'} = shift if @_;
-    return $self->{'app_state'};
-}
-
+# Login history and needed and configured factors are stored in arrays.  Note
+# that there is no way of clearing the array once a value has been set, only
+# adding new values.
 sub factor_configured {
-    my $self = shift;
-    push (@{$self->{'factor_configured'}}, @_) if @_;
+    my ($self, @values) = @_;
+    push (@{ $self->{'factor_configured'} }, @values) if @values;
     return $self->{'factor_configured'};
 }
-
 sub factor_needed {
-    my $self = shift;
-    push (@{$self->{'factor_needed'}}, @_) if @_;
+    my ($self, @values) = @_;
+    push (@{ $self->{'factor_needed'} }, @values) if @values;
     return $self->{'factor_needed'};
 }
-
 sub login_history {
-    my $self = shift;
-    push (@{$self->{'login_history'}}, @_) if @_;
+    my ($self, @values) = @_;
+    push (@{ $self->{'login_history'} }, @values) if @values;
     return $self->{'login_history'};
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+WebKDC::WebResponse - Encapsulates a response from a WebAuth WebKDC
+
+=head1 SYNOPSIS
+
+    use WebKDC::WebResponse
+
+    my $resp = WebKDC::WebResponse->new;
+    $resp->subject ($user);
+    $resp->requester_subject ($req_subject);
+    $resp->response_token_type ('id');
+    $resp->response_token ($id);
+    $resp->return_url ($url);
+
+=head1 DESCRIPTION
+
+A WebKDC::WebResponse object encapsulates a response from a WebAuth
+WebKDC, representing the result of a login attempt for a particular
+WebAuth Application Server.  It is filled in by the WebKDC module as the
+result of a make_request_token_request call.  The object has very little
+inherent functionality.  It's mostly a carrier for data.
+
+=head1 CLASS METHODS
+
+=over 4
+
+=item new ()
+
+Create a new, empty WebKDC::WebResponse object.  At least some parameters
+must be set using accessor functions as described below to do anything
+useful with the object.
+
+=back
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item app_state ([STATE])
+
+Returns or sets the application state token.  If this is set in the
+response, the WebLogin server should return it to the WebAuth application
+server as the WEBAUTHS parameter in the URL.
+
+=item factor_configured ([FACTOR, ...])
+
+=item factor_needed ([FACTOR, ...])
+
+Returns or sets the authentication factors this user has configured or
+that the WebAuth application server requires.  These are set when the
+user's authentication was rejected because multifactor authentication was
+required and are used by the WebLogin server to determine what factor to
+prompt for or to customize an error message explaining to the user what
+factors they need to configure.
+
+=item login_canceled_token ([LC])
+
+Returns or sets a login cancellation token.  If the user decides to cancel
+this authentication, this token should be returned to the WebAuth
+application server as the WEBAUTHR parameter in the URL.
+
+=item login_history ([RECORD, ...])
+
+Returns the list of login history records or adds new login history
+records.  If any parameters are given, they are history records that will
+be added to the list.  Note that there is no way to remove an entry from
+the list once it has been added.
+
+Each RECORD should be an anonymous hash with an C<ip> key whose value is
+the IP address from which the user logged in and a C<timestamp> key whose
+value is the time of that login in seconds since epoch.  There may
+optionally be a C<hostname> key that, if present, gives the hostname from
+which the user logged in.
+
+=item proxy_cookie (TYPE[, VALUE])
+
+Returns or sets a proxy cookie of the specified type.  The TYPE parameter
+should be the type of the proxy cookie.  The VALUE, if present, is the
+corresponding webkdc-proxy token, suitable for being set as a browser
+cookie.  Returns the webkdc-proxy token of the given type, if any is set.
+
+=item proxy_cookies ()
+
+Returns all proxy cookies as a hash, whose keys are the proxy types and
+whose values are the webkdc-proxy tokens.  The returned hash is a
+reference to the hash inside the WebKDC::WebResponse object and therefore
+should not be modified by the caller.
+
+=item return_url ([URL])
+
+Returns or sets the return URL to which the user should be directed after
+authentication.
+
+=item requester_subject ([SUBJECT])
+
+Returns or sets the identity of the WebAuth application server that
+prompted this authentication attempt.
+
+=item response_token ([TOKEN])
+
+=item response_token_type ([TYPE])
+
+Returns or sets the token that is the result of the authentication
+attempt, or the type of that token.  This will be either an id token or a
+proxy token, depending on what the WebAuth application server requested.
+
+=item subject ([SUBJECT])
+
+Returns or sets the authenticated user identity.
+
+=back
+
+=head1 AUTHOR
+
+Roland Schemers and Russ Allbery <rra@stanford.edu>
+
+=head1 SEE ALSO
+
+WebKDC(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut

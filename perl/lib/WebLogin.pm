@@ -1806,43 +1806,44 @@ sub edit_remoteuser : Runmode {
 # Documentation
 ##############################################################################
 
-# FIXME: Update the documentation with the CGI::Application rewrite bits.
 1;
 
 __END__
 
 =head1 NAME
 
-WebLogin - functions to support the weblogin process
+WebLogin - Central login service for the WebAuth authentication system
 
 =head1 SYNOPSIS
 
-  use WebLogin;
+    use WebLogin;
+
+    my $weblogin = WebLogin->new (PARAMS => { pages => \%pages },
+                                  QUERY  => $q);
+    $weblogin->run;
 
 =head1 DESCRIPTION
 
-WebLogin is a set of functions required by the WebAuth login process itself,
-in order to generalize login tasks between scripts.
+The WebLogin module implements a CGI service using the CGI::Application
+framework that provides central login services for the WebAuth
+authentication system.  For its entry points and constructor options, see
+L<CGI::Application/"Instance Script Methods">.
 
-=head1 EXPORT
+This module is normally only called from the F<login.fcgi>, F<logout.fcgi>,
+and F<pwchange.cgi> scripts that come with WebAuth and comprise, with this
+module, the WebLogin service.  It is not currently designed to be used by
+any other scripts and does not currently have a documented API.
 
-None
+=head1 AUTHORS
 
-=head1 FUNCTIONS
-
-=over 4
-
-=back
-
-=head1 AUTHOR
-
-Roland Schemers <schemers@stanford.edu>
-Russ Allbery <rra@stanford.edu>
-Jon Robertson <jonrober@stanford.edu>
+Roland Schemers, Russ Allbery <rra@stanford.edu>, and Jon Robertson
+<jonrober@stanford.edu>.
 
 =head1 SEE ALSO
 
-L<WebKDC>
-L<WebAuth>.
+WebAuth(3), WebKDC(3), WebKDC::Config(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
 
 =cut

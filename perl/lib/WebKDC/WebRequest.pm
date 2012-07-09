@@ -1,7 +1,7 @@
 # An object encapsulating a request to a WebKDC.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2009
+# Copyright 2002, 2003, 2005, 2009, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -11,116 +11,177 @@ package WebKDC::WebRequest;
 use strict;
 use warnings;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
 BEGIN {
-    use Exporter   ();
-    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
-
-    # set the version for version checking
-    $VERSION     = 1.00;
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw();
-    %EXPORT_TAGS = ( );     # eg: TAG => [ qw!name1 name2! ],
-
-    # your exported package globals go here,
-    # as well as any optionally exported functions
-    @EXPORT_OK   = qw();
+    $VERSION = '1.01';
 }
 
-our @EXPORT_OK;
-
+# Create a new, empty request.
 sub new {
-    my $type = shift;
+    my ($type) = @_;
     my $self = {};
-    bless $self, $type;
+    bless ($self, $type);
     return $self;
 }
 
-sub user {
-    my $self = shift;
-    $self->{'user'} = shift if @_;
-    return $self->{'user'};
+# Shared code for all simple accessor methods.  Takes the object, the
+# attribute name, and the value.  Sets the value if one was given, and returns
+# the current value of that attribute.
+sub _attr ($$;$) {
+    my ($self, $attr, $value) = @_;
+    $self->{$attr} = $value if defined ($value);
+    return $self->{$attr};
 }
 
-sub pass {
-    my $self = shift;
-    $self->{'pass'} = shift if @_;
-    return $self->{'pass'};
-}
+# Simple accessor methods.
+sub local_ip_addr  ($;$) { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
+sub local_ip_port  ($;$) { my $r = shift; $r->_attr ('local_ip_port',  @_) }
+sub otp            ($;$) { my $r = shift; $r->_attr ('otp',            @_) }
+sub pass           ($;$) { my $r = shift; $r->_attr ('pass',           @_) }
+sub remote_ip_addr ($;$) { my $r = shift; $r->_attr ('remote_ip_addr', @_) }
+sub remote_ip_port ($;$) { my $r = shift; $r->_attr ('remote_ip_port', @_) }
+sub remote_user    ($;$) { my $r = shift; $r->_attr ('remote_user',    @_) }
+sub request_token  ($;$) { my $r = shift; $r->_attr ('request_token',  @_) }
+sub service_token  ($;$) { my $r = shift; $r->_attr ('service_token',  @_) }
+sub user           ($;$) { my $r = shift; $r->_attr ('user',           @_) }
 
-sub otp {
-    my $self = shift;
-    $self->{'otp'} = shift if @_;
-    return $self->{'otp'};
-}
-
+# Set or retrieve a proxy cookie of a particular type.  If given two
+# arguments, returns the proxy cookie for that type.  If given four arguments,
+# sets the proxy cookie and its corresponding session factor for that type.
 sub proxy_cookie {
-    my $self = shift;
-    my $type = shift;
-    if (@_ == 2) {
-        my ($cookie, $session_factor) = @_;
-        $self->{'cookies'}{$type}{'cookie'} = $cookie;
-        $self->{'cookies'}{$type}{'session_factor'} = $session_factor;
+    my ($self, $type, $cookie, $factor) = @_;
+    if (defined $cookie) {
+        $self->{cookies}{$type}{cookie} = $cookie;
+        $self->{cookies}{$type}{session_factor} = $factor;
     }
-    return $self->{'cookies'}{$type};
+    return $self->{cookies}{$type};
 }
 
-sub proxy_cookies {
-    my $self = shift;
-    $self->{'cookies'} = shift if @_;
-    my (%cookies);
-    foreach my $type (keys %{$self->{'cookies'}}) {
-        $cookies{$type} = $self->{'cookies'}{$type}{'cookie'};
+# Set or retrieve a hash of all cookies.  The returned hash maps a cookie type
+# to the proxy cookie.  If given a hash as a third argument, this should have
+# the same structure as the internal proxy cookie hash: each type maps to an
+# anonymous hash with two keys, cookie and session_factor.
+sub proxy_cookies ($;$) {
+    my ($self, $cookies) = @_;
+    $self->{cookies} = $cookies if defined $cookies;
+    my %cookies;
+    for my $type (keys %{ $self->{cookies} }) {
+        $cookies{$type} = $self->{cookies}{$type}{cookie};
     }
     return \%cookies;
 }
 
-sub proxy_cookies_rich {
-    my $self = shift;
+# Set or retrieve the hash of all cookies, including the session factors.
+# This returns the same format as is used internally.
+sub proxy_cookies_rich ($;$) {
+    my ($self, $cookies) = @_;
     $self->{'cookies'} = shift if @_;
     return $self->{'cookies'};
 }
 
-sub request_token {
-    my $self = shift;
-    $self->{'request_token'} = shift if @_;
-    return $self->{'request_token'};
-}
-
-sub service_token {
-    my $self = shift;
-    $self->{'service_token'} = shift if @_;
-    return $self->{'service_token'};
-}
-
-
-sub local_ip_addr {
-    my $self = shift;
-    $self->{'local_ip_addr'} = shift if @_;
-    return $self->{'local_ip_addr'};
-}
-
-sub local_ip_port {
-    my $self = shift;
-    $self->{'local_ip_port'} = shift if @_;
-    return $self->{'local_ip_port'};
-}
-
-sub remote_ip_addr {
-    my $self = shift;
-    $self->{'remote_ip_addr'} = shift if @_;
-    return $self->{'remote_ip_addr'};
-}
-
-sub remote_ip_port {
-    my $self = shift;
-    $self->{'remote_ip_port'} = shift if @_;
-    return $self->{'remote_ip_port'};
-}
-
-sub remote_user {
-    my $self = shift;
-    $self->{'remote_user'} = shift if @_;
-    return $self->{'remote_user'};
-}
-
 1;
+
+__END__
+
+=head1 NAME
+
+WebKDC::WebRequest - Encapsulates a request to a WebAuth WebKDC
+
+=head1 SYNOPSIS
+
+    use WebKDC::WebRequest;
+
+    my $req = WebKDC::WebRequest->new;
+    $req->user ($user);
+    $req->pass ($password);
+    $req->request_token ($RT);
+    $req->service_token ($ST);
+
+=head1 DESCRIPTION
+
+A WebKDC::WebRequest object encapsulates a request to a WebAuth WebKDC,
+representing a login attempt for a particular WebAuth Application Server.
+It is used by the WebLogin server as the argument to
+make_request_token_request.  The object has very little inherent
+functionality.  It's mostly a carrier for data.
+
+=head1 CLASS METHODS
+
+=over 4
+
+=item new ()
+
+Create a new, empty WebKDC::WebRequest object.  At least some parameters
+must be set using accessor functions as described below to do anything
+useful with the object.
+
+=back
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item local_ip_addr ([ADDR])
+
+=item local_ip_port ([PORT])
+
+=item remote_ip_addr ([ADDR])
+
+=item remote_ip_port ([PORT])
+
+Retrieve or set information about the network connection that is
+attempting authentication.  If one of these values is set, all of them
+should be set.  The remote_* parameters are the IP address of the remote
+client that is attempting to authenticate, and the local_* parameters are
+the local interface and port to which that client connected.
+
+=item otp ([CODE])
+
+Retrieve or set the one-time password sent by the user.  Either this or
+pass should be set, but not both.
+
+=item pass ([PASSWORD])
+
+Retrieve or set the password sent by the user.  Either this or otp should
+be set, but not both.
+
+=item remote_user ([USER])
+
+Retrieve or set the remote username, as determined by some external
+authentication system such as Apache authentication.  This is not
+currently used.
+
+=item request_token ([TOKEN])
+
+Retrieve or set the request token from the WebAuth application server that
+prompted this authentication request.  This must be set to create a valid
+WebKDC::WebRequest.
+
+=item service_token ([TOKEN])
+
+Retrieve or set the service token provided by the WebAuth application
+server, which contains the key used to decrypt the request token.  This
+must be set to create a valid WebKDC::WebRequest.
+
+=item user ([USER])
+
+Retrieve or set the username of the authenticating user.  This must be set
+to create a valid WebKDC::WebRequest.
+
+=back
+
+=head1 AUTHOR
+
+Roland Schemers and Russ Allbery <rra@stanford.edu>
+
+=head1 SEE ALSO
+
+WebKDC(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut

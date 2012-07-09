@@ -1,7 +1,7 @@
 # Configuration for the WebLogin script.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2004, 2005, 2006, 2007, 2008, 2009
+# Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -70,3 +70,58 @@ if (defined ($REALM)) {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+WebKDC::Config - Configuration for the WebAuth WebLogin service
+
+=head1 SYNOPSIS
+
+    use WebKDC::Config;
+    my $keyring = $WebKDC::Config::KEYRING_PATH;
+
+=head1 DESCRIPTION
+
+WebKDC::Config encapsulates all the site-specific configuration for the
+WebLogin component of the WebAuth web authentication system.  It is
+implemented as a Perl class that declares and sets the defaults for
+various configuration variables and then, if it exists, loads the file
+specified by the WEBKDC_CONFIG environment variable or
+F</etc/webkdc/webkdc.conf> if that environment variable isn't set.  That
+file should contain any site-specific overrides to the defaults.
+
+This file must be valid Perl.  To set a variable, use the syntax:
+
+    $VARIABLE = <value>;
+
+where VARIABLE is the variable name (always in all-capital letters) and
+<value> is the value.  If setting a variable to a string and not a number,
+you should normally enclose <value> in C<''>.  For example, to set the
+variable KEYRING_PATH to C</var/lib/webkdc/keyring>, use:
+
+    $KEYRING_PATH = '/var/lib/webkdc/keyring';
+
+There are some settings that take arrays instead of strings or numbers;
+for those, see the description of the setting for its syntax.
+
+It is also possible to customize WebLogin by defining some Perl functions
+in the configuration file.
+
+All the configuration settings are documented in F<docs/weblogin-config>
+in the WebAuth source tree.  This is also available on-line at
+L<http://webauth.stanford.edu/weblogin-config.html>.
+
+=head1 AUTHORS
+
+Roland Schemers and Russ Allbery <rra@stanford.edu>.
+
+=head1 SEE ALSO
+
+WebKDC(3), WebLogin(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut
