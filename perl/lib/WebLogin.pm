@@ -1810,6 +1810,9 @@ sub edit_remoteuser : Runmode {
 
 __END__
 
+=for stopwords
+WebAuth WebLogin CGI login API Allbery
+
 =head1 NAME
 
 WebLogin - Central login service for the WebAuth authentication system

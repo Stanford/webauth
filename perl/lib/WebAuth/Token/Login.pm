@@ -29,6 +29,9 @@ sub creation ($;$) { my $t = shift; $t->_attr ('creation', @_) }
 
 __END__
 
+=for stopwords
+WebAuth WebKDC login username otp timestamp KEYRING WebLogin Allbery
+
 =head1 NAME
 
 WebAuth::Token::Login - WebAuth login tokens
@@ -60,7 +63,7 @@ can be used.
 
 =head1 INSTANCE METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =head1 General Methods

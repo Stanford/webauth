@@ -33,6 +33,9 @@ sub expiration      ($;$) { my $t = shift; $t->_attr ('expiration',      @_) }
 
 __END__
 
+=for stopwords
+WebAuth WebKDC KEYRING timestamp decrypt loa Allbery
+
 =head1 NAME
 
 WebAuth::Token::App - WebAuth app tokens
@@ -54,7 +57,7 @@ There are two basic forms of this token: one that contains only the
 session_key attribute and one that contains the other attributes.  The
 first form is used to communicate the session key for WebKDC communication
 across a pool of WebAuth Application Servers that the user may visit
-interchageably while accessing the same URL.  The second form is used to
+interchangeably while accessing the same URL.  The second form is used to
 record the authenticated identity of the user for a session on a WebAuth
 Application Server.
 
@@ -72,7 +75,7 @@ can be used.
 
 =head1 INSTANCE METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =head1 General Methods

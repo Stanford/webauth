@@ -48,6 +48,9 @@ sub new ($$$$;$) {
 
 __END__
 
+=for stopwords
+WebAuth keyring WEBAUTH Allbery
+
 =head1 NAME
 
 WebAuth::Key - WebAuth encryption and decryption key
@@ -84,7 +87,7 @@ destroyed.
 
 =head1 CLASS METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =over 4

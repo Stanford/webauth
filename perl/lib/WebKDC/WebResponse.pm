@@ -93,6 +93,10 @@ sub login_history {
 
 __END__
 
+=for stopwords
+WebAuth WebKDC login WEBAUTHS multifactor WEBAUTHR IP hostname webkdc-proxy
+WebLogin Allbery
+
 =head1 NAME
 
 WebKDC::WebResponse - Encapsulates a response from a WebAuth WebKDC

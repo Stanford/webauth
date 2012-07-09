@@ -130,6 +130,10 @@ bootstrap WebAuth $VERSION;
 
 __END__
 
+=for stopwords
+WebAuth API keyring keyrings KEYRING CTX KDC ATTRS login KEYTAB PRINC
+decrypt decrypted EDATA Allbery const krb5 TGT SPRINC
+
 =head1 NAME
 
 WebAuth - Perl extension for WebAuth
@@ -264,13 +268,13 @@ will contain a more detailed error message.
 
 =item hex_decode (INPUT)
 
-Interpret INPUT as a sequence of hexidecimal numbers, with two characters
+Interpret INPUT as a sequence of hexadecimal numbers, with two characters
 per number, and convert each number into the corresponding byte, returning
 the result.
 
 =item hex_encode (INPUT)
 
-For each byte in INPUT, encode it in two hexidecimal digits, and return
+For each byte in INPUT, encode it in two hexadecimal digits, and return
 the resulting string.
 
 =item key_create (TYPE, SIZE[, KEY_MATERIAL])

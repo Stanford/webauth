@@ -73,6 +73,9 @@ sub to_string () {
 
 __END__
 
+=for stopwords
+WebAuth API Allbery
+
 =head1 NAME
 
 WebAuth::Exception - Rich exception for errors from WebAuth API methods
@@ -148,7 +151,7 @@ code.
 Returns a verbose error message, which consists of all information
 available in the exception, including the status code, error message, line
 number and file, and any detail message in the exception.  It also will
-include the kerberos error code and error message if status is
+include the Kerberos error code and error message if status is
 WA_ERR_KRB5.
 
 The result of this method is also used as the string value of the

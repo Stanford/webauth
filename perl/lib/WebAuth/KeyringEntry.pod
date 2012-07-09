@@ -1,3 +1,6 @@
+=for stopwords
+WebAuth keyring metadata timestamps Allbery
+
 =head1 NAME
 
 WebAuth::KeyringEntry - A single entry in a WebAuth::Keyring

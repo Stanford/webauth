@@ -73,6 +73,9 @@ if (defined ($REALM)) {
 
 __END__
 
+=for stopwords
+WebAuth WebLogin Allbery
+
 =head1 NAME
 
 WebKDC::Config - Configuration for the WebAuth WebLogin service

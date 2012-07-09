@@ -96,6 +96,9 @@ sub root {
 
 __END__
 
+=for stopwords
+WebKDC WebAuth ATTRS Allbery
+
 =head1 NAME
 
 WebKDC::XmlDoc - Manipulate a document of WebKDC::XmlElement objects

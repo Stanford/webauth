@@ -107,6 +107,10 @@ sub to_string {
 
 __END__
 
+=for stopwords
+WebKDC username login WebAuth WebKdcPermittedRealms multifactor logins
+errorCode Allbery
+
 =head1 NAME
 
 WebKDC::WebKDCException - Exceptions for WebKDC communications
@@ -165,10 +169,10 @@ and the function should be called again.
 
 =item WK_ERR_UNRECOVERABLE_ERROR
 
-This status code indicates that a function was called and an error occured
-that can not be recovered from.  If you are in the process of attempting
-to log a user in, you have no choice but to display an error message to
-the user and not prompt again.
+This status code indicates that a function was called and an error
+occurred that can not be recovered from.  If you are in the process of
+attempting to log a user in, you have no choice but to display an error
+message to the user and not prompt again.
 
 =item WK_ERR_REQUEST_TOKEN_STALE
 
@@ -179,7 +183,7 @@ action that caused them to be prompted for authentication.
 =item WK_ERR_WEBAUTH_SERVER_ERROR
 
 This status code indicates something happened that most likely indicates
-the WebAuth server that made the request is mis-configured and/or
+the WebAuth server that made the request is misconfigured and/or
 unauthorized to make the request.  It is similar to
 WK_ERR_UNRECOVERABLE_ERROR except that the error message to the user
 should indicate that the problem is most likely with the server that

@@ -351,6 +351,10 @@ sub request_token_request ($$) {
 
 __END__
 
+=for stopwords
+WebAuth webkdc-proxy authenticator WebKDC WebKDC's WebLogin AUTH TGT
+Allbery
+
 =head1 NAME
 
 WebKDC - Send requests to a WebAuth WebKDC

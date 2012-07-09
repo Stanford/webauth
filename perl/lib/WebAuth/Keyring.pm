@@ -58,6 +58,9 @@ sub read ($$$) {
 
 __END__
 
+=for stopwords
+WebAuth keyring keyrings WebKDCs WEBAUTH timestamp decrypted Allbery
+
 =head1 NAME
 
 WebAuth::Keyring - WebAuth keyring to hold encryption and decryption keys
@@ -93,7 +96,7 @@ destroyed.
 
 =head1 CLASS METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =over 4
@@ -127,7 +130,7 @@ This is a convenience wrapper around the WebAuth keyring_read() method.
 
 =head1 INSTANCE METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =over 4

@@ -86,6 +86,9 @@ sub proxy_cookies_rich ($;$) {
 
 __END__
 
+=for stopwords
+WebAuth WebKDC login IP otp username decrypt WebLogin Allbery
+
 =head1 NAME
 
 WebKDC::WebRequest - Encapsulates a request to a WebAuth WebKDC

@@ -239,6 +239,9 @@ sub to_string {
 
 __END__
 
+=for stopwords
+WebKDC WebAuth attr attrs Allbery
+
 =head1 NAME
 
 WebKDC::XmlElement - Parse and manipulate XML documents and elements
@@ -255,7 +258,7 @@ WebKDC::XmlElement - Parse and manipulate XML documents and elements
 =head1 DESCRIPTION
 
 A WebKDC::XmlElement object represents an XML element, including its
-attributes, textul content, and any nested elements.  It therefore can
+attributes, textual content, and any nested elements.  It therefore can
 represent an entire XML document, although XML documents are normally
 constructed via the methods provided by WebKDC::XmlDoc.  It is used
 internally by the WebKDC module to create and parse XML documents when

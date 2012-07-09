@@ -29,6 +29,9 @@ sub expiration  ($;$) { my $t = shift; $t->_attr ('expiration',  @_) }
 
 __END__
 
+=for stopwords
+WebAuth webkdc-service WebKDC WebKDC's KEYRING timestamp Allbery
+
 =head1 NAME
 
 WebAuth::Token::WebKDCService - WebAuth webkdc-service tokens
@@ -64,7 +67,7 @@ before the token can be used.
 
 =head1 INSTANCE METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =head1 General Methods

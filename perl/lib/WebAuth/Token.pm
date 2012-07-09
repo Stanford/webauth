@@ -63,6 +63,10 @@ sub _attr ($$;$) {
 
 __END__
 
+=for stopwords
+WebAuth WebKDC username WebLogin reauthenticating WebKDC's WEBAUTH KEYRING
+decrypt subclasses Allbery
+
 =head1 NAME
 
 WebAuth::Token - Generic WebAuth token handling
@@ -164,7 +168,7 @@ token.
 
 =head1 CLASS METHODS
 
-As with WebAuth module functions, failures are signalled by throwing
+As with WebAuth module functions, failures are signaled by throwing
 WebAuth::Exception rather than by return status.
 
 =over 4
