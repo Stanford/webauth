@@ -96,6 +96,14 @@ General:
    probably to auto-generate most of the code from a separate description
    of the options.
 
+ * WEBAUTH-107: Write an authentication provider for Shibboleth that
+   implements the WebAuth protocol natively, and using that, express to
+   WebAuth the final destination of the Shibboleth authentication,
+   allowing the WebLogin server to make more interesting decisions.  This
+   also would eliminate the need to front the Shibboleth IdP with an
+   Apache server and would be a natural extension of the work already done
+   in the native Java implementation.
+
 libwebauth:
 
  * WEBAUTH-37: Provide a way to report diagnostic warnings in the library,
