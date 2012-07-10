@@ -103,6 +103,18 @@ WebAuth 4.2.0 (unreleased)
 
     All WebKDC::* Perl modules now have POD documentation.
 
+    Update to rra-c-util 4.5:
+
+    * Pass --deps to krb5-config unless --enable-reduced-depends was used.
+    * Do not use krb5-config results unless gssapi is supported.
+    * Fix test suite portability to Solaris.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+
+    Update to C TAP Harness 1.12:
+
+    * Fix additional uses of local in the shell TAP library.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
