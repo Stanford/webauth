@@ -285,3 +285,12 @@ other tests:
     go to webkdc logout page (URL?) and logout of SSO
     go back to test1, and you should have to login again (username/password)
 
+-----
+
+Copyright 2003, 2006
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

@@ -20,3 +20,13 @@ For test.keyring.path, some tests have us create our own keyring, but one
 set of tests for login requires running on a working WebKDC server, and
 uses the system keyring.  If this file contains the path to the system
 keyring, use that.  Otherwise, skip the full login tests.
+
+-----
+
+Copyright 2010, 2012
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

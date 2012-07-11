@@ -62,6 +62,7 @@ GSS-API Kerberos via SASL.</p>
 <li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
 <li><img alt="" src="../images/down.gif" /> Ad hoc attributes lookup</li>
 <li><img alt="" src="../images/down.gif" /> WebAuth 2.x backward compatibility</li>
+<li><img alt="" src="../images/down.gif" /> Manual License</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -197,6 +198,17 @@ require group stanford:stanford
 
 <p>This backward compatibility support is probably of interest only to
 Stanford users, since WebAuth v2 was never publically released.</p>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Manual License</h2>
+
+<p>Copyright 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The Board of
+Trustees of the Leland Stanford Junior University</p>
+
+<p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright notice
+and this notice are preserved.  This file is offered as-is, without any
+warranty.</p>
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2>

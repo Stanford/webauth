@@ -90,6 +90,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
 <li><img alt="" src="../images/down.gif" /> Debugging mod_webauth</li>
 <li><img alt="" src="../images/down.gif" /> Setting up load-balanced WebAuth servers</li>
+<li><img alt="" src="../images/down.gif" /> Manual License</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -681,7 +682,17 @@ done
 # Restart the master and all the slaves at any point before the new key is
 # valid.
 </pre></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Manual License</h2>
 
+<p>Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The
+Board of Trustees of the Leland Stanford Junior University</p>
+
+<p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright notice
+and this notice are preserved.  This file is offered as-is, without any
+warranty.</p>
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAppTokenLifetime" id="WebAuthAppTokenLifetime">WebAuthAppTokenLifetime</a> <a name="webauthapptokenlifetime" id="webauthapptokenlifetime">Directive</a></h2>

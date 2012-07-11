@@ -7,6 +7,13 @@
  * small subset of what config.h defines, just those symbols that we want to
  * use in the module code.
  *
+ * Copyright 2003, 2005, 2006, 2010, 2011, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
+ *
+ * See LICENSE for licensing terms.
+ */
+
+/*
  * Define CONFIG_H_INCLUDED so that some portable header files know not to
  * include the main config.h.
  */

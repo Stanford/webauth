@@ -175,3 +175,13 @@ Implementation Details
 
   This webkdc-proxy token is never stored in a cookie, to force
   reauthentication with SPNEGO on each visit.
+
+License
+
+  Copyright 2006, 2008, 2009
+    The Board of Trustees of the Leland Stanford Junior University
+
+  Copying and distribution of this file, with or without modification, are
+  permitted in any medium without royalty provided the copyright notice
+  and this notice are preserved.  This file is offered as-is, without any
+  warranty.
