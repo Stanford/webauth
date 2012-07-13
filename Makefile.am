@@ -30,7 +30,6 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm perl/lib/WebAuth/Token.pm  \
 	perl/t/pending-expire.t perl/t/token-decode.t perl/t/token-encode.t \
 	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/typemap
 
-AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	conf/debian/webauth.conf conf/debian/webauth.load		    \

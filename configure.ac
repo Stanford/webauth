@@ -11,14 +11,15 @@ AC_INIT([WebAuth], [4.1.1], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([1.11 check-news silent-rules -Wall -Werror])
+AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
+    -Wall -Werror])
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT
 RRA_LD_VERSION_SCRIPT
 
 dnl Store information about the time the package was configured and the person
