@@ -30,6 +30,7 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
   * Update to debhelper compatibility level V9.
     - Use dpkg-buildflags to set CFLAGS.
     - Enable bindnow hardening.  Leave PIE off for right now.
+  * Convert debian/copyright to copyright-format 1.0.
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
 
