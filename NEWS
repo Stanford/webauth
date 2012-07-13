@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.2.0 (unreleased)
+WebAuth 4.2.0 (2012-07-13)
 
     Port to Apache 2.4 (tested with Apache 2.4.1).
 
