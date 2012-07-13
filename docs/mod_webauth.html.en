@@ -90,6 +90,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
 <li><img alt="" src="../images/down.gif" /> Debugging mod_webauth</li>
 <li><img alt="" src="../images/down.gif" /> Setting up load-balanced WebAuth servers</li>
+<li><img alt="" src="../images/down.gif" /> Manual License</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -150,7 +151,7 @@ to have additional environment variables set.
 </p>
 
 <p>Additionally, requesting credentials for a particular request may cause
-environment variables to get set.  For example, request Kerberos V5
+environment variables to get set.  For example, requesting Kerberos
 credentials will result in the KRB5CCNAME environment variable being
 set.</p>
 
@@ -525,7 +526,7 @@ control which requests will actually go through this process.</p>
 
 <p>The following example shows one scenario where every page under /myapp/
 is WebAuth-protected, and every page under /myapp/commands/ requires the
-use of two Kerberos V5 credentials.</p>
+use of two Kerberos credentials.</p>
 
 <div class="example"><h3>Example</h3><pre>
 # This first WebAuthCred directive will cause us to acquire a proxy token
@@ -681,7 +682,17 @@ done
 # Restart the master and all the slaves at any point before the new key is
 # valid.
 </pre></div>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Manual License</h2>
 
+<p>Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The
+Board of Trustees of the Leland Stanford Junior University</p>
+
+<p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright notice
+and this notice are preserved.  This file is offered as-is, without any
+warranty.</p>
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAppTokenLifetime" id="WebAuthAppTokenLifetime">WebAuthAppTokenLifetime</a> <a name="webauthapptokenlifetime" id="webauthapptokenlifetime">Directive</a></h2>
@@ -1149,7 +1160,7 @@ WebAuthKeyringKeyLifetime 60d<br />
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeytab" id="WebAuthKeytab">WebAuthKeytab</a> <a name="webauthkeytab" id="webauthkeytab">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos V5 keytab file
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos keytab file
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
@@ -1158,7 +1169,7 @@ WebAuthKeyringKeyLifetime 60d<br />
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
-This is the name of the Kerberos V5 keytab file. If principal is not
+This is the name of the Kerberos keytab file. If principal is not
 specified, then the first principal in the keytab file be used.</p>
 
 <p>If the path
@@ -1629,8 +1640,8 @@ by <em>type</em>:</p>
 <li><code>krb5</code>
     <p>
     When this type of subject authenticator is used, the WebKDC will use
-    the user's Kerberos V5 credentials to make a <code>krb5_mk_req</code>
-    call, using the requesting web server's Kerberos V5 principal. When
+    the user's Kerberos credentials to make a <code>krb5_mk_req</code>
+    call, using the requesting web server's Kerberos principal. When
     mod_webauth gets back the id-token, it will then use it's keytab to
     verify the subject authenticator using <code>krb5_rd_req</code>.</p>
     <p>This basically means that even if the WebKDC is compromised, a
@@ -1746,7 +1757,7 @@ WebAuthVarPrefix HTTP_<br />
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcPrincipal" id="WebAuthWebKdcPrincipal">WebAuthWebKdcPrincipal</a> <a name="webauthwebkdcprincipal" id="webauthwebkdcprincipal">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The Kerberos V5 principal name of the WebKDC
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The Kerberos principal name of the WebKDC
 </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
@@ -1755,7 +1766,7 @@ WebAuthVarPrefix HTTP_<br />
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
 <p>
-This is the name of the Kerberos V5 Principal to use when communicating with
+This is the name of the Kerberos principal to use when communicating with
 the WebKDC. It used to request a service-token from the WebKDC. </p>
 
 <div class="note"><h3>Note</h3>

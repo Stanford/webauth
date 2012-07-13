@@ -5,8 +5,8 @@
  * representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
- *     The Board of Trustees of the Leland Stanford Junior Univerity
+ * Copyright 2011, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
@@ -19,9 +19,29 @@
 #include <time.h>
 
 #include <lib/internal.h>
+#include <util/macros.h>
 #include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
+
+/*
+ * The mapping of token types to token names.  Note that WA_TOKEN_ANY cannot
+ * be used with this array and has to be handled specially so that its value
+ * won't be used by any new token type.  This must be kept in sync with the
+ * enum webauth_token_type definition in webauth/tokens.h.
+ */
+static const char * const token_name[] = {
+    "unknown",
+    WA_TT_APP,
+    WA_TT_CRED,
+    WA_TT_ERROR,
+    WA_TT_ID,
+    WA_TT_LOGIN,
+    WA_TT_PROXY,
+    WA_TT_REQUEST,
+    WA_TT_WEBKDC_PROXY,
+    WA_TT_WEBKDC_SERVICE
+};
 
 /*
  * Macros for decoding attributes, which make code easier to read and audit.
@@ -61,6 +81,36 @@
 
 
 /*
+ * Map a token type string to one of the enum token_type constants.  Returns
+ * WA_TOKEN_UNKNOWN on error.  This would arguably be faster as a binary
+ * search, but there aren't enough cases to worry about it.
+ */
+enum webauth_token_type
+webauth_token_type_code(const char *type)
+{
+    size_t i;
+
+    for (i = 0; i < ARRAY_SIZE(token_name); i++)
+        if (strcmp(type, token_name[i]) == 0)
+            return i;
+    return WA_TOKEN_UNKNOWN;
+}
+
+
+/*
+ * Map a token type code to the corresponding string representation used in
+ * tokens.  Returns NULL for an invalid code.
+ */
+const char *
+webauth_token_type_string(enum webauth_token_type type)
+{
+    if (type >= ARRAY_SIZE(token_name))
+        return NULL;
+    return token_name[type];
+}
+
+
+/*
  * Parse a raw token into an attribute list and check whether it's the token
  * type that we expected.  type may be set to WA_TOKEN_ANY to accept any token
  * type, in which case it will be changed to match the actual token type on
@@ -70,12 +120,14 @@
  */
 static int
 parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
-            const void *token, size_t length, const WEBAUTH_KEYRING *keyring,
-            WEBAUTH_ATTR_LIST **alist)
+            const void *token, size_t length,
+            const struct webauth_keyring *keyring, WEBAUTH_ATTR_LIST **alist)
 {
+    void *attrs;
     char *value;
-    void *input;
+    size_t alen;
     const char *type_string = NULL;
+    time_t expiration, now;
     int status;
 
     /* Do some initial sanity checking. */
@@ -86,14 +138,17 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
         return WA_ERR_INVALID;
     }
 
-    /* FIXME: Fix webauth_token_parse to not be destructive. */
-    input = apr_palloc(ctx->pool, length);
-    memcpy(input, token, length);
-
-    /* Parse the token. */
-    status = webauth_token_parse(input, length, 0, keyring, alist);
+    /* Decrypt the token. */
+    status = webauth_token_decrypt(ctx, token, length, &attrs, &alen, keyring);
     if (status != WA_ERR_NONE)
-        goto error;
+        return status;
+
+    /* Decode the attributes. */
+    status = webauth_attrs_decode(attrs, alen, alist);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "error decoding token attributes");
+        return status;
+    }
 
     /* Check the token type to see if it's what we expect. */
     status = webauth_attr_list_get_str(*alist, WA_TK_TOKEN_TYPE, &value,
@@ -114,6 +169,23 @@ parse_token(struct webauth_context *ctx, enum webauth_token_type *type,
                           " %s token", value, type_string);
         goto fail;
     }
+
+    /* See if the token has an explicit expiration. */
+    status = webauth_attr_list_get_time(*alist, WA_TK_EXPIRATION_TIME,
+                                        &expiration, WA_F_NONE);
+    if (status == WA_ERR_NONE) {
+        now = time(NULL);
+        if (expiration < now) {
+            status = WA_ERR_TOKEN_EXPIRED;
+            webauth_error_set(ctx, status, "token expired at %lu",
+                              (unsigned long) expiration);
+            goto fail;
+        }
+    } else if (status != WA_ERR_NOT_FOUND) {
+        webauth_error_set(ctx, status, "error retrieving expiration time");
+        return status;
+    }
+
     return WA_ERR_NONE;
 
 error:
@@ -637,7 +709,7 @@ fail:
 int
 webauth_token_decode_raw(struct webauth_context *ctx,
                          enum webauth_token_type type, const void *token,
-                         size_t length, const WEBAUTH_KEYRING *ring,
+                         size_t length, const struct webauth_keyring *ring,
                          struct webauth_token **decoded)
 {
     WEBAUTH_ATTR_LIST *alist = NULL;
@@ -703,7 +775,7 @@ webauth_token_decode_raw(struct webauth_context *ctx,
 int
 webauth_token_decode(struct webauth_context *ctx,
                      enum webauth_token_type type, const char *token,
-                     const WEBAUTH_KEYRING *ring,
+                     const struct webauth_keyring *ring,
                      struct webauth_token **decoded)
 {
     size_t length;

@@ -48,11 +48,12 @@ if ($kerberos_config) {
 # Test actually loading WebAuth module.
 use WebAuth qw(:const);
 ok (1, 'loading WebAuth works');
+my $wa = WebAuth->new;
 
 my ($context, $sp, $ctx_princ, $tgt, $expiration, $princ, $ticket, $rprinc,
     $request, $client_princ);
 
-eval { $context = WebAuth::krb5_new () };
+eval { $context = $wa->krb5_new () };
 ok ($context->isa ('WEBAUTH_KRB5_CTXTPtr'), 'krb5_new works');
 
 eval {
@@ -82,7 +83,7 @@ ok ($expiration, ' and an expiration time');
 
 # Nuke current context and import from tgt we created
 eval {
-    $context = WebAuth::krb5_new ();
+    $context = $wa->krb5_new ();
     WebAuth::krb5_init_via_cred ($context, $tgt);
 };
 ok (!$@, 'krb5_init_via_cred from a tgt works');
@@ -93,7 +94,7 @@ ok (!$@, 'krb5_import_cred to import an exported ticket works');
 
 # Nuke current context and get from keytab
 eval {
-    $context = WebAuth::krb5_new ();
+    $context = $wa->krb5_new ();
     WebAuth::krb5_init_via_keytab ($context, $keytab, '');
 };
 ok (!$@, 'krb5_init_via_keytab to get context from a keytab works');

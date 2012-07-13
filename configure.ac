@@ -7,18 +7,19 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.1.1], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.2.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([1.11 check-news silent-rules -Wall -Werror])
+AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
+    -Wall -Werror])
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT
 RRA_LD_VERSION_SCRIPT
 
 dnl Store information about the time the package was configured and the person
@@ -72,6 +73,12 @@ AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
     [$PATH$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/usr/local/sbin])
 
 RRA_LIB_APACHE
+RRA_LIB_APACHE_SWITCH
+AC_CHECK_DECLS([ap_get_server_description, ap_register_auth_provider,
+    ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
+AC_CHECK_MEMBERS([request_rec.useragent_ip], [], [],
+    [RRA_INCLUDES_APACHE])
+RRA_LIB_APACHE_RESTORE
 RRA_LIB_APR
 RRA_LIB_APRUTIL
 RRA_LIB_KRB5
@@ -103,6 +110,14 @@ RRA_LIB_SSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
+dnl If we have libkeyutils, we can support tighter permissions on keyring
+dnl caches.
+KEYUTILS_LIBS=
+AC_CHECK_LIB([keyutils], [keyctl_search],
+    [KEYUTILS_LIBS=-lkeyutils
+     AC_DEFINE([HAVE_LIBKEYUTILS], [1],
+        [Define to 1 if you have the `keyutils' library (-lkeyutils).])])
+
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([strings.h sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
@@ -127,13 +142,16 @@ dnl dependencies that libwebauth may need, but don't do so if
 dnl --enable-reduced-depends was specified.
 AS_IF([test x"$rra_reduced_depends" = xtrue],
     [DEPEND_LIBS=],
-    [DEPEND_LIBS="$KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
-     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS"])
+    [DEPEND_LIBS="$APR_LDFLAGS $APR_LIBS $APRUTIL_LDFLAGS $APRUTIL_LIBS"
+     DEPEND_LIBS="$DEPEND_LIBS $REMCTL_LDFLAGS $REMCTL_LIBS"
+     DEPEND_LIBS="$DEPEND_LIBS $KRB5_LDFLAGS $KRB5_LIBS -lcom_err"
+     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
-AC_CONFIG_HEADERS([config.h modules/mod-config.h])
-AS_IF([test x"$build_perl" = xtrue], [AC_CONFIG_FILES([perl/Makefile.PL])])
+AC_CONFIG_HEADERS([config.h config-mod.h])
+AS_IF([test x"$build_perl" = xtrue],
+    [AC_CONFIG_FILES([perl/Makefile.PL perl/t/lib/RRA/TAP/Automake.pm])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=include/webauth/defines.h])

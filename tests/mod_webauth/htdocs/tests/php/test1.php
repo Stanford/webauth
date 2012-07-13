@@ -1,4 +1,13 @@
 <?php 
+/*
+ * Copyright 2003
+ *     The Board of Trustees of the Leland Stanford Junior University
+ * 
+ * Copying and distribution of this file, with or without modification, are
+ * permitted in any medium without royalty provided the copyright notice and
+ * this notice are preserved.  This file is offered as-is, without any
+ * warranty.
+ */
 
 $ru_env = getenv('REMOTE_USER');
 
@@ -38,5 +47,4 @@ EOS;
 phpinfo(); 
 
 print "</html>";
-
 ?>

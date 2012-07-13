@@ -32,9 +32,8 @@ int
 main(void)
 {
     apr_pool_t *pool = NULL;
-    WEBAUTH_KEYRING *ring, *session;
-    WEBAUTH_KEY *session_key;
-    char key_data[WA_AES_128];
+    struct webauth_keyring *ring, *session;
+    struct webauth_key *session_key;
     int status;
     char *keyring;
     time_t now;
@@ -59,10 +58,10 @@ main(void)
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read_file(keyring, &ring);
+    status = webauth_keyring_read(ctx, keyring, &ring);
     if (status != WA_ERR_NONE)
         bail("cannot read %s: %s", keyring,
-             webauth_error_message(NULL, status));
+             webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
     /* Provide basic configuration to the WebKDC code. */
@@ -79,12 +78,12 @@ main(void)
     memset(&request, 0, sizeof(request));
     memset(&service, 0, sizeof(service));
     service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    if (webauth_random_key(key_data, sizeof(key_data)) != WA_ERR_NONE)
-        bail("cannot create random key");
-    session_key = webauth_key_create(WA_AES_KEY, key_data, sizeof(key_data));
-    status = webauth_keyring_from_key(ctx, session_key, &session);
+
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
+                                &session_key);
     if (status != WA_ERR_NONE)
-        bail("cannot create keyring from session key");
+        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    session = webauth_keyring_from_key(ctx, session_key);
     service.session_key = session_key->data;
     service.session_key_len = session_key->length;
     service.creation = now;
@@ -233,8 +232,6 @@ main(void)
     is_string("testuser", response->subject, "...but we do know the subject");
 
     /* Clean up. */
-    webauth_keyring_free(ring);
-    webauth_key_free(session_key);
     apr_terminate();
     return 0;
 }

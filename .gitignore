@@ -1,6 +1,7 @@
 /Makefile.in
 /aclocal.m4
 /build-aux/
+/config-mod.h
 /config.h
 /config.h.in
 /config.h.in~
@@ -17,8 +18,6 @@
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
-/modules/mod-config.h
-/modules/stamp-h2
 /perl/MANIFEST.bak
 /perl/MYMETA.yml
 /perl/Makefile.PL
@@ -32,9 +31,11 @@
 /perl/t/data/test.principal
 /perl/t/data/test.principal-webauth
 /perl/t/data/test.realm
+/perl/t/lib/RRA/TAP/Automake.pm
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1
+/stamp-h2
 /tests/config/keytab
 /tests/config/password
 /tests/data/conf-webkdc
@@ -43,14 +44,13 @@
 /tests/lib/hex-t
 /tests/lib/factors-t
 /tests/lib/interval-t
-/tests/lib/key-t
+/tests/lib/keyring-t
 /tests/lib/keys-t
 /tests/lib/krb5-t
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
-/tests/lib/token-t
 /tests/lib/webkdc-info-t
 /tests/lib/webkdc-krb-t
 /tests/lib/webkdc-login-t

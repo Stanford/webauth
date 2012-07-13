@@ -1,8 +1,8 @@
 /*
- * WebKDC interface to retrieving user metadata.
+ * WebKDC interface to retrieving user information.
  *
- * These interfaces are used by the WebKDC implementation to retrieve metadata
- * about a user from the user metadata service.
+ * These interfaces are used by the WebKDC implementation to retrieve data
+ * about a user from the user information service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011, 2012
@@ -41,12 +41,12 @@
 
 
 /*
- * Configure how to access the user metadata service.  Takes the method, the
- * host, an optional port (may be 0 to use the default for that method), an
- * optional authentication identity for the remote service (may be NULL to use
- * the default for that method), and a method-specific command parameter such
- * as a remctl command name or a partial URL.  The configuration information
- * is stored in the WebAuth context and used for all subsequent
+ * Configure how to access the user information service.  Takes the method,
+ * the host, an optional port (may be 0 to use the default for that method),
+ * an optional authentication identity for the remote service (may be NULL to
+ * use the default for that method), and a method-specific command parameter
+ * such as a remctl command name or a partial URL.  The configuration
+ * information is stored in the WebAuth context and used for all subsequent
  * webauth_userinfo queries.
  */
 int
@@ -62,7 +62,7 @@ webauth_user_config(struct webauth_context *ctx,
     }
     if (user->host == NULL) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "user metadata host must be set");
+        webauth_error_set(ctx, status, "user information host must be set");
         goto done;
     }
     if (user->protocol == WA_PROTOCOL_REMCTL && user->keytab == NULL) {
@@ -278,11 +278,11 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
 
 
 /*
- * Issue a remctl command to the user metadata service.  Takes the argv-style
- * vector of the command to execute and a timeout (which may be 0 to use no
- * timeout), and stores the resulting XML document in the provided argument.
- * On any error, including remote failure to execute the command, sets the
- * WebAuth error and returns a status code.
+ * Issue a remctl command to the user information service.  Takes the
+ * argv-style vector of the command to execute and a timeout (which may be 0
+ * to use no timeout), and stores the resulting XML document in the provided
+ * argument.  On any error, including remote failure to execute the command,
+ * sets the WebAuth error and returns a status code.
  */
 #ifdef HAVE_REMCTL
 static int
@@ -457,7 +457,7 @@ remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
 
 
 /*
- * Call the user metadata info service via remctl and parse the results into a
+ * Call the user information service via remctl and parse the results into a
  * webauth_user_info struct.
  */
 static int
@@ -484,8 +484,8 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
 
 
 /*
- * Call the user metadata validation service via remctl and parse the results
- * into a webauth_user_validate struct.
+ * Call the user validation service via remctl and parse the results into a
+ * webauth_user_validate struct.
  */
 static int
 remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
@@ -510,8 +510,8 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
 
 
 /*
- * Common code to sanity-check the environment for a user metadata call.  On
- * any error, sets the WebAuth error message and returns an error code.
+ * Common code to sanity-check the environment for a user information call.
+ * On any error, sets the WebAuth error message and returns an error code.
  */
 static int
 check_config(struct webauth_context *ctx)
@@ -520,7 +520,8 @@ check_config(struct webauth_context *ctx)
 
     if (ctx->user == NULL) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "user metadata service not configured");
+        webauth_error_set(ctx, status,
+                          "user information service not configured");
         return status;
     }
     if (ctx->user->protocol == WA_PROTOCOL_REMCTL) {
@@ -543,8 +544,8 @@ check_config(struct webauth_context *ctx)
  * Obtain user information for a given user.  The IP address of the user (as a
  * string) is also provided, defaulting to 127.0.0.1.  The final flag
  * indicates whether a site requested random multifactor and asks the user
- * metadata service to calculate whether multifactor is forced based on that
- * random multifactor chance.
+ * information service to calculate whether multifactor is forced based on
+ * that random multifactor chance.
  *
  * On success, sets the info parameter to a new webauth_userinfo struct
  * allocated from pool memory, sets random multifactor if we were asked to

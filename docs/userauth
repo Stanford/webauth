@@ -122,3 +122,13 @@ to use it.  For more detailed information and more examples, see the
 Apache manual; all of this works exactly the same way as it does with a
 completely stock Apache server except that the user identity is
 established using WebAuth instead of some other authentication mechanism.
+
+-----
+
+Copyright 2009
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

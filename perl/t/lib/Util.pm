@@ -2,7 +2,7 @@
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Parts from Russ Allbery <rra@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -13,17 +13,17 @@ require 5.006;
 use strict;
 use vars qw(@ISA @EXPORT $VERSION);
 
-use WebAuth qw (:const);
+use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '2.00';
 
 use Exporter ();
 @ISA    = qw(Exporter);
 @EXPORT = qw(contents get_userinfo remctld_spawn remctld_stop create_keyring
-    getcreds);
+             getcreds);
 
 ##############################################################################
 # General utility functions
@@ -49,35 +49,6 @@ sub contents {
     close FILE;
     chomp $data;
     return $data;
-}
-
-##############################################################################
-# User test configuration
-##############################################################################
-
-# Set up the database configuration parameters.  Use a local SQLite database
-# for testing by default, but support t/data/test.database as a configuration
-# file to use another database backend.
-sub db_setup {
-    if (-f 't/data/test.database') {
-        open (DB, '<', 't/data/test.database')
-            or die "cannot open t/data/test.database: $!";
-        my $driver = <DB>;
-        my $info = <DB>;
-        my $user = <DB>;
-        my $password = <DB>;
-        chomp ($driver, $info);
-        chomp $user if $user;
-        chomp $password if $password;
-        $Wallet::Config::DB_DRIVER = $driver;
-        $Wallet::Config::DB_INFO = $info;
-        $Wallet::Config::DB_USER = $user if $user;
-        $Wallet::Config::DB_PASSWORD = $password if $password;
-    } else {
-        $Wallet::Config::DB_DRIVER = 'SQLite';
-        $Wallet::Config::DB_INFO = 'wallet-db';
-        unlink 'wallet-db';
-    }
 }
 
 ##############################################################################
@@ -121,12 +92,10 @@ sub create_keyring {
     my ($fname) = @_;
     return if -f $fname;
 
-    my $key = WebAuth::key_create (WebAuth::WA_AES_KEY,
-                                   WebAuth::random_key (WebAuth::WA_AES_128));
-    my $ring = WebAuth::Keyring->new (32);
-    my $curr = time();
-    $ring->add ($curr, $curr, $key);
-    $ring->write_file ($fname);
+    my $wa = WebAuth->new;
+    my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
+    my $ring = $wa->keyring_new ($key);
+    $ring->write ($fname);
 }
 
 ##############################################################################

@@ -2,7 +2,7 @@
  * Test token decoding.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -15,6 +15,7 @@
 #include <util/xmalloc.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 
@@ -53,7 +54,7 @@ read_token(const char *filename)
  */
 static struct webauth_token *
 check_decode(struct webauth_context *ctx, enum webauth_token_type type,
-             const char *name, WEBAUTH_KEYRING *ring, int count)
+             const char *name, const struct webauth_keyring *ring, int count)
 {
     char *path, *token;
     int status;
@@ -84,7 +85,8 @@ check_decode(struct webauth_context *ctx, enum webauth_token_type type,
  */
 static struct webauth_token *
 check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
-                 const char *name, WEBAUTH_KEYRING *ring, int count)
+                 const char *name, const struct webauth_keyring *ring,
+                 int count)
 {
     char *filename, *path;
     FILE *token;
@@ -127,7 +129,7 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
  */
 static void
 check_error(struct webauth_context *ctx, enum webauth_token_type type,
-            const char *name, WEBAUTH_KEYRING *ring, int code,
+            const char *name, const struct webauth_keyring *ring, int code,
             const char *message)
 {
     int s;
@@ -152,7 +154,8 @@ check_error(struct webauth_context *ctx, enum webauth_token_type type,
 int
 main(void)
 {
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring, *bad_ring;
+    struct webauth_key *key;
     char *keyring;
     int status;
     struct webauth_context *ctx;
@@ -167,7 +170,7 @@ main(void)
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
-    plan(293);
+    plan(295);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -178,10 +181,10 @@ main(void)
      * that's stored in that directory.  So start by loading that keyring.
      */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read_file(keyring, &ring);
+    status = webauth_keyring_read(ctx, keyring, &ring);
     if (status != WA_ERR_NONE)
         bail("cannot read %s: %s", keyring,
-             webauth_error_message(NULL, status));
+             webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
     /*
@@ -232,13 +235,24 @@ main(void)
 
     /* Test decoding error cases for app tokens. */
     check_error(ctx, WA_TOKEN_APP, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "bad app token");
+                "HMAC check failed while decrypting token");
     check_error(ctx, WA_TOKEN_APP, "app-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad app token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type cred while decoding app token");
+
+    /*
+     * Create a different keyring and test decoding a token using a keyring
+     * that does not contain a usable key.
+     */
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    if (key == NULL)
+        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    bad_ring = webauth_keyring_from_key(ctx, key);
+    check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC,
+                "HMAC check failed while decrypting token");
 
     /* Test decoding of a credential token. */
     result = check_decode(ctx, WA_TOKEN_CRED, "cred-ok", ring, 7);
@@ -258,7 +272,7 @@ main(void)
     check_error(ctx, WA_TOKEN_CRED, "cred-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_CRED, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad cred token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type error while decoding cred token");
 
@@ -321,7 +335,7 @@ main(void)
 
     /* Test decoding error cases for id tokens. */
     check_error(ctx, WA_TOKEN_ID, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad id token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_ID, "login-pass", ring, WA_ERR_CORRUPT,
                 "wrong token type login while decoding id token");
 
@@ -369,7 +383,7 @@ main(void)
     check_error(ctx, WA_TOKEN_PROXY, "proxy-empty", ring, WA_ERR_CORRUPT,
                 "decoding attribute s failed");
     check_error(ctx, WA_TOKEN_PROXY, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "bad proxy token");
+                "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
                 "wrong token type req while decoding proxy token");
 
@@ -492,7 +506,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-proxy tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "bad webkdc-proxy token");
+                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app while decoding webkdc-proxy token");
 
@@ -511,7 +525,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-service tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "bad webkdc-service token");
+                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app while decoding webkdc-service token");
 
@@ -580,12 +594,9 @@ main(void)
                   "...subject");
     }
 
-    /*
-     * And test basic error handling with generic decoding.  We won't bother
-     * to test the error message; that was previously tested.
-     */
+    /* And test basic error handling with generic decoding. */
     check_error(ctx, WA_TOKEN_ANY, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "bad token");
+                "HMAC check failed while decrypting token");
 
     /* Test decoding of a raw app token. */
     result = check_decode_raw(ctx, WA_TOKEN_APP, "app-raw", ring, 9);
@@ -603,7 +614,6 @@ main(void)
     }
 
     /* Clean up. */
-    webauth_keyring_free(ring);
     webauth_context_free(ctx);
     return 0;
 }

@@ -117,8 +117,8 @@ Schemers & Allbery                                              [Page 2]
      5.5.  Kerberos Credential Encoding . . . . . . . . . . . . . . . 45
    6.  Cookie Formats . . . . . . . . . . . . . . . . . . . . . . . . 48
    Appendix A.  Document Revision History . . . . . . . . . . . . . . 49
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 51
-
+   Appendix B.  License . . . . . . . . . . . . . . . . . . . . . . . 51
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 52
 
 
 
@@ -2801,6 +2801,62 @@ Schemers & Allbery                                             [Page 50]
                      WebAuth Technical Specification           June 2011
 
 
+Appendix B.  License
+
+   Copyright 2006, 2008, 2009, 2010, 2011 The Board of Trustees of the
+   Leland Stanford Junior University
+
+   Copying and distribution of this file, with or without modification,
+   are permitted in any medium without royalty provided the copyright
+   notice and this notice are preserved.  This file is offered as-is,
+   without any warranty.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 51]
+
+                     WebAuth Technical Specification           June 2011
+
+
 Authors' Addresses
 
    Roland Schemers
@@ -2852,5 +2908,5 @@ Authors' Addresses
 
 
 
-Schemers & Allbery                                             [Page 51]
+Schemers & Allbery                                             [Page 52]
 

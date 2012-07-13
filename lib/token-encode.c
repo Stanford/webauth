@@ -5,8 +5,8 @@
  * tokens representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
- *     The Board of Trustees of the Leland Stanford Junior Univerity
+ * Copyright 2011, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
@@ -109,11 +109,11 @@
  * sets the WebAuth error.
  */
 static int
-prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
+prep_encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
             const void **token, WEBAUTH_ATTR_LIST **alist)
 {
     *token = NULL;
-    if (keyring == NULL) {
+    if (ring == NULL) {
         webauth_error_set(ctx, WA_ERR_BAD_KEY,
                           "keyring is NULL when encoding token");
         return WA_ERR_BAD_KEY;
@@ -135,26 +135,25 @@ prep_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
  * token is not set on error.
  */
 static int
-finish_encode(struct webauth_context *ctx, const WEBAUTH_KEYRING *keyring,
+finish_encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
               const WEBAUTH_ATTR_LIST *alist, const void **token,
               size_t *length)
 {
-    char *rtoken;
+    size_t alen;
+    char *attrs;
+    void *rtoken;
     int status;
 
-    /*
-     * Encode the token.  First, we encode the binary form into newly
-     * allocated memory, and then we allocate an additional block of memory
-     * for the base64-encoded form.  The first block is temporary memory that
-     * we could reclaim faster if it ever looks worthwhile.
-     */
-    *length = webauth_token_encoded_length(alist);
-    rtoken = apr_palloc(ctx->pool, *length);
-    status = webauth_token_create(alist, 0, rtoken, length, *length, keyring);
+    alen = webauth_attrs_encoded_length(alist);
+    attrs = apr_palloc(ctx->pool, alen);
+    status = webauth_attrs_encode(alist, attrs, &alen, alen);
     if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "error encoding app token");
+        webauth_error_set(ctx, status, "error encoding attributes");
         return status;
     }
+    status = webauth_token_encrypt(ctx, attrs, alen, &rtoken, length, ring);
+    if (status != WA_ERR_NONE)
+        return status;
     *token = rtoken;
     return WA_ERR_NONE;
 }
@@ -282,7 +281,6 @@ encode_id(struct webauth_context *ctx, const struct webauth_token_id *id,
     time_t creation;
 
     /* Sanity-check the token attributes. */
-    CHECK_STR(id, subject);
     CHECK_STR(id, auth);
     CHECK_NUM(id, expiration);
     if (strcmp(id->auth, "krb5") != 0 && strcmp(id->auth, "webkdc") != 0) {
@@ -290,16 +288,19 @@ encode_id(struct webauth_context *ctx, const struct webauth_token_id *id,
                           "unknown subject auth %s for id token", id->auth);
         goto corrupt;
     }
+    if (strcmp(id->auth, "webkdc") == 0)
+        CHECK_STR(id, subject);
     if (strcmp(id->auth, "krb5") == 0)
         CHECK_DATA(id, auth_data);
 
     /* Encode the token attributes into the attribute list. */
     creation = (id->creation > 0) ? id->creation : time(NULL);
     ADD_STR( WA_TK_TOKEN_TYPE,      WA_TT_ID);
-    ADD_STR( WA_TK_SUBJECT,         id->subject);
     ADD_STR( WA_TK_SUBJECT_AUTH,    id->auth);
     ADD_TIME(WA_TK_CREATION_TIME,   creation);
     ADD_TIME(WA_TK_EXPIRATION_TIME, id->expiration);
+    if (id->subject != NULL)
+        ADD_STR(WA_TK_SUBJECT, id->subject);
     if (id->auth_data != NULL)
         ADD_DATA(WA_TK_SUBJECT_AUTH_DATA, id->auth_data, id->auth_data_len);
     if (id->initial_factors != NULL)
@@ -570,8 +571,8 @@ corrupt:
 int
 webauth_token_encode_raw(struct webauth_context *ctx,
                          const struct webauth_token *data,
-                         const WEBAUTH_KEYRING *ring, const void **token,
-                         size_t *length)
+                         const struct webauth_keyring *ring,
+                         const void **token, size_t *length)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;
@@ -639,13 +640,19 @@ fail:
 int
 webauth_token_encode(struct webauth_context *ctx,
                      const struct webauth_token *data,
-                     const WEBAUTH_KEYRING *ring, const char **token)
+                     const struct webauth_keyring *ring, const char **token)
 {
     int status;
     const void *raw;
     char *btoken;
     size_t length;
 
+    /*
+     * First, we encode the binary form into newly allocated memory, and then
+     * we allocate an additional block of memory for the base64-encoded form.
+     * The first block is temporary memory that we could reclaim faster if it
+     * ever looks worthwhile.
+     */
     *token = NULL;
     status = webauth_token_encode_raw(ctx, data, ring, &raw, &length);
     if (status != WA_ERR_NONE)

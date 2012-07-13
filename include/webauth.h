@@ -8,7 +8,7 @@
  * functions to generate random numbers or new AES keys.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2008, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,16 +73,6 @@ typedef enum {
     WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
     WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
 } WEBAUTH_ET_ERR;
-
-/*
- * Status for webauth_keyring_auto_update, indicating whether the keyring was
- * newly created, updated, or left alone.
- */
-typedef enum {
-    WA_KAU_NONE = 0,
-    WA_KAU_CREATE,
-    WA_KAU_UPDATE
-} WEBAUTH_KAU_STATUS;
 
 
 /*
@@ -151,14 +141,6 @@ typedef enum {
  * API CONSTANTS
  */
 
-/* Supported key types. */
-#define WA_AES_KEY 1
-
-/* Supported AES key sizes. */
-#define WA_AES_128 16
-#define WA_AES_192 24
-#define WA_AES_256 32
-
 /* Flags to webauth_attr_list_add functions. */
 #define WA_F_NONE       0x00
 #define WA_F_COPY_VALUE 0x01
@@ -202,27 +184,6 @@ typedef struct {
     size_t capacity;
     WEBAUTH_ATTR *attrs;
 } WEBAUTH_ATTR_LIST;
-
-/* A crypto key for encryption or decryption. */
-typedef struct {
-    unsigned int type;
-    char *data;
-    size_t length;
-} WEBAUTH_KEY;
-
-/* An entry in a keyring, holding a WEBAUTH_KEY with timestamps. */
-typedef struct {
-    time_t creation_time;
-    time_t valid_after;
-    WEBAUTH_KEY *key;
-} WEBAUTH_KEYRING_ENTRY;
-
-/* A keyring, holding encryption keys.  Can be serialized to disk. */
-typedef struct {
-    size_t num_entries;
-    size_t capacity;
-    WEBAUTH_KEYRING_ENTRY *entries;
-} WEBAUTH_KEYRING;
 
 /* A WebAuth Kerberos context for Kerberos support functions. */
 typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
@@ -439,217 +400,6 @@ int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **);
 
 
 /*
- * RANDOM DATA
- */
-
-/*
- * Returns pseudo random bytes, suitable for use a nonce or random data, but
- * not necessarily suitable for use as an encryption key.  Use
- * webauth_random_key for that.  The number of bytes specified is placed in
- * the output buffer, which must contain enough room to contain the requested
- * number of bytes.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
- */
-int webauth_random_bytes(char *, size_t);
-
-/*
- * Used to create random bytes suitable for use as a key.  The number of bytes
- * specified is placed in the output buffer, which must contain enough room to
- * hold that many bytes.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_RAND_FAILURE on error.
- */
-int webauth_random_key(char *, size_t);
-
-
-/*
- * KEY AND KEYRING MANIPULATION
- */
-
-/*
- * Construct new key.  key_type is the key type; currently the only supported
- * type is WA_AES_KEY.  key_material points to the key material and will get
- * copied into the new key.  key_len is the length of the key material and
- * should be WA_AES_128, WA_AES_192, or WA_AES_256.
- *
- * Returns a newly allocated key or NULL on error.
- */
-WEBAUTH_KEY *webauth_key_create(unsigned int key_type,
-                                const char *key_material, size_t key_len);
-
-/* Make a copy of a key.  Returns the new key or NULL on error. */
-WEBAUTH_KEY *webauth_key_copy(const WEBAUTH_KEY *);
-
-/* Free a key, zeroing out the key material memory first. */
-void webauth_key_free(WEBAUTH_KEY *);
-
-/* Create a new keyring, returning the new keyring or NULL on error. */
-WEBAUTH_KEYRING * webauth_keyring_new(size_t initial_capacity);
-
-/* Free a keyring and any keys in it. */
-void webauth_keyring_free(WEBAUTH_KEYRING *);
-
-/*
- * Add a new entry to a keyring.  The key is copied and the copy will be freed
- * when the keyring is freed.  If creation_time or valid_after time is 0, then
- * the current time is used.
- *
- * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_keyring_add(WEBAUTH_KEYRING *, time_t creation_time,
-                        time_t valid_after, WEBAUTH_KEY *);
-
-/*
- * Removes (and frees) the key at the specified index, shifting the remaining
- * keys down.
- *
- * Returns WA_ERR_NONE or WA_ERR_NOT_FOUND.
- */
-int webauth_keyring_remove(WEBAUTH_KEYRING *, size_t index);
-
-/*
- * Given a keyring, return the best key on the ring for either encryption or
- * decryption.  The best key for encryption is the key with the most current
- * valid valid_after time.  The best key for decryption is the key with the
- * the valid_after time closest to but not more current then hint.
- *
- * Returns the key or NULL on error.
- */
-WEBAUTH_KEY *webauth_keyring_best_key(const WEBAUTH_KEYRING *,
-                                      int encryption, time_t hint);
-
-/*
- * Encodes a keyring into a buffer and returns the encoded length.  buffer
- * should be freed when no longer needed.
- *
- * Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_keyring_encode(WEBAUTH_KEYRING *, char **, size_t *);
-
-/*
- * Deecodes a keyring from a buffer.  ring should be freed with
- * webauth_keyring_free when no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or
- * WA_ERR_KEYRING_VERSION.
- */
-int webauth_keyring_decode(char *, size_t, WEBAUTH_KEYRING **);
-
-/*
- * Write a keyring to a file in encoded form.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_KEYRING_OPENWRITE, or
- * WA_ERR_KEYRING_WRITE.
- */
-int webauth_keyring_write_file(WEBAUTH_KEYRING *, const char *);
-
-/*
- * Reads a keyring from a file in encoded form.  The newly allocated keyring
- * should be freed with webauth_keyring_Free when no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_KEYRING_READ, or
- * WA_ERR_KEYRING_OPENREAD.
- */
-int webauth_keyring_read_file(const char *, WEBAUTH_KEYRING **);
-
-/*
- * Attempts to read a keyring file.  If create is non-zero, it will create the
- * file if it doesn't exist.  If lifetime is non-zero, there must be at least
- * one key in the ring where valid_after + lifetime is greater then the
- * current time; otherwise, a new key will be created with valid_after set to
- * the current time and the key ring file will be updated.
- *
- * This function does no file locking.
- *
- * kau_status will be set to WA_KAU_NONE if we didn't create or update the
- * ring, WA_KAU_CREATE if we attempted to create it, and WA_KAU_UPDATE if we
- * attempted to update it.
- *
- * The return code applies to only the open and/or create.  If the open and/or
- * create succeed, then WA_ERR_NONE will always be returned, even if the
- * update fails.  If the update fails, then update_status will be set to
- * someting other then WA_ERR_NONE.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_KEYRING_READ, or
- * WA_ERR_KEYRING_OPENREAD.
- */
-int webauth_keyring_auto_update(const char *path, int create, int lifetime,
-                                WEBAUTH_KEYRING **ring,
-                                WEBAUTH_KAU_STATUS *kau_status,
-                                int *update_status);
-
-/*
- * TOKEN MANIPULATION
- */
-
-/*
- * Returns the space required to encode and encrypt a token, not including
- * nul-termination.
- */
-size_t webauth_token_encoded_length(const WEBAUTH_ATTR_LIST *);
-
-/*
- * Encodes and encrypts attributes into a token, using the key from the
- * keyring that has the most recent valid valid_from time.  If hint is 0 then
- * the current time will be used.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, WA_ERR_NO_MEM, or WA_ERR_BAD_KEY.
- */
-int webauth_token_create(const WEBAUTH_ATTR_LIST *, time_t hint, char *output,
-                         size_t *output_len, size_t max_output_len,
-                         const WEBAUTH_KEYRING *);
-
-/*
- * Encodes and encrypts attributes into a token using the specified key.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, WA_ERR_NO_MEM, or WA_ERR_BAD_KEY.
- *
- */
-int webauth_token_create_with_key(const WEBAUTH_ATTR_LIST *, time_t hint,
-                                  char *output, size_t *output_len,
-                                  size_t max_output_len, const WEBAUTH_KEY *);
-
-/*
- * Decrypts and decodes attributes from a token.  The best decryption key on
- * the ring will be tried first, and if that fails all the remaining keys will
- * be tried.  input is modified and the returned attrs in list point into
- * input.
- *
- * The following checks are made:
- *
- * * If the token has a WA_TK_EXPIRATION_TIME attribute, it must be 4 bytes
- *   long and is assumed to be the expiration time of the token in network
- *   byte order.  It is compared against the current time, and
- *   WA_ERR_TOKEN_EXPIRED is returned if the token has expired.
- *
- * * WA_TK_CREATION_TIME is checked if and only if the token doesn't have an
- *   explicit expiration time and ttl is non-zero.
- *
- * * If the token has a WA_TK_CREATION_TIME attribute, it must be 4 bytes long
- *   and is assumed to be the creation time of the token in network byte
- *   order.  The creation time is compared against the current time + ttl and
- *   WA_ERR_TOKEN_STALE is returned if the token is stale.
- *
- * The list will point to the dynamically-allocated list of attributes and
- * must be freed when no longer needed.
- *
- * Note: If WA_ERR_TOKEN_EXPIRED or WA_ERR_TOKEN_STALE are returned, an
- * attribute list is still allocated and needs to be freed.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC,
- * WA_ERR_BAD_KEY, WA_ERR_TOKEN_EXPIRED, or WA_ERR_TOKEN_STALE.
- */
-int webauth_token_parse(char *input, size_t input_len, unsigned long ttl,
-                        const WEBAUTH_KEYRING *, WEBAUTH_ATTR_LIST **);
-
-/* Same as webauth_token_parse but takes a key instead of a keyring. */
-int webauth_token_parse_with_key(char *input, size_t input_len,
-                                 unsigned long ttl, const WEBAUTH_KEY *,
-                                 WEBAUTH_ATTR_LIST **);
-
-
-/*
  * KERBEROS
  */
 
@@ -766,6 +516,16 @@ int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *, const char *cache_name);
  */
 int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
                                size_t cred_len, const char *cache_name);
+
+/*
+ * Initialize a context from a credential that was created via
+ * webauth_krb5_export_tgt or webauth_krb5_export_ticket, but do not import
+ * the credential.
+ *
+ * Returns WA_ERR_NONE or WA_ERR_KRB5.
+ */
+int webauth_krb5_prepare_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
+                                  size_t cred_len, const char *cache_name);
 
 /*
  * Export the TGT from the context and also store the expiration time.  This

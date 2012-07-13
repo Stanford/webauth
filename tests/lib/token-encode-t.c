@@ -21,6 +21,7 @@
 #include <tests/tap/basic.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
 #include <webauth/tokens.h>
 
 
@@ -32,7 +33,7 @@
  */
 static struct webauth_token *
 encode_decode(struct webauth_context *ctx, struct webauth_token *data,
-              WEBAUTH_KEYRING *ring, const char *name, int count)
+              const struct webauth_keyring *ring, const char *name, int count)
 {
     int status;
     struct webauth_token *result;
@@ -69,7 +70,8 @@ encode_decode(struct webauth_context *ctx, struct webauth_token *data,
  */
 static struct webauth_token *
 encode_decode_raw(struct webauth_context *ctx, struct webauth_token *data,
-                  WEBAUTH_KEYRING *ring, const char *name, int count)
+                  const struct webauth_keyring *ring, const char *name,
+                  int count)
 {
     int status;
     struct webauth_token *result;
@@ -106,7 +108,7 @@ encode_decode_raw(struct webauth_context *ctx, struct webauth_token *data,
  */
 static void
 check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
-                WEBAUTH_KEYRING *ring, const char *name)
+                const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_app *app2;
@@ -143,7 +145,7 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
  */
 static void
 check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
-                 WEBAUTH_KEYRING *ring, const char *name)
+                 const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_cred *cred2;
@@ -175,7 +177,7 @@ check_cred_token(struct webauth_context *ctx, struct webauth_token_cred *cred,
 static void
 check_error_token(struct webauth_context *ctx,
                   struct webauth_token_error *err,
-                  WEBAUTH_KEYRING *ring, const char *name)
+                  const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_error *err2;
@@ -202,7 +204,7 @@ check_error_token(struct webauth_context *ctx,
  */
 static void
 check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
-                WEBAUTH_KEYRING *ring, const char *name)
+                const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_id *id2;
@@ -239,7 +241,7 @@ check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
 static void
 check_login_token(struct webauth_context *ctx,
                   struct webauth_token_login *login,
-                  WEBAUTH_KEYRING *ring, const char *name)
+                  const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_login *login2;
@@ -268,7 +270,7 @@ check_login_token(struct webauth_context *ctx,
 static void
 check_proxy_token(struct webauth_context *ctx,
                   struct webauth_token_proxy *proxy,
-                 WEBAUTH_KEYRING *ring, const char *name)
+                 const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_proxy *proxy2;
@@ -306,7 +308,7 @@ check_proxy_token(struct webauth_context *ctx,
 static void
 check_request_token(struct webauth_context *ctx,
                     struct webauth_token_request *req,
-                    WEBAUTH_KEYRING *ring, const char *name)
+                    const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_request *req2;
@@ -345,7 +347,7 @@ check_request_token(struct webauth_context *ctx,
 static void
 check_webkdc_proxy_token(struct webauth_context *ctx,
                          struct webauth_token_webkdc_proxy *wkproxy,
-                         WEBAUTH_KEYRING *ring, const char *name)
+                         const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_webkdc_proxy *wkproxy2;
@@ -386,7 +388,7 @@ check_webkdc_proxy_token(struct webauth_context *ctx,
 static void
 check_webkdc_service_token(struct webauth_context *ctx,
                          struct webauth_token_webkdc_service *service,
-                         WEBAUTH_KEYRING *ring, const char *name)
+                         const struct webauth_keyring *ring, const char *name)
 {
     struct webauth_token data, *result;
     struct webauth_token_webkdc_service *service2;
@@ -422,8 +424,8 @@ check_webkdc_service_token(struct webauth_context *ctx,
     static void                                                         \
     check_ ## name ## _error(struct webauth_context *ctx,               \
                              struct webauth_token_ ## name *name,       \
-                             WEBAUTH_KEYRING *ring, const char *summ,   \
-                             const char *message)                       \
+                             const struct webauth_keyring *ring,        \
+                             const char *summ, const char *message)     \
     {                                                                   \
         struct webauth_token data;                                      \
         const char *token = "foo";                                      \
@@ -456,7 +458,8 @@ CHECK_FUNCTION(webkdc_service, WEBKDC_SERVICE)
 int
 main(void)
 {
-    WEBAUTH_KEYRING *ring;
+    struct webauth_keyring *ring, *bad_ring;
+    struct webauth_key *key;
     char *keyring;
     time_t now;
     int status;
@@ -472,18 +475,19 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_token in;
     struct webauth_token *out;
+    const char *result;
 
-    plan(409);
+    plan(424);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read_file(keyring, &ring);
+    status = webauth_keyring_read(ctx, keyring, &ring);
     if (status != WA_ERR_NONE)
         bail("cannot read %s: %s", keyring,
-             webauth_error_message(NULL, status));
+             webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
     /* Now, flesh out a application token, and then encode and decode it. */
@@ -592,7 +596,6 @@ main(void)
                       "missing message for error token");
 
     /* Flesh out an id token, and then encode and decode it. */
-    id.subject = "testuser";
     id.auth = "krb5";
     id.auth_data = "s=ome\0da;;ta";
     id.auth_data_len = 12;
@@ -601,6 +604,8 @@ main(void)
     id.loa = 2;
     id.creation = now;
     id.expiration = now + 60;
+    check_id_token(ctx, &id, ring, "krb5");
+    id.subject = "testuser";
     check_id_token(ctx, &id, ring, "full");
     id.auth = "webkdc";
     id.auth_data = NULL;
@@ -847,8 +852,19 @@ main(void)
         is_int(5, out->token.webkdc_service.session_key_len,
                "...session key length");
 
+    /* Create a keyring with an invalid key and then try encoding a token. */
+    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    if (status != WA_ERR_NONE)
+        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    key->length = 2;
+    bad_ring = webauth_keyring_from_key(ctx, key);
+    status = webauth_token_encode(ctx, &in, bad_ring, &result);
+    is_int(WA_ERR_BAD_KEY, status, "Encoding with invalid key fails");
+    is_string("unable to use key (error setting encryption key)",
+              webauth_error_message(ctx, status),
+              "...with correct error message");
+
     /* Clean up. */
-    webauth_keyring_free(ring);
     webauth_context_free(ctx);
     return 0;
 }

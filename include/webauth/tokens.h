@@ -9,7 +9,7 @@
  * decode function to convert between those two representations.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +42,7 @@
 #include <webauth.h>            /* WEBAUTH_KEYRING */
 
 struct webauth_context;
+struct webauth_keyring;
 
 /*
  * Stores a set of factors that we want to perform operations on.  This is a
@@ -315,11 +316,12 @@ const char *webauth_token_type_string(enum webauth_token_type type)
  * webkdc-proxy token embedded inside a proxy token.
  */
 int webauth_token_decode(struct webauth_context *, enum webauth_token_type,
-                         const char *, const WEBAUTH_KEYRING *,
+                         const char *, const struct webauth_keyring *,
                          struct webauth_token **)
     __attribute__((__nonnull__));
 int webauth_token_decode_raw(struct webauth_context *, enum webauth_token_type,
-                             const void *, size_t, const WEBAUTH_KEYRING *,
+                             const void *, size_t,
+                             const struct webauth_keyring *,
                              struct webauth_token **)
     __attribute__((__nonnull__));
 
@@ -335,12 +337,12 @@ int webauth_token_decode_raw(struct webauth_context *, enum webauth_token_type,
  */
 int webauth_token_encode(struct webauth_context *,
                          const struct webauth_token *,
-                         const WEBAUTH_KEYRING *, const char **token)
+                         const struct webauth_keyring *, const char **token)
     __attribute__((__nonnull__));
 int webauth_token_encode_raw(struct webauth_context *,
                              const struct webauth_token *,
-                             const WEBAUTH_KEYRING *, const void **token,
-                             size_t *length)
+                             const struct webauth_keyring *,
+                             const void **token, size_t *length)
     __attribute__((__nonnull__));
 
 END_DECLS

@@ -35,9 +35,8 @@
 
 #include <sys/types.h>
 
-#include <webauth.h>
-
 struct webauth_context;
+struct webauth_keyring;
 
 /*
  * General configuration information for the WebKDC functions.  The WebKDC
@@ -110,7 +109,7 @@ struct webauth_webkdc_login_response {
 };    
 
 /*
- * Supported protocols for contacting the user metadata and multifactor
+ * Supported protocols for contacting the user information and multifactor
  * authentication services.  Currently, only remctl is supported.
  */
 enum webauth_user_protocol {
@@ -119,10 +118,10 @@ enum webauth_user_protocol {
 };
 
 /*
- * Configuration information for the user metadata service.  This is used to
- * bundle together the configuration parameters and pass them into
+ * Configuration information for the user information service.  This is used
+ * to bundle together the configuration parameters and pass them into
  * webauth_user_config.  The port may be 0, which indicates the standard port
- * should be used.  identity is the identity of the metadata service for
+ * should be used.  identity is the identity of the information service for
  * authentication purposes and may be NULL to use the default.  command is
  * protocol-specific command information, such as a partial URL or a remctl
  * command.
@@ -159,9 +158,8 @@ struct webauth_login {
 };
 
 /*
- * The webauth_user_info struct and its supporting data structures stores
- * metadata about a user, returned from the site-local user management
- * middleware.
+ * The webauth_user_info struct and its supporting data structures stores data
+ * about a user, returned from the site-local user information middleware.
  */
 struct webauth_user_info {
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
@@ -187,11 +185,11 @@ struct webauth_user_validate {
 BEGIN_DECLS
 
 /*
- * Configure how to access the user metadata service.  Takes the context and
- * the configuration information.  The configuration information is stored in
- * the WebAuth context and used for all subsequent webauth_userinfo queries.
- * Returns a status code, which will be WA_ERR_NONE unless invalid parameters
- * were passed.
+ * Configure how to access the user information service.  Takes the context
+ * and the configuration information.  The configuration information is stored
+ * in the WebAuth context and used for all subsequent webauth_userinfo
+ * queries.  Returns a status code, which will be WA_ERR_NONE unless invalid
+ * parameters were passed.
  */
 int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
     __attribute__((__nonnull__));
@@ -201,8 +199,8 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
  * string) is also provided.  If NULL, it defaults to 127.0.0.1.  The
  * timestamp of the query is assumed to be the current time.  The final flag
  * indicates whether a site requested random multifactor and asks the user
- * metadata service to calculate whether multifactor is forced based on that
- * random multifactor chance.
+ * information service to calculate whether multifactor is forced based on
+ * that random multifactor chance.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -261,7 +259,7 @@ int webauth_webkdc_config(struct webauth_context *,
 int webauth_webkdc_login(struct webauth_context *,
                          struct webauth_webkdc_login_request *,
                          struct webauth_webkdc_login_response **,
-                         WEBAUTH_KEYRING *keyring)
+                         struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 END_DECLS

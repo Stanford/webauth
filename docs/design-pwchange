@@ -160,3 +160,13 @@ Implementation Notes
   modules could also use better POD documentation.  The new WebLogin
   configuration options and page flow should be added to the relevant
   files in docs.
+
+License
+
+  Copyright 2010
+    The Board of Trustees of the Leland Stanford Junior University
+
+  Copying and distribution of this file, with or without modification, are
+  permitted in any medium without royalty provided the copyright notice
+  and this notice are preserved.  This file is offered as-is, without any
+  warranty.

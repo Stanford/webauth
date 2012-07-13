@@ -43,7 +43,6 @@ our %PAGES = (login    => 'login.tmpl',
               pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
 
-
 ##############################################################################
 # Debugging
 ##############################################################################
@@ -69,19 +68,16 @@ sub dump_stuff {
 # Main routine
 ##############################################################################
 
-# Exit safely if we get a SIGTERM.
-$SIG{TERM} = sub { $EXITING = 1 };
-
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
 # processing loop until the FastCGI socket closes.
 while (my $q = CGI::Fast->new) {
-
-    # Could try $weblogin->start_mode ('pwchange'); if following doesn't work.
+    $SIG{TERM} = sub { $EXITING = 1 };
     $q->param ('rm', 'pwchange') unless defined $q->param ('rm');
     my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
                                   QUERY  => $q);
     $weblogin->run;
+    $SIG{TERM} = 'DEFAULT';
 
 # Done on each pass through the FastCGI loop.  Restart the script if its
 # modification time has changed.

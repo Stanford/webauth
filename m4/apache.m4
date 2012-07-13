@@ -23,6 +23,15 @@ dnl This file is free software; the authors give unlimited permission to copy
 dnl and/or distribute it, with or without modifications, as long as this
 dnl notice is preserved.
 
+dnl Headers to include when probing for Apache properties.
+AC_DEFUN([RRA_INCLUDES_APACHE], [[
+#include <httpd.h>
+#include <http_config.h>
+#include <http_log.h>
+#include <http_request.h>
+#include <unixd.h>
+]])
+
 dnl Save the current CPPFLAGS, LDFLAGS, and LIBS settings and switch to
 dnl versions that include the Apache flags.  Used as a wrapper, with
 dnl RRA_LIB_APACHE_RESTORE, around tests.
