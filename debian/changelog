@@ -27,6 +27,9 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
   * Move single-debian-patch to local-options and patch-header to
     local-patch-header so that they only apply to the packages I build and
     NMUs get regular version-numbered patches.
+  * Update to debhelper compatibility level V9.
+    - Use dpkg-buildflags to set CFLAGS.
+    - Enable bindnow hardening.  Leave PIE off for right now.
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
 

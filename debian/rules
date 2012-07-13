@@ -1,5 +1,9 @@
 #!/usr/bin/make -f
 
+# Add hardening build flags.  We have to omit PIE because it breaks the Perl
+# module build (and probably the other interpretors as well).
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+
 ifndef PERL
     PERL = /usr/bin/perl
 endif
@@ -8,8 +12,9 @@ endif
 	dh $@
 
 override_dh_auto_configure:
-	dh_auto_configure -- --libexecdir=/usr/lib --enable-webkdc \
-	    --enable-perl --with-apxs=/usr/bin/apxs2 --enable-reduced-depends
+	dh_auto_configure -- --libdir=/usr/lib --libexecdir=/usr/lib \
+	    --enable-webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
+	    --enable-reduced-depends
 
 override_dh_auto_build:
 	dh_auto_build
