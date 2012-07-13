@@ -66,7 +66,7 @@
 
 /* Apache 2.4 renamed this to stay in the ap_* namespace. */
 #if !HAVE_DECL_AP_UNIXD_CONFIG
-# define unixd_config ap_unixd_config
+# define ap_unixd_config unixd_config
 #endif
 
 #endif /* !PORTABLE_APACHE_H */
