@@ -84,7 +84,7 @@ Section: libdevel
 Priority: extra
 Architecture: any
 Depends: ${misc:Depends}, libwebauth7 (= ${binary:Version})
-Suggests: libkrb5-dev
+Suggests: libkrb5-dev, libapr1-dev
 Replaces: libwebauth1-dev (<< 3.7.0)
 Breaks: libwebauth1-dev (<< 3.7.0)
 Description: Development files for WebAuth authentication
