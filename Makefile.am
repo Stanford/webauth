@@ -50,10 +50,10 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
 	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
 	lib/libwebauth.sym perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/config/README tests/data/cmd-webkdc			    \
-	tests/data/generate-tokens tests/data/keyring tests/data/tokens	    \
-	tests/data/xml tests/mod_webauth tests/tap/libtap.sh		    \
-	tests/tools/wa_keyring-t tests/util/xmalloc-t tools/wa_keyring.pod  \
+	tests/config/README tests/data/cmd-webkdc tests/data/keyring	    \
+	tests/data/tokens.conf tests/data/tokens tests/data/xml		    \
+	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/webauth-make-tokens \
 	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
 	weblogin/images/error.xcf weblogin/images/help.xcf		    \
 	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
