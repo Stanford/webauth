@@ -62,7 +62,7 @@ libwebauth.so.7 libwebauth7 #MINVER#
  webauth_krb5_mk_req@WEBAUTH_3 4.0.0
  webauth_krb5_mk_req_with_data@WEBAUTH_3 4.0.0
  webauth_krb5_new@WEBAUTH_3 4.0.0
- webauth_krb5_prepare_via_cred@WEBAUTH_4.2 4.2.0
+ webauth_krb5_prepare_via_cred@WEBAUTH_4_2 4.2.0
  webauth_krb5_rd_req@WEBAUTH_3 4.0.0
  webauth_krb5_rd_req_with_data@WEBAUTH_3 4.0.0
  webauth_parse_interval@WEBAUTH_3 4.0.0
