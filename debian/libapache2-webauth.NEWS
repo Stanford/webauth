@@ -1,3 +1,14 @@
+libapache2-webauth (4.2.0-1) unstable; urgency=low
+
+  Use of AuthType StanfordAuth (instead of AuthType WebAuth) is deprecated
+  and will be removed in a subsequent release.  This directive will
+  produce a warning in the Apache error log whenever encountered while
+  processing a request.  This mode was for compatibility with the
+  Stanford-internal WebAuth 2.5 release and was probably not used outside
+  of Stanford.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:43:13 -0700
+
 libapache2-webauth (3.7.0-1) unstable; urgency=low
 
   Users of mod_webauthldap should note that WebAuthLdapAuthRule's behavior
