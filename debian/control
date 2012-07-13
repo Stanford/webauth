@@ -3,7 +3,7 @@ Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 9), apache2-threaded-dev (>= 2.2),
- libapr1-dev, libaprutil1-dev, libcgi-application-perl,
+ dh-autoreconf, libapr1-dev, libaprutil1-dev, libcgi-application-perl,
  libcgi-application-perl (>= 4.50) |
  libcgi-application-basic-plugin-bundle-perl,
  libcgi-application-plugin-autorunmode-perl |
