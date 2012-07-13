@@ -1165,11 +1165,10 @@ auth_checker_hook(request_rec * r)
 
     lc = (MWAL_LDAP_CTXT*) apr_pcalloc(r->pool, sizeof(MWAL_LDAP_CTXT));
     lc->r = r;
-    lc->dconf = (MWAL_DCONF*)
-        ap_get_module_config(lc->r->per_dir_config, &webauthldap_module);
-
-    lc->sconf = (MWAL_SCONF*)
-        ap_get_module_config(lc->r->server->module_config,&webauthldap_module);
+    lc->dconf = ap_get_module_config(lc->r->per_dir_config,
+                                     &webauthldap_module);
+    lc->sconf = ap_get_module_config(lc->r->server->module_config,
+                                     &webauthldap_module);
 
     lc->legacymode = apr_table_get(r->subprocess_env, "SU_AUTH_USER") ? 1 : 0;
 
@@ -1288,7 +1287,7 @@ auth_checker_hook(request_rec * r)
 
 
     /* This sets a envvar for the rule on which authorization succeeded. */
-    if (lc->sconf->set_authrule && lc->authrule)
+    if (lc->sconf->authrule && lc->authrule)
         apr_table_set(lc->r->subprocess_env, "WEBAUTH_LDAPAUTHRULE",
                        lc->authrule);
 
