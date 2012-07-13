@@ -1,3 +1,27 @@
+webauth (4.2.0-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Add support for Apache 2.4.
+    - Support for AuthType StanfordAuth has been deprecated, and the
+      corresponding mod_webauthldap support is not available when built
+      against Apache 2.4.
+    - Support use of Kerberos keyring caches for passing delegated
+      credentials from mod_webauth to CGI and embedded code.
+    - Fix merging of mod_webkdc Apache directives in corner cases.
+    - Hopefully fix some problems with orphaned WebLogin login.fcgi and
+      pwchange.fcgi scripts when running under FastCGI.
+    - Significant revisions of the WebAuth Perl module API.
+    - Allow id tokens of type krb5 to omit the subject attribute.
+    - Convert the key and keyring functions in the WebAuth library API
+      to use APR.  The signatures of these functions have therefore
+      changed, and keyring manipulation has changed considerably.  Some
+      of the APIs have been simplified or renamed.
+    - The webauth_random_bytes, webauth_random_key, webauth_token_create,
+      and webauth_token_parse APIs have been removed
+    - All Perl modules now have POD documentation.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+
 webauth (4.1.1-1) unstable; urgency=low
 
   * New upstream release (no Apache 2.4 support yet; that's next).
