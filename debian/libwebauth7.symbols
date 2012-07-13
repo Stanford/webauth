@@ -2,6 +2,7 @@ libwebauth.so.6 libwebauth6 #MINVER#
 * Build-Depends-Package: libwebauth-dev
  WEBAUTH_3@WEBAUTH_3 4.0.0
  WEBAUTH_4_1@WEBAUTH_4_1 4.1.0
+ WEBAUTH_4_2@WEBAUTH_4_2 4.2.0
  webauth_attr_list_add@WEBAUTH_4_1 4.1.0
  webauth_attr_list_add_int32@WEBAUTH_4_1 4.1.0
  webauth_attr_list_add_str@WEBAUTH_4_1 4.1.0
@@ -33,20 +34,16 @@ libwebauth.so.6 libwebauth6 #MINVER#
  webauth_hex_decoded_length@WEBAUTH_3 4.0.0
  webauth_hex_encode@WEBAUTH_3 4.0.0
  webauth_hex_encoded_length@WEBAUTH_3 4.0.0
- webauth_key_copy@WEBAUTH_3 4.0.0
- webauth_key_create@WEBAUTH_3 4.0.0
- webauth_key_free@WEBAUTH_3 4.0.0
- webauth_keyring_add@WEBAUTH_3 4.0.0
- webauth_keyring_auto_update@WEBAUTH_3 4.0.0
- webauth_keyring_best_key@WEBAUTH_3 4.0.0
- webauth_keyring_decode@WEBAUTH_3 4.0.0
- webauth_keyring_encode@WEBAUTH_3 4.0.0
- webauth_keyring_free@WEBAUTH_3 4.0.0
- webauth_keyring_from_key@WEBAUTH_3 4.0.0
- webauth_keyring_new@WEBAUTH_3 4.0.0
- webauth_keyring_read_file@WEBAUTH_3 4.0.0
- webauth_keyring_remove@WEBAUTH_3 4.0.0
- webauth_keyring_write_file@WEBAUTH_3 4.0.0
+ webauth_key_copy@WEBAUTH_4_2 4.2.0
+ webauth_key_create@WEBAUTH_4_2 4.2.0
+ webauth_keyring_add@WEBAUTH_4_2 4.2.0
+ webauth_keyring_auto_update@WEBAUTH_4_2 4.2.0
+ webauth_keyring_best_key@WEBAUTH_4_2 4.2.0
+ webauth_keyring_from_key@WEBAUTH_4_2 4.2.0
+ webauth_keyring_new@WEBAUTH_4_2 4.2.0
+ webauth_keyring_read@WEBAUTH_4_2 4.2.0
+ webauth_keyring_remove@WEBAUTH_4_2 4.2.0
+ webauth_keyring_write@WEBAUTH_4_2 4.2.0
  webauth_krb5_change_password@WEBAUTH_3 4.0.0
  webauth_krb5_error_code@WEBAUTH_3 4.0.0
  webauth_krb5_error_message@WEBAUTH_3 4.0.0
@@ -65,24 +62,18 @@ libwebauth.so.6 libwebauth6 #MINVER#
  webauth_krb5_mk_req@WEBAUTH_3 4.0.0
  webauth_krb5_mk_req_with_data@WEBAUTH_3 4.0.0
  webauth_krb5_new@WEBAUTH_3 4.0.0
+ webauth_krb5_prepare_via_cred@WEBAUTH_4.2 4.2.0
  webauth_krb5_rd_req@WEBAUTH_3 4.0.0
  webauth_krb5_rd_req_with_data@WEBAUTH_3 4.0.0
  webauth_parse_interval@WEBAUTH_3 4.0.0
- webauth_random_bytes@WEBAUTH_3 4.0.0
- webauth_random_key@WEBAUTH_3 4.0.0
- webauth_token_create@WEBAUTH_3 4.0.0
- webauth_token_create_with_key@WEBAUTH_3 4.0.0
- webauth_token_decode@WEBAUTH_3 4.0.0
- webauth_token_decode_raw@WEBAUTH_3 4.0.0
- webauth_token_encode@WEBAUTH_3 4.0.0
- webauth_token_encode_raw@WEBAUTH_3 4.0.0
- webauth_token_encoded_length@WEBAUTH_3 4.0.0
- webauth_token_parse@WEBAUTH_3 4.0.0
- webauth_token_parse_with_key@WEBAUTH_3 4.0.0
+ webauth_token_decode@WEBAUTH_4_2 4.2.0
+ webauth_token_decode_raw@WEBAUTH_4_2 4.2.0
+ webauth_token_encode@WEBAUTH_4_2 4.2.0
+ webauth_token_encode_raw@WEBAUTH_4_2 4.2.0
  webauth_token_type_code@WEBAUTH_3 4.0.0
  webauth_token_type_string@WEBAUTH_3 4.0.0
  webauth_user_config@WEBAUTH_4_1 4.1.0
  webauth_user_info@WEBAUTH_4_1 4.1.0
  webauth_user_validate@WEBAUTH_4_1 4.1.0
  webauth_webkdc_config@WEBAUTH_4_1 4.1.0
- webauth_webkdc_login@WEBAUTH_4_1 4.1.0
+ webauth_webkdc_login@WEBAUTH_4_2 4.2.0
