@@ -31,3 +31,6 @@ override_dh_fixperms:
 	set -e; if [ -d 'debian/libwebkdc-perl/var/cache/weblogin' ] ; then \
 	    chown www-data:www-data debian/libwebkdc-perl/var/cache/weblogin; \
 	fi
+
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
