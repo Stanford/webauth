@@ -1,5 +1,5 @@
 /*
- * Test WebKDC user metadata retrieval.
+ * Test WebKDC user information retrieval.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011, 2012
@@ -77,11 +77,13 @@ main(void)
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
 
-    /* Set up the user metadata service configuration, testing error cases. */
+    /*
+     * Set up the user information service configuration, testing error cases.
+     */
     memset(&config, 0, sizeof(config));
     status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
     is_int(WA_ERR_INVALID, status, "Info without configuration");
-    is_string("invalid argument to function (user metadata service not"
+    is_string("invalid argument to function (user information service not"
               " configured)", webauth_error_message(ctx, status),
               "...with correct error");
     ok(info == NULL, "...and info is NULL");
@@ -92,7 +94,8 @@ main(void)
     config.protocol = WA_PROTOCOL_REMCTL;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_INVALID, status, "Config without host");
-    is_string("invalid argument to function (user metadata host must be set)",
+    is_string("invalid argument to function (user information host must be"
+              " set)",
               webauth_error_message(ctx, status), "...with correct error");
     config.host = "localhost";
     config.port = 14373;

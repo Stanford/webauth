@@ -2,7 +2,7 @@
  * Internal data types, definitions, and prototypes for the WebAuth library.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -15,6 +15,8 @@
 #include <portable/stdbool.h>
 
 #include <apr_xml.h>
+
+struct webauth_keyring;
 
 /*
  * The internal context struct, which holds any state information required for
@@ -74,6 +76,33 @@ bool webauth_buffer_find_string(struct buffer *, const char *, size_t start,
 /* Set the internal WebAuth error message and error code. */
 void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
+
+/*
+ * Encrypts an input buffer (normally encoded attributes) into a token, using
+ * the key from the keyring that has the most recent valid valid_from time.
+ * The encoded token will be stored in newly pool-allocated memory in the
+ * provided output argument, with its length stored in output_len.
+ *
+ * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if no suitable
+ * and valid encryption key could be found in the keyring.
+ */
+int webauth_token_encrypt(struct webauth_context *, const void *input,
+                          size_t len, void **output, size_t *output_len,
+                          const struct webauth_keyring *)
+    __attribute__((__nonnull__));
+
+/*
+ * Decrypts a token.  The best decryption key on the ring will be tried first,
+ * and if that fails all the remaining keys will be tried.  Returns the
+ * decrypted data in output and its length in output_len.
+ *
+ * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC, or
+ * WA_ERR_BAD_KEY.
+ */
+int webauth_token_decrypt(struct webauth_context *, const void *input,
+                          size_t input_len, void **output, size_t *output_len,
+                          const struct webauth_keyring *)
+    __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
 int webauth_xml_content(struct webauth_context *, apr_xml_elem *,

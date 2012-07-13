@@ -2,8 +2,14 @@
 #
 # Tests for WebKDC.pm, currently meant only for login tests.
 #
+# This test is performed against a running WebKDC and therefore currently
+# requires huge amounts of setup, including a copy of the WebKDC keyring.  It
+# also tests authentication with expired passwords, which requires access to
+# remctl commands to set password expiration on an account using the
+# kadmin-remctl package.  Accordingly, we will almost always skip this test.
+#
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,31 +20,25 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo);
 
-use WebAuth qw(:base64 :const :krb5 :key);
+use POSIX qw(strftime);
+use WebAuth qw(3.00);
 use WebKDC ();
 use WebKDC::Config;
 use WebLogin;
 
 use Test::More;
 
-# We need remctld and Net::Remctl.
-my $no_remctl = 0;
-my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-$no_remctl = 1 unless $remctld;
-eval { require Net::Remctl };
-$no_remctl = 1 if $@;
+# We need a user account and password.
+plan skip_all => 'no Kerberos configuration found'
+    unless -f 't/data/test.password';
 
-# Check for a valid kerberos config.
-if (! -f 't/data/test.keyring.path' || ! -f 't/data/test.password'
-    || ! -f 't/data/test.principal') {
+# We need a keyring path and a principal suitable for use as a WebAuth client.
+plan skip_all => 'no WebKDC configuration found'
+    unless (-f 't/data/test.keyring.path'
+            && -f 't/data/test.principal-webauth');
 
-    plan skip_all => 'no kerberos configuration found';
-} elsif ($no_remctl) {
-    plan skip_all => 'Net::Remctl not available';
-} else {
-    plan tests => 3;
-}
+# Apparently we can actually test, at least somewhat.
+plan tests => 3;
 
 #############################################################################
 # Wrapper functions
@@ -81,10 +81,12 @@ my ($user, $pass) = get_userinfo ($fname_passwd) if -f $fname_passwd;
 unless ($user && $pass) {
     die "no test user configuration\n";
 }
+my $realm = $user;
+$realm =~ s/^[^\@]+\@//;
 
 # Miscellaneous config settings.
-my $principal = contents ('t/data/test.principal');
-@WebKDC::Config::REMUSER_REALMS   = ();
+my $principal = contents ('t/data/test.principal-webauth');
+@WebKDC::Config::REMUSER_REALMS = ($realm);
 
 # Set up various ENV variables later used for logging.
 $ENV{SERVER_ADDR} = 'localhost';
@@ -96,87 +98,94 @@ $ENV{SCRIPT_NAME} = '/login';
 
 # Make sure we have the path to the actual KDC keyring.  Required since these
 # tests must be run on a working KDC.
-if (-e 't/data/test.keyring.path') {
-    $WebKDC::Config::KEYRING_PATH = contents ('t/data/test.keyring.path');
+my $wa = WebAuth->new;
+$WebKDC::Config::KEYRING_PATH = contents ('t/data/test.keyring.path');
+unless (-r $WebKDC::Config::KEYRING_PATH) {
+    BAIL_OUT ("cannot read $WebKDC::Config::KEYRING_PATH");
 }
-if (!$WebKDC::Config::KEYRING_PATH) {
-    die "could not find server keyring path\n";
-}
-my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
-my $random = WebAuth::random_key (WebAuth::WA_AES_128);
-my $key = WebAuth::key_create (WebAuth::WA_AES_KEY, $random);
-my $st = WebKDC::WebKDCServiceToken->new;
-$st->session_key ($random);
+my $random = 'b' x WebAuth::WA_AES_128;
+my $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128, $random);
+my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
-$st->creation_time (time);
-$st->expiration_time (time + 3600);
-my $st_base64 = base64_encode ($st->to_token ($keyring));
+$st->session_key ($random);
+$st->creation (time);
+$st->expiration (time + 3600);
+my $st_base64 = $st->encode ($keyring);
 
 # Create the RT for testing.
-my $rt = WebKDC::RequestToken->new;
-$rt->creation_time (time);
-$rt->subject_auth ('webkdc');
-$rt->requested_token_type ('id');
+my $client_keyring = $wa->keyring_new ($key);
+my $rt = WebAuth::Token::Request->new ($wa);
+$rt->type ('id');
+$rt->auth ('webkdc');
 $rt->return_url ('https://test.example.org/');
-my $rt_base64 = base64_encode ($rt->to_token ($key));
+$rt->creation (time);
+my $rt_base64 = $rt->encode ($client_keyring);
 
 #############################################################################
 # Actual tests
 #############################################################################
 
-# Pass the information along to the WebKDC and get the response.
-TODO: {
-    todo_skip 'WebKDC tests not yet debugged, also require working KDC for '
-        .'the tests to run on, and a kadmin-remctl server for testing '
-        .'password expiration', 3;
+# Get and set up a WebLogin object.  Actual testing of this is done in
+# weblogin.t.
+my ($status, $error);
+my %pages = ();
+my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
+$status = $weblogin->setup_kdc_request;
 
-    # Get and set up a WebLogin object.  Actual testing of this is done in
-    # weblogin.t.
-    my ($status, $error);
-    my %pages = ();
-    my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64,
-                                  \%pages);
-    $status = $weblogin->setup_kdc_request;
+# Test working username/password.
+($status, $error)
+    = WebKDC::make_request_token_request ($weblogin->{request},
+                                          $weblogin->{response});
+is ($status, WebKDC::WK_SUCCESS, 'Creating token for valid user works');
 
-    # Test working username/password.
-    ($status, $error)
-        = WebKDC::make_request_token_request ($weblogin->{request},
-                                              $weblogin->{response});
-    is ($status, WebKDC::WK_SUCCESS, 'Creating token for valid user works');
+# Test username and bad password (append a letter to known good password).
+$weblogin = init_weblogin ($user, $pass.'a', $st_base64, $rt_base64, \%pages);
+$status = $weblogin->setup_kdc_request;
+($status, $error)
+    = WebKDC::make_request_token_request ($weblogin->{request},
+                                          $weblogin->{response});
+is ($status, WebKDC::WK_ERR_LOGIN_FAILED, 'Failing on invalid password works');
 
-    # Test username and bad password (append a letter to known good password).
-    $weblogin = init_weblogin ($user, $pass.'a', $st_base64, $rt_base64,
-                               \%pages);
-    $status = $weblogin->setup_kdc_request;
-    ($status, $error)
-        = WebKDC::make_request_token_request ($weblogin->{request},
-                                              $weblogin->{response});
-    is ($status, WebKDC::WK_ERR_LOGIN_FAILED,
-        'Failing on invalid password works');
+# Test for handling of an expired password.
+SKIP: {
+    eval { require Net::Remctl };
+    skip 'Net::Remctl not available', 1 if $@;
+    skip 'no kadmin-remctl configuration found', 1
+        unless -r 't/data/test.kadmin-remctl.server';
 
     # Set the password expiration to yesterday, in order to test a user with
-    # expired password.
-    my $yesterday = time - 60 * 60 * 24;
-    my $remctl_server = contents ('t/data/test.kadmin-remctl.server');
-    my $result = remctl ($remctl_server, 0, '', 'kadmin', 'pwexpiration',
-                         $user, $yesterday);
-    skip 'could not contact remctl server', 1 if $result->error;
+    # expired password.  We have to strip the realm from the user since the
+    # kadmin-remctl interface doesn't support realms.
+    my $yesterday = strftime ('%Y-%m-%d %T', localtime (time - 60 * 60 * 24));
+    my $server = contents ('t/data/test.kadmin-remctl.server');
+    my $short = $user;
+    $short =~ s/\@.*//;
+    my $result = Net::Remctl::remctl ($server, 0, '', 'kadmin',
+                                      'pwexpiration', $short, $yesterday);
+    skip "cannot set $short to expired", 1
+        if (defined ($result->error) || $result->status != 0);
 
-    # Test user with expired password.
+    # Authenticate.  We should get back an expired credential error.
     $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%pages);
     $status = $weblogin->setup_kdc_request;
     ($status, $error)
         = WebKDC::make_request_token_request ($weblogin->{request},
                                               $weblogin->{response});
-    is ($status, WebKDC::WK_SUCCESS, 'Failing on expired password works');
+    is ($status, WebKDC::WK_ERR_CREDS_EXPIRED,
+        'Failing on expired password works');
 
     # Disable password expiration for this user again.  Only do so if the
     # first change succeeded.
     if (!$result->error) {
-        $result = remctl ($remctl_server, 0, '', 'kadmin', 'pwexpiration',
-                          $user, 'never');
+        my $result = Net::Remctl::remctl ($server, 0, '', 'kadmin',
+                                          'pwexpiration', $short, 'never');
+        if ($result->error) {
+            warn $result->error, "\n";
+        } elsif ($result->stderr) {
+            warn $result->stderr;
+        }
     }
-
-};
+}

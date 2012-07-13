@@ -2,18 +2,16 @@
  * Utility functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
-
-#include <httpd.h>
-#include <http_core.h>
-#include <http_log.h>
+#include <portable/stdbool.h>
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
@@ -167,22 +165,18 @@ mwa_log_webauth_error(server_rec *s,
 
 
 int
-mwa_cache_keyring(server_rec *serv, MWA_SCONF *sconf)
+mwa_cache_keyring(server_rec *serv, struct server_config *sconf)
 {
     int status;
-    WEBAUTH_KAU_STATUS kau_status;
+    enum webauth_kau_status kau_status;
     int update_status;
 
     static const char *mwa_func = "mwa_cache_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path,
-                                         sconf->keyring_auto_update,
-                                         sconf->keyring_auto_update ?
-                                         sconf->keyring_key_lifetime :
-                                         0,
-                                         &sconf->ring,
-                                         &kau_status,
-                                         &update_status);
+    status = webauth_keyring_auto_update(sconf->ctx, sconf->keyring_path,
+                 sconf->keyring_auto_update,
+                 sconf->keyring_auto_update ? sconf->keyring_key_lifetime : 0,
+                 &sconf->ring, &kau_status, &update_status);
 
     if (status != WA_ERR_NONE) {
             mwa_log_webauth_error(serv, status, mwa_func,
@@ -258,8 +252,8 @@ mwa_get_webauth_cookies(request_rec *r)
  * parse a cred-token. return pointer to it on success, NULL on failure.
  */
 struct webauth_token_cred *
-mwa_parse_cred_token(char *token, WEBAUTH_KEYRING *ring, WEBAUTH_KEY *key,
-                     MWA_REQ_CTXT *rc)
+mwa_parse_cred_token(char *token, struct webauth_keyring *ring,
+                     struct webauth_key *key, MWA_REQ_CTXT *rc)
 {
     int status;
     struct webauth_token *data;
@@ -270,14 +264,9 @@ mwa_parse_cred_token(char *token, WEBAUTH_KEYRING *ring, WEBAUTH_KEY *key,
     /* parse the token, TTL is zero because cred-tokens don't have ttl,
      * just expiration
      */
-    if (key != NULL) {
-        status = webauth_keyring_from_key(rc->ctx, key, &ring);
-        if (status != WA_ERR_NONE) {
-            mwa_log_webauth_error(rc->r->server, status,
-                                  mwa_func, "webauth_keyring_from_key", NULL);
-            return NULL;
-        }
-    } else if (ring == NULL) {
+    if (key != NULL)
+        ring = webauth_keyring_from_key(rc->ctx, key);
+    else if (ring == NULL) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
                      "mod_webauth: %s: callled with NULL key and ring!",
                      mwa_func);
@@ -297,7 +286,7 @@ static apr_array_header_t *cred_interfaces = NULL;
 
 void
 mwa_register_cred_interface(server_rec *server,
-                            MWA_SCONF *sconf,
+                            struct server_config *sconf,
                             apr_pool_t *pool,
                             MWA_CRED_INTERFACE *interface)
 {

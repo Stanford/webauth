@@ -13,12 +13,19 @@
  * All abnormal errors are handled as exceptions, generated via webauth_croak,
  * rather than through error returns.
  *
+ * Wrap all CODE and PPCODE segments in this file longer than a single line in
+ * braces to reduce Emacs's c-mode confusion when trying to understand XS
+ * constructs.
+ *
  * Written by Roland Schemers
- * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011
+ * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
+
+/* We cannot include config.h here because it conflicts with Perl. */
+#include <portable/apr.h>
 
 #include <EXTERN.h>
 #include <perl.h>
@@ -26,32 +33,298 @@
 
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
+#include <webauth/tokens.h>
 
 /*
  * These typedefs are needed for xsubpp to work its magic with type
  * translation to Perl objects.
  */
-typedef WEBAUTH_KEYRING *       WebAuth__Keyring;
-typedef WEBAUTH_KEYRING_ENTRY * WebAuth__KeyringEntry;
+typedef struct webauth_context *                WebAuth;
+typedef const struct webauth_key *              WebAuth__Key;
+typedef const struct webauth_keyring_entry *    WebAuth__KeyringEntry;
+
+/*
+ * For WebAuth::Keyring, we need to stash a copy of the parent context
+ * somewhere so that we don't require it as an argument to all methods.
+ */
+typedef struct {
+    struct webauth_context *ctx;
+    struct webauth_keyring *ring;
+} *WebAuth__Keyring;
 
 /* Used to generate the Perl glue for WebAuth constants. */
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
 #define STR_CONST(X) newCONSTSUB(stash, #X, newSVpv(X, 0))
+
+/*
+ * Encoding and decoding magic for tokens.
+ *
+ * There are significant memory management challenges for how to handle the
+ * token structs as Perl objects directly.  (For example, the structs
+ * allocated via webauth_token_decode would be allocated entirely differently
+ * than values set from Perl.)  It's therefore easier to have the Perl
+ * expression of the token structs be Perl hash tables, which we can bless and
+ * wrap with getters and setters written in Perl instead of XS.
+ *
+ * In order to avoid vast amounts of duplicate code, we define coding tables
+ * for each token.  This maps the attribute names in the form of the hash keys
+ * used in the Perl object to offsets into the relevant token struct and types
+ * of the C data structure.  We can then use some (scary) C code to handle the
+ * transcoding from C structs to Perl objects generically for all token types.
+ *
+ * All TYPE_DATA entries in the table must be followed by TYPE_DATALEN
+ * entries.
+ */
+enum token_mapping_type {
+    TYPE_STRING,
+    TYPE_TIME,
+    TYPE_DATA,
+    TYPE_DATALEN,
+    TYPE_ULONG
+};
+struct token_mapping {
+    const char *key;
+    size_t offset;
+    enum token_mapping_type type;
+};
+
+/* Used to make the tables more readable. */
+#define M(s, n, t) { (#n), offsetof(struct s, n), TYPE_ ## t }
+
+/* Used to store or extract data from the struct. */
+#define DATA_STRING(d, o)       *(const char **)  ((char *) (d) + (o))
+#define DATA_TIME(d, o)         *(time_t *)       ((char *) (d) + (o))
+#define DATA_DATA(d, o)         *(const void **)  ((char *) (d) + (o))
+#define DATA_DATALEN(d, o)      *(size_t *)       ((char *) (d) + (o))
+#define DATA_ULONG(d, o)        *(unsigned long *)((char *) (d) + (o))
+
+/* App tokens. */
+struct token_mapping token_mapping_app[] = {
+    M(webauth_token_app, subject,         STRING),
+    M(webauth_token_app, last_used,       TIME),
+    M(webauth_token_app, session_key,     DATA),
+    M(webauth_token_app, session_key_len, DATALEN),
+    M(webauth_token_app, initial_factors, STRING),
+    M(webauth_token_app, session_factors, STRING),
+    M(webauth_token_app, loa,             ULONG),
+    M(webauth_token_app, creation,        TIME),
+    M(webauth_token_app, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* Cred tokens. */
+struct token_mapping token_mapping_cred[] = {
+    M(webauth_token_cred, subject,    STRING),
+    M(webauth_token_cred, type,       STRING),
+    M(webauth_token_cred, service,    STRING),
+    M(webauth_token_cred, data,       DATA),
+    M(webauth_token_cred, data_len,   DATALEN),
+    M(webauth_token_cred, creation,   TIME),
+    M(webauth_token_cred, expiration, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Error tokens. */
+struct token_mapping token_mapping_error[] = {
+    M(webauth_token_error, code,     ULONG),
+    M(webauth_token_error, message,  STRING),
+    M(webauth_token_error, creation, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Id tokens. */
+struct token_mapping token_mapping_id[] = {
+    M(webauth_token_id, subject,         STRING),
+    M(webauth_token_id, auth,            STRING),
+    M(webauth_token_id, auth_data,       DATA),
+    M(webauth_token_id, auth_data_len,   DATALEN),
+    M(webauth_token_id, initial_factors, STRING),
+    M(webauth_token_id, session_factors, STRING),
+    M(webauth_token_id, loa,             ULONG),
+    M(webauth_token_id, creation,        TIME),
+    M(webauth_token_id, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* Login tokens. */
+struct token_mapping token_mapping_login[] = {
+    M(webauth_token_login, username, STRING),
+    M(webauth_token_login, password, STRING),
+    M(webauth_token_login, otp,      STRING),
+    M(webauth_token_login, creation, TIME),
+    { NULL, 0, 0 }
+};
+
+/* Proxy tokens. */
+struct token_mapping token_mapping_proxy[] = {
+    M(webauth_token_proxy, subject,          STRING),
+    M(webauth_token_proxy, type,             STRING),
+    M(webauth_token_proxy, webkdc_proxy,     DATA),
+    M(webauth_token_proxy, webkdc_proxy_len, DATALEN),
+    M(webauth_token_proxy, initial_factors,  STRING),
+    M(webauth_token_proxy, session_factors,  STRING),
+    M(webauth_token_proxy, loa,              ULONG),
+    M(webauth_token_proxy, creation,         TIME),
+    M(webauth_token_proxy, expiration,       TIME),
+    { NULL, 0, 0 }
+};
+
+/* Request tokens. */
+struct token_mapping token_mapping_request[] = {
+    M(webauth_token_request, type,            STRING),
+    M(webauth_token_request, auth,            STRING),
+    M(webauth_token_request, proxy_type,      STRING),
+    M(webauth_token_request, state,           DATA),
+    M(webauth_token_request, state_len,       DATALEN),
+    M(webauth_token_request, return_url,      STRING),
+    M(webauth_token_request, options,         STRING),
+    M(webauth_token_request, initial_factors, STRING),
+    M(webauth_token_request, session_factors, STRING),
+    M(webauth_token_request, loa,             ULONG),
+    M(webauth_token_request, command,         STRING),
+    M(webauth_token_request, creation,        TIME),
+    { NULL, 0, 0 }
+};
+
+/* WebKDC proxy tokens. */
+struct token_mapping token_mapping_webkdc_proxy[] = {
+    M(webauth_token_webkdc_proxy, subject,         STRING),
+    M(webauth_token_webkdc_proxy, proxy_type,      STRING),
+    M(webauth_token_webkdc_proxy, proxy_subject,   STRING),
+    M(webauth_token_webkdc_proxy, data,            DATA),
+    M(webauth_token_webkdc_proxy, data_len,        DATALEN),
+    M(webauth_token_webkdc_proxy, initial_factors, STRING),
+    M(webauth_token_webkdc_proxy, loa,             ULONG),
+    M(webauth_token_webkdc_proxy, creation,        TIME),
+    M(webauth_token_webkdc_proxy, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+/* WebKDC service tokens. */
+struct token_mapping token_mapping_webkdc_service[] = {
+    M(webauth_token_webkdc_service, subject,         STRING),
+    M(webauth_token_webkdc_service, session_key,     DATA),
+    M(webauth_token_webkdc_service, session_key_len, DATALEN),
+    M(webauth_token_webkdc_service, creation,        TIME),
+    M(webauth_token_webkdc_service, expiration,      TIME),
+    { NULL, 0, 0 }
+};
+
+
+/*
+ * Decode a token into a Perl hash.  This function doesn't know what type of
+ * token is being decoded; it just takes an array of struct token_mapping, a
+ * pointer to the token struct, and a Perl HV, and uses the rules in
+ * token_mapping to move data into the HV.
+ */
+static void
+map_token_to_hash(struct token_mapping mapping[], const void *token, HV *hash)
+{
+    size_t i, length;
+    struct token_mapping *map;
+    SV *value;
+    const char *string;
+    const void *data;
+    unsigned long number;
+
+    for (i = 0; mapping[i].key != NULL; i++) {
+        map = &mapping[i];
+        value = NULL;
+        switch (map->type) {
+        case TYPE_STRING:
+            string = DATA_STRING(token, map->offset);
+            if (string != NULL)
+                value = newSVpv(string, 0);
+            break;
+        case TYPE_TIME:
+            number = DATA_TIME(token, map->offset);
+            if (number != 0)
+                value = newSViv(number);
+            break;
+        case TYPE_DATA:
+            data = DATA_DATA(token, map->offset);
+            if (data != NULL) {
+                length = DATA_DATALEN(token, mapping[i + 1].offset);
+                value = newSVpvn(data, length);
+            }
+            break;
+        case TYPE_DATALEN:
+            /* Handled as part of TYPE_DATA. */
+            break;
+        case TYPE_ULONG:
+            number = DATA_ULONG(token, map->offset);
+            if (number != 0)
+                value = newSViv(DATA_ULONG(token, map->offset));
+            break;
+        }
+        if (value != NULL)
+            if (hv_store(hash, map->key, strlen(map->key), value, 0) == NULL)
+                croak("cannot store %s in hash", map->key);
+    }
+}
+
+
+/*
+ * Encode a Perl hash into a token struct.  This function doesn't know what
+ * type of token is being encoded; it just takes an array of struct
+ * token_mapping, a pointer to the token struct, and a Perl HV, and uses the
+ * rules in token_mapping to move data from the HV into the struct.
+ *
+ * This does not check for attributes in the HV that don't correspond to valid
+ * members of the struct.
+ */
+static void
+map_hash_to_token(struct token_mapping mapping[], HV *hash, const void *token)
+{
+    size_t i;
+    struct token_mapping *map;
+    SV **value;
+    STRLEN length;
+
+    for (i = 0; mapping[i].key != NULL; i++) {
+        map = &mapping[i];
+        value = hv_fetch(hash, map->key, strlen(map->key), 0);
+        if (value == NULL)
+            continue;
+        switch (map->type) {
+        case TYPE_STRING:
+            DATA_STRING(token, map->offset) = SvPV_nolen(*value);
+            break;
+        case TYPE_TIME:
+            DATA_TIME(token, map->offset) = SvIV(*value);
+            break;
+        case TYPE_DATA:
+            DATA_DATA(token, map->offset) = SvPV(*value, length);
+            DATA_DATALEN(token, mapping[i + 1].offset) = length;
+            break;
+        case TYPE_DATALEN:
+            /* Handled as part of TYPE_DATA. */
+            break;
+        case TYPE_ULONG:
+            DATA_ULONG(token, map->offset) = SvIV(*value);
+            break;
+        }
+    }
+}
 
 
 /*
  * Turn a WebAuth error into a Perl exception.
  */
 static void
-webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
+webauth_croak(struct webauth_context *ctx, const char *detail, int s,
+              WEBAUTH_KRB5_CTXT *c)
 {
     HV *hv;
     SV *rv;
 
     hv = newHV();
     (void) hv_store(hv, "status", 6, newSViv(s), 0);
+    (void) hv_store(hv, "message", 7,
+                    newSVpv(webauth_error_message(ctx, s), 0), 0);
     if (detail != NULL)
-        (void) hv_store(hv, "detail", 6, newSVpv(detail,0), 0);
+        (void) hv_store(hv, "detail", 6, newSVpv(detail, 0), 0);
     if (s == WA_ERR_KRB5 && c != NULL) {
         (void) hv_store(hv, "krb5_ec", 7,
                         newSViv(webauth_krb5_error_code(c)), 0);
@@ -63,11 +336,12 @@ webauth_croak(const char *detail, int s, WEBAUTH_KRB5_CTXT *c)
         (void) hv_store(hv, "line", 4, newSViv(CopLINE(PL_curcop)), 0);
         (void) hv_store(hv, "file", 4, newSVpv(CopFILE(PL_curcop), 0), 0);
     }
-    rv = newRV_noinc((SV*)hv);
+    rv = newRV_noinc((SV *) hv);
     sv_bless(rv, gv_stashpv("WebAuth::Exception", TRUE));
     sv_setsv(get_sv("@", TRUE), sv_2mortal(rv));
     croak(Nullch);
 }
+
 
 /* XS code below this point. */
 
@@ -84,6 +358,7 @@ BOOT:
     /* Constant subs for WebAuth. */
     stash = gv_stashpv("WebAuth", TRUE);
 
+    /* WebAuth error codes. */
     IV_CONST(WA_ERR_NONE);
     IV_CONST(WA_ERR_NO_ROOM);
     IV_CONST(WA_ERR_CORRUPT);
@@ -102,7 +377,14 @@ BOOT:
     IV_CONST(WA_ERR_LOGIN_FAILED);
     IV_CONST(WA_ERR_TOKEN_EXPIRED);
     IV_CONST(WA_ERR_TOKEN_STALE);
+    IV_CONST(WA_ERR_CREDS_EXPIRED);
+    IV_CONST(WA_ERR_USER_REJECTED);
+    IV_CONST(WA_ERR_APR);
+    IV_CONST(WA_ERR_UNIMPLEMENTED);
+    IV_CONST(WA_ERR_INVALID);
+    IV_CONST(WA_ERR_REMOTE_FAILURE);
 
+    /* Protocol error codes from the WebKDC. */
     IV_CONST(WA_PEC_SERVICE_TOKEN_EXPIRED);
     IV_CONST(WA_PEC_SERVICE_TOKEN_INVALID);
     IV_CONST(WA_PEC_PROXY_TOKEN_EXPIRED);
@@ -127,56 +409,64 @@ BOOT:
     IV_CONST(WA_PEC_LOGIN_REJECTED);
     IV_CONST(WA_PEC_LOA_UNAVAILABLE);
 
-    IV_CONST(WA_AES_KEY);
+    /* Key types. */
+    IV_CONST(WA_KEY_AES);
+
+    /* Key sizes. */
     IV_CONST(WA_AES_128);
     IV_CONST(WA_AES_192);
     IV_CONST(WA_AES_256);
 
-    STR_CONST(WA_TK_APP_STATE);
-    STR_CONST(WA_TK_COMMAND);
-    STR_CONST(WA_TK_CRED_DATA);
-    STR_CONST(WA_TK_CRED_SERVICE);
-    STR_CONST(WA_TK_CRED_TYPE);
-    STR_CONST(WA_TK_CREATION_TIME);
-    STR_CONST(WA_TK_ERROR_CODE);
-    STR_CONST(WA_TK_ERROR_MESSAGE);
-    STR_CONST(WA_TK_EXPIRATION_TIME);
-    STR_CONST(WA_TK_INITIAL_FACTORS);
-    STR_CONST(WA_TK_SESSION_KEY);
-    STR_CONST(WA_TK_LOA);
-    STR_CONST(WA_TK_LASTUSED_TIME);
-    STR_CONST(WA_TK_OTP);
-    STR_CONST(WA_TK_PASSWORD);
-    STR_CONST(WA_TK_PROXY_DATA);
-    STR_CONST(WA_TK_PROXY_SUBJECT);
-    STR_CONST(WA_TK_PROXY_TYPE);
-    STR_CONST(WA_TK_REQUEST_OPTIONS);
-    STR_CONST(WA_TK_REQUESTED_TOKEN_TYPE);
-    STR_CONST(WA_TK_RETURN_URL);
-    STR_CONST(WA_TK_SUBJECT);
-    STR_CONST(WA_TK_SUBJECT_AUTH);
-    STR_CONST(WA_TK_SUBJECT_AUTH_DATA);
-    STR_CONST(WA_TK_SESSION_FACTORS);
-    STR_CONST(WA_TK_TOKEN_TYPE);
-    STR_CONST(WA_TK_USERNAME);
-    STR_CONST(WA_TK_WEBKDC_TOKEN);
+    /* Key usages. */
+    IV_CONST(WA_KEY_DECRYPT);
+    IV_CONST(WA_KEY_ENCRYPT);
 }
 
 
-char *
-webauth_error_message(status)
-    int status
-  PROTOTYPE: $
+WebAuth
+new(class)
+    const char *class
+  PROTOTYPE: ;$
+  PREINIT:
+    struct webauth_context *ctx;
+    int status;
   CODE:
-    RETVAL = (char*) webauth_error_message(NULL, status);
+{
+    status = webauth_context_init(&ctx, NULL);
+    if (status != WA_ERR_NONE)
+        webauth_croak(NULL, "webauth_context_init", status, NULL);
+    RETVAL = ctx;
+}
   OUTPUT:
     RETVAL
 
 
 void
-webauth_base64_encode(input)
+DESTROY(self)
+   WebAuth self
+ CODE:
+{
+   if (self != NULL)
+       webauth_context_free(self);
+}
+
+
+const char *
+webauth_error_message(self, status)
+    WebAuth self
+    int status
+  PROTOTYPE: $$
+  CODE:
+    RETVAL = webauth_error_message(self, status);
+  OUTPUT:
+    RETVAL
+
+
+void
+webauth_base64_encode(self, input)
+    WebAuth self
     SV *input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   CODE:
 {
     STRLEN n_input;
@@ -193,7 +483,7 @@ webauth_base64_encode(input)
                               out_max);
 
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_base64_encode", s, NULL);
+        webauth_croak(NULL, "webauth_base64_encode", s, NULL);
 
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
@@ -201,9 +491,10 @@ webauth_base64_encode(input)
 
 
 void
-webauth_base64_decode(input)
+webauth_base64_decode(self, input)
+    WebAuth self
     SV * input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     STRLEN n_input;
@@ -224,7 +515,7 @@ webauth_base64_decode(input)
     if (s != WA_ERR_NONE) {
        if (buff != NULL)
             free(buff);
-       webauth_croak("webauth_base64_decode", s, NULL);
+       webauth_croak(NULL, "webauth_base64_decode", s, NULL);
     }
 
     EXTEND(SP,1);
@@ -237,9 +528,10 @@ webauth_base64_decode(input)
 
 
 void
-webauth_hex_encode(input)
+webauth_hex_encode(self, input)
+    WebAuth self
     SV * input
-  PROTOTYPE: $
+  PROTOTYPE: $$
   CODE:
 {
     STRLEN n_input;
@@ -253,14 +545,15 @@ webauth_hex_encode(input)
     ST(0) = sv_2mortal(NEWSV(0, out_max));
     s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_hex_encode", s, NULL);
+        webauth_croak(NULL, "webauth_hex_encode", s, NULL);
     SvCUR_set(ST(0), out_len);
     SvPOK_only(ST(0));
 }
 
 
 void
-webauth_hex_decode(input)
+webauth_hex_decode(self, input)
+    WebAuth self
     SV * input
   PROTOTYPE: $
   PPCODE:
@@ -275,7 +568,7 @@ webauth_hex_decode(input)
     p_input = SvPV(input, n_input);
     s = webauth_hex_decoded_length(n_input, &out_max);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_hex_decoded_length", s, NULL);
+        webauth_croak(NULL, "webauth_hex_decoded_length", s, NULL);
     buff = malloc(out_max);
     if (buff == NULL)
         croak("can't create buffer");
@@ -283,7 +576,7 @@ webauth_hex_decode(input)
     if (s != WA_ERR_NONE) {
         if (buff != NULL)
             free(buff);
-        webauth_croak("webauth_hex_decode", s, NULL);
+        webauth_croak(NULL, "webauth_hex_decode", s, NULL);
     }
 
     EXTEND(SP,1);
@@ -297,9 +590,10 @@ webauth_hex_decode(input)
 
 
 void
-webauth_attrs_encode(attrs)
+webauth_attrs_encode(self, attrs)
+    WebAuth self
     SV *attrs
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     HV *h;
@@ -331,7 +625,7 @@ webauth_attrs_encode(attrs)
     s = webauth_attrs_encode(list, SvPVX(output), &out_len, out_max);
     webauth_attr_list_free(list);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_attrs_encode", s, NULL);
+        webauth_croak(NULL, "webauth_attrs_encode", s, NULL);
     else {
         SvCUR_set(output, out_len);
         SvPOK_only(output);
@@ -343,9 +637,10 @@ webauth_attrs_encode(attrs)
 
 
 void
-webauth_attrs_decode(buffer)
+webauth_attrs_decode(self, buffer)
+    WebAuth self
     SV *buffer
-  PROTOTYPE: $
+  PROTOTYPE: $$
   PPCODE:
 {
     size_t n_input;
@@ -360,7 +655,7 @@ webauth_attrs_decode(buffer)
     p_input = SvPV(copy, n_input);
     s = webauth_attrs_decode(p_input, n_input, &list);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_attrs_decode", s, NULL);
+        webauth_croak(NULL, "webauth_attrs_decode", s, NULL);
 
     hv = newHV();
     for (i = 0; i < list->num_attrs; i++)
@@ -374,192 +669,163 @@ webauth_attrs_decode(buffer)
 }
 
 
-void
-webauth_random_bytes(length)
-    int length
-  PROTOTYPE: $
+WebAuth::Key
+key_create(self, type, size, key_material = NULL)
+    WebAuth self
+    enum webauth_key_type type
+    enum webauth_key_size size
+    const unsigned char *key_material
+  PROTOTYPE: $$$;$
+  PREINIT:
+    struct webauth_key *key;
+    int status;
   CODE:
 {
-    int s;
-
-    ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_bytes(SvPVX(ST(0)), length);
-    if (s != WA_ERR_NONE)
-        webauth_croak("webauth_random_bytes", s, NULL);
-    else {
-        SvCUR_set(ST(0), length);
-        SvPOK_only(ST(0));
-    }
+    status = webauth_key_create(self, type, size, key_material, &key);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_key_create", status, NULL);
+    RETVAL = key;
 }
+  OUTPUT:
+    RETVAL
 
 
-void
-webauth_random_key(length)
-    int length
-  PROTOTYPE: $
-  CODE:
-{
-    int s;
-
-    ST(0) = sv_2mortal(NEWSV(0, length));
-    s = webauth_random_key(SvPVX(ST(0)), length);
-    if (s != WA_ERR_NONE) {
-        webauth_croak("webauth_random_key", s, NULL);
-    } else {
-        SvCUR_set(ST(0), length);
-        SvPOK_only(ST(0));
-    }
-}
-
-
-WEBAUTH_KEY *
-webauth_key_create(type, key_material)
-    int type
-    SV *key_material
+WebAuth::Keyring
+keyring_new(self, ks)
+    WebAuth self
+    SV *ks
   PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
   CODE:
 {
-    STRLEN n_input;
-    char *p_input;
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    if (sv_isobject(ks) && sv_derived_from(ks, "WebAuth::Key")) {
+        struct webauth_key *key;
 
-    p_input = SvPV(key_material, n_input);
-    RETVAL = webauth_key_create(type, p_input, n_input);
-    if (RETVAL == NULL)
-        webauth_croak("webauth_key_create", WA_ERR_BAD_KEY, NULL);
+        key = INT2PTR(struct webauth_key *, SvIV((SV *) SvRV(ks)));
+        ring->ring = webauth_keyring_from_key(self, key);
+    } else {
+        ring->ring = webauth_keyring_new(self, SvIV(ks));
+    }
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+WebAuth::Keyring
+keyring_read(self, file)
+    WebAuth self
+    const char *file
+  PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
+    int status;
+  CODE:
+{
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    status = webauth_keyring_read(self, file, &ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_keyring_read", status, NULL);
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+SV *
+token_decode(self, input, ring)
+    WebAuth self
+    SV *input
+    WebAuth::Keyring ring
+  PROTOTYPE: $$$
+  PREINIT:
+    const char *encoded;
+    struct webauth_token *token;
+    int status;
+    HV *hash;
+    SV *object;
+  CODE:
+{
+    encoded = SvPV_nolen(input);
+    status = webauth_token_decode(self, WA_TOKEN_ANY, encoded, ring->ring,
+                                  &token);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_token_decode", status, NULL);
+    hash = newHV();
+    object = newRV_noinc((SV *) hash);
+    switch (token->type) {
+    case WA_TOKEN_APP:
+        sv_bless(object, gv_stashpv("WebAuth::Token::App", GV_ADD));
+        map_token_to_hash(token_mapping_app, &token->token.app, hash);
+        break;
+    case WA_TOKEN_CRED:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Cred", GV_ADD));
+        map_token_to_hash(token_mapping_cred, &token->token.cred, hash);
+        break;
+    case WA_TOKEN_ERROR:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Error", GV_ADD));
+        map_token_to_hash(token_mapping_error, &token->token.error, hash);
+        break;
+    case WA_TOKEN_ID:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Id", GV_ADD));
+        map_token_to_hash(token_mapping_id, &token->token.id, hash);
+        break;
+    case WA_TOKEN_LOGIN:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Login", GV_ADD));
+        map_token_to_hash(token_mapping_login, &token->token.login, hash);
+        break;
+    case WA_TOKEN_PROXY:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Proxy", GV_ADD));
+        map_token_to_hash(token_mapping_proxy, &token->token.proxy, hash);
+        break;
+    case WA_TOKEN_REQUEST:
+        sv_bless(object, gv_stashpv("WebAuth::Token::Request", GV_ADD));
+        map_token_to_hash(token_mapping_request, &token->token.request, hash);
+        break;
+    case WA_TOKEN_WEBKDC_PROXY:
+        sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCProxy", GV_ADD));
+        map_token_to_hash(token_mapping_webkdc_proxy,
+                          &token->token.webkdc_proxy, hash);
+        break;
+    case WA_TOKEN_WEBKDC_SERVICE:
+        sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCService", GV_ADD));
+        map_token_to_hash(token_mapping_webkdc_service,
+                          &token->token.webkdc_service, hash);
+        break;
+    case WA_TOKEN_UNKNOWN:
+    case WA_TOKEN_ANY:
+    default:
+        croak("unknown token type %d", token->type);
+        break;
+    }
+
+    /*
+     * Stash a reference to the context in the generated hash.  XS will have
+     * automatically unwrapped a struct webauth_context from an SV for us in
+     * the preamble, but we want to reuse the SV used by Perl, so store the
+     * contents of our first argument directly.
+     */
+    if (hv_stores(hash, "ctx", ST(0)) == NULL)
+        croak("cannot store context in hash");
+    SvREFCNT_inc(ST(0));
+    RETVAL = object;
 }
   OUTPUT:
     RETVAL
 
 
 void
-webauth_token_create(attrs, hint, key_or_ring)
-    SV *attrs
-    time_t hint
-    SV *key_or_ring
-  PROTOTYPE: $$$
-  PPCODE:
-{
-    HV *h;
-    SV *sv_val;
-    size_t num_attrs, out_len, out_max;
-    int s;
-    char *akey, *val, *buff;
-    I32 klen;
-    STRLEN vlen;
-    WEBAUTH_ATTR_LIST *list;
-    SV *output = NULL;
-    int iskey;
-
-    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV))
-        croak("attrs must be reference to a hash");
-    h = (HV *) SvRV(attrs);
-
-    num_attrs = hv_iterinit(h);
-    list = webauth_attr_list_new(num_attrs);
-    if (list == NULL)
-        croak("can't malloc attrs");
-
-    while ((sv_val = hv_iternextsv(h, &akey, &klen)) != NULL) {
-        val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, akey, val, vlen, WA_F_NONE);
-    }
-
-    out_max = webauth_token_encoded_length(list);
-    buff = malloc(out_max);
-    if (buff == NULL)
-        croak("can't malloc token buffer");
-    if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
-        WEBAUTH_KEYRING *ring;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_create(list, hint, buff, &out_len, out_max, ring);
-        iskey = 0;
-    } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
-        WEBAUTH_KEY *key;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        key = INT2PTR(WEBAUTH_KEY *, tmp);
-        s = webauth_token_create_with_key(list, hint, buff, &out_len,
-                                          out_max, key);
-        iskey = 1;
-    } else
-        croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-
-    webauth_attr_list_free(list);
-
-    if (s != WA_ERR_NONE) {
-        free(buff);
-        webauth_croak(iskey ?
-                      "webauth_token_create_with_key" : "webauth_token_create",
-                      s, NULL);
-    } else {
-        output = sv_newmortal();
-        sv_setpvn(output, buff, out_len);
-    }
-    free(buff);
-    EXTEND(SP,1);
-    PUSHs(output);
-}
-
-
-void
-webauth_token_parse(buffer, ttl, key_or_ring)
-    SV *buffer
-    int ttl
-    SV *key_or_ring
-  PROTOTYPE: $$$
-  PPCODE:
-{
-    STRLEN n_input;
-    char *p_input;
-    WEBAUTH_ATTR_LIST *list;
-    int s, iskey;
-    size_t i;
-    HV *hv;
-    SV *output = NULL;
-    SV *copy = sv_2mortal(newSVsv(buffer));
-
-    p_input = SvPV(copy, n_input);
-
-    if (sv_derived_from(key_or_ring, "WebAuth::Keyring")) {
-        WEBAUTH_KEYRING *ring;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        ring = INT2PTR(WEBAUTH_KEYRING *, tmp);
-        s = webauth_token_parse(p_input, n_input, ttl, ring, &list);
-        iskey = 0;
-    } else if (sv_derived_from(key_or_ring, "WEBAUTH_KEYPtr")) {
-        WEBAUTH_KEY *key;
-        IV tmp = SvIV((SV *) SvRV(key_or_ring));
-
-        key = INT2PTR(WEBAUTH_KEY *,tmp);
-        s = webauth_token_parse_with_key(p_input, n_input, ttl, key, &list);
-        iskey = 1;
-    } else
-        croak("key_or_ring must be a WebAuth::Keyring or WEBAUTH_KEY");
-
-    if (s == WA_ERR_NONE) {
-        hv = newHV();
-        for (i = 0; i < list->num_attrs; i++)
-            (void) hv_store(hv, list->attrs[i].name,
-                            strlen(list->attrs[i].name),
-                            newSVpvn(list->attrs[i].value,
-                                     list->attrs[i].length), 0);
-        output = sv_2mortal(newRV_noinc((SV *) hv));
-        webauth_attr_list_free(list);
-    } else
-        webauth_croak(iskey ?
-                      "webauth_token_parse_with_key" : "webauth_token_parse",
-                      s, NULL);
-    EXTEND(SP,1);
-    PUSHs(output);
-}
-
-
-void
-webauth_krb5_new()
-  PROTOTYPE:
+webauth_krb5_new(self)
+    WebAuth self
+  PROTOTYPE: $
   PPCODE:
 {
     WEBAUTH_KRB5_CTXT *ctxt = NULL;
@@ -570,9 +836,9 @@ webauth_krb5_new()
     output = sv_newmortal();
     sv_setref_pv(output, "WEBAUTH_KRB5_CTXTPtr", (void*)ctxt);
     if (ctxt == NULL)
-        webauth_croak("webauth_krb5_new", WA_ERR_NO_MEM, NULL);
+        webauth_croak(NULL, "webauth_krb5_new", WA_ERR_NO_MEM, NULL);
     else if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_new", s, ctxt);
+        webauth_croak(NULL, "webauth_krb5_new", s, ctxt);
     EXTEND(SP,1);
     PUSHs(output);
 }
@@ -628,7 +894,7 @@ webauth_krb5_init_via_password(c, name, password, get_principal, keytab, \
                                        keytab, server_principal, cred,
                                        &server_princ_out);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_password", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_password", s, c);
     else if (get_principal == NULL || keytab != NULL) {
         SV *out = sv_newmortal();
         sv_setpv(out, server_princ_out);
@@ -650,7 +916,7 @@ webauth_krb5_change_password(c, pass, ...)
 
     s = webauth_krb5_change_password(c, pass);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_change_password", s, c);
+        webauth_croak(NULL, "webauth_krb5_change_password", s, c);
 }
 
 
@@ -674,7 +940,7 @@ webauth_krb5_init_via_keytab(c, keytab, server_principal, ...)
 
     s = webauth_krb5_init_via_keytab(c, keytab, server_principal, cred);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_keytab", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_keytab", s, c);
 }
 
 
@@ -698,7 +964,7 @@ webauth_krb5_init_via_cred(c, cred, ...)
         cc = NULL;
     s = webauth_krb5_init_via_cred(c, pcred, cred_len, cc);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_cred", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_cred", s, c);
 }
 
 
@@ -717,7 +983,7 @@ webauth_krb5_init_via_cache(c, ...)
         cc = NULL;
     s = webauth_krb5_init_via_cache(c, cc);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_init_via_cache", s, c);
+        webauth_croak(NULL, "webauth_krb5_init_via_cache", s, c);
 }
 
 
@@ -735,7 +1001,7 @@ webauth_krb5_import_cred(c, cred)
     pticket = SvPV(cred, ticket_len);
     s = webauth_krb5_import_cred(c, pticket, ticket_len);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_import_cred", s, c);
+        webauth_croak(NULL, "webauth_krb5_import_cred", s, c);
 }
 
 
@@ -761,7 +1027,7 @@ webauth_krb5_export_tgt(c)
         PUSHs(sv_2mortal(newSViv(expiration)));
     } else {
         free(tgt);
-        webauth_croak("webauth_krb5_export_tgt", s, c);
+        webauth_croak(NULL, "webauth_krb5_export_tgt", s, c);
     }
 }
 
@@ -786,7 +1052,7 @@ webauth_krb5_get_principal(c, local)
         free(princ);
     } else {
         free(princ);
-        webauth_croak("webauth_krb5_get_principal", s, c);
+        webauth_croak(NULL, "webauth_krb5_get_principal", s, c);
     }
 }
 
@@ -816,7 +1082,7 @@ webauth_krb5_export_ticket(c, princ)
     } else {
         if (ticket != NULL)
             free(ticket);
-        webauth_croak("webauth_krb5_export_ticket", s, c);
+        webauth_croak(NULL, "webauth_krb5_export_ticket", s, c);
     }
 }
 
@@ -855,7 +1121,7 @@ webauth_krb5_mk_req(c, princ, ...)
             PUSHs(data_out);
         }
     } else
-        webauth_croak("webauth_krb5_mk_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_mk_req", s, c);
 }
 
 
@@ -904,7 +1170,7 @@ webauth_krb5_rd_req(c, request, keytab, server_principal, local, ...)
         }
     } else {
         free(client_princ);
-        webauth_croak("webauth_krb5_rd_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_rd_req", s, c);
     }
 }
 
@@ -919,102 +1185,85 @@ webauth_krb5_keep_cred_cache(c)
 
     s = webauth_krb5_keep_cred_cache(c);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_krb5_rd_req", s, c);
+        webauth_croak(NULL, "webauth_krb5_rd_req", s, c);
 }
 
 
-MODULE = WebAuth        PACKAGE = WEBAUTH_KEYPtr  PREFIX = webauth_
+MODULE = WebAuth  PACKAGE = WebAuth::Key
 
-void
-webauth_DESTROY(key)
-    WEBAUTH_KEY *key
+enum webauth_key_type
+type(self)
+    WebAuth::Key self
+  PROTOTYPE: $
   CODE:
-    webauth_key_free(key);
+    RETVAL = self->type;
+  OUTPUT:
+    RETVAL
+
+enum webauth_key_size
+length(self)
+    WebAuth::Key self
+  PROTOTYPE: $
+  CODE:
+    RETVAL = self->length;
+  OUTPUT:
+    RETVAL
+
+SV *
+data(self)
+    WebAuth::Key self
+  PROTOTYPE: $
+  CODE:
+    RETVAL = newSVpvn((const void *) self->data, self->length);
+  OUTPUT:
+    RETVAL
 
 
-MODULE = WebAuth  PACKAGE = WebAuth::Keyring  PREFIX = webauth_keyring_
+MODULE = WebAuth  PACKAGE = WebAuth::Keyring
 
 void
 DESTROY(self)
     WebAuth::Keyring self
-  CODE:
-    webauth_keyring_free(self);
-
-
-WebAuth::Keyring
-new(class, capacity = 1)
-    const char *class
-    size_t capacity
-  PROTOTYPE: ;$
-  CODE:
-    RETVAL = webauth_keyring_new(capacity);
-    if (RETVAL == NULL)
-        webauth_croak("webauth_keyring_new", WA_ERR_NO_MEM, NULL);
-  OUTPUT:
-    RETVAL
-
-
-WebAuth::Keyring
-read_file(class, path)
-    const char *class
-    const char *path
   PROTOTYPE: $
-  PREINIT:
-    WEBAUTH_KEYRING *ring;
-    int s;
   CODE:
-    s = webauth_keyring_read_file(path, &ring);
-    if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_read_file", s, NULL);
-    RETVAL = ring;
-  OUTPUT:
-    RETVAL
+    free(self);
 
 
 void
-add(self, creation_time, valid_after, key)
+add(self, creation, valid_after, key)
     WebAuth::Keyring self
-    time_t creation_time
+    time_t creation
     time_t valid_after
-    WEBAUTH_KEY *key
+    WebAuth::Key key
   PROTOTYPE: $$$$
   PREINIT:
     int s;
   PPCODE:
-    s = webauth_keyring_add(self, creation_time, valid_after, key);
-    if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_add", s, NULL);
+{
+    webauth_keyring_add(self->ctx, self->ring, creation, valid_after, key);
     XSRETURN_YES;
+}
 
 
-# Must return a copy of the key rather than the actual key, since Perl really
-# wants to free these objects and we don't have a good way of detecting in
-# the destructor that we can't free them.
-WEBAUTH_KEY *
-best_key(self, encryption, hint)
+WebAuth::Key
+best_key(self, usage, hint)
     WebAuth::Keyring self
-    int encryption
+    enum webauth_key_usage usage
     time_t hint
   PROTOTYPE: $$$
   PREINIT:
-    WEBAUTH_KEY *key;
+    const struct webauth_key *key;
+    int s;
   CODE:
-    key = webauth_keyring_best_key(self, encryption, hint);
-    if (key == NULL)
+{
+    s = webauth_keyring_best_key(self->ctx, self->ring, usage, hint, &key);
+    if (s == WA_ERR_NONE)
+        RETVAL = key;
+    else if (s == WA_ERR_NOT_FOUND)
         XSRETURN_UNDEF;
-    RETVAL = webauth_key_copy(key);
-    if (RETVAL == NULL)
-        webauth_croak("webauth_keyring_best_key", WA_ERR_NO_MEM, NULL);
-  OUTPUT:
-    RETVAL
-
-
-int
-capacity(self)
-    WebAuth::Keyring self
-  PROTOTYPE: $
-  CODE:
-    RETVAL = self->capacity;
+    else
+        webauth_croak(self->ctx, "webauth_keyring_best_key", s, NULL);
+}
   OUTPUT:
     RETVAL
 
@@ -1023,22 +1272,29 @@ void
 entries(self)
     WebAuth::Keyring self
   PROTOTYPE: $
+  PREINIT:
+    struct webauth_keyring *ring;
   PPCODE:
+{
+    ring = self->ring;
     if (GIMME_V == G_ARRAY) {
+        struct webauth_keyring_entry *e;
         SV *entry;
         size_t i;
 
-        for (i = 0; i < self->num_entries; i++) {
+        for (i = 0; i < (size_t) ring->entries->nelts; i++) {
+            e = &APR_ARRAY_IDX(ring->entries, i, struct webauth_keyring_entry);
             entry = sv_newmortal();
-            sv_setref_pv(entry, "WebAuth::KeyringEntry", &self->entries[i]);
+            sv_setref_pv(entry, "WebAuth::KeyringEntry", e);
             SvREADONLY_on(entry);
             XPUSHs(entry);
         }
     } else {
-        ST(0) = newSViv(self->num_entries);
+        ST(0) = newSViv(ring->entries->nelts);
         sv_2mortal(ST(0));
         XSRETURN(1);
     }
+}
 
 
 void
@@ -1049,24 +1305,28 @@ remove(self, n)
   PREINIT:
     int s;
   PPCODE:
-    s = webauth_keyring_remove(self, n);
+{
+    s = webauth_keyring_remove(self->ctx, self->ring, n);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_remove", s, NULL);
+        webauth_croak(self->ctx, "webauth_keyring_remove", s, NULL);
     XSRETURN_YES;
+}
 
 
 void
-write_file(self, path)
+write(self, path)
     WebAuth::Keyring self
     char *path
   PROTOTYPE: $$
   PREINIT:
     int s;
   PPCODE:
-    s = webauth_keyring_write_file(self, path);
+{
+    s = webauth_keyring_write(self->ctx, self->ring, path);
     if (s != WA_ERR_NONE)
-        webauth_croak("webauth_keyring_write_file", s, NULL);
+        webauth_croak(self->ctx, "webauth_keyring_write_file", s, NULL);
     XSRETURN_YES;
+}
 
 
 MODULE = WebAuth        PACKAGE = WebAuth::KeyringEntry
@@ -1076,7 +1336,7 @@ creation(self)
     WebAuth::KeyringEntry self
   PROTOTYPE: $
   CODE:
-    RETVAL = self->creation_time;
+    RETVAL = self->creation;
   OUTPUT:
     RETVAL
 
@@ -1091,17 +1351,88 @@ valid_after(self)
     RETVAL
 
 
-# Must return a copy of the key rather than the actual key, since Perl really
-# wants to free these objects and we don't have a good way of detecting in
-# the destructor that we can't free them.
-WEBAUTH_KEY *
+WebAuth::Key
 key(self)
     WebAuth::KeyringEntry self
   PROTOTYPE: $
   CODE:
-    RETVAL = webauth_key_copy(self->key);
-    if (RETVAL == NULL)
-        webauth_croak("webauth_key_copy", WA_ERR_NO_MEM, NULL);
+    RETVAL = self->key;
+  OUTPUT:
+    RETVAL
+
+
+MODULE = WebAuth        PACKAGE = WebAuth::Token
+
+const char *
+encode(self, ring)
+    SV *self
+    WebAuth::Keyring ring
+  PROTOTYPE: $$
+  PREINIT:
+    HV *hash;
+    SV **ctx_sv;
+    IV ctx_iv;
+    struct webauth_context *ctx;
+    struct webauth_token token;
+    int status;
+    const char *output;
+  CODE:
+{
+    if (!sv_derived_from(self, "WebAuth::Token"))
+        croak("self is not of type WebAuth::Token");
+    hash = (HV *) SvRV(self);
+
+    /*
+     * Pull the context from the hash.  Our typemap wraps the context by
+     * storing it as the IV of the scalar, so we undo that wrapping here.
+     */
+    ctx_sv = hv_fetch(hash, "ctx", strlen("ctx"), 0);
+    if (ctx_sv == NULL)
+        croak("no WebAuth context in WebAuth::Token object");
+    ctx_iv = SvIV((SV *) SvRV(*ctx_sv));
+    ctx = INT2PTR(struct webauth_context *, ctx_iv);
+
+    /* Copy our hash contents to the appropriate struct. */
+    memset(&token, 0, sizeof(token));
+    if (sv_derived_from(self, "WebAuth::Token::App")) {
+        token.type = WA_TOKEN_APP;
+        map_hash_to_token(token_mapping_app, hash, &token.token.app);
+    } else if (sv_derived_from(self, "WebAuth::Token::Cred")) {
+        token.type = WA_TOKEN_CRED;
+        map_hash_to_token(token_mapping_cred, hash, &token.token.cred);
+    } else if (sv_derived_from(self, "WebAuth::Token::Error")) {
+        token.type = WA_TOKEN_ERROR;
+        map_hash_to_token(token_mapping_error, hash, &token.token.error);
+    } else if (sv_derived_from(self, "WebAuth::Token::Id")) {
+        token.type = WA_TOKEN_ID;
+        map_hash_to_token(token_mapping_id, hash, &token.token.id);
+    } else if (sv_derived_from(self, "WebAuth::Token::Login")) {
+        token.type = WA_TOKEN_LOGIN;
+        map_hash_to_token(token_mapping_login, hash, &token.token.login);
+    } else if (sv_derived_from(self, "WebAuth::Token::Proxy")) {
+        token.type = WA_TOKEN_PROXY;
+        map_hash_to_token(token_mapping_proxy, hash, &token.token.proxy);
+    } else if (sv_derived_from(self, "WebAuth::Token::Request")) {
+        token.type = WA_TOKEN_REQUEST;
+        map_hash_to_token(token_mapping_request, hash, &token.token.request);
+    } else if (sv_derived_from(self, "WebAuth::Token::WebKDCProxy")) {
+        token.type = WA_TOKEN_WEBKDC_PROXY;
+        map_hash_to_token(token_mapping_webkdc_proxy, hash,
+                          &token.token.webkdc_proxy);
+    } else if (sv_derived_from(self, "WebAuth::Token::WebKDCService")) {
+        token.type = WA_TOKEN_WEBKDC_SERVICE;
+        map_hash_to_token(token_mapping_webkdc_service, hash,
+                          &token.token.webkdc_service);
+    } else {
+        croak("self is not a supported WebAuth::Token::* object");
+    }
+
+    /* Do the actual encoding. */
+    status = webauth_token_encode(ctx, &token, ring->ring, &output);
+    if (status != WA_ERR_NONE)
+        webauth_croak(ctx, "webauth_token_encode", status, NULL);
+    RETVAL = output;
+}
   OUTPUT:
     RETVAL
 

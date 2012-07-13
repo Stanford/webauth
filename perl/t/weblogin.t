@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
     create_keyring);
 
-use WebAuth qw(:base64 :const :krb5 :key);
+use WebAuth qw(3.00 :const :krb5);
 use WebKDC ();
 use WebKDC::Config;
 
@@ -171,28 +171,30 @@ $WebKDC::Config::EXPIRING_PW_TGT = 'krb5cc_test';
 $WebKDC::Config::EXPIRING_PW_PRINC = $principal;
 
 # Create a keyring to test with.
+my $wa = WebAuth->new;
 unlink ('t/data/test.keyring');
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
-my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
-my $random = WebAuth::random_key (WebAuth::WA_AES_128);
-my $key = WebAuth::key_create (WebAuth::WA_AES_KEY, $random);
-my $st = WebKDC::WebKDCServiceToken->new;
-$st->session_key ($random);
+my $random = 'b' x WebAuth::WA_AES_128;
+my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
-$st->creation_time (time);
-$st->expiration_time (time + 3600);
-my $st_base64 = base64_encode ($st->to_token ($keyring));
+$st->session_key ($random);
+$st->creation (time);
+$st->expiration (time + 3600);
+my $st_base64 = $st->encode ($keyring);
 
 # Create the RT for testing.
-my $rt = WebKDC::RequestToken->new;
-$rt->creation_time (time);
-$rt->subject_auth ('webkdc');
-$rt->requested_token_type ('id');
+my $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128, $random);
+my $client_keyring = $wa->keyring_new ($key);
+my $rt = WebAuth::Token::Request->new ($wa);
+$rt->type ('id');
+$rt->auth ('webkdc');
 $rt->return_url ('https://test.example.org/');
-my $rt_base64 = base64_encode ($rt->to_token ($key));
+$rt->creation (time);
+my $rt_base64 = $st->encode ($client_keyring);
 
 #############################################################################
 # Tests

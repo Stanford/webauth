@@ -14,15 +14,13 @@
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
-
-#include <httpd.h>
-#include <http_config.h>
-#include <http_log.h>
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
+#include <webauth/basic.h>
 #include <webauth/util.h>
 #include <webauth/webkdc.h>
 
@@ -105,7 +103,8 @@ enum {
 #define MERGE_PTR_OTHER(field, other)                                   \
     conf->field = (oconf->other != NULL) ? oconf->field : bconf->field
 #define MERGE_SET(field)                                                \
-    conf->field = (oconf->field ## _set) ? oconf->field : bconf->field
+    conf->field = (oconf->field ## _set) ? oconf->field : bconf->field; \
+    conf->field ## _set = oconf->field ## _set || bconf->field ## _set
 
 /*
  * Macro used for checking if a directive is set.  Takes the struct attribute,
@@ -116,7 +115,7 @@ enum {
  */
 #define CHECK_DIRECTIVE(field, dir, value)      \
     if (sconf->field == value)                  \
-        fatal_config(server, CD_ ## dir, ptemp)
+        fatal_config(server, CD_ ## dir, p)
 
 
 /*
@@ -213,15 +212,32 @@ fatal_config(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * from an Apache configuration directive.
  */
 void
-webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *ptemp)
+webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *p)
 {
     struct config *sconf;
+    int status;
 
     sconf = ap_get_module_config(server->module_config, &webkdc_module);
     CHECK_DIRECTIVE(keyring_path,     Keyring,              NULL);
     CHECK_DIRECTIVE(keytab_path,      Keytab,               NULL);
     CHECK_DIRECTIVE(service_lifetime, ServiceTokenLifetime, 0);
     CHECK_DIRECTIVE(token_acl_path,   TokenAcl,             NULL);
+
+    /*
+     * Create a WebAuth context that will last for the life of the server
+     * configuration.  We need this because there is some data, such as the
+     * main server keyring, that needs to live as long as the server, although
+     * most operations will be done on the per-request context.
+     */
+    status = webauth_context_init_apr(&sconf->ctx, p);
+    if (status != WA_ERR_NONE) {
+        const char *msg = webauth_error_message(NULL, status);
+
+        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, server,
+                     "mod_webauth: fatal error: %s", msg);
+        fprintf(stderr, "mod_webauth: fatal error: %s\n", msg);
+        exit(1);
+    }
 
     /*
      * Load the keyring into the configuration struct.  If the configuration
@@ -234,11 +250,8 @@ webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *ptemp)
     if (bconf->ring != NULL
         && strcmp(sconf->keyring_path, bconf->keyring_path) == 0) {
         sconf->ring = bconf->ring;
-        sconf->free_ring = false;
     } else {
         mwk_cache_keyring(server, sconf);
-        if (sconf->ring != NULL)
-            sconf->free_ring = true;
     }
 }
 
@@ -261,9 +274,9 @@ parse_interval(cmd_parms *cmd, const char *arg, unsigned long *value)
 
 
 /*
- * Utility function for parsing a user metadata service URL.  This also does
- * validation of the URL and the protocol to ensure that it represents a
- * supported user metadata service.  Returns an error string or NULL on
+ * Utility function for parsing a user information service URL.  This also
+ * does validation of the URL and the protocol to ensure that it represents a
+ * supported user information service.  Returns an error string or NULL on
  * success.  The URL will be of the form:
  *
  *     remctl://hostname.example.com:4373/oath
@@ -279,11 +292,12 @@ parse_userinfo_url(cmd_parms *cmd, const char *arg,
 
     status = apr_uri_parse(cmd->pool, arg, &uri);
     if (status != APR_SUCCESS)
-        return apr_psprintf(cmd->pool, "Invalid user metadata service URL"
+        return apr_psprintf(cmd->pool, "Invalid user information service URL"
                             " \"%s\" for %s", arg, cmd->directive->directive);
     if (strcmp(uri.scheme, "remctl") != 0)
-        return apr_psprintf(cmd->pool, "Unknown user metadata protocol \"%s\""
-                            " for %s", uri.scheme, cmd->directive->directive);
+        return apr_psprintf(cmd->pool, "Unknown user information protocol"
+                            " \"%s\" for %s", uri.scheme,
+                            cmd->directive->directive);
     config->protocol = WA_PROTOCOL_REMCTL;
     config->host = uri.hostname;
     config->port = uri.port;

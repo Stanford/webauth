@@ -43,3 +43,13 @@ REMOTE_USER Cookie
   updated expiration date.  That way, the cookie will still expire if the
   user stops using that WebLogin server, but provided that they use the
   server at least once a year, the cookie will not expire.
+
+License
+
+  Copyright 2007, 2009
+    The Board of Trustees of the Leland Stanford Junior University
+
+  Copying and distribution of this file, with or without modification, are
+  permitted in any medium without royalty provided the copyright notice
+  and this notice are preserved.  This file is offered as-is, without any
+  warranty.

@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+#
+# webauth-make-tokens -- Generate WebAuth tokens from a configuration file.
+#
+# This script is not run automatically by the build process or by the test
+# suite.  It's here as an example for how to generate the test tokens using
+# the WebAuth modules.  Given a configuration and output path, it will
+# regenerate all the tokens that are currently used for testing or, if given a
+# list of specific tokens, generate only those tokens.
+#
+# Since each time a token is generated, it uses new random data and therefore
+# changes, this script should not normally be run.  It will change all of the
+# test tokens.  For regular testing, we want to use static tokens generated
+# previously with earlier known-good versions to ensure that no new symmetric
+# bugs have been introduced.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2011, 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+
+require 5.006;
+use strict;
+use warnings;
+
+use Getopt::Long qw(GetOptions);
+use WebAuth ();
+
+# Will be loaded from the configuration.
+our %TOKENS_GOOD;
+our %TOKENS_ERROR;
+our %TOKENS_BAD;
+
+# Generate a particular token.  Takes the WebAuth object, the keyring, the
+# class, and a hash of attributes.  Sets the attributes using the appropriate
+# accessors, and then generates a new token using the provided keyring.
+sub generate_token {
+    my ($wa, $ring, $class, $attrs) = @_;
+    eval "require $class";
+    if ($@) {
+        die "$0: cannot load $class: $@\n";
+    }
+    my $token = $class->new;
+    for my $attr (keys %$attrs) {
+        $token->$attr ($attrs->{$attr});
+    }
+    return $wa->token_encode ($token, $ring);
+}
+
+# Clean up $0 for error reporting.
+$0 =~ s%.*/%%;
+
+# Parse command-line options.  By default, this script looks for the
+# configuration file in the current directory, a keyring in the current
+# directory, and outputs tokens into a subdirectory named tokens.  All this
+# can be changed with options.
+my $config = 'tokens.conf';
+my $keyring = 'keyring';
+my $output = 'tokens';
+GetOptions('c|config=s'  => \$config,
+           'k|keyring=s' => \$keyring,
+           'o|output=s'  => \$output) or exit 1;
+
+# Get the tokens to create from the command line, if any.
+my %generate = map { $_ => 1 } @ARGV;
+
+# Load the configuration and keyring and create the WebAuth object.
+require $config;
+my $ring = WebAuth::Keyring->read_file ($keyring);
+my $wa = WebAuth->new;
+
+# Generate the tokens listed in the configuration file.
+unless (-d $output) {
+    mkdir ($output, 0755) or die "$0: cannot mkdir $output: $!\n";
+}
+for my $tokens (\%TOKENS_GOOD, \%TOKENS_ERROR) {
+    for my $file (sort keys %$tokens) {
+        next if (%generate and not $generate{$file});
+        my ($class, $data) = @{ $tokens->{$file} };
+        my $token = generate_token ($wa, $ring, $class, $data);
+        open (TOKEN, '>', "$output/$file")
+            or die "cannot create $output/$file: $!\n";
+        print TOKEN "$token\n" or die "cannot write to $output/$file: $!\n";
+        close TOKEN or die "cannot write to $output/$file: $!\n";
+    }
+}
+
+# FIXME: %TOKENS_BAD not yet supported and will require generic token encoding
+# or some other way to create tokens while bypassing sanity checks.
+
+# FIXME: Restore the ability to generate app-bad-hmac (which replaces one
+# character of the encoded token) and app-raw (a valid token that isn't
+# base64-encoded).
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1
+
+webauth-make-tokens - Generate WebAuth tokens from a configuration file
+
+=head1 SYNOPSIS
+
+B<webauth-make-tokens> [B<-c> I<config>] [B<-k> I<keyring>] [B<-o> I<output>]
+    [I<token> ...]
+
+=head1 REQUIREMENTS
+
+Perl 5.6 or later and the WebAuth Perl modules (from WebAuth 4.2.0 or
+later).
+
+=head1 DESCRIPTION
+
+B<webauth-make-tokens> reads information about WebAuth tokens from a
+configuration file and generates encoded tokens stored in files.  This is
+primarily intended as a testing tool, but can occasionally be useful in
+other situations where manually generating WebAuth tokens is required.
+
+By default, it expects the configuration file to be named F<tokens.conf>
+and found in the currently directory and a keyring named F<keyring> in the
+current directory.  By default, it generates tokens in a directory named
+F<tokens> under the current directory.  All of these paths can be changed
+with command-line options.  For details of the configuration file syntax,
+see L<"CONFIGURATION FILE">.
+
+By default, every token specified in the configuration file is generated.
+However, this can be limited to specific tokens by listing the short names
+of the tokens to create on the command line.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-c> I<config>, B<--config>=I<config>
+
+Load the specified file instead of F<./tokens.conf>.
+
+=item B<-k> I<keyring>, B<--keyring>=I<keyring>
+
+Use I<keyring> as the WebAuth keyring file for token encryption instead of
+F<./keyring>.
+
+=item B<-o> I<output>, B<--output>=I<output>
+
+Use I<output> as the output directory for tokens instead of F<./tokens>.
+The generated tokens will be stored in separate files in this directory,
+named after their short names.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+This file is Perl code and is intended to be loaded via require.  It
+defines three variables: %TOKENS_GOOD, %TOKENS_ERROR, and %TOKENS_BAD.
+Each is a hash of short token names to anonymous arrays.  The first
+element of the array is the name of a WebAuth::Token::* class; the second
+element is a hash of token attributes to values.
+
+%TOKENS_GOOD should be fully valid tokens, %TOKENS_ERROR should be tokens
+with valid syntax but that will produce errors when decoded (such as
+expired tokens), and %TOKENS_BAD should be syntactically invalid tokens
+(such as ones with missing attributes).
+
+For example:
+
+    our %TOKENS_GOOD =
+        (
+         'app-minimal' => [ 'WebAuth::Token::App',
+                            { subject         => 'testuser',
+                              expiration_time => 2147483600 }
+                          ],
+         'app-session' => [ 'WebAuth::Token::App',
+                            { session_key     => "\0\0;s=test;\0",
+                              expiration_time => 2147483600 }
+                          ],
+        );
+
+This configuration defines two tokens, F<app-minimal> and F<app-session>,
+which are both WebAuth::Token::App tokens containing test data.
+
+The names used in this file will be the file names of the tokens created.
+They are otherwise arbitrary and have no protocol significance.
+
+=head1 BUGS
+
+Only the %TOKENS_GOOD and %TOKENS_ERROR tokens are handled currently.
+%TOKENS_BAD is ignored.
+
+=head1 SEE ALSO
+
+This script is is part of the WebAuth distribution, the current version of
+which can be found at L<http://webauth.stanford.edu/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut

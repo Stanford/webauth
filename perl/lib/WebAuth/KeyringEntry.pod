@@ -1,0 +1,83 @@
+=for stopwords
+WebAuth keyring metadata timestamps Allbery
+
+=head1 NAME
+
+WebAuth::KeyringEntry - A single entry in a WebAuth::Keyring
+
+=head1 SYNOPSIS
+
+    use WebAuth ();
+    use WebAuth::Keyring ();
+
+    my $wa = WebAuth->new;
+    eval {
+        $ring = WebAuth::Keyring->read ($wa, '/path/to/keyring');
+        my @entries = $ring->entries;
+        for my $entry (@entries) {
+            print $entry->creation, ' ', $entry->valid_after, "\n";
+        }
+    };
+    if ($@) {
+        # handle exception
+    }
+
+=head1 DESCRIPTION
+
+A WebAuth::KeyringEntry represents a single entry in a WebAuth::Keyring.
+Calling the entries() method on a WebAuth::Keyring in an array context
+returns a list of these objects.  They encapsulate the WebAuth::Key and
+the additional metadata about that key stored in a keyring, specifically
+the creation and valid-after timestamps.
+
+This object is always read-only.
+
+A WebAuth::KeyringEntry object will be destroyed when the corresponding
+WebAuth::Keyring object is destroyed, which in turn will happen when the
+WebAuth context used to create it is destroyed.  Subsequent accesses to it
+may cause memory access errors or other serious bugs.  Be careful not to
+retain a copy of a WebAuth::KeyringEntry object after the enclosing
+objects that created it have been destroyed.
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item creation ()
+
+Returns the creation time of the key in seconds since epoch.
+
+=item key ()
+
+Returns the key of this entry as a WebAuth::Key object.
+
+=item valid_after ()
+
+Returns the valid-after time of the key in seconds since epoch.  For more
+information about how the valid-after time is used, see the documentation
+of the add() and best_key() methods of WebAuth::Keyring.
+
+=back
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 SEE ALSO
+
+WebAuth(3), WebAuth::Key(3), WebAuth::Keyring(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2012 The Board of Trustees of the Leland Stanford Junior
+University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.
+
+=cut

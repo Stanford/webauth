@@ -29,3 +29,13 @@ queries.
 If you are using Debian or Ubuntu, you probably want to install the
 packages that come with the operating system and follow the instructions
 in /usr/share/doc/libapache2-webauth/README.Debian instead.
+
+-----
+
+Copyright 2003, 2004, 2009
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

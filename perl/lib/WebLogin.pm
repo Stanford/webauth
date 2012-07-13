@@ -2,10 +2,27 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
+# Rewritten for CGI::Application by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
 ##############################################################################
 # Modules and declarations
@@ -27,7 +44,7 @@ use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
 use Template ();
-use WebAuth qw(:base64 :const :krb5 :key);
+use WebAuth qw(3.00 :const :krb5);
 use WebKDC ();
 use WebKDC::Config ();
 use WebKDC::WebKDCException;
@@ -80,7 +97,12 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 sub setup {
     my ($self) = @_;
 
-    # Configure the template
+    # Initial context.  This is used only in setup and in test cases that call
+    # underlying functions directly.  We will replace this context with a
+    # fresh one in cgiapp_prerun after receiving each query.
+    $self->{webauth} = WebAuth->new;
+
+    # Configure the template.
     $self->tt_config(
                      TEMPLATE_OPTIONS => {
                          STAT_TTL     => 60,
@@ -138,13 +160,15 @@ sub setup {
         if $self->param ('debug');
 }
 
-# Prerunning the application, make sure rm works if you're using GET or POST.
-# http://www.perlmonks.org/?node_id=748939
+# Hook called before processing of each query.  Make sure rm works if you're
+# using GET or POST (see <http://www.perlmonks.org/?node_id=748939>) and limit
+# the lifetime of the WebAuth context to a single run mode.
 sub cgiapp_prerun {
     my ($self) = @_;
     if (!defined $self->query->param ('rm')) {
         $self->prerun_mode ($self->query->url_param ('rm'));
     }
+    $self->{webauth} = WebAuth->new;
 }
 
 # Wrapper to help store current template settings.  We need to set template
@@ -832,12 +856,12 @@ sub add_proxy_token {
     my ($kreq, $data);
     my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
     eval {
-        my $context = krb5_new;
+        my $context = $self->{webauth}->krb5_new;
         krb5_init_via_cache ($context);
         my ($tgt, $expires) = krb5_export_tgt ($context);
         ($kreq, $data) = krb5_mk_req ($context, $principal, $tgt);
-        $kreq = base64_encode ($kreq);
-        $data = base64_encode ($data);
+        $kreq = $self->{webauth}->base64_encode ($kreq);
+        $data = $self->{webauth}->base64_encode ($data);
     };
     if ($@) {
         print STDERR "failed to create proxy token request for"
@@ -862,10 +886,11 @@ sub add_proxy_token {
 # reason, log an error and don't do anything else.
 sub add_remuser_token {
     my ($self) = @_;
+    my $wa = $self->{webauth};
 
     print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
         if $self->param ('debug');
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -897,13 +922,13 @@ sub add_remuser_token {
     }
 
     # Create a proxy token.
-    my $token = new WebKDC::WebKDCProxyToken;
-    $token->creation_time (time);
-    $token->expiration_time (time + $WebKDC::Config::REMUSER_EXPIRES);
-    $token->proxy_data ($user);
-    $token->proxy_subject ('WEBKDC:remuser');
-    $token->proxy_type ('remuser');
+    my $token = WebAuth::Token::WebKDCProxy->new ($wa);
     $token->subject ($user);
+    $token->proxy_type ('remuser');
+    $token->proxy_subject ('WEBKDC:remuser');
+    $token->data ($user);
+    $token->creation (time);
+    $token->expiration (time + $WebKDC::Config::REMUSER_EXPIRES);
 
     # If there's a callback defined for determining the initial and session
     # factors and level of assurance, make that callback and store the results
@@ -921,7 +946,7 @@ sub add_remuser_token {
     }
 
     # Add the token to the WebKDC request.
-    my $token_string = base64_encode ($token->to_token ($keyring));
+    my $token_string = $token->encode ($keyring);
     $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
 }
 
@@ -933,6 +958,7 @@ sub add_remuser_token {
 # true on success and false on failure.
 sub add_changepw_token {
     my ($self) = @_;
+    my $wa = $self->{webauth};
     my $q = $self->query;
     my $username = $q->param ('username');
     my $password = $q->param ('password');
@@ -945,12 +971,12 @@ sub add_changepw_token {
 
     # Create a ticket for kadmin/changepw with the user name and password.
     my ($ticket, $expires);
+    my $changepw = 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM) {
+        $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
+    }
     eval {
-        my $context = krb5_new;
-        my $changepw = 'kadmin/changepw';
-        if ($WebKDC::Config::DEFAULT_REALM) {
-            $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
-        }
+        my $context = $wa->krb5_new;
         krb5_init_via_password ($context, $username, $password, $changepw,
                                 '', '');
         ($ticket, $expires) = krb5_export_ticket ($context, $changepw);
@@ -966,27 +992,29 @@ sub add_changepw_token {
     $expires = $expires_limit if $expires_limit < $expires;
 
     # Create the token to contain the credential.
-    my $token = new WebKDC::CredToken;
-    $token->creation_time (time);
-    $token->expiration_time ($expires);
-    $token->cred_type ('krb5');
-    $token->cred_data ($ticket);
+    my $token = WebAuth::Token::Cred->new ($wa);
     $token->subject ($username);
+    $token->type ('krb5');
+    $token->service ($changepw);
+    $token->data ($ticket);
+    $token->creation (time);
+    $token->expiration ($expires);
 
     # Add the token to the web page.
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
         return;
     }
-    $self->param ('CPT', base64_encode ($token->to_token ($keyring)));
+    $self->param ('CPT', $token->encode ($keyring));
     return 1;
 }
 
 # Attempt to change the user password using the changepw token.
 sub change_user_password {
     my ($self) = @_;
+    my $wa = $self->{webauth};
     my $q = $self->query;
     my ($status, $error);
 
@@ -997,7 +1025,7 @@ sub change_user_password {
     print STDERR "changing password for $username\n"
         if $self->param ('debug');
 
-    my $keyring = WebAuth::Keyring->read_file ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"
             . " $WebKDC::Config::KEYRING_PATH\n";
@@ -1017,10 +1045,7 @@ sub change_user_password {
         }
         $cpt = $self->param ('CPT');
     }
-    my $token;
-    eval {
-        $token = new WebKDC::CredToken (base64_decode ($cpt), $keyring, 0);
-    };
+    my $token = eval { $wa->token_decode ($cpt, $keyring) };
     if ($@) {
         $self->param ('CPT', '');
         my $msg = "internal error";
@@ -1039,12 +1064,16 @@ sub change_user_password {
         } elsif ($e) {
             return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $msg);
         }
-
+    } elsif (!$token->isa ('WebAuth::Token::Cred')) {
+        my $e = "failed to change password for $username: "
+            . 'CPT parameter is not a cred token';
+        print STDERR $e, "\n" if $self->param ('logging');
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } elsif ($token->subject ne $username) {
         my $e = "failed to change password for $username: invalid username";
         print STDERR $e, "\n" if $self->param ('logging');
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
-    } elsif ($token->cred_type ne 'krb5') {
+    } elsif ($token->type ne 'krb5') {
         my $e = "failed to change password for $username: "
             . "invalid credential type";
         print STDERR $e, "\n" if $self->param ('logging');
@@ -1053,8 +1082,8 @@ sub change_user_password {
 
     # Change the password and return any error status plus exception object.
     eval {
-        my $context = krb5_new;
-        krb5_init_via_cred ($context, $token->cred_data);
+        my $context = $wa->krb5_new;
+        krb5_init_via_cred ($context, $token->data);
         krb5_change_password ($context, $password);
     };
     my $e = $@;
@@ -1793,43 +1822,47 @@ sub edit_remoteuser : Runmode {
 # Documentation
 ##############################################################################
 
-# FIXME: Update the documentation with the CGI::Application rewrite bits.
 1;
 
 __END__
 
+=for stopwords
+WebAuth WebLogin CGI login API Allbery
+
 =head1 NAME
 
-WebLogin - functions to support the weblogin process
+WebLogin - Central login service for the WebAuth authentication system
 
 =head1 SYNOPSIS
 
-  use WebLogin;
+    use WebLogin;
+
+    my $weblogin = WebLogin->new (PARAMS => { pages => \%pages },
+                                  QUERY  => $q);
+    $weblogin->run;
 
 =head1 DESCRIPTION
 
-WebLogin is a set of functions required by the WebAuth login process itself,
-in order to generalize login tasks between scripts.
+The WebLogin module implements a CGI service using the CGI::Application
+framework that provides central login services for the WebAuth
+authentication system.  For its entry points and constructor options, see
+L<CGI::Application/"Instance Script Methods">.
 
-=head1 EXPORT
+This module is normally only called from the F<login.fcgi>, F<logout.fcgi>,
+and F<pwchange.cgi> scripts that come with WebAuth and comprise, with this
+module, the WebLogin service.  It is not currently designed to be used by
+any other scripts and does not currently have a documented API.
 
-None
+=head1 AUTHORS
 
-=head1 FUNCTIONS
-
-=over 4
-
-=back
-
-=head1 AUTHOR
-
-Roland Schemers <schemers@stanford.edu>
-Russ Allbery <rra@stanford.edu>
-Jon Robertson <jonrober@stanford.edu>
+Roland Schemers, Russ Allbery <rra@stanford.edu>, and Jon Robertson
+<jonrober@stanford.edu>.
 
 =head1 SEE ALSO
 
-L<WebKDC>
-L<WebAuth>.
+WebAuth(3), WebKDC(3), WebKDC::Config(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
 
 =cut

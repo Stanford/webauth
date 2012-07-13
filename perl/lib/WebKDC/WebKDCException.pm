@@ -1,177 +1,174 @@
 # Exception class for WebKDC call failures.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011
+# Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
 package WebKDC::WebKDCException;
 
 use strict;
 use warnings;
 
-use WebAuth;
-
+use base qw(Exporter);
 use overload '""' => \&to_string;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
 BEGIN {
-    use Exporter   ();
-    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, @ErrorNames);
-
-    # set the version for version checking
-    $VERSION     = 1.02;
-    @ISA         = qw(Exporter);
-    @EXPORT      = qw(WK_SUCCESS
-		      WK_ERR_USER_AND_PASS_REQUIRED
-		      WK_ERR_LOGIN_FAILED
-		      WK_ERR_UNRECOVERABLE_ERROR
-		      WK_ERR_REQUEST_TOKEN_STALE
-		      WK_ERR_WEBAUTH_SERVER_ERROR
-		      WK_ERR_LOGIN_FORCED
-		      WK_ERR_USER_REJECTED
-		      WK_ERR_CREDS_EXPIRED
-                      WK_ERR_MULTIFACTOR_REQUIRED
-                      WK_ERR_MULTIFACTOR_UNAVAILABLE
-                      WK_ERR_LOGIN_REJECTED
-                      WK_ERR_LOA_UNAVAILABLE
-		      );
-    @EXPORT_OK   = ();
+    $VERSION = '1.03';
 }
 
-our @EXPORT_OK;
+# Export the error codes.  This list MUST be kept in sync and follow the same
+# order as the sequence number of the error codes defined below in the
+# constant subs or we won't map errors to the correct name.
+our @EXPORT;
+BEGIN {
+    @EXPORT = qw(WK_SUCCESS
+                 WK_ERR_USER_AND_PASS_REQUIRED
+                 WK_ERR_LOGIN_FAILED
+                 WK_ERR_UNRECOVERABLE_ERROR
+                 WK_ERR_REQUEST_TOKEN_STALE
+                 WK_ERR_WEBAUTH_SERVER_ERROR
+                 WK_ERR_LOGIN_FORCED
+                 WK_ERR_USER_REJECTED
+                 WK_ERR_CREDS_EXPIRED
+                 WK_ERR_MULTIFACTOR_REQUIRED
+                 WK_ERR_MULTIFACTOR_UNAVAILABLE
+                 WK_ERR_LOGIN_REJECTED
+                 WK_ERR_LOA_UNAVAILABLE);
+}
 
-sub WK_SUCCESS                         () { 0;}
-sub WK_ERR_USER_AND_PASS_REQUIRED      () { 1;}
-sub WK_ERR_LOGIN_FAILED                () { 2;}
-sub WK_ERR_UNRECOVERABLE_ERROR         () { 3;}
-sub WK_ERR_REQUEST_TOKEN_STALE         () { 4;}
-sub WK_ERR_WEBAUTH_SERVER_ERROR        () { 5;}
-sub WK_ERR_LOGIN_FORCED                () { 6;}
-sub WK_ERR_USER_REJECTED               () { 7;}
-sub WK_ERR_CREDS_EXPIRED               () { 8;}
-sub WK_ERR_MULTIFACTOR_REQUIRED        () { 9;}
-sub WK_ERR_MULTIFACTOR_UNAVAILABLE     () {10;}
-sub WK_ERR_LOGIN_REJECTED              () {11;}
-sub WK_ERR_LOA_UNAVAILABLE             () {12;}
+# This hash maps the error code names, used when stringifying.
+our %ERROR_NAMES;
+{
+    my $i = 0;
+    %ERROR_NAMES = map {
+        my $n = $_;
+        $n =~ s/^WK_(?:ERR_)?//;
+        $n => $i++;
+    } @EXPORT;
+}
 
-our @ErrorNames = qw(SUCCESS
-		     USER_AND_PASS_REQUIRED
-		     LOGIN_FAILED
-		     UNRECOVERABLE_ERROR
-		     REQUEST_TOKEN_STALE
-		     WEBAUTH_SERVER_ERROR
-		     LOGIN_FORCED
-		     USER_REJECTED
-                     MULTIFACTOR_REQUIRED
-                     MULTIFACTOR_UNAVAILABLE
-                     LOGIN_REJECTED
-                     LOA_UNAVAILABLE);
+# The error code constants.
+sub WK_SUCCESS                     () {  0 }
+sub WK_ERR_USER_AND_PASS_REQUIRED  () {  1 }
+sub WK_ERR_LOGIN_FAILED            () {  2 }
+sub WK_ERR_UNRECOVERABLE_ERROR     () {  3 }
+sub WK_ERR_REQUEST_TOKEN_STALE     () {  4 }
+sub WK_ERR_WEBAUTH_SERVER_ERROR    () {  5 }
+sub WK_ERR_LOGIN_FORCED            () {  6 }
+sub WK_ERR_USER_REJECTED           () {  7 }
+sub WK_ERR_CREDS_EXPIRED           () {  8 }
+sub WK_ERR_MULTIFACTOR_REQUIRED    () {  9 }
+sub WK_ERR_MULTIFACTOR_UNAVAILABLE () { 10 }
+sub WK_ERR_LOGIN_REJECTED          () { 11 }
+sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 
+# Create a new WebKDC::WebKDCException object and initialize the status,
+# message, and protocol error.
 sub new {
     my ($type, $status, $mesg, $pec) = @_;
-    my $self = {};
-    bless $self, $type;
-    $self->{'status'} = $status;
-    $self->{'mesg'} = $mesg;
-    $self->{'pec'} = $pec;
+    my $self = {
+        status => $status,
+        mesg   => $mesg,
+        pec    => $pec
+    };
+    bless ($self, $type);
     return $self;
 }
 
-sub status {
-    my $self = shift;
-    return $self->{'status'};
-}
+# Basic accessors.
+sub status     { my $self = shift; return $self->{'status'} }
+sub message    { my $self = shift; return $self->{'mesg'}   }
+sub error_code { my $self = shift; return $self->{'pec'}    }
 
-sub message {
-    my $self = shift;
-    return $self->{'mesg'};
-}
-
-sub error_code {
-    my $self = shift;
-    return $self->{'pec'};
-}
-
+# A full verbose message with all the information from the exception.
 sub verbose_message {
     my $self = shift;
     my $s = $self->{'status'};
     my $m = $self->{'mesg'};
     my $pec = $self->{'pec'};
-    my $msg = "WebKDC::WebKDCException ".$ErrorNames[$s].": $m";
-    $msg .= ": WebKDC errorCode: $pec" if (defined($pec));
+    my $msg = 'WebKDC::WebKDCException ' . $ERROR_NAMES{$s} . ": $m";
+    $msg .= ": WebKDC errorCode: $pec" if defined $pec;
     return $msg;
 }
 
+# The string conversion of this exception is the full verbose message.
 sub to_string {
     my ($self) = @_;
-    return $self->verbose_message();
+    return $self->verbose_message;
 }
-
-sub match {
-    my $e = shift;
-    return 0 unless ref $e;
-    return 0 if !$e->isa("WebKDC::WebKDCException");
-    return @_ ? $e->status() == shift : 1;
-}
-
 
 1;
 
 __END__
 
+=for stopwords
+WebKDC username login WebAuth WebKdcPermittedRealms multifactor logins
+errorCode Allbery
+
 =head1 NAME
 
-WebKDC::WebKDCException - exceptions for WebKDC
+WebKDC::WebKDCException - Exceptions for WebKDC communications
 
 =head1 SYNOPSIS
 
-  use WebKDC;
-  use WebKDC::WebKDCException;
+    use WebKDC;
+    use WebKDC::WebKDCException;
 
-  eval {
-    ...
-    WebKDC::request_token_request($req, $resp);
-    ...
-  };
-  if (WebKDC::WebKDCException::match($@)) {
+    eval {
+        # ...
+        WebKDC::request_token_request($req, $resp);
+        # ...
+    };
     my $e = $@;
-    # you can call the following methods on a WebKDCException object:
-    # $e->status()
-    # $e->message()
-    # $e->error_code()
-    # $e->verbose_message()
-  }
+    if (ref $e and $e->isa ('WebKDC::WebKDCException')) {
+        # you can call the following methods on a WebKDCException object:
+        # $e->status()
+        # $e->message()
+        # $e->error_code()
+        # $e->verbose_message()
+    }
 
 =head1 DESCRIPTION
 
-The various WebKDC functions can all throw WebKDCException if something
-wrong happens.
+Various WebKDC functions may return a WebKDC::WebKDCException object if
+anything goes wrong.  This object encapsulates various information about
+the error.
 
-=head1 EXPORT
+This module also defines the status codes returned by the WebKDC
+functions.
+
+=head1 CONSTANTS
 
 The following constants are exported:
-
-  WK_SUCCESS
-  WK_ERR_USER_AND_PASS_REQUIRED
-  WK_ERR_LOGIN_FAILED
-  WK_ERR_UNRECOVERABLE_ERROR
-  WK_ERR_REQUEST_TOKEN_STATLE
-  WK_ERR_WEBAUTH_SERVER_ERROR
-  WK_ERR_LOGIN_FORCED
-  WK_ERR_USER_REJECTED
-  WK_ERR_CREDS_EXPIRED
-  WK_ERR_MULTIFACTOR_REQUIRED
-  WK_ERR_MULTIFACTOR_UNAVAILABLE
-  WK_ERR_LOGIN_REJECTED
-  WK_ERR_LOA_UNAVAILABLE
 
 =over 4
 
 =item WK_SUCCESS
 
-This status code never comes back as part of an exception, though it might
-be returned by a function that uses these status codes as return values.
+This status code never comes back as part of an exception.  It is returned
+for success.
 
 =item WK_ERR_USER_AND_PASS_REQUIRED
 
@@ -182,36 +179,38 @@ the function should be called again.
 =item WK_ERR_LOGIN_FAILED
 
 This status code indicates that a function was called that attempted to
-validate the username and password and could not, due to an invalid user or
-password. The user should be re-prompted for their username/password and the
-function should be called again.
+validate the username and password and could not, due to an invalid user
+or password.  The user should be re-prompted for their username/password
+and the function should be called again.
 
 =item WK_ERR_UNRECOVERABLE_ERROR
 
-This status code indicates that a function was called and an error occured
-that can not be recovered from. If you are in the process of attempting to
-log a user in, you have no choice but to display an error message to the
-user and not prompt again.
+This status code indicates that a function was called and an error
+occurred that can not be recovered from.  If you are in the process of
+attempting to log a user in, you have no choice but to display an error
+message to the user and not prompt again.
 
 =item WK_ERR_REQUEST_TOKEN_STALE
 
 This status code indicates the user took too long to login, and the the
-request token is too old to be used.
+request token is too old to be used.  The user should be told to retry the
+action that caused them to be prompted for authentication.
 
 =item WK_ERR_WEBAUTH_SERVER_ERROR
 
-This status code indicates something happened that most likely indicates the
-webauth server that made the request is mis-configured and/or unauthorized
-to make the request. It is similar to WK_ERR_UNRECOVERABLE_ERROR except that
-the error message to the user should indicate that the problem is most
-likely with the server that redirected them.
+This status code indicates something happened that most likely indicates
+the WebAuth server that made the request is misconfigured and/or
+unauthorized to make the request.  It is similar to
+WK_ERR_UNRECOVERABLE_ERROR except that the error message to the user
+should indicate that the problem is most likely with the server that
+redirected them.
 
 =item WK_ERR_LOGIN_FORCED
 
 This status code indicates that a function was called that required a
 username and password even if single sign-on credentials were available.
-The user should be prompted for their username and password and the function
-should be called again with that data.
+The user should be prompted for their username and password and the
+function should be called again with that data.
 
 =item WK_ERR_USER_REJECTED
 
@@ -222,7 +221,8 @@ and the realm of the principal wasn't in that list).
 =item WK_ERR_CREDS_EXPIRED
 
 This status code indicates that the principal we attempted to authenticate
-to has an expired password.
+to has an expired password.  If possible, the user should be prompted to
+change their password and then the operation retried.
 
 =item WK_ERR_MULTIFACTOR_REQUIRED
 
@@ -255,49 +255,53 @@ or due to an insufficiently strong configured authentication method.
 
 =back
 
-=head1 METHODS and FUNCTIONS
+=head1 CLASS METHODS
 
 =over 4
 
-=item match($exception[, $status])
+=item new (STATUS, MESSAGE[, ERROR])
 
-This class function (not a method) returns true if the given $exception is a
-WebKDC::WebKDCException. If $status is specified, then $exception->status()
-will also be compared to $status.
+Create a new WebKDC::WebKDCException object.  STATUS is one of the status
+constants defined above other than WK_SUCCESS.  MESSAGE is the error
+message for the exception.  ERROR, if present, is a protocol error code
+that caused the exception.
 
-=item new(status, message, wrapped_exception)
+=back
 
-This method is used to created new WebKDC::WebKDCException objects.
+=head1 INSTANCE METHODS
 
-=item status()
+=over 4
 
-This method returns the WebKDC::WebKDCException status code for the
-exception, which will be one of the WK_ERR_* codes.
+=item status ()
 
-=item message()
+Returns the WebKDC::WebKDCException status code for the exception, which
+will be one of the WK_ERR_* codes.
 
-This method returns the error message that was used in the constructor.
+=item message ()
 
-=item error_code()
+Returns the error message that was passed to the constructor.
 
-This method returns the WebKDC errorCode (if there was one).
+=item error_code ()
 
-=item verbose_message()
+Returns the WebKDC protocol errorCode (if there was one).
+
+=item verbose_message ()
 
 This method returns a verbose error message, which consists of the status
-code, message, and any error code.
-
-The verbose_message method is also called if the exception is used as a
-string.
+code, message, and any error code.  The verbose_message method is also
+called if the exception is used as a string.
 
 =back
 
 =head1 AUTHOR
 
-Roland Schemers (schemers@stanford.edu)
+Roland Schemers and Russ Allbery <rra@stanford.edu>
 
 =head1 SEE ALSO
 
-L<WebKDC>.
+WebKDC(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
 
 =cut

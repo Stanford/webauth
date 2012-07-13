@@ -2,26 +2,24 @@
  * Utility functions for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2009, 2011
+ * Copyright 2002, 2003, 2009, 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
 
-#include <modules/mod-config.h>
+#include <config-mod.h>
+#include <portable/apache.h>
 #include <portable/apr.h>
 
 #include <apr_errno.h>
 #include <apr_thread_mutex.h>
-#include <ap_config.h>
-#include <httpd.h>
-#include <http_log.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <unixd.h>
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>
+#include <webauth/keys.h>
 #include <webauth/basic.h>
 
 /* Initiaized in child. */
@@ -280,11 +278,11 @@ int
 mwk_cache_keyring(server_rec *serv, struct config *sconf)
 {
     int status;
-    WEBAUTH_KAU_STATUS kau_status;
+    enum webauth_kau_status kau_status;
     int update_status;
     static const char *mwk_func = "mwk_init_keyring";
 
-    status = webauth_keyring_auto_update(sconf->keyring_path,
+    status = webauth_keyring_auto_update(sconf->ctx, sconf->keyring_path,
                  sconf->keyring_auto_update,
                  sconf->keyring_auto_update ? sconf->key_lifetime : 0,
                  &sconf->ring, &kau_status, &update_status);
@@ -298,7 +296,7 @@ mwk_cache_keyring(server_rec *serv, struct config *sconf)
          * keyring file.
          */
         if (geteuid() == 0)
-            if (chown(sconf->keyring_path, unixd_config.user_id, -1) < 0)
+            if (chown(sconf->keyring_path, ap_unixd_config.user_id, -1) < 0)
                 ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
                              "mod_webkdc: %s: cannot chown keyring: %s",
                              mwk_func, sconf->keyring_path);

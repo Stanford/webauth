@@ -34,7 +34,7 @@
 groups.  It also allows retrieving adhoc LDAP attributes and places them
 in environment variables.  The module was designed for use with an LDAP
 server that supports LDAP version 3 and allows binds authenticated using
-SASL GSSAPI Kerberos 5.</p>
+GSS-API Kerberos via SASL.</p>
 
 <p>For other WebAuth documentation see the
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
@@ -62,6 +62,7 @@ SASL GSSAPI Kerberos 5.</p>
 <li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
 <li><img alt="" src="../images/down.gif" /> Ad hoc attributes lookup</li>
 <li><img alt="" src="../images/down.gif" /> WebAuth 2.x backward compatibility</li>
+<li><img alt="" src="../images/down.gif" /> Manual License</li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -197,6 +198,17 @@ require group stanford:stanford
 
 <p>This backward compatibility support is probably of interest only to
 Stanford users, since WebAuth v2 was never publically released.</p>
+</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="section">
+<h2>Manual License</h2>
+
+<p>Copyright 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The Board of
+Trustees of the Leland Stanford Junior University</p>
+
+<p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright notice
+and this notice are preserved.  This file is offered as-is, without any
+warranty.</p>
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapAttribute" id="WebAuthLdapAttribute">WebAuthLdapAttribute</a> <a name="webauthldapattribute" id="webauthldapattribute">Directive</a></h2>
@@ -381,7 +393,7 @@ WebAuthLdapFilter (&amp;(objectClass=superson)(uid=USER))
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
 </table>
-<p>The LDAP server must support SASL GSSAPI Kerberos V binds.  No other
+<p>The LDAP server must support GSS-API Kerberos SASL binds.  No other
 bind type is supported by mod_webauthldap at this time.</p>
 
 <div class="note"><h3>Note</h3> 

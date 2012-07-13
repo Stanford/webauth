@@ -1,5 +1,120 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.2.0 (2012-07-13)
+
+    Port to Apache 2.4 (tested with Apache 2.4.1).
+
+    Support for AuthType StanfordAuth has been deprecated and will be
+    removed from mod_webauth and mod_webauthldap in a subsequent release.
+
+    Support for AuthType StanfordAuth in mod_webauthldap is not available
+    when built with Apache 2.4.  This includes treating "require group"
+    directives where the group contains a colon as "require privgroup" and
+    setting the SU_AUTH_DIRMAIL, SU_AUTH_DIRNAME, and SU_AUTH_UNIVID
+    environment variables.  This behavior is currently still supported for
+    now when built with Apache 2.2 or earlier, but is deprecated as
+    mentioned above.
+
+    Support Kerberos keyring ticket caches for passing delegated
+    credentials from mod_webauth to CGI and embedded code.  Set possessor
+    permissions on Kerberos keyring tickets so that other processes
+    running as the same UID should not have access.  Patch from Benjamin
+    Coddington.
+
+    Fix merging of mod_webkdc Apache directives in some corner cases where
+    the directive has a default value or is explicitly set to off.
+
+    WebLogin now only sets a SIGTERM handler to defer exit while
+    processing a request.  This will hopefully fix orphaned login.fcgi and
+    pwchange.fcgi processes due to SIGTERM arriving while waiting in the
+    FastCGI listen loop and then never being woken up again.
+
+    The WebAuth Perl module API now requires creating a WebAuth object
+    first and passing that object as the first argument to all other
+    functions except the krb5_* functions.  This is the first step in
+    making the API more object-oriented.  The only export groups provided
+    are :const and :krb5, and all other export requests should be removed.
+    All users will need code changes to work with the new API.
+    WebAuth::Keyring and WebAuth::Krb5 have not yet been converted, but
+    will be in a subsequent release.  This means that the WebKDC and
+    WebLogin Perl modules in this release require the WebAuth module from
+    this release and vice versa, so be careful of partial upgrades.
+
+    Add new tools/webauth-make-tokens script to generate WebAuth tokens
+    given a configuration file and keyring.  This is not installed by
+    default and is normally only used to generate test data, but it may be
+    useful in some other cases of manual token generation.
+
+    webauth_token_encode now correctly allows id tokens of type krb5 to
+    omit the subject attribute.  The receiver is supposed to determine the
+    subject via the Kerberos authenticator.
+
+    All key and keyring functions in the WebAuth library API have changed
+    to take the WebAuth context and use APR memory management and
+    new-style error message handling.  All the *_free functions have
+    therefore been removed.  Keyrings are now represented by an APR array;
+    callers that want to walk through the keyring entries will need the
+    relevant APR headers.  Functions that could only fail if memory
+    allocation failed now either return new objects directly or are
+    declared void, since APR code assumes memory allocation does not fail.
+    The API now uses named structs instead of typedefs.
+
+    webauth_key_create will now create a random key if passed NULL for the
+    key material.  It also now returns a status code so that better error
+    messages can be reported.
+
+    webauth_keyring_read_file has been renamed to webauth_keyring_read.
+    webauth_keyring_write_file has been renamed to webauth_keyring_write.
+
+    The webauth_keyring_encode and webauth_keyring_decode functions have
+    been removed from the public API.
+
+    The constant WA_AES_KEY has been renamed to WA_KEY_AES.
+
+    The webauth_random_bytes and webauth_random_key functions have been
+    removed from the public API.
+
+    webauth_keyring_best_key now takes a WA_KEY_DECRYPT or WA_KEY_ENCRYPT
+    argument instead of a boolean.  This makes the meaning clearer at the
+    call site.
+
+    The Perl API for manipulating keyrings has been modified to include
+    the WebAuth context.  The read_file method in the WebAuth::Keyring
+    class has been renamed to read, calling an underlying keyring_read
+    method in the WebAuth class.  The WebAuth::Keyring new constructor now
+    takes a WebAuth context and calls a keyring_new method in the WebAuth
+    class so that the WebAuth context can be tracked.  The capacity method
+    on a WebAuth::Keyring object has been removed since it's not part of
+    the abstraction.
+
+    The Perl WebAuth::Key class now supports type, length, and data
+    accessor methods so that Perl programs can inspect the contents of
+    keys.  It also supports a convenience new constructor that calls
+    WebAuth::key_create.
+
+    The old webauth_token_create and webauth_token_parse functions have
+    been removed from the public API in favor of the new _encode and
+    _decode functions.  The token_create and token_parse methods have also
+    been removed from the Perl API in favor of the new token_decode method
+    and WebAuth::Token::* classes.
+
+    The Perl WebKDC::Token module and the classes it defined have been
+    removed.  Use the new WebAuth::Token::* classes instead.
+
+    All WebKDC::* Perl modules now have POD documentation.
+
+    Update to rra-c-util 4.5:
+
+    * Pass --deps to krb5-config unless --enable-reduced-depends was used.
+    * Do not use krb5-config results unless gssapi is supported.
+    * Fix test suite portability to Solaris.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+
+    Update to C TAP Harness 1.12:
+
+    * Fix additional uses of local in the shell TAP library.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+
 WebAuth 4.1.1 (2012-04-25)
 
     Fix a bug in webauth_user_info that misparsed timestamp attributes
