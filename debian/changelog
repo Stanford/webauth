@@ -19,6 +19,14 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
     - The webauth_random_bytes, webauth_random_key, webauth_token_create,
       and webauth_token_parse APIs have been removed
     - All Perl modules now have POD documentation.
+  * Convert to Apache 2.4 and follow the Apache module policy.
+    - Rename libapache2-webauth to libapache2-mod-webauth and
+      libapache2-webkdc to libapache2-mod-webkdc.  Add transitional
+      packages to ease the upgrade.
+    - Use dh_apache2 to handle module and configuration installation and
+      maintainer script actions.
+    - Depend on apache2-dev instead of apache2-threaded-dev.
+    - Use apxs, not apxs2.
   * libwebauth-dev now suggests libapr1-dev since it is required to use
     the parts of the API that require APR (such as keyring traversal or
     creating the WebAuth context from an existing APR pool).

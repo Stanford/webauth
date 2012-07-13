@@ -1,0 +1,15 @@
+#! /bin/sh
+
+set -e
+
+# Make sure that /var/lib/webauth exists and is writable by the www-data
+# group, since this is where the keyring and ticket cache will go.
+if [ ! -d /var/lib/webauth ] ; then
+    mkdir /var/lib/webauth
+fi
+chgrp www-data /var/lib/webauth
+chmod 770 /var/lib/webauth
+
+#DEBHELPER#
+
+exit 0

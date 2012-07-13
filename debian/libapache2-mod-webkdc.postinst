@@ -10,14 +10,6 @@ fi
 chgrp www-data /var/lib/webkdc
 chmod 770 /var/lib/webkdc
 
-# If the Apache module is configured and Apache is running, restart Apache on
-# upgrades.
-if [ -f /etc/apache2/mods-enabled/webkdc.load ] ; then
-    if invoke-rc.d apache2 status >/dev/null 2>&1 ; then
-        invoke-rc.d apache2 restart
-    fi
-fi
-
 #DEBHELPER#
 
 exit 0

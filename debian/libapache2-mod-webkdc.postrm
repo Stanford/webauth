@@ -1,0 +1,13 @@
+#! /bin/sh
+
+set -e
+
+# Remove /var/lib/webkdc/keyring on purge and try to remove the directory.
+if [ "$1" = purge ] ; then
+    rm -f /var/lib/webkdc/keyring
+    rmdir --ignore-fail-on-non-empty /var/lib/webkdc
+fi
+
+#DEBHELPER#
+
+exit 0

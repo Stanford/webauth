@@ -2,8 +2,8 @@ Source: webauth
 Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 9), apache2-threaded-dev (>= 2.2),
- dh-autoreconf, libapr1-dev, libaprutil1-dev, libcgi-application-perl,
+Build-Depends: debhelper (>= 9), apache2-dev, dh-autoreconf, libapr1-dev,
+ libaprutil1-dev, libcgi-application-perl,
  libcgi-application-perl (>= 4.50) |
  libcgi-application-basic-plugin-bundle-perl,
  libcgi-application-plugin-autorunmode-perl |
@@ -20,7 +20,7 @@ Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
 
-Package: libapache2-webauth
+Package: libapache2-mod-webauth
 Section: httpd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
@@ -36,7 +36,7 @@ Description: Apache 2 modules for WebAuth authentication
  used for authorization control and to populate environment variables.
  These modules should be installed on any web server using WebAuth.
 
-Package: libapache2-webkdc
+Package: libapache2-mod-webkdc
 Section: httpd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
@@ -50,6 +50,37 @@ Description: Apache 2 modules for a WebAuth authentication KDC
  server for a particular site.  Only one such server is needed; all web
  servers that use WebAuth will talk to this server to obtain and verify
  authentication credentials.
+
+Package: libapache2-webauth
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: ${misc:Depends}, libapache2-mod-webauth
+Description: Transitional package for WebAuth Apache modules
+Description: Apache 2 modules for WebAuth authentication
+ WebAuth is a cookie-based web authentication system built on top of
+ Kerberos.  It relies on a central authentication server that handles all
+ user authentication for a domain and creates user authentication
+ credentials for any web server that needs strong authentication.
+ .
+ This package is a transitional package to ease upgrades to the correct
+ Apache module package naming scheme.  It can be safely removed.
+
+Package: libapache2-webkdc
+Section: oldlibs
+Priority: extra
+Architecture: all
+Depends: ${misc:Depends}, libapache2-mod-webkdc
+Description: Transitional package for WebAuth authentication KDC
+Description: Apache 2 modules for WebAuth authentication
+ WebAuth is a cookie-based web authentication system built on top of
+ Kerberos.  It relies on a central authentication server that handles all
+ user authentication for a domain and creates user authentication
+ credentials for any web server that needs strong authentication.
+ .
+ This package is a transitional package for the WebKDC to ease upgrades to
+ the correct Apache module package naming scheme.  It can be safely
+ removed.
 
 Package: libwebauth-perl
 Section: perl

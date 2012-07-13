@@ -13,7 +13,7 @@ ifndef PERL
 endif
 
 %:
-	dh $@ --parallel --with autoreconf
+	dh $@ --parallel --with apache2,autoreconf
 
 override_dh_autoreconf:
 	dh_autoreconf --as-needed
@@ -21,7 +21,7 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	dh_auto_configure --parallel -- --libdir=/usr/lib \
 	    --libexecdir=/usr/lib --enable-webkdc --enable-perl \
-	    --with-apxs=/usr/bin/apxs2 --enable-reduced-depends
+	    --with-apxs=/usr/bin/apxs --enable-reduced-depends
 
 override_dh_auto_build:
 	dh_auto_build --parallel

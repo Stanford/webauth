@@ -1,0 +1,3 @@
+mod conf/debian/webkdc.conf
+mod conf/debian/webkdc.load
+mod debian/tmp/usr/lib/apache2/modules/mod_webkdc.so
