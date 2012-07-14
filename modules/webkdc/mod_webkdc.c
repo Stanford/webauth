@@ -543,12 +543,13 @@ make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
     struct webauth_key *wkey;
 
     status = webauth_key_create(rc->ctx, WA_KEY_AES, key_len, key, &wkey);
-    if (status != WA_ERR_NONE)
+    if (status != WA_ERR_NONE) {
         mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
                               "webauth_key_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "invalid key while creating token",
                                  mwk_func, true);
+    }
     ring = webauth_keyring_from_key(rc->ctx, wkey);
     status = webauth_token_encode(rc->ctx, data, ring, token);
     if (status != WA_ERR_NONE) {
