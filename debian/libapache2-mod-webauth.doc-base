@@ -1,5 +1,5 @@
 Document: webauth-protocol
-Title: WebAuth V3 Protocol Specification
+Title: WebAuth Protocol Specification
 Author: Roland Schemers and Russ Allbery
 Abstract: The detailed protocol specification for WebAuth, including all
  URL formats, token formats, and the XML protocol for talking to the
@@ -7,8 +7,8 @@ Abstract: The detailed protocol specification for WebAuth, including all
 Section: System/Security
 
 Format: text
-Files: /usr/share/doc/libapache2-webauth/protocol.txt.gz
+Files: /usr/share/doc/libapache2-mod-webauth/protocol.txt.gz
 
 Format: HTML
-Index: /usr/share/doc/libapache2-webauth/protocol.html
-Files: /usr/share/doc/libapache2-webauth/protocol.html
+Index: /usr/share/doc/libapache2-mod-webauth/protocol.html
+Files: /usr/share/doc/libapache2-mod-webauth/protocol.html

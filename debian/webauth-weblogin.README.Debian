@@ -3,7 +3,7 @@ WebAuth Weblogin Server for Debian
 
 This package contains the central Weblogin server for a WebAuth
 installation.  Only one server (or one pool of load-balanced servers) at a
-given site need to run this package.  libapache2-webkdc should also be
+given site need to run this package.  libapache2-mod-webkdc should also be
 installed on the same server as this package is running on.
 
 This package comes with a very generic set of page templates, suitable for
@@ -96,12 +96,12 @@ Site Documentation
 ------------------
 
 After you have configured both this server and the WebKDC, following the
-instructions in /usr/share/doc/libapache2-webkdc/README.Debian, you should
-document the way WebAuth is configured at your site for other users who
-are installing the WebAuth modules on individual web servers.  I recommend
-putting up a web page that contains the following information:
+instructions in /usr/share/doc/libapache2-mod-webkdc/README.Debian, you
+should document the way WebAuth is configured at your site for other users
+who are installing the WebAuth modules on individual web servers.  I
+recommend putting up a web page that contains the following information:
 
- * The configuration needed for libapache2-webauth (or any other
+ * The configuration needed for libapache2-mod-webauth (or any other
    installation of WebAuth, regardless of platform, at your site).  Users
    who are installing WebAuth servers need to know the URL to the WebKDC
    service, the URL to the Weblogin server, and the Kerberos principal
@@ -114,8 +114,8 @@ putting up a web page that contains the following information:
         WebAuthWebKdcPrincipal service/webkdc@example.com
 
    where example.com is your domain.  But as long as you configure this
-   package and libapache2-webkdc consistently, you can use whatever URLs
-   and Kerberos principals you want.
+   package and libapache2-mod-webkdc consistently, you can use whatever
+   URLs and Kerberos principals you want.
 
  * The naming convention for WebAuth Kerberos principals for individual
    web servers.  This needs to match the configuration that you put into
@@ -155,10 +155,10 @@ The Weblogin scripts are written so that they can use FastCGI, but don't
 require it.
 
 If you want to use these scripts with FastCGI, you will need to install
-the Apache 2.x modules for FastCGI.  libapache2-mod-fcgid comes with
-Debian, and libapache2-mod-fastcgi is available in the non-free Debian
-archive (which is not part of Debian, but which is provided on the same
-servers for the convenience of Debian users).
+the Apache modules for FastCGI.  libapache2-mod-fcgid comes with Debian,
+and libapache2-mod-fastcgi is available in the non-free Debian archive
+(which is not part of Debian, but which is provided on the same servers
+for the convenience of Debian users).
 
 Once you have configured Apache to support FastCGI, add, to the
 <Directory> block in the installation instructions above, the line:
@@ -168,4 +168,4 @@ Once you have configured Apache to support FastCGI, add, to the
 After you restart Apache with apache2ctl graceful, the Weblogin scripts
 should run under FastCGI.
 
- -- Russ Allbery <rra@debian.org>, Thu, 11 Aug 2011 14:20:59 -0700
+ -- Russ Allbery <rra@debian.org>, Fri, 13 Jul 2012 17:14:10 -0700

@@ -1,16 +1,16 @@
 WebAuth WebKDC for Debian
 -------------------------
 
-This package contains the Apache 2.x module for the central WebAuth
-WebKDC.  Only one server (or one pool of load-balanced servers) at a given
-site need to run this module.  On the server that you install this module,
-you should also install the webauth-weblogin package and follow its
+This package contains the Apache module for the central WebAuth WebKDC.
+Only one server (or one pool of load-balanced servers) at a given site
+need to run this module.  On the server that you install this module, you
+should also install the webauth-weblogin package and follow its
 installation instructions.  The documentation for it has additional
 information about what site configuration documentation you will probably
 want to publish for WebAuth users at your site.
 
 mod_webkdc.html.en is the formatted manuals, but it expects to be part of
-the Apache 2.x documentation tree.  If you wish, you can install the
+the Apache documentation tree.  If you wish, you can install the
 apache2-doc package and then copy this file into:
 
     /usr/share/doc/apache2-doc/manual/mod/
@@ -89,4 +89,4 @@ WebKDC available:
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
 
- -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:35 2006
+ -- Russ Allbery <rra@debian.org>, Fri, 13 Jul 2012 17:11:18 -0700
