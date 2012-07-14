@@ -39,6 +39,10 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
   * Move single-debian-patch to local-options and patch-header to
     local-patch-header so that they only apply to the packages I build and
     NMUs get regular version-numbered patches.
+  * Purging libapache2-mod-{webauth,webkdc} no longer unconditionally
+    removes the contents of /var/lib/{webauth,webkdc}.  Instead, known
+    files are removed and then removal of the directory is attempted,
+    ignoring failure if the directory is non-empty.
   * Update to debhelper compatibility level V9.
     - Use dpkg-buildflags to set CFLAGS.
     - Enable bindnow hardening.  Leave PIE off for right now.
