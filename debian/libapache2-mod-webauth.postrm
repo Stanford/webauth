@@ -10,14 +10,6 @@ if [ "$1" = purge ] ; then
     rmdir --ignore-fail-on-non-empty /var/lib/webauth
 fi
 
-# Handle module removal.  We can't let dh_apache2 do this for us because we
-# have custom postinst tasks.  See the postinst script for more information.
-if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
-    . /usr/share/apache2/apache2-maintscript-helper
-    apache2_invoke dismod webauth
-    apache2_invoke dismod webauthldap
-fi
-
 #DEBHELPER#
 
 exit 0
