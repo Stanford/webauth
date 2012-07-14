@@ -1,7 +1,7 @@
-webauth (4.2.0-1) UNRELEASED; urgency=low
+webauth (4.2.0-1) experimental; urgency=low
 
   * New upstream release.
-    - Add support for Apache 2.4.
+    - Add support for Apache 2.4.  (Closes: #666861)
     - Support for AuthType StanfordAuth has been deprecated, and the
       corresponding mod_webauthldap support is not available when built
       against Apache 2.4.
@@ -57,7 +57,7 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
       the destination if it echoes the source.
   * Convert debian/copyright to copyright-format 1.0.
 
- -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+ -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 22:58:20 -0700
 
 webauth (4.1.1-1) unstable; urgency=low
 
