@@ -1,0 +1,16 @@
+#! /bin/sh
+
+set -e
+
+# Do this manually because of libapache2-mod-webauth.  See comments in
+# debian/rules.
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ] ; then
+    if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+        . /usr/share/apache2/apache2-maintscript-helper
+        apache2_invoke dismod webkdc
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0
