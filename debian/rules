@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-export DH_VERBOSE=1
-
 # Add hardening build flags.  We have to omit PIE because it breaks the Perl
 # module build (and probably the other interpretors as well).
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
