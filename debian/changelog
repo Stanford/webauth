@@ -26,6 +26,7 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
     - Use dh_apache2 to handle module and configuration installation and
       maintainer script actions.
     - Depend on apache2-dev instead of apache2-threaded-dev.
+    - Remove explicit dependencies on apache2.2-common.
     - Use apxs, not apxs2.
   * libwebauth-dev now suggests libapr1-dev since it is required to use
     the parts of the API that require APR (such as keyring traversal or

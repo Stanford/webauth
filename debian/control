@@ -23,7 +23,7 @@ Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
 Package: libapache2-mod-webauth
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Apache 2 modules for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -39,7 +39,7 @@ Description: Apache 2 modules for WebAuth authentication
 Package: libapache2-mod-webkdc
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Apache 2 modules for a WebAuth authentication KDC
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
