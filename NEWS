@@ -35,10 +35,10 @@ WebAuth 4.2.0 (2012-07-13)
     making the API more object-oriented.  The only export groups provided
     are :const and :krb5, and all other export requests should be removed.
     All users will need code changes to work with the new API.
-    WebAuth::Keyring and WebAuth::Krb5 have not yet been converted, but
-    will be in a subsequent release.  This means that the WebKDC and
-    WebLogin Perl modules in this release require the WebAuth module from
-    this release and vice versa, so be careful of partial upgrades.
+    WebAuth::Krb5 has not yet been converted, but will be in a subsequent
+    release.  This means that the WebKDC and WebLogin Perl modules in this
+    release require the WebAuth module from this release and vice versa,
+    so be careful of partial upgrades.
 
     Add new tools/webauth-make-tokens script to generate WebAuth tokens
     given a configuration file and keyring.  This is not installed by
