@@ -156,7 +156,7 @@ Description: Perl libraries for WebAuth central login server
 
 Package: webauth-tests
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libapache2-webauth
+Depends: ${misc:Depends}, ${perl:Depends}, libapache2-mod-webauth
 Suggests: libapache2-mod-php5
 Description: Tests for the WebAuth authentication modules
  WebAuth is a cookie-based web authentication system built on top of
