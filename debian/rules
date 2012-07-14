@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+export DH_VERBOSE=1
+
 # Add hardening build flags.  We have to omit PIE because it breaks the Perl
 # module build (and probably the other interpretors as well).
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
@@ -47,8 +49,8 @@ override_dh_fixperms:
 # libapache2-mod-webauth has modules with directives with no default that
 # must be set, so we can't unconditionally enable them in postinst.
 override_dh_apache2:
-	dh_apache2 -plibapache2-mod-webauth -n
-	dh_apache2 -Nlibapache2-mod-webauth
+	dh_apache2 -p libapache2-mod-webauth -n
+	dh_apache2 --remaining-packages
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz
