@@ -97,6 +97,8 @@ Description: Perl library for WebAuth authentication
 Package: libwebauth7
 Section: libs
 Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Shared libraries for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
@@ -112,6 +114,7 @@ Package: libwebauth-dev
 Section: libdevel
 Priority: extra
 Architecture: any
+Multi-Arch: same
 Depends: ${misc:Depends}, libwebauth7 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
 Replaces: libwebauth1-dev (<< 3.7.0)
@@ -166,6 +169,7 @@ Description: Tests for the WebAuth authentication modules
 
 Package: webauth-utils
 Architecture: any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Command-line utilities for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
