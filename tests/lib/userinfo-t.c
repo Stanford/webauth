@@ -64,6 +64,8 @@ main(void)
     struct webauth_user_info *info;
     struct webauth_user_validate *validate;
     struct webauth_login *login;
+    const char url[] = "https://example.com/";
+    const char restrict_url[] = "https://example.com/restrict/";
     int status;
 
     /* Load test configuration and start remctl. */
@@ -72,7 +74,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(91);
+    plan(99);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -81,7 +83,7 @@ main(void)
      * Set up the user information service configuration, testing error cases.
      */
     memset(&config, 0, sizeof(config));
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, &info);
     is_int(WA_ERR_INVALID, status, "Info without configuration");
     is_string("invalid argument to function (user information service not"
               " configured)", webauth_error_message(ctx, status),
@@ -109,7 +111,7 @@ main(void)
     config.principal = krbconf->principal;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with only host and protocol");
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, &info);
     is_int(WA_ERR_INVALID, status, "remctl info call without command");
     is_string("invalid argument to function (no remctl command specified)",
               webauth_error_message(ctx, status), "...with correct error");
@@ -119,7 +121,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Complete config");
 
     /* Do a query for a full user. */
-    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, &info);
+    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, &info);
     is_int(WA_ERR_NONE, status, "Metadata for full succeeded");
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
@@ -164,7 +166,7 @@ main(void)
     }
 
     /* Do a query for a minimal user. */
-    status = webauth_user_info(ctx, "mini", NULL, 0, &info);
+    status = webauth_user_info(ctx, "mini", NULL, 0, url, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
@@ -179,7 +181,7 @@ main(void)
     }
 
     /* The same query, but with random multifactor. */
-    status = webauth_user_info(ctx, "mini", NULL, 1, &info);
+    status = webauth_user_info(ctx, "mini", NULL, 1, url, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini w/random succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
@@ -209,7 +211,7 @@ main(void)
     config.timeout = 1;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout");
-    status = webauth_user_info(ctx, "delay", NULL, 0, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 0, url, &info);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Metadata for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
@@ -226,7 +228,7 @@ main(void)
     config.ignore_failure = 1;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
-    status = webauth_user_info(ctx, "delay", NULL, 0, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 0, url, &info);
     is_int(status, WA_ERR_NONE, "Metadata for delay now succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -241,7 +243,7 @@ main(void)
 
     /* Try the query again with ignore_failure and random multifactor. */
     is_int(WA_ERR_NONE, status, "Config with timeout, ignore, random");
-    status = webauth_user_info(ctx, "delay", NULL, 1, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 1, url, &info);
     is_int(status, WA_ERR_NONE, "Metadata for delay w/random succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -260,6 +262,22 @@ main(void)
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
+
+    /* Attempt a login to a restricted site.  This should return an error. */
+    status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, &info);
+    is_int(status, WA_ERR_NONE, "Metadata for restricted URL succeeds");
+    if (info == NULL)
+        ok_block(7, 0, "Metadata failed");
+    else {
+        is_string("<strong>You are restricted!</strong>  &lt;_&lt;;",
+                  info->error, "...error string");
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(0, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        ok(info->factors == NULL, "...factors is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
 
     return 0;
 }

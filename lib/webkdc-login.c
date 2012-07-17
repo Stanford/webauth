@@ -493,7 +493,7 @@ get_user_info(struct webauth_context *ctx,
 
     /* Call the user information service. */
     status = webauth_user_info(ctx, wkproxy->subject, request->remote_ip,
-                               randmf, info);
+                               randmf, req->return_url, info);
     if (status != WA_ERR_NONE)
         return status;
 
