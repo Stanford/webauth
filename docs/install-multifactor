@@ -276,6 +276,18 @@ User Information Service
   a warning and a prompt to the user to change their password on the
   WebLogin confirmation screen.
 
+  Alternately, the user information service may reject this
+  authentication.  In this case, it should return the much simpler
+  response:
+
+      <authdata user="{username}">
+        <error>{message-for-user}</error>
+      </authdata>
+
+  The {message-for-user} should be an HTML-formatted message that will be
+  displayed to the user as a fatal error message by WebLogin.  Normally,
+  this should be inside a CDATA block to protect the HTML markup.
+
   For information about how this information is handled by the WebLogin
   system, see "WebLogin Templates" below.
 
