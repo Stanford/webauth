@@ -1,5 +1,5 @@
 /*
- * Test WebKDC user information retrieval.
+ * Test user information service retrieval.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2011, 2012

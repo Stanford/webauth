@@ -7,9 +7,9 @@ lib/keyring
 lib/keys
 lib/krb5
 lib/krb5-tgt
+lib/userinfo
 lib/token-decode
 lib/token-encode
-lib/webkdc-info
 lib/webkdc-krb
 lib/webkdc-login
 lib/webkdc-mf
