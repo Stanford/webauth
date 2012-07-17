@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.00';
+    $VERSION = '3.01';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -93,6 +93,7 @@ BEGIN {
                                         WA_PEC_MULTIFACTOR_UNAVAILABLE
                                         WA_PEC_LOGIN_REJECTED
                                         WA_PEC_LOA_UNAVAILABLE
+                                        WA_PEC_AUTH_REJECTED
 
                                         WA_KEY_AES
 
@@ -529,6 +530,7 @@ WebAuth protocol error codes used for login errors:
     WA_PEC_MULTIFACTOR_UNAVAILABLE
     WA_PEC_LOGIN_REJECTED
     WA_PEC_LOA_UNAVAILABLE
+    WA_PEC_AUTH_REJECTED
 
 Key types for key_create() and C<< WebAuth::Key->new >>:
 

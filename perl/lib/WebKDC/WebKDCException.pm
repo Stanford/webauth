@@ -35,7 +35,7 @@ use overload '""' => \&to_string;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.03';
+    $VERSION = '1.04';
 }
 
 # Export the error codes.  This list MUST be kept in sync and follow the same
@@ -55,7 +55,8 @@ BEGIN {
                  WK_ERR_MULTIFACTOR_REQUIRED
                  WK_ERR_MULTIFACTOR_UNAVAILABLE
                  WK_ERR_LOGIN_REJECTED
-                 WK_ERR_LOA_UNAVAILABLE);
+                 WK_ERR_LOA_UNAVAILABLE
+                 WK_ERR_AUTH_REJECTED);
 }
 
 # This hash maps the error code names, used when stringifying.
@@ -83,6 +84,7 @@ sub WK_ERR_MULTIFACTOR_REQUIRED    () {  9 }
 sub WK_ERR_MULTIFACTOR_UNAVAILABLE () { 10 }
 sub WK_ERR_LOGIN_REJECTED          () { 11 }
 sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
+sub WK_ERR_AUTH_REJECTED           () { 13 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, and protocol error.

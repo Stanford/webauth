@@ -90,6 +90,7 @@ struct webauth_webkdc_login_request {
 struct webauth_webkdc_login_response {
     int login_error;
     const char *login_message;
+    const char *user_message;
     WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
     WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
     WA_APR_ARRAY_HEADER_T *proxies; /* Array of webkdc_proxy_data structs. */

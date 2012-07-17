@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.01';
+    $VERSION = '2.02';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -78,6 +78,7 @@ our %pec_mapping = (
     &WA_PEC_MULTIFACTOR_UNAVAILABLE     => WK_ERR_MULTIFACTOR_UNAVAILABLE,
     &WA_PEC_LOGIN_REJECTED              => WK_ERR_LOGIN_REJECTED,
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
+    &WA_PEC_AUTH_REJECTED               => WK_ERR_AUTH_REJECTED,
 );
 
 # Get a keyring from the configured WebLogin keyring path.  This used to

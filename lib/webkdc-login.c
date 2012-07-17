@@ -1026,6 +1026,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                &info);
         if (status != WA_ERR_NONE)
             return status;
+        if (info->error != NULL) {
+            (*response)->login_error = WA_PEC_AUTH_REJECTED;
+            (*response)->login_message
+                = "authentication rejected by user information service";
+            (*response)->user_message = info->error;
+            return WA_ERR_NONE;
+        }
     }
 
     /*
