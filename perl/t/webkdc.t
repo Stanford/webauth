@@ -29,7 +29,7 @@ use WebLogin;
 use Test::More;
 
 # We need a user account and password.
-plan skip_all => 'no Kerberos configuration found'
+plan skip_all => 'Kerberos tests not configured'
     unless -f 't/data/test.password';
 
 # We need a keyring path and a principal suitable for use as a WebAuth client.

@@ -61,7 +61,7 @@ require WebLogin;
 # Check for a valid kerberos config.
 if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 } else {
     plan tests => 326;
 }

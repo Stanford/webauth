@@ -42,7 +42,7 @@ unless ($username && $password && $principal && $wa_principal) {
 if ($kerberos_config) {
     plan tests => 13;
 } else {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 }
 
 # Test actually loading WebAuth module.

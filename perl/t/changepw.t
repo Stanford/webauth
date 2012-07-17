@@ -37,7 +37,7 @@ if ($username && $password) {
 if ($kerberos_config) {
     plan tests => 11;
 } else {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 }
 
 # New password to try changing the user to.
