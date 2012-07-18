@@ -13,7 +13,6 @@
 #include <portable/apr.h>
 #include <portable/stdbool.h>
 
-#include <mod_auth.h>
 #include <unistd.h>
 
 #include <modules/webauth/mod_webauth.h>

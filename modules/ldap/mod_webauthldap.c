@@ -30,7 +30,9 @@
 #endif
 #include <krb5.h>
 #include <ldap.h>
-#include <mod_auth.h>
+#ifdef HAVE_MOD_AUTH_H
+# include <mod_auth.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>

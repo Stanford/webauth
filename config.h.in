@@ -127,6 +127,9 @@
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
+/* Define to 1 if you have the <mod_auth.h> header file. */
+#undef HAVE_MOD_AUTH_H
+
 /* Define to enable remctl features. */
 #undef HAVE_REMCTL
 
