@@ -78,6 +78,7 @@ AC_CHECK_DECLS([ap_get_server_description, ap_register_auth_provider,
     ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
 AC_CHECK_MEMBERS([request_rec.useragent_ip], [], [],
     [RRA_INCLUDES_APACHE])
+AC_CHECK_HEADERS([mod_auth.h])
 RRA_LIB_APACHE_RESTORE
 RRA_LIB_APR
 RRA_LIB_APRUTIL
