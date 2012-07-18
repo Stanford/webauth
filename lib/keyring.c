@@ -347,7 +347,7 @@ decode(struct webauth_context *ctx, char *input, size_t length,
         uint32_t key_type;
         char name[32];
         void *key_data;
-        uint32_t key_len;
+        size_t key_len;
         struct webauth_key *key;
 
         DECODE_TIME_N(A_CREATION_TIME, i, "key creation", &creation);
