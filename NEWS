@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.2.1 (unreleased)
+WebAuth 4.2.1 (2012-07-18)
 
     Fix error decoding keyrings from files on 64-bit systems, preventing
     all use of keyring files.  Reported by Kai Lanz.
