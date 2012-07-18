@@ -1810,6 +1810,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                         false));
     }
 
+    if (response->user_message != NULL)
+        ap_rprintf(rc->r, "<userMessage><![CDATA[%s]]></userMessage>",
+                   response->user_message);
+
     if (response->factors_configured != NULL) {
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
         print_xml_array(rc, "factor", response->factors_wanted);
