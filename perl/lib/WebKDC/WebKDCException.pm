@@ -87,24 +87,27 @@ sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
-# message, and protocol error.
+# message, protocol error, and data.
 sub new {
-    my ($type, $status, $mesg, $pec) = @_;
+    my ($type, $status, $mesg, $pec, $data) = @_;
     my $self = {
         status => $status,
         mesg   => $mesg,
-        pec    => $pec
+        pec    => $pec,
+        data   => $data
     };
     bless ($self, $type);
     return $self;
 }
 
 # Basic accessors.
-sub status     { my $self = shift; return $self->{'status'} }
-sub message    { my $self = shift; return $self->{'mesg'}   }
-sub error_code { my $self = shift; return $self->{'pec'}    }
+sub status     { my $self = shift; return $self->{status} }
+sub message    { my $self = shift; return $self->{mesg}   }
+sub error_code { my $self = shift; return $self->{pec}    }
+sub data       { my $self = shift; return $self->{data}   }
 
-# A full verbose message with all the information from the exception.
+# A full verbose message with all the information from the exception except
+# the exception data.
 sub verbose_message {
     my $self = shift;
     my $s = $self->{'status'};
@@ -261,12 +264,14 @@ or due to an insufficiently strong configured authentication method.
 
 =over 4
 
-=item new (STATUS, MESSAGE[, ERROR])
+=item new (STATUS, MESSAGE[, ERROR[, DATA]])
 
 Create a new WebKDC::WebKDCException object.  STATUS is one of the status
 constants defined above other than WK_SUCCESS.  MESSAGE is the error
 message for the exception.  ERROR, if present, is a protocol error code
-that caused the exception.
+that caused the exception.  DATA, if present, is additional data about the
+exception, currently used to carry the HTML error message to display to
+the user if one is available.
 
 =back
 
@@ -274,18 +279,22 @@ that caused the exception.
 
 =over 4
 
-=item status ()
+=item data ()
 
-Returns the WebKDC::WebKDCException status code for the exception, which
-will be one of the WK_ERR_* codes.
+Returns the additional exception data (if there was any).
+
+=item error_code ()
+
+Returns the WebKDC protocol errorCode (if there was one).
 
 =item message ()
 
 Returns the error message that was passed to the constructor.
 
-=item error_code ()
+=item status ()
 
-Returns the WebKDC protocol errorCode (if there was one).
+Returns the WebKDC::WebKDCException status code for the exception, which
+will be one of the WK_ERR_* codes.
 
 =item verbose_message ()
 

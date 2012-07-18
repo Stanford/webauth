@@ -47,7 +47,7 @@ use Template ();
 use WebAuth qw(3.00 :const :krb5);
 use WebKDC ();
 use WebKDC::Config ();
-use WebKDC::WebKDCException;
+use WebKDC::WebKDCException qw(1.04);
 use URI ();
 use URI::QueryParam ();
 
@@ -1523,6 +1523,17 @@ sub index : StartRunmode {
     # satisfy the destination site.
     } elsif ($status == WK_ERR_LOA_UNAVAILABLE) {
         $self->template_params ({err_insufficient_loa => 1});
+        return $self->print_error_page;
+
+    # The authentication was rejected.  We should have a custom error page to
+    # display to the user.
+    } elsif ($status == WK_ERR_AUTH_REJECTED) {
+        if ($error->data) {
+            $self->template_params ({err_html => $error->data});
+        } else {
+            $self->template_params ({err_webkdc => 1});
+            $self->template_params ({err_msg => 'authentication rejected.'});
+        }
         return $self->print_error_page;
 
     # Something abnormal happened.  Figure out what error message to display

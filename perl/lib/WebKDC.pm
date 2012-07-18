@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.02';
+    $VERSION = '2.03';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -90,10 +90,10 @@ sub get_keyring ($) {
 }
 
 # Throw a WebKDCException with the given error code and error message and
-# optional protocol error code.
-sub throw ($$;$) {
-    my ($code, $error, $pec) = @_;
-    die WebKDC::WebKDCException->new ($code, $error, $pec);
+# optional protocol error code and data
+sub throw ($$;$$) {
+    my ($code, $error, $pec, $data) = @_;
+    die WebKDC::WebKDCException->new ($code, $error, $pec, $data);
 }
 
 # Get the value of the given child of an element or throw an exception if
@@ -309,6 +309,7 @@ sub request_token_request ($$) {
         my $proxy_tokens = $root->find_child ('proxyTokens');
         my $error_code = get_child_value ($root, 'loginErrorCode', 1);
         my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
+        my $user_message = get_child_value ($root, 'userMessage', 1);
 
         if (defined $proxy_tokens) {
             for my $token (@{ $proxy_tokens->children }) {
@@ -355,7 +356,7 @@ sub request_token_request ($$) {
             my $wk_err = $pec_mapping{$error_code}
                 || WK_ERR_UNRECOVERABLE_ERROR;
             throw ($wk_err, "Login error: $error_message ($error_code)",
-                   $error_code);
+                   $error_code, $user_message);
         }
         return;
     } else {
