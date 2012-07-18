@@ -1,9 +1,10 @@
-webauth (4.2.1-1) UNRELEASED; urgency=low
+webauth (4.2.1-1) experimental; urgency=low
 
   * New upstream release.
     - Fix keyring decoding from files on 64-bit systems.
+    - Fix uninitialized memory error in token-encode test case.
 
- -- Russ Allbery <rra@debian.org>  Wed, 18 Jul 2012 16:14:59 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 18 Jul 2012 16:41:50 -0700
 
 webauth (4.2.0-1) experimental; urgency=low
 
