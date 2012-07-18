@@ -1,5 +1,26 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.3.0 (unreleased)
+
+    Add a new optional <userMessage> element to the specification of the
+    <requestTokenResponse> reply from the WebKDC and a new error code.
+    These are used to indicate a rejected authentication and to return an
+    HTML error that should be displayed to the user.
+
+    Support a new <error> return element inside the <authdata> reply from
+    the user information service during WebLogin authentication.  Presence
+    of this element indicates that the user information service has
+    rejected this authentication.  The content is raw HTML content (which
+    should be protected by a CDATA block in the XML) to display to the
+    user.  Make appropriate changes to the webauth_user_info and
+    webauth_webkdc_login APIs and to mod_webkdc to return this information
+    via the new <userMessage> element and the new protocol error code.
+
+    Add a new parameter, err_html, to the error page template in WebLogin.
+    When this parameter is set, the contents should be used as the entire
+    error message to display to the user.  Local WebLogin error templates
+    should be updated to support this parameter.
+
 WebAuth 4.2.0 (2012-07-13)
 
     Port to Apache 2.4 (tested with Apache 2.4.1).
