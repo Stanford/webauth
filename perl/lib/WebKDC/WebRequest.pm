@@ -94,7 +94,7 @@ sub proxy_cookies ($;$) {
 # This returns the same format as is used internally.
 sub proxy_cookies_rich ($;$) {
     my ($self, $cookies) = @_;
-    $self->{'cookies'} = shift if @_;
+    $self->{'cookies'} = $cookies if $cookies;
     return $self->{'cookies'};
 }
 
