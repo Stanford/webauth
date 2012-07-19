@@ -2,6 +2,9 @@
 
 WebAuth 4.3.0 (unreleased)
 
+    WebLogin now sets the HttpOnly flag on the single sign-on cookie, and
+    on the test cookie used to probe whether cookies are supported.
+
     Add a new optional <userMessage> element to the specification of the
     <requestTokenResponse> reply from the WebKDC and a new error code.
     These are used to indicate a rejected authentication and to return an

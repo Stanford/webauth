@@ -261,20 +261,21 @@ sub print_headers {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
             if ($name =~ /^webauth_wpt/ && $value eq '') {
-                $cookie = $q->cookie(-name    => $name,
-                                     -value   => $EXPIRED_COOKIE,
-                                     -secure  => $secure,
-                                     -expires => '-1d');
+                $cookie = $q->cookie (-name    => $name,
+                                      -value   => $EXPIRED_COOKIE,
+                                      -secure  => $secure,
+                                      -expires => '-1d');
             } elsif ($name eq $remuser_name) {
-                $cookie = $q->cookie(-name    => $name,
-                                     -value   => $value,
-                                     -secure  => $secure,
-                                     -expires => $remuser_lifetime);
+                $cookie = $q->cookie (-name    => $name,
+                                      -value   => $value,
+                                      -secure  => $secure,
+                                      -expires => $remuser_lifetime);
                 $saw_remuser = 1;
             } else {
-                $cookie = $q->cookie(-name   => $name,
-                                     -value  => $value,
-                                     -secure => $secure);
+                $cookie = $q->cookie (-name     => $name,
+                                      -value    => $value,
+                                      -secure   => $secure,
+                                      -httponly => 1);
             }
             push (@$ca, $cookie);
         }
@@ -294,10 +295,10 @@ sub print_headers {
 
     # Set the test cookie unless it's already set.
     unless ($q->cookie ($self->param ('test_cookie'))) {
-        my $cookie = $q->cookie (-name  => $self->param ('test_cookie'),
-                                 -value => 'True',
-                                 -path  => '/',
-                                 -secure => $secure);
+        my $cookie = $q->cookie (-name     => $self->param ('test_cookie'),
+                                 -value    => 'True',
+                                 -secure   => $secure,
+                                 -httponly => 1);
         push (@$ca, $cookie);
     }
 
