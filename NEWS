@@ -24,7 +24,7 @@ WebAuth 4.3.0 (unreleased)
     error message to display to the user.  Local WebLogin error templates
     should be updated to support this parameter.
 
-WebAuth 4.2.2 (unreleased)
+WebAuth 4.2.2 (2012-07-19)
 
     Fix WebKDC::WebRequest error introduced in 4.2.0 that broke WebLogin
     functionality.
