@@ -1,3 +1,12 @@
+webauth (4.2.2-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix WebKDC::WebRequest error in proxy cookie handling that broke
+      WebLogin functionality.
+    - Fix Kerberos context cleanup after saving delegated credentials.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 19 Jul 2012 16:19:25 -0700
+
 webauth (4.2.1-1) experimental; urgency=low
 
   * New upstream release.
