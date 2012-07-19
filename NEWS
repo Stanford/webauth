@@ -24,6 +24,15 @@ WebAuth 4.3.0 (unreleased)
     error message to display to the user.  Local WebLogin error templates
     should be updated to support this parameter.
 
+WebAuth 4.2.2 (unreleased)
+
+    Fix WebKDC::WebRequest error introduced in 4.2.0 that broke WebLogin
+    functionality.
+
+    Fix Kerberos context cleanup bug after storing delegated credentials
+    in a file cache, introduced in 4.2.0.  This bug would cause segfaults
+    in the child Apache process after completion of the request.
+
 WebAuth 4.2.1 (2012-07-18)
 
     Fix error decoding keyrings from files on 64-bit systems, preventing
