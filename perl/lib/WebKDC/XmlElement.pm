@@ -139,6 +139,7 @@ sub name     ($;$) { my $e = shift; $e->_attr ('name',     @_) };
 sub content_trimmed {
     my ($self) = @_;
     my $content = $self->content;
+    return unless defined $content;
     $content =~ s/^\s+//;
     $content =~ s/\s+$//;
     return $content;
@@ -324,12 +325,13 @@ anonymous array of WebKDC::XmlElement objects).
 =item content ([CONTENT])
 
 Retrieve or set the textual content of this element as a string, not
-including any child elements.
+including any child elements.  Returns undef if the element has no
+content.
 
 =item content_trimmed ()
 
 Retrieve the textual content of this element with all leading and trailing
-whitespace removed.
+whitespace removed.  Returns undef if the element has no content.
 
 =item find_child (NAME)
 
