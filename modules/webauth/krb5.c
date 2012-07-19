@@ -113,7 +113,8 @@ krb5_cleanup_context(void *data)
 {
     WEBAUTH_KRB5_CTXT *ctxt = data;
 
-    webauth_krb5_free(ctxt);
+    if (ctxt != NULL)
+        webauth_krb5_free(ctxt);
     return APR_SUCCESS;
 }
 
@@ -152,10 +153,6 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
         return 0;
     }
 
-    apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
-                              krb5_cleanup_context,
-                              apr_pool_cleanup_null);
-
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: temp_cred_file mktemp(%s)",
@@ -164,6 +161,9 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
     ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
     if (ctxt == NULL)
         return 0;
+
+    apr_pool_cleanup_register(rc->r->pool, ctxt, krb5_cleanup_context,
+                              apr_pool_cleanup_null);
 
     for (i = 0; i < (size_t) creds->nelts; i++) {
         struct webauth_token_cred *cred;
@@ -221,8 +221,7 @@ krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
         return 0;
 
     /* register a pool cleanup handler */
-    apr_pool_cleanup_register(rc->r->pool, ctxt,
-                              krb5_cleanup_context,
+    apr_pool_cleanup_register(rc->r->pool, ctxt, krb5_cleanup_context,
                               apr_pool_cleanup_null);
 
     for (i = 0; i < (size_t) creds->nelts; i++) {
