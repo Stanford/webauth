@@ -153,7 +153,7 @@ sub append_content {
 }
 
 # Return true if this element has attributes or has children.
-sub has_attrs    ($) { my $e = shift; return %{ $e->{attrs} } }
+sub has_attrs    ($) { my $e = shift; return !!%{ $e->{attrs} } }
 sub has_children ($) { my $e = shift; return $#{ $e->{children} } != -1 }
 
 # Set or return a specific attribute.
