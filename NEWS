@@ -21,6 +21,14 @@ WebAuth 4.3.0 (unreleased)
     error message to display to the user.  Local WebLogin error templates
     should be updated to support this parameter.
 
+WebAuth 4.2.1 (2012-07-18)
+
+    Fix error decoding keyrings from files on 64-bit systems, preventing
+    all use of keyring files.  Reported by Kai Lanz.
+
+    Fix compilation with Apache 2.0, which does not have the mod_auth.h
+    header.  Reported by Kai Lanz.
+
 WebAuth 4.2.0 (2012-07-13)
 
     Port to Apache 2.4 (tested with Apache 2.4.1).
