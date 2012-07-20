@@ -141,7 +141,7 @@ modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
-tools_wa_keyring_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tools_wa_keyring_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1

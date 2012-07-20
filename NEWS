@@ -24,6 +24,9 @@ WebAuth 4.3.0 (unreleased)
     error message to display to the user.  Local WebLogin error templates
     should be updated to support this parameter.
 
+    Fix wa_keyring compilation error when older versions of the WebAuth
+    headers are installed in the APR header path.
+
 WebAuth 4.2.2 (2012-07-19)
 
     Fix WebKDC::WebRequest error introduced in 4.2.0 that broke WebLogin
