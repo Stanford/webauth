@@ -87,6 +87,7 @@ struct server_config {
     const char *cred_cache_dir;
     bool debug;
     bool extra_redirect;
+    bool httponly;
     bool keyring_auto_update;
     unsigned long keyring_key_lifetime;
     const char *keyring_path;
@@ -108,6 +109,7 @@ struct server_config {
     /* Only used during configuration merging. */
     bool debug_set;
     bool extra_redirect_set;
+    bool httponly_set;
     bool keyring_auto_update_set;
     bool keyring_key_lifetime_set;
     bool require_ssl_set;

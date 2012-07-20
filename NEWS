@@ -2,6 +2,13 @@
 
 WebAuth 4.3.0 (unreleased)
 
+    mod_webauth now sets the HttpOnly flag on all WebAuth session cookies
+    by default.  This can be turned off at the server or virtual host
+    level with the new WebAuthHttpOnly Apache directive.  (Although be
+    aware that the structure of the WebAuth cookies is an internal
+    implementation detail; if this directive is needed, the web site is
+    probably doing something unsupported.)
+
     WebLogin now sets the HttpOnly flag on the single sign-on cookie, and
     on the test cookie used to probe whether cookies are supported.
 

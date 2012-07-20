@@ -1695,6 +1695,39 @@ WebAuthStripURL off
 </directivesynopsis>
 
 <directivesynopsis>
+  <name>WebAuthHttpOnly</name>
+  <description>Whether or not to set WebAuth cookies HttpOnly</description>
+  <syntax>WebAuthHttpOnly on|off</syntax>
+  <default>on</default>
+  <contextlist>
+    <context>server config</context>
+    <context>virtual host</context>
+  </contextlist>
+
+  <usage>
+    <p>
+      This directive controls whether the HttpOnly flag is set on WebAuth
+      session cookies.  It is turned on by default.  In the unusual event
+      that Javascript needs to be able to read these cookies, this
+      directive can be used to turn off the flag.
+    </p>
+
+    <p>
+      Be aware that the structure and format of the WebAuth cookies are an
+      internal implementation detail and decoding them or modifying them
+      outside of the WebAuth code itself is not recommended.  If you need
+      to turn this directive off, that normally indicates that you are
+      doing something unsupported with the WebAuth cookies.
+    </p>
+
+    <example>
+      <title>Example</title>
+WebAuthHttpOnly off
+    </example>
+  </usage>
+</directivesynopsis>
+
+<directivesynopsis>
   <name>WebAuthOptional</name>
   <description>Whether or not to require the use to authenticate</description>
   <syntax>WebAuthOptional on|off</syntax>

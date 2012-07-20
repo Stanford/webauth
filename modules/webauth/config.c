@@ -54,6 +54,7 @@ DIRN(DontCache,          "whether to set Expires to the current date")
 DIRD(ExtraRedirect,      "redirect to strip tokens from the URL", bool, true)
 DIRN(FailureURL,         "URL to redirect to after serious WebAuth failure")
 DIRN(ForceLogin,         "whether to force initial authentication")
+DIRD(HttpOnly,           "whether to set HttpOnly for cookies", bool, true)
 DIRN(InactiveExpire,     "duration of inactivity before an app token expires")
 DIRN(Keyring,            "path to the keyring file")
 DIRD(KeyringAutoUpdate,  "whether to automatically update keyring", bool, true)
@@ -118,6 +119,7 @@ enum {
     E_ExtraRedirect,
     E_FailureURL,
     E_ForceLogin,
+    E_HttpOnly,
     E_InactiveExpire,
     E_Keyring,
     E_KeyringAutoUpdate,
@@ -198,6 +200,7 @@ mwa_server_config_create(apr_pool_t *pool, server_rec *s UNUSED)
 
     sconf = apr_pcalloc(pool, sizeof(struct server_config));
     sconf->extra_redirect       = DF_ExtraRedirect;
+    sconf->httponly             = DF_HttpOnly;
     sconf->keyring_auto_update  = DF_KeyringAutoUpdate;
     sconf->keyring_key_lifetime = DF_KeyringKeyLifetime;
     sconf->require_ssl          = DF_RequireSSL;
@@ -245,6 +248,7 @@ mwa_server_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(cred_cache_dir);
     MERGE_SET(debug);
     MERGE_SET(extra_redirect);
+    MERGE_SET(httponly);
     MERGE_SET(keyring_auto_update);
     MERGE_SET(keyring_key_lifetime);
     MERGE_PTR(keyring_path);
@@ -657,6 +661,10 @@ cfg_flag(cmd_parms *cmd, void *mconf, int flag)
         sconf->debug = flag;
         sconf->debug_set = true;
         break;
+    case E_HttpOnly:
+        sconf->httponly = flag;
+        sconf->httponly_set = true;
+        break;
     case E_KeyringAutoUpdate:
         sconf->keyring_auto_update = flag;
         sconf->keyring_auto_update_set = true;
@@ -756,6 +764,7 @@ const command_rec webauth_cmds[] = {
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   RSRC_CONF,   AuthType),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   RSRC_CONF,   CredCacheDir),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_CONF,   Debug),
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_CONF,   HttpOnly),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   RSRC_CONF,   Keyring),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_CONF,   KeyringAutoUpdate),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   RSRC_CONF,   KeyringKeyLifetime),

@@ -49,6 +49,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthextraredirect">WebAuthExtraRedirect</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthfailureurl">WebAuthFailureURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthforcelogin">WebAuthForceLogin</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthhttponly">WebAuthHttpOnly</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthkeyring">WebAuthKeyring</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a></li>
@@ -1022,6 +1023,37 @@ authentication.
   &lt;/Location&gt;
 </code></p></div>
 
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthHttpOnly" id="WebAuthHttpOnly">WebAuthHttpOnly</a> <a name="webauthhttponly" id="webauthhttponly">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to set WebAuth cookies HttpOnly</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthHttpOnly on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+    <p>
+      This directive controls whether the HttpOnly flag is set on WebAuth
+      session cookies.  It is turned on by default.  In the unusual event
+      that Javascript needs to be able to read these cookies, this
+      directive can be used to turn off the flag.
+    </p>
+
+    <p>
+      Be aware that the structure and format of the WebAuth cookies are an
+      internal implementation detail and decoding them or modifying them
+      outside of the WebAuth code itself is not recommended.  If you need
+      to turn this directive off, that normally indicates that you are
+      doing something unsupported with the WebAuth cookies.
+    </p>
+
+    <div class="example"><h3>Example</h3><p><code>
+      
+WebAuthHttpOnly off
+    </code></p></div>
+  
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthInactiveExpire" id="WebAuthInactiveExpire">WebAuthInactiveExpire</a> <a name="webauthinactiveexpire" id="webauthinactiveexpire">Directive</a></h2>
