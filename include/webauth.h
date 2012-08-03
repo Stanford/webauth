@@ -4,8 +4,10 @@
  * The libwebauth utility library contains the basic token handling functions
  * used by all other parts of the webauth code.  It contains functions to
  * encode and decode lists of attributes, generate tokens from them, encode
- * and decode tokens in base64 or hex encoding, and some additional utility
- * functions to generate random numbers or new AES keys.
+ * and decode tokens in base64 or hex encoding, and other functions.
+ *
+ * This file will be going away, replaced by separate include files under
+ * the webauth directory.
  *
  * Written by Roland Schemers
  * Copyright 2002, 2003, 2008, 2009, 2010, 2011, 2012
@@ -150,13 +152,6 @@ typedef enum {
 #define WA_F_FMT_HEX    0x08
 #define WA_F_COPY_BOTH  (WA_F_COPY_NAME | WA_F_COPY_VALUE)
 
-/* Flags for webauth_krb5_get_principal. */
-enum webauth_krb5_canon {
-    WA_KRB5_CANON_NONE  = 0,    /* Do not canonicalize principals. */
-    WA_KRB5_CANON_LOCAL = 1,    /* Strip the local realm. */
-    WA_KRB5_CANON_STRIP         /* Strip any realm. */
-};
-
 
 /*
  * TYPES
@@ -185,9 +180,6 @@ typedef struct {
     size_t capacity;
     WEBAUTH_ATTR *attrs;
 } WEBAUTH_ATTR_LIST;
-
-/* A WebAuth Kerberos context for Kerberos support functions. */
-typedef struct webauth_krb5_ctxt WEBAUTH_KRB5_CTXT;
 
 
 /*
@@ -398,263 +390,6 @@ int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *, char *output,
  * Returns WA_ERR_NONE, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
  */
 int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **);
-
-
-/*
- * KERBEROS
- */
-
-/*
- * Create new webauth krb5 context for use with all the webauth_krb5_* calls.
- * The context must be freed with webauth_krb5_free when finished.  One of the
- * various webauth_krb5_init_via* calls should be made before the context is
- * fully usable, except when using webauth_krb5_rd_req.
- *
- * If this call returns WA_ERR_KRB5, the only calls that can be made using the
- * context are webauth_krb5_error_code and webauth_krb5_error_message.  The
- * context still needs to be freed.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_new(WEBAUTH_KRB5_CTXT **);
-
-/*
- * Sets an internal flag in the context that causes webauth_krb5_free to close
- * the credential cache instead of destroying it.  This call is only useful
- * when you need a file-based cache to remain intact after a call to
- * webauth_krb5_free.
- *
- * Currently always returns WA_ERR_NONE.
- */
-int webauth_krb5_keep_cred_cache(WEBAUTH_KRB5_CTXT *);
-
-/*
- * Frees a context.  If the credential cache hasn't been closed, it will be
- * destroyed unless webauth_krb5_keep_cred_cache was previously called with
- * this context.
- *
- * Currently always returns WA_ERR_NONE.
- */
-int webauth_krb5_free(WEBAUTH_KRB5_CTXT *);
-
-/*
- * Returns the internal Kerberos error code from the last Kerberos call or 0
- * if there wasn't any error.  This code is internal to the Kerberos
- * libraries; one can't do much useful with it except report it.
- */
-int webauth_krb5_error_code(WEBAUTH_KRB5_CTXT *);
-
-/*
- * Returns the error message from the last Kerberos call or the string
- * "success" if the error code was 0.  The returned string points to internal
- * storage and does not need to be freed.
- */
-const char *webauth_krb5_error_message(WEBAUTH_KRB5_CTXT *);
-
-/*
- * Change the password for a principal.  The credential cache to use for the
- * password change is already set up in a given context, as is the principal
- * to change.
- *
- * Returns WA_ERR_NONE or WA_ERR_KRB5.
- */
-int webauth_krb5_change_password(WEBAUTH_KRB5_CTXT *, const char *password);
-
-/*
- * Initialize a context with username/password to obtain a ticket-granting
- * ticket (TGT).  The TGT is verified using the specified keytab, unless
- * the keytab is NULL.  The TGT will be placed in the specified cache, or a
- * memory cache if cache_name is NULL.
- *
- * If server_principal is NULL, the first principal in the keytab will be
- # used.  Otherwise, the specifed server principal will be used.
- *
- * If get_principal is not NULL, then we acquire credentials for that
- * principal instead.  The purpose of this is to get credentials for
- * kadmin/changepw with a user's username and password.
- *
- * server_principal_out will be set to the fully qualified server principal
- * used, unless the keytab is NULL.  If WA_ERR_NONE is returned, then it
- * should instead be freed.
- *
- * Returns WA_ERR_NONE, WA_ERR_LOGIN_FAILED, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_init_via_password(WEBAUTH_KRB5_CTXT *, const char *username,
-                                   const char *password,
-                                   const char *get_principal,
-                                   const char *keytab,
-                                   const char *server_principal,
-                                   const char *cache_name,
-                                   char **server_principal_out);
-
-/*
- * Initialize a context with a keytab.  Credentials will be placed in the
- * specified cache, or a memory cache if cache_name is NULL.
- *
- * If server_princpal is NULL, the first principal in the keytab will be used;
- * otherwise, the specifed server principal will be used.
- *
- * Returns WA_ERR_NONE, WA_ERR_LOGIN_FAILED, or WA_ERR_KRB5.
- */
-int webauth_krb5_init_via_keytab(WEBAUTH_KRB5_CTXT *, const char *path,
-                                 const char *server_principal,
-                                 const char *cache_name);
-
-/*
- * Initialize a context with an existing credential cache.  If cache_name is
- * NULL, krb5_cc_default is used.
- *
- * Returns WA_ERR_NONE or WA_ERR_KRB5.
- */
-int webauth_krb5_init_via_cache(WEBAUTH_KRB5_CTXT *, const char *cache_name);
-
-/*
- * Initialize a context with a credential that was created via
- * webauth_krb5_export_tgt or webauth_krb5_export_ticket.  If cache_name is
- * NULL, a memory cache is used.
- *
- * Returns WA_ERR_NONE or WA_ERR_KRB5.
- */
-int webauth_krb5_init_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
-                               size_t cred_len, const char *cache_name);
-
-/*
- * Initialize a context from a credential that was created via
- * webauth_krb5_export_tgt or webauth_krb5_export_ticket, but do not import
- * the credential.
- *
- * Returns WA_ERR_NONE or WA_ERR_KRB5.
- */
-int webauth_krb5_prepare_via_cred(WEBAUTH_KRB5_CTXT *, const void *cred,
-                                  size_t cred_len, const char *cache_name);
-
-/*
- * Export the TGT from the context and also store the expiration time.  This
- * is used to construct a proxy-token after a call to
- * webauth_krb5_init_via_password or webauth_krb5_init_via_tgt.  Memory
- * returned in TGT should be freed when it is no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_export_tgt(WEBAUTH_KRB5_CTXT *, char **, size_t *, time_t *);
-
-/*
- * Import a credential (TGT or ticket) that was exported via
- * webauth_krb5_export_{ticket,tgt}.  The context should have been initialized
- * by calling webauth_krb5_init_via_import first.
- *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_import_cred(WEBAUTH_KRB5_CTXT *, const char *, size_t);
-
-/*
- * Get the string form of the principal from the context.  This should only be
- * called after a successful call to webauth_krb5_init_via_*.
- *
- * If the canon argument is WA_KRB5_CANON_LOCAL, krb5_aname_to_localname is
- * called on the principal.  If krb5_aname_to_localname returns an error, the
- * fully-qualified principal name is returned.
- *
- * If the canon argument is WA_KRB5_CANON_STRIP, the realm is stripped,
- * regardless of what it is.
- *
- * If the canon argument is WA_KRB5_CANON_NONE, the fully-qualified Kerberos
- * principal is always returned.
- *
- * principal should be freed when it is no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, or WA_ERR_KRB5.
- */
-int webauth_krb5_get_principal(WEBAUTH_KRB5_CTXT *, char **principal,
-                               enum webauth_krb5_canon canon);
-
-/*
- * Get the ticket cache from the context.  This is the string suitable for
- * storing in KRB5CCNAME.  It should only be called after a successful call to
- * webauth_krb5_init_via_*.  It should be freed when it is no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_get_cache(WEBAUTH_KRB5_CTXT *, char **);
-
-/*
- * Get the realm from the context.  This should only be called after a
- * successful call to webauth_krb5_init_via_*.  realm should be freed when it
- * is no longer needed.
- *
- * Returns WA_ERR_NONE, WA_ERR_INVALID_CONTEXT, or WA_ERR_NO_MEM.
- */
-int webauth_krb5_get_realm(WEBAUTH_KRB5_CTXT *, char **);
-
-/*
- * Export a ticket for the given server_principal.  ticket should be freed
- * when no longer needed.  This should only be called after one of the
- * webauth_krb5_init_via_* methods has been successfully called.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, or WA_ERR_KRB5.
- */
-int webauth_krb5_export_ticket(WEBAUTH_KRB5_CTXT *,
-                               const char *server_principal,
-                               char **ticket, size_t *ticket_len,
-                               time_t *expiration);
-
-/*
- * Calls krb5_mk_req using the specified service and stores the resulting
- * request in req, which should be freed when it is no longer needed.  This
- * should only be called after one of the webauth_krb5_init_via_* methods has
- * been successfully called.
- *
- * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
- */
-int webauth_krb5_mk_req(WEBAUTH_KRB5_CTXT *, const char *server_principal,
-                        char **req, size_t *length);
-
-/*
- * Calls krb5_rd_req on the specified request and returns the client principal
- * in client_principal on success.  client_principal should be freed when it
- * is no longer needed.
- *
- * If server_princpal is NULL, the first principal in the keytab will be used;
- * otherwise, the specifed server principal will be used.
- *
- * If local is 1, then krb5_aname_to_localname is called on the principal.  If
- * krb5_aname_to_localname returns an error, the fully-qualified principal
- * name is returned.
- *
- * This function can be called any time after calling webauth_krb5_new.
- *
- * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
- */
-int webauth_krb5_rd_req(WEBAUTH_KRB5_CTXT *, const char *req, size_t length,
-                        const char *keytab, const char *server_principal,
-                        char **client_principal, int local);
-
-/*
- * Similar to webauth_krb5_mk_req, but additionally calls krb5_mk_priv
- * on in_data and places the encrypted data in the out_data buffer.
- *
- * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
- */
-int webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *,
-                                  const char *server_principal,
-                                  char **req, size_t *length,
-                                  char *in_data, size_t in_length,
-                                  char **out_data, size_t *out_length);
-
-/*
- * Similar to webauth_krb5_rd_req, but additionally calls krb5_rd_priv
- * on in_data and places the decrypted data in the out_data buffer.
- *
- * Returns WA_ERR_NONE, WA_ERR_KRB5, or WA_ERR_NO_MEM.
- */
-int webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *,
-                                  const char *req, size_t length,
-                                  const char *keytab,
-                                  const char *server_principal,
-                                  char **out_server_princ,
-                                  char **client_principal, int local,
-                                  char *in_data, size_t in_length,
-                                  char **out_data, size_t *out_length);
 
 END_DECLS
 

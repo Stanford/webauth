@@ -617,7 +617,7 @@ parse_service_token_response(apr_xml_doc *xd,
  * request a service token from the WebKDC
  */
 static MWA_SERVICE_TOKEN *
-request_service_token(server_rec *server,
+request_service_token(struct webauth_context *ctx, server_rec *server,
                       struct server_config *sconf,
                       apr_pool_t *pool,
                       time_t curr)
@@ -635,7 +635,7 @@ request_service_token(server_rec *server,
     if (mci == NULL)
         return NULL;
 
-    bk5_req = mci->webkdc_credential(server, sconf, pool);
+    bk5_req = mci->webkdc_credential(ctx, server, sconf, pool);
 
     if (bk5_req == NULL)
         return NULL;
@@ -813,7 +813,7 @@ mwa_get_service_token(server_rec *server, struct server_config *sconf,
     if (local_cache_only)
         goto done;
 
-    token = request_service_token(server, sconf, pool, curr);
+    token = request_service_token(ctx, server, sconf, pool, curr);
 
     if (token == NULL ) {
 

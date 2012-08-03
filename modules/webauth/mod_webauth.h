@@ -212,7 +212,8 @@ typedef struct {
 
     /* get the base64'd blob that we would send to the WebKDC
        in the <requesterCredential> element. */
-    const char *(*webkdc_credential)(server_rec *server,
+    const char *(*webkdc_credential)(struct webauth_context *ctx,
+                                     server_rec *server,
                                      struct server_config *sconf,
                                      apr_pool_t *pool);
 

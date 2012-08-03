@@ -858,9 +858,9 @@ sub add_proxy_token {
     my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
     eval {
         my $context = $self->{webauth}->krb5_new;
-        krb5_init_via_cache ($context);
-        my ($tgt, $expires) = krb5_export_tgt ($context);
-        ($kreq, $data) = krb5_mk_req ($context, $principal, $tgt);
+        $context->init_via_cache;
+        my ($tgt, $expires) = $context->export_cred;
+        ($kreq, $data) = $context->make_auth ($principal, $tgt);
         $kreq = $self->{webauth}->base64_encode ($kreq);
         $data = $self->{webauth}->base64_encode ($data);
     };
@@ -978,9 +978,8 @@ sub add_changepw_token {
     }
     eval {
         my $context = $wa->krb5_new;
-        krb5_init_via_password ($context, $username, $password, $changepw,
-                                '', '');
-        ($ticket, $expires) = krb5_export_ticket ($context, $changepw);
+        $context->init_via_password ($username, $password, $changepw);
+        ($ticket, $expires) = $context->export_cred ($changepw);
     };
     if ($@) {
         print STDERR "failed to create kadmin/changepw credential for"
@@ -1084,8 +1083,8 @@ sub change_user_password {
     # Change the password and return any error status plus exception object.
     eval {
         my $context = $wa->krb5_new;
-        krb5_init_via_cred ($context, $token->data);
-        krb5_change_password ($context, $password);
+        $context->import_cred ($token->data);
+        $context->change_password ($password);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {

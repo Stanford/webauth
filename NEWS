@@ -34,6 +34,41 @@ WebAuth 4.3.0 (unreleased)
     Fix wa_keyring compilation error when older versions of the WebAuth
     headers are installed in the APR header path.
 
+    Change all Kerberos functions in the WebAuth library API to take the
+    WebAuth context and use APR memory management and new-style error
+    message handling.  There is a new include file, webauth/krb5.h, for
+    the Kerberos functions.  Remove webauth_krb5_error_code and
+    webauth_krb5_error_message in favor of the new-style error handling.
+    Call the proper Kerberos error reporting functions to get more
+    information than was available via com_err.
+
+    Replace webauth_krb5_export_ticket and webauth_krb5_export_tgt with a
+    new webauth_krb5_export_cred function that is parallel to
+    webauth_krb5_import_cred and can do either operation.  Similarly,
+    merge webauth_krb5_init_via_cred and webauth_krb5_import_cred into
+    webauth_krb5_import_cred.
+
+    Rename webauth_krb5_rd_req to webauth_krb5_read_auth and
+    webauth_krb5_mk_req to webauth_krb5_make_auth.  Rename the _with_data
+    variations of both to _data.
+
+    Remove webauth_krb5_keep_cred_cache.  This was no longer used anywhere
+    in the WebAuth source.
+
+    Revise the Perl API for Kerberos-related functions to match the
+    changes to libwebauth, including changes of method names and removal
+    of now-unused functions, and complete the conversion to an
+    object-oriented interface.  A WebAuth::Krb5 object is now returned by
+    the krb5_new method, and all other Kerberos functions are now
+    implemented as methods on that object.
+
+    Fix decoding of Kerberos credentials that include a second ticket when
+    built with MIT Kerberos.
+
+    Kerberos realm names are no longer escaped before matching them
+    against the Apache configuration.  This only affects handling realm
+    names with unusual characters.
+
 WebAuth 4.2.2 (2012-07-19)
 
     Fix WebKDC::WebRequest error introduced in 4.2.0 that broke WebLogin
