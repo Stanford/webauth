@@ -48,6 +48,11 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
 
+    /* Skip this test if built without remctl support. */
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
+
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)

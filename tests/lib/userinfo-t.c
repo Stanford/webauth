@@ -68,6 +68,11 @@ main(void)
     const char restrict_url[] = "https://example.com/restrict/";
     int status;
 
+    /* Skip this test if built without remctl support. */
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
+
     /* Load test configuration and start remctl. */
     krbconf = kerberos_setup(TAP_KRB_NEEDS_KEYTAB);
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
