@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.01';
+    $VERSION = '3.02';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -103,6 +103,10 @@ BEGIN {
 
                                         WA_KEY_DECRYPT
                                         WA_KEY_ENCRYPT
+
+                                        WA_KRB5_CANON_NONE
+                                        WA_KRB5_CANON_LOCAL
+                                        WA_KRB5_CANON_STRIP
                                        )],
                         'krb5' => [ qw(krb5_new
                                        krb5_error_code
@@ -546,6 +550,13 @@ Key usages for the best_key() method of WebAuth::Keyring:
 
     WA_KEY_DECRYPT
     WA_KEY_ENCRYPT
+
+Canonicalization modes for the get_principal() and read_auth() methods of
+WebAuth::Krb5:
+
+    WA_KRB5_CANON_NONE
+    WA_KRB5_CANON_LOCAL
+    WA_KRB5_CANON_STRIP
 
 =head1 AUTHOR
 
