@@ -51,6 +51,14 @@ use WebKDC::WebKDCException qw(1.04);
 use URI ();
 use URI::QueryParam ();
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
+BEGIN {
+    $VERSION = '1.00';
+}
+
 # These are required only if we are going to check for expiring passwords.
 if ($WebKDC::Config::EXPIRING_PW_SERVER) {
     require Date::Parse;
