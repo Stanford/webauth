@@ -59,6 +59,20 @@ BEGIN_DECLS
 # define krb5_free_data_contents(c, d) krb5_data_free(d)
 #endif
 
+/*
+ * Heimdal: krb5_xfree, MIT: krb5_free_string, older MIT uses free().  Note
+ * that we can incorrectly allocate in the library and call free() if
+ * krb5_free_string is not available but something we use that API for is
+ * available.  Hopefully that won't happen.
+ */
+#ifndef HAVE_KRB5_FREE_STRING
+# ifdef HAVE_KRB5_XFREE
+#  define krb5_free_string(c, s) krb5_xfree(s)
+# else
+#  define krb5_free_string(c, s) free(s)
+# endif
+#endif
+
 /* Heimdal: krb5_xfree, MIT: krb5_free_unparsed_name. */
 #ifdef HAVE_KRB5_XFREE
 # define krb5_free_unparsed_name(c, p) krb5_xfree(p)
