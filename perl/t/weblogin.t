@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
     create_keyring);
 
-use WebAuth qw(3.00 :const :krb5);
+use WebAuth qw(3.00 :const);
 use WebKDC ();
 use WebKDC::Config;
 

@@ -17,7 +17,7 @@ use Util qw (get_userinfo create_keyring);
 use CGI;
 use Template;
 
-use WebAuth qw(:const :krb5);
+use WebAuth qw(:const);
 use WebLogin;
 use WebKDC ();
 use WebKDC::Config ();

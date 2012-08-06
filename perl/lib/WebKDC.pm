@@ -30,7 +30,7 @@ use warnings;
 
 use LWP::UserAgent;
 
-use WebAuth qw(3.00 :const :krb5);
+use WebAuth qw(3.00 :const);
 use WebAuth::Keyring ();
 use WebKDC::Config;
 use WebKDC::WebRequest;
@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.03';
+    $VERSION = '2.04';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
