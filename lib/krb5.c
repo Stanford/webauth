@@ -165,9 +165,15 @@ static const struct webauth_encoding cred_encoding[] = {
  * Forward declarations for the functions that have to be used by the MIT- and
  * Heimdal-specific code.
  */
+static int decode_principal(struct webauth_context *, struct webauth_krb5 *,
+                            const char *, krb5_principal *)
+    __attribute__((__nonnull__));
+static int encode_principal(struct webauth_context *, struct webauth_krb5 *,
+                            krb5_principal, char **)
+    __attribute__((__nonnull__));
 static int error_set(struct webauth_context *, struct webauth_krb5 *,
                      krb5_error_code, const char *, ...)
-    __attribute__((__nonnull__(4), __format__(printf, 4, 5)));
+    __attribute__((__nonnull__(1, 4), __format__(printf, 4, 5)));
 
 /* Include the appropriate implementation-specific Kerberos bits. */
 #if HAVE_KRB5_MIT
@@ -234,6 +240,49 @@ error_set(struct webauth_context *ctx, struct webauth_krb5 *kc,
 
 
 /*
+ * Convert a principal into a string, taking the contexts, the principal, and
+ * the location into which to store the resulting principal.  Returns a
+ * WebAuth status.
+ */
+static int
+encode_principal(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                 krb5_principal princ, char **principal)
+{
+    krb5_error_code code;
+    char *name;
+
+    code = krb5_unparse_name(kc->ctx, princ, &name);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot unparse principal");
+    *principal = apr_pstrdup(kc->pool, name);
+    krb5_free_unparsed_name(kc->ctx, name);
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Convert a principal from a string to the Kerberos representation, taking
+ * the contexts, the string, and the destination principal structure.  Returns
+ * a WebAuth status.
+ *
+ * Note that this uses the Kerberos library to allocate the principal data
+ * structures, not an APR pool, so the resulting principal will need to be
+ * manually freed.
+ */
+static int
+decode_principal(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                 const char *name, krb5_principal *princ)
+{
+    krb5_error_code code;
+
+    code = krb5_parse_name(kc->ctx, name, princ);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot parse principal %s", name);
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Open up a keytab and return a krb5_principal to use with that keytab.  If
  * in_principal is NULL, returned out_principal is the first principal found
  * in keytab.  The caller is responsible for freeing the returned principal
@@ -245,9 +294,10 @@ open_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc,
             krb5_keytab *keytab)
 {
     krb5_keytab id = NULL;
-    krb5_kt_cursor cursor = NULL;
+    krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
     krb5_error_code code;
+    bool cursor_valid = false;
 
     /* Initialize return values in the case of an error. */
     *princ = NULL;
@@ -265,8 +315,10 @@ open_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc,
         }
     } else {
         code = krb5_kt_start_seq_get(kc->ctx, id, &cursor);
-        if (code == 0)
+        if (code == 0) {
+            cursor_valid = true;
             code = krb5_kt_next_entry(kc->ctx, id, &entry, &cursor);
+        }
         if (code != 0) {
             error_set(ctx, kc, code, "cannot read keytab %s", path);
             goto fail;
@@ -278,12 +330,13 @@ open_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc,
         if (code != 0)
             goto fail;
         krb5_kt_end_seq_get(kc->ctx, id, &cursor);
+        cursor_valid = false;
     }
     *keytab = id;
     return WA_ERR_NONE;
 
 fail:
-    if (cursor != NULL)
+    if (cursor_valid)
         krb5_kt_end_seq_get(kc->ctx, id, &cursor);
     if (id != NULL)
         krb5_kt_close(kc->ctx, id);
@@ -921,17 +974,24 @@ webauth_krb5_make_auth_data(struct webauth_context *ctx,
     if (in_data != NULL && out_data != NULL) {
         krb5_data in;
         krb5_address laddr;
-        const krb5_octet address[4] = { 127, 0, 0, 1 };
 
         /*
          * We cheat here and always use localhost as the address.  This is an
          * ugly hack, but then so is address checking, and we have other
          * security around use of the tokens.
          */
+#ifdef HAVE_KRB5_MIT
+        const krb5_octet address[4] = { 127, 0, 0, 1 };
         laddr.magic = KV5M_ADDRESS;
         laddr.addrtype = ADDRTYPE_INET;
         laddr.length = 4;
         laddr.contents = (void *) address;
+#else
+        const char address[4] = { 127, 0, 0, 1 };
+        laddr.addr_type = KRB5_ADDRESS_INET;
+        laddr.address.length = 4;
+        laddr.address.data = (void *) address;
+#endif
         code = krb5_auth_con_setflags(kc->ctx, auth, 0);
         if (code != 0) {
             error_set(ctx, kc, code, "cannot set context flags");
@@ -1003,7 +1063,11 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     krb5_keytab kt;
     krb5_auth_context auth = NULL;
     krb5_data buf;
+#ifdef HAVE_KRB5_MIT
     krb5_authenticator *ka = NULL;
+#else
+    krb5_authenticator ka = NULL;
+#endif
     krb5_error_code code;
     int status;
     char *name;
@@ -1029,8 +1093,8 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     cprinc = ka->client;
 #else
     cprinc = apr_palloc(kc->pool, sizeof(*cprinc));
-    cprinc.name = ka->cname;
-    cprinc.realm = ka->crealm;
+    cprinc->name = ka->cname;
+    cprinc->realm = ka->crealm;
 #endif
     status = canonicalize_principal(ctx, kc, cprinc, client, canon);
 
@@ -1038,17 +1102,24 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     if (in_data != NULL && out_data != NULL) {
         krb5_data in, out;
         krb5_address raddr;
-        const krb5_octet address[4] = { 127, 0, 0, 1 };
 
         /*
          * We cheat here and always use localhost as the address.  This is an
          * ugly hack, but then so is address checking, and we have other
          * security around use of the tokens.
          */
+#ifdef HAVE_KRB5_MIT
+        const krb5_octet address[4] = { 127, 0, 0, 1 };
         raddr.magic = KV5M_ADDRESS;
         raddr.addrtype = ADDRTYPE_INET;
         raddr.length = 4;
         raddr.contents = (void *) address;
+#else
+        const char address[4] = { 127, 0, 0, 1 };
+        raddr.addr_type = KRB5_ADDRESS_INET;
+        raddr.address.length = 4;
+        raddr.address.data = (void *) address;
+#endif
         code = krb5_auth_con_setflags(kc->ctx, auth, 0);
         if (code != 0) {
             error_set(ctx, kc, code, "cannot set context flags");
@@ -1085,10 +1156,15 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     }
 
 done:
-    if (ka != NULL)
-        krb5_free_authenticator(kc->ctx, ka);
     if (auth != NULL)
         krb5_auth_con_free(kc->ctx, auth);
+#ifdef HAVE_KRB5_MIT
+    if (ka != NULL)
+        krb5_free_authenticator(kc->ctx, ka);
+#else
+    if (ka != NULL)
+        krb5_free_authenticator(kc->ctx, &ka);
+#endif
     krb5_kt_close(kc->ctx, kt);
     krb5_free_principal(kc->ctx, sprinc);
     if (status == WA_ERR_NONE && code != 0)

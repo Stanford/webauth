@@ -6,17 +6,11 @@
  * to make a corresponding change to krb5-mit.c for systems with MIT Kerberos.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2002, 2003, 2006, 2009, 2010
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
-
-/* Heimdal 0.6 doesn't have KRB5_TC_MATCH_SRV_NAMEONLY, but the effect of
-   KRB5_TC_DONT_MATCH_REALM appears to be the same. */
-#ifndef KRB5_TC_MATCH_SRV_NAMEONLY
-# define KRB5_TC_MATCH_SRV_NAMEONLY KRB5_TC_DONT_MATCH_REALM
-#endif
 
 /*
  * Take a single Kerberos credential and serialize it into a buffer, using the
@@ -26,622 +20,157 @@
  * WA_ERR code.
  */
 static int
-cred_to_attr_encoding(WEBAUTH_KRB5_CTXTP *c, krb5_creds *creds,
-                      char **output, size_t *length, time_t *expiration)
+encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
+             krb5_creds *creds, void **output, size_t *length,
+             time_t *expiration)
 {
-    WEBAUTH_ATTR_LIST *list;
-    int s;
-    size_t length_max;
+    int status;
+    struct webauth_krb5_cred data;
 
-    assert(c != NULL);
-    assert(creds != NULL);
-    assert(output != NULL);
-    assert(length != NULL);
-    assert(expiration != NULL);
-
-    list = webauth_attr_list_new(128);
-
-    /* Client principal. */
-    if (creds->client) {
-        char *princ;
-
-        c->code = krb5_unparse_name(c->ctx, creds->client, &princ);
-        if (c->code != 0) {
-            s = WA_ERR_KRB5;
-            goto cleanup;
-        }
-        s = webauth_attr_list_add_str(list, CR_CLIENT, princ, 0,
-                                      WA_F_COPY_VALUE);
-        free(princ);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-    }
-
-    /* Server principal. */
-    if (creds->server) {
-        char *princ;
-
-        c->code = krb5_unparse_name(c->ctx, creds->server, &princ);
-        if (c->code != 0) {
-            s = WA_ERR_KRB5;
-            goto cleanup;
-        }
-        s = webauth_attr_list_add_str(list, CR_SERVER, princ, 0,
-                                      WA_F_COPY_VALUE);
-        free(princ);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-    }
-
-    /* Keyblock. */
-    s = webauth_attr_list_add_int32(list, CR_KEYBLOCK_ENCTYPE,
-                                    creds->session.keytype, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    s = webauth_attr_list_add(list, CR_KEYBLOCK_CONTENTS,
-                              creds->session.keyvalue.data,
-                              creds->session.keyvalue.length, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* Times. */
-    s = webauth_attr_list_add_int32(list, CR_AUTHTIME,
-                                    creds->times.authtime, WA_F_NONE);
-    if (s == WA_ERR_NONE)
-        s = webauth_attr_list_add_int32(list, CR_STARTTIME,
-                                        creds->times.starttime, WA_F_NONE);
-    if ( s== WA_ERR_NONE)
-        s = webauth_attr_list_add_int32(list, CR_ENDTIME,
-                                        creds->times.endtime, WA_F_NONE);
-    if (s == WA_ERR_NONE)
-        s = webauth_attr_list_add_int32(list, CR_RENEWTILL,
-                                        creds->times.renew_till, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    *expiration = creds->times.endtime;
-
-    /*
-     * is_skey.  Heimdal doesn't have this, so always set it to 0.  It
-     * probably shouldn't be included in the encoding anyway.
-     */
-    s = webauth_attr_list_add_int32(list, CR_ISSKEY, 0, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* Ticket flags. */
-    s = webauth_attr_list_add_int32(list, CR_TICKETFLAGS,
-                                    creds->flags.i, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* Addresses. */
+    /* Start by copying the credential data into our standard struct. */
+    memset(&data, 0, sizeof(data));
+    status = encode_principal(ctx, kc, creds->client, &data.client_principal);
+    if (status != WA_ERR_NONE)
+        return status;
+    status = encode_principal(ctx, kc, creds->server, &data.server_principal);
+    if (status != WA_ERR_NONE)
+        return status;
+    data.keyblock_enctype  = creds->session.keytype;
+    data.keyblock_data     = creds->session.keyvalue.data;
+    data.keyblock_data_len = creds->session.keyvalue.length;
+    data.auth_time         = creds->times.authtime;
+    data.start_time        = creds->times.starttime;
+    data.end_time          = creds->times.endtime;
+    if (expiration != NULL)
+        *expiration = creds->times.endtime;
+    data.renew_until       = creds->times.renew_till;
+    data.flags             = creds->flags.i;
     if (creds->addresses.len > 0) {
-        size_t i;
-        char name[32];
-        krb5_address *temp;
+        size_t i, size;
 
-        s = webauth_attr_list_add_uint32(list, CR_NUMADDRS,
-                                         creds->addresses.len, WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
+        data.address_count = creds->addresses.len;
+        size = creds->addresses.len * sizeof(struct webauth_krb5_cred_address);
+        data.address = apr_palloc(kc->pool, size);
         for (i = 0; i < creds->addresses.len; i++) {
-            temp = creds->addresses.val + i;
-            snprintf(name, sizeof(name), CR_ADDRTYPE, i);
-            s = webauth_attr_list_add_int32(list, name,
-                                            temp->addr_type, WA_F_COPY_NAME);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            snprintf(name, sizeof(name), CR_ADDRCONT, i);
-            s = webauth_attr_list_add(list, name,
-                                      temp->address.data,
-                                      temp->address.length, WA_F_COPY_NAME);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
+            data.address[i].type = creds->addresses.val[i].addr_type;
+            data.address[i].data = creds->addresses.val[i].address.data;
+            data.address[i].data_len = creds->addresses.val[i].address.length;
         }
     }
-
-    /* Ticket. */
-    if (creds->ticket.length) {
-        s = webauth_attr_list_add(list, CR_TICKET,
-                                  creds->ticket.data,
-                                  creds->ticket.length, WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
+    if (creds->ticket.length > 0) {
+        data.ticket     = creds->ticket.data;
+        data.ticket_len = creds->ticket.length;
     }
-
-    /* Second ticket. */
-    if (creds->second_ticket.length) {
-        s = webauth_attr_list_add(list, CR_TICKET2,
-                                  creds->second_ticket.data,
-                                  creds->second_ticket.length, WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
+    if (creds->second_ticket.length > 0) {
+        data.second_ticket     = creds->second_ticket.data;
+        data.second_ticket_len = creds->second_ticket.length;
     }
-
-    /* Auth data. */
     if (creds->authdata.len > 0) {
-        size_t i;
-        char name[32];
+        size_t i, size;
 
-        s = webauth_attr_list_add_uint32(list, CR_NUMAUTHDATA,
-                                         creds->authdata.len, WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
+        data.authdata_count = creds->authdata.len;
+        size = creds->authdata.len * sizeof(struct webauth_krb5_cred_authdata);
+        data.authdata = apr_palloc(kc->pool, size);
         for (i = 0; i < creds->authdata.len; i++) {
-            snprintf(name, sizeof(name), CR_AUTHDATATYPE, i);
-            s = webauth_attr_list_add_int32(list, name,
-                                            creds->authdata.val[i].ad_type,
-                                            WA_F_COPY_NAME);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            snprintf(name, sizeof(name), CR_AUTHDATACONT, i);
-            s = webauth_attr_list_add(list, name,
-                                      creds->authdata.val[i].ad_data.data,
-                                      creds->authdata.val[i].ad_data.length,
-                                      WA_F_COPY_NAME);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
+            data.authdata[i].type = creds->authdata.val[i].ad_type;
+            data.authdata[i].data = creds->authdata.val[i].ad_data.data;
+            data.authdata[i].data_len = creds->authdata.val[i].ad_data.length;
         }
     }
 
-    /* All done.  Fill in some final details and do the attribute encoding. */
-    length_max =  webauth_attrs_encoded_length(list);
-    *output = malloc(length_max);
-    if (*output == NULL) {
-        s = WA_ERR_NO_MEM;
-        goto cleanup;
-    }
-    s = webauth_attrs_encode(list, *output, length, length_max);
-    if (s != WA_ERR_NONE) {
-        free (*output);
-        *output = NULL;
-    }
-
- cleanup:
-    webauth_attr_list_free(list);
-    return s;
+    /* All done.  Do the attribute encoding. */
+    return webauth_encode(ctx, kc->pool, cred_encoding, &data, output, length);
 }
 
 
 /*
- * Take an externalized credential and turn it back into an internal
- * credential.  Takes the encoded credential string and its length.
+ * Take a serialized Kerberos credential and decode it into a krb5_creds
+ * structure.  creds will point to newly-allocated pool memory.
+ *
+ * Be very cautious of memory management here.  Nearly all of the credential
+ * structure will be allocated from pool memory, and therefore the credential
+ * must not be freed with the normal Kerberos memory calls.  However, the
+ * client and server principals will be allocated by the Kerberos library and
+ * will need to be freed.
  */
 static int
-cred_from_attr_encoding(WEBAUTH_KRB5_CTXTP *c, const void *input,
-                        size_t input_length, krb5_creds *creds)
+decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
+             const void *input, size_t length, krb5_creds *creds)
 {
-    WEBAUTH_ATTR_LIST *list;
-    int s;
-    ssize_t f;
-    char *buff;
-    size_t temp_int;
-    int32_t temp_int32;
+    void *buf;
+    WEBAUTH_ATTR_LIST *alist = NULL;
+    struct webauth_krb5_cred data;
+    int status;
+    size_t size, i;
 
-    assert(c != NULL);
-    assert(creds != NULL);
-    assert(input != NULL);
-
-    memset(creds, 0, sizeof(krb5_creds));
-
-    list = NULL;
-    buff = malloc(input_length);
-
-    if (buff == NULL)
-        return WA_ERR_NO_MEM;
-
-    memcpy(buff, input, input_length);
-
-    s = webauth_attrs_decode(buff, input_length, &list);
-
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* Client principal. */
-    webauth_attr_list_find(list, CR_CLIENT, &f);
-    if (f != -1) {
-        c->code = krb5_parse_name(c->ctx, list->attrs[f].value,
-                                  &creds->client);
-        if (c->code != 0) {
-            s = WA_ERR_KRB5;
-            goto cleanup;
-        }
+    /* Decode the input into an attribute list. */
+    buf = apr_pmemdup(kc->pool, input, length);
+    status = webauth_attrs_decode(buf, length, &alist);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "credential decode failed");
+        return status;
     }
-
-    /* Server principal. */
-    webauth_attr_list_find(list, CR_SERVER, &f);
-    if (f != -1) {
-        c->code = krb5_parse_name(c->ctx, list->attrs[f].value,
-                                  &creds->server);
-        if (c->code != 0) {
-            s = WA_ERR_KRB5;
-            goto cleanup;
-        }
-    }
-
-    /* Keyblock. */
-    s = webauth_attr_list_get_int32(list, CR_KEYBLOCK_ENCTYPE, &temp_int32,
-                                    WA_F_NONE);
-    creds->session.keytype = temp_int32;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    s = webauth_attr_list_get(list, CR_KEYBLOCK_CONTENTS,
-                              &creds->session.keyvalue.data, &temp_int,
-                              WA_F_COPY_VALUE);
-    creds->session.keyvalue.length = temp_int;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* Times. */
-    s = webauth_attr_list_get_int32(list, CR_AUTHTIME, &temp_int32, WA_F_NONE);
-    creds->times.authtime = temp_int32;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_STARTTIME, &temp_int32,
-                                    WA_F_NONE);
-    creds->times.starttime = temp_int32;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_ENDTIME, &temp_int32, WA_F_NONE);
-    creds->times.endtime = temp_int32;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-    s = webauth_attr_list_get_int32(list, CR_RENEWTILL, &temp_int32,
-                                    WA_F_NONE);
-    creds->times.renew_till = temp_int32;
-    if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /* is_skey is not supported by Heimdal, so ignore it. */
-
-    /* Ticket flags. */
-    s = webauth_attr_list_get_int32(list, CR_TICKETFLAGS,
-                                    (int32_t *) &creds->flags.i, WA_F_NONE);
-    if (s != WA_ERR_NONE)
-        goto cleanup;
 
     /*
-     * Addresses.  We may want to always ignore these.  They might not even
-     * exist if we got forwardable/proxiable tickets.
+     * Decode the attribute list and copy the results into the credential
+     * struct.  is_skey is not supported by Heimdal, so ignore it.
      */
-    webauth_attr_list_find(list, CR_NUMADDRS, &f);
-    if (f != -1) {
-        uint32_t num = 0;
-        unsigned int i;
-        char name[32];
-
-        s = webauth_attr_list_get_uint32(list, CR_NUMADDRS, &num, WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-
-        creds->addresses.len = num;
-        creds->addresses.val = calloc(num, sizeof(krb5_address));
-        if (creds->addresses.val == NULL) {
-            s = WA_ERR_NO_MEM;
-            goto cleanup;
-        }
-
-        for (i = 0; i < num; i++) {
-            snprintf(name, sizeof(name), CR_ADDRTYPE, i);
-            s = webauth_attr_list_get_int32(list, name,
-                                            &temp_int32, WA_F_NONE);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            creds->addresses.val[i].addr_type = temp_int32;
-
-            snprintf(name, sizeof(name), CR_ADDRCONT, i);
-            s = webauth_attr_list_get(list, name,
-                                      &creds->addresses.val[i].address.data,
-                                      &temp_int, WA_F_COPY_VALUE);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            creds->addresses.val[i].address.length = temp_int;
-        }
+    memset(&data, 0, sizeof(data));
+    status = webauth_decode(ctx, kc->pool, cred_encoding, input, length,
+                            &data);
+    if (status != WA_ERR_NONE) {
+        webauth_attr_list_free(alist);
+        return status;
     }
-
-    /* Ticket. */
-    webauth_attr_list_find(list, CR_TICKET, &f);
-    if (f != -1) {
-        s = webauth_attr_list_get(list, CR_TICKET,
-                                  &creds->ticket.data,
-                                  &temp_int, WA_F_COPY_VALUE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-        creds->ticket.length = temp_int;
+    webauth_attr_list_free(alist);
+    memset(creds, 0, sizeof(krb5_creds));
+    if (data.client_principal != NULL) {
+        status = decode_principal(ctx, kc, data.client_principal,
+                                  &creds->client);
+        if (status != WA_ERR_NONE)
+            return status;
     }
-
-    /* Second ticket. */
-    webauth_attr_list_find(list, CR_TICKET2, &f);
-    if (f != -1) {
-        s = webauth_attr_list_get(list, CR_TICKET2,
-                                  &creds->second_ticket.data,
-                                  &temp_int, WA_F_COPY_VALUE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-        creds->second_ticket.length = temp_int;
+    if (data.client_principal != NULL) {
+        status = decode_principal(ctx, kc, data.server_principal,
+                                  &creds->server);
+        if (status != WA_ERR_NONE)
+            return status;
     }
-
-    /* Auth data. */
-    webauth_attr_list_find(list, CR_NUMAUTHDATA, &f);
-    if (f != -1) {
-        uint32_t num = 0;
-        unsigned int i;
-        char name[32];
-
-        s = webauth_attr_list_get_uint32(list, CR_NUMAUTHDATA, &num,
-                                         WA_F_NONE);
-        if (s != WA_ERR_NONE)
-            goto cleanup;
-
-        creds->authdata.len = num;
-        creds->authdata.val = calloc(num, sizeof(*creds->authdata.val));
-        if (creds->authdata.val == NULL) {
-            s = WA_ERR_NO_MEM;
-            goto cleanup;
-        }
-
-        for (i = 0; i < num; i++) {
-            snprintf(name, sizeof(name), CR_AUTHDATATYPE, i);
-            s = webauth_attr_list_get_int32(list, name,
-                                            &temp_int32, WA_F_NONE);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            creds->authdata.val[i].ad_type = temp_int32;
-
-            snprintf(name, sizeof(name), CR_AUTHDATACONT, i);
-            s = webauth_attr_list_get(list, name,
-                                      &creds->authdata.val[i].ad_data.data,
-                                      &temp_int, WA_F_COPY_VALUE);
-            if (s != WA_ERR_NONE)
-                goto cleanup;
-            creds->authdata.val[i].ad_data.length = temp_int;
+    creds->session.keytype = data.keyblock_enctype;
+    creds->session.keyvalue.data = data.keyblock_data;
+    creds->session.keyvalue.length = data.keyblock_data_len;
+    creds->times.authtime = data.auth_time;
+    creds->times.starttime = data.start_time;
+    creds->times.endtime = data.end_time;
+    creds->times.renew_till = data.renew_until;
+    creds->flags.i = data.flags;
+    if (data.address_count > 0) {
+        creds->addresses.len = data.address_count;
+        size = data.address_count * sizeof(krb5_address);
+        creds->addresses.val = apr_pcalloc(kc->pool, size);
+        for (i = 0; i < data.address_count; i++) {
+            creds->addresses.val[i].addr_type = data.address[i].type;
+            creds->addresses.val[i].address.data = data.address[i].data;
+            creds->addresses.val[i].address.length = data.address[i].data_len;
         }
     }
-
-    s = WA_ERR_NONE;
-
- cleanup:
-    if (buff != NULL)
-        free(buff);
-    if (list != NULL)
-        webauth_attr_list_free(list);
-    if (s != WA_ERR_NONE)
-        krb5_free_cred_contents(c->ctx, creds);
-    return s;
-}
-
-
-/*
- * Create an encoded Kerberos request, including encrypted data from in_data
- * (which may be empty).  The request is stored in output in newly allocated
- * memory and the length is stored in length.  The encrypted data, if any, is
- * stored in out_data in newly alllocated memory and the length of the data is
- * stored in out_length.  Returns a WA_ERR code.
- *
- * This is used as an authenticator from a WAS to the WebKDC.
- */
-int
-webauth_krb5_mk_req_with_data(WEBAUTH_KRB5_CTXT *context,
-                              const char *server_principal,
-                              char **output, size_t *length,
-                              char *in_data, size_t in_length,
-                              char **out_data, size_t *out_length)
-{
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
-    krb5_auth_context auth;
-    krb5_data outbuf;
-    krb5_principal princ;
-    int s;
-
-    assert(c != NULL);
-    assert(server_principal != NULL);
-    assert(output != NULL);
-    assert(length != NULL);
-
-    memset(&outbuf, 0, sizeof(krb5_data));
-    *output = NULL;
-    if (out_data)
-        *output = NULL;
-
-    c->code = krb5_parse_name(c->ctx, server_principal, &princ);
-    if (c->code != 0)
-        return WA_ERR_KRB5;
-
-    auth = NULL;
-    c->code = mk_req_with_principal(c->ctx, &auth, 0, princ, NULL, c->cc,
-                                    &outbuf);
-    krb5_free_principal(c->ctx, princ);
-
-    if (c->code != 0)
-        return WA_ERR_KRB5;
-
-    *output = malloc(outbuf.length);
-    if (*output == NULL) {
-        s = WA_ERR_NO_MEM;
-        krb5_free_data_contents(c->ctx, &outbuf);
-        goto cleanup;
-    } else {
-        *length = outbuf.length;
-        memcpy(*output, outbuf.data, outbuf.length);
-        s = WA_ERR_NONE;
-        krb5_free_data_contents(c->ctx, &outbuf);
+    if (data.ticket != NULL) {
+        creds->ticket.data = data.ticket;
+        creds->ticket.length = data.ticket_len;
     }
-
-    if (in_data != NULL && out_data != NULL) {
-        krb5_data indata, outdata;
-        krb5_address laddr;
-        char lh[4] = {127, 0, 0, 1};
-
-        laddr.addr_type = KRB5_ADDRESS_INET;
-        laddr.address.length = 4;
-        laddr.address.data = (void *) &lh;
-
-        indata.data = in_data;
-        indata.length = in_length;
-
-        /*
-         * We cheat here and always use localhost as the address of the remote
-         * system.  This is an ugly hack, but then so is address checking, and
-         * we have other security around use of the tokens.
-         */
-        krb5_auth_con_setflags(c->ctx, auth, 0);
-        krb5_auth_con_setaddrs(c->ctx, auth, &laddr, NULL);
-
-        c->code = krb5_mk_priv(c->ctx, auth, &indata, &outdata, NULL);
-        if (c->code == 0) {
-            s = WA_ERR_NONE;
-
-            *out_data = malloc(outdata.length);
-            if (*out_data == NULL)
-                s = WA_ERR_NO_MEM;
-            else {
-                *out_length = outdata.length;
-                memcpy(*out_data, outdata.data, outdata.length);
-                s = WA_ERR_NONE;
-            }
-            krb5_free_data_contents(c->ctx, &outdata);
-        } else {
-            s = WA_ERR_KRB5;
+    if (data.second_ticket != NULL) {
+        creds->second_ticket.data = data.second_ticket;
+        creds->second_ticket.length = data.second_ticket_len;
+    }
+    if (data.authdata_count > 0) {
+        creds->authdata.len = data.authdata_count;
+        size = data.authdata_count * sizeof(*creds->authdata.val);
+        creds->authdata.val = apr_palloc(kc->pool, size);
+        for (i = 0; i < data.authdata_count; i++) {
+            creds->authdata.val[i].ad_type = data.authdata[i].type;
+            creds->authdata.val[i].ad_data.data = data.authdata[i].data;
+            creds->authdata.val[i].ad_data.length = data.authdata[i].data_len;
         }
     }
-
-cleanup:
-    if (s != WA_ERR_NONE)
-        if (*output != NULL)
-            free(*output);
-    if (auth != NULL)
-        krb5_auth_con_free(c->ctx, auth);
-    return s;
-}
-
-
-/*
- * Receive and decrypt a Kerberos request using a local keytab.  The request
- * may have associated encrypted data, which is put into out_data with
- * out_length set to the length of the data.  The principal making the remote
- * Kerberos request is stored in client_principal and the server principal to
- * which the request was addressed is stored in out_server_principal.  Returns
- * a WA_ERR code.
- */
-int
-webauth_krb5_rd_req_with_data(WEBAUTH_KRB5_CTXT *context,
-                              const char *req, size_t length,
-                              const char *keytab_path,
-                              const char *server_principal,
-                              char **out_server_principal,
-                              char **client_principal,
-                              int local, char *in_data, size_t in_length,
-                              char **out_data, size_t *out_length)
-{
-    WEBAUTH_KRB5_CTXTP *c = (WEBAUTH_KRB5_CTXTP *) context;
-    krb5_principal server;
-    krb5_keytab keytab;
-    krb5_auth_context auth;
-    krb5_data buf;
-    int s;
-
-    assert(c != NULL);
-    assert(keytab_path != NULL);
-    assert(req != NULL);
-    assert(client_principal);
-
-    s = open_keytab(c, keytab_path, server_principal, &server, &keytab);
-    if (s != WA_ERR_NONE)
-        return s;
-
-    auth = NULL;
-
-    if (out_server_principal)
-        *out_server_principal = NULL;
-
-    buf.data = (char *) req;
-    buf.length = length;
-    c->code = krb5_rd_req(c->ctx, &auth, &buf, server, keytab, NULL, NULL);
-    if (c->code == 0) {
-        if (out_server_principal)
-            krb5_unparse_name(c->ctx, server, out_server_principal);
-        if (auth != NULL) {
-            krb5_authenticator ka;
-
-            c->code = krb5_auth_con_getauthenticator(c->ctx, auth, &ka);
-            if (c->code != 0)
-                *client_principal = NULL;
-            else {
-                int local_ok = 0;
-                krb5_principal_data kprinc;
-
-                kprinc.name = ka->cname;
-                kprinc.realm = ka->crealm;
-
-                if (local) {
-                    krb5_error_code tcode;
-                    char lname[256];
-
-                    tcode = krb5_aname_to_localname(c->ctx, &kprinc,
-                                                    sizeof(lname) - 1,
-                                                    lname);
-                    if (tcode == 0) {
-                        *client_principal = strdup(lname);
-                        if (*client_principal == NULL) {
-                            krb5_free_authenticator(c->ctx, &ka);
-                            krb5_auth_con_free(c->ctx, auth);
-                            s = WA_ERR_NO_MEM;
-                            goto done;
-                        }
-                        local_ok = 1;
-                    }
-                }
-
-                if (!local_ok)
-                    c->code = krb5_unparse_name(c->ctx, &kprinc,
-                                                client_principal);
-
-                if (in_data != NULL && out_data != NULL) {
-                    krb5_data inbuf, outbuf;
-                    krb5_address raddr;
-                    char rh[4] = {127, 0, 0, 1};
-
-                    raddr.addr_type = KRB5_ADDRESS_INET;
-                    raddr.address.length = 4;
-                    raddr.address.data = (void *) &rh;
-
-                    /*
-                     * We cheat and always use 127.0.0.1 as the address, which
-                     * is what the remote side also always sends.  We use
-                     * encryption of tokens to protect the request.
-                     */
-                    inbuf.data = in_data;
-                    inbuf.length = in_length;
-                    krb5_auth_con_setflags(c->ctx, auth, 0);
-                    krb5_auth_con_setaddrs(c->ctx, auth, NULL, &raddr);
-                    c->code = krb5_rd_priv(c->ctx, auth,
-                                           &inbuf, &outbuf, NULL);
-                    if (c->code == 0) {
-                        *out_data = malloc(outbuf.length);
-                        if (*out_data == NULL)
-                            s = WA_ERR_NO_MEM;
-                        else {
-                            s = WA_ERR_NONE;
-                            *out_length = outbuf.length;
-                            memcpy(*out_data, outbuf.data, outbuf.length);
-                        }
-                        krb5_free_data_contents(c->ctx, &outbuf);
-                    }
-
-                }
-                krb5_free_authenticator(c->ctx, &ka);
-            }
-            krb5_auth_con_free(c->ctx, auth);
-        }
-    }
-
-done:
-    krb5_kt_close(c->ctx, keytab);
-    krb5_free_principal(c->ctx, server);
-    if (s == WA_ERR_NONE && c->code != 0)
-        s = WA_ERR_KRB5;
-    if (s != WA_ERR_NONE)
-        if (out_server_principal && *out_server_principal != NULL)
-            free(*out_server_principal);
-    return s;
+    return WA_ERR_NONE;
 }

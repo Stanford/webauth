@@ -15,49 +15,6 @@
 
 
 /*
- * Convert a principal into a string, taking the contexts, the principal, and
- * the location into which to store the resulting principal.  Returns a
- * WebAuth status.
- */
-static int
-encode_principal(struct webauth_context *ctx, struct webauth_krb5 *kc,
-                 krb5_principal princ, char **principal)
-{
-    krb5_error_code code;
-    char *name;
-
-    code = krb5_unparse_name(kc->ctx, princ, &name);
-    if (code != 0)
-        return error_set(ctx, kc, code, "cannot unparse principal");
-    *principal = apr_pstrdup(kc->pool, name);
-    krb5_free_unparsed_name(kc->ctx, name);
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Convert a principal from a string to the Kerberos representation, taking
- * the contexts, the string, and the destination principal structure.  Returns
- * a WebAuth status.
- *
- * Note that this uses the Kerberos library to allocate the principal data
- * structures, not an APR pool, so the resulting principal will need to be
- * manually freed.
- */
-static int
-decode_principal(struct webauth_context *ctx, struct webauth_krb5 *kc,
-                 const char *name, krb5_principal *princ)
-{
-    krb5_error_code code;
-
-    code = krb5_parse_name(kc->ctx, name, princ);
-    if (code != 0)
-        return error_set(ctx, kc, code, "cannot parse principal %s", name);
-    return WA_ERR_NONE;
-}
-
-
-/*
  * Take a single Kerberos credential and serialize it into a buffer, using the
  * encoding required for putting it into tokens.  output will be a pointer to
  * newly allocated memory, and length will be set to the encoded length.
@@ -199,7 +156,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     creds->is_skey = data.is_skey;
     creds->ticket_flags = data.flags;
     if (data.address_count > 0) {
-        size = data.address_count + 1 * sizeof(krb5_address *);
+        size = (data.address_count + 1) * sizeof(krb5_address *);
         creds->addresses = apr_pcalloc(kc->pool, size);
         for (i = 0; i < data.address_count; i++) {
             creds->addresses[i] = apr_pcalloc(kc->pool, sizeof(krb5_address));
@@ -221,7 +178,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         creds->second_ticket.length = data.second_ticket_len;
     }
     if (data.authdata_count > 0) {
-        size = data.authdata_count + 1 * sizeof(krb5_authdata *);
+        size = (data.authdata_count + 1) * sizeof(krb5_authdata *);
         creds->authdata = apr_pcalloc(kc->pool, size);
         for (i = 0; i < data.authdata_count; i++) {
             creds->authdata[i] = apr_palloc(kc->pool, sizeof(krb5_authdata));
