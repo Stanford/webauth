@@ -4,19 +4,12 @@
 # module build (and probably the other interpretors as well).
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 
-# Link with --as-needed so that webauth-utils doesn't inherit the shared
-# library dependencies of libwebauth.
-export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-
 ifndef PERL
     PERL = /usr/bin/perl
 endif
 
 %:
 	dh $@ --parallel --with autoreconf
-
-override_dh_autoreconf:
-	dh_autoreconf --as-needed
 
 override_dh_auto_configure:
 	dh_auto_configure --parallel -- --libdir=/usr/lib \
