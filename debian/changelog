@@ -1,3 +1,27 @@
+webauth (4.3.0-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - mod_webauth now sets HttpOnly on cookies by default.  There is a new
+      WebAuthHttpOnly flag to disable this behavior.
+    - WebLogin now sets HttpOnly on all cookies.
+    - Add new optional <userMessage> element to <requestTokenResponse>
+      from the WebKDC and a new error code to indicate that this HTML
+      error should be displayed to the user.
+    - Support an <error> return element from the user information
+      service and pass it as the <userMessage> element.
+    - Add WebLogin support via an err_html parameter to display the error
+      returned in the <userMessage> element from the WebKDC.
+    - Change all Kerberos functions in the WebAuth library API to take the
+      WebAuth context and use APR.  Remove some unused functions, merge
+      others, and rename others.  Update the Perl API to match.  Any Perl
+      programs that call WebAuth Kerberos functions will require updates.
+    - Fix decoding of Kerberos credentials with a second ticket.
+    - Kerberos realms are no longer escaped before matching them against
+      the Apache configuration.  This only affects handling of realm names
+      with unusual characters.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 06 Aug 2012 19:02:38 -0700
+
 webauth (4.2.2-1) experimental; urgency=low
 
   * New upstream release.
