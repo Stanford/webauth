@@ -131,7 +131,6 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
     status = WA_ERR_NONE;
 
 done:
-    free(realm);
     return status;
 }
 
