@@ -94,7 +94,7 @@ Description: Perl library for WebAuth authentication
  does token encoding and decoding and other lower-level parts of the
  WebAuth protocol.
 
-Package: libwebauth7
+Package: libwebauth8
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -115,7 +115,7 @@ Section: libdevel
 Priority: extra
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, libwebauth7 (= ${binary:Version})
+Depends: ${misc:Depends}, libwebauth8 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
 Replaces: libwebauth1-dev (<< 3.7.0)
 Breaks: libwebauth1-dev (<< 3.7.0)
