@@ -1764,14 +1764,16 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         *subject_out = response->subject;
 
     /*
-     * If we saw an error other than proxy token required, abort and send the
-     * error message.
+     * If we saw an error other than proxy token required, multifactor
+     * required, LoA unavailable, or authentication rejected, abort and send
+     * the error message.
      */
     if (response->login_error != 0
         && response->login_error != WA_PEC_PROXY_TOKEN_REQUIRED
         && response->login_error != WA_PEC_MULTIFACTOR_REQUIRED
         && response->login_error != WA_PEC_MULTIFACTOR_UNAVAILABLE
-        && response->login_error != WA_PEC_LOA_UNAVAILABLE)
+        && response->login_error != WA_PEC_LOA_UNAVAILABLE
+        && response->login_error != WA_PEC_AUTH_REJECTED)
         return set_errorResponse(rc, response->login_error,
                                  response->login_message, mwk_func, true);
 
