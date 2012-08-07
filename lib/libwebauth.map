@@ -59,7 +59,6 @@ WEBAUTH_4_2 {
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
-        webauth_krb5_prepare_via_cred;
         webauth_token_decode;
         webauth_token_decode_raw;
         webauth_token_encode;
@@ -81,6 +80,7 @@ WEBAUTH_4_3 {
         webauth_krb5_init_via_password;
         webauth_krb5_make_auth;
         webauth_krb5_make_auth_data;
+        webauth_krb5_prepare_via_cred;
         webauth_krb5_new;
         webauth_krb5_read_auth;
         webauth_krb5_read_auth_data;
