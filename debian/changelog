@@ -3,6 +3,8 @@ webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
   * Backport to squeeze.
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
     version of dh_autoreconf in squeeze.
+  * Add a portable replacement for krb5_cc_get_full_name, which is not
+    available in the MIT Kerberos in squeeze.
   * New upstream release.
     - Add support for Apache 2.4.
     - Support for AuthType StanfordAuth has been deprecated, and the
