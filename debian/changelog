@@ -1,15 +1,18 @@
 webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
 
   * Backport to squeeze.
+  * Revert transition to Apache 2.4, use of the new Apache module helper
+    functions, and multi-arch.
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
     version of dh_autoreconf in squeeze.
   * Add a portable replacement for krb5_cc_get_full_name, which is not
     available in the MIT Kerberos in squeeze.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+
+webauth (4.3.0-1) experimental; urgency=low
+
   * New upstream release.
-    - Add support for Apache 2.4.
-    - Support for AuthType StanfordAuth has been deprecated, and the
-      corresponding mod_webauthldap support is not available when built
-      against Apache 2.4.
     - mod_webauth now sets HttpOnly on cookies by default.  There is a new
       WebAuthHttpOnly flag to disable this behavior.
     - WebLogin now sets HttpOnly on all cookies.
@@ -20,6 +23,43 @@ webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
       service and pass it as the <userMessage> element.
     - Add WebLogin support via an err_html parameter to display the error
       returned in the <userMessage> element from the WebKDC.
+    - Change all Kerberos functions in the WebAuth library API to take the
+      WebAuth context and use APR.  Remove some unused functions, merge
+      others, and rename others.  Update the Perl API to match.  Any Perl
+      programs that call WebAuth Kerberos functions will require updates.
+    - Fix decoding of Kerberos credentials with a second ticket.
+    - Kerberos realms are no longer escaped before matching them against
+      the Apache configuration.  This only affects handling of realm names
+      with unusual characters.
+  * Mark webauth-tests and webauth-weblogin as Multi-Arch: foreign.  This
+    is necessary even for arch: all packages.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 06 Aug 2012 20:35:13 -0700
+
+webauth (4.2.2-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix WebKDC::WebRequest error in proxy cookie handling that broke
+      WebLogin functionality.
+    - Fix Kerberos context cleanup after saving delegated credentials.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 19 Jul 2012 16:19:25 -0700
+
+webauth (4.2.1-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix keyring decoding from files on 64-bit systems.
+    - Fix uninitialized memory error in token-encode test case.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 18 Jul 2012 16:41:50 -0700
+
+webauth (4.2.0-1) experimental; urgency=low
+
+  * New upstream release.
+    - Add support for Apache 2.4.  (Closes: #666861)
+    - Support for AuthType StanfordAuth has been deprecated, and the
+      corresponding mod_webauthldap support is not available when built
+      against Apache 2.4.
     - Support use of Kerberos keyring caches for passing delegated
       credentials from mod_webauth to CGI and embedded code.
     - Fix merging of mod_webkdc Apache directives in corner cases.
@@ -33,15 +73,22 @@ webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
       of the APIs have been simplified or renamed.
     - The webauth_random_bytes, webauth_random_key, webauth_token_create,
       and webauth_token_parse APIs have been removed
-    - Change all Kerberos functions in the WebAuth library API to take the
-      WebAuth context and use APR.  Remove some unused functions, merge
-      others, and rename others.  Update the Perl API to match.  Any Perl
-      programs that call WebAuth Kerberos functions will require updates.
-    - Fix decoding of Kerberos credentials with a second ticket.
-    - Kerberos realms are no longer escaped before matching them against
-      the Apache configuration.  This only affects handling of realm names
-      with unusual characters.
     - All Perl modules now have POD documentation.
+  * Convert to Apache 2.4 and follow the Apache module policy.
+    - Rename libapache2-webauth to libapache2-mod-webauth and
+      libapache2-webkdc to libapache2-mod-webkdc.  Add transitional
+      packages to ease the upgrade.
+    - Use dh_apache2 to handle module and configuration installation.  Do
+      not use it for maitnainer script actions, since
+      libapache2-mod-webauth modules have required configuration and can't
+      be enabled by default.
+    - Update the maintainer script actions for the new Apache module
+      policy.
+    - Depend on apache2-dev instead of apache2-threaded-dev.
+    - Remove explicit dependencies on apache2.2-common.
+    - Use apxs, not apxs2.
+  * Mark libwebauth7 and libwebauth-dev Multi-Arch: same and webauth-utils
+    Multi-Arch: foreign.  Convert to multiarch library paths.
   * libwebauth-dev now suggests libapr1-dev since it is required to use
     the parts of the API that require APR (such as keyring traversal or
     creating the WebAuth context from an existing APR pool).
@@ -54,12 +101,18 @@ webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
   * Move single-debian-patch to local-options and patch-header to
     local-patch-header so that they only apply to the packages I build and
     NMUs get regular version-numbered patches.
+  * Purging libapache2-mod-{webauth,webkdc} no longer unconditionally
+    removes the contents of /var/lib/{webauth,webkdc}.  Instead, known
+    files are removed and then removal of the directory is attempted,
+    ignoring failure if the directory is non-empty.
   * Update to debhelper compatibility level V9.
     - Use dpkg-buildflags to set CFLAGS.
     - Enable bindnow hardening.  Leave PIE off for right now.
+    - Simplify all *.install rules to remove debian/tmp and not specify
+      the destination if it echoes the source.
   * Convert debian/copyright to copyright-format 1.0.
 
- -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+ -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 22:58:20 -0700
 
 webauth (4.1.1-1) unstable; urgency=low
 
