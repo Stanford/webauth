@@ -1,4 +1,4 @@
-webauth (4.3.0-1) UNRELEASED; urgency=low
+webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
 
   * New upstream release.
     - Add support for Apache 2.4.
