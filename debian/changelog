@@ -7,6 +7,7 @@ webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
     version of dh_autoreconf in squeeze.
   * Add a portable replacement for krb5_cc_get_full_name, which is not
     available in the MIT Kerberos in squeeze.
+  * Remove invalid free in webauth_webkdc_login.
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
 
