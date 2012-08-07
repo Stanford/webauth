@@ -50,7 +50,7 @@ WriteMakefile (
     VERSION_FROM      => 'lib/WebAuth.pm',
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'lib/WebAuth.pm',
-       AUTHOR         => 'Roland Schemers (schemers@stanford.edu)') : ()),
+       AUTHOR         => 'Russ Allbery (rra@stanford.edu)') : ()),
     INC               => '-I@top_builddir@ -I@top_srcdir@/include'
                          . ' @APR_CPPFLAGS@',
     LDDLFLAGS         => $lddlflags,

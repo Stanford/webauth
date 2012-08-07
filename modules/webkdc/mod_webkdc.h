@@ -242,27 +242,28 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
 /*
  * get a WEBAUTH_KRB5_CTXT, log errors
  */
-WEBAUTH_KRB5_CTXT *
-mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func);
+struct webauth_krb5 *
+mwk_get_webauth_krb5_ctxt(struct webauth_context *, request_rec *r,
+                          const char *mwk_func);
 
 /*
  * construct a detailed error message
  */
 
 char *
-mwk_webauth_error_message(request_rec *r,
+mwk_webauth_error_message(struct webauth_context *,
+                          request_rec *r,
                           int status,
-                          WEBAUTH_KRB5_CTXT *ctxt,
                           const char *webauth_func,
                           const char *extra);
 
 /*
- * log a webauth-related error. ctxt can be NULL.
+ * log a webauth-related error.  The Kerberos context can be NULL.
  */
 void
-mwk_log_webauth_error(server_rec *serv,
+mwk_log_webauth_error(struct webauth_context *,
+                      server_rec *serv,
                       int status,
-                      WEBAUTH_KRB5_CTXT *ctxt,
                       const char *mwk_func,
                       const char *func,
                       const char *extra);

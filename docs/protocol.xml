@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='June' year='2011' />
+    <date month='July' year='2012' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -993,6 +993,13 @@
               this user (perhaps because the user doesn't have a strong
               enough authentication method configured or hasn't associated
               the account with proof of identity).</t>
+
+              <t hangText='24'>The user is not permitted to authenticate
+              to the desired destination WAS at this time.  This may be
+              due to local policy, security limitations placed on the
+              user, missing prerequisite actions that the user must take
+              (such as training or a usage agreement), or some other local
+              factor.</t>
             </list>
           </t>
         </section>
@@ -1156,6 +1163,11 @@
     <loginErrorCode>{numeric}<loginErrorCode>
     <loginErrorMessage>{message}<loginErrorMessage>
 
+    <!-- userMessage will be set if loginErrorCode is 24 and is an
+         HTML message intended for the end user.  It will normally
+         be in a CDATA block to protect markup. -->
+    <userMessage>{message}</userMessage>
+
     <!-- set in combination with a loginErrorCode of 19 if
          multifactor authentication is required -->
     <multifactorRequired>
@@ -1284,6 +1296,15 @@
               enough authentication method configured or hasn't associated
               the account with proof of identity).  The web front-end
               should display an error message to the user.</t>
+
+              <t hangText='24'>The user is not permitted to authenticate
+              to the desired destination WAS at this time.  This may be
+              due to local policy, security limitations placed on the
+              user, missing prerequisite actions that the user must take
+              (such as training or a usage agreement), or some other local
+              factor.  An HTML message intended for the end user will be
+              present in the &lt;userMessage&gt; element of the WebKDC
+              reply.</t>
             </list>
           </t>
 
@@ -2339,13 +2360,18 @@
           <vspace blankLines='0'/>Change the &lt;loginHistory> XML schema
           to have the content of &lt;loginLocation be the IP address.  The
           hostname is now an optional attribute.</t>
+
+          <t hangText='3.2.0 (2012-07-17, rra)'>
+          <vspace blankLines='0'/>Add error code 24, representing a rejected
+          authentication, and add optional element &lt;userMessage&gt; to
+          &lt;requestTokenResponse&gt;.</t>
         </list>
       </t>
     </section>
 
     <section anchor='license' title='License'>
-      <t>Copyright 2006, 2008, 2009, 2010, 2011 The Board of Trustees of
-      the Leland Stanford Junior University</t>
+      <t>Copyright 2006, 2008, 2009, 2010, 2011, 2012 The Board of
+      Trustees of the Leland Stanford Junior University</t>
 
       <t>Copying and distribution of this file, with or without
       modification, are permitted in any medium without royalty provided

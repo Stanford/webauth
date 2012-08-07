@@ -144,7 +144,7 @@
 <tr><td class="header">WebAuth Documentation</td><td class="header">R. Schemers</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">R. Allbery</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Stanford University</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">June 2011</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">July 2012</td></tr>
 </table></td></tr></table>
 <h1><br />WebAuth Technical Specification</h1>
 
@@ -1327,6 +1327,14 @@ Common XML Elements</h3>
               enough authentication method configured or hasn't associated
               the account with proof of identity).
 </dd>
+<dt>24</dt>
+<dd>The user is not permitted to authenticate
+              to the desired destination WAS at this time.  This may be
+              due to local policy, security limitations placed on the
+              user, missing prerequisite actions that the user must take
+              (such as training or a usage agreement), or some other local
+              factor.
+</dd>
 </dl></blockquote><p>
           
 </p>
@@ -1492,6 +1500,11 @@ requestToken</h3>
     &lt;loginErrorCode&gt;{numeric}&lt;loginErrorCode&gt;
     &lt;loginErrorMessage&gt;{message}&lt;loginErrorMessage&gt;
 
+    &lt;!-- userMessage will be set if loginErrorCode is 24 and is an
+         HTML message intended for the end user.  It will normally
+         be in a CDATA block to protect markup. --&gt;
+    &lt;userMessage&gt;{message}&lt;/userMessage&gt;
+
     &lt;!-- set in combination with a loginErrorCode of 19 if
          multifactor authentication is required --&gt;
     &lt;multifactorRequired&gt;
@@ -1628,6 +1641,16 @@ requestToken</h3>
               enough authentication method configured or hasn't associated
               the account with proof of identity).  The web front-end
               should display an error message to the user.
+</dd>
+<dt>24</dt>
+<dd>The user is not permitted to authenticate
+              to the desired destination WAS at this time.  This may be
+              due to local policy, security limitations placed on the
+              user, missing prerequisite actions that the user must take
+              (such as training or a usage agreement), or some other local
+              factor.  An HTML message intended for the end user will be
+              present in the &lt;userMessage&gt; element of the WebKDC
+              reply.
 </dd>
 </dl></blockquote><p>
           
@@ -2758,6 +2781,12 @@ Document Revision History</h3>
           to have the content of &lt;loginLocation be the IP address.  The
           hostname is now an optional attribute.
 </dd>
+<dt>3.2.0 (2012-07-17, rra)</dt>
+<dd>
+          Add error code 24, representing a rejected
+          authentication, and add optional element &lt;userMessage&gt; to
+          &lt;requestTokenResponse&gt;.
+</dd>
 </dl></blockquote><p>
       
 </p>
@@ -2766,8 +2795,8 @@ Document Revision History</h3>
 <a name="rfc.section.B"></a><h3>Appendix B.&nbsp;
 License</h3>
 
-<p>Copyright 2006, 2008, 2009, 2010, 2011 The Board of Trustees of
-      the Leland Stanford Junior University
+<p>Copyright 2006, 2008, 2009, 2010, 2011, 2012 The Board of
+      Trustees of the Leland Stanford Junior University
 </p>
 <p>Copying and distribution of this file, with or without
       modification, are permitted in any medium without royalty provided

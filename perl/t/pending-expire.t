@@ -41,7 +41,7 @@ require WebLogin;
 
 # Check for a valid kerberos config.
 if (! -f 't/data/test.principal') {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 } elsif ($no_remctl) {
     plan skip_all => 'Net::Remctl not available';
 } else {

@@ -125,8 +125,8 @@ the service ticket stored in this token.
 =item data ([CREDENTIAL])
 
 Get or set the credential stored in this token.  This is currently always
-a Kerberos ticket in the form created by the krb5_export_tgt() or
-krb5_export_ticket() functions of the WebAuth module.
+a Kerberos ticket in the form created by the export_cred() method of the
+WebAuth::Krb5 module.
 
 =item creation ([TIMESTAMP])
 
@@ -146,7 +146,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 SEE ALSO
 
-WebAuth(3), WebAuth::Keyring(3), WebAuth::Token(3)
+WebAuth(3), WebAuth::Keyring(3), WebAuth::Krb5(3), WebAuth::Token(3)
 
 This module is part of WebAuth.  The current version is available from
 L<http://webauth.stanford.edu/>.

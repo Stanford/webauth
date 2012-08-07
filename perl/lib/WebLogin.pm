@@ -44,12 +44,20 @@ use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
 use Template ();
-use WebAuth qw(3.00 :const :krb5);
+use WebAuth qw(3.02 :const);
 use WebKDC ();
 use WebKDC::Config ();
-use WebKDC::WebKDCException;
+use WebKDC::WebKDCException qw(1.04);
 use URI ();
 use URI::QueryParam ();
+
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
+BEGIN {
+    $VERSION = '1.00';
+}
 
 # These are required only if we are going to check for expiring passwords.
 if ($WebKDC::Config::EXPIRING_PW_SERVER) {
@@ -261,20 +269,21 @@ sub print_headers {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
             if ($name =~ /^webauth_wpt/ && $value eq '') {
-                $cookie = $q->cookie(-name    => $name,
-                                     -value   => $EXPIRED_COOKIE,
-                                     -secure  => $secure,
-                                     -expires => '-1d');
+                $cookie = $q->cookie (-name    => $name,
+                                      -value   => $EXPIRED_COOKIE,
+                                      -secure  => $secure,
+                                      -expires => '-1d');
             } elsif ($name eq $remuser_name) {
-                $cookie = $q->cookie(-name    => $name,
-                                     -value   => $value,
-                                     -secure  => $secure,
-                                     -expires => $remuser_lifetime);
+                $cookie = $q->cookie (-name    => $name,
+                                      -value   => $value,
+                                      -secure  => $secure,
+                                      -expires => $remuser_lifetime);
                 $saw_remuser = 1;
             } else {
-                $cookie = $q->cookie(-name   => $name,
-                                     -value  => $value,
-                                     -secure => $secure);
+                $cookie = $q->cookie (-name     => $name,
+                                      -value    => $value,
+                                      -secure   => $secure,
+                                      -httponly => 1);
             }
             push (@$ca, $cookie);
         }
@@ -294,10 +303,10 @@ sub print_headers {
 
     # Set the test cookie unless it's already set.
     unless ($q->cookie ($self->param ('test_cookie'))) {
-        my $cookie = $q->cookie (-name  => $self->param ('test_cookie'),
-                                 -value => 'True',
-                                 -path  => '/',
-                                 -secure => $secure);
+        my $cookie = $q->cookie (-name     => $self->param ('test_cookie'),
+                                 -value    => 'True',
+                                 -secure   => $secure,
+                                 -httponly => 1);
         push (@$ca, $cookie);
     }
 
@@ -857,9 +866,9 @@ sub add_proxy_token {
     my $principal = $WebKDC::Config::WEBKDC_PRINCIPAL;
     eval {
         my $context = $self->{webauth}->krb5_new;
-        krb5_init_via_cache ($context);
-        my ($tgt, $expires) = krb5_export_tgt ($context);
-        ($kreq, $data) = krb5_mk_req ($context, $principal, $tgt);
+        $context->init_via_cache;
+        my ($tgt, $expires) = $context->export_cred;
+        ($kreq, $data) = $context->make_auth ($principal, $tgt);
         $kreq = $self->{webauth}->base64_encode ($kreq);
         $data = $self->{webauth}->base64_encode ($data);
     };
@@ -977,9 +986,8 @@ sub add_changepw_token {
     }
     eval {
         my $context = $wa->krb5_new;
-        krb5_init_via_password ($context, $username, $password, $changepw,
-                                '', '');
-        ($ticket, $expires) = krb5_export_ticket ($context, $changepw);
+        $context->init_via_password ($username, $password, $changepw);
+        ($ticket, $expires) = $context->export_cred ($changepw);
     };
     if ($@) {
         print STDERR "failed to create kadmin/changepw credential for"
@@ -1083,8 +1091,8 @@ sub change_user_password {
     # Change the password and return any error status plus exception object.
     eval {
         my $context = $wa->krb5_new;
-        krb5_init_via_cred ($context, $token->data);
-        krb5_change_password ($context, $password);
+        $context->import_cred ($token->data);
+        $context->change_password ($password);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
@@ -1523,6 +1531,17 @@ sub index : StartRunmode {
     # satisfy the destination site.
     } elsif ($status == WK_ERR_LOA_UNAVAILABLE) {
         $self->template_params ({err_insufficient_loa => 1});
+        return $self->print_error_page;
+
+    # The authentication was rejected.  We should have a custom error page to
+    # display to the user.
+    } elsif ($status == WK_ERR_AUTH_REJECTED) {
+        if ($error->data) {
+            $self->template_params ({err_html => $error->data});
+        } else {
+            $self->template_params ({err_webkdc => 1});
+            $self->template_params ({err_msg => 'authentication rejected.'});
+        }
         return $self->print_error_page;
 
     # Something abnormal happened.  Figure out what error message to display

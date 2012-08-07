@@ -19,8 +19,9 @@
 
 #include <modules/webkdc/mod_webkdc.h>
 #include <webauth.h>
-#include <webauth/keys.h>
 #include <webauth/basic.h>
+#include <webauth/keys.h>
+#include <webauth/krb5.h>
 
 /* Initiaized in child. */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];
@@ -193,24 +194,23 @@ mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, request_rec *r,
 
 
 /*
- * Get a WEBAUTH_KRB5_CTXT, with logging if it fails.  Return NULL if the call
+ * Get a Kerberos context, with logging if it fails.  Return NULL if the call
  * fails for some reason.
  */
-WEBAUTH_KRB5_CTXT *
-mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
+struct webauth_krb5 *
+mwk_get_webauth_krb5_ctxt(struct webauth_context *ctx, request_rec *r,
+                          const char *mwk_func)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     int status;
 
-    status = webauth_krb5_new(&ctxt);
+    status = webauth_krb5_new(ctx, &kc);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(r->server, status, ctxt, mwk_func,
+        mwk_log_webauth_error(ctx, r->server, status, mwk_func,
                               "webauth_krb5_new", NULL);
-        if (status == WA_ERR_KRB5)
-            webauth_krb5_free(ctxt);
         return NULL;
     }
-    return ctxt;
+    return kc;
 }
 
 
@@ -222,22 +222,14 @@ mwk_get_webauth_krb5_ctxt(request_rec *r, const char *mwk_func)
  * be added to the message.
  */
 char *
-mwk_webauth_error_message(request_rec *r, int status, WEBAUTH_KRB5_CTXT *ctxt,
-                          const char *webauth_func, const char *extra)
+mwk_webauth_error_message(struct webauth_context *ctx, request_rec *r,
+                          int status, const char *webauth_func,
+                          const char *extra)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL)
-        return apr_psprintf(r->pool, "%s%s%s error: %s (%d): %s %d",
-                            webauth_func,
-                            extra == NULL ? "" : " ",
-                            extra == NULL ? "" : extra,
-                            webauth_error_message(NULL, status), status,
-                            webauth_krb5_error_message(ctxt),
-                            webauth_krb5_error_code(ctxt));
-    else
-        return apr_psprintf(r->pool, "%s%s%s error: %s (%d)", webauth_func,
-                            extra == NULL ? "" : " ",
-                            extra == NULL ? "" : extra,
-                            webauth_error_message(NULL, status), status);
+    return apr_psprintf(r->pool, "%s%s%s error: %s (%d)", webauth_func,
+                        extra == NULL ? "" : " ",
+                        extra == NULL ? "" : extra,
+                        webauth_error_message(ctx, status), status);
 }
 
 
@@ -246,26 +238,16 @@ mwk_webauth_error_message(request_rec *r, int status, WEBAUTH_KRB5_CTXT *ctxt,
  * rather than returning it.
  */
 void
-mwk_log_webauth_error(server_rec *serv, int status, WEBAUTH_KRB5_CTXT *ctxt,
-                      const char *mwk_func, const char *func,
+mwk_log_webauth_error(struct webauth_context *ctx, server_rec *serv,
+                      int status, const char *mwk_func, const char *func,
                       const char *extra)
 {
 
-    if (status == WA_ERR_KRB5 && ctxt != NULL)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                     "mod_webkdc: %s:%s%s%s failed: %s (%d): %s %d",
-                     mwk_func, func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(NULL, status), status,
-                     webauth_krb5_error_message(ctxt),
-                     webauth_krb5_error_code(ctxt));
-    else
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                     "mod_webkdc: %s:%s%s%s failed: %s (%d)", mwk_func, func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(NULL, status), status);
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                 "mod_webkdc: %s:%s%s%s failed: %s (%d)", mwk_func, func,
+                 extra == NULL ? "" : " ",
+                 extra == NULL ? "" : extra,
+                 webauth_error_message(ctx, status), status);
 }
 
 
@@ -287,7 +269,7 @@ mwk_cache_keyring(server_rec *serv, struct config *sconf)
                  sconf->keyring_auto_update ? sconf->key_lifetime : 0,
                  &sconf->ring, &kau_status, &update_status);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(serv, status, NULL, mwk_func,
+        mwk_log_webauth_error(sconf->ctx, serv, status, mwk_func,
                               "webauth_keyring_auto_update",
                               sconf->keyring_path);
     } else {
@@ -302,7 +284,7 @@ mwk_cache_keyring(server_rec *serv, struct config *sconf)
                              mwk_func, sconf->keyring_path);
     }
     if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
-            mwk_log_webauth_error(serv, status, NULL, mwk_func,
+        mwk_log_webauth_error(sconf->ctx, serv, status, mwk_func,
                                   "webauth_keyring_auto_update",
                                   sconf->keyring_path);
             ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,

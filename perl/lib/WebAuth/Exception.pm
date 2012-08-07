@@ -38,7 +38,7 @@ require 5.006;
 use strict;
 use warnings;
 
-use WebAuth qw(3.00 WA_ERR_KRB5);
+use WebAuth qw(3.00);
 
 use base qw(Exporter);
 use overload '""' => \&to_string;
@@ -46,17 +46,15 @@ use overload '""' => \&to_string;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '3.00';
+our $VERSION = '3.01';
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.
 
 # Basic accessors.
-sub detail_message ()     { my $self = shift; return $self->{'detail'}  }
-sub error_message ()      { my $self = shift; return $self->{'message'} }
-sub krb5_error_code ()    { my $self = shift; return $self->{'krb5_ec'} }
-sub krb5_error_message () { my $self = shift; return $self->{'krb5_em'} }
-sub status ()             { my $self = shift; return $self->{'status'}  }
+sub detail_message () { my $self = shift; return $self->{'detail'}  }
+sub error_message ()  { my $self = shift; return $self->{'message'} }
+sub status ()         { my $self = shift; return $self->{'status'}  }
 
 # A full verbose message with all the information from the exception.
 sub verbose_message () {
@@ -70,9 +68,6 @@ sub verbose_message () {
     my $result = '';
     $result .= "$detail: " if defined $detail;
     $result .= $message;
-    if ($status == WA_ERR_KRB5) {
-        $result .= ": $self->{krb5_em} ($self->{krb5_ec})";
-    }
     if (defined $line) {
         $result .= " at $file line $line";
     }
@@ -109,8 +104,6 @@ WebAuth::Exception - Rich exception for errors from WebAuth API methods
         print 'status: ', $e->status, "\n";
         print 'message: ', $e->error_message, "\n";
         print 'detail: ', $e->detail_message, "\n";
-        print 'krb5 error: ', $e->krb5_error_code, "\n";
-        print 'krb5 message: ', $e->krb5_error_message, "\n";
         print "$e\n";
         die $e->verbose_message;
     }
@@ -149,26 +142,11 @@ Returns the "detail" message in the exception.  The detail message is
 additional information created with the exception when it was raised and
 is usually the name of the WebAuth C function that raised the exception.
 
-=item krb5_error_code ()
-
-If the status of the exception is WA_ERR_KRB5, then this method will
-return the Kerberos error code (normally a large negative number from the
-Kerberos com_err error range) that caused the exception.  There are
-currently no constants defined for these error codes.
-
-=item krb5_error_message ()
-
-If the status of the exception is WA_ERR_KRB5, then this method will
-return the Kerberos error message corresponding to the Kerberos error
-code.
-
 =item verbose_message ()
 
 Returns a verbose error message, which consists of all information
 available in the exception, including the status code, error message, line
-number and file, and any detail message in the exception.  It also will
-include the Kerberos error code and error message if status is
-WA_ERR_KRB5.
+number and file, and any detail message in the exception.
 
 The result of this method is also used as the string value of the
 exception if the exception object is interpolated into a string or

@@ -1,4 +1,4 @@
-                          WebAuth release 4.2.2
+                          WebAuth release 4.3.0
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
@@ -18,23 +18,25 @@ BLURB
 DESCRIPTION
 
   WebAuth is a comprehensive system for authenticating web users, built on
-  top of Apache 2.0.  It relies on a login server (the WebKDC) to which
-  users are redirected at their first attempt to access a protected web
-  site, uses AES-encrypted chunks of data called tokens which can be sent
-  either in URLs or in cookies and are used to communicate between the
-  login server and each participating web server, and implements a
-  protocol able to use whichever initial user authentication mechanism is
-  convenient to establish the user's identity.  Once the user has logged
-  in to the login server, their identity is carried in a cookie set by
-  that login server and they will not again need to enter their password
-  until their credentials expire, even if they visit multiple different
-  protected web sites.
+  top of Apache.  It relies on a central authentication server with which
+  individual web servers negotiate keys (the WebKDC) and a central login
+  server to which users are redirected at their first attempt to access a
+  protected web site (WebLogin).  WebAuth uses AES-encrypted chunks of
+  data, called tokens, that can be sent either in URLs or in cookies.
+  These tokens are used to communicate between the login server and each
+  participating web server.  The WebAuth protocol can use whatever initial
+  user authentication mechanism is convenient for the local site to
+  establish the user's identity.  Once the user has logged in to the login
+  server, their identity is carried in a cookie set by that login server
+  and they will not again need to enter their password until their
+  credentials expire, even if they visit multiple different protected web
+  sites.
 
-  WebAuth relies on either Kerberos or Apache to establish the user's
-  identity, although some features are only available if Kerberos is used.
-  Kerberos is the only supported mechanism for WebAuth servers to
-  authenticate to the WebKDC.  The protocol is sufficiently general,
-  however, to allow other methods to be added.
+  WebAuth currently relies on either Kerberos or Apache to establish the
+  user's identity, although some features are only available if Kerberos
+  is used.  Kerberos is currently the only supported mechanism for WebAuth
+  servers to authenticate to the WebKDC.  The protocol is sufficiently
+  general, however, to allow other methods to be added.
 
   WebAuth supports obtaining of credentials on behalf of the user by
   trusted application servers, allowing cleaner implementation of
@@ -43,22 +45,13 @@ DESCRIPTION
   WebAuth also provides a second module that can do LDAP directory lookups
   using Kerberos GSS-API authentication and use the result to authorize
   web clients by privilege groups or provide directory information to web
-  applications in environment variables.
+  applications in environment variables.  This module implements a subset
+  of the capabilities of more general Apache LDAP modules, but provides
+  those features using a simpler and more easily documented syntax.
 
   For more information on the Stanford WebAuth project, see:
 
       <http://webauth.stanford.edu/>
-
-  This is a substantial reworking of the previous Stanford WebAuth system,
-  which was based primarily around the S/Ident protocol for user
-  authentication but supported a fallback to a web login server and used
-  domain-wide cookies to pass that authentication information to
-  individual web servers.  This implementation was heavily inspired by
-  that previous work but shares no common code, only uses cookies scoped
-  to individual systems, and is now built primarily around the login
-  server model with "web single sign-on" (single sign-on that works for
-  all authenticated web sites within an authentication realm, but which
-  does not necessarily tie into desktop single sign-on systems).
 
   For release history and user-visible changes, see the file NEWS.
 
@@ -67,6 +60,7 @@ REQUIREMENTS
   WebAuth requires the following additional packages:
 
       Apache 2 version 2.0.43 or later (2.2 or later recommended)
+      APR and APRUtil libraries (come with Apache)
       OpenSSL 0.9.7 or later
       MIT Kerberos 1.2.x or later (1.2.8 or later recommended)
         -or- Heimdal Kerberos (tested with 0.7 or later)
@@ -87,6 +81,14 @@ REQUIREMENTS
   The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
   but are no longer tested with versions earlier than 5.10.
 
+  For optional support for a user information service, which allows
+  WebAuth to do multifactor authentication, support login history, provide
+  level of assurance information, and other integration into local
+  identity management systems, WebAuth also requires the remctl libraries.
+  These can be obtained from:
+
+      <http://www.eyrie.org/~eagle/software/remctl/>
+
   For all dependency libraries, be aware that primary testing is done on
   Debian testing and Debian stable with the versions of the libraries
   currently available there at the time of the release.  Using
@@ -103,15 +105,16 @@ REQUIREMENTS
 
   WebAuth is written in C and requires a C compiler and a standard make
   program to build.  It does not (at least intentionally) use any special
-  make features.  WebAuth also requires Perl 5.6.1 or later for the
-  WebLogin server; Perl is not required for the basic WebAuth module.
+  make features.  WebAuth also requires Perl 5.6.1 or later and a variety
+  of additional Perl modules for the WebLogin server.  Perl is not
+  required for the basic WebAuth module.
 
   WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).  It
   has been lightly tested on Solaris and Mac OS X, and earlier releases
-  were tested on AIX 4.3.  Other Unix platforms that support Apache 2.0 or
-  2.2 should also work, but have not been tested.  Some amount of porting
-  may be required.  WebAuth does use libtool to try to build shared
-  libraries portably.
+  were tested on AIX 4.3.  Other UNIX and UNIX-like platforms that support
+  Apache should also work, but have not been tested.  Some amount of
+  porting may be required.  WebAuth does use libtool to try to build
+  shared libraries portably.  Windows is not supported.
 
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
@@ -127,8 +130,9 @@ REQUIREMENTS
       URI
       XML::Parser
 
-  The Apache mod_fastcgi module is also recommended to speed up the
-  WebLogin interface, but is not required.
+  Some mechanism for running FastCGI scripts under Apache, such as
+  mod_fcgi or mod_fastcgi, is also recommended to improve performance of
+  the WebLogin interface, but this is not required.
 
   For optional WebLogin support for warning users of expired passwords,
   the Date::Parse, Time::Duration, and Net::Remctl Perl modules are
@@ -178,8 +182,8 @@ SUPPORT
 
       <http://helpsu.stanford.edu/>
 
-  Please note that we do *not* support Apache, and we cannot help you set
-  up a web server.  We can help you configure WebAuth and may provide a
+  Please note that we do not support Apache, and we cannot help you set up
+  a web server.  We can help you configure WebAuth and may provide a
   prebuilt Apache server for your platform for convenience, but general
   web server problems unrelated to WebAuth are outside the scope of what
   we can help with.
@@ -189,10 +193,10 @@ SUPPORT
   non-Stanford users, nor do we make any promises or committments related
   to this software.  Please feel free to use it on an as-is basis, and
   please do feel free to send us any patches or improvements that you wish
-  to contribute and we will evaluate them for future releases.  Our
-  primary focus is supporting the needs of Stanford University, however,
-  and problems that don't affect Stanford's use of WebAuth will generally
-  not be prioritized.
+  to contribute and we will evaluate them for future releases.  However,
+  please be aware that our primary focus is supporting the needs of
+  Stanford University and work on features not used by Stanford is mostly
+  done on a volunteer basis.
 
 SOURCE REPOSITORY
 

@@ -14,7 +14,8 @@
 #include <portable/macros.h>
 #include <portable/stdbool.h>
 
-#include <apr_xml.h>
+#include <apr_pools.h>          /* apr_pool_t */
+#include <apr_xml.h>            /* apr_xml_elem */
 
 struct webauth_keyring;
 
@@ -47,6 +48,50 @@ struct buffer {
     char *data;
 };
 
+/*
+ * The types of data that can be encoded.  WA_TYPE_REPEAT is special and
+ * indicates a part of the encoding that is repeated some number of times.
+ * This is represented as a count followed by that many repetitions of some
+ * structure.
+ */
+enum webauth_encoding_type {
+    WA_TYPE_DATA,
+    WA_TYPE_STRING,
+    WA_TYPE_INT32,
+    WA_TYPE_UINT32,
+    WA_TYPE_TIME,
+    WA_TYPE_REPEAT
+};
+
+/*
+ * An encoding specification.  This is used to turn data elements into an
+ * encoded attribute string, or to translate an encoded attribute string back
+ * into a data structure.
+ *
+ * All types use offset as the offset to the basic value (obtained via
+ * offsetof).  WA_TYPE_DATA also uses lenoff as the offset to the length.  For
+ * WA_TYPE_REPEAT, the named attribute will be the count of elements and will
+ * be stored as WA_TYPE_UINT32, and then size specifies the size of the
+ * structure to store each element and repeat is a set of rules for each
+ * element.  In this case, a number will be appended to the name in each rule
+ * inside the repeated structure.
+ *
+ * Only one level of nesting of WA_TYPE_REPEAT is supported.
+ */
+struct webauth_encoding {
+    const char *attr;                   /* Attribute name in encoding */
+    const char *desc;                   /* Description for error reporting */
+    enum webauth_encoding_type type;    /* Data type */
+    bool optional;                      /* Whether attribute is optional */
+    size_t offset;                      /* Offset of data value */
+    size_t len_offset;                  /* Offset of data value length */
+    size_t size;                        /* Size of nested structure */
+    const struct webauth_encoding *repeat; /* Rules for nested structure */
+};
+
+/* Used as the terminator for an encoding specification. */
+#define WA_ENCODING_END { NULL, NULL, 0, false, 0, 0, 0, NULL }
+
 BEGIN_DECLS
 
 /* Default to a hidden visibility for all internal functions. */
@@ -71,6 +116,27 @@ void webauth_buffer_append(struct buffer *, const char *data, size_t length)
  */
 bool webauth_buffer_find_string(struct buffer *, const char *, size_t start,
                                 size_t *offset)
+    __attribute__((__nonnull__));
+
+/*
+ * Decode the binary attribute representation into the struct pointed to by
+ * data following the provided rules.  Takes a separate pool to use for memory
+ * allocation.
+ */
+int webauth_decode(struct webauth_context *, apr_pool_t *,
+                   const struct webauth_encoding *, const void *input, size_t,
+                   void *data)
+    __attribute__((__nonnull__));
+
+/*
+ * Encode the struct pointed to by data according to given the rules into the
+ * output parameter, storing the encoded data length.  The result will be in
+ * WebAuth attribute encoding format.  Takes a separate pool to use for memory
+ * allocation.
+ */
+int webauth_encode(struct webauth_context *, apr_pool_t *,
+                   const struct webauth_encoding *, void *data, void **,
+                   size_t *)
     __attribute__((__nonnull__));
 
 /* Set the internal WebAuth error message and error code. */
