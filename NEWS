@@ -5,6 +5,10 @@ WebAuth 4.3.1 (unreleased)
     Fix invalid free in webauth_webkdc_login when there are permitted
     realms configured.
 
+    Add a replacement for krb5_cc_get_full_name for Kerberos libraries
+    that don't have this function.  Fixes compilation against MIT Kerberos
+    1.8 and earlier.
+
 WebAuth 4.3.0 (2012-08-06)
 
     mod_webauth now sets the HttpOnly flag on all WebAuth session cookies

@@ -54,6 +54,14 @@ BEGIN_DECLS
 /* Default to a hidden visibility for all portability functions. */
 #pragma GCC visibility push(hidden)
 
+/*
+ * Now present in both Heimdal and MIT, but very new in MIT and not present in
+ * older Heimdal.
+ */
+#ifndef HAVE_KRB5_CC_GET_FULL_NAME
+krb5_error_code krb5_cc_get_full_name(krb5_context, krb5_ccache, char **);
+#endif
+
 /* Heimdal: krb5_data_free, MIT: krb5_free_data_contents. */
 #ifdef HAVE_KRB5_DATA_FREE
 # define krb5_free_data_contents(c, d) krb5_data_free(d)
