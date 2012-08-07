@@ -21,6 +21,7 @@
 #include <util/macros.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
+#include <webauth/krb5.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
@@ -268,7 +269,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
                                       rc->sconf->ring, &data);
         if (status != WA_ERR_NONE) {
-            mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+            mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                                   "webauth_token_decode", NULL);
             if (status == WA_ERR_TOKEN_EXPIRED) {
                 set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
@@ -291,9 +292,11 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         const char *req;
         int blen;
         char *bin_req, *client_principal;
-        WEBAUTH_KRB5_CTXT *ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
+        struct webauth_krb5 *kc;
+
+        kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
         /* mwk_get_webauth_krb5_ctxt already logged error */
-        if (ctxt == NULL) {
+        if (kc == NULL) {
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                      "server failure", mwk_func, false);
         }
@@ -307,24 +310,21 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                     apr_base64_decode_len(req));
         blen = apr_base64_decode(bin_req, req);
 
-        status = webauth_krb5_rd_req(ctxt, bin_req, blen,
-                                     rc->sconf->keytab_path,
-                                     rc->sconf->keytab_principal,
-                                     &client_principal, 0);
+        status = webauth_krb5_read_auth(rc->ctx, kc, bin_req, blen,
+                                        rc->sconf->keytab_path,
+                                        rc->sconf->keytab_principal,
+                                        &client_principal, 0);
 
         if (status != WA_ERR_NONE) {
-            char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                                  "webauth_krb5_rd_req", NULL);
+            char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
+                                                  "webauth_krb5_read_auth",
+                                                  NULL);
             set_errorResponse(rc, WA_PEC_REQUESTER_KRB5_CRED_INVALID, msg,
                               mwk_func, true);
-            webauth_krb5_free(ctxt);
             return MWK_ERROR;
         }
-        webauth_krb5_free(ctxt);
         req_cred->subject = apr_pstrcat(rc->r->pool, "krb5:", client_principal,
                                         NULL);
-        free(client_principal);
-
     } else {
         char *msg = apr_psprintf(rc->r->pool,
                                  "unknown <requesterCredential> type: %s",
@@ -361,7 +361,7 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
     status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_PROXY, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_decode", NULL);
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
@@ -395,7 +395,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
     status = webauth_token_decode(rc->ctx, WA_TOKEN_LOGIN, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_decode", NULL);
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
@@ -503,7 +503,7 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
                                  "no keyring", mwk_func, true);
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, token);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "token create failed", mwk_func, false);
@@ -524,7 +524,7 @@ make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
     ring = rc->sconf->ring;
     status = webauth_token_encode_raw(rc->ctx, data, ring, token, length);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "token create failed", mwk_func, false);
@@ -544,7 +544,7 @@ make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
 
     status = webauth_key_create(rc->ctx, WA_KEY_AES, key_len, key, &wkey);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_key_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "invalid key while creating token",
@@ -553,7 +553,7 @@ make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
     ring = webauth_keyring_from_key(rc->ctx, wkey);
     status = webauth_token_encode(rc->ctx, data, ring, token);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_create", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "token create failed", mwk_func, false);
@@ -592,7 +592,7 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
 
     status = webauth_key_create(rc->ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_create_key", NULL);
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "can't generate session key", mwk_func,
@@ -632,33 +632,31 @@ static enum mwk_status
 get_krb5_sad(MWK_REQ_CTXT *rc,
              MWK_REQUESTER_CREDENTIAL *req_cred,
              struct webauth_token_webkdc_proxy *sub_pt,
-             char **sad,
+             void **sad,
              size_t *sad_len,
              const char *mwk_func)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     int status;
     const char *server_principal;
-    char *temp_sad;
     enum mwk_status ms;
 
-    ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
-    if (ctxt == NULL) {
+    kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
+    if (kc == NULL) {
         /* mwk_get_webauth_krb5_ctxt already logged error */
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                       "server failure (webauth_krb5_new)",
                                       mwk_func, false);
     }
 
-    status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
-                                        NULL);
+    status = webauth_krb5_import_cred(rc->ctx, kc, sub_pt->data,
+                                      sub_pt->data_len, NULL);
 
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r,
-                                              status, ctxt,
-                                              "webauth_krb5_export_ticket",
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r,
+                                              status,
+                                              "webauth_krb5_import_cred",
                                               NULL);
-        webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
@@ -672,10 +670,11 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
         server_principal += 5;
     }
 
-    status = webauth_krb5_mk_req(ctxt, server_principal, &temp_sad, sad_len);
+    status = webauth_krb5_make_auth(rc->ctx, kc, server_principal, sad,
+                                    sad_len);
 
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                               "webauth_krb5_mk_req", NULL);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
@@ -684,13 +683,8 @@ get_krb5_sad(MWK_REQ_CTXT *rc,
         set_errorResponse(rc, WA_PEC_PROXY_TOKEN_INVALID, msg, mwk_func, true);
         ms = MWK_ERROR;
     } else {
-        *sad = apr_palloc(rc->r->pool, *sad_len);
-        memcpy(*sad,  temp_sad, *sad_len);
-        free(temp_sad);
         ms = MWK_OK;
     }
-
-    webauth_krb5_free(ctxt);
     return ms;
 }
 
@@ -710,7 +704,7 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     enum mwk_status ms;
     struct webauth_token_webkdc_proxy *sub_pt;
     struct webauth_token token;
-    char *sad;
+    void *sad;
 
     ms = MWK_ERROR;
 
@@ -927,10 +921,10 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     time_t expiration, ticket_expiration;
     apr_xml_elem *credential_type, *server_principal;
     char *ct, *sp;
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     struct webauth_token_webkdc_proxy *sub_pt;
     struct webauth_token token;
-    char *ticket;
+    void *ticket;
     enum mwk_status ms;
 
     /* only create cred tokens from service creds */
@@ -984,20 +978,19 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     }
 
     /* try to get the credentials  */
-    ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
-    if (ctxt == NULL) {
+    kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
+    if (kc == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                       "server failure", mwk_func, false);
     }
 
-    status = webauth_krb5_init_via_cred(ctxt, sub_pt->data, sub_pt->data_len,
-                                        NULL);
+    status = webauth_krb5_import_cred(rc->ctx, kc, sub_pt->data,
+                                      sub_pt->data_len, NULL);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r,
-                                              status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r,
+                                              status,
                                               "webauth_krb5_init_via_cred",
                                               NULL);
-        webauth_krb5_free(ctxt);
         /* FIXME: probably need to examine errors a little more closely
          *        to determine if we should return a proxy-token error
          *        or a server-failure.
@@ -1007,23 +1000,18 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     }
 
     /* now try and export a ticket */
-    status = webauth_krb5_export_ticket(ctxt,
-                                        sp,
-                                        &ticket,
-                                        &ticket_len,
-                                        &ticket_expiration);
+    status = webauth_krb5_export_cred(rc->ctx, kc, sp, &ticket, &ticket_len,
+                                      &ticket_expiration);
 
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r,
-                                              status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r,
+                                              status,
                                               "webauth_krb5_export_ticket",
                                               NULL);
-        webauth_krb5_free(ctxt);
         return set_errorResponse(rc, WA_PEC_GET_CRED_FAILURE,
                                  msg, mwk_func, true);
     }
 
-    webauth_krb5_free(ctxt);
 
     /* now create the cred-token */
     if (ticket_expiration < sub_pt->expiration)
@@ -1047,7 +1035,6 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
     rtoken->info =
         apr_pstrcat(rc->r->pool, " type=cred crt=", ct, " crs=", sp,NULL);
 
-    free(ticket);
     return ms;
 }
 
@@ -1076,7 +1063,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     status = webauth_key_create(rc->ctx, WA_KEY_AES, st->session_key_len,
                                 st->session_key, &key);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_key_create", NULL);
         return set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
                                  "invalid service token key", mwk_func, true);
@@ -1085,7 +1072,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     status = webauth_token_decode(rc->ctx, WA_TOKEN_REQUEST, token, ring,
                                   &data);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_parse", NULL);
         if (status == WA_ERR_BAD_HMAC) {
             set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_INVALID,
@@ -1341,7 +1328,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
  * so the caller doesn't need to do so.
  */
 static int
-realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
+realm_permitted(MWK_REQ_CTXT *rc, struct webauth_krb5 *kc,
                 const char *mwk_func)
 {
     int status;
@@ -1355,18 +1342,13 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
         return MWK_OK;
 
     /* Get the realm. */
-    status = webauth_krb5_get_realm(ctxt, &realm);
+    status = webauth_krb5_get_realm(rc->ctx, kc, &realm);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                              "webauth_krb5_get_realm", NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
-
-    /*
-     * We assume that all realms listed in the configuration are already
-     * escaped, as is the realm parameter.
-     */
     realms = apr_array_copy(rc->r->pool, rc->sconf->permitted_realms);
     while ((allowed = apr_array_pop(realms)) != NULL)
         if (apr_strnatcmp(*allowed, realm) == 0) {
@@ -1377,10 +1359,8 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
         char *msg = apr_psprintf(rc->r->pool, "realm %s is not permitted",
                                  realm);
         set_errorResponse(rc, WA_PEC_USER_REJECTED, msg, mwk_func, true);
-        free(realm);
         return MWK_ERROR;
     }
-    free(realm);
     return MWK_OK;
 }
 
@@ -1393,10 +1373,9 @@ realm_permitted(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
  * The subject is returned as newly allocated pool memory.
  */
 static int
-get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
-            const char **subject_out, const char *mwk_func)
+get_subject(MWK_REQ_CTXT *rc, struct webauth_krb5 *kc,
+            char **subject, const char *mwk_func)
 {
-    char *subject;
     enum webauth_krb5_canon canonicalize = WA_KRB5_CANON_LOCAL;
     int status;
 
@@ -1419,9 +1398,9 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
             canonicalize = WA_KRB5_CANON_LOCAL;
         } else {
             canonicalize = WA_KRB5_CANON_NONE;
-            status = webauth_krb5_get_realm(ctxt, &realm);
+            status = webauth_krb5_get_realm(rc->ctx, kc, &realm);
             if (status != WA_ERR_NONE) {
-                char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+                char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                                       "webauth_krb5_get_realm",
                                                       NULL);
                 set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func,
@@ -1432,7 +1411,6 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
                 if (apr_strnatcmp(*local, realm) == 0)
                     canonicalize = WA_KRB5_CANON_STRIP;
             } while ((local = apr_array_pop(realms)) != NULL);
-            free(realm);
         }
     }
 
@@ -1440,16 +1418,14 @@ get_subject(MWK_REQ_CTXT *rc, WEBAUTH_KRB5_CTXT *ctxt,
      * We now know the canonicalization method we're using, so we can retrieve
      * the principal from the context.
      */
-    status = webauth_krb5_get_principal(ctxt, &subject, canonicalize);
+    status = webauth_krb5_get_principal(rc->ctx, kc, subject, canonicalize);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                              "webauth_krb5_get_principal",
                                               NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         return MWK_ERROR;
     }
-    *subject_out = apr_pstrdup(rc->r->pool, subject);
-    free(subject);
     return MWK_OK;
 }
 
@@ -1490,7 +1466,7 @@ parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->r->server, status, NULL, mwk_func,
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
                               "webauth_token_decode", NULL);
         if (status == WA_ERR_TOKEN_EXPIRED) {
             set_errorResponse(rc, WA_PEC_SERVICE_TOKEN_EXPIRED,
@@ -1810,6 +1786,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                         false));
     }
 
+    if (response->user_message != NULL)
+        ap_rprintf(rc->r, "<userMessage><![CDATA[%s]]></userMessage>",
+                   response->user_message);
+
     if (response->factors_configured != NULL) {
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
         print_xml_array(rc, "factor", response->factors_wanted);
@@ -1938,29 +1918,27 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
 static enum mwk_status
 handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                               const char **subject_out)
+                               char **subject_out)
 {
     apr_xml_elem *child;
     static const char *mwk_func = "handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
     char *sc_data, *pd_data;
-    char *dpd_data;
+    void *dpd_data, *tgt;
     const char *token_data;
-    char *tgt;
     size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len;
     int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
     time_t tgt_expiration;
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     struct webauth_token token;
 
-    *subject_out = "<unknown>";
+    *subject_out = apr_pstrdup(rc->r->pool, "<unknown>");
     sc_data = NULL;
     pd_data = NULL;
 
     client_principal = NULL;
-    ctxt = NULL;
     ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
@@ -2009,7 +1987,7 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                    sc_data, &sc_len,
                                    sc_blen);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                               "webauth_base64_decode",
                                               "subjectCredential");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
@@ -2021,62 +1999,57 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                    pd_data, &pd_len,
                                    pd_blen);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                        "webauth__base64_decode", "proxyData");
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
+                        "webauth_base64_decode", "proxyData");
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
                                  mwk_func, true);
     }
 
-    ctxt = mwk_get_webauth_krb5_ctxt(rc->r, mwk_func);
+    kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
-    if (ctxt == NULL) {
+    if (kc == NULL) {
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "server failure", mwk_func, false);
     }
 
-    status = webauth_krb5_rd_req_with_data(ctxt,
-                                           sc_data,
-                                           sc_len,
-                                           rc->sconf->keytab_path,
-                                           rc->sconf->keytab_principal,
-                                           &server_principal,
-                                           &client_principal,
-                                           0,
-                                           pd_data,
-                                           pd_len,
-                                           &dpd_data,
-                                           &dpd_len);
+    status = webauth_krb5_read_auth_data(rc->ctx, kc,
+                                         sc_data,
+                                         sc_len,
+                                         rc->sconf->keytab_path,
+                                         rc->sconf->keytab_principal,
+                                         &server_principal,
+                                         &client_principal,
+                                         0,
+                                         pd_data,
+                                         pd_len,
+                                         &dpd_data,
+                                         &dpd_len);
 
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                             "webauth__krb5_rd_req_with_data",
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
+                                             "webauth_krb5_read_auth_data",
                                               NULL);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
         goto cleanup;
     }
+    proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:", server_principal,
+                                NULL);
 
-    proxy_subject = apr_pstrcat(rc->r->pool, "WEBKDC:",
-                                server_principal, NULL);
-    free(server_principal);
-
-    status = webauth_krb5_init_via_cred(ctxt, dpd_data, dpd_len, NULL);
-    free(dpd_data);
+    status = webauth_krb5_import_cred(rc->ctx, kc, dpd_data, dpd_len, NULL);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "webauth_krb5_init_via_cred",
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
+                                              "webauth_krb5_import_cred",
                                               NULL);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg, mwk_func, true);
-        free(client_principal);
         goto cleanup;
     }
-    status = webauth_krb5_get_principal(ctxt, &check_principal,
+    status = webauth_krb5_get_principal(rc->ctx, kc, &check_principal,
                                         WA_KRB5_CANON_NONE);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
                                               "webauth_krb5_get_principal",
                                               NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
-        free(client_principal);
         goto cleanup;
     }
 
@@ -2085,38 +2058,30 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
      * the authentication principal.
      */
     if (strcmp(client_principal, check_principal) != 0) {
-        free(client_principal);
-        free(check_principal);
         set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                           "authenticator and Kerberos TGT mismatch",
                           mwk_func, true);
         goto cleanup;
     }
-    free(client_principal);
-    free(check_principal);
 
     /* Check if the realm of the authenticated principal is permitted. */
-    if (realm_permitted(rc, ctxt, mwk_func) != MWK_OK)
+    if (realm_permitted(rc, kc, mwk_func) != MWK_OK)
         goto cleanup;
 
     /* Get the subject and canonicalize the authentication identity. */
-    if (get_subject(rc, ctxt, subject_out, mwk_func) != MWK_OK)
+    if (get_subject(rc, kc, subject_out, mwk_func) != MWK_OK)
         goto cleanup;
 
     /* now export the tgt again, for sanity checking and to get
        expiration */
-    status = webauth_krb5_export_tgt(ctxt, &tgt, &tgt_len, &tgt_expiration);
+    status = webauth_krb5_export_cred(rc->ctx, kc, NULL, &tgt, &tgt_len,
+                                      &tgt_expiration);
     if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->r, status, ctxt,
-                                              "webauth_krb5_export_tgt",
+        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
+                                              "webauth_krb5_export_cred",
                                               NULL);
         set_errorResponse(rc, WA_PEC_SERVER_FAILURE, msg, mwk_func, true);
         goto cleanup;
-    } else {
-        char *new_tgt = apr_palloc(rc->r->pool, tgt_len);
-        memcpy(new_tgt, tgt, tgt_len);
-        free(tgt);
-        tgt = new_tgt;
     }
 
     /* if ProxyTopkenLifetime is non-zero, use the min of it
@@ -2144,7 +2109,6 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         char *p;
         p = apr_array_pstrcat(rc->r->pool, rc->sconf->kerberos_factors, ',');
         token.token.webkdc_proxy.initial_factors = p;
-
     } else {
         token.token.webkdc_proxy.initial_factors = "u";
     }
@@ -2178,13 +2142,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  *subject_out);
     ms = MWK_OK;
 
- cleanup:
-
-    if (ctxt != NULL)
-        webauth_krb5_free(ctxt);
-
+cleanup:
     return ms;
-
 }
 
 
@@ -2354,7 +2313,7 @@ parse_request(MWK_REQ_CTXT *rc)
                          );
         }
     } else if (strcmp(xd->root->name, "webkdcProxyTokenRequest") == 0) {
-        const char *sub;
+        char *sub;
 
         if (!handle_webkdcProxyTokenRequest(rc, xd->root, &sub)) {
             generate_errorResponse(rc);

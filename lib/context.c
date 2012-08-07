@@ -5,7 +5,7 @@
  * state required by the WebAuth APIs.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -16,8 +16,8 @@
 #include <portable/system.h>
 
 #include <lib/internal.h>
-#include <webauth.h>
 #include <webauth/basic.h>
+#include <util/macros.h>
 
 
 /*
@@ -89,9 +89,8 @@ webauth_context_init_apr(struct webauth_context **context, apr_pool_t *parent)
  * webauth_context_init_apr.
  */
 void
-webauth_context_free(struct webauth_context *ctx)
+webauth_context_free(struct webauth_context *ctx UNUSED)
 {
-    apr_pool_destroy(ctx->pool);
     apr_terminate();
 }
 

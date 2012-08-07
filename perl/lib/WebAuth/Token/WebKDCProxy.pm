@@ -135,7 +135,7 @@ entity is permitted to use the token.
 
 Get or set any data associated with the webkdc-proxy token.  For a token
 with proxy_type C<krb5>, this will be a Kerberos TGT encoded in the format
-created by the krb5_export_tgt() function of the WebAuth module.
+created by the export_cred() function of the WebAuth::Krb5 module.
 
 =item initial_factors ([FACTORS])
 
@@ -169,7 +169,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 SEE ALSO
 
-WebAuth(3), WebAuth::Keyring(3), WebAuth::Token(3)
+WebAuth(3), WebAuth::Keyring(3), WebAuth::Krb5(3), WebAuth::Token(3)
 
 This module is part of WebAuth.  The current version is available from
 L<http://webauth.stanford.edu/>.

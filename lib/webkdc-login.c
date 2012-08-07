@@ -20,6 +20,7 @@
 #include <lib/internal.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
+#include <webauth/krb5.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
@@ -42,11 +43,11 @@
  * "local", which is the default.
  */
 static int
-canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
+canonicalize_user(struct webauth_context *ctx, struct webauth_krb5 *kc,
                   const char **result)
 {
-    char *subject;
     int status, i;
+    char *subject;
     enum webauth_krb5_canon canonicalize = WA_KRB5_CANON_LOCAL;
 
     *result = NULL;
@@ -61,7 +62,7 @@ canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
             canonicalize = WA_KRB5_CANON_LOCAL;
         else {
             canonicalize = WA_KRB5_CANON_NONE;
-            status = webauth_krb5_get_realm(kctx, &realm);
+            status = webauth_krb5_get_realm(ctx, kc, &realm);
             if (status != WA_ERR_NONE)
                 return status;
             for (i = 0; i < ctx->webkdc->local_realms->nelts; i++) {
@@ -70,19 +71,18 @@ canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
                 if (strcmp(local, realm) == 0)
                     canonicalize = WA_KRB5_CANON_STRIP;
             }
-            free(realm);
         }
     }
 
     /*
      * We now know the canonicalization method we're using, so we can retrieve
-     * the principal from the context.
+     * the principal from the context.  Move the result into the main WebAuth
+     * context pool.
      */
-    status = webauth_krb5_get_principal(kctx, &subject, canonicalize);
+    status = webauth_krb5_get_principal(ctx, kc, &subject, canonicalize);
     if (status != WA_ERR_NONE)
         return status;
     *result = apr_pstrdup(ctx->pool, subject);
-    free(subject);
     return WA_ERR_NONE;
 }
 
@@ -95,12 +95,12 @@ canonicalize_user(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
  * message appropriately.
  */
 static int
-realm_permitted(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
+realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
                 struct webauth_webkdc_login_response *response)
 {
     int status, i;
     char *realm;
-    const char *allowed;
+    const char *allow;
     bool okay = false;
 
     /* If we aren't restricting the realms, always return true. */
@@ -108,7 +108,7 @@ realm_permitted(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
         return WA_ERR_NONE;
 
     /* Get the realm. */
-    status = webauth_krb5_get_realm(kctx, &realm);
+    status = webauth_krb5_get_realm(ctx, kc, &realm);
     if (status != WA_ERR_NONE)
         goto done;
 
@@ -117,8 +117,8 @@ realm_permitted(struct webauth_context *ctx, WEBAUTH_KRB5_CTXT *kctx,
      * escaped, as is the realm parameter.
      */
     for (i = 0; i < ctx->webkdc->permitted_realms->nelts; i++) {
-        allowed = APR_ARRAY_IDX(ctx->webkdc->permitted_realms, i, const char *);
-        if (strcmp(allowed, realm) == 0) {
+        allow = APR_ARRAY_IDX(ctx->webkdc->permitted_realms, i, const char *);
+        if (strcmp(allow, realm) == 0) {
             okay = true;
             break;
         }
@@ -207,30 +207,24 @@ do_login(struct webauth_context *ctx,
          struct webauth_token **wkproxy)
 {
     int status;
-    WEBAUTH_KRB5_CTXT *kctx;
+    struct webauth_krb5 *kc;
+    char *webkdc;
     const char *subject;
-    char *webkdc, *tmp;
-    char *tgt, *tmp_tgt;
+    void *tgt;
     size_t tgt_len;
     time_t expires;
     struct webauth_token_webkdc_proxy *pt;
 
-    status = webauth_krb5_new(&kctx);
-    if (status != WA_ERR_NONE) {
-        if (status == WA_ERR_KRB5)
-            webauth_krb5_free(kctx);
+    status = webauth_krb5_new(ctx, &kc);
+    if (status != WA_ERR_NONE)
         return status;
-    }
-    status = webauth_krb5_init_via_password(kctx,
-                                            login->username,
-                                            login->password,
-                                            NULL,
+    status = webauth_krb5_init_via_password(ctx, kc, login->username,
+                                            login->password, NULL,
                                             ctx->webkdc->keytab_path,
                                             ctx->webkdc->principal,
-                                            NULL,
-                                            &webkdc);
+                                            NULL, &webkdc);
     switch (status) {
-    case 0:
+    case WA_ERR_NONE:
         break;
     case WA_ERR_LOGIN_FAILED:
         response->login_error = WA_PEC_LOGIN_FAILED;
@@ -247,9 +241,6 @@ do_login(struct webauth_context *ctx,
         response->login_message = webauth_error_message(ctx, status);
         status = WA_ERR_NONE;
         goto cleanup;
-    case WA_ERR_KRB5:
-        webauth_error_set(ctx, status, "%s", webauth_krb5_error_message(kctx));
-        /* fall through */
     default:
         return status;
     }
@@ -257,32 +248,29 @@ do_login(struct webauth_context *ctx,
     /*
      * webauth_krb5_init_via_password determined the principal of the WebKDC
      * service to which we just authenticated and stored that information in
-     * webkdc, but it's not yet poolified, so make a copy in our memory pool
-     * so that we can free it.
+     * webkdc, but we need to add the krb5 prefix.
      */
-    tmp = apr_pstrcat(ctx->pool, "krb5:", webkdc, NULL);
-    free(webkdc);
-    webkdc = tmp;
+    webkdc = apr_pstrcat(ctx->pool, "krb5:", webkdc, NULL);
 
     /*
      * Check if the realm of the authenticated principal is permitted and
      * then canonicalize the user's identity.
      */
-    status = realm_permitted(ctx, kctx, response);
+    status = realm_permitted(ctx, kc, response);
     if (status != WA_ERR_NONE || response->login_error != 0)
         goto cleanup;
-    status = canonicalize_user(ctx, kctx, &subject);
+    status = canonicalize_user(ctx, kc, &subject);
     if (status != WA_ERR_NONE)
         goto cleanup;
 
-    /* Export the ticket-granting ticket for the webkdc-proxy token. */
-    status = webauth_krb5_export_tgt(kctx, &tgt, &tgt_len, &expires);
+    /*
+     * Export the ticket-granting ticket for the webkdc-proxy token and move
+     * it into the context pool from the Kerberos context pool.
+     */
+    status = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgt_len, &expires);
     if (status != WA_ERR_NONE)
         goto cleanup;
-    tmp_tgt = apr_palloc(ctx->pool, tgt_len);
-    memcpy(tmp_tgt, tgt, tgt_len);
-    free(tgt);
-    tgt = tmp_tgt;
+    tgt = apr_pmemdup(ctx->pool, tgt, tgt_len);
 
     /*
      * We now have everything we need to create the webkdc-proxy token.  We've
@@ -308,7 +296,7 @@ do_login(struct webauth_context *ctx,
     }
 
 cleanup:
-    webauth_krb5_free(kctx);
+    webauth_krb5_free(ctx, kc);
     return status;
 }
 
@@ -493,7 +481,7 @@ get_user_info(struct webauth_context *ctx,
 
     /* Call the user information service. */
     status = webauth_user_info(ctx, wkproxy->subject, request->remote_ip,
-                               randmf, info);
+                               randmf, req->return_url, info);
     if (status != WA_ERR_NONE)
         return status;
 
@@ -654,33 +642,25 @@ check_multifactor(struct webauth_context *ctx,
 static int
 get_krb5_authenticator(struct webauth_context *ctx, const char *server,
                        struct webauth_token_webkdc_proxy *wkproxy,
-                       void **krb5_auth, size_t *krb5_auth_len)
+                       void **auth, size_t *auth_len)
 {
     int status;
-    WEBAUTH_KRB5_CTXT *kctx;
-    char *tmp_auth;
+    struct webauth_krb5 *kc;
+    void *data;
 
-    *krb5_auth = NULL;
-    status = webauth_krb5_new(&kctx);
-    if (status != WA_ERR_NONE) {
-        if (status == WA_ERR_KRB5)
-            webauth_krb5_free(kctx);
+    *auth = NULL;
+    status = webauth_krb5_new(ctx, &kc);
+    if (status != WA_ERR_NONE)
         return status;
-    }
 
     /*
      * FIXME: Probably need to examine errors a little more closely to
      * determine if we should return a proxy-token error or a server-failure.
      */
-    status = webauth_krb5_init_via_cred(kctx, wkproxy->data,
-                                        wkproxy->data_len, NULL);
-    if (status != WA_ERR_NONE) {
-        if (status == WA_ERR_KRB5)
-            webauth_error_set(ctx, status, "%s",
-                              webauth_krb5_error_message(kctx));
-        webauth_krb5_free(kctx);
-        return status;
-    }
+    status = webauth_krb5_import_cred(ctx, kc, wkproxy->data,
+                                      wkproxy->data_len, NULL);
+    if (status != WA_ERR_NONE)
+        goto done;
 
     /*
      * Generate the Kerberos authenticator.
@@ -690,20 +670,13 @@ get_krb5_authenticator(struct webauth_context *ctx, const char *server,
      */
     if (strncmp(server, "krb5:", 5) == 0)
         server += 5;
-    status = webauth_krb5_mk_req(kctx, server, &tmp_auth, krb5_auth_len);
-    if (status != WA_ERR_NONE) {
-        if (status == WA_ERR_KRB5)
-            webauth_error_set(ctx, status, "%s",
-                              webauth_krb5_error_message(kctx));
-        webauth_krb5_free(kctx);
-        return status;
-    } else {
-        *krb5_auth = apr_palloc(ctx->pool, *krb5_auth_len);
-        memcpy(*krb5_auth, tmp_auth, *krb5_auth_len);
-        free(tmp_auth);
-    }
-    webauth_krb5_free(kctx);
-    return WA_ERR_NONE;
+    status = webauth_krb5_make_auth(ctx, kc, server, &data, auth_len);
+    if (status == WA_ERR_NONE)
+        *auth = apr_pmemdup(ctx->pool, data, *auth_len);
+
+done:
+    webauth_krb5_free(ctx, kc);
+    return status;
 }
 
 
@@ -1026,6 +999,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                &info);
         if (status != WA_ERR_NONE)
             return status;
+        if (info->error != NULL) {
+            (*response)->login_error = WA_PEC_AUTH_REJECTED;
+            (*response)->login_message
+                = "authentication rejected by user information service";
+            (*response)->user_message = info->error;
+            return WA_ERR_NONE;
+        }
     }
 
     /*

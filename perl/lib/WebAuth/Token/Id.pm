@@ -121,7 +121,7 @@ that the token contains a Kerberos authenticator.
 
 Get or set the authentication data.  If the authenticator type is C<krb5>,
 this will hold a Kerberos authenticator such as is created by the
-krb5_mk_req() function of the WebAuth module.  It is raw binary data.
+make_auth() function of the WebAuth::Krb5 module.  It is raw binary data.
 
 =item initial_factors ([FACTORS])
 
@@ -162,7 +162,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 SEE ALSO
 
-WebAuth(3), WebAuth::Keyring(3), WebAuth::Token(3)
+WebAuth(3), WebAuth::Keyring(3), WebAuth::Krb5(3), WebAuth::Token(3)
 
 This module is part of WebAuth.  The current version is available from
 L<http://webauth.stanford.edu/>.

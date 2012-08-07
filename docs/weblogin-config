@@ -95,6 +95,7 @@ Templates
 
   error.tmpl
 
+      err_html                  If set, the entire HTML to display
       err_bad_method            If set, login form submitted without POST
       err_cookies_disabled      If set, user doesn't have cookies enabled
       err_no_request_token      If set, user had no request token

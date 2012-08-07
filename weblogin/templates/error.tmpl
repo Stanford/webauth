@@ -11,6 +11,7 @@ This is the template for the WebAuth error page.  It is displayed whenever
 the login.fcgi script on the weblogin server encounters an error.
 Variables used:
 
+err_html                  : the complete HTML text of the error
 err_bad_method            : browser submitted login page via GET not POST
 err_cookies_disabled      : cookies disabled in the web browser
 err_no_request_token      : no request token (user went straight to weblogin)
@@ -46,6 +47,9 @@ works of this work.
                    width="160" height="160"/></td>
           <td>
             <div class="errortext">
+              [% IF err_html %]
+                [% err_html %]
+              [% ELSE %]
               <p><strong>An error has occurred</strong></p>
 
               <!-- Error: browser submitted login page via GET -->
@@ -133,6 +137,7 @@ works of this work.
               (or you may need to start your request for this web
               service again).  Click <a href="/help.html">help</a> for
               assistance</p>
+              [% END %]
             </div>
           </td>
         </tr>
