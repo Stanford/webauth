@@ -1,8 +1,9 @@
-libwebauth.so.7 libwebauth7 #MINVER#
+libwebauth.so.8 libwebauth8 #MINVER#
 * Build-Depends-Package: libwebauth-dev
  WEBAUTH_3@WEBAUTH_3 4.0.0
  WEBAUTH_4_1@WEBAUTH_4_1 4.1.0
  WEBAUTH_4_2@WEBAUTH_4_2 4.2.0
+ WEBAUTH_4_3@WEBAUTH_4_3 4.3.0
  webauth_attr_list_add@WEBAUTH_4_1 4.1.0
  webauth_attr_list_add_int32@WEBAUTH_4_1 4.1.0
  webauth_attr_list_add_str@WEBAUTH_4_1 4.1.0
@@ -44,27 +45,22 @@ libwebauth.so.7 libwebauth7 #MINVER#
  webauth_keyring_read@WEBAUTH_4_2 4.2.0
  webauth_keyring_remove@WEBAUTH_4_2 4.2.0
  webauth_keyring_write@WEBAUTH_4_2 4.2.0
- webauth_krb5_change_password@WEBAUTH_3 4.0.0
- webauth_krb5_error_code@WEBAUTH_3 4.0.0
- webauth_krb5_error_message@WEBAUTH_3 4.0.0
- webauth_krb5_export_tgt@WEBAUTH_3 4.0.0
- webauth_krb5_export_ticket@WEBAUTH_3 4.0.0
- webauth_krb5_free@WEBAUTH_3 4.0.0
- webauth_krb5_get_cache@WEBAUTH_3 4.0.0
- webauth_krb5_get_principal@WEBAUTH_3 4.0.0
- webauth_krb5_get_realm@WEBAUTH_3 4.0.0
- webauth_krb5_import_cred@WEBAUTH_3 4.0.0
- webauth_krb5_init_via_cache@WEBAUTH_3 4.0.0
- webauth_krb5_init_via_cred@WEBAUTH_3 4.0.0
- webauth_krb5_init_via_keytab@WEBAUTH_3 4.0.0
- webauth_krb5_init_via_password@WEBAUTH_3 4.0.0
- webauth_krb5_keep_cred_cache@WEBAUTH_3 4.0.0
- webauth_krb5_mk_req@WEBAUTH_3 4.0.0
- webauth_krb5_mk_req_with_data@WEBAUTH_3 4.0.0
- webauth_krb5_new@WEBAUTH_3 4.0.0
- webauth_krb5_prepare_via_cred@WEBAUTH_4_2 4.2.0
- webauth_krb5_rd_req@WEBAUTH_3 4.0.0
- webauth_krb5_rd_req_with_data@WEBAUTH_3 4.0.0
+ webauth_krb5_change_password@WEBAUTH_4_3 4.3.0
+ webauth_krb5_export_cred@WEBAUTH_4_3 4.3.0
+ webauth_krb5_free@WEBAUTH_4_3 4.3.0
+ webauth_krb5_get_cache@WEBAUTH_4_3 4.3.0
+ webauth_krb5_get_principal@WEBAUTH_4_3 4.3.0
+ webauth_krb5_get_realm@WEBAUTH_4_3 4.3.0
+ webauth_krb5_import_cred@WEBAUTH_4_3 4.3.0
+ webauth_krb5_init_via_cache@WEBAUTH_4_3 4.3.0
+ webauth_krb5_init_via_keytab@WEBAUTH_4_3 4.3.0
+ webauth_krb5_init_via_password@WEBAUTH_4_3 4.3.0
+ webauth_krb5_make_auth@WEBAUTH_4_3 4.3.0
+ webauth_krb5_make_auth_data@WEBAUTH_4_3 4.3.0
+ webauth_krb5_new@WEBAUTH_4_3 4.3.0
+ webauth_krb5_prepare_via_cred@WEBAUTH_4_3 4.3.0
+ webauth_krb5_read_auth@WEBAUTH_4_3 4.3.0
+ webauth_krb5_read_auth_data@WEBAUTH_4_3 4.3.0
  webauth_parse_interval@WEBAUTH_3 4.0.0
  webauth_token_decode@WEBAUTH_4_2 4.2.0
  webauth_token_decode_raw@WEBAUTH_4_2 4.2.0
