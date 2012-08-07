@@ -84,8 +84,8 @@ lib_LTLIBRARIES = lib/libwebauth.la
 include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
-	include/webauth/tokens.h include/webauth/util.h			\
-	include/webauth/webkdc.h
+	include/webauth/krb5.h include/webauth/tokens.h			\
+	include/webauth/util.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
 	lib/attr-encode.c lib/attrs.c lib/base64.c lib/context.c	    \
