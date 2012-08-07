@@ -1070,7 +1070,7 @@ init_via_keytab(self, keytab, server = NULL, cache = NULL)
 
 
 const char *
-init_via_password(self, username, password, principal, keytab = NULL, \
+init_via_password(self, username, password, principal = NULL, keytab = NULL, \
                   server = NULL, cache = NULL)
     WebAuth::Krb5 self
     const char *username
@@ -1079,7 +1079,7 @@ init_via_password(self, username, password, principal, keytab = NULL, \
     const char *keytab
     const char *server
     const char *cache
-  PROTOTYPE: $$$$;$$$
+  PROTOTYPE: $$$;$$$$
   PREINIT:
     char *servername;
     int status;
@@ -1087,6 +1087,8 @@ init_via_password(self, username, password, principal, keytab = NULL, \
 {
     if (principal != NULL && principal[0] == '\0')
        principal = NULL;
+    if (server != NULL && server[0] == '\0')
+       server = NULL;
     status = webauth_krb5_init_via_password(self->ctx, self->kc, username,
                                             password, principal, keytab,
                                             server, cache, &servername);
@@ -1157,10 +1159,10 @@ import_cred(self, cred, cache = NULL)
 
 
 char *
-get_principal(self, canon)
+get_principal(self, canon = 0)
     WebAuth::Krb5 self
     enum webauth_krb5_canon canon
-  PROTOTYPE: $$
+  PROTOTYPE: $;$
   PREINIT:
     int status;
     char *principal;
@@ -1220,14 +1222,14 @@ make_auth(self, server, data = NULL)
 
 
 void
-read_auth(self, request, keytab, server, canon, data = NULL)
+read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
     WebAuth::Krb5 self
     SV *request
     const char *keytab
     const char *server
     enum webauth_krb5_canon canon
     SV *data
-  PROTOTYPE: $$$$$;$
+  PROTOTYPE: $$$;$$$
   PPCODE:
 {
     const void *req;
