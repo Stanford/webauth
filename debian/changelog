@@ -19,6 +19,8 @@ webauth (4.3.0-1) UNRELEASED; urgency=low
     - Kerberos realms are no longer escaped before matching them against
       the Apache configuration.  This only affects handling of realm names
       with unusual characters.
+  * Mark webauth-tests and webauth-weblogin as Multi-Arch: foreign.  This
+    is necessary even for arch: all packages.
 
  -- Russ Allbery <rra@debian.org>  Mon, 06 Aug 2012 19:02:38 -0700
 

@@ -156,6 +156,7 @@ Description: Perl libraries for WebAuth central login server
 
 Package: webauth-tests
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends}, libapache2-mod-webauth
 Suggests: libapache2-mod-php5
 Description: Tests for the WebAuth authentication modules
@@ -182,6 +183,7 @@ Description: Command-line utilities for WebAuth authentication
 
 Package: webauth-weblogin
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.0.0~),
  libwebkdc-perl (>= 4.0.0~)
 Recommends: httpd-cgi
