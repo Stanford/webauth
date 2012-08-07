@@ -1,10 +1,20 @@
-webauth (4.2.0-1) UNRELEASED; urgency=low
+webauth (4.3.0-1) UNRELEASED; urgency=low
 
   * New upstream release.
     - Add support for Apache 2.4.
     - Support for AuthType StanfordAuth has been deprecated, and the
       corresponding mod_webauthldap support is not available when built
       against Apache 2.4.
+    - mod_webauth now sets HttpOnly on cookies by default.  There is a new
+      WebAuthHttpOnly flag to disable this behavior.
+    - WebLogin now sets HttpOnly on all cookies.
+    - Add new optional <userMessage> element to <requestTokenResponse>
+      from the WebKDC and a new error code to indicate that this HTML
+      error should be displayed to the user.
+    - Support an <error> return element from the user information
+      service and pass it as the <userMessage> element.
+    - Add WebLogin support via an err_html parameter to display the error
+      returned in the <userMessage> element from the WebKDC.
     - Support use of Kerberos keyring caches for passing delegated
       credentials from mod_webauth to CGI and embedded code.
     - Fix merging of mod_webkdc Apache directives in corner cases.
@@ -18,6 +28,14 @@ webauth (4.2.0-1) UNRELEASED; urgency=low
       of the APIs have been simplified or renamed.
     - The webauth_random_bytes, webauth_random_key, webauth_token_create,
       and webauth_token_parse APIs have been removed
+    - Change all Kerberos functions in the WebAuth library API to take the
+      WebAuth context and use APR.  Remove some unused functions, merge
+      others, and rename others.  Update the Perl API to match.  Any Perl
+      programs that call WebAuth Kerberos functions will require updates.
+    - Fix decoding of Kerberos credentials with a second ticket.
+    - Kerberos realms are no longer escaped before matching them against
+      the Apache configuration.  This only affects handling of realm names
+      with unusual characters.
     - All Perl modules now have POD documentation.
   * libwebauth-dev now suggests libapr1-dev since it is required to use
     the parts of the API that require APR (such as keyring traversal or
