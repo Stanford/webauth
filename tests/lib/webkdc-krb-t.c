@@ -36,7 +36,7 @@ main(void)
     struct webauth_key *session_key;
     struct kerberos_config *krbconf;
     int status;
-    char *keyring;
+    char *keyring, *err;
     time_t now;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
@@ -75,7 +75,7 @@ main(void)
              webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
-    plan(81);
+    plan(96);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -197,8 +197,52 @@ main(void)
         ok(token->token.id.auth_data != NULL, "...and there is auth data");
     }
 
-    /* Get a proxy token instead. */
+    /* Test permitted realm support with a realm that is allowed. */
+    APR_ARRAY_PUSH(config.permitted_realms, const char *) = krbconf->realm;
+    status = webauth_webkdc_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
     req.options = NULL;
+    req.auth = "webkdc";
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(2, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string(krbconf->userprinc, token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+    }
+
+    /* Test permitted realm support with a realm that is denied. */
+    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    APR_ARRAY_PUSH(config.permitted_realms, const char *) = "FOO.EXAMPLE.COM";
+    status = webauth_webkdc_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
+    is_int(WA_PEC_USER_REJECTED, response->login_error,
+           "...with correct login error");
+    err = apr_psprintf(pool, "realm %s is not permitted", krbconf->realm);
+    is_string(err, response->login_message, "...and no message");
+    ok(response->result == NULL, "...and there is no result token");
+
+    /* Get a proxy token instead. */
+    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    status = webauth_webkdc_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Clearing permitted realms succeeds");
     request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "proxy";
