@@ -41,6 +41,18 @@
 # include <config.h>
 #endif
 
+/*
+ * Automake always defines this, which causes Heimdal to pull in its config.h
+ * and leak Autoconf definitions into the package namespace, which in turn
+ * conflicts with Apache's own definitions.  Undefine it to work around that
+ * problem.
+ *
+ * Arguably, this should be in portable/krb5.h, since the problem is actually
+ * in the Heimdal headers, but it only poses problems when using the Apache
+ * includes, which also leak the package defines.
+ */
+#undef HAVE_CONFIG_H
+
 #include <httpd.h>
 #include <http_config.h>
 #include <http_core.h>

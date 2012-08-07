@@ -2,6 +2,12 @@
 
 Protocol:
 
+ * WEBAUTH-108: Replace (or supplement; backwards compatibility will be
+   necessary for a long time) the WebAuth protocol with a new protocol
+   built on top of OpenID Connect (or OAuth 2.0) to make it easier to
+   implement WebAuth servers and clients and to allow WebAuth to be more
+   usable for program-to-program authentication.
+
  * WEBAUTH-27: Currently, there is no good logout strategy other than
    closing the browser, since the user remains logged in to each web site
    they've visited even if they go to the logout page on the weblogin
@@ -73,6 +79,9 @@ Protocol:
    should be done in combination with some of the other changes for use of
    ? in URLs as a bundle of new-format token changes.
 
+ * WEBAUTH-42: Stop including addresses in serialized Kerberos tickets and
+   figure out what to do about the is_skey attribute.
+
 General:
 
  * WEBAUTH-34: Currently, all module errors are logged with ap_log_error.
@@ -135,19 +144,6 @@ libwebauth:
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so
    that two processes don't simultaneously update a keyring.
 
- * WEBAUTH-42: Stop including addresses in serialized Kerberos tickets and
-   figure out what to do about the is_skey attribute.
-
- * WEBAUTH-43: Once logging is available, log better error messages when
-   reading keytabs and obtaining initial credentials fails.
-
- * WEBAUTH-44: Replace the internal verify_tgt function with
-   krb5_verify_init_creds.
-
- * WEBAUTH-45: The code to get a Kerberos error message always just uses
-   com_err right now.  This needs modification to call the appropriate
-   Kerberos error message function.
-
  * WEBAUTH-46: Support configuration of options for initial Kerberos
    tickets, such as ticket lifetime.  We also probably want to suppress
    some options by default that we never use.
@@ -169,8 +165,6 @@ mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
    clearer about object lifetimes.
-
- * WEBAUTH-4: Support setting HttpOnly flag in the generated cookies.
 
  * WEBAUTH-49: Provide a way to force reauthentication of a user who has
    valid credentials but ones that are about to expire, and apply it only
@@ -267,8 +261,6 @@ mod_webkdc:
    destination based on information from the user information service.
 
 WebLogin:
-
- * WEBAUTH-4: Set HttpOnly flag in the generated cookies.
 
  * WEBAUTH-14: Pass the password expiration information to the templates
    as seconds since epoch rather than as pre-formatted dates.  This will

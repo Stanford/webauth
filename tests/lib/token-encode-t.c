@@ -596,6 +596,7 @@ main(void)
                       "missing message for error token");
 
     /* Flesh out an id token, and then encode and decode it. */
+    id.subject = NULL;
     id.auth = "krb5";
     id.auth_data = "s=ome\0da;;ta";
     id.auth_data_len = 12;

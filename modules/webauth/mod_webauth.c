@@ -13,7 +13,6 @@
 #include <portable/apr.h>
 #include <portable/stdbool.h>
 
-#include <mod_auth.h>
 #include <unistd.h>
 
 #include <modules/webauth/mod_webauth.h>
@@ -256,10 +255,11 @@ fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
     mwa_setn_note(rc->r,
                   "mod_webauth_COOKIE_",
                   name,
-                  "%s=%s; path=/;%s",
+                  "%s=%s; path=/%s%s",
                   name,
                   value,
-                  is_https(rc->r) ? "secure" : "");
+                  is_https(rc->r) ? "; secure" : "",
+                  rc->sconf->httponly ? "; HttpOnly" : "");
 }
 
 

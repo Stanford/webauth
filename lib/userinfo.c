@@ -24,8 +24,8 @@
 #include <time.h>
 
 #include <lib/internal.h>
-#include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/krb5.h>
 #include <webauth/webkdc.h>
 #include <util/macros.h>
 
@@ -211,7 +211,9 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
     info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     for (child = doc->root->first_child; child != NULL; child = child->next) {
         status = WA_ERR_NONE;
-        if (strcmp(child->name, "factors") == 0)
+        if (strcmp(child->name, "error") == 0)
+            status = webauth_xml_content(ctx, child, &info->error);
+        else if (strcmp(child->name, "factors") == 0)
             status = parse_factors(ctx, child, &info->factors);
         else if (strcmp(child->name, "multifactor-required") == 0)
             info->multifactor_required = true;
@@ -296,7 +298,7 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     char errbuf[BUFSIZ] = "";
     struct buffer *errors;
     struct webauth_user_config *c = ctx->user;
-    WEBAUTH_KRB5_CTXT *kctx = NULL;
+    struct webauth_krb5 *kc = NULL;
     char *cache;
     int status;
 
@@ -318,35 +320,23 @@ remctl_generic(struct webauth_context *ctx, const char **command,
      * If remctl_set_ccache fails or doesn't exist, we fall back on just
      * whacking the global KRB5CCNAME variable.
      */
-    status = webauth_krb5_new(&kctx);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "initializing Kerberos context");
+    status = webauth_krb5_new(ctx, &kc);
+    if (status != WA_ERR_NONE)
         goto fail;
-    }
-    status = webauth_krb5_init_via_keytab(kctx, c->keytab, c->principal, NULL);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "%s", webauth_krb5_error_message(kctx));
+    status = webauth_krb5_init_via_keytab(ctx, kc, c->keytab, c->principal,
+                                          NULL);
+    if (status != WA_ERR_NONE)
         goto fail;
-    }
-    status = webauth_krb5_get_cache(kctx, &cache);
-    if (cache == NULL) {
-        if (status == WA_ERR_KRB5)
-            webauth_error_set(ctx, status, "%s",
-                              webauth_krb5_error_message(kctx));
-        else
-            webauth_error_set(ctx, status, "%s",
-                              webauth_error_message(NULL, status));
+    status = webauth_krb5_get_cache(ctx, kc, &cache);
+    if (status != WA_ERR_NONE)
         goto fail;
-    }
     if (!remctl_set_ccache(r, cache)) {
         if (setenv("KRB5CCNAME", cache, 1) < 0) {
             status = WA_ERR_NO_MEM;
             webauth_error_set(ctx, status, "setting KRB5CCNAME");
-            free(cache);
             goto fail;
         }
     }
-    free(cache);
 
     /* Set a timeout if one was given. */
     if (c->timeout > 0)
@@ -418,8 +408,6 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     } while (out->type == REMCTL_OUT_OUTPUT);
     remctl_close(r);
     r = NULL;
-    webauth_krb5_free(kctx);
-    kctx = NULL;
 
     /*
      * We have an accumulated XML document in the parser and don't think we've
@@ -438,8 +426,6 @@ fail:
         apr_xml_parser_done(parser, NULL);
     if (r != NULL)
         remctl_close(r);
-    if (kctx != NULL)
-        webauth_krb5_free(kctx);
     return status;
 }
 #else /* !HAVE_REMCTL */
@@ -462,10 +448,11 @@ remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
  */
 static int
 remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
-            int random_multifactor, struct webauth_user_info **info)
+            int random_multifactor, const char *url,
+            struct webauth_user_info **info)
 {
     int status;
-    const char *argv[7];
+    const char *argv[8];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
 
@@ -475,7 +462,8 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     argv[3] = ip;
     argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) time(NULL));
     argv[5] = apr_psprintf(ctx->pool, "%d", random_multifactor ? 1 : 0);
-    argv[6] = NULL;
+    argv[6] = url;
+    argv[7] = NULL;
     status = remctl_generic(ctx, argv, &doc);
     if (status != WA_ERR_NONE)
         return status;
@@ -557,7 +545,7 @@ check_config(struct webauth_context *ctx)
 int
 webauth_user_info(struct webauth_context *ctx, const char *user,
                   const char *ip, int random_multifactor,
-                  struct webauth_user_info **info)
+                  const char *url, struct webauth_user_info **info)
 {
     int status;
 
@@ -569,7 +557,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        status = remctl_info(ctx, user, ip, random_multifactor, info);
+        status = remctl_info(ctx, user, ip, random_multifactor, url, info);
         break;
     case WA_PROTOCOL_NONE:
     default:

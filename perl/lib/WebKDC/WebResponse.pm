@@ -83,7 +83,7 @@ sub proxy_cookie {
 # Return the proxy cookies as a hash.
 sub proxy_cookies {
     my ($self) = @_;
-    return $self->{'cookies'};
+    return $self->{cookies};
 }
 
 # Login history and needed and configured factors are stored in arrays.  Note

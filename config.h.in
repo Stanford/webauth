@@ -66,6 +66,9 @@
 /* Define to 1 if you have the `krb5_free_error_message' function. */
 #undef HAVE_KRB5_FREE_ERROR_MESSAGE
 
+/* Define to 1 if you have the `krb5_free_string' function. */
+#undef HAVE_KRB5_FREE_STRING
+
 /* Define to 1 if you have the `krb5_get_error_message' function. */
 #undef HAVE_KRB5_GET_ERROR_MESSAGE
 
@@ -126,6 +129,9 @@
 
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
+
+/* Define to 1 if you have the <mod_auth.h> header file. */
+#undef HAVE_MOD_AUTH_H
 
 /* Define to enable remctl features. */
 #undef HAVE_REMCTL

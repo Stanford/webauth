@@ -12,10 +12,11 @@
 PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/lib/WebAuth/Exception.pm perl/lib/WebAuth/Key.pm		    \
 	perl/lib/WebAuth/Keyring.pm perl/lib/WebAuth/KeyringEntry.pod	    \
-	perl/lib/WebAuth/Token.pm perl/lib/WebAuth/Token/App.pm		    \
-	perl/lib/WebAuth/Token/Cred.pm perl/lib/WebAuth/Token/Error.pm	    \
-	perl/lib/WebAuth/Token/Id.pm perl/lib/WebAuth/Token/Login.pm	    \
-	perl/lib/WebAuth/Token/Proxy.pm perl/lib/WebAuth/Token/Request.pm   \
+	perl/lib/WebAuth/Krb5.pm perl/lib/WebAuth/Token.pm		    \
+	perl/lib/WebAuth/Token/App.pm perl/lib/WebAuth/Token/Cred.pm	    \
+	perl/lib/WebAuth/Token/Error.pm perl/lib/WebAuth/Token/Id.pm	    \
+	perl/lib/WebAuth/Token/Login.pm perl/lib/WebAuth/Token/Proxy.pm	    \
+	perl/lib/WebAuth/Token/Request.pm				    \
 	perl/lib/WebAuth/Token/WebKDCProxy.pm				    \
 	perl/lib/WebAuth/Token/WebKDCService.pm perl/lib/WebKDC.pm	    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/WebKDCException.pm	    \
@@ -29,8 +30,9 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
 	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
 	perl/t/pending-expire.t perl/t/pod-spelling.t perl/t/pod.t	    \
-	perl/t/token-decode.t perl/t/token-encode.t perl/t/webauth.t	    \
-	perl/t/webkdc.t perl/t/weblogin.t perl/typemap
+	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
+	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
+	perl/t/weblogin.t perl/t/xml.t perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -82,24 +84,24 @@ lib_LTLIBRARIES = lib/libwebauth.la
 include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
-	include/webauth/tokens.h include/webauth/util.h			\
-	include/webauth/webkdc.h
+	include/webauth/krb5.h include/webauth/tokens.h			\
+	include/webauth/util.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attrs.c lib/base64.c	 \
-	lib/context.c lib/factors.c lib/keyring.c lib/keys.c lib/krb5.c	 \
-	lib/internal.h lib/misc.c lib/token-crypto.c lib/token-decode.c	 \
-	lib/token-encode.c lib/userinfo.c lib/util.c lib/webkdc-config.c \
-	lib/webkdc-login.c lib/xml.c
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
+	lib/attr-encode.c lib/attrs.c lib/base64.c lib/context.c	    \
+	lib/factors.c lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h    \
+	lib/misc.c lib/token-crypto.c lib/token-decode.c lib/token-encode.c \
+	lib/userinfo.c lib/util.c lib/webkdc-config.c lib/webkdc-login.c    \
+	lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
 	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 7:0:0 $(VERSION_LDFLAGS)	    \
+lib_libwebauth_la_LDFLAGS = -version-info 8:0:0 $(VERSION_LDFLAGS)	    \
 	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
-lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)	\
-	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) -lcom_err	\
-	$(CRYPTO_LIBS)
+lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
+	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) $(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =
@@ -140,7 +142,7 @@ modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
-tools_wa_keyring_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tools_wa_keyring_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
@@ -271,14 +273,13 @@ warnings:
 check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
 	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		   \
-	tests/lib/krb5-tgt-t tests/lib/token-decode-t			   \
-	tests/lib/token-encode-t tests/lib/webkdc-info-t		   \
-	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
-	tests/lib/webkdc-mf-t tests/portable/asprintf-t			   \
-	tests/portable/mkstemp-t tests/portable/setenv-t		   \
-	tests/portable/snprintf-t tests/portable/strlcat-t		   \
-	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
-	tests/util/xmalloc
+	tests/lib/krb5-tgt-t tests/lib/userinfo-t tests/lib/token-decode-t \
+	tests/lib/token-encode-t tests/lib/webkdc-krb-t			   \
+	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			   \
+	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
+	tests/portable/setenv-t tests/portable/snprintf-t		   \
+	tests/portable/strlcat-t tests/portable/strlcpy-t		   \
+	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -312,15 +313,14 @@ tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
+tests_lib_userinfo_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_userinfo_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_userinfo_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
-tests_lib_webkdc_info_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_webkdc_info_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
-tests_lib_webkdc_info_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_krb_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
@@ -329,8 +329,7 @@ tests_lib_webkdc_login_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
-tests_lib_webkdc_mf_t_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_webkdc_mf_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_mf_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_mf_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)

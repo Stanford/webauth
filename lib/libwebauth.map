@@ -21,26 +21,6 @@ WEBAUTH_3 {
         webauth_hex_decoded_length;
         webauth_hex_encode;
         webauth_hex_encoded_length;
-        webauth_krb5_change_password;
-        webauth_krb5_error_code;
-        webauth_krb5_error_message;
-        webauth_krb5_export_tgt;
-        webauth_krb5_export_ticket;
-        webauth_krb5_free;
-        webauth_krb5_get_cache;
-        webauth_krb5_get_principal;
-        webauth_krb5_get_realm;
-        webauth_krb5_import_cred;
-        webauth_krb5_init_via_cache;
-        webauth_krb5_init_via_cred;
-        webauth_krb5_init_via_keytab;
-        webauth_krb5_init_via_password;
-        webauth_krb5_keep_cred_cache;
-        webauth_krb5_mk_req;
-        webauth_krb5_mk_req_with_data;
-        webauth_krb5_new;
-        webauth_krb5_rd_req;
-        webauth_krb5_rd_req_with_data;
         webauth_parse_interval;
         webauth_token_type_code;
         webauth_token_type_string;
@@ -79,10 +59,29 @@ WEBAUTH_4_2 {
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
-        webauth_krb5_prepare_via_cred;
         webauth_token_decode;
         webauth_token_decode_raw;
         webauth_token_encode;
         webauth_token_encode_raw;
         webauth_webkdc_login;
 } WEBAUTH_4_1;
+
+WEBAUTH_4_3 {
+    global:
+        webauth_krb5_change_password;
+        webauth_krb5_export_cred;
+        webauth_krb5_free;
+        webauth_krb5_get_cache;
+        webauth_krb5_get_principal;
+        webauth_krb5_get_realm;
+        webauth_krb5_import_cred;
+        webauth_krb5_init_via_cache;
+        webauth_krb5_init_via_keytab;
+        webauth_krb5_init_via_password;
+        webauth_krb5_make_auth;
+        webauth_krb5_make_auth_data;
+        webauth_krb5_prepare_via_cred;
+        webauth_krb5_new;
+        webauth_krb5_read_auth;
+        webauth_krb5_read_auth_data;
+} WEBAUTH_4_2;

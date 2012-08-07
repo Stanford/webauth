@@ -21,60 +21,50 @@
 
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
+#include <webauth/krb5.h>
 #include <webauth/tokens.h>
 
 
 static void
-log_webauth_error(server_rec *s, int status, WEBAUTH_KRB5_CTXT *ctxt,
+log_webauth_error(struct webauth_context *ctx, server_rec *s, int status,
                   const char *mwa_func, const char *func, const char *extra)
 {
-    if (status == WA_ERR_KRB5 && ctxt != NULL)
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s%s%s failed: %s (%d): %s %d",
-                     mwa_func, func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(NULL, status), status,
-                     webauth_krb5_error_message(ctxt),
-                     webauth_krb5_error_code(ctxt));
-    else
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                     "mod_webauth: %s: %s%s%s failed: %s (%d)",
-                     mwa_func,
-                     func,
-                     extra == NULL ? "" : " ",
-                     extra == NULL ? "" : extra,
-                     webauth_error_message(NULL, status), status);
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                 "mod_webauth: %s: %s%s%s failed: %s (%d)",
+                 mwa_func,
+                 func,
+                 extra == NULL ? "" : " ",
+                 extra == NULL ? "" : extra,
+                 webauth_error_message(ctx, status), status);
 }
 
 
 /*
  * get a WEBAUTH_KRB5_CTXT
  */
-static WEBAUTH_KRB5_CTXT *
-get_webauth_krb5_ctxt(server_rec *server, const char *mwa_func)
+static struct webauth_krb5 *
+get_webauth_krb5_ctxt(struct webauth_context *ctx, server_rec *server,
+                      const char *mwa_func)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc = NULL;
     int status;
 
-    status = webauth_krb5_new(&ctxt);
+    status = webauth_krb5_new(ctx, &kc);
     if (status != WA_ERR_NONE) {
-        log_webauth_error(server, status, ctxt, mwa_func, "webauth_krb5_new",
-                          NULL);
-        if (status == WA_ERR_KRB5)
-            webauth_krb5_free(ctxt);
+        log_webauth_error(ctx, server, status, mwa_func,
+                          "webauth_krb5_new", NULL);
         return NULL;
     }
-    return ctxt;
+    return kc;
 }
 
 
 static const char *
 krb5_validate_sad(MWA_REQ_CTXT *rc, const void *sad, size_t sad_len)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     int status;
-    char *principal, *subject;
+    char *subject;
     const char *mwa_func = "krb5_validate_sad";
     char *kt;
 
@@ -82,39 +72,21 @@ krb5_validate_sad(MWA_REQ_CTXT *rc, const void *sad, size_t sad_len)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: called", mwa_func);
 
-    ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
-    if (ctxt == NULL)
+    kc = get_webauth_krb5_ctxt(rc->ctx, rc->r->server, mwa_func);
+    if (kc == NULL)
         return NULL;
 
     kt = apr_pstrcat(rc->r->pool, "FILE:", rc->sconf->keytab_path, NULL);
 
-    status = webauth_krb5_rd_req(ctxt, sad, sad_len, kt,
-                                 rc->sconf->keytab_principal,
-                                 &principal, 1);
-    webauth_krb5_free(ctxt);
-
+    status = webauth_krb5_read_auth(rc->ctx, kc, sad, sad_len, kt,
+                                    rc->sconf->keytab_principal,
+                                    &subject, WA_KRB5_CANON_LOCAL);
     if (status != WA_ERR_NONE) {
-        log_webauth_error(rc->r->server, status, ctxt, mwa_func,
-                              "webauth_krb5_rd_req", NULL);
+        log_webauth_error(rc->ctx, rc->r->server, status, mwa_func,
+                          "webauth_krb5_read_auth", NULL);
         return NULL;
     }
-
-    subject = apr_pstrdup(rc->r->pool, principal);
-    free(principal);
     return subject;
-}
-
-
-/*
- * called when the request pool gets cleaned up
- */
-static apr_status_t
-krb5_cleanup_context(void *data)
-{
-    WEBAUTH_KRB5_CTXT *ctxt = data;
-
-    webauth_krb5_free(ctxt);
-    return APR_SUCCESS;
 }
 
 
@@ -122,7 +94,7 @@ static int
 krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 {
     const char *mwa_func="krb5_prepare_file_creds";
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     size_t i;
     int status;
     char *temp_cred_file;
@@ -152,17 +124,13 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
         return 0;
     }
 
-    apr_pool_cleanup_register(rc->r->pool, temp_cred_file,
-                              krb5_cleanup_context,
-                              apr_pool_cleanup_null);
-
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: %s: temp_cred_file mktemp(%s)",
                      mwa_func, temp_cred_file);
 
-    ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
-    if (ctxt == NULL)
+    kc = get_webauth_krb5_ctxt(rc->ctx, rc->r->server, mwa_func);
+    if (kc == NULL)
         return 0;
 
     for (i = 0; i < (size_t) creds->nelts; i++) {
@@ -174,20 +142,11 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                              "mod_webauth: %s: prepare (%s) for (%s)",
                              mwa_func, cred->service, cred->subject);
-            if (i == 0) {
-                status = webauth_krb5_init_via_cred(ctxt,
-                                                    (void *) cred->data,
-                                                    cred->data_len,
-                                                    temp_cred_file);
-            } else {
-                status = webauth_krb5_import_cred(ctxt,
-                                                  (void *) cred->data,
-                                                  cred->data_len);
-            }
+            status = webauth_krb5_import_cred(rc->ctx, kc, cred->data,
+                                              cred->data_len, temp_cred_file);
             if (status != WA_ERR_NONE)
-                log_webauth_error(rc->r->server,
-                                  status, ctxt, mwa_func,
-                                  i == 0 ? "webauth_krb5_init_via_cred" :
+                log_webauth_error(rc->ctx, rc->r->server,
+                                  status, mwa_func,
                                   "webauth_krb5_import_cred", NULL);
         }
     }
@@ -203,7 +162,7 @@ static int
 krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 {
     const char *mwa_func="krb5_prepare_keyring_creds";
-    WEBAUTH_KRB5_CTXT *ctxt;
+    struct webauth_krb5 *kc;
     size_t i;
     int status;
     const char *kr_ccache_name;
@@ -216,21 +175,16 @@ krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
                      "mod_webauth: %s: krb5 keyring cache %s)",
                      mwa_func, kr_ccache_name);
 
-    ctxt = get_webauth_krb5_ctxt(rc->r->server, mwa_func);
-    if (ctxt == NULL)
+    kc = get_webauth_krb5_ctxt(rc->ctx, rc->r->server, mwa_func);
+    if (kc == NULL)
         return 0;
-
-    /* register a pool cleanup handler */
-    apr_pool_cleanup_register(rc->r->pool, ctxt,
-                              krb5_cleanup_context,
-                              apr_pool_cleanup_null);
 
     for (i = 0; i < (size_t) creds->nelts; i++) {
         struct webauth_token_cred *cred;
 
         cred = APR_ARRAY_IDX(creds, i, struct webauth_token_cred *);
 
-        // sanity
+        /* FIXME: Do something here other than just ignoring them. */
         if (strcmp(cred->type, "krb5") != 0)
             continue;
 
@@ -254,11 +208,11 @@ krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
                 return 0;
             }
             keyctl_setperm(kr_ccache, KEY_POS_ALL);
-            status = webauth_krb5_prepare_via_cred(ctxt, cred->data,
+            status = webauth_krb5_prepare_via_cred(rc->ctx, kc, cred->data,
                                                    cred->data_len,
                                                    kr_ccache_name);
             if (status != WA_ERR_NONE) {
-                log_webauth_error(rc->r->server, status, ctxt, mwa_func,
+                log_webauth_error(rc->ctx, rc->r->server, status, mwa_func,
                                   "webauth_krb5_prepare_via_cred", NULL);
                 return 0;
             }
@@ -280,10 +234,10 @@ krb5_prepare_keyring_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
         }
         keyctl_setperm(key, KEY_POS_ALL);
 
-        status = webauth_krb5_import_cred(ctxt, (void *) cred->data,
-                                          cred->data_len);
+        status = webauth_krb5_import_cred(rc->ctx, kc, cred->data,
+                                          cred->data_len, NULL);
         if (status != WA_ERR_NONE)
-            log_webauth_error(rc->r->server, status, ctxt, mwa_func,
+            log_webauth_error(rc->ctx, rc->r->server, status, mwa_func,
                               "webauth_krb5_import_cred", NULL);
     }
 
@@ -314,48 +268,46 @@ krb5_prepare_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
 
 
 static const char *
-krb5_webkdc_credential(server_rec *server,
-                       struct server_config *sconf,
-                       apr_pool_t *pool)
+krb5_webkdc_credential(struct webauth_context *ctx, server_rec *server,
+                       struct server_config *sconf, apr_pool_t *pool)
 {
-    WEBAUTH_KRB5_CTXT *ctxt;
-    char *k5_req, *bk5_req;
+    struct webauth_krb5 *kc;
+    void *k5_req;
+    char *bk5_req;
     int status;
     size_t k5_req_len, bk5_req_len;
     static const char *mwa_func = "krb5_webkdc_credential";
     char *kt;
 
-    ctxt = get_webauth_krb5_ctxt(server, mwa_func);
-    if (ctxt == NULL)
-        return 0;
+    kc = get_webauth_krb5_ctxt(ctx, server, mwa_func);
+    if (kc == NULL)
+        return NULL;
 
     kt = apr_pstrcat(pool, "FILE:", sconf->keytab_path, NULL);
 
-    status = webauth_krb5_init_via_keytab(ctxt, kt,
+    status = webauth_krb5_init_via_keytab(ctx, kc, kt,
                                           sconf->keytab_principal, NULL);
     if (status != WA_ERR_NONE) {
-        log_webauth_error(server, status, ctxt, mwa_func,
+        log_webauth_error(ctx, server, status, mwa_func,
                           "webauth_krb5_init_via_keytab", kt);
-        webauth_krb5_free(ctxt);
-        return 0;
+        webauth_krb5_free(ctx, kc);
+        return NULL;
     }
 
-    status = webauth_krb5_mk_req(ctxt, sconf->webkdc_principal,
-                                 &k5_req, &k5_req_len);
+    status = webauth_krb5_make_auth(ctx, kc, sconf->webkdc_principal,
+                                    &k5_req, &k5_req_len);
 
     if (status != WA_ERR_NONE) {
-        log_webauth_error(server, status, ctxt, mwa_func,
-                          "webauth_krb5_mk_req",
-                          sconf->webkdc_principal);
-        webauth_krb5_free(ctxt);
+        log_webauth_error(ctx, server, status, mwa_func,
+                          "webauth_krb5_mk_req", sconf->webkdc_principal);
+        webauth_krb5_free(ctx, kc);
         return 0;
     }
-    webauth_krb5_free(ctxt);
+    webauth_krb5_free(ctx, kc);
 
     bk5_req_len = apr_base64_encode_len(k5_req_len);
     bk5_req = apr_palloc(pool, bk5_req_len);
     apr_base64_encode(bk5_req, k5_req, k5_req_len);
-    free(k5_req);
     return bk5_req;
 }
 

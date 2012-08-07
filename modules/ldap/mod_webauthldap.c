@@ -23,14 +23,10 @@
 #include <apr_thread_mutex.h>
 #include <apr_xml.h>
 #include <errno.h>
-#ifdef HAVE_ET_COM_ERR_H
-# include <et/com_err.h>
-#else
-# include <com_err.h>
-#endif
-#include <krb5.h>
 #include <ldap.h>
-#include <mod_auth.h>
+#ifdef HAVE_MOD_AUTH_H
+# include <mod_auth.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -504,8 +500,8 @@ webauthldap_managedbind(MWAL_LDAP_CTXT* lc)
             return -1;
         } if (rc != 0) {
             ap_log_error(APLOG_MARK, APLOG_ERR, 0, lc->r->server,
-                         "webauthldap(%s): cannot get ticket: %s (%d)",
-                         lc->r->user, error_message(rc), rc);
+                         "webauthldap(%s): cannot get ticket (%d)",
+                         lc->r->user, rc);
             return -1;
         }
 

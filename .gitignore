@@ -49,9 +49,9 @@
 /tests/lib/krb5-t
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
+/tests/lib/userinfo-t
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
-/tests/lib/webkdc-info-t
 /tests/lib/webkdc-krb-t
 /tests/lib/webkdc-login-t
 /tests/lib/webkdc-mf-t

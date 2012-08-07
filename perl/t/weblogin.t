@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
     create_keyring);
 
-use WebAuth qw(3.00 :const :krb5);
+use WebAuth qw(3.00 :const);
 use WebKDC ();
 use WebKDC::Config;
 
@@ -61,9 +61,9 @@ require WebLogin;
 # Check for a valid kerberos config.
 if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 } else {
-    plan tests => 326;
+    plan tests => 336;
 }
 
 # Set our method to not have password tests complain.
@@ -751,7 +751,29 @@ is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
 is ($output[4], "err_msg $errmsg", ' with correct error message');
 is ($output[5], 'err_confirm ', ' and err_confirm was not set');
 is ($output[6], 'script_name ', ' and script_name was not set');
+is ($output[7], 'err_html ', ' and err_html was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
+
+# Authentication rejected by the user information service.
+$weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
+$error = WebKDC::WebKDCException->new (WebKDC::WK_ERR_AUTH_REJECTED,
+                                       'authentication rejected',
+                                       WA_PEC_AUTH_REJECTED,
+                                       '<strong>go away</strong>');
+($status, $error) = (WebKDC::WK_ERR_AUTH_REJECTED, $error);
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'error page for authentication rejected error');
+is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[1], 'err_cookies_disabled ',
+    ' and err_cookies_disabled was not set');
+is ($output[2], 'err_no_request_token ',
+    ' and err_no_request_token was not set');
+is ($output[3], 'err_webkdc ', ' and err_webkdc was not set');
+is ($output[4], 'err_msg ', ' and err_msg was not set');
+is ($output[5], 'err_confirm ', ' and err_confirm was not set');
+is ($output[6], 'script_name ', ' and script_name was not set');
+is ($output[7], 'err_html <strong>go away</strong>',
+    ' and err_html was set to the correct value');
 
 remctld_stop;
 unlink ('krb5cc_test', 'test-acl', 't/data/test.keyring');

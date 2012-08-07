@@ -4,7 +4,7 @@
 #
 # Written by Roland Schemers
 # Updated by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2002, 2003, 2005, 2009, 2010
+# Copyright 2002, 2003, 2005, 2009, 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -42,7 +42,7 @@ unless ($username && $password && $principal && $wa_principal) {
 if ($kerberos_config) {
     plan tests => 13;
 } else {
-    plan skip_all => 'no kerberos configuration found';
+    plan skip_all => 'Kerberos tests not configured';
 }
 
 # Test actually loading WebAuth module.
@@ -53,21 +53,20 @@ my $wa = WebAuth->new;
 my ($context, $sp, $ctx_princ, $tgt, $expiration, $princ, $ticket, $rprinc,
     $request, $client_princ);
 
-eval { $context = $wa->krb5_new () };
-ok ($context->isa ('WEBAUTH_KRB5_CTXTPtr'), 'krb5_new works');
+eval { $context = $wa->krb5_new };
+isa_ok ($context, 'WebAuth::Krb5');
 
 eval {
-    $sp = WebAuth::krb5_init_via_password($context, $username, $password,
-                                          '', $keytab, '');
+    $sp = $context->init_via_password($username, $password, '', $keytab);
 };
-is ($@, '', "krb5_init_via_password didn't thrown an exception");
-ok ($sp, 'krb5_init_via_password works');
+is ($@, '', "init_via_password didn't thrown an exception");
+ok ($sp, 'init_via_password works');
 
-eval { $ctx_princ = WebAuth::krb5_get_principal ($context, 1) };
-ok ($ctx_princ, 'krb5_get_principal works');
+eval { $ctx_princ = $context->get_principal (1) };
+ok ($ctx_princ, 'get_principal works');
 
-eval { ($tgt, $expiration) = WebAuth::krb5_export_tgt ($context) };
-is ($@, '', 'krb5_init_via_password works');
+eval { ($tgt, $expiration) = $context->export_cred };
+is ($@, '', 'export_cred works');
 ok ($expiration, ' and returns an expiration time');
 
 # If our user is in a realm other than our default realm, we can't use the
@@ -75,26 +74,26 @@ ok ($expiration, ' and returns an expiration time');
 # realm.
 eval {
     ($ticket, $expiration)
-        = WebAuth::krb5_export_ticket ($context, $wa_principal);
+        = $context->export_cred ($wa_principal);
 };
-is ($@, '', 'krb5_export_ticket works');
+is ($@, '', 'krb5_export_cred works');
 ok ($ticket, ' and returns a ticket');
 ok ($expiration, ' and an expiration time');
 
-# Nuke current context and import from tgt we created
+# Nuke current context and import from tgt we created.
 eval {
-    $context = $wa->krb5_new ();
-    WebAuth::krb5_init_via_cred ($context, $tgt);
+    $context = $wa->krb5_new;
+    $context->import_cred ($tgt);
 };
-ok (!$@, 'krb5_init_via_cred from a tgt works');
+is ($@, '', 'import_cred from a tgt works');
 
 # Import ticket we exported
-eval { WebAuth::krb5_import_cred ($context, $ticket) };
-ok (!$@, 'krb5_import_cred to import an exported ticket works');
+eval { $context->import_cred ($ticket) };
+is ($@, '', 'krb5_import_cred to import an exported ticket works');
 
 # Nuke current context and get from keytab
 eval {
-    $context = $wa->krb5_new ();
-    WebAuth::krb5_init_via_keytab ($context, $keytab, '');
+    $context = $wa->krb5_new;
+    $context->init_via_keytab ($keytab);
 };
-ok (!$@, 'krb5_init_via_keytab to get context from a keytab works');
+is ($@, '', 'init_via_keytab to get context from a keytab works');

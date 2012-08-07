@@ -8,17 +8,17 @@
 
 TYPEMAP
 
-WEBAUTH_KRB5_CTXT *     T_PTROBJ
-
 enum webauth_key_type   T_IV
 enum webauth_key_size   T_IV
 enum webauth_key_usage  T_IV
+enum webauth_krb5_canon T_IV
 const unsigned char *   T_PV
 
 WebAuth                 T_PTROBJ_NU
 WebAuth::Key            T_PTROBJ_NU
 WebAuth::Keyring        T_PTROBJ_NU
 WebAuth::KeyringEntry   T_PTROBJ_NU
+WebAuth::Krb5           T_PTROBJ_NU
 
 INPUT
 

@@ -94,7 +94,7 @@ sub proxy_cookies ($;$) {
 # This returns the same format as is used internally.
 sub proxy_cookies_rich ($;$) {
     my ($self, $cookies) = @_;
-    $self->{'cookies'} = shift if @_;
+    $self->{'cookies'} = $cookies if $cookies;
     return $self->{'cookies'};
 }
 
@@ -166,6 +166,30 @@ pass should be set, but not both.
 
 Retrieve or set the password sent by the user.  Either this or otp should
 be set, but not both.
+
+=item proxy_cookie (TYPE[, COOKIE, FACTOR])
+
+Retrieve or set a proxy cookie of a particular type.  If COOKIE and FACTOR
+are given, sets a cookie of the given TYPE with value COOKIE and session
+factor FACTOR.  Returns the cookie value of the given TYPE or undef if no
+such cookie is available.
+
+=item proxy_cookies ([COOKIES])
+
+Retrieve or set a hash of all cookies.  If the COOKIES parameter is
+provided, it must be a hash of cookie types to anonymous hashes, with each
+value hash having two keys: C<cookie>, whose value is the cookie value,
+and C<session_factor>, whose value is the session factors for that cookie.
+Returns a hash of cookie types to values without the factor information.
+
+=item proxy_cookies_rich ([COOKIES])
+
+Retrieve or set a hash of all cookies including session factors.  If the
+COOKIES parameter is provided, it must be a hash of cookie types to
+anonymous hashes, with each value hash having two keys: C<cookie>, whose
+value is the cookie value, and C<session_factor>, whose value is the
+session factors for that cookie.  Returns a hash in the same structure as
+the COOKIES argument.
 
 =item remote_user ([USER])
 

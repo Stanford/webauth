@@ -48,6 +48,11 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
 
+    /* Skip this test if built without remctl support. */
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
+
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
@@ -75,7 +80,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(168);
+    plan(174);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -124,7 +129,7 @@ main(void)
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
 
     /*
-     * Add configuration for user information and try authencation with just
+     * Add configuration for user information and try authentication with just
      * the proxy token.
      */
     user_config.protocol = WA_PROTOCOL_REMCTL;
@@ -144,6 +149,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Proxy auth w/user config returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
+    is_string(NULL, response->user_message, "...and no user message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
     status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
@@ -166,10 +172,28 @@ main(void)
     is_int(0, response->password_expires, "...no password expiration");
 
     /*
+     * Attempt to access a restricted URL and try again.  This should fail
+     * and return an error message.
+     */
+    req.return_url = "https://example.com/restrict/";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Restricted URL returns success");
+    is_int(WA_PEC_AUTH_REJECTED, response->login_error,
+           "...with the right error");
+    is_string("authentication rejected by user information service",
+              response->login_message, "...and the right message");
+    is_string("<strong>You are restricted!</strong>  &lt;_&lt;;",
+              response->user_message, "...and the right user message");
+    ok(response->result == NULL, "...and there is no result token");
+
+    /*
      * Request an X.509 factor and try again.  This should still work even
      * though this user doesn't have password listed as a supported factor in
      * their user information.
      */
+    req.return_url = "https://example.com/";
     req.initial_factors = "x";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)

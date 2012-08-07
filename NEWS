@@ -1,5 +1,91 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.3.0 (2012-08-06)
+
+    mod_webauth now sets the HttpOnly flag on all WebAuth session cookies
+    by default.  This can be turned off at the server or virtual host
+    level with the new WebAuthHttpOnly Apache directive.  (Although be
+    aware that the structure of the WebAuth cookies is an internal
+    implementation detail; if this directive is needed, the web site is
+    probably doing something unsupported.)
+
+    WebLogin now sets the HttpOnly flag on the single sign-on cookie, and
+    on the test cookie used to probe whether cookies are supported.
+
+    Add a new optional <userMessage> element to the specification of the
+    <requestTokenResponse> reply from the WebKDC and a new error code.
+    These are used to indicate a rejected authentication and to return an
+    HTML error that should be displayed to the user.
+
+    Support a new <error> return element inside the <authdata> reply from
+    the user information service during WebLogin authentication.  Presence
+    of this element indicates that the user information service has
+    rejected this authentication.  The content is raw HTML content (which
+    should be protected by a CDATA block in the XML) to display to the
+    user.  Make appropriate changes to the webauth_user_info and
+    webauth_webkdc_login APIs and to mod_webkdc to return this information
+    via the new <userMessage> element and the new protocol error code.
+
+    Add a new parameter, err_html, to the error page template in WebLogin.
+    When this parameter is set, the contents should be used as the entire
+    error message to display to the user.  Local WebLogin error templates
+    should be updated to support this parameter.
+
+    Fix wa_keyring compilation error when older versions of the WebAuth
+    headers are installed in the APR header path.
+
+    Change all Kerberos functions in the WebAuth library API to take the
+    WebAuth context and use APR memory management and new-style error
+    message handling.  There is a new include file, webauth/krb5.h, for
+    the Kerberos functions.  Remove webauth_krb5_error_code and
+    webauth_krb5_error_message in favor of the new-style error handling.
+    Call the proper Kerberos error reporting functions to get more
+    information than was available via com_err.
+
+    Replace webauth_krb5_export_ticket and webauth_krb5_export_tgt with a
+    new webauth_krb5_export_cred function that is parallel to
+    webauth_krb5_import_cred and can do either operation.  Similarly,
+    merge webauth_krb5_init_via_cred and webauth_krb5_import_cred into
+    webauth_krb5_import_cred.
+
+    Rename webauth_krb5_rd_req to webauth_krb5_read_auth and
+    webauth_krb5_mk_req to webauth_krb5_make_auth.  Rename the _with_data
+    variations of both to _data.
+
+    Remove webauth_krb5_keep_cred_cache.  This was no longer used anywhere
+    in the WebAuth source.
+
+    Revise the Perl API for Kerberos-related functions to match the
+    changes to libwebauth, including changes of method names and removal
+    of now-unused functions, and complete the conversion to an
+    object-oriented interface.  A WebAuth::Krb5 object is now returned by
+    the krb5_new method, and all other Kerberos functions are now
+    implemented as methods on that object.
+
+    Fix decoding of Kerberos credentials that include a second ticket when
+    built with MIT Kerberos.
+
+    Kerberos realm names are no longer escaped before matching them
+    against the Apache configuration.  This only affects handling realm
+    names with unusual characters.
+
+WebAuth 4.2.2 (2012-07-19)
+
+    Fix WebKDC::WebRequest error introduced in 4.2.0 that broke WebLogin
+    functionality.
+
+    Fix Kerberos context cleanup bug after storing delegated credentials
+    in a file cache, introduced in 4.2.0.  This bug would cause segfaults
+    in the child Apache process after completion of the request.
+
+WebAuth 4.2.1 (2012-07-18)
+
+    Fix error decoding keyrings from files on 64-bit systems, preventing
+    all use of keyring files.  Reported by Kai Lanz.
+
+    Fix compilation with Apache 2.0, which does not have the mod_auth.h
+    header.  Reported by Kai Lanz.
+
 WebAuth 4.2.0 (2012-07-13)
 
     Port to Apache 2.4 (tested with Apache 2.4.1).
@@ -35,10 +121,10 @@ WebAuth 4.2.0 (2012-07-13)
     making the API more object-oriented.  The only export groups provided
     are :const and :krb5, and all other export requests should be removed.
     All users will need code changes to work with the new API.
-    WebAuth::Keyring and WebAuth::Krb5 have not yet been converted, but
-    will be in a subsequent release.  This means that the WebKDC and
-    WebLogin Perl modules in this release require the WebAuth module from
-    this release and vice versa, so be careful of partial upgrades.
+    WebAuth::Krb5 has not yet been converted, but will be in a subsequent
+    release.  This means that the WebKDC and WebLogin Perl modules in this
+    release require the WebAuth module from this release and vice versa,
+    so be careful of partial upgrades.
 
     Add new tools/webauth-make-tokens script to generate WebAuth tokens
     given a configuration file and keyring.  This is not installed by
