@@ -82,6 +82,9 @@ Protocol:
  * WEBAUTH-42: Stop including addresses in serialized Kerberos tickets and
    figure out what to do about the is_skey attribute.
 
+ * WEBAUTH-39: Change encoded timestamps on the wire to be 64-bit times so
+   that we don't have a year 2038 problem.
+
 General:
 
  * WEBAUTH-34: Currently, all module errors are logged with ap_log_error.
@@ -134,9 +137,6 @@ libwebauth:
 
  * WEBAUTH-7: Switch all the WebAuth library interfaces to using opaque
    structs instead of typedefs, matching our current coding style.
-
- * WEBAUTH-39: webauth_attr_list_add_time assumes that timestamps are
-   unsigned 32-bit values.
 
  * WEBAUTH-40: String to number conversion in the WebAuth library is being
    done with atol instead of with strtol and with error checking.
@@ -256,6 +256,11 @@ mod_webkdc:
 
  * WEBAUTH-12: Investigate implementing the GSSAPI-RPC protocol for the
    WebKDC.
+
+ * WEBAUTH-109: Rather than maintaining two parsers, include the possible
+   tokens we would issue to the WAS in the return from the WebKDC so that
+   the WebLogin server can choose whether to tell the user about them.
+   This will let us remove the token.acl parser in WebLogin.
 
 WebLogin:
 
