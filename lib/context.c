@@ -37,6 +37,23 @@ init_context(apr_pool_t *pool)
 
 
 /*
+ * The abort function called by APR on any memory allocation failure.  By
+ * default, APR just returns NULL, which will probably cause segfaults but
+ * might cause some strange issue.  Instead, always abort immediately after
+ * attempting to report an error.
+ */
+static int
+pool_failure(int retcode)
+{
+    fprintf(stderr, "libwebauth: APR pool allocation failure (%d)", retcode);
+    abort();
+
+    /* Not reached. */
+    return retcode;
+}
+
+
+/*
  * Initialize a WebAuth context.  This allocates the internal webauth_context
  * struct and does any necessary initialization, including setting up an APR
  * memory pool to use for any required allocations.  This is the entry point
@@ -53,6 +70,7 @@ webauth_context_init(struct webauth_context **context, apr_pool_t *parent)
         return WA_ERR_APR;
     if (apr_pool_create(&pool, parent) != APR_SUCCESS)
         return WA_ERR_APR;
+    apr_pool_abort_set(pool_failure, pool);
     *context = init_context(pool);
     return WA_ERR_NONE;
 }
@@ -77,6 +95,7 @@ webauth_context_init_apr(struct webauth_context **context, apr_pool_t *parent)
         return WA_ERR_APR;
     if (apr_pool_create(&pool, parent) != APR_SUCCESS)
         return WA_ERR_APR;
+    apr_pool_abort_set(pool_failure, pool);
     *context = init_context(pool);
     return WA_ERR_NONE;
 }
