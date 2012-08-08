@@ -257,9 +257,6 @@ mod_webkdc:
  * WEBAUTH-12: Investigate implementing the GSSAPI-RPC protocol for the
    WebKDC.
 
- * WEBAUTH-84: Support forcing a user to only go to a particular
-   destination based on information from the user information service.
-
 WebLogin:
 
  * WEBAUTH-14: Pass the password expiration information to the templates
@@ -270,9 +267,6 @@ WebLogin:
    protected by WebAuth, the browser seems to go to WebLogin multiple
    times, and for some of those times there's an error "no cookie, even
    after redirection" in the logs.  Figure out what's going on and fix it.
-
- * WEBAUTH-66: Fix Perl warnings when going directly to the password
-   change screen.
 
  * WEBAUTH-67: Display a message if the password prompt is forced in order
    to get a TGT for credential delegation to the destination site.
