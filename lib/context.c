@@ -131,7 +131,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_BAD_KEY:           return "unable to use key";
     case WA_ERR_KEYRING_OPENWRITE: return "unable to open keyring for writing";
-    case WA_ERR_KEYRING_WRITE:     return "error writing key ring";
+    case WA_ERR_KEYRING_WRITE:     return "error writing to keyring file";
     case WA_ERR_KEYRING_OPENREAD:  return "unable to open keyring for reading";
     case WA_ERR_KEYRING_READ:      return "error reading from keyring file";
     case WA_ERR_KEYRING_VERSION:   return "bad keyring version";
