@@ -16,6 +16,11 @@ WebAuth 4.3.1 (unreleased)
     Fix incorrect Perl module includes in pwchange.fcgi that prevented the
     WebLogin password change component from starting properly.
 
+    Document that while WebAuthLdapKeytab can be set in either the main
+    server configuration or in a virtual host, separate configurations for
+    different virtual hosts are not supported due to the way the module is
+    currently implemented.
+
 WebAuth 4.3.0 (2012-08-06)
 
     mod_webauth now sets the HttpOnly flag on all WebAuth session cookies
