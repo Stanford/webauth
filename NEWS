@@ -2,6 +2,10 @@
 
 WebAuth 4.3.1 (unreleased)
 
+    Allow WebAuthDoLogout in .htaccess files with AllowOverride
+    AuthConfig.  Previously, WebAuthDoLogout could only be set in the
+    Apache server configuration.
+
     Fix invalid free in webauth_webkdc_login when there are permitted
     realms configured.
 
