@@ -10,7 +10,7 @@
 
 use strict;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 
 BEGIN {
     use_ok ('WebAuth', '3.02', qw/WA_ERR_INVALID/);
@@ -31,4 +31,4 @@ like ($exception->verbose_message, qr/^webauth_key_create: \Q$message\E at /,
       'Verbose message');
 like ("$@", qr/^webauth_key_create: \Q$message\E at /, 'Stringification');
 my $string = "$@";
-#ok ($@ cmp $string, 'cmp');
+is ($@ cmp $string, 0, 'cmp');

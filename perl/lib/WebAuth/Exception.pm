@@ -38,15 +38,15 @@ require 5.006;
 use strict;
 use warnings;
 
-use WebAuth qw(3.00);
+use WebAuth qw(3.02);
 
 use base qw(Exporter);
-use overload '""' => \&to_string;
+use overload '""' => \&to_string, 'cmp' => \&spaceship;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '3.01';
+our $VERSION = '3.02';
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.
@@ -78,6 +78,18 @@ sub verbose_message () {
 sub to_string () {
     my ($self) = @_;
     return $self->verbose_message;
+}
+
+# cmp converts the exception to a string and then compares it to the other
+# argument.
+sub spaceship {
+    my ($self, $other, $swap) = @_;
+    my $string = $self->verbose_message;
+    if ($swap) {
+        return ($other cmp $string);
+    } else {
+        return ($string cmp $other);
+    }
 }
 
 1;

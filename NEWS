@@ -16,6 +16,9 @@ WebAuth 4.3.1 (unreleased)
     Fix incorrect Perl module includes in pwchange.fcgi that prevented the
     WebLogin password change component from starting properly.
 
+    Add an overloaded cmp operator for WebAuth::Exception, primarily to
+    make testing easier.
+
     Document that while WebAuthLdapKeytab can be set in either the main
     server configuration or in a virtual host, separate configurations for
     different virtual hosts are not supported due to the way the module is
