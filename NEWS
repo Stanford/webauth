@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.3.1 (unreleased)
+WebAuth 4.3.1 (2012-08-08)
 
     Allow WebAuthDoLogout in .htaccess files with AllowOverride
     AuthConfig.  Previously, WebAuthDoLogout could only be set in the
