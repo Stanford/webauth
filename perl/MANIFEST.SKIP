@@ -1,7 +1,7 @@
 \bCVS\b
 ^MANIFEST\.
 ^Makefile$
-^WebAuth\.o$
+^WebAuth\.[co]$
 ^WebAuth\.bs$
 ^webauth-perl-.*\.tar\.gz$
 ^blib/

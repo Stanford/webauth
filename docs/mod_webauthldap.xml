@@ -416,7 +416,11 @@ the principal to use.</p>
 <code>ServerRoot</code>.</p>
 
 <note><title>Note</title> 
-  <p>This directive must be set.</p>
+  <p>This directive must be set.  While it is permitted in either the main
+  server configuration or in a virtual host configuration, it should be
+  set once and only once for the whole server.  The module currently does
+  not support having separate authentication configurations in different
+  virtual hosts.</p>
 </note>
 
 <example><title>Example</title>

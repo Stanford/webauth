@@ -20,6 +20,5 @@ portable/setenv
 portable/strlcat
 portable/strlcpy
 tools/wa_keyring
-util/concat
 util/messages
 util/xmalloc

@@ -82,6 +82,9 @@ Protocol:
  * WEBAUTH-42: Stop including addresses in serialized Kerberos tickets and
    figure out what to do about the is_skey attribute.
 
+ * WEBAUTH-39: Change encoded timestamps on the wire to be 64-bit times so
+   that we don't have a year 2038 problem.
+
 General:
 
  * WEBAUTH-34: Currently, all module errors are logged with ap_log_error.
@@ -119,10 +122,6 @@ libwebauth:
    and use that to report user information service failures when
    ignore_failure is set.
 
- * WEBAUTH-38: Deal with memory allocation failure in the library.  Set a
-   default abort function that blows up the whole application if one isn't
-   already set.
-
  * WEBAUTH-7: Convert the rest of the libwebauth interface to use APR and
    to set the error message in the WebAuth context instead of just
    returning error codes.
@@ -134,9 +133,6 @@ libwebauth:
 
  * WEBAUTH-7: Switch all the WebAuth library interfaces to using opaque
    structs instead of typedefs, matching our current coding style.
-
- * WEBAUTH-39: webauth_attr_list_add_time assumes that timestamps are
-   unsigned 32-bit values.
 
  * WEBAUTH-40: String to number conversion in the WebAuth library is being
    done with atol instead of with strtol and with error checking.
@@ -154,12 +150,18 @@ libwebauth:
  * WEBAUTH-90: Validate that only the correct attributes are present for
    the two types of app tokens when decoding.
 
- * WEBAUTH-91: Use APR file open and read commands instead of directly
-   using UNIX utilities, since they provide us some nice functionality
-   (like reading the entirety of a file).
-
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
+
+ * WEBAUTH-110: Review all errors reported in libwebauth to ensure that
+   the supplemental information added makes sense when presented in
+   context with the default error message for that error code.  Some of
+   the error messages reported right now are too verbose.
+
+ * WEBAUTH-112: Add keyring_encode and keyring_decode functions that
+   encode a keyring to the same portable format used for keyring files on
+   disk.  This makes the implementation of the wallet WebAuth keyring
+   backend much easier.
 
 mod_webauth:
 
@@ -176,8 +178,6 @@ mod_webauth:
    and WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request
    an id token from the WebKDC and then verify it rather than simply
    trusting the identity in the proxy token.
-
- * WEBAUTH-51: Add support for WebAuthDoLogout in an .htaccess file.
 
  * WEBAUTH-52: Check the Cookie header for multiple webauth_at cookies and
    try each of them.  This works around a bug in IE 7 where bar.com
@@ -213,11 +213,6 @@ mod_webauthldap:
    and different credentials in different virtual hosts so that the server
    would switch credentials and see different data depending on the
    context.  This would require a significant reworking of the internals.
-
- * WEBAUTH-57: Currently, WebAuthLdapKeytab is defined to be acceptable in
-   virtual hosts.  A caution should be added that it's not reasonable to
-   define multiple keytabs, since the implementation currently only
-   supports one set of authentication credentials.
 
  * WEBAUTH-53: Support setting request headers in addition to or instead
    of environment variables, which will help when using proxy_http to, for
@@ -257,8 +252,10 @@ mod_webkdc:
  * WEBAUTH-12: Investigate implementing the GSSAPI-RPC protocol for the
    WebKDC.
 
- * WEBAUTH-84: Support forcing a user to only go to a particular
-   destination based on information from the user information service.
+ * WEBAUTH-109: Rather than maintaining two parsers, include the possible
+   tokens we would issue to the WAS in the return from the WebKDC so that
+   the WebLogin server can choose whether to tell the user about them.
+   This will let us remove the token.acl parser in WebLogin.
 
 WebLogin:
 
@@ -270,9 +267,6 @@ WebLogin:
    protected by WebAuth, the browser seems to go to WebLogin multiple
    times, and for some of those times there's an error "no cookie, even
    after redirection" in the logs.  Figure out what's going on and fix it.
-
- * WEBAUTH-66: Fix Perl warnings when going directly to the password
-   change screen.
 
  * WEBAUTH-67: Display a message if the password prompt is forced in order
    to get a TGT for credential delegation to the destination site.
@@ -303,11 +297,10 @@ WebLogin:
    is coming from a public cluster.  If checked, don't set a single
    sign-on cookie.
 
-Perl Modules:
+ * WEBAUTH-113: Add a new WebLogin hook to map environment variables (from
+   client X.509 authentication, for example) to user identities.
 
- * WEBAUTH-87: Attempting is() on a WebAuth::Exception object produces the
-   error message 'Operation "eq": no method found'.  Figure out what is
-   required and add the necessary method.
+Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
    modules are misnamed and need to be renamed into the
@@ -319,6 +312,8 @@ Test Suite:
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
    tested) is desperately needed for all the code currently embedded in
    Apache modules.
+
+ * WEBAUTH-111: Add better tests for the Kerberos libwebauth functions.
 
 Documentation:
 

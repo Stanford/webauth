@@ -11,7 +11,8 @@
 #
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011
+# Converted to CGI::Application by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -24,11 +25,8 @@ require 5.006;
 
 use strict;
 
-use CGI ();
-use CGI::Cookie ();
 use CGI::Fast ();
 use WebLogin ();
-use WebKDC ();
 use WebKDC::Config ();
 
 # Set to true in our signal handler to indicate that the script should exit

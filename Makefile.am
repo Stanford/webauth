@@ -27,12 +27,13 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
-	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
-	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
-	perl/t/pending-expire.t perl/t/pod-spelling.t perl/t/pod.t	    \
-	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
-	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
-	perl/t/weblogin.t perl/t/xml.t perl/typemap
+	perl/t/data/webkdc.conf perl/t/exception.t perl/t/krb5.t	    \
+	perl/t/lib/Util.pm perl/t/keyring.t perl/t/misc.t		    \
+	perl/t/page-pwchange.t perl/t/pending-expire.t			    \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/token-decode.t	    \
+	perl/t/token-encode.t perl/t/web-request.t perl/t/web-response.t    \
+	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t	    \
+	perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -71,8 +72,8 @@ portable_libportable_la_SOURCES = portable/apache.h portable/apr.h	\
 portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
 noinst_LIBRARIES = util/libutil.a
-util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
-        util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
+util_libutil_a_SOURCES = util/macros.h util/messages.c util/messages.h	\
+        util/xmalloc.c util/xmalloc.h
 
 if HAVE_LD_VERSION_SCRIPT
     VERSION_LDFLAGS = -Wl,--version-script=${srcdir}/lib/libwebauth.map
@@ -279,7 +280,7 @@ check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
 	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
 	tests/portable/setenv-t tests/portable/snprintf-t		   \
 	tests/portable/strlcat-t tests/portable/strlcpy-t		   \
-	tests/util/concat-t tests/util/messages-t tests/util/xmalloc
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -351,8 +352,6 @@ tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
-tests_util_concat_t_LDADD = tests/tap/libtap.a util/libutil.a \
-	portable/libportable.la
 tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la

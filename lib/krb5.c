@@ -30,8 +30,6 @@
 #include <portable/krb5.h>
 #include <portable/system.h>
 
-#include <errno.h>
-
 #include <lib/internal.h>
 #include <util/macros.h>
 #include <webauth.h>
