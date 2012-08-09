@@ -153,6 +153,16 @@ libwebauth:
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
 
+ * WEBAUTH-110: Review all errors reported in libwebauth to ensure that
+   the supplemental information added makes sense when presented in
+   context with the default error message for that error code.  Some of
+   the error messages reported right now are too verbose.
+
+ * WEBAUTH-112: Add keyring_encode and keyring_decode functions that
+   encode a keyring to the same portable format used for keyring files on
+   disk.  This makes the implementation of the wallet WebAuth keyring
+   backend much easier.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
@@ -287,6 +297,9 @@ WebLogin:
    is coming from a public cluster.  If checked, don't set a single
    sign-on cookie.
 
+ * WEBAUTH-113: Add a new WebLogin hook to map environment variables (from
+   client X.509 authentication, for example) to user identities.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -299,6 +312,8 @@ Test Suite:
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
    tested) is desperately needed for all the code currently embedded in
    Apache modules.
+
+ * WEBAUTH-111: Add better tests for the Kerberos libwebauth functions.
 
 Documentation:
 
