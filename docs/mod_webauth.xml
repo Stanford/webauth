@@ -1144,7 +1144,9 @@ WebAuthVarPrefix HTTP_<br/>
 <syntax>WebAuthDoLogout on|off</syntax>
 <default>WebAuthDoLogout off</default>
 <contextlist>
-<context>directory</context></contextlist>
+  <context>directory</context>
+  <context>.htaccess</context>
+</contextlist>
 
 <usage>
 <p>
@@ -1159,9 +1161,15 @@ given location.</p>
   &lt;/Location&gt;
 </example>
 
-<note><title>Note</title>
-WebAuth-related cookies are all cookis that start with
-the prefix "webauth_".
+<note>
+  <title>Note</title>
+
+  <p>
+    WebAuth-related cookies are all cookis that start with the prefix
+    "webauth_", except for those beginning with "webauth_wpt".  The latter
+    are single sign-on cookies used with the WebLogin server and aren't
+    removed by this directive.
+  </p>
 </note>
 
 </usage>

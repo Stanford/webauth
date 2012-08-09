@@ -37,6 +37,23 @@ init_context(apr_pool_t *pool)
 
 
 /*
+ * The abort function called by APR on any memory allocation failure.  By
+ * default, APR just returns NULL, which will probably cause segfaults but
+ * might cause some strange issue.  Instead, always abort immediately after
+ * attempting to report an error.
+ */
+static int
+pool_failure(int retcode)
+{
+    fprintf(stderr, "libwebauth: APR pool allocation failure (%d)", retcode);
+    abort();
+
+    /* Not reached. */
+    return retcode;
+}
+
+
+/*
  * Initialize a WebAuth context.  This allocates the internal webauth_context
  * struct and does any necessary initialization, including setting up an APR
  * memory pool to use for any required allocations.  This is the entry point
@@ -53,6 +70,7 @@ webauth_context_init(struct webauth_context **context, apr_pool_t *parent)
         return WA_ERR_APR;
     if (apr_pool_create(&pool, parent) != APR_SUCCESS)
         return WA_ERR_APR;
+    apr_pool_abort_set(pool_failure, pool);
     *context = init_context(pool);
     return WA_ERR_NONE;
 }
@@ -77,6 +95,7 @@ webauth_context_init_apr(struct webauth_context **context, apr_pool_t *parent)
         return WA_ERR_APR;
     if (apr_pool_create(&pool, parent) != APR_SUCCESS)
         return WA_ERR_APR;
+    apr_pool_abort_set(pool_failure, pool);
     *context = init_context(pool);
     return WA_ERR_NONE;
 }
@@ -112,7 +131,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_BAD_KEY:           return "unable to use key";
     case WA_ERR_KEYRING_OPENWRITE: return "unable to open keyring for writing";
-    case WA_ERR_KEYRING_WRITE:     return "error writing key ring";
+    case WA_ERR_KEYRING_WRITE:     return "error writing to keyring file";
     case WA_ERR_KEYRING_OPENREAD:  return "unable to open keyring for reading";
     case WA_ERR_KEYRING_READ:      return "error reading from keyring file";
     case WA_ERR_KEYRING_VERSION:   return "bad keyring version";
@@ -169,5 +188,28 @@ webauth_error_set(struct webauth_context *ctx, int err, const char *format,
     va_end(args);
     ctx->error = apr_pstrcat(ctx->pool, error_string(ctx, err),
                              " (", string, ")", NULL);
+    ctx->code = err;
+}
+
+
+/*
+ * Set the error message and code to the provided values, supporting
+ * printf-style formatting and including the string explanation of an APR
+ * status.  This function is internal to the WebAuth library and is not
+ * exposed to external consumers.
+ */
+void
+webauth_error_set_apr(struct webauth_context *ctx, int err,
+                      apr_status_t status, const char *format, ...)
+{
+    va_list args;
+    char *string;
+    char buf[BUFSIZ];
+
+    va_start(args, format);
+    string = apr_pvsprintf(ctx->pool, format, args);
+    va_end(args);
+    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
+                              string, apr_strerror(status, buf, sizeof(buf)));
     ctx->code = err;
 }

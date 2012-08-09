@@ -10,7 +10,7 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2011
+# Copyright 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -23,14 +23,8 @@ require 5.006;
 
 use strict;
 
-use CGI ();
-use CGI::Cookie ();
 use CGI::Fast ();
-use WebAuth qw(:base64 :const :krb5 :key);
-use WebLogin;
-use WebKDC ();
-use WebKDC::Config ();
-use WebKDC::WebKDCException;
+use WebLogin ();
 
 # Set to true in our signal handler to indicate that the script should exit
 # once it finishes processing the current request.
@@ -42,27 +36,6 @@ our %PAGES = (login    => 'login.tmpl',
               confirm  => 'confirm.tmpl',
               pwchange => 'pwchange.tmpl',
               error    => 'error.tmpl');
-
-##############################################################################
-# Debugging
-##############################################################################
-
-# Dump as much information as possible about the environment and input to
-# standard output.  Not currently used anywhere, just left in here for use
-# with debugging.
-sub dump_stuff {
-    my ($var, $val);
-    foreach $var (sort keys %ENV) {
-        $val = $ENV{$var};
-        $val =~ s|\n|\\n|g;
-        $val =~ s|\"|\\\"|g;
-        print "${var}=\"${val}\"\n";
-    }
-    print "\n";
-    print "\n";
-    local $_;
-    print "INPUT: $_" while <STDIN>;
-}
 
 ##############################################################################
 # Main routine

@@ -784,7 +784,6 @@ const command_rec webauth_cmds[] = {
 
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ACCESS_CONF, AppTokenLifetime),
     DIRECTIVE(AP_INIT_TAKE12,  cfg_str12, ACCESS_CONF, Cred),
-    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  ACCESS_CONF, DoLogout),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ACCESS_CONF, FailureURL),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  ACCESS_CONF, ForceLogin),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ACCESS_CONF, InactiveExpire),
@@ -793,6 +792,7 @@ const command_rec webauth_cmds[] = {
 
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_ORAUTH, ExtraRedirect),
 
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DoLogout),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DontCache),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   OR_AUTHCFG,  LoginCanceledURL),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  Optional),
