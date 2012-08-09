@@ -1,15 +1,22 @@
-webauth (4.3.0-1~sbp60+1) UNRELEASED; urgency=low
+webauth (4.3.1-1~sbp60+1) UNRELEASED; urgency=low
 
   * Backport to squeeze.
   * Revert transition to Apache 2.4, use of the new Apache module helper
     functions, and multi-arch.
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
     version of dh_autoreconf in squeeze.
-  * Add a portable replacement for krb5_cc_get_full_name, which is not
-    available in the MIT Kerberos in squeeze.
-  * Remove invalid free in webauth_webkdc_login.
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+
+webauth (4.3.1-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - WebAuthDoLogout is now allowed in .htaccess via AuthConfig.
+    - Fix an invalid free in webauth_webkdc_login.
+    - Fix incorrect Perl module includes in pwchange.fcgi.
+    - Add an overloaded cmp operator for WebAuth::Exception.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 08 Aug 2012 20:16:21 -0700
 
 webauth (4.3.0-1) experimental; urgency=low
 
