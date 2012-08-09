@@ -122,10 +122,6 @@ libwebauth:
    and use that to report user information service failures when
    ignore_failure is set.
 
- * WEBAUTH-38: Deal with memory allocation failure in the library.  Set a
-   default abort function that blows up the whole application if one isn't
-   already set.
-
  * WEBAUTH-7: Convert the rest of the libwebauth interface to use APR and
    to set the error message in the WebAuth context instead of just
    returning error codes.
@@ -154,10 +150,6 @@ libwebauth:
  * WEBAUTH-90: Validate that only the correct attributes are present for
    the two types of app tokens when decoding.
 
- * WEBAUTH-91: Use APR file open and read commands instead of directly
-   using UNIX utilities, since they provide us some nice functionality
-   (like reading the entirety of a file).
-
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
 
@@ -176,8 +168,6 @@ mod_webauth:
    and WebAuthSubjectAuthType is set to krb5, mod_webauth needs to request
    an id token from the WebKDC and then verify it rather than simply
    trusting the identity in the proxy token.
-
- * WEBAUTH-51: Add support for WebAuthDoLogout in an .htaccess file.
 
  * WEBAUTH-52: Check the Cookie header for multiple webauth_at cookies and
    try each of them.  This works around a bug in IE 7 where bar.com
@@ -213,11 +203,6 @@ mod_webauthldap:
    and different credentials in different virtual hosts so that the server
    would switch credentials and see different data depending on the
    context.  This would require a significant reworking of the internals.
-
- * WEBAUTH-57: Currently, WebAuthLdapKeytab is defined to be acceptable in
-   virtual hosts.  A caution should be added that it's not reasonable to
-   define multiple keytabs, since the implementation currently only
-   supports one set of authentication credentials.
 
  * WEBAUTH-53: Support setting request headers in addition to or instead
    of environment variables, which will help when using proxy_http to, for
@@ -303,10 +288,6 @@ WebLogin:
    sign-on cookie.
 
 Perl Modules:
-
- * WEBAUTH-87: Attempting is() on a WebAuth::Exception object produces the
-   error message 'Operation "eq": no method found'.  Figure out what is
-   required and add the necessary method.
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
    modules are misnamed and need to be renamed into the
