@@ -8,7 +8,7 @@ webauth (4.3.1-1~sbp60+1) UNRELEASED; urgency=low
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
 
-webauth (4.3.1-1) UNRELEASED; urgency=low
+webauth (4.3.1-1) experimental; urgency=low
 
   * New upstream release.
     - WebAuthDoLogout is now allowed in .htaccess via AuthConfig.
@@ -17,7 +17,7 @@ webauth (4.3.1-1) UNRELEASED; urgency=low
     - Add an overloaded cmp operator for WebAuth::Exception.
   * Tighten the dependencies between the Perl modules and WebLogin.
 
- -- Russ Allbery <rra@debian.org>  Wed, 08 Aug 2012 20:16:21 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 08 Aug 2012 20:38:58 -0700
 
 webauth (4.3.0-1) experimental; urgency=low
 
