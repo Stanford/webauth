@@ -131,7 +131,7 @@ Description: Development files for WebAuth authentication
 Package: libwebkdc-perl
 Section: perl
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.0.0~),
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
  libcgi-application-perl,
  libcgi-application-perl (>= 4.50) |
  libcgi-application-basic-plugin-bundle-perl,
@@ -184,8 +184,8 @@ Description: Command-line utilities for WebAuth authentication
 Package: webauth-weblogin
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.0.0~),
- libwebkdc-perl (>= 4.0.0~)
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
+ libwebkdc-perl (>= 4.3.0~)
 Recommends: httpd-cgi
 Suggests: libapache2-mod-auth-kerb
 Description: Central login server for WebAuth authentication
