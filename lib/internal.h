@@ -14,6 +14,7 @@
 #include <portable/macros.h>
 #include <portable/stdbool.h>
 
+#include <apr_errno.h>          /* apr_status_t */
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_xml.h>            /* apr_xml_elem */
 
@@ -142,6 +143,11 @@ int webauth_encode(struct webauth_context *, apr_pool_t *,
 /* Set the internal WebAuth error message and error code. */
 void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
+
+/* The same, but include the string expansion of an APR error. */
+void webauth_error_set_apr(struct webauth_context *, int err, apr_status_t,
+                           const char *, ...)
+    __attribute__((__nonnull__, __format__(printf, 4, 5)));
 
 /*
  * Encrypts an input buffer (normally encoded attributes) into a token, using
