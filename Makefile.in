@@ -86,7 +86,7 @@ check_PROGRAMS = tests/runtests$(EXEEXT) tests/lib/attrs-t$(EXEEXT) \
 	tests/portable/setenv-t$(EXEEXT) \
 	tests/portable/snprintf-t$(EXEEXT) \
 	tests/portable/strlcat-t$(EXEEXT) \
-	tests/portable/strlcpy-t$(EXEEXT) tests/util/concat-t$(EXEEXT) \
+	tests/portable/strlcpy-t$(EXEEXT) \
 	tests/util/messages-t$(EXEEXT) tests/util/xmalloc$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(am__dist_image_DATA_DIST) \
@@ -145,8 +145,8 @@ am_tests_tap_libtap_a_OBJECTS =  \
 tests_tap_libtap_a_OBJECTS = $(am_tests_tap_libtap_a_OBJECTS)
 util_libutil_a_AR = $(AR) $(ARFLAGS)
 util_libutil_a_LIBADD =
-am_util_libutil_a_OBJECTS = util/concat.$(OBJEXT) \
-	util/messages.$(OBJEXT) util/xmalloc.$(OBJEXT)
+am_util_libutil_a_OBJECTS = util/messages.$(OBJEXT) \
+	util/xmalloc.$(OBJEXT)
 util_libutil_a_OBJECTS = $(am_util_libutil_a_OBJECTS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -402,10 +402,6 @@ tests_portable_strlcpy_t_DEPENDENCIES = tests/tap/libtap.a \
 tests_runtests_SOURCES = tests/runtests.c
 tests_runtests_OBJECTS = tests/tests_runtests-runtests.$(OBJEXT)
 tests_runtests_LDADD = $(LDADD)
-tests_util_concat_t_SOURCES = tests/util/concat-t.c
-tests_util_concat_t_OBJECTS = tests/util/concat-t.$(OBJEXT)
-tests_util_concat_t_DEPENDENCIES = tests/tap/libtap.a util/libutil.a \
-	portable/libportable.la
 tests_util_messages_t_SOURCES = tests/util/messages-t.c
 tests_util_messages_t_OBJECTS = tests/util/messages-t.$(OBJEXT)
 tests_util_messages_t_DEPENDENCIES = tests/tap/libtap.a util/libutil.a \
@@ -464,8 +460,8 @@ SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
 	$(tests_portable_strlcat_t_SOURCES) \
 	$(tests_portable_strlcpy_t_SOURCES) tests/runtests.c \
-	tests/util/concat-t.c tests/util/messages-t.c \
-	tests/util/xmalloc.c tools/wa_keyring.c
+	tests/util/messages-t.c tests/util/xmalloc.c \
+	tools/wa_keyring.c
 DIST_SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	$(lib_libwebauth_la_SOURCES) \
 	$(EXTRA_lib_libwebauth_la_SOURCES) \
@@ -485,8 +481,8 @@ DIST_SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
 	$(tests_portable_strlcat_t_SOURCES) \
 	$(tests_portable_strlcpy_t_SOURCES) tests/runtests.c \
-	tests/util/concat-t.c tests/util/messages-t.c \
-	tests/util/xmalloc.c tools/wa_keyring.c
+	tests/util/messages-t.c tests/util/xmalloc.c \
+	tools/wa_keyring.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -699,12 +695,13 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
-	perl/t/data/webkdc.conf perl/t/krb5.t perl/t/lib/Util.pm	    \
-	perl/t/keyring.t perl/t/misc.t perl/t/page-pwchange.t		    \
-	perl/t/pending-expire.t perl/t/pod-spelling.t perl/t/pod.t	    \
-	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
-	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
-	perl/t/weblogin.t perl/t/xml.t perl/typemap
+	perl/t/data/webkdc.conf perl/t/exception.t perl/t/krb5.t	    \
+	perl/t/lib/Util.pm perl/t/keyring.t perl/t/misc.t		    \
+	perl/t/page-pwchange.t perl/t/pending-expire.t			    \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/token-decode.t	    \
+	perl/t/token-encode.t perl/t/web-request.t perl/t/web-response.t    \
+	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t	    \
+	perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -744,8 +741,8 @@ portable_libportable_la_SOURCES = portable/apache.h portable/apr.h	\
 portable_libportable_la_CPPFLAGS = $(AM_CPPFLAGS) $(KRB5_CPPFLAGS)
 portable_libportable_la_LIBADD = $(LTLIBOBJS)
 noinst_LIBRARIES = util/libutil.a
-util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h \
-        util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
+util_libutil_a_SOURCES = util/macros.h util/messages.c util/messages.h	\
+        util/xmalloc.c util/xmalloc.h
 
 @HAVE_LD_VERSION_SCRIPT_FALSE@VERSION_LDFLAGS = -export-symbols ${srcdir}/lib/libwebauth.sym
 @HAVE_LD_VERSION_SCRIPT_TRUE@VERSION_LDFLAGS = -Wl,--version-script=${srcdir}/lib/libwebauth.map
@@ -973,9 +970,6 @@ tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
-tests_util_concat_t_LDADD = tests/tap/libtap.a util/libutil.a \
-	portable/libportable.la
-
 tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 
@@ -1082,8 +1076,6 @@ util/$(am__dirstamp):
 util/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) util/$(DEPDIR)
 	@: > util/$(DEPDIR)/$(am__dirstamp)
-util/concat.$(OBJEXT): util/$(am__dirstamp) \
-	util/$(DEPDIR)/$(am__dirstamp)
 util/messages.$(OBJEXT): util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
 util/xmalloc.$(OBJEXT): util/$(am__dirstamp) \
@@ -1485,11 +1477,6 @@ tests/util/$(am__dirstamp):
 tests/util/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/util/$(DEPDIR)
 	@: > tests/util/$(DEPDIR)/$(am__dirstamp)
-tests/util/concat-t.$(OBJEXT): tests/util/$(am__dirstamp) \
-	tests/util/$(DEPDIR)/$(am__dirstamp)
-tests/util/concat-t$(EXEEXT): $(tests_util_concat_t_OBJECTS) $(tests_util_concat_t_DEPENDENCIES) $(EXTRA_tests_util_concat_t_DEPENDENCIES) tests/util/$(am__dirstamp)
-	@rm -f tests/util/concat-t$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(tests_util_concat_t_OBJECTS) $(tests_util_concat_t_LDADD) $(LIBS)
 tests/util/messages-t.$(OBJEXT): tests/util/$(am__dirstamp) \
 	tests/util/$(DEPDIR)/$(am__dirstamp)
 tests/util/messages-t$(EXEEXT): $(tests_util_messages_t_OBJECTS) $(tests_util_messages_t_DEPENDENCIES) $(EXTRA_tests_util_messages_t_DEPENDENCIES) tests/util/$(am__dirstamp)
@@ -1651,11 +1638,9 @@ mostlyclean-compile:
 	-rm -f tests/tap/tests_tap_libtap_a-remctl.$(OBJEXT)
 	-rm -f tests/tap/tests_tap_libtap_a-string.$(OBJEXT)
 	-rm -f tests/tests_runtests-runtests.$(OBJEXT)
-	-rm -f tests/util/concat-t.$(OBJEXT)
 	-rm -f tests/util/messages-t.$(OBJEXT)
 	-rm -f tests/util/xmalloc.$(OBJEXT)
 	-rm -f tools/tools_wa_keyring-wa_keyring.$(OBJEXT)
-	-rm -f util/concat.$(OBJEXT)
 	-rm -f util/messages.$(OBJEXT)
 	-rm -f util/xmalloc.$(OBJEXT)
 
@@ -1736,11 +1721,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-process.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-remctl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-string.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/util/$(DEPDIR)/concat-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/util/$(DEPDIR)/messages-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/util/$(DEPDIR)/xmalloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tools/$(DEPDIR)/tools_wa_keyring-wa_keyring.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/concat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/messages.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/xmalloc.Po@am__quote@
 

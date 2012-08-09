@@ -3,6 +3,7 @@
  *
  * This header includes the following APR headers:
  *
+ *     #include <apr_errno.h>
  *     #include <apr_general.h>
  *     #include <apr_pools.h>
  *     #include <apr_strings.h>
@@ -27,6 +28,7 @@
 #ifndef PORTABLE_APR_H
 #define PORTABLE_APR_H 1
 
+#include <apr_errno.h>
 #include <apr_general.h>
 #include <apr_pools.h>
 #include <apr_strings.h>

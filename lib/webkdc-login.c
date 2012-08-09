@@ -110,12 +110,9 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
     /* Get the realm. */
     status = webauth_krb5_get_realm(ctx, kc, &realm);
     if (status != WA_ERR_NONE)
-        goto done;
+        return status;
 
-    /*
-     * We assume that all realms listed in the configuration are already
-     * escaped, as is the realm parameter.
-     */
+    /* Check against the configured permitted realms. */
     for (i = 0; i < ctx->webkdc->permitted_realms->nelts; i++) {
         allow = APR_ARRAY_IDX(ctx->webkdc->permitted_realms, i, const char *);
         if (strcmp(allow, realm) == 0) {
@@ -128,10 +125,7 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
         response->login_message
             = apr_psprintf(ctx->pool, "realm %s is not permitted", realm);
     }
-    status = WA_ERR_NONE;
-
-done:
-    return status;
+    return WA_ERR_NONE;
 }
 
 

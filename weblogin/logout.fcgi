@@ -9,16 +9,15 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jeanmarie Lucker <jlucker@stanford.edu>
-# Copyright 2002, 2003, 2004, 2009, 2011
+# Converted to CGI::Application by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2002, 2003, 2004, 2009, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
 
-use CGI::Cookie ();
 use CGI::Fast ();
-use WebKDC::Config ();
 use WebLogin ();
 
 # The name of the template to use for logout.

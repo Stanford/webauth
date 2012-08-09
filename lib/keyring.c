@@ -12,9 +12,8 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <apr_file_info.h>
+#include <apr_file_io.h>
 #include <time.h>
 
 #include <lib/internal.h>
@@ -190,68 +189,59 @@ static int
 read_keyring_file(struct webauth_context *ctx, const char *path,
                   char **output, size_t *length)
 {
-    int fd = -1;
-    struct stat st;
-    size_t size, total;
+    apr_file_t *file = NULL;
+    apr_finfo_t finfo;
+    apr_size_t size;
     char *buf;
-    ssize_t nread;
-    int status;
+    apr_status_t status;
+    int s;
 
     /* Set output parameters in case of error. */
     *output = NULL;
     *length = 0;
 
     /* Open the file. */
-    fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        status = WA_ERR_KEYRING_OPENREAD;
-        webauth_error_set(ctx, status, "cannot read keyring file %s: %s",
-                          path, strerror(errno));
-        return status;
-    }
-    if (fstat(fd, &st) < 0) {
-        status = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, status, "cannot stat keyring file %s: %s",
-                          path, strerror(errno));
+    status = apr_file_open(&file, path, APR_READ, 0600, ctx->pool);
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_OPENREAD;
+        webauth_error_set_apr(ctx, s, status, "%s", path);
         goto done;
     }
 
     /* Allocate enough room for the contents. */
-    size = st.st_size;
-    if (size == 0) {
-        status = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, status, "keyring file %s is empty", path);
+    status = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_READ;
+        webauth_error_set_apr(ctx, s, status, "stat of %s", path);
         goto done;
     }
-    buf = apr_palloc(ctx->pool, size);
+    if (finfo.size == 0) {
+        s = WA_ERR_KEYRING_READ;
+        webauth_error_set(ctx, s, "file %s is empty", path);
+        goto done;
+    }
+    buf = apr_palloc(ctx->pool, finfo.size);
 
-    /* Read the contents, looping on interruptions and partial reads. */
-    total = 0;
-    while (total < size) {
-        nread = read(fd, buf + total, size - total);
-        if (nread < 0) {
-            if (errno == EINTR)
-                continue;
-            status = WA_ERR_KEYRING_READ;
-            webauth_error_set(ctx, status, "cannot read keyring file %s: %s",
-                              path, strerror(errno));
-            goto done;
-        } else if (nread == 0) {
-            status = WA_ERR_KEYRING_READ;
-            webauth_error_set(ctx, status,
-                              "keyring file %s modified during read", path);
-            goto done;
-        }
-        total += nread;
+    /* Read the contents. */
+    status = apr_file_read_full(file, buf, finfo.size, &size);
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_READ;
+        webauth_error_set_apr(ctx, s, status, "%s", path);
+        goto done;
+    }
+    if (size != finfo.size) {
+        s = WA_ERR_KEYRING_READ;
+        webauth_error_set(ctx, s, "file %s modified during read", path);
+        goto done;
     }
     *output = buf;
     *length = size;
-    status = WA_ERR_NONE;
+    s = WA_ERR_NONE;
 
 done:
-    if (fd >= 0)
-        close(fd);
-    return status;
+    if (file != NULL)
+        apr_file_close(file);
+    return s;
 }
 
 
@@ -503,51 +493,52 @@ int
 webauth_keyring_write(struct webauth_context *ctx,
                       const struct webauth_keyring *ring, const char *path)
 {
-    int status;
-    int fd = -1;
+    apr_file_t *file = NULL;
     size_t length;
-    ssize_t nwrite;
     char *temp, *buf;
+    apr_status_t status;
+    int s;
 
     /* Create a temporary file for the new copy of the keyring. */
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
-    fd = mkstemp(temp);
-    if (fd < 0) {
-        status = WA_ERR_KEYRING_OPENWRITE;
-        webauth_error_set(ctx, status, "cannot create temporary keyring file"
-                          "%s.XXXXXX: %s", path, strerror(errno));
+    status = apr_file_mktemp(&file, temp, APR_CREATE | APR_WRITE | APR_EXCL,
+                             ctx->pool);
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_OPENWRITE;
+        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
         goto done;
     }
 
     /* Encode and write out the file. */
-    status = encode(ctx, ring, &buf, &length);
-    if (status != WA_ERR_NONE)
+    s = encode(ctx, ring, &buf, &length);
+    if (s != WA_ERR_NONE)
         goto done;
-    nwrite = write(fd, buf, length);
-    if (nwrite < 0 || (size_t) nwrite != length || close(fd) < 0) {
-        status = WA_ERR_KEYRING_WRITE;
-        webauth_error_set(ctx, status, "error writing to temporary keyring"
-                          " file %s: %s", temp, strerror(errno));
+    status = apr_file_write_full(file, buf, length, NULL);
+    if (status == APR_SUCCESS) {
+        status = apr_file_close(file);
+        file = NULL;
+    }
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_WRITE;
+        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
         goto done;
     }
-    fd = -1;
 
     /* Rename the new file over the old path. */
-    if (rename(temp, path) < 0) {
-        status = WA_ERR_KEYRING_WRITE;
-        webauth_error_set(ctx, status, "cannot rename temporary keyring file"
-                          " %s to %s: %s", temp, path, strerror(errno));
+    status = apr_file_rename(temp, path, ctx->pool);
+    if (status != APR_SUCCESS) {
+        s = WA_ERR_KEYRING_WRITE;
+        webauth_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
         goto done;
     }
-    status = WA_ERR_NONE;
+    s = WA_ERR_NONE;
 
 done:
-    /* Should be -1 and closed by now, else an error occured. */
-    if (fd >= 0) {
-        close(fd);
-        unlink(temp);
+    if (file != NULL) {
+        apr_file_close(file);
+        apr_file_remove(temp, ctx->pool);
     }
-    return status;
+    return s;
 }
 
 
