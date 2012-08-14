@@ -257,6 +257,10 @@ mod_webkdc:
    the WebLogin server can choose whether to tell the user about them.
    This will let us remove the token.acl parser in WebLogin.
 
+ * WEBAUTH-114: Allow the user information service to provide the last
+   password change date, and expose that information via the login
+   history.
+
 WebLogin:
 
  * WEBAUTH-14: Pass the password expiration information to the templates
