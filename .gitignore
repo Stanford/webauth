@@ -40,7 +40,6 @@
 /tests/config/password
 /tests/data/conf-webkdc
 /tests/lib/attrs-t
-/tests/lib/base64-t
 /tests/lib/hex-t
 /tests/lib/factors-t
 /tests/lib/interval-t

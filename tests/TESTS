@@ -1,5 +1,4 @@
 lib/attrs
-lib/base64
 lib/factors
 lib/hex
 lib/interval

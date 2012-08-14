@@ -17,7 +17,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
 use WebAuth::Key ();
 
-BEGIN { plan tests => 49 }
+BEGIN { plan tests => 44 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -29,19 +29,6 @@ eval {
     is (WA_AES_128, 16, 'Check for constant WA_AES_128 works');
     is (WebAuth::WA_AES_192, 24, ' and WA_AES_192');
     is (WebAuth::WA_AES_256, 32, ' and WA_AES_256');
-
-    # base64 tests
-    is ($wa->base64_encode ('hello'), 'aGVsbG8=',
-        'base64 encoding works');
-    is ($wa->base64_decode ('aGVsbG8='), 'hello',
-        ' as does decoding');
-    is ($wa->base64_decode ($wa->base64_encode ('\000\001\002')),
-        '\000\001\002', ' and encoding and decoding in turn');
-
-    # Test failure by feeding a bad base64 string.
-    eval { $wa->base64_decode ('axc') };
-    ok ($@->isa ('WebAuth::Exception'), 'Decoding a bad base64 string fails');
-    is ($@->status, WA_ERR_CORRUPT, ' with corrupt string error');
 
     # Hex tests
     is ($wa->hex_encode ('\000\001\002\003\004\005'),

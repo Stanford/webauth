@@ -183,59 +183,6 @@ typedef struct {
 
 
 /*
- * BASE64 ENCODING AND DECODING
- */
-
-/*
- * Returns the amount of space required to base64-encode data.  Returned
- * length does NOT include room for nul-termination.
- */
-size_t webauth_base64_encoded_length(size_t length);
-
-/*
- * Amount of space required to base64-decode data.
- *
- * Returns the amount of space required to base64-decode data of the given
- * length.  Does not actually attempt to ensure that the input contains a
- * valid base64-encoded string, other than checking the last two characters
- * for padding ("=").  Returned length does NOT include room for
- * nul-termination.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_CORRUPT if length is not greater
- * than 0 and a multiple of 4, since the input data cannot be valid
- * base64-encoded data.
- */
-int webauth_base64_decoded_length(const char *, size_t length,
-                                  size_t *decoded_length);
-
-/*
- * Base64-encode the given data.
- *
- * Does NOT nul-terminate.  Output cannot point to the same memory space as
- * input.
- *
- * Returns WA_ERR_NONE on success, or WA_ERR_NO_ROOM if encoding the provided
- * data would require more space than max_output_len.
- */
-int webauth_base64_encode(const char *input, size_t input_len,
-                          char *output, size_t *output_len,
-                          size_t max_output_len);
-
-/*
- * Base64-decode the given data.
- *
- * Does NOT nul-terminate.  Output may point to input.
- *
- * Returns WA_ERR_NONE on success, WA_ERR_NO_ROOM if decoding the provided
- * data would require more space than max_output_len, or WA_ERR_CORRUPT if
- * input is not valid base64-encoded data.
- */
-int webauth_base64_decode(char *input, size_t input_len,
-                          char *output, size_t *output_len,
-                          size_t max_output_len);
-
-
-/*
  * HEX ENCODING AND DECODING
  */
 

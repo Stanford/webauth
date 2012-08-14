@@ -43,6 +43,7 @@ use warnings;
 use CGI ();
 use CGI::Cookie ();
 use CGI::Fast ();
+use MIME::Base64 qw(encode_base64);
 use Template ();
 use WebAuth qw(3.02 :const);
 use WebKDC ();
@@ -869,8 +870,8 @@ sub add_proxy_token {
         $context->init_via_cache;
         my ($tgt, $expires) = $context->export_cred;
         ($kreq, $data) = $context->make_auth ($principal, $tgt);
-        $kreq = $self->{webauth}->base64_encode ($kreq);
-        $data = $self->{webauth}->base64_encode ($data);
+        $kreq = encode_base64 ($kreq, '');
+        $data = encode_base64 ($data, '');
     };
     if ($@) {
         print STDERR "failed to create proxy token request for"

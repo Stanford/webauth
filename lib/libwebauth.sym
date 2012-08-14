@@ -15,10 +15,6 @@ webauth_attr_list_new
 webauth_attrs_decode
 webauth_attrs_encode
 webauth_attrs_encoded_length
-webauth_base64_decode
-webauth_base64_decoded_length
-webauth_base64_encode
-webauth_base64_encoded_length
 webauth_context_free
 webauth_context_init
 webauth_context_init_apr

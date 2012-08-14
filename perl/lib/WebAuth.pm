@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.02';
+    $VERSION = '3.03';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -237,20 +237,6 @@ inside WebAuth tokens.  The values in the ATTRS hash are converted to
 strings if they are not already.  Nested complex data structures, such as
 references to other arrays or hashes, are not supported and will produce
 undefined results.
-
-=item base64_decode (INPUT)
-
-Decode INPUT as a base64 string and return the result.
-
-This function is deprecated; use decode_base64() from L<MIME::Base64>
-instead.
-
-=item base64_encode (INPUT);
-
-Encode INPUT into base64 and return the result.
-
-This function is deprecated; use encode_base64() from L<MIME::Base64>
-instead.
 
 =item error_message (STATUS)
 

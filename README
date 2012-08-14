@@ -126,6 +126,7 @@ REQUIREMENTS
       CGI::Application::Plugin::TT
       libwww (LWP)
       IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
+      MIME::Base64 (part of Perl itself since 5.7.3)
       Template (Template Toolkit)
       URI
       XML::Parser

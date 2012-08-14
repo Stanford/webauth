@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.0 (unreleased)
+
+    The webauth_base64_* functions have been removed from libwebauth, as
+    have the corresponding Perl bindings.  For C programs, use the
+    apr_base64_* functions from APR-Util instead.  For Perl programs, use
+    MIME::Base64.
+
 WebAuth 4.3.1 (2012-08-08)
 
     Allow WebAuthDoLogout in .htaccess files with AllowOverride

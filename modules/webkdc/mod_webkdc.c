@@ -1925,10 +1925,11 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     static const char *mwk_func = "handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
-    char *sc_data, *pd_data;
-    void *dpd_data, *tgt;
+    char *bsc_data = NULL;
+    char *bpd_data = NULL;
+    void *sc_data, *pd_data, *dpd_data, *tgt;
     const char *token_data;
-    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len;
+    size_t sc_len, pd_len, dpd_len, tgt_len;
     int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
@@ -1937,17 +1938,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     struct webauth_token token;
 
     *subject_out = apr_pstrdup(rc->r->pool, "<unknown>");
-    sc_data = NULL;
-    pd_data = NULL;
-
     client_principal = NULL;
     ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "proxyData") == 0) {
-            pd_data = get_elem_text(rc, child, mwk_func);
-            if (pd_data == NULL)
+            bpd_data = get_elem_text(rc, child, mwk_func);
+            if (bpd_data == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
             const char *at = get_attr_value(rc, child, "type",  1, mwk_func);
@@ -1961,8 +1959,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
                                          mwk_func, true);
             }
-            sc_data = get_elem_text(rc, child, mwk_func);
-            if (sc_data == NULL)
+            bsc_data = get_elem_text(rc, child, mwk_func);
+            if (bsc_data == NULL)
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
@@ -1971,42 +1969,26 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found proxyData */
-    if (pd_data == NULL) {
+    if (bpd_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <proxyData>",
                                  mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
-    if (sc_data == NULL) {
+    if (bsc_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
                                  mwk_func, true);
     }
 
-    sc_blen = strlen(sc_data);
-    status = webauth_base64_decode(sc_data, sc_blen,
-                                   sc_data, &sc_len,
-                                   sc_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                                              "webauth_base64_decode",
-                                              "subjectCredential");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
+    /* Decode the base64 encoding. */
+    sc_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bsc_data));
+    sc_len = apr_base64_decode(sc_data, bsc_data);
+    pd_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bpd_data));
+    pd_len = apr_base64_decode(pd_data, bpd_data);
 
-    pd_blen = strlen(pd_data);
-    status = webauth_base64_decode(pd_data, pd_blen,
-                                   pd_data, &pd_len,
-                                   pd_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                        "webauth_base64_decode", "proxyData");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
-
+    /* Process the Kerberos authenticator and encrypted data. */
     kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
     if (kc == NULL) {
