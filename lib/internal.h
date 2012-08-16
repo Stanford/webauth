@@ -84,6 +84,7 @@ struct webauth_encoding {
     const char *desc;                   /* Description for error reporting */
     enum webauth_encoding_type type;    /* Data type */
     bool optional;                      /* Whether attribute is optional */
+    bool ascii;                         /* Whether to use ASCII-safe format */
     size_t offset;                      /* Offset of data value */
     size_t len_offset;                  /* Offset of data value length */
     size_t size;                        /* Size of nested structure */
@@ -91,7 +92,7 @@ struct webauth_encoding {
 };
 
 /* Used as the terminator for an encoding specification. */
-#define WA_ENCODING_END { NULL, NULL, 0, false, 0, 0, 0, NULL }
+#define WA_ENCODING_END { NULL, NULL, 0, false, false, 0, 0, 0, NULL }
 
 BEGIN_DECLS
 

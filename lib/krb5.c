@@ -114,19 +114,20 @@ struct webauth_krb5_cred {
 #define KE(st, name, attr, type, opt)                           \
     {                                                           \
         attr, APR_STRINGIFY(name), WA_TYPE_ ## type, opt,       \
-        offsetof(struct webauth_krb5_ ## st, name), 0, 0, NULL  \
+        false, offsetof(struct webauth_krb5_ ## st, name), 0,   \
+        0, NULL                                                 \
     }
 #define KD(st, name, attr, type, opt)                           \
     {                                                           \
         attr, APR_STRINGIFY(name), WA_TYPE_ ## type, opt,       \
-        offsetof(struct webauth_krb5_ ## st, name),             \
+        false, offsetof(struct webauth_krb5_ ## st, name),      \
         offsetof(struct webauth_krb5_ ## st, name ## _len), 0,  \
         NULL                                                    \
     }
 #define KR(st, name, attr, type, opt, nest)                     \
     {                                                           \
         attr, APR_STRINGIFY(name), WA_TYPE_ ## type, opt,       \
-        offsetof(struct webauth_krb5_ ## st, name),             \
+        false, offsetof(struct webauth_krb5_ ## st, name),      \
         offsetof(struct webauth_krb5_ ## st, name ## _count),   \
         sizeof(struct webauth_krb5_ ## nest),                   \
         nest ## _encoding                                       \

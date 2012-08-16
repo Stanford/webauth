@@ -76,7 +76,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
     const struct webauth_encoding *rule;
     const char *attr;
     unsigned long i;
-    int status;
+    int status, flags;
     void *data, *repeat;
     int32_t int32;
     char *string;
@@ -95,7 +95,8 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             if (rule->optional && data == NULL)
                 break;
             size = *LOC_SIZE(input, rule->len_offset);
-            status = webauth_attr_list_add(alist, attr, data, size, WA_F_NONE);
+            flags = rule->ascii ? WA_F_FMT_HEX : WA_F_NONE;
+            status = webauth_attr_list_add(alist, attr, data, size, flags);
             break;
         case WA_TYPE_STRING:
             string = *LOC_STRING(input, rule->offset);
@@ -108,28 +109,29 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             int32 = *LOC_INT32(input, rule->offset);
             if (rule->optional && int32 == 0)
                 break;
-            status
-                = webauth_attr_list_add_int32(alist, attr, int32, WA_F_NONE);
+            flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
+            status = webauth_attr_list_add_int32(alist, attr, int32, flags);
             break;
         case WA_TYPE_UINT32:
             uint32 = *LOC_UINT32(input, rule->offset);
             if (rule->optional && uint32 == 0)
                 break;
-            status
-                = webauth_attr_list_add_uint32(alist, attr, uint32, WA_F_NONE);
+            flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
+            status = webauth_attr_list_add_uint32(alist, attr, uint32, flags);
             break;
         case WA_TYPE_TIME:
             time = *LOC_TIME(input, rule->offset);
             if (rule->optional && time == 0)
                 break;
-            status = webauth_attr_list_add_time(alist, attr, time, WA_F_NONE);
+            flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
+            status = webauth_attr_list_add_time(alist, attr, time, flags);
             break;
         case WA_TYPE_REPEAT:
             uint32 = *LOC_UINT32(input, rule->len_offset);
             if (rule->optional && uint32 == 0)
                 break;
-            status
-                = webauth_attr_list_add_uint32(alist, attr, uint32, WA_F_NONE);
+            flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
+            status = webauth_attr_list_add_uint32(alist, attr, uint32, flags);
             if (status != WA_ERR_NONE)
                 break;
             for (i = 0; i < uint32; i++) {
