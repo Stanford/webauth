@@ -964,7 +964,7 @@ write(self, path)
 {
     s = webauth_keyring_write(self->ctx, self->ring, path);
     if (s != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_keyring_write_file", s);
+        webauth_croak(self->ctx, "webauth_keyring_write", s);
     XSRETURN_YES;
 }
 
