@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.03';
+    $VERSION = '3.04';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -294,6 +294,14 @@ used to create it is destroyed, and subsequent accesses to it may cause
 memory access errors or other serious bugs.  Be careful not to retain a
 copy of a WebAuth::Keyring object after the WebAuth object that created it
 has been destroyed.
+
+=item keyring_decode (DATA)
+
+Create a new WebAuth::Keyring object by decoding DATA, which should be a
+keyring in its serialization format (as read from a file written by
+WebAuth::Keyring->write or encoded with WebAuth::Keyring->encode).  All the
+caveats about the lifetime of the WebAuth::Keyring object mentioned for
+keyring_new() also apply here.
 
 =item keyring_read (FILE)
 

@@ -656,6 +656,32 @@ keyring_new(self, ks)
 
 
 WebAuth::Keyring
+keyring_decode(self, data)
+    WebAuth self
+    SV *data
+  PROTOTYPE: $$
+  PREINIT:
+    WebAuth__Keyring ring;
+    int status;
+    const char *encoded;
+    STRLEN length;
+  CODE:
+{
+    ring = malloc(sizeof(WebAuth__Keyring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    encoded = SvPV(data, length);
+    status = webauth_keyring_decode(self, encoded, length, &ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_keyring_decode", status);
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+WebAuth::Keyring
 keyring_read(self, file)
     WebAuth self
     const char *file
@@ -858,6 +884,25 @@ best_key(self, usage, hint)
         XSRETURN_UNDEF;
     else
         webauth_croak(self->ctx, "webauth_keyring_best_key", s);
+}
+  OUTPUT:
+    RETVAL
+
+
+SV *
+encode(self)
+    WebAuth::Keyring self
+  PROTOTYPE: $$
+  PREINIT:
+    int s;
+    char *data;
+    size_t length;
+  CODE:
+{
+    s = webauth_keyring_encode(self->ctx, self->ring, &data, &length);
+    if (s != WA_ERR_NONE)
+        webauth_croak(self->ctx, "webauth_keyring_encode", s);
+    RETVAL = newSVpvn(data, length);
 }
   OUTPUT:
     RETVAL

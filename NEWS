@@ -10,7 +10,9 @@ WebAuth 4.4.0 (unreleased)
     Add public webauth_keyring_encode and webauth_keyring_decode functions
     that encode and decode keyrings into the serialization format used for
     storing them in files.  These are useful for sending WebAuth keyrings
-    over other protocols.
+    over other protocols.  Add a corresponding keyring_decode method to
+    the Perl WebAuth class and encode and decode methods to the
+    WebAuth::Keyring class.
 
 WebAuth 4.3.1 (2012-08-08)
 
