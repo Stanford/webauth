@@ -31,6 +31,8 @@ webauth_key_create
 webauth_keyring_add
 webauth_keyring_auto_update
 webauth_keyring_best_key
+webauth_keyring_decode
+webauth_keyring_encode
 webauth_keyring_from_key
 webauth_keyring_new
 webauth_keyring_read

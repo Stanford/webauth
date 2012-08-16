@@ -7,6 +7,11 @@ WebAuth 4.4.0 (unreleased)
     apr_base64_* functions from APR-Util instead.  For Perl programs, use
     MIME::Base64.
 
+    Add public webauth_keyring_encode and webauth_keyring_decode functions
+    that encode and decode keyrings into the serialization format used for
+    storing them in files.  These are useful for sending WebAuth keyrings
+    over other protocols.
+
 WebAuth 4.3.1 (2012-08-08)
 
     Allow WebAuthDoLogout in .htaccess files with AllowOverride

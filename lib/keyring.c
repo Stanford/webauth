@@ -305,11 +305,12 @@ done:
  * Decode the encoded form of a keyring into a new keyring structure and store
  * that in the ring argument.  Returns a WA_ERR code.
  */
-static int
-decode(struct webauth_context *ctx, char *input, size_t length,
-       struct webauth_keyring **output)
+int
+webauth_keyring_decode(struct webauth_context *ctx, const char *input,
+                       size_t length, struct webauth_keyring **output)
 {
     size_t i;
+    char *buf;
     int status;
     uint32_t version, count;
     WEBAUTH_ATTR_LIST *alist = NULL;
@@ -317,7 +318,8 @@ decode(struct webauth_context *ctx, char *input, size_t length,
 
     /* Get basic information and create the keyring. */
     *output = NULL;
-    status = webauth_attrs_decode(input, length, &alist);
+    buf = apr_pmemdup(ctx->pool, input, length);
+    status = webauth_attrs_decode(buf, length, &alist);
     if (status != WA_ERR_NONE) {
         webauth_error_set(ctx, status, "error decoding keyring file");
         goto done;
@@ -374,7 +376,7 @@ webauth_keyring_read(struct webauth_context *ctx, const char *path,
     status = read_keyring_file(ctx, path, &buf, &length);
     if (status != WA_ERR_NONE)
         return status;
-    return decode(ctx, buf, length, ring);
+    return webauth_keyring_decode(ctx, buf, length, ring);
 }
 
 
@@ -439,9 +441,10 @@ webauth_keyring_read(struct webauth_context *ctx, const char *path,
  * (allocating new memory for it) and the length of the encoded buffer in
  * buffer_len.  Returns an WA_ERR code.
  */
-static int
-encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
-       char **output, size_t *length)
+int
+webauth_keyring_encode(struct webauth_context *ctx,
+                       const struct webauth_keyring *ring, char **output,
+                       size_t *length)
 {
     size_t i, attr_len;
     WEBAUTH_ATTR_LIST *alist = NULL;
@@ -510,7 +513,7 @@ webauth_keyring_write(struct webauth_context *ctx,
     }
 
     /* Encode and write out the file. */
-    s = encode(ctx, ring, &buf, &length);
+    s = webauth_keyring_encode(ctx, ring, &buf, &length);
     if (s != WA_ERR_NONE)
         goto done;
     status = apr_file_write_full(file, buf, length, NULL);

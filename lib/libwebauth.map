@@ -81,3 +81,9 @@ WEBAUTH_4_3 {
         webauth_krb5_read_auth;
         webauth_krb5_read_auth_data;
 } WEBAUTH_4_2;
+
+WEBAUTH_4_4 {
+    global:
+        webauth_keyring_decode;
+        webauth_keyring_encode;
+} WEBAUTH_4_3;

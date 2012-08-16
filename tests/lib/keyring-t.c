@@ -1,8 +1,7 @@
 /*
  * Test suite for keyring handling.
  *
- * Written by Roland Schemers
- * Updated for current TAP library support by Russ Allbery
+ * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
  * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -30,13 +29,15 @@ main(void)
     const struct webauth_key *best;
     struct webauth_keyring *ring, *ring2;
     struct webauth_keyring_entry *entry, *entry2;
-    char *tmpdir, *keyring;
+    char *tmpdir, *keyring, *buf2;
+    char buf[4096];
+    FILE *file;
     int s, ks, fd;
-    size_t i;
+    size_t i, size;
     time_t now;
     enum webauth_kau_status kau;
 
-    plan(90);
+    plan(96);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -103,6 +104,27 @@ main(void)
     }
     s = webauth_keyring_write(ctx, ring2, keyring);
     is_int(WA_ERR_NONE, s, "Writing the second keyring back out succeeds");
+
+    /* Read the encoded keyring data back in. */
+    file = fopen(keyring, "r");
+    ok(file != NULL, "...and can open the file");
+    if (file == NULL)
+        ok_block(5, false, "Keyring file doesn't exist");
+    else {
+        size = fread(buf, 1, sizeof(buf), file);
+        buf[size] = '\0';
+        fclose(file);
+        s = webauth_keyring_decode(ctx, buf, size, &ring2);
+        is_int(WA_ERR_NONE, s, "...and decode the results");
+        is_int(ring->entries->nelts, ring2->entries->nelts,
+           "... and the key count matches");
+        s = webauth_keyring_encode(ctx, ring, &buf2, &size);
+        is_int(WA_ERR_NONE, s, "Encoding the first keyring works");
+        is_int(strlen(buf), size,
+               "...and the length matches the first encoding");
+        ok(memcmp(buf, buf2, strlen(buf)) == 0,
+           "...and the encoding matches what we read from the file");
+    }
 
     /* Test removal of keys from a keyring. */
     s = webauth_keyring_remove(ctx, ring, 2);
