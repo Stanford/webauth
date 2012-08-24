@@ -163,6 +163,11 @@ libwebauth:
    disk.  This makes the implementation of the wallet WebAuth keyring
    backend much easier.
 
+ * WEBAUTH-115: Split the app and request tokens into two separate structs
+   in the library API.  We have to continue to use the same encoding on
+   the wire, but we can at least not subject the library users to the
+   problem.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
