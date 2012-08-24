@@ -79,7 +79,8 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     }
 
     /* All done.  Do the attribute encoding. */
-    return webauth_encode(ctx, kc->pool, cred_encoding, &data, output, length);
+    return webauth_encode(ctx, kc->pool, wai_krb5_cred_encoding, &data,
+                          output, length);
 }
 
 
@@ -116,8 +117,8 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * struct.  is_skey is not supported by Heimdal, so ignore it.
      */
     memset(&data, 0, sizeof(data));
-    status = webauth_decode(ctx, kc->pool, cred_encoding, input, length,
-                            &data);
+    status = webauth_decode(ctx, kc->pool, wai_krb5_cred_encoding, input,
+                            length, &data);
     if (status != WA_ERR_NONE) {
         webauth_attr_list_free(alist);
         return status;

@@ -12,6 +12,11 @@ version=`grep '^WebAuth' NEWS | head -1 | cut -d' ' -f2`
 pod2man --release="$version" --center="WebAuth" tools/wa_keyring.pod \
     > tools/wa_keyring.1
 
+# Generate encoding rules for WebAuth structs.
+lib/encoding-rules lib/internal.h \
+    webauth_krb5_cred_address webauth_krb5_cred_authdata webauth_krb5_cred \
+    > lib/rules-krb5.c
+
 # Generate protocol documentation.
 cd docs
 xml2rfc protocol.xml protocol.html

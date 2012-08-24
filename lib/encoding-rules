@@ -1,0 +1,136 @@
+#!/usr/bin/perl -w
+#
+# encoding-rules -- Generate encoding rules for WebAuth data.
+#
+# This script is used by WebAuth maintainers to generate encoding rules, used
+# by the webauth_encode and webauth_decode internal library functions, to
+# translate structs to and from the WebAuth data serialization format.  This
+# is used for token generation, Kerberos credential serialization, and other
+# places serialization is needed (such as keyrings and service token caches).
+#
+# encoding-rules takes as arguments a source file that defines one more more
+# structs and then a list of structs for which to generate encodings.  It
+# creates, from this, a C source file that defines an array of
+# webauth_encoding structs that will translate those structs to and from the
+# WebAuth attribute serialization format.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+# Mappings from C types to encoding types.
+our %TYPES =
+    ('char *'       => 'STRING',
+     'const char *' => 'STRING',
+     'int32_t'      => 'INT32',
+     'uint32_t'     => 'UINT32',
+     'time_t'       => 'TIME',
+     'void *'       => 'DATA',
+     'const void *' => 'DATA');
+
+# The heading on the generated source file.
+our $HEADING = <<EOH;
+/*
+ * Automatically generated -- do not edit!
+ *
+ * This file was automatically generated from the encode comments on the
+ * members of structs in the WebAuth source using the encoding-rules
+ * script.  To make changes, modify either the encode comments or (more
+ * rarely) the encoding-rules script and run it again.
+ *
+ * Copyright 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
+ *
+ * See LICENSE for licensing terms.
+ */
+
+#include <portable/system.h>
+
+#include <lib/internal.h>
+EOH
+
+# Parse command-line arguments.
+my ($source, @structs) = @ARGV;
+unless (@structs) {
+    die "Syntax: encoding-rules <source> <struct> [<struct> ...]\n";
+}
+my %structs = map { $_ => 1 } @structs;
+
+# Parse the source file and build our encoding rules.
+open (SOURCE, '<', $source) or die "Cannot open $source: $!\n";
+my (%rules, $struct, $last);
+while (<SOURCE>) {
+    if (/^struct (\S+) \{/) {
+        next unless $structs{$1};
+        $struct = $1;
+    } elsif (/^\}/) {
+        undef $struct;
+        undef $last;
+    }
+    next unless $struct;
+    if (m,^\s+(.*?)([\w_]+);\s+/\* encode: (.*?) \*/,) {
+        my ($type, $attr, $encode) = ($1, $2, $3);
+        $type =~ s/\s+$//;
+        unless ($TYPES{$type}) {
+            die "$source:$.: unknown type $type\n";
+        }
+        my @encode = split (/,\s*/, $encode);
+        $encode = shift @encode;
+        my %options = map { $_ => 1 } @encode;
+        if ($options{repeat}) {
+            $type = 'REPEAT';
+        } else {
+            $type = $TYPES{$type};
+        }
+        my @rule = ($attr, $type, $encode, \%options);
+        $rules{$struct} ||= [];
+        push (@{ $rules{$struct} }, \@rule);
+        $last = $options{repeat} ? \@rule : undef;
+    } elsif ($last && m,^\s+(struct [\w_]+) \*([\w_]+);,) {
+        $last->[0] = $2;
+        push (@$last, $1);
+        undef $last;
+    }
+}
+
+# Generate the encoding rules.
+print $HEADING, "\n";
+for my $struct (sort keys %rules) {
+    my $name = $struct;
+    $name =~ s/^(webauth|wai)_/wai_/;
+    print "const struct webauth_encoding ${name}_encoding[] = {\n";
+    for my $rule (@{ $rules{$struct} }) {
+        my ($attr, $type, $encode, $options, $nest) = @$rule;
+        my $optional = $options->{optional} ? 'true' : 'false';
+        my $ascii = $options->{ascii} ? 'true' : 'false';
+        my $desc = $attr;
+        $desc =~ tr/_/ /;
+        print   "    {\n";
+        print qq(        "$encode",\n);
+        print qq(        "$desc",\n);
+        print   "        WA_TYPE_$type,\n";
+        print   "        $optional,\n";
+        print   "        $ascii,\n";
+        print   "        offsetof(struct $struct, $attr),\n";
+        if ($type eq 'DATA') {
+            print "        offsetof(struct $struct, ${attr}_len),\n";
+            print "        0,\n";
+            print "        NULL\n";
+        } elsif ($type eq 'REPEAT') {
+            my $nest_name = $nest;
+            $nest_name =~ s/^struct (?:(webauth|wai)_)/wai_/;
+            print "        offsetof(struct $struct, ${attr}_count),\n";
+            print "        sizeof($nest),\n";
+            print "        ${nest_name}_encoding\n";
+        } else {
+            print "        0,\n";
+            print "        0,\n";
+            print "        NULL\n";
+        }
+        print "    \},\n";
+    }
+    print "    WA_ENCODING_END\n";
+    print "};\n";
+}
