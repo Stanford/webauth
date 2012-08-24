@@ -30,12 +30,13 @@
  * pointer to the appropriate type.  Scary violations of the C type system
  * lurk here.
  */
-#define LOC_DATA(d, o)   (void **)    (void *)((char *) (d) + (o))
-#define LOC_INT32(d, o)  (int32_t *)  (void *)((char *) (d) + (o))
-#define LOC_STRING(d, o) (char **)    (void *)((char *) (d) + (o))
-#define LOC_SIZE(d, o)   (size_t *)   (void *)((char *) (d) + (o))
-#define LOC_TIME(d, o)   (time_t *)   (void *)((char *) (d) + (o))
-#define LOC_UINT32(d, o) (uint32_t *) (void *)((char *) (d) + (o))
+#define LOC_DATA(d, o)   (void **)         (void *)((char *) (d) + (o))
+#define LOC_INT32(d, o)  (int32_t *)       (void *)((char *) (d) + (o))
+#define LOC_STRING(d, o) (char **)         (void *)((char *) (d) + (o))
+#define LOC_SIZE(d, o)   (size_t *)        (void *)((char *) (d) + (o))
+#define LOC_TIME(d, o)   (time_t *)        (void *)((char *) (d) + (o))
+#define LOC_UINT32(d, o) (uint32_t *)      (void *)((char *) (d) + (o))
+#define LOC_ULONG(d, o)  (unsigned long *) (void *)((char *) (d) + (o))
 
 
 /*
@@ -83,6 +84,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
     size_t size;
     time_t time;
     uint32_t uint32;
+    unsigned long ulong;
 
     for (rule = rules; rule->attr != NULL; rule++) {
         if (element == 0)
@@ -118,6 +120,13 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
                 break;
             flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
             status = webauth_attr_list_add_uint32(alist, attr, uint32, flags);
+            break;
+        case WA_TYPE_ULONG:
+            ulong = *LOC_ULONG(input, rule->offset);
+            if (rule->optional && ulong == 0)
+                break;
+            flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
+            status = webauth_attr_list_add_uint32(alist, attr, ulong, flags);
             break;
         case WA_TYPE_TIME:
             time = *LOC_TIME(input, rule->offset);

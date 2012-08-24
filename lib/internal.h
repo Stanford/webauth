@@ -60,6 +60,7 @@ enum webauth_encoding_type {
     WA_TYPE_STRING,
     WA_TYPE_INT32,
     WA_TYPE_UINT32,
+    WA_TYPE_ULONG,
     WA_TYPE_TIME,
     WA_TYPE_REPEAT
 };

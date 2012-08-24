@@ -22,13 +22,14 @@
 
 # Mappings from C types to encoding types.
 our %TYPES =
-    ('char *'       => 'STRING',
-     'const char *' => 'STRING',
-     'int32_t'      => 'INT32',
-     'uint32_t'     => 'UINT32',
-     'time_t'       => 'TIME',
-     'void *'       => 'DATA',
-     'const void *' => 'DATA');
+    ('char *'        => 'STRING',
+     'const char *'  => 'STRING',
+     'int32_t'       => 'INT32',
+     'uint32_t'      => 'UINT32',
+     'unsigned long' => 'ULONG',
+     'time_t'        => 'TIME',
+     'void *'        => 'DATA',
+     'const void *'  => 'DATA');
 
 # The heading on the generated source file.
 our $HEADING = <<EOH;
