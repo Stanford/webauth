@@ -79,6 +79,12 @@ enum webauth_token_type {
 };
 
 /*
+ * In the following token struct definitions, the "encode" comments are used
+ * internally by the WebAuth code to generate encoding rules for the wire
+ * format of the tokens.
+ */
+
+/*
  * Application token, used by a WebAuth Application Server to hold
  * authentication information for its own use.  (Note that applications are
  * not required to use this token format; nothing else in the WebAuth protocol
@@ -86,15 +92,15 @@ enum webauth_token_type {
  * standard WebAuth distribution for the application cookie.)
  */
 struct webauth_token_app {
-    const char *subject;
-    time_t last_used;
-    const void *session_key;
+    const char *subject;                /* encode: s, optional */
+    time_t last_used;                   /* encode: lt, optional */
+    const void *session_key;            /* encode: k, optional */
     size_t session_key_len;
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
-    time_t creation;
-    time_t expiration;
+    const char *initial_factors;        /* encode: ia, optional */
+    const char *session_factors;        /* encode: san, optional */
+    unsigned long loa;                  /* encode: loa, optional */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*
@@ -104,28 +110,23 @@ struct webauth_token_app {
  * uses it to store the credentials in cookies.
  */
 struct webauth_token_cred {
-    const char *subject;
-    const char *type;
-    const char *service;
-    const void *data;
+    const char *subject;                /* encode: s */
+    const char *type;                   /* encode: crt */
+    const char *service;                /* encode: crs */
+    const void *data;                   /* encode: crd */
     size_t data_len;
-    time_t creation;
-    time_t expiration;
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*
  * Error token, returned by the WebKDC in response to a request token if some
  * error occurred in processing that request.
- *
- * Note that the error code is a string, not a number, in the WebAuth protocol
- * on the wire.  This cannot be changed in the protocol due to backward
- * compatibility constraints, but the code is presented as a number to users
- * of the library for convenience.
  */
 struct webauth_token_error {
-    unsigned long code;
-    const char *message;
-    time_t creation;
+    unsigned long code;                 /* encode: ec, ascii */
+    const char *message;                /* encode: em */
+    time_t creation;                    /* encode: ct, creation */
 };
 
 /*
@@ -134,15 +135,15 @@ struct webauth_token_error {
  * communicate the authentication information.
  */
 struct webauth_token_id {
-    const char *subject;
-    const char *auth;
-    const void *auth_data;
+    const char *subject;                /* encode: s, optional */
+    const char *auth;                   /* encode: sa */
+    const void *auth_data;              /* encode: sad, optional */
     size_t auth_data_len;
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
-    time_t creation;
-    time_t expiration;
+    const char *initial_factors;        /* encode: ia, optional */
+    const char *session_factors;        /* encode: san, optional */
+    unsigned long loa;                  /* encode: loa, optional */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*
@@ -150,10 +151,10 @@ struct webauth_token_id {
  * user's username and password or other authentication secret.
  */
 struct webauth_token_login {
-    const char *username;
-    const char *password;
-    const char *otp;
-    time_t creation;
+    const char *username;               /* encode: u */
+    const char *password;               /* encode: p, optional */
+    const char *otp;                    /* encode: otp, optional */
+    time_t creation;                    /* encode: ct, creation */
 };
 
 /*
@@ -163,15 +164,15 @@ struct webauth_token_login {
  * and used as an opaque blob for creating later requests to the WebKDC.
  */
 struct webauth_token_proxy {
-    const char *subject;
-    const char *type;
-    const void *webkdc_proxy;
+    const char *subject;                /* encode: s */
+    const char *type;                   /* encode: pt */
+    const void *webkdc_proxy;           /* encode: wt */
     size_t webkdc_proxy_len;
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
-    time_t creation;
-    time_t expiration;
+    const char *initial_factors;        /* encode: ia, optional */
+    const char *session_factors;        /* encode: san, optional */
+    unsigned long loa;                  /* encode: loa, optional */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*
@@ -184,18 +185,18 @@ struct webauth_token_proxy {
  * creation time.
  */
 struct webauth_token_request {
-    const char *type;
-    const char *auth;
-    const char *proxy_type;
-    const void *state;
+    const char *type;                   /* encode: rtt, optional */
+    const char *auth;                   /* encode: sa, optional */
+    const char *proxy_type;             /* encode: pt, optional */
+    const void *state;                  /* encode: as, optional */
     size_t state_len;
-    const char *return_url;
-    const char *options;
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
-    const char *command;
-    time_t creation;
+    const char *return_url;             /* encode: ru, optional */
+    const char *options;                /* encode: ro, optional */
+    const char *initial_factors;        /* encode: ia, optional */
+    const char *session_factors;        /* encode: san, optional */
+    unsigned long loa;                  /* encode: loa, optional */
+    const char *command;                /* encode: cmd, optional */
+    time_t creation;                    /* encode: ct, creation */
 };
 
 /*
@@ -214,15 +215,15 @@ struct webauth_token_request {
  * token is encoded.
  */
 struct webauth_token_webkdc_proxy {
-    const char *subject;
-    const char *proxy_type;
-    const char *proxy_subject;
-    const void *data;
+    const char *subject;                /* encode: s */
+    const char *proxy_type;             /* encode: pt */
+    const char *proxy_subject;          /* encode: ps */
+    const void *data;                   /* encode: pd, optional */
     size_t data_len;
-    const char *initial_factors;
-    unsigned long loa;
-    time_t creation;
-    time_t expiration;
+    const char *initial_factors;        /* encode: ia, optional */
+    unsigned long loa;                  /* encode: loa, optional */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 
     /* Not included in the wire representation. */
     const char *session_factors;
@@ -236,11 +237,11 @@ struct webauth_token_webkdc_proxy {
  * used by the WebKDC to recover the session key without having local state.
  */
 struct webauth_token_webkdc_service {
-    const char *subject;
-    const void *session_key;
+    const char *subject;                /* encode: s */
+    const void *session_key;            /* encode: k */
     size_t session_key_len;
-    time_t creation;
-    time_t expiration;
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*

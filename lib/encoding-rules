@@ -14,6 +14,35 @@
 # webauth_encoding structs that will translate those structs to and from the
 # WebAuth attribute serialization format.
 #
+# The following options are supported:
+#
+#   ascii
+#
+#     Only used for numeric and data attributes.  Encode the attribute in
+#     ASCII rather than using a binary form.  For numeric attributes, this
+#     means encoding the value as ASCII digits.  For data attributes, this
+#     means encoding the value in hex.  The inverse is done when decoding.
+#
+#   creation
+#
+#     Only valid for TIME attributes.  This attribute represents a creation
+#     time.  If it is not set when encoding, the current time will be encoded
+#     as the value of this attribute.
+#
+#   optional
+#
+#     Indicates that this attribute is optional in the encoding.  If it is
+#     NULL or 0, the attribute will be ommitted when encoding.  If the
+#     attribute is missing from an encoded form, this is not a problem.
+#     Absent this option, numeric attributes will be encoded as 0 if the value
+#     is 0, NULL string and data attributes are an error, and the attribute
+#     must be present when parsing the encoded form or an error is reported.
+#
+#   repeat
+#
+#     This attribute represents the count of a repeated nested struct, which
+#     will be the next attribute in the struct.
+#
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2012
 #     The Board of Trustees of the Leland Stanford Junior University
@@ -71,12 +100,17 @@ while (<SOURCE>) {
         undef $last;
     }
     next unless $struct;
+
+    # Found an attribute with an encoding specified.
     if (m,^\s+(.*?)([\w_]+);\s+/\* encode: (.*?) \*/,) {
         my ($type, $attr, $encode) = ($1, $2, $3);
         $type =~ s/\s+$//;
         unless ($TYPES{$type}) {
             die "$source:$.: unknown type $type\n";
         }
+
+        # The first encode: argument is the name of the attribute.  Any
+        # remaining ones are options.
         my @encode = split (/,\s*/, $encode);
         $encode = shift @encode;
         my %options = map { $_ => 1 } @encode;
@@ -85,9 +119,17 @@ while (<SOURCE>) {
         } else {
             $type = $TYPES{$type};
         }
+        if ($type ne 'TIME' && $options{creation}) {
+            die "$source:$.: creation option specified on non-TIME attribute"
+                . " $attr\n";
+        }
         my @rule = ($attr, $type, $encode, \%options);
         $rules{$struct} ||= [];
         push (@{ $rules{$struct} }, \@rule);
+
+        # If this is an attribute of type REPEAT, the next attribute will be
+        # the nested struct from which we should derive the nested encoding
+        # variable.
         $last = $options{repeat} ? \@rule : undef;
     } elsif ($last && m,^\s+(struct [\w_]+) \*([\w_]+);,) {
         $last->[0] = $2;
@@ -97,13 +139,16 @@ while (<SOURCE>) {
 }
 
 # Generate the encoding rules.
-print $HEADING, "\n";
+print $HEADING;
+print "#include <$source>\n" unless $source eq 'lib/internal.h';
+print "\n";
 for my $struct (sort keys %rules) {
     my $name = $struct;
     $name =~ s/^(webauth|wai)_/wai_/;
     print "const struct webauth_encoding ${name}_encoding[] = {\n";
     for my $rule (@{ $rules{$struct} }) {
         my ($attr, $type, $encode, $options, $nest) = @$rule;
+        my $creation = $options->{creation} ? 'true' : 'false';
         my $optional = $options->{optional} ? 'true' : 'false';
         my $ascii = $options->{ascii} ? 'true' : 'false';
         my $desc = $attr;
@@ -112,8 +157,9 @@ for my $struct (sort keys %rules) {
         print qq(        "$encode",\n);
         print qq(        "$desc",\n);
         print   "        WA_TYPE_$type,\n";
-        print   "        $optional,\n";
-        print   "        $ascii,\n";
+        print   "        $optional, /* optional */\n";
+        print   "        $ascii,    /* ascii */\n";
+        print   "        $creation, /* creation */\n";
         print   "        offsetof(struct $struct, $attr),\n";
         if ($type eq 'DATA') {
             print "        offsetof(struct $struct, ${attr}_len),\n";

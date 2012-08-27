@@ -24,6 +24,7 @@
 #include <util/macros.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 /*
  * Macros used to resolve a void * pointer to a struct and an offset into a
@@ -193,6 +194,56 @@ webauth_decode(struct webauth_context *ctx, apr_pool_t *pool,
         return status;
     }
     status = decode_from_attrs(ctx, pool, rules, alist, data, NULL, 0);
+    webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Similar to webauth_decode, but decodes a WebAuth token, including handling
+ * the determination of the type of the token from the attributes.  Uses the
+ * memory pool from the WebAuth context.  This does not perform any sanity
+ * checking on the token data; that must be done by higher-level code.
+ */
+int
+webauth_decode_token(struct webauth_context *ctx, const void *input,
+                     size_t length, struct webauth_token *token)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    void *buf, *data;
+    char *type;
+    size_t vlen;
+    const struct webauth_encoding *rules;
+
+    memset(token, 0, sizeof(*token));
+    buf = apr_pmemdup(ctx->pool, input, length);
+    status = webauth_attrs_decode(buf, length, &alist);
+    if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "decoding attributes");
+        return status;
+    }
+    status = webauth_attr_list_get_str(alist, "t", &type, &vlen, WA_F_NONE);
+    if (status == WA_ERR_NOT_FOUND) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "token has no type attribute");
+        goto done;
+    } else if (status != WA_ERR_NONE) {
+        webauth_error_set(ctx, status, "bad token");
+        goto done;
+    }
+    token->type = webauth_token_type_code(type);
+    if (token->type == WA_TOKEN_UNKNOWN) {
+        status = WA_ERR_CORRUPT;
+        webauth_error_set(ctx, status, "unknown token type %s", type);
+        goto done;
+    }
+    status = wai_token_encoding(ctx, token, &rules, (const void **) &data);
+    if (status != WA_ERR_NONE)
+        goto done;
+    status = decode_from_attrs(ctx, ctx->pool, rules, alist, data, NULL, 0);
+
+done:
     webauth_attr_list_free(alist);
     return status;
 }

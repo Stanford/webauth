@@ -13,6 +13,7 @@
 /include/webauth/defines.h
 /lib/libwebauth.pc
 /lib/rules-krb5.c
+/lib/rules-tokens.c
 /libtool
 /m4/libtool.m4
 /m4/ltoptions.m4

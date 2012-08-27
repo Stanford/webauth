@@ -20,10 +20,13 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <time.h>
+
 #include <lib/internal.h>
 #include <util/macros.h>
 #include <webauth.h>
 #include <webauth/basic.h>
+#include <webauth/tokens.h>
 
 /*
  * Macros used to resolve a void * pointer to a struct and an offset into a
@@ -82,7 +85,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
     int32_t int32;
     char *string;
     size_t size;
-    time_t time;
+    time_t timev;
     uint32_t uint32;
     unsigned long ulong;
 
@@ -96,6 +99,10 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             data = *LOC_DATA(input, rule->offset);
             if (rule->optional && data == NULL)
                 break;
+            if (data == NULL) {
+                status = WA_ERR_INVALID;
+                break;
+            }
             size = *LOC_SIZE(input, rule->len_offset);
             flags = rule->ascii ? WA_F_FMT_HEX : WA_F_NONE;
             status = webauth_attr_list_add(alist, attr, data, size, flags);
@@ -104,6 +111,10 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             string = *LOC_STRING(input, rule->offset);
             if (rule->optional && string == NULL)
                 break;
+            if (string == NULL) {
+                status = WA_ERR_INVALID;
+                break;
+            }
             status = webauth_attr_list_add_str(alist, attr, string,
                                                strlen(string), WA_F_NONE);
             break;
@@ -129,11 +140,13 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             status = webauth_attr_list_add_uint32(alist, attr, ulong, flags);
             break;
         case WA_TYPE_TIME:
-            time = *LOC_TIME(input, rule->offset);
-            if (rule->optional && time == 0)
+            timev = *LOC_TIME(input, rule->offset);
+            if (rule->creation && timev == 0)
+                timev = time(NULL);
+            if (rule->optional && timev == 0)
                 break;
             flags = rule->ascii ? WA_F_FMT_STR : WA_F_NONE;
-            status = webauth_attr_list_add_time(alist, attr, time, flags);
+            status = webauth_attr_list_add_time(alist, attr, timev, flags);
             break;
         case WA_TYPE_REPEAT:
             uint32 = *LOC_UINT32(input, rule->len_offset);
@@ -189,6 +202,48 @@ webauth_encode(struct webauth_context *ctx, apr_pool_t *pool,
         goto done;
     size = webauth_attrs_encoded_length(alist);
     *output = apr_palloc(pool, size);
+    status = webauth_attrs_encode(alist, *output, length, size);
+    if (status != WA_ERR_NONE)
+        webauth_error_set(ctx, status, "encoding attributes");
+
+done:
+    webauth_attr_list_free(alist);
+    return status;
+}
+
+
+/*
+ * Similar to webauth_encode, but encodes a WebAuth token, including adding
+ * the appropriate encoding of the token type.  This does not perform any
+ * sanity checking on the token data; that must be done by higher-level code.
+ */
+int
+webauth_encode_token(struct webauth_context *ctx,
+                     const struct webauth_token *token,
+                     void **output, size_t *length)
+{
+    WEBAUTH_ATTR_LIST *alist;
+    int status;
+    size_t size;
+    const struct webauth_encoding *rules;
+    const void *data;
+
+    status = wai_token_encoding(ctx, token, &rules, &data);
+    if (status != WA_ERR_NONE)
+        return status;
+    alist = webauth_attr_list_new(10);
+    if (alist == NULL) {
+        webauth_error_set(ctx, WA_ERR_NO_MEM, "creating attribute list");
+        return WA_ERR_NO_MEM;
+    }
+    webauth_attr_list_add_str(alist, "t",
+                              webauth_token_type_string(token->type), 0,
+                              WA_F_NONE);
+    status = encode_to_attrs(ctx, ctx->pool, rules, data, alist, NULL, 0);
+    if (status != WA_ERR_NONE)
+        goto done;
+    size = webauth_attrs_encoded_length(alist);
+    *output = apr_palloc(ctx->pool, size);
     status = webauth_attrs_encode(alist, *output, length, size);
     if (status != WA_ERR_NONE)
         webauth_error_set(ctx, status, "encoding attributes");

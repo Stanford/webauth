@@ -19,6 +19,7 @@
 #include <apr_xml.h>            /* apr_xml_elem */
 
 struct webauth_keyring;
+struct webauth_token;
 
 /*
  * The internal context struct, which holds any state information required for
@@ -86,6 +87,7 @@ struct webauth_encoding {
     enum webauth_encoding_type type;    /* Data type */
     bool optional;                      /* Whether attribute is optional */
     bool ascii;                         /* Whether to use ASCII-safe format */
+    bool creation;                      /* Whether this is a creation time */
     size_t offset;                      /* Offset of data value */
     size_t len_offset;                  /* Offset of data value length */
     size_t size;                        /* Size of nested structure */
@@ -93,7 +95,7 @@ struct webauth_encoding {
 };
 
 /* Used as the terminator for an encoding specification. */
-#define WA_ENCODING_END { NULL, NULL, 0, false, false, 0, 0, 0, NULL }
+#define WA_ENCODING_END { NULL, NULL, 0, false, false, false, 0, 0, 0, NULL }
 
 /*
  * Encoding rules.  These are defined in the lib/rules-*.c files, which in
@@ -103,6 +105,15 @@ struct webauth_encoding {
 extern const struct webauth_encoding wai_krb5_cred_encoding[];
 extern const struct webauth_encoding wai_krb5_cred_address_encoding[];
 extern const struct webauth_encoding wai_krb5_cred_authdata_encoding[];
+extern const struct webauth_encoding wai_token_app_encoding[];
+extern const struct webauth_encoding wai_token_cred_encoding[];
+extern const struct webauth_encoding wai_token_error_encoding[];
+extern const struct webauth_encoding wai_token_id_encoding[];
+extern const struct webauth_encoding wai_token_login_encoding[];
+extern const struct webauth_encoding wai_token_proxy_encoding[];
+extern const struct webauth_encoding wai_token_request_encoding[];
+extern const struct webauth_encoding wai_token_webkdc_proxy_encoding[];
+extern const struct webauth_encoding wai_token_webkdc_service_encoding[];
 
 /*
  * The internal representation of a Kerberos credential.  This representation
@@ -183,6 +194,16 @@ int webauth_decode(struct webauth_context *, apr_pool_t *,
     __attribute__((__nonnull__));
 
 /*
+ * Similar to webauth_decode, but decodes a WebAuth token, including handling
+ * the determination of the type of the token from the attributes.  Uses the
+ * memory pool from the WebAuth context.  This does not perform any sanity
+ * checking on the token data; that must be done by higher-level code.
+ */
+int webauth_decode_token(struct webauth_context *, const void *input, size_t,
+                         struct webauth_token *)
+    __attribute__((__nonnull__));
+
+/*
  * Encode the struct pointed to by data according to given the rules into the
  * output parameter, storing the encoded data length.  The result will be in
  * WebAuth attribute encoding format.  Takes a separate pool to use for memory
@@ -193,6 +214,15 @@ int webauth_encode(struct webauth_context *, apr_pool_t *,
                    size_t *)
     __attribute__((__nonnull__));
 
+/*
+ * Similar to webauth_encode, but encodes a WebAuth token, including adding
+ * the appropriate encoding of the token type.  This does not perform any
+ * sanity checking on the token data; that must be done by higher-level code.
+ */
+int webauth_encode_token(struct webauth_context *,
+                         const struct webauth_token *, void **, size_t *)
+    __attribute__((__nonnull__));
+
 /* Set the internal WebAuth error message and error code. */
 void webauth_error_set(struct webauth_context *, int err, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 3, 4)));
@@ -201,6 +231,18 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
 void webauth_error_set_apr(struct webauth_context *, int err, apr_status_t,
                            const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 4, 5)));
+
+/*
+ * Map a token type code to the corresponding encoding rule set and data
+ * pointer.  Takes the token struct (which must have the type filled out), and
+ * stores a pointer to the encoding rules and a pointer to the correct data
+ * portion of the token struct in the provided output arguments.  Returns an
+ * error code, which will be set to an error if the token type is not
+ * recognized.
+ */
+int wai_token_encoding(struct webauth_context *, const struct webauth_token *,
+                       const struct webauth_encoding **, const void **)
+    __attribute__((__nonnull__));
 
 /*
  * Encrypts an input buffer (normally encoded attributes) into a token, using

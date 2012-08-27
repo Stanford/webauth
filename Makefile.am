@@ -88,12 +88,12 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/krb5.h include/webauth/tokens.h			\
 	include/webauth/util.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		 \
-	lib/attr-encode.c lib/attrs.c lib/context.c lib/factors.c	 \
-	lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h lib/misc.c	 \
-	lib/rules-krb5.c lib/token-crypto.c lib/token-decode.c		 \
-	lib/token-encode.c lib/userinfo.c lib/util.c lib/webkdc-config.c \
-	lib/webkdc-login.c lib/xml.c
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		\
+	lib/attr-encode.c lib/attrs.c lib/context.c lib/factors.c	\
+	lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h lib/misc.c	\
+	lib/rules-krb5.c lib/rules-tokens.c lib/token-crypto.c		\
+	lib/token-decode.c lib/token-encode.c lib/userinfo.c lib/util.c	\
+	lib/webkdc-config.c lib/webkdc-login.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\

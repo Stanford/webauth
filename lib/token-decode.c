@@ -111,6 +111,69 @@ webauth_token_type_string(enum webauth_token_type type)
 
 
 /*
+ * Map a token type code to the corresponding encoding rule set and data
+ * pointer.  Takes the token struct (which must have the type filled out), and
+ * stores a pointer to the encoding rules and a pointer to the correct data
+ * portion of the token struct in the provided output arguments.  Returns an
+ * error code, which will be set to an error if the token type is not
+ * recognized.
+ */
+int
+wai_token_encoding(struct webauth_context *ctx,
+                   const struct webauth_token *token,
+                   const struct webauth_encoding **rules, const void **data)
+{
+    int status;
+
+    switch (token->type) {
+    case WA_TOKEN_APP:
+        *rules = wai_token_app_encoding;
+        *data = &token->token.app;
+        break;
+    case WA_TOKEN_CRED:
+        *rules = wai_token_cred_encoding;
+        *data = &token->token.cred;
+        break;
+    case WA_TOKEN_ERROR:
+        *rules = wai_token_error_encoding;
+        *data = &token->token.error;
+        break;
+    case WA_TOKEN_ID:
+        *rules = wai_token_id_encoding;
+        *data = &token->token.id;
+        break;
+    case WA_TOKEN_LOGIN:
+        *rules = wai_token_login_encoding;
+        *data = &token->token.login;
+        break;
+    case WA_TOKEN_PROXY:
+        *rules = wai_token_proxy_encoding;
+        *data = &token->token.proxy;
+        break;
+    case WA_TOKEN_REQUEST:
+        *rules = wai_token_request_encoding;
+        *data = &token->token.request;
+        break;
+    case WA_TOKEN_WEBKDC_PROXY:
+        *rules = wai_token_webkdc_proxy_encoding;
+        *data = &token->token.webkdc_proxy;
+        break;
+    case WA_TOKEN_WEBKDC_SERVICE:
+        *rules = wai_token_webkdc_service_encoding;
+        *data = &token->token.webkdc_service;
+        break;
+    case WA_TOKEN_UNKNOWN:
+    case WA_TOKEN_ANY:
+    default:
+        status = WA_ERR_INVALID;
+        webauth_error_set(ctx, status, "unknown token type %d", token->type);
+        return status;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Parse a raw token into an attribute list and check whether it's the token
  * type that we expected.  type may be set to WA_TOKEN_ANY to accept any token
  * type, in which case it will be changed to match the actual token type on
