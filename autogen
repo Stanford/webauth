@@ -14,6 +14,9 @@ pod2man --release="$version" --center="WebAuth" tools/wa_keyring.pod \
 
 # Generate encoding rules for WebAuth structs.
 lib/encoding-rules lib/internal.h \
+    wai_keyring_entry wai_keyring \
+    > lib/rules-keyring.c
+lib/encoding-rules lib/internal.h \
     webauth_krb5_cred_address webauth_krb5_cred_authdata webauth_krb5_cred \
     > lib/rules-krb5.c
 lib/encoding-rules include/webauth/tokens.h \

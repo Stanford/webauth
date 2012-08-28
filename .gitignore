@@ -12,6 +12,7 @@
 /docs/protocol.txt
 /include/webauth/defines.h
 /lib/libwebauth.pc
+/lib/rules-keyring.c
 /lib/rules-krb5.c
 /lib/rules-tokens.c
 /libtool
