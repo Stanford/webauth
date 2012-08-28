@@ -43,18 +43,22 @@
 /*
  * Report an error while encoding an attribute.  Takes the WebAuth context,
  * status, description, context (for repeated elements), and element number
- * (for repeated elements).  This is an internal helper function for
+ * (for repeated elements), and returns the new status (we may need to do
+ * status code mapping).  This is an internal helper function for
  * decode_from_attrs.
  */
-static void
+static int
 decode_error_set(struct webauth_context *ctx, int status, const char *desc,
                  const char *context, size_t element)
 {
+    if (status == WA_ERR_NOT_FOUND)
+        status = WA_ERR_CORRUPT;
     if (context != NULL && element != 0)
         webauth_error_set(ctx, status, "decoding %s %s %lu", context, desc,
                           (unsigned long) element);
     else
         webauth_error_set(ctx, status, "decoding %s", desc);
+    return status;
 }
 
 
@@ -161,7 +165,8 @@ decode_from_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             break;
         }
         if (status != WA_ERR_NONE) {
-            decode_error_set(ctx, status, rule->desc, context, element);
+            status = decode_error_set(ctx, status, rule->desc, context,
+                                      element);
             return status;
         }
     }

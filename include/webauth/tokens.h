@@ -99,7 +99,7 @@ struct webauth_token_app {
     const char *initial_factors;        /* encode: ia, optional */
     const char *session_factors;        /* encode: san, optional */
     unsigned long loa;                  /* encode: loa, optional */
-    time_t creation;                    /* encode: ct, creation */
+    time_t creation;                    /* encode: ct, creation, optional */
     time_t expiration;                  /* encode: et */
 };
 
