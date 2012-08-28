@@ -93,7 +93,7 @@ decode_from_attrs(struct webauth_context *ctx, apr_pool_t *pool,
     uint32_t uint32;
 
     for (rule = rules; rule->attr != NULL; rule++) {
-        if (element == 0)
+        if (context == NULL)
             attr = rule->attr;
         else
             attr = apr_psprintf(pool, "%s%lu", rule->attr, element);
@@ -157,7 +157,7 @@ decode_from_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             *repeat = apr_palloc(pool, rule->size * uint32);
             for (i = 0; i < uint32; i++) {
                 data = (char *) *repeat + i * rule->size;
-                status = decode_from_attrs(ctx, pool, rules->repeat, alist,
+                status = decode_from_attrs(ctx, pool, rule->repeat, alist,
                                            data, attr, i);
                 if (status != WA_ERR_NONE)
                     return status;

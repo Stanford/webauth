@@ -65,7 +65,7 @@ encode_error_set(struct webauth_context *ctx, int status, const char *desc,
  * encode into attributes.  Takes a separate pool to use rather than using the
  * normal WebAuth context pool, since attribute encoding can churn a lot of
  * memory.  Context is a string to prepend to the description for error
- * reporting.  If element is non-zero, we are handling a repeated attribute
+ * reporting.  If context is non-NULL, we are handling a repeated attribute
  * encoding, and the element number is appended to the attribute name when
  * encoding it.
  *
@@ -90,7 +90,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
     unsigned long ulong;
 
     for (rule = rules; rule->attr != NULL; rule++) {
-        if (element == 0)
+        if (context == NULL)
             attr = rule->attr;
         else
             attr = apr_psprintf(pool, "%s%lu", rule->attr, element);
@@ -159,7 +159,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
             for (i = 0; i < uint32; i++) {
                 repeat = *LOC_STRING(input, rule->offset) + rule->size * i;
                 status = encode_to_attrs(ctx, pool, rule->repeat, repeat,
-                                         alist, context, i);
+                                         alist, attr, i);
                 if (status != WA_ERR_NONE)
                     return status;
             }
