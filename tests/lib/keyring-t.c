@@ -83,6 +83,8 @@ main(void)
     s = webauth_keyring_write(ctx, ring, keyring);
     is_int(WA_ERR_NONE, s, "Writing the keyring to a file succeeds");
     s = webauth_keyring_read(ctx, keyring, &ring2);
+    if (s != WA_ERR_NONE)
+        diag("error message: %s", webauth_error_message(ctx, s));
     is_int(WA_ERR_NONE, s, "Reading the keyring back from a file succeeds");
     is_int(ring->entries->nelts, ring2->entries->nelts,
            "... and the key count matches");
