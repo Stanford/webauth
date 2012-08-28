@@ -129,12 +129,12 @@ extern const struct webauth_encoding wai_token_webkdc_service_encoding[];
  */
 struct webauth_krb5_cred_address {
     int32_t type;                       /* encode: A */
-    void *data;                         /* encode: a, data */
+    void *data;                         /* encode: a */
     size_t data_len;
 };
 struct webauth_krb5_cred_authdata {
     int32_t type;                       /* encode: D */
-    void *data;                         /* encode: d, data */
+    void *data;                         /* encode: d */
     size_t data_len;
 };
 struct webauth_krb5_cred {
