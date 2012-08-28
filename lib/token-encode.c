@@ -25,22 +25,23 @@
 #include <webauth/tokens.h>
 
 /*
- * The mapping of token types to token names.  Note that WA_TOKEN_ANY cannot
- * be used with this array and has to be handled specially so that its value
- * won't be used by any new token type.  This must be kept in sync with the
- * enum webauth_token_type definition in webauth/tokens.h.
+ * The mapping of token types to token names as used in the token type
+ * attribute in the wire encoding.  Note that WA_TOKEN_ANY cannot be used with
+ * this array and has to be handled specially so that its value won't be used
+ * by any new token type.  This must be kept in sync with the enum
+ * webauth_token_type definition in webauth/tokens.h.
  */
 static const char * const token_name[] = {
-    "unknown",
-    WA_TT_APP,
-    WA_TT_CRED,
-    WA_TT_ERROR,
-    WA_TT_ID,
-    WA_TT_LOGIN,
-    WA_TT_PROXY,
-    WA_TT_REQUEST,
-    WA_TT_WEBKDC_PROXY,
-    WA_TT_WEBKDC_SERVICE
+    /* WA_TOKEN_UNKNOWN        = */ "unknown",
+    /* WA_TOKEN_APP            = */ "app",
+    /* WA_TOKEN_CRED           = */ "cred",
+    /* WA_TOKEN_ERROR          = */ "error",
+    /* WA_TOKEN_ID             = */ "id",
+    /* WA_TOKEN_LOGIN          = */ "login",
+    /* WA_TOKEN_PROXY          = */ "proxy",
+    /* WA_TOKEN_REQUEST        = */ "req",
+    /* WA_TOKEN_WEBKDC_PROXY   = */ "webkdc-proxy",
+    /* WA_TOKEN_WEBKDC_SERVICE = */ "webkdc-service"
 };
 
 /*

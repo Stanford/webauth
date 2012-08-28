@@ -112,17 +112,6 @@ typedef enum {
 #define WA_TK_USERNAME             "u"
 #define WA_TK_WEBKDC_TOKEN         "wt"
 
-/* Token type constants. */
-#define WA_TT_WEBKDC_SERVICE       "webkdc-service"
-#define WA_TT_WEBKDC_PROXY         "webkdc-proxy"
-#define WA_TT_REQUEST              "req"
-#define WA_TT_ERROR                "error"
-#define WA_TT_ID                   "id"
-#define WA_TT_PROXY                "proxy"
-#define WA_TT_CRED                 "cred"
-#define WA_TT_APP                  "app"
-#define WA_TT_LOGIN                "login"
-
 /* Subject auth type constants. */
 #define WA_SA_KRB5                 "krb5"
 #define WA_SA_WEBKDC               "webkdc"
