@@ -141,7 +141,7 @@ struct webauth_krb5_cred {
     char *client_principal;             /* encode: c, optional */
     char *server_principal;             /* encode: s, optional */
     int32_t keyblock_enctype;           /* encode: K */
-    void *keyblock_data;                /* encode: k, data */
+    void *keyblock_data;                /* encode: k */
     size_t keyblock_data_len;
     int32_t auth_time;                  /* encode: ta */
     int32_t start_time;                 /* encode: ts */
@@ -151,9 +151,9 @@ struct webauth_krb5_cred {
     int32_t flags;                      /* encode: f */
     uint32_t address_count;             /* encode: na, optional, repeat */
     struct webauth_krb5_cred_address *address;
-    void *ticket;                       /* encode: t, optional, data */
+    void *ticket;                       /* encode: t, optional */
     size_t ticket_len;
-    void *second_ticket;                /* encode: t, optional, data */
+    void *second_ticket;                /* encode: t, optional */
     size_t second_ticket_len;
     uint32_t authdata_count;            /* encode: nd, optional, repeat */
     struct webauth_krb5_cred_authdata *authdata;
