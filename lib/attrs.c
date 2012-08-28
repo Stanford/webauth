@@ -12,6 +12,8 @@
 #include <portable/system.h>
 
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <netinet/in.h>
 
 #include <webauth.h>
@@ -340,14 +342,20 @@ webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *list, const char *name,
     int s;
     size_t vlen;
     void *v;
+    char *end;
 
     v = NULL;
     s = webauth_attr_list_get(list, name, &v, &vlen, flags);
 
     if (s == WA_ERR_NONE) {
-        if (FLAG_ISSET(flags, WA_F_FMT_STR))
-            *value = atol((char *) v);
-        else {
+        if (FLAG_ISSET(flags, WA_F_FMT_STR)) {
+            errno = 0;
+            *value = strtoul(v, &end, 10);
+            if (*end != '\0' || (*value == ULONG_MAX && errno != 0)) {
+                s = WA_ERR_CORRUPT;
+                goto cleanup;
+            }
+        } else {
             if (vlen != sizeof(uint32_t)) {
                 s = WA_ERR_CORRUPT;
                 goto cleanup;

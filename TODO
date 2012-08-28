@@ -134,9 +134,6 @@ libwebauth:
  * WEBAUTH-7: Switch all the WebAuth library interfaces to using opaque
    structs instead of typedefs, matching our current coding style.
 
- * WEBAUTH-40: String to number conversion in the WebAuth library is being
-   done with atol instead of with strtol and with error checking.
-
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so
    that two processes don't simultaneously update a keyring.
 
