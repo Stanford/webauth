@@ -1085,7 +1085,7 @@ handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
         if (mci == NULL)
             return 0;
         subject = mci->validate_sad(rc, id->auth_data, id->auth_data_len);
-    } else if (strcmp(id->auth, WA_SA_WEBKDC) == 0) {
+    } else if (strcmp(id->auth, "webkdc") == 0) {
         subject = id->subject;
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,

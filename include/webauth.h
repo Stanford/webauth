@@ -112,10 +112,6 @@ typedef enum {
 #define WA_TK_USERNAME             "u"
 #define WA_TK_WEBKDC_TOKEN         "wt"
 
-/* Subject auth type constants. */
-#define WA_SA_KRB5                 "krb5"
-#define WA_SA_WEBKDC               "webkdc"
-
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
 #define WA_FA_PASSWORD             "p"
