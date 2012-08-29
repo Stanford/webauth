@@ -82,36 +82,6 @@ typedef enum {
  * PROTOCOL CONSTANTS
  */
 
-/* Token constants. */
-#define WA_TK_APP_STATE            "as"
-#define WA_TK_COMMAND              "cmd"
-#define WA_TK_CRED_DATA            "crd"
-#define WA_TK_CRED_SERVICE         "crs"
-#define WA_TK_CRED_TYPE            "crt"
-#define WA_TK_CREATION_TIME        "ct"
-#define WA_TK_ERROR_CODE           "ec"
-#define WA_TK_ERROR_MESSAGE        "em"
-#define WA_TK_EXPIRATION_TIME      "et"
-#define WA_TK_INITIAL_FACTORS      "ia"
-#define WA_TK_SESSION_KEY          "k"
-#define WA_TK_LOA                  "loa"
-#define WA_TK_LASTUSED_TIME        "lt"
-#define WA_TK_OTP                  "otp"
-#define WA_TK_PASSWORD             "p"
-#define WA_TK_PROXY_DATA           "pd"
-#define WA_TK_PROXY_SUBJECT        "ps"
-#define WA_TK_PROXY_TYPE           "pt"
-#define WA_TK_REQUEST_OPTIONS      "ro"
-#define WA_TK_REQUESTED_TOKEN_TYPE "rtt"
-#define WA_TK_RETURN_URL           "ru"
-#define WA_TK_SUBJECT              "s"
-#define WA_TK_SUBJECT_AUTH         "sa"
-#define WA_TK_SUBJECT_AUTH_DATA    "sad"
-#define WA_TK_SESSION_FACTORS      "san"
-#define WA_TK_TOKEN_TYPE           "t"
-#define WA_TK_USERNAME             "u"
-#define WA_TK_WEBKDC_TOKEN         "wt"
-
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
 #define WA_FA_PASSWORD             "p"
