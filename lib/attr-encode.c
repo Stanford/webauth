@@ -186,7 +186,7 @@ encode_to_attrs(struct webauth_context *ctx, apr_pool_t *pool,
 int
 webauth_encode(struct webauth_context *ctx, apr_pool_t *pool,
                const struct webauth_encoding *rules,
-               void *data, void **output, size_t *length)
+               const void *data, void **output, size_t *length)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;

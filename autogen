@@ -13,6 +13,9 @@ pod2man --release="$version" --center="WebAuth" tools/wa_keyring.pod \
     > tools/wa_keyring.1
 
 # Generate encoding rules for WebAuth structs.
+lib/encoding-rules include/webauth/was.h \
+    webauth_was_token_cache \
+    > lib/rules-cache.c
 lib/encoding-rules lib/internal.h \
     wai_keyring_entry wai_keyring \
     > lib/rules-keyring.c

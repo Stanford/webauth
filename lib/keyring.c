@@ -157,74 +157,6 @@ webauth_keyring_best_key(struct webauth_context *ctx,
 
 
 /*
- * Read in the entirety of a file, continuing after partial reads or signal
- * interruptions.  Takes the WebAuth context, the file name, and pointers into
- * which to store the newly allocated buffer and length.  Returns a WebAuth
- * error code.
- *
- * FIXME: Currently does no locking.
- */
-static int
-read_keyring_file(struct webauth_context *ctx, const char *path,
-                  char **output, size_t *length)
-{
-    apr_file_t *file = NULL;
-    apr_finfo_t finfo;
-    apr_size_t size;
-    char *buf;
-    apr_status_t status;
-    int s;
-
-    /* Set output parameters in case of error. */
-    *output = NULL;
-    *length = 0;
-
-    /* Open the file. */
-    status = apr_file_open(&file, path, APR_READ, 0600, ctx->pool);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_FILE_OPENREAD;
-        webauth_error_set_apr(ctx, s, status, "keyring %s", path);
-        goto done;
-    }
-
-    /* Allocate enough room for the contents. */
-    status = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_FILE_READ;
-        webauth_error_set_apr(ctx, s, status, "stat of %s", path);
-        goto done;
-    }
-    if (finfo.size == 0) {
-        s = WA_ERR_FILE_READ;
-        webauth_error_set(ctx, s, "keyring %s is empty", path);
-        goto done;
-    }
-    buf = apr_palloc(ctx->pool, finfo.size);
-
-    /* Read the contents. */
-    status = apr_file_read_full(file, buf, finfo.size, &size);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_FILE_READ;
-        webauth_error_set_apr(ctx, s, status, "keyring %s", path);
-        goto done;
-    }
-    if (size != finfo.size) {
-        s = WA_ERR_FILE_READ;
-        webauth_error_set(ctx, s, "keyring %s modified during read", path);
-        goto done;
-    }
-    *output = buf;
-    *length = size;
-    s = WA_ERR_NONE;
-
-done:
-    if (file != NULL)
-        apr_file_close(file);
-    return s;
-}
-
-
-/*
  * Decode the encoded form of a keyring into a new keyring structure and store
  * that in the ring argument.  Returns a WA_ERR code.
  */
@@ -286,11 +218,11 @@ webauth_keyring_read(struct webauth_context *ctx, const char *path,
                      struct webauth_keyring **ring)
 {
     int status;
-    char *buf;
+    void *buf;
     size_t length;
 
     *ring = NULL;
-    status = read_keyring_file(ctx, path, &buf, &length);
+    status = wai_file_read(ctx, path, &buf, &length);
     if (status != WA_ERR_NONE)
         return status;
     return webauth_keyring_decode(ctx, buf, length, ring);

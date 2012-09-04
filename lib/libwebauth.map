@@ -86,4 +86,6 @@ WEBAUTH_4_4 {
     global:
         webauth_keyring_decode;
         webauth_keyring_encode;
+        webauth_was_token_cache_read;
+        webauth_was_token_cache_write;
 } WEBAUTH_4_3;

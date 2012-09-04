@@ -116,6 +116,7 @@ extern const struct webauth_encoding wai_token_proxy_encoding[];
 extern const struct webauth_encoding wai_token_request_encoding[];
 extern const struct webauth_encoding wai_token_webkdc_proxy_encoding[];
 extern const struct webauth_encoding wai_token_webkdc_service_encoding[];
+extern const struct webauth_encoding wai_was_token_cache_encoding[];
 
 /*
  * The internal representation of a Kerberos credential.  This representation
@@ -233,7 +234,7 @@ int webauth_decode_token(struct webauth_context *, const void *input, size_t,
  * allocation.
  */
 int webauth_encode(struct webauth_context *, apr_pool_t *,
-                   const struct webauth_encoding *, void *data, void **,
+                   const struct webauth_encoding *, const void *data, void **,
                    size_t *)
     __attribute__((__nonnull__));
 
@@ -254,6 +255,15 @@ void webauth_error_set(struct webauth_context *, int err, const char *, ...)
 void webauth_error_set_apr(struct webauth_context *, int err, apr_status_t,
                            const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 4, 5)));
+
+/* Read the contents of a file into memory. */
+int wai_file_read(struct webauth_context *, const char *, void **, size_t *)
+    __attribute__((__nonnull__));
+
+/* Replace the contents of a file with the provided data. */
+int wai_file_write(struct webauth_context *, const void *, size_t,
+                   const char *path)
+    __attribute__((__nonnull__));
 
 /*
  * Map a token type code to the corresponding encoding rule set and data

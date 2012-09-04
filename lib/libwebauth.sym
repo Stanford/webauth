@@ -64,5 +64,7 @@ webauth_token_type_string
 webauth_user_config
 webauth_user_info
 webauth_user_validate
+webauth_was_token_cache_read
+webauth_was_token_cache_write
 webauth_webkdc_config
 webauth_webkdc_login

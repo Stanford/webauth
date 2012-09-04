@@ -9,6 +9,7 @@ lib/krb5-tgt
 lib/token-decode
 lib/token-encode
 lib/userinfo
+lib/was-cache
 lib/webkdc-krb
 lib/webkdc-login
 lib/webkdc-mf
