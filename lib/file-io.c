@@ -12,9 +12,6 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_file_info.h>
-#include <apr_file_io.h>
-
 #include <lib/internal.h>
 #include <webauth/basic.h>
 
@@ -43,8 +40,8 @@ wai_file_read(struct webauth_context *ctx, const char *path,
     *length = 0;
 
     /* Open the file. */
-    code = apr_file_open(&file, path, APR_READ | APR_FILE_NOCLEANUP,
-                         APR_UREAD | APR_UWRITE, ctx->pool);
+    code = apr_file_open(&file, path, APR_FOPEN_READ | APR_FOPEN_NOCLEANUP,
+                         APR_FPROT_UREAD | APR_FPROT_UWRITE, ctx->pool);
     if (code != APR_SUCCESS) {
         if (APR_STATUS_IS_ENOENT(code))
             s = WA_ERR_FILE_NOT_FOUND;
@@ -110,7 +107,8 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
 
     /* Create a temporary file for the new copy of the keyring. */
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
-    flags = APR_CREATE | APR_WRITE | APR_EXCL | APR_FILE_NOCLEANUP;
+    flags = (APR_FOPEN_CREATE | APR_FOPEN_WRITE | APR_FOPEN_EXCL
+             | APR_FOPEN_NOCLEANUP);
     code = apr_file_mktemp(&file, temp, flags, ctx->pool);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENWRITE;
@@ -131,7 +129,7 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
     }
 
     /* Set permissions. */
-    code = apr_file_perms_set(temp, APR_UREAD | APR_UWRITE);
+    code = apr_file_perms_set(temp, APR_FPROT_UREAD | APR_FPROT_UWRITE);
     if (code != APR_SUCCESS && code != APR_ENOTIMPL) {
         s = WA_ERR_FILE_WRITE;
         webauth_error_set_apr(ctx, s, code, "setting permissions on %s", temp);

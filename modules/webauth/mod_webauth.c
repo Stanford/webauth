@@ -473,7 +473,8 @@ status_check_access(const char *path, apr_int32_t flag, request_rec *r)
     apr_file_t *f;
     char errbuff[512];
 
-    st = apr_file_open(&f, path, flag, APR_UREAD|APR_UWRITE, r->pool);
+    st = apr_file_open(&f, path, flag, APR_FPROT_UREAD | APR_FPROT_UWRITE,
+                       r->pool);
     if (st != APR_SUCCESS) {
         errbuff[0] = 0;
         apr_strerror(st, errbuff, sizeof(errbuff)-1);
@@ -533,6 +534,7 @@ handler_hook(request_rec *r)
 {
     struct server_config *sconf;
     MWA_SERVICE_TOKEN *st;
+    apr_int32_t flags;
 
     if (strcmp(r->handler, "webauth")) {
         return DECLINED;
@@ -614,7 +616,7 @@ handler_hook(request_rec *r)
 
     ap_rputs("<dl>", r);
     dt_str("Keyring read check",
-           status_check_access(sconf->keyring_path, APR_READ, r), r);
+           status_check_access(sconf->keyring_path, APR_FOPEN_READ, r), r);
     ap_rputs("<dt><strong>Keyring info:</strong></dt>\n", r);
 
     if (sconf->ring == NULL) {
@@ -643,7 +645,7 @@ handler_hook(request_rec *r)
     ap_rputs("<dl>", r);
 
     dt_str("Keytab read check",
-           status_check_access(sconf->keytab_path, APR_READ, r), r);
+           status_check_access(sconf->keytab_path, APR_FOPEN_READ, r), r);
     ap_rputs("</dl>", r);
     ap_rputs("<hr/>", r);
 
@@ -651,9 +653,9 @@ handler_hook(request_rec *r)
 
     st = mwa_get_service_token(r->server, sconf, r->pool, 0);
 
+    flags = APR_FOPEN_READ | APR_FOPEN_WRITE | APR_FOPEN_CREATE;
     dt_str("Service Token Cache read/write check",
-           status_check_access(sconf->st_cache_path,
-                               APR_READ|APR_WRITE|APR_CREATE, r), r);
+           status_check_access(sconf->st_cache_path, flags, r), r);
     ap_rputs("<dt><strong>Service Token info:</strong></dt>\n", r);
 
     if (st == NULL) {

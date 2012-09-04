@@ -115,7 +115,7 @@ get_acl(MWK_REQ_CTXT *rc)
     int lineno, error;
     char line[1024];
     struct apr_finfo_t finfo;
-
+    apr_int32_t flags;
 
     if (acl != NULL) {
         /* FIXME: stat and free current acl if out-of-date */
@@ -145,10 +145,9 @@ get_acl(MWK_REQ_CTXT *rc)
     }
 
     /* open ACL file */
-    astatus = apr_file_open(&acl_file, rc->sconf->token_acl_path,
-                            APR_READ|APR_FILE_NOCLEANUP|APR_BUFFERED,
-                            APR_UREAD|APR_UWRITE,
-                            rc->r->pool);
+    flags = APR_FOPEN_READ | APR_FOPEN_BUFFERED | APR_FOPEN_NOCLEANUP;
+    astatus = apr_file_open(&acl_file, rc->sconf->token_acl_path, flags,
+                            APR_FPROT_OS_DEFAULT, rc->r->pool);
 
     if (astatus != APR_SUCCESS) {
         log_apr_error(rc, astatus, mwk_func, "apr_file_open",

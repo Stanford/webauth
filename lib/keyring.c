@@ -12,8 +12,6 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_file_info.h>
-#include <apr_file_io.h>
 #include <time.h>
 
 #include <lib/internal.h>
@@ -281,12 +279,14 @@ webauth_keyring_write(struct webauth_context *ctx,
     size_t length;
     char *temp, *buf;
     apr_status_t status;
+    apr_int32_t flags;
     int s;
 
     /* Create a temporary file for the new copy of the keyring. */
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
-    status = apr_file_mktemp(&file, temp, APR_CREATE | APR_WRITE | APR_EXCL,
-                             ctx->pool);
+    flags = (APR_FOPEN_CREATE | APR_FOPEN_WRITE | APR_FOPEN_EXCL
+             | APR_FOPEN_NOCLEANUP);
+    status = apr_file_mktemp(&file, temp, flags, ctx->pool);
     if (status != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENWRITE;
         webauth_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
