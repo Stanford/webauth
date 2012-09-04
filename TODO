@@ -144,9 +144,6 @@ libwebauth:
  * WEBAUTH-48: Format times properly when reporting errors about expired
    or stale tokens from token decoding.
 
- * WEBAUTH-90: Validate that only the correct attributes are present for
-   the two types of app tokens when decoding.
-
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
 
@@ -154,11 +151,6 @@ libwebauth:
    the supplemental information added makes sense when presented in
    context with the default error message for that error code.  Some of
    the error messages reported right now are too verbose.
-
- * WEBAUTH-112: Add keyring_encode and keyring_decode functions that
-   encode a keyring to the same portable format used for keyring files on
-   disk.  This makes the implementation of the wallet WebAuth keyring
-   backend much easier.
 
  * WEBAUTH-115: Split the app and request tokens into two separate structs
    in the library API.  We have to continue to use the same encoding on
@@ -335,9 +327,6 @@ Documentation:
  * WEBAUTH-74: Describe the multifactor design and implementation in the
    protocol specification, particularly including the criteria used when
    deciding whether to merge factors together as initial factors.
-
- * WEBAUTH-75: Add POD documentation for all Perl modules.  Many of the
-   WebKDC modules currently don't have documentation.
 
  * WEBAUTH-76: Write design notes / internals documentation for how
    WebAuth is put together.
