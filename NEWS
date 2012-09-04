@@ -22,7 +22,9 @@ WebAuth 4.4.0 (unreleased)
     The WA_ERR_KEYRING_* error codes have changed to WA_ERR_FILE_* and
     will be used for any errors inside the WebAuth library when reading or
     writing to files.  Now that WebAuth can report rich error messages,
-    there is no need for the codes to be this specific.
+    there is no need for the codes to be this specific.  Add new
+    WA_ERR_FILE_NOT_FOUND error, which replaces WA_ERR_KEYRING_OPENREAD
+    when the error is due to the file not existing.
 
 WebAuth 4.3.1 (2012-08-08)
 

@@ -46,7 +46,10 @@ wai_file_read(struct webauth_context *ctx, const char *path,
     code = apr_file_open(&file, path, APR_READ | APR_FILE_NOCLEANUP,
                          APR_UREAD | APR_UWRITE, ctx->pool);
     if (code != APR_SUCCESS) {
-        s = WA_ERR_FILE_OPENREAD;
+        if (APR_STATUS_IS_ENOENT(code))
+            s = WA_ERR_FILE_NOT_FOUND;
+        else
+            s = WA_ERR_FILE_OPENREAD;
         webauth_error_set_apr(ctx, s, code, "%s", path);
         goto done;
     }

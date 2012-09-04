@@ -68,6 +68,7 @@ BEGIN {
                        WA_ERR_UNIMPLEMENTED
                        WA_ERR_INVALID
                        WA_ERR_REMOTE_FAILURE
+                       WA_ERR_FILE_NOT_FOUND
 
                        WA_PEC_SERVICE_TOKEN_EXPIRED
                        WA_PEC_SERVICE_TOKEN_INVALID
@@ -359,6 +360,7 @@ WebAuth error codes used in WebAuth::Exception for API call failures.
     WA_ERR_UNIMPLEMENTED
     WA_ERR_INVALID
     WA_ERR_REMOTE_FAILURE
+    WA_ERR_FILE_NOT_FOUND
 
 WebAuth protocol error codes used for login errors:
 

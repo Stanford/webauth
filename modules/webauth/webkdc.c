@@ -123,7 +123,7 @@ read_service_token_cache(server_rec *server, struct server_config *sconf,
     memset(&cache, 0, sizeof(cache));
     status = webauth_was_token_cache_read(sconf->ctx, sconf->st_cache_path,
                                           &cache);
-    if (status == WA_ERR_FILE_OPENREAD)
+    if (status == WA_ERR_FILE_NOT_FOUND)
         return NULL;
     if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(server, status, mwa_func,

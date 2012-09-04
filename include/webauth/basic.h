@@ -86,6 +86,7 @@ enum webauth_status {
     WA_ERR_UNIMPLEMENTED,    /* Operation not supported. */
     WA_ERR_INVALID,          /* Invalid argument to function. */
     WA_ERR_REMOTE_FAILURE,   /* A remote service call failed. */
+    WA_ERR_FILE_NOT_FOUND,   /* File does not exist. */
 
     /* Update webauth_error_message when adding more codes. */
 };
