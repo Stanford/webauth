@@ -192,12 +192,12 @@ main(void)
         sysbail("Cannot truncate %s", keyring);
     close(fd);
     s = webauth_keyring_read(ctx, keyring, &ring);
-    is_int(WA_ERR_KEYRING_READ, s, "Correct error from reading empty keyring");
+    is_int(WA_ERR_FILE_READ, s, "Correct error from reading empty keyring");
 
     /* Test creating a new keyring with keyring_auto_update. */
     unlink(keyring);
     s = webauth_keyring_auto_update(ctx, keyring, false, 0, &ring, &kau, &ks);
-    is_int(WA_ERR_KEYRING_OPENREAD, s,
+    is_int(WA_ERR_FILE_OPENREAD, s,
            "keyring_auto_update fails with no ring and no creation");
     is_int(WA_KAU_NONE, kau, "... with correct kau_status");
     s = webauth_keyring_auto_update(ctx, keyring, true, 0, &ring, &kau, &ks);

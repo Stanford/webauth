@@ -178,8 +178,8 @@ int webauth_keyring_encode(struct webauth_context *,
 /*
  * Reads a keyring from a file in encoded form and stores the newly-allocated
  * keyring in the provided argument.  Returns a WebAuth status code, which may
- * be WA_ERR_KEYRING_OPENREAD, WA_ERR_KEYRING_READ, WA_ERR_CORRUPT, or
- * WA_ERR_KEYRING_VERSION on failure.
+ * be WA_ERR_FILE_OPENREAD, WA_ERR_FILE_READ, WA_ERR_CORRUPT, or
+ * WA_ERR_FILE_VERSION on failure.
  */
 int webauth_keyring_read(struct webauth_context *, const char *,
                          struct webauth_keyring **)
@@ -187,7 +187,7 @@ int webauth_keyring_read(struct webauth_context *, const char *,
 
 /*
  * Write a keyring to a file in encoded form.  Returns a WebAuth status code,
- * which may be WA_ERR_KEYRING_OPENWRITE or WA_ERR_KEYRING_WRITE on failure.
+ * which may be WA_ERR_FILE_OPENWRITE or WA_ERR_FILE_WRITE on failure.
  */
 int webauth_keyring_write(struct webauth_context *,
                           const struct webauth_keyring *, const char *)
@@ -212,8 +212,8 @@ int webauth_keyring_write(struct webauth_context *,
  * update fails.  If the update fails, then update_status will be set to
  * someting other then WA_ERR_NONE.
  *
- * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_KEYRING_READ, or
- * WA_ERR_KEYRING_OPENREAD.
+ * Returns WA_ERR_NONE, WA_ERR_CORRUPT, WA_ERR_NO_MEM, WA_ERR_FILE_READ, or
+ * WA_ERR_FILE_OPENREAD.
  */
 int webauth_keyring_auto_update(struct webauth_context *, const char *path,
                                 int create, unsigned long lifetime,

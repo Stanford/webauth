@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.04';
+    $VERSION = '3.05';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -51,11 +51,11 @@ BEGIN {
                        WA_ERR_BAD_HMAC
                        WA_ERR_RAND_FAILURE
                        WA_ERR_BAD_KEY
-                       WA_ERR_KEYRING_OPENWRITE
-                       WA_ERR_KEYRING_WRITE
-                       WA_ERR_KEYRING_OPENREAD
-                       WA_ERR_KEYRING_READ
-                       WA_ERR_KEYRING_VERISON
+                       WA_ERR_FILE_OPENWRITE
+                       WA_ERR_FILE_WRITE
+                       WA_ERR_FILE_OPENREAD
+                       WA_ERR_FILE_READ
+                       WA_ERR_FILE_VERSION
                        WA_ERR_NOT_FOUND
                        WA_ERR_KRB5
                        WA_ERR_INVALID_CONTEXT
@@ -342,11 +342,11 @@ WebAuth error codes used in WebAuth::Exception for API call failures.
     WA_ERR_BAD_HMAC
     WA_ERR_RAND_FAILURE
     WA_ERR_BAD_KEY
-    WA_ERR_KEYRING_OPENWRITE
-    WA_ERR_KEYRING_WRITE
-    WA_ERR_KEYRING_OPENREAD
-    WA_ERR_KEYRING_READ
-    WA_ERR_KEYRING_VERISON
+    WA_ERR_FILE_OPENWRITE
+    WA_ERR_FILE_WRITE
+    WA_ERR_FILE_OPENREAD
+    WA_ERR_FILE_READ
+    WA_ERR_FILE_VERSION
     WA_ERR_NOT_FOUND
     WA_ERR_KRB5
     WA_ERR_INVALID_CONTEXT

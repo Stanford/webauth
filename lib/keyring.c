@@ -182,21 +182,21 @@ read_keyring_file(struct webauth_context *ctx, const char *path,
     /* Open the file. */
     status = apr_file_open(&file, path, APR_READ, 0600, ctx->pool);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_OPENREAD;
-        webauth_error_set_apr(ctx, s, status, "%s", path);
+        s = WA_ERR_FILE_OPENREAD;
+        webauth_error_set_apr(ctx, s, status, "keyring %s", path);
         goto done;
     }
 
     /* Allocate enough room for the contents. */
     status = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_READ;
+        s = WA_ERR_FILE_READ;
         webauth_error_set_apr(ctx, s, status, "stat of %s", path);
         goto done;
     }
     if (finfo.size == 0) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, s, "file %s is empty", path);
+        s = WA_ERR_FILE_READ;
+        webauth_error_set(ctx, s, "keyring %s is empty", path);
         goto done;
     }
     buf = apr_palloc(ctx->pool, finfo.size);
@@ -204,13 +204,13 @@ read_keyring_file(struct webauth_context *ctx, const char *path,
     /* Read the contents. */
     status = apr_file_read_full(file, buf, finfo.size, &size);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set_apr(ctx, s, status, "%s", path);
+        s = WA_ERR_FILE_READ;
+        webauth_error_set_apr(ctx, s, status, "keyring %s", path);
         goto done;
     }
     if (size != finfo.size) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, s, "file %s modified during read", path);
+        s = WA_ERR_FILE_READ;
+        webauth_error_set(ctx, s, "keyring %s modified during read", path);
         goto done;
     }
     *output = buf;
@@ -248,8 +248,9 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
     if (status != WA_ERR_NONE)
         return status;
     if (data.version != KEYRING_VERSION) {
-        status = WA_ERR_KEYRING_VERSION;
-        webauth_error_set(ctx, status, "unsupported keyring file version");
+        status = WA_ERR_FILE_VERSION;
+        webauth_error_set(ctx, status, "unsupported keyring data version %d",
+                          data.version);
         return status;
     }
 
@@ -355,8 +356,8 @@ webauth_keyring_write(struct webauth_context *ctx,
     status = apr_file_mktemp(&file, temp, APR_CREATE | APR_WRITE | APR_EXCL,
                              ctx->pool);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_OPENWRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
+        s = WA_ERR_FILE_OPENWRITE;
+        webauth_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
@@ -370,15 +371,15 @@ webauth_keyring_write(struct webauth_context *ctx,
         file = NULL;
     }
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_WRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
+        s = WA_ERR_FILE_WRITE;
+        webauth_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
     /* Rename the new file over the old path. */
     status = apr_file_rename(temp, path, ctx->pool);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_WRITE;
+        s = WA_ERR_FILE_WRITE;
         webauth_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
         goto done;
     }
@@ -485,7 +486,7 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
     *update_status = WA_ERR_NONE;
     status = webauth_keyring_read(ctx, path, ring);
     if (status != WA_ERR_NONE) {
-        if (!create || status != WA_ERR_KEYRING_OPENREAD)
+        if (!create || status != WA_ERR_FILE_OPENREAD)
             return status;
         *updated = WA_KAU_CREATE;
         return new_ring(ctx, path, ring);
