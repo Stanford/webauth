@@ -42,8 +42,9 @@ is (scalar (@out), 4, '...and length of output');
 my ($id, $created, $valid, $fingerprint) = split ('  ', $out[3]);
 is ($id, ' 0', '...and correct key ID');
 is ($created, $valid, '...and created equals valid after');
+diag ("fingerprint: $fingerprint");
 is (length ($fingerprint), 32, '...and correct fingerprint length');
-diag ("# now ", time, " - ", Date::Parse::str2time ($created), ", < 10");
+diag ("now ", time, " - ", Date::Parse::str2time ($created), ", < 10");
 ok ((time - Date::Parse::str2time ($created)) < 10,
     '...and correct created date');
 ($status, $out, $err) = wa_keyring ('-v', '-f', 'keyring', 'list');

@@ -17,7 +17,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
 use WebAuth::Key ();
 
-BEGIN { plan tests => 44 }
+BEGIN { plan tests => 30 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -29,44 +29,6 @@ eval {
     is (WA_AES_128, 16, 'Check for constant WA_AES_128 works');
     is (WebAuth::WA_AES_192, 24, ' and WA_AES_192');
     is (WebAuth::WA_AES_256, 32, ' and WA_AES_256');
-
-    # Hex tests
-    is ($wa->hex_encode ('\000\001\002\003\004\005'),
-        '5c3030305c3030315c3030325c3030335c3030345c303035',
-        'hex encoding a number works');
-    is ($wa->hex_decode ('5c3030305c3030315c3030325c3030335c3030345c303035'),
-        '\000\001\002\003\004\005', ' as is decoding');
-    is ($wa->hex_encode ('hello'), '68656c6c6f',
-        'hex encoding a string works');
-    is ($wa->hex_decode ('68656c6c6f'), 'hello', ' as is decoding');
-
-    # Hex failure by giving a bad Hex value.
-    eval { $wa->hex_decode ('FOOBAR') };
-    ok ($@->isa ('WebAuth::Exception'), 'hex decoding fails');
-    is ($@->status, WA_ERR_CORRUPT, ' with the correct error');
-
-    # Attr tests
-    is ($wa->attrs_encode ({'x' => '1' }), 'x=1;',
-        'encoding an attr works');
-    is ($wa->attrs_encode ({'x' => ';' }), 'x=;;;',
-        ' and a more difficult attr');
-    is ($wa->attrs_encode ({'x' => '1;'}), 'x=1;;;',
-        ' and one more difficult still');
-
-    # Try and encode attrs, followed by a decode and compare the hashes.
-    my $a = {'x' => '1', 'y' => 'hello', 'z' => 'goodbye'};
-    my $ea = 'x=1;y=hello;z=goodbye;';
-    $b = $wa->attrs_decode ($ea);
-    is (compareHashes ($a, $b), 1, ' and a multi-value hash');
-
-    # Attr failures.
-    eval { $b = $wa->attrs_decode ('x=1;y=23') };
-    ok ($@->isa ('WebAuth::Exception'), 'decoding an invalid attr fails');
-    is ($@->status (), WebAuth::WA_ERR_CORRUPT, ' with the right error');
-    eval { $b = $wa->attrs_decode('x=1;zr') };
-    ok ($@->isa ('WebAuth::Exception'), ' and another invalid attr fails');
-    is ($@->status (), WebAuth::WA_ERR_CORRUPT,
-        ' also with the right error');
 
     # Key tests.
     my $bytes = 'a' x WebAuth::WA_AES_128;

@@ -16,7 +16,6 @@
 #include <openssl/rand.h>
 
 #include <lib/internal.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 

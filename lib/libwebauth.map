@@ -1,11 +1,5 @@
 WEBAUTH_3 {
     global:
-        webauth_attr_list_find;
-        webauth_attr_list_free;
-        webauth_attr_list_new;
-        webauth_attrs_decode;
-        webauth_attrs_encode;
-        webauth_attrs_encoded_length;
         webauth_context_free;
         webauth_context_init;
         webauth_context_init_apr;
@@ -13,10 +7,6 @@ WEBAUTH_3 {
         webauth_factors_parse;
         webauth_factors_string;
         webauth_factors_subset;
-        webauth_hex_decode;
-        webauth_hex_decoded_length;
-        webauth_hex_encode;
-        webauth_hex_encoded_length;
         webauth_parse_interval;
         webauth_token_type_code;
         webauth_token_type_string;
@@ -27,16 +17,6 @@ WEBAUTH_3 {
 
 WEBAUTH_4_1 {
     global:
-        webauth_attr_list_add;
-        webauth_attr_list_add_int32;
-        webauth_attr_list_add_str;
-        webauth_attr_list_add_time;
-        webauth_attr_list_add_uint32;
-        webauth_attr_list_get;
-        webauth_attr_list_get_int32;
-        webauth_attr_list_get_str;
-        webauth_attr_list_get_time;
-        webauth_attr_list_get_uint32;
         webauth_user_config;
         webauth_user_info;
         webauth_user_validate;

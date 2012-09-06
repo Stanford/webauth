@@ -82,7 +82,6 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
-include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/krb5.h include/webauth/tokens.h			\
@@ -91,8 +90,8 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
 	lib/attr-encode.c lib/attrs.c lib/context.c lib/factors.c	  \
-	lib/file-io.c lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h  \
-	lib/misc.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
+	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
+	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
 	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
 	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	  \
 	lib/webkdc-login.c lib/xml.c
@@ -295,13 +294,16 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
+tests_lib_attrs_t_SOURCES = lib/attrs.c lib/hex.c tests/lib/attrs-t.c
+tests_lib_attrs_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la $(APR_LIBS)
-tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+tests_lib_hex_t_SOURCES = lib/hex.c tests/lib/hex-t.c
+tests_lib_hex_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_hex_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_keyring_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)

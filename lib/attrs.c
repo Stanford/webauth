@@ -16,7 +16,7 @@
 #include <limits.h>
 #include <netinet/in.h>
 
-#include <webauth.h>
+#include <lib/internal.h>
 #include <webauth/basic.h>
 
 #define NAME_TERM '='

@@ -19,7 +19,6 @@
 #include <portable/system.h>
 
 #include <tests/tap/basic.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>

@@ -19,7 +19,6 @@
 #include <httpd.h>              /* server_rec and request_rec */
 #include <sys/types.h>          /* size_t, etc. */
 
-#include <webauth.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 

@@ -221,24 +221,6 @@ methods will throw a WebAuth::Exception object.
 
 =over 4
 
-=item attrs_decode (INPUT)
-
-Given a string representing a set of attributes encoded in the attribute
-format used inside WebAuth tokens, decode that string into a hash where
-the keys are the attributes and the values are their corresponding values.
-Attribute strings that contain the same attribute multiple times are not
-supported and will produce undefined results.  (Such strings are not valid
-in WebAuth tokens.)
-
-=item attrs_encode (ATTRS)
-
-Given ATTRS, which must be a reference to a hash, take the hash members as
-attribute and value pairs and encode them into the attribute format used
-inside WebAuth tokens.  The values in the ATTRS hash are converted to
-strings if they are not already.  Nested complex data structures, such as
-references to other arrays or hashes, are not supported and will produce
-undefined results.
-
 =item error_message (STATUS)
 
 Returns an error message string corresponding to STATUS, which should be
@@ -246,17 +228,6 @@ one of the WA_ERR_* values.  It's rare to need to use this method, since
 generally any error return from the WebAuth C API is converted into a
 WebAuth::Exception and thrown instead, and the WebAuth::Exception object
 will contain a more detailed error message.
-
-=item hex_decode (INPUT)
-
-Interpret INPUT as a sequence of hexadecimal numbers, with two characters
-per number, and convert each number into the corresponding byte, returning
-the result.
-
-=item hex_encode (INPUT)
-
-For each byte in INPUT, encode it in two hexadecimal digits, and return
-the resulting string.
 
 =item key_create (TYPE, SIZE[, KEY_MATERIAL])
 

@@ -13,7 +13,6 @@
 
 #include <tests/tap/basic.h>
 #include <util/xmalloc.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>

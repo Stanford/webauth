@@ -17,7 +17,6 @@
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
 #include <tests/tap/string.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/krb5.h>
 

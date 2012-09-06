@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include <webauth.h>
+#include <lib/internal.h>
 #include <webauth/basic.h>
 
 /*

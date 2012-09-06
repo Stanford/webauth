@@ -19,7 +19,6 @@
 #include <apr_tables.h>
 #include <sys/types.h>
 
-#include <webauth.h>
 #include <webauth/tokens.h>
 
 struct webauth_context;
@@ -229,15 +228,6 @@ mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
  */
 void
 mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
-
-/*
- * get a string from an attr list, log an error if not present.
- * vlen is optional and can be set to NULL.
- */
-
-char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
-                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get a WEBAUTH_KRB5_CTXT, log errors

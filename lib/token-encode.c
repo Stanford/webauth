@@ -20,7 +20,6 @@
 
 #include <lib/internal.h>
 #include <util/macros.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
 

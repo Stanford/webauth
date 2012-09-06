@@ -15,6 +15,15 @@ WebAuth 4.4.0 (unreleased)
     apr_base64_* functions from APR-Util instead.  For Perl programs, use
     MIME::Base64.
 
+    The webauth_attr_*, webauth_attrs_*, and webauth_hex_* functions have
+    been removed from libwebauth, as have the corresponding Perl bindings.
+    These functions provided a low-level interface to internal WebAuth
+    data structures that is no longer necessary.
+
+    Remove webauth.h.  The only remaining contents of interest to clients
+    were the WebAuth protocol error constants, which have now moved to
+    webauth/tokens.h.
+
     Add public webauth_keyring_encode and webauth_keyring_decode functions
     that encode and decode keyrings into the serialization format used for
     storing them in files.  These are useful for sending WebAuth keyrings
