@@ -2,6 +2,14 @@
 
 WebAuth 4.4.0 (unreleased)
 
+    In WebLogin, set single sign-on cookies if present even when
+    displaying an error.  This establishes single sign-on when errors are
+    returned after authentication, such as authentication rejected errors
+    from the user information service.  Without this behavior, if the
+    custom error sent the user to another page that also required
+    authentication, the user would have to log in again and may given up,
+    thinking that authentication was looping.
+
     The webauth_base64_* functions have been removed from libwebauth, as
     have the corresponding Perl bindings.  For C programs, use the
     apr_base64_* functions from APR-Util instead.  For Perl programs, use
