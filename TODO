@@ -157,6 +157,9 @@ libwebauth:
    the wire, but we can at least not subject the library users to the
    problem.
 
+ * WEBAUTH-116: Implement automatic encoding for enums and use that to
+   replace the custom encoding and decoding code for tokens.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
@@ -254,6 +257,10 @@ mod_webkdc:
  * WEBAUTH-114: Allow the user information service to provide the last
    password change date, and expose that information via the login
    history.
+
+ * WEBAUTH-117: Provide some mechanism to handle OTP "try again" requests.
+   Some OTP mechanisms may re-prompt the user for an additional code (or
+   multiple additional codes) if the offset is too large.
 
 WebLogin:
 
