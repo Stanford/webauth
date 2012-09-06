@@ -1,4 +1,4 @@
-webauth (4.3.1-1~sbp60+1) UNRELEASED; urgency=low
+webauth (4.3.1-1~sbp60+1) stable; urgency=low
 
   * Backport to squeeze.
   * Cherry-pick upstream changes from 4.4.0:
@@ -8,7 +8,7 @@ webauth (4.3.1-1~sbp60+1) UNRELEASED; urgency=low
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
     version of dh_autoreconf in squeeze.
 
- -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:33:39 -0700
+ -- Russ Allbery <rra@debian.org>  Thu, 06 Sep 2012 16:59:33 -0700
 
 webauth (4.3.1-1) experimental; urgency=low
 
