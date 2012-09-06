@@ -1,6 +1,8 @@
 webauth (4.3.1-1~sbp60+1) UNRELEASED; urgency=low
 
   * Backport to squeeze.
+  * Cherry-pick upstream changes from 4.4.0:
+    - [f1231440] WebLogin: set single sign-on cookies on error
   * Revert transition to Apache 2.4, use of the new Apache module helper
     functions, and multi-arch.
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
