@@ -149,7 +149,6 @@ Description: Command-line utilities for WebAuth authentication
 
 Package: webauth-weblogin
 Architecture: all
-Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
  libwebkdc-perl (>= 4.3.0~)
 Recommends: httpd-cgi
