@@ -525,7 +525,8 @@ sub print_error_page {
         $params->{cancel_url} = $cancel_url;
     }
 
-    $self->header_props (-expires => 'now');
+    $self->print_headers ($resp->proxy_cookies);
+    $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
