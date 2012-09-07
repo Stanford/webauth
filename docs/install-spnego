@@ -69,16 +69,21 @@ Configuration
 
       $REMUSER_ENABLED = 1;
       $REMUSER_EXPIRES = 60 * 60 * 8;
-      @REMUSER_REALMS = ("EXAMPLE.COM");
+      @REMUSER_PERMITTED_REALMS = ("EXAMPLE.COM"); # optionally restrict
+      @REMUSER_LOCAL_REALMS = ("EXAMPLE.COM"); # optionally strip realm name
 
   The first line tells the WebLogin script to trust REMOTE_USER as set by
   Apache if present (so make sure that there isn't a way of accessing the
   script via an Apache authentication mechanism that you don't trust!).
   The second line says how good authentication via REMOTE_USER should be
   valid for (see Notes and Cautions below).  The third line tells it what
-  realm to strip off the REMOTE_USER variable, since mod_auth_kerb sets
-  REMOTE_USER to the full principal name.  It should be your local default
-  realm.
+  realms to allow authentication for (if this is unset, control of this remains
+  with the underlying Kerberos service, including any cross-realm
+  relationships that have been established).  The fourth line declares
+  which realm names should be stripped off the REMOTE_USER variable
+  before being passed on to the Webauth-enabled Application Servers. 
+  Depending on local practice, this may be set to your local default
+  realm, or left unset.
 
   You will also need to set $KEYRING_PATH if your WebKDC keyring is not
   located in ../conf/webkdc/keyring relative to your server root.  For

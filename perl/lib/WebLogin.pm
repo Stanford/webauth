@@ -908,14 +908,12 @@ sub add_remuser_token {
         return;
     }
 
-    # Make sure that any realm in REMOTE_USER matches the realm specified in
-    # our configuration file.  Note that if a realm is specified in the
-    # configuration file, it must be present in REMOTE_USER.
+    # Make sure that any realm in REMOTE_USER is permitted.
     my ($user, $realm) = split ('@', $ENV{REMOTE_USER}, 2);
-    if (@WebKDC::Config::REMUSER_REALMS) {
+    if (@WebKDC::Config::REMUSER_PERMITTED_REALMS) {
         my $found = 0;
         $realm ||= '';
-        for my $check (@WebKDC::Config::REMUSER_REALMS) {
+        for my $check (@WebKDC::Config::REMUSER_PERMITTED_REALMS) {
             if ($check eq $realm) {
                 $found = 1;
                 last;
@@ -927,17 +925,19 @@ sub add_remuser_token {
                 . "\n";
             return;
         }
-    } elsif ($realm) {
-        warn "weblogin: found realm in REMOTE_USER but no realm configured\n";
-        return;
     }
 
+    my $onward_username = 
+        (grep { $realm eq $_ } @WebKDC::Config::REMUSER_LOCAL_REALMS)
+        ? $user
+        : $ENV{REMOTE_USER};
+        
     # Create a proxy token.
     my $token = WebAuth::Token::WebKDCProxy->new ($wa);
-    $token->subject ($user);
+    $token->subject ($onward_username);
     $token->proxy_type ('remuser');
     $token->proxy_subject ('WEBKDC:remuser');
-    $token->data ($user);
+    $token->data ($onward_username);
     $token->creation (time);
     $token->expiration (time + $WebKDC::Config::REMUSER_EXPIRES);
 
@@ -947,7 +947,7 @@ sub add_remuser_token {
     # and omit the level of assurance.
     my $session_factor;
     if (defined (&WebKDC::Config::remuser_factors)) {
-        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($user);
+        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($onward_username);
         $token->initial_factors ($ini);
         $token->loa ($loa) if (defined ($loa) && $loa > 0);
         $session_factor = $sess;

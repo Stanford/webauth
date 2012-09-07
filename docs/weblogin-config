@@ -259,30 +259,52 @@ Configuration
       from REMOTE_USER will expire after this many seconds (given as a
       number).  Default: 28800 (eight hours).
 
-  @REMUSER_REALMS (was @REALMS)
+  @REMUSER_LOCAL_REALMS
 
-      Only used when $REMUSER_ENABLED is set.  If this variable is set,
-      everything after the @ sign in REMOTE_USER must match one of the
-      values in this list and is stripped before creating the
-      authenticated user identity.  This variable is equivalent to the
-      combination of WebKdcLocalRealms and WebKdcPermittedRealms in the
-      mod_webkdc configuration but must be set separately due to how
-      Apache authentication is supported.
+      Only used when $REMUSER_ENABLED is set.  If the realm
+      matches any of the listed realms, the realm information will be
+      stripped off.  By default, this list is empty, so all principal
+      names will be passed on fully qualified.
+
+      This setting is semantically similar to WebKdcLocalRealms in
+      the mod_webkdc configuration.
 
       An example setting:
 
-          @REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
+          @REMUSER_LOCAL_REALMS = ("stanford.edu", "WIN.STANFORD.EDU");
 
-      As demonstrated in this example, realms should be listed in
-      parentheses and separated by commas.  "" (the empty realm) is an
+  @REMUSER_PERMITTED_REALMS
+
+      Only used when $REMUSER_ENABLED is set.  If set, then authentication
+      is only permitted if the realm is a member of this list (that is,
+      everything after the @ sign in REMOTE_USER must match one of the
+      values in this list).  If unset, there is no restriction on which 
+      realms are permitted.
+
+      This setting is semantically similar to WebKdcPermittedRealms in
+      the mod_webkdc configuration.
+
+      "" (the empty realm) is an
       allowable value and means to allow REMOTE_USER settings that contain
-      no realm information (do not contain a @-sign).  If the realm
-      matches any of the allowable realms, the realm information will be
-      stripped off.
+      no realm information (do not contain a @-sign).
 
-      If this variable is not set, the REMOTE_USER information must not
-      contain an @.  If it does, it will be ignored and login will proceed
-      as if it weren't set.
+      If @REMUSER_PERMITTED_REALMS is unset, the possible set of realms
+      is determined by the underlying Kerberos service, including 
+      any cross-realm relationships that exist.
+
+      An example setting:
+
+          @REMUSER_PERMITTED_REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
+
+  @REMUSER_REALMS (was @REALMS)
+
+      Convenience (and backwards compatibility) setting to allow both
+      @REMUSER_LOCAL_REALMS and @REMUSER_PERMITTED_REALMS to be set to
+      the same value.
+
+      An example setting:
+
+          @REMUSER_REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
 
       Default: not set.
 
