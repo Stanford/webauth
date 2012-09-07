@@ -10,6 +10,16 @@ WebAuth 4.4.0 (unreleased)
     authentication, the user would have to log in again and may given up,
     thinking that authentication was looping.
 
+    Support two additional WebLogin configuration settings:
+    @REMUSER_LOCAL_REALMS and @REMUSER_PERMITTED_REALMS.  These provide
+    the equivalent of WebKdcLocalRealms and WebKdcPermittedRealms for
+    Apache REMOTE_USER authentication handled by the WebLogin front-end
+    (such as when using Negotiate-Auth with mod_auth_kerb).  Previously,
+    there was only a @REMUSER_REALMS setting, which combined both
+    meanings.  @REMUSER_REALMS continues to be supported for backward
+    compatibility, but will only be used if the more-specific variable is
+    not set.  Patch from Tom Jones.
+
     The webauth_base64_* functions have been removed from libwebauth, as
     have the corresponding Perl bindings.  For C programs, use the
     apr_base64_* functions from APR-Util instead.  For Perl programs, use

@@ -261,40 +261,44 @@ Configuration
 
   @REMUSER_LOCAL_REALMS
 
-      Only used when $REMUSER_ENABLED is set.  If the realm
-      matches any of the listed realms, the realm information will be
-      stripped off.  By default, this list is empty, so all principal
-      names will be passed on fully qualified.
+      Only used when $REMUSER_ENABLED is set.  If the realm matches any of
+      the listed realms, the realm information will be stripped off.  By
+      default, this list is empty, so all principal names will be passed
+      on fully qualified.
 
-      This setting is semantically similar to WebKdcLocalRealms in
-      the mod_webkdc configuration.
+      This setting is semantically similar to WebKdcLocalRealms in the
+      mod_webkdc configuration.
 
       An example setting:
 
           @REMUSER_LOCAL_REALMS = ("stanford.edu", "WIN.STANFORD.EDU");
+
+      Default: not set.
 
   @REMUSER_PERMITTED_REALMS
 
       Only used when $REMUSER_ENABLED is set.  If set, then authentication
       is only permitted if the realm is a member of this list (that is,
       everything after the @ sign in REMOTE_USER must match one of the
-      values in this list).  If unset, there is no restriction on which 
+      values in this list).  If unset, there is no restriction on which
       realms are permitted.
 
-      This setting is semantically similar to WebKdcPermittedRealms in
-      the mod_webkdc configuration.
+      This setting is semantically similar to WebKdcPermittedRealms in the
+      mod_webkdc configuration.
 
-      "" (the empty realm) is an
-      allowable value and means to allow REMOTE_USER settings that contain
-      no realm information (do not contain a @-sign).
+      "" (the empty realm) is an allowable value and says to permit
+      REMOTE_USER settings that contain no realm information (i.e., do not
+      contain a @-sign).
 
-      If @REMUSER_PERMITTED_REALMS is unset, the possible set of realms
-      is determined by the underlying Kerberos service, including 
+      If @REMUSER_PERMITTED_REALMS is unset, the possible authentication
+      realms is determined by the underlying Kerberos service, including
       any cross-realm relationships that exist.
 
       An example setting:
 
-          @REMUSER_PERMITTED_REALMS = ("stanford.edu", "WIN.STANFORD.EDU", "");
+          @REMUSER_PERMITTED_REALMS = ("EXAMPLE.COM", "");
+
+      Default: not set.
 
   @REMUSER_REALMS (was @REALMS)
 

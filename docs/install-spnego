@@ -69,21 +69,32 @@ Configuration
 
       $REMUSER_ENABLED = 1;
       $REMUSER_EXPIRES = 60 * 60 * 8;
-      @REMUSER_PERMITTED_REALMS = ("EXAMPLE.COM"); # optionally restrict
-      @REMUSER_LOCAL_REALMS = ("EXAMPLE.COM"); # optionally strip realm name
 
   The first line tells the WebLogin script to trust REMOTE_USER as set by
   Apache if present (so make sure that there isn't a way of accessing the
   script via an Apache authentication mechanism that you don't trust!).
   The second line says how good authentication via REMOTE_USER should be
-  valid for (see Notes and Cautions below).  The third line tells it what
-  realms to allow authentication for (if this is unset, control of this remains
-  with the underlying Kerberos service, including any cross-realm
-  relationships that have been established).  The fourth line declares
-  which realm names should be stripped off the REMOTE_USER variable
-  before being passed on to the Webauth-enabled Application Servers. 
-  Depending on local practice, this may be set to your local default
-  realm, or left unset.
+  valid for (see Notes and Cautions below).
+
+  By default, whatever appears in REMOTE_USER will be expressed as the
+  authenticated identity, and any user allowed to authenticate by your
+  Kerberos administrative policies (such as cross-realm trust) will be
+  able to authenticate to WebLogin.  To change that behavior, you can use
+  the following settings:
+
+      @REMUSER_PERMITTED_REALMS = ("EXAMPLE.COM");
+      @REMUSER_LOCAL_REALMS = ("EXAMPLE.COM");
+
+  The first setting lists the realms that are permitted to authenticate.
+  If you are happy to allow any realm with which you have cross-realm
+  trust, you can omit this.  This is roughly equivalent to the
+  WebKdcPermittedRealms setting in mod_webkdc.
+
+  The second setting lists the realms that will be stripped off of the
+  authenticated identity before being passed to WebAuth Application
+  Servers.  Depending on local practice, this may be set to your local
+  default realm or left unset.  This is roughly equivalent to the
+  WebKdcLocalRealms setting in mod_webkdc.
 
   You will also need to set $KEYRING_PATH if your WebKDC keyring is not
   located in ../conf/webkdc/keyring relative to your server root.  For

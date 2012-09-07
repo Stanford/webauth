@@ -909,7 +909,8 @@ sub add_remuser_token {
     }
 
     # Make sure that any realm in REMOTE_USER is permitted.
-    my ($user, $realm) = split ('@', $ENV{REMOTE_USER}, 2);
+    my $identity = $ENV{REMOTE_USER};
+    my ($user, $realm) = split ('@', $identity, 2);
     if (@WebKDC::Config::REMUSER_PERMITTED_REALMS) {
         my $found = 0;
         $realm ||= '';
@@ -926,18 +927,16 @@ sub add_remuser_token {
             return;
         }
     }
+    if (grep { $realm eq $_ } @WebKDC::Config::REMUSER_LOCAL_REALMS) {
+        $identity = $user;
+    }
 
-    my $onward_username = 
-        (grep { $realm eq $_ } @WebKDC::Config::REMUSER_LOCAL_REALMS)
-        ? $user
-        : $ENV{REMOTE_USER};
-        
     # Create a proxy token.
     my $token = WebAuth::Token::WebKDCProxy->new ($wa);
-    $token->subject ($onward_username);
+    $token->subject ($identity);
     $token->proxy_type ('remuser');
     $token->proxy_subject ('WEBKDC:remuser');
-    $token->data ($onward_username);
+    $token->data ($identity);
     $token->creation (time);
     $token->expiration (time + $WebKDC::Config::REMUSER_EXPIRES);
 
@@ -947,7 +946,7 @@ sub add_remuser_token {
     # and omit the level of assurance.
     my $session_factor;
     if (defined (&WebKDC::Config::remuser_factors)) {
-        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($onward_username);
+        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($identity);
         $token->initial_factors ($ini);
         $token->loa ($loa) if (defined ($loa) && $loa > 0);
         $session_factor = $sess;
