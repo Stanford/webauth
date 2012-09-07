@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='July' year='2012' />
+    <date month='August' year='2012' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -383,7 +383,7 @@
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
-                         send K5 auth for webkdc-service token
+                         send Kerberos auth for webkdc-service token
   1.                     WAS ---------> WebKDC
 
                          return session key, webkdc-service token
@@ -732,11 +732,11 @@
         <t>Normally, the requested credential tokens will be Kerberos
         service tickets that the WAS can then use to talk to other
         services that use Kerberos authentication.  Since the webkdc-proxy
-        token is generally a Kerberos TGT, this works together well and
-        allows WebAuth to treat the UA's cookie jar as essentially a
-        Kerberos ticket cache.  However, this is not required by the
-        protocol and credential tokens may be any form of credential
-        supported by the WAS and WebKDC.</t>
+        token is generally a Kerberos TGT credential, this works together
+        well and allows WebAuth to treat the UA's cookie jar as
+        essentially a Kerberos ticket cache.  However, this is not
+        required by the protocol and credential tokens may be any form of
+        credential supported by the WAS and WebKDC.</t>
 
         <t>As with an id token, the WAS may choose not to put the
         credentials in an app token for subsequent use.  It may instead
@@ -1020,11 +1020,11 @@
         requestToken command is used by the WebLogin component of the
         WebKDC to process a request token sent in a URL from a WAS.  The
         webkdcProxyToken command converts an existing credential (such as
-        a Kerberos TGT) into a webkdc-proxy token and can be used to
-        bootstrap WebAuth authentication from an existing Kerberos ticket
-        cache for improved single sign-on.  The webkdcProxyTokenInfo
-        command returns information about an existing webkdc-proxy
-        token.</t>
+        a Kerberos credential for the ticket-granting service) into a
+        webkdc-proxy token and can be used to bootstrap WebAuth
+        authentication from an existing Kerberos ticket cache for improved
+        single sign-on.  The webkdcProxyTokenInfo command returns
+        information about an existing webkdc-proxy token.</t>
 
         <section anchor='xmlgettokens' title='getTokens'>
           <t>The getTokens command is used to request tokens (service, id,
@@ -1332,10 +1332,10 @@
 
         <section anchor='xmlwebkdcproxytoken' title='webkdcProxyToken'>
           <t>The webkdcProxyToken command is used to convert an existing
-          credential, such as a Kerberos TGT, into a webkdc-proxy
-          token.  It can be used to bootstrap WebAuth authentication from
-          an existing Kerberos ticket cache for improved single
-          sign-on.</t>
+          credential, such as a Kerberos TGT credential, into a
+          webkdc-proxy token.  It can be used to bootstrap WebAuth
+          authentication from an existing Kerberos ticket cache for
+          improved single sign-on.</t>
 
           <figure>
             <preamble>The request message is:</preamble>
@@ -1453,7 +1453,7 @@
         </section>
 
         <section title='WAS Asking for a credential Token'>
-          <t>In this example, the WAS requests an K5 ticket using a
+          <t>In this example, the WAS requests an Kerberos ticket using a
           previously obtained webkdc-proxy token (presumably obtained from
           the UA via a redirect to the WebKDC with a request token).  The
           webkdc-proxy token's type MUST match the requested credential's
@@ -1661,7 +1661,9 @@
 
             <t hangText='pd (binary)'>
             <vspace blankLines='0'/>Proxy data, such as an encoded
-            Kerberos ticket-granting ticket (TGT).</t>
+            Kerberos credential for the ticket-granting service (a
+            Kerberos TGT plus its supporting data such as the session
+            key).</t>
 
             <t hangText='ps (string)'>
             <vspace blankLines='0'/>Proxy subject, the subject from the
@@ -1852,7 +1854,9 @@
           Encoding'>
           <t>A webkdc-proxy token is a proxy authentication token
           maintained by the WebKDC on behalf of another user, or on behalf
-          of itself.  Normally it contains a Kerberos TGT.</t>
+          of itself.  Normally it contains a Kerberos credential for the
+          ticket-granting service (a Kerberos TGT plus its supporting data
+          such as the session key).</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1992,7 +1996,7 @@
           <t>If "at" is krb5, then "sad" (subject authenticator data) is a
           KRB_AP_REQ for the WAS service principal (as determined from the
           subject of the webkdc-service token) using the user's TGT from a
-          krb5 webkdc-procy token.</t>
+          krb5 webkdc-proxy token.</t>
 
           <t>If at is webkdc, we are trusting the webkdc and "s" contains
           the authenticated user's identity (generally as a Kerberos
@@ -2057,8 +2061,8 @@
         <section anchor='tokencred' title='credential Token Encoding'>
           <t>A credential token is an authentication credential for the
           user for some other service, used by the WAS for proxied
-          authentication.  It is normally a K5 service ticket generated by
-          the WebKDC from the user's TGT.</t>
+          authentication.  It is normally a Kerberos service ticket
+          generated by the WebKDC from the user's TGT.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -2365,6 +2369,12 @@
           <vspace blankLines='0'/>Add error code 24, representing a rejected
           authentication, and add optional element &lt;userMessage&gt; to
           &lt;requestTokenResponse&gt;.</t>
+
+          <t hangText='3.2.1 (2012-09-07, rra)'>
+          <vspace blankLines='0'/>Clarify references to a "Kerberos TGT",
+          which normally mean a Kerberos credential that includes the TGT
+          plus other supporting data such as the session key.  Replace
+          remaining K5 references with just Kerberos.</t>
         </list>
       </t>
     </section>
