@@ -304,11 +304,11 @@ krb5_webkdc_credential(struct webauth_context *ctx, server_rec *server,
         webauth_krb5_free(ctx, kc);
         return 0;
     }
-    webauth_krb5_free(ctx, kc);
 
     bk5_req_len = apr_base64_encode_len(k5_req_len);
     bk5_req = apr_palloc(pool, bk5_req_len);
     apr_base64_encode(bk5_req, k5_req, k5_req_len);
+    webauth_krb5_free(ctx, kc);
     return bk5_req;
 }
 
