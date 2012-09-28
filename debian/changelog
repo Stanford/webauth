@@ -1,3 +1,11 @@
+webauth (4.3.2-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix memory pool allocation error in mod_webauth that could prevent
+      it from obtaining a service token from the WebKDC.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 27 Sep 2012 19:43:24 -0700
+
 webauth (4.3.1-1) experimental; urgency=low
 
   * New upstream release.
