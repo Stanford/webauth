@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.3.2 (unreleased)
+WebAuth 4.3.2 (2012-09-27)
 
     Fix a pool management bug when mod_webauth requested a service token
     from the WebKDC.  A premature release of an APR memory pool could
