@@ -230,8 +230,11 @@ CREDITS
   oversaw the project.
 
   The WebAuth package is currently maintained by Russ Allbery.  Jon
-  Robertson does most of the maintenance work on the WebLogin code,
-  including implementing password change and multifactor support.
+  Robertson does much of the maintenance work on the WebLogin code and
+  implemented password change and multifactor support.
+
+  RPMs are built by Darren Patterson based on earlier work by Joe Little.
+  Many of the Solaris packages were built by Quanah Gibson-Mount.
 
   Thanks to pod for improvements, particularly to the WebKDC, to make it
   easier to package for a Linux distribution, for the initial Debian
