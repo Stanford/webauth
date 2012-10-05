@@ -6,7 +6,7 @@
  * tests even if no Kerberos configuration is provided.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -45,8 +45,9 @@ main(void)
     struct webauth_token_webkdc_proxy *pt;
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
+    const char *identity;
 
-    plan(54);
+    plan(63);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -77,7 +78,6 @@ main(void)
     memset(&request, 0, sizeof(request));
     memset(&service, 0, sizeof(service));
     service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-
     status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
                                 &session_key);
     if (status != WA_ERR_NONE)
@@ -206,6 +206,32 @@ main(void)
     is_string("x,x1", response->initial_factors, "...initial factors");
     is_string(NULL, response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
+    ok(response->identities == NULL, "...identities");
+
+    /* Set an identity ACL file and try again. */
+    config.id_acl_path = test_file_path("data/id.acl");
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Proxy auth for webkdc returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->identities != NULL, "...and there are allowed identities");
+    if (response->identities == NULL)
+        ok_block(3, 0, "...no identities");
+    else {
+        is_int(2, response->identities->nelts, "...two allowed identities");
+        identity = APR_ARRAY_IDX(response->identities, 0, const char *);
+        is_string("otheruser", identity, "...first is correct");
+        identity = APR_ARRAY_IDX(response->identities, 1, const char *);
+        is_string("bar", identity, "...second is correct");
+    }
 
     /* Set forced authentication and try again. */
     req.options = "fa";
@@ -232,5 +258,6 @@ main(void)
 
     /* Clean up. */
     apr_terminate();
+    test_file_path_free((char *) config.id_acl_path);
     return 0;
 }

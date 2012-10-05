@@ -17,6 +17,8 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <ctype.h>
+
 #include <lib/internal.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
@@ -627,6 +629,105 @@ check_multifactor(struct webauth_context *ctx,
 
 
 /*
+ * Given the authenticated user and the destination site, determine the
+ * permissible authentication identities for that destination site.  Stores
+ * that list in a newly-allocated array, which may be set to NULL if there is
+ * no identity ACL or if none of its entries apply to the current
+ * authentication.  Returns an error code.
+ */
+static int
+build_identity_list(struct webauth_context *ctx, const char *subject,
+                    const char *target, apr_array_header_t **identities)
+{
+    int status;
+    unsigned long line;
+    apr_file_t *acl;
+    apr_int32_t flags;
+    apr_status_t code;
+    char buf[BUFSIZ];
+    char *p, *authn, *was, *authz, *last;
+
+    /* If there is no identity ACL file, there is a NULL array. */
+    *identities = NULL;
+    if (ctx->webkdc->id_acl_path == NULL)
+        return WA_ERR_NONE;
+
+    /* Open the identity ACL file. */
+    flags = APR_FOPEN_READ | APR_FOPEN_BUFFERED | APR_FOPEN_NOCLEANUP;
+    code = apr_file_open(&acl, ctx->webkdc->id_acl_path, flags,
+                         APR_FPROT_OS_DEFAULT, ctx->pool);
+    if (code != APR_SUCCESS) {
+        status = WA_ERR_FILE_OPENREAD;
+        webauth_error_set_apr(ctx, status, code, "identity ACL %s",
+                              ctx->webkdc->id_acl_path);
+        return status;
+    }
+
+    /*
+     * Read the file line by line, and store the relevant potential
+     * identities.  The format is:
+     *
+     *     <authn> <target> <authz>
+     *
+     * where <authn> is the user's actual authenticated identity, <target> is
+     * the identity of the site to which the user is going, and <authz> is an
+     * alternate authorization identity the user is allowed to express to that
+     * site.
+     */
+    line = 0;
+    while ((code = apr_file_gets(buf, sizeof(buf), acl)) == APR_SUCCESS) {
+        line++;
+        if (buf[strlen(buf) - 1] != '\n') {
+            status = WA_ERR_FILE_READ;
+            webauth_error_set(ctx, status, "identity ACL %s line %lu too long",
+                              ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        p = buf;
+        while (isspace((int) *p))
+            p++;
+        if (*p == '#' || *p == '\0')
+            continue;
+        authn = apr_strtok(p, " \t\r\n", &last);
+        if (authn == NULL)
+            continue;
+        if (strcmp(subject, authn) != 0)
+            continue;
+        was = apr_strtok(NULL, " \t\r\n", &last);
+        if (was == NULL) {
+            status = WA_ERR_FILE_READ;
+            webauth_error_set(ctx, status, "missing target on identity ACL %s"
+                              "line %lu", ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        if (strcmp(target, was) != 0)
+            continue;
+        authz = apr_strtok(NULL, " \t\r\n", &last);
+        if (authz == NULL) {
+            status = WA_ERR_FILE_READ;
+            webauth_error_set(ctx, status, "missing identity on identity ACL"
+                              " %s line %lu", ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        if (*identities == NULL)
+            *identities = apr_array_make(ctx->pool, 1, sizeof(char *));
+        APR_ARRAY_PUSH(*identities, char *) = apr_pstrdup(ctx->pool, authz);
+    }
+    if (code != APR_SUCCESS && code != APR_EOF) {
+        status = WA_ERR_FILE_READ;
+        webauth_error_set_apr(ctx, status, code, "identity ACL %s",
+                              ctx->webkdc->id_acl_path);
+        goto done;
+    }
+    status = WA_ERR_NONE;
+
+done:
+    apr_file_close(acl);
+    return status;
+}
+
+
+/*
  * Given the identity of a WAS and a webkdc-proxy token identifying the user,
  * obtain a Kerberos authenticator identifying that user to that WAS.  Store
  * it in the provided buffer.  Returns either WA_ERR_NONE on success or a
@@ -1066,6 +1167,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
         (*response)->login_message = "not authorized to use proxy token";
         return WA_ERR_NONE;
     }
+
+    /* Determine if the user is allowed to assert alternate identities. */
+    status = build_identity_list(ctx, (*response)->subject,
+                                 request->service->subject,
+                                 &(*response)->identities);
+    if (status != WA_ERR_NONE)
+        return status;
 
     /*
      * We have a single (or no) webkdc-proxy token that contains everything we
