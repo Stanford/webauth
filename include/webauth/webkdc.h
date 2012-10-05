@@ -67,11 +67,13 @@ struct webauth_webkdc_proxy_data {
  * to the WebKDC and represents a request by a user to authenticate to a WAS.
  * This request may contain webkdc-proxy tokens, representing existing single
  * sign-on credentials, and a login token, representing a username and
- * authentication credential provided by the user in this session.
+ * authentication credential provided by the user in this session.  An
+ * authorization identity can also be requested in via the identity field.
  */
 struct webauth_webkdc_login_request {
     struct webauth_token_webkdc_service *service;
     WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
+    const char *identity;               /* Requested authorization identity. */
     struct webauth_token_request *request;
     const char *remote_user;
     const char *local_ip;
@@ -98,6 +100,7 @@ struct webauth_webkdc_login_response {
     const char *return_url;
     const char *requester;
     const char *subject;
+    const char *identity;       /* Authorization identity, if different. */
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
     const char *initial_factors;

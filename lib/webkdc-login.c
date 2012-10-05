@@ -910,6 +910,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     const void *key_data;
     struct webauth_key *key;
     struct webauth_keyring *session;
+    const char *allowed;
 
     /* Basic sanity checking. */
     if (request->service == NULL || request->creds == NULL
@@ -1174,6 +1175,24 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                  &(*response)->identities);
     if (status != WA_ERR_NONE)
         return status;
+
+    /*
+     * If the user attempts to assert an alternate identity, see if that's
+     * allowed.  If so, copy that into the response.
+     */
+    if (request->identity != NULL && (*response)->identities != NULL)
+        for (i = 0; i < (*response)->identities->nelts; i++) {
+            allowed = APR_ARRAY_IDX((*response)->identities, i, const char *);
+            if (strcmp(allowed, request->identity) == 0) {
+                (*response)->identity = apr_pstrdup(ctx->pool, allowed);
+                break;
+            }
+        }
+    if (request->identity != NULL && (*response)->identity == NULL) {
+        (*response)->login_error = WA_PEC_UNAUTHORIZED;
+        (*response)->login_message = "not authorized to assert that identity";
+        return WA_ERR_NONE;
+    }
 
     /*
      * We have a single (or no) webkdc-proxy token that contains everything we
