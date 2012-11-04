@@ -5,6 +5,9 @@ webauth (4.3.3-1) UNRELEASED; urgency=low
       incorrect handling of random multifactor verification.
     - Fix memory allocation error in the WebAuth Perl module that could
       cause memory corruption in the WebLogin server.
+  * Add Breaks of libwebkdc-perl and webauth-weblogin << 4.3.0 to
+    libwebauth-perl and of webauth-weblogin << 4.3.0 to libwebkdc-perl.
+    The API of the Perl modules changed in 4.3.0.  (Closes: #691878)
 
  -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 11:18:52 -0800
 
