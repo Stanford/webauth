@@ -1,3 +1,12 @@
+webauth (4.1.1-2) unstable; urgency=low
+
+  * Add Breaks of libwebkdc-perl and webauth-weblogin << 4.0.0 to
+    libwebauth-perl and of webauth-weblogin << 4.0.0 to libwebkdc-perl.
+    The API of the Perl modules changed in 4.0.0.  Thanks, Dameon Wagner.
+    (Closes: #691878)
+
+ -- Russ Allbery <rra@debian.org>  Sun, 04 Nov 2012 13:57:09 -0800
+
 webauth (4.1.1-1) unstable; urgency=low
 
   * New upstream release (no Apache 2.4 support yet; that's next).
