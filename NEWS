@@ -1,5 +1,15 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.3.3 (2012-11-05)
+
+    Fix a memory initialization issue in the WebKDC that could cause
+    incorrect handling of random multifactor verification, including
+    requiring random multifactor when the WebAuth Application Server
+    didn't request it.
+
+    Fix a memory allocation error in the WebAuth Perl module that could
+    cause memory corruption in the WebLogin server.
+
 WebAuth 4.3.2 (2012-09-27)
 
     Fix a pool management bug when mod_webauth requested a service token

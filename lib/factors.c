@@ -58,8 +58,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
                 x509 = true;
         }
     } else {
-        factors = apr_palloc(ctx->pool, sizeof(struct webauth_factors));
-        factors->multifactor = false;
+        factors = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
         factors->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
     }
 
