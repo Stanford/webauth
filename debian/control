@@ -118,8 +118,6 @@ Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends}, libwebauth8 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
-Replaces: libwebauth1-dev (<< 3.7.0)
-Breaks: libwebauth1-dev (<< 3.7.0)
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all

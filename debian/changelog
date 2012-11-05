@@ -10,6 +10,8 @@ webauth (4.3.3-1) UNRELEASED; urgency=low
     The API of the Perl modules changed in 4.3.0.  (Closes: #691878)
   * Remove ~ on 4.3.0 dependencies.  There were no pre-release versions,
     so this is just visual clutter.
+  * Drop Replaces and Breaks on libwebauth1-dev, not required since the
+    squeeze release.
 
  -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 11:18:52 -0800
 
