@@ -525,7 +525,7 @@ keyring_decode(self, data)
     STRLEN length;
   CODE:
 {
-    ring = malloc(sizeof(WebAuth__Keyring));
+    ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
     encoded = SvPV(data, length);
