@@ -283,5 +283,7 @@ main(void)
         ok(info->logins == NULL, "...logins is NULL");
     }
 
+    /* Clean up. */
+    webauth_context_free(ctx);
     return 0;
 }

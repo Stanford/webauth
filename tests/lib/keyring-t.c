@@ -256,5 +256,6 @@ main(void)
     unlink(keyring);
     free(keyring);
     test_tmpdir_free(tmpdir);
+    webauth_context_free(ctx);
     return 0;
 }

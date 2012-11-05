@@ -369,3 +369,17 @@ check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	    cd perl && LD_LIBRARY_PATH=$(abs_top_builddir)/lib/.libs \
 		$(MAKE) test ; \
 	fi
+
+# Used by maintainers to run the main test suite under valgrind.  Suppress
+# the xmalloc and pod-spelling tests because the former won't work properly
+# under valgrind (due to increased memory usage) and the latter is pointless
+# to run under valgrind.
+check-valgrind: $(check_PROGRAMS)
+	rm -rf $(abs_top_builddir)/tmp-valgrind
+	mkdir $(abs_top_builddir)/tmp-valgrind
+	env RRA_MAINTAINER_TESTS= valgrind --leak-check=full		   \
+	    --track-fds=yes --trace-children=yes			   \
+	    --log-file=$(abs_top_builddir)/tmp-valgrind/log.%p		   \
+	    --suppressions=$(abs_top_srcdir)/tests/data/valgrind.supp	   \
+	    --trace-children-skip="/bin/sh,*/cat,*/cut,*/expr,*/getopt,*/kinit,*/ls,*/mkdir,*/rm,*/rmdir,*/sed,*/sleep,*/wc,*/data/cmd-*,*/docs/pod*-t" \
+	    tests/runtests $(abs_top_srcdir)/tests/TESTS
