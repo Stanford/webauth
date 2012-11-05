@@ -702,7 +702,7 @@ keyring_new(self, ks)
     WebAuth__Keyring ring;
   CODE:
 {
-    ring = malloc(sizeof(WebAuth__Keyring));
+    ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
     if (sv_isobject(ks) && sv_derived_from(ks, "WebAuth::Key")) {
@@ -730,7 +730,7 @@ keyring_read(self, file)
     int status;
   CODE:
 {
-    ring = malloc(sizeof(WebAuth__Keyring));
+    ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
     status = webauth_keyring_read(self, file, &ring->ring);
@@ -836,7 +836,7 @@ krb5_new(self)
     SV *output;
   CODE:
 {
-    krb5 = malloc(sizeof(WebAuth__Krb5));
+    krb5 = malloc(sizeof(*krb5));
     if (krb5 == NULL)
         croak("cannot allocate memory");
     status = webauth_krb5_new(self, &krb5->kc);
