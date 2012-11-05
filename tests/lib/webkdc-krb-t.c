@@ -284,7 +284,7 @@ main(void)
         is_string("p", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(0, token->token.proxy.loa, "...and no LoA");
-        ok(token->token.proxy.creation - now < 5, "...and creation is sane");
+        ok(token->token.proxy.creation - now < 10, "...and creation is sane");
         is_int(expiration, token->token.proxy.expiration,
                "...and expiration matches the expiration of the proxy token");
         status = webauth_token_decode_raw(ctx, WA_TOKEN_WEBKDC_PROXY,
@@ -304,7 +304,7 @@ main(void)
                "...and correct proxy subject identity");
             ok(pt->data != NULL, "...and data is not NULL");
             is_string("p", pt->initial_factors, "...and factors is password");
-            ok(pt->creation - now < 5, "...and creation is okay");
+            ok(pt->creation - now < 10, "...and creation is okay");
             ok(pt->expiration > now, "...and expiration is sane");
         }
     }
