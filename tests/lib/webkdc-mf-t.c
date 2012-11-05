@@ -652,7 +652,7 @@ main(void)
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Random with multifactor returns success");
+    is_int(WA_ERR_NONE, status, "Random session multifactor returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
