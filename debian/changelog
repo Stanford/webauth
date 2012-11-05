@@ -1,3 +1,13 @@
+webauth (4.3.3-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Fix memory initialization error in the WebKDC that could cause
+      incorrect handling of random multifactor verification.
+    - Fix memory allocation error in the WebAuth Perl module that could
+      cause memory corruption in the WebLogin server.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 11:18:52 -0800
+
 webauth (4.3.2-1) experimental; urgency=low
 
   * New upstream release.
