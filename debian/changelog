@@ -8,6 +8,8 @@ webauth (4.3.3-1) UNRELEASED; urgency=low
   * Add Breaks of libwebkdc-perl and webauth-weblogin << 4.3.0 to
     libwebauth-perl and of webauth-weblogin << 4.3.0 to libwebkdc-perl.
     The API of the Perl modules changed in 4.3.0.  (Closes: #691878)
+  * Remove ~ on 4.3.0 dependencies.  There were no pre-release versions,
+    so this is just visual clutter.
 
  -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 11:18:52 -0800
 
