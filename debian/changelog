@@ -1,3 +1,9 @@
+webauth (4.3.3-1~sbp60+1) stable; urgency=low
+
+  * Backport to squeeze, preserving changes from the previous backport.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 13:47:57 -0800
+
 webauth (4.3.3-1) experimental; urgency=low
 
   * New upstream release.
