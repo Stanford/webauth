@@ -55,6 +55,7 @@ Package: libwebauth-perl
 Section: perl
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
+Breaks: libwebkdc-perl (<< 4.3.0), webauth-weblogin (<< 4.3.0)
 Description: Perl library for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -85,8 +86,6 @@ Priority: extra
 Architecture: any
 Depends: ${misc:Depends}, libwebauth8 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
-Replaces: libwebauth1-dev (<< 3.7.0)
-Breaks: libwebauth1-dev (<< 3.7.0)
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -99,7 +98,7 @@ Description: Development files for WebAuth authentication
 Package: libwebkdc-perl
 Section: perl
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0),
  libcgi-application-perl,
  libcgi-application-perl (>= 4.50) |
  libcgi-application-basic-plugin-bundle-perl,
@@ -112,6 +111,7 @@ Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
  libcgi-fast-perl, libio-socket-ssl-perl, libtemplate-perl, liburi-perl,
  libwww-perl, libxml-parser-perl
 Suggests: libnet-remctl-perl, libtime-duration-perl, libtimedate-perl
+Breaks: webauth-weblogin (<< 4.3.0)
 Description: Perl libraries for WebAuth central login server
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -149,8 +149,8 @@ Description: Command-line utilities for WebAuth authentication
 
 Package: webauth-weblogin
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0~),
- libwebkdc-perl (>= 4.3.0~)
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0),
+ libwebkdc-perl (>= 4.3.0)
 Recommends: httpd-cgi
 Suggests: libapache2-mod-auth-kerb
 Description: Central login server for WebAuth authentication

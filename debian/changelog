@@ -1,3 +1,20 @@
+webauth (4.3.3-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix memory initialization error in the WebKDC that could cause
+      incorrect handling of random multifactor verification.
+    - Fix memory allocation error in the WebAuth Perl module that could
+      cause memory corruption in the WebLogin server.
+  * Add Breaks of libwebkdc-perl and webauth-weblogin << 4.3.0 to
+    libwebauth-perl and of webauth-weblogin << 4.3.0 to libwebkdc-perl.
+    The API of the Perl modules changed in 4.3.0.  (Closes: #691878)
+  * Remove ~ on 4.3.0 dependencies.  There were no pre-release versions,
+    so this is just visual clutter.
+  * Drop Replaces and Breaks on libwebauth1-dev, not required since the
+    squeeze release.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 12:43:48 -0800
+
 webauth (4.3.2-1~sbp60+1) stable; urgency=low
 
   * Backport to squeeze, preserving changes from the previous backport.
