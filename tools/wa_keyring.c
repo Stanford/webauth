@@ -439,5 +439,6 @@ main(int argc, char **argv)
     } else {
         usage(1);
     }
+    webauth_context_free(ctx);
     exit(0);
 }
