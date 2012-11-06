@@ -306,7 +306,7 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     r = remctl_new();
     if (r == NULL) {
         status = WA_ERR_NO_MEM;
-        wai_error_set(ctx, status, "initializing remctl: %s", strerror(errno));
+        wai_error_set_system(ctx, status, errno, "initializing remctl");
         return status;
     }
 
@@ -334,8 +334,8 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     if (!remctl_set_ccache(r, cache)) {
         if (setenv("KRB5CCNAME", cache, 1) < 0) {
             status = WA_ERR_NO_MEM;
-            wai_error_set(ctx, status, "setting KRB5CCNAME for remctl: %s",
-                          strerror(errno));
+            wai_error_set_system(ctx, status, errno,
+                                 "setting KRB5CCNAME for remctl");
             goto fail;
         }
     }

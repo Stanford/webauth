@@ -213,3 +213,25 @@ wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
                               string, apr_strerror(status, buf, sizeof(buf)));
     ctx->code = err;
 }
+
+
+/*
+ * Set the error message and code to the provided values, supporting
+ * printf-style formatting and including the string explanation of an errno.
+ * This function is internal to the WebAuth library and is not exposed to
+ * external consumers.
+ */
+void
+wai_error_set_system(struct webauth_context *ctx, int err, int syserr,
+                     const char *format, ...)
+{
+    va_list args;
+    char *string;
+
+    va_start(args, format);
+    string = apr_pvsprintf(ctx->pool, format, args);
+    va_end(args);
+    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
+                              string, strerror(syserr));
+    ctx->code = err;
+}

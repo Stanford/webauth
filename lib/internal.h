@@ -416,6 +416,11 @@ void wai_error_set_apr(struct webauth_context *, int err, apr_status_t,
                        const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 4, 5)));
 
+/* The same, but include the string expansion of an errno. */
+void wai_error_set_system(struct webauth_context *, int err, int syserr,
+                          const char *, ...)
+    __attribute__((__nonnull__, __format__(printf, 4, 5)));
+
 /* Read the contents of a file into memory. */
 int wai_file_read(struct webauth_context *, const char *, void **, size_t *)
     __attribute__((__nonnull__));
