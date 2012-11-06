@@ -24,7 +24,7 @@
  * Allocate a new struct buffer and initialize it.
  */
 struct buffer *
-webauth_buffer_new(apr_pool_t *pool)
+wai_buffer_new(apr_pool_t *pool)
 {
     struct buffer *buffer;
 
@@ -64,7 +64,7 @@ buffer_resize(struct buffer *buffer, size_t size)
  * Resize the buffer if needed.
  */
 void
-webauth_buffer_set(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_set(struct buffer *buffer, const char *data, size_t length)
 {
     buffer_resize(buffer, length + 1);
     if (length > 0)
@@ -79,7 +79,7 @@ webauth_buffer_set(struct buffer *buffer, const char *data, size_t length)
  * at the end of the buffer.  Resize the buffer if needed.
  */
 void
-webauth_buffer_append(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_append(struct buffer *buffer, const char *data, size_t length)
 {
     if (length == 0)
         return;
@@ -96,8 +96,8 @@ webauth_buffer_append(struct buffer *buffer, const char *data, size_t length)
  * terminator is found and false otherwise.
  */
 bool
-webauth_buffer_find_string(struct buffer *buffer, const char *string,
-                           size_t start, size_t *offset)
+wai_buffer_find_string(struct buffer *buffer, const char *string,
+                       size_t start, size_t *offset)
 {
     char *terminator, *data;
     size_t length;

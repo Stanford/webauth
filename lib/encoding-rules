@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # encoding-rules -- Generate encoding rules for WebAuth data.
 #
@@ -48,6 +48,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 # Mappings from C types to encoding types.
 our %TYPES =
@@ -145,7 +148,7 @@ print "\n";
 for my $struct (sort keys %rules) {
     my $name = $struct;
     $name =~ s/^(webauth|wai)_/wai_/;
-    print "const struct webauth_encoding ${name}_encoding[] = {\n";
+    print "const struct wai_encoding ${name}_encoding[] = {\n";
     for my $rule (@{ $rules{$struct} }) {
         my ($attr, $type, $encode, $options, $nest) = @$rule;
         my $creation = $options->{creation} ? 'true' : 'false';

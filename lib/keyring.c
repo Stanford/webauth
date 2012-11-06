@@ -89,9 +89,8 @@ webauth_keyring_remove(struct webauth_context *ctx,
     struct webauth_keyring_entry *entry;
 
     if (n >= (size_t) entries->nelts) {
-        webauth_error_set(ctx, WA_ERR_NOT_FOUND,
-                          "keyring index %lu out of range",
-                          (unsigned long) n);
+        wai_error_set(ctx, WA_ERR_NOT_FOUND, "keyring index %lu out of range",
+                      (unsigned long) n);
         return WA_ERR_NOT_FOUND;
     }
     for (i = n + 1; i < (size_t) entries->nelts; i++) {
@@ -144,7 +143,7 @@ webauth_keyring_best_key(struct webauth_context *ctx,
         }
     }
     if (best == NULL) {
-        webauth_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys found");
+        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys found");
         return WA_ERR_NOT_FOUND;
     } else {
         *output = best->key;
@@ -172,14 +171,14 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
      */
     *output = NULL;
     memset(&data, 0, sizeof(data));
-    status = webauth_decode(ctx, ctx->pool, wai_keyring_encoding, input,
-                            length, &data);
+    status = wai_decode(ctx, ctx->pool, wai_keyring_encoding, input, length,
+                        &data);
     if (status != WA_ERR_NONE)
         return status;
     if (data.version != KEYRING_VERSION) {
         status = WA_ERR_FILE_VERSION;
-        webauth_error_set(ctx, status, "unsupported keyring data version %d",
-                          data.version);
+        wai_error_set(ctx, status, "unsupported keyring data version %d",
+                      data.version);
         return status;
     }
 
@@ -261,8 +260,8 @@ webauth_keyring_encode(struct webauth_context *ctx,
     }
 
     /* Do the encoding. */
-    return webauth_encode(ctx, ctx->pool, wai_keyring_encoding, &data,
-                          (void **) output, length);
+    return wai_encode(ctx, ctx->pool, wai_keyring_encoding, &data,
+                      (void **) output, length);
 }
 
 
@@ -288,7 +287,7 @@ webauth_keyring_write(struct webauth_context *ctx,
     status = apr_file_mktemp(&file, temp, flags, ctx->pool);
     if (status != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENWRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
+        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
@@ -303,7 +302,7 @@ webauth_keyring_write(struct webauth_context *ctx,
     }
     if (status != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
+        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
@@ -311,7 +310,7 @@ webauth_keyring_write(struct webauth_context *ctx,
     status = apr_file_rename(temp, path, ctx->pool);
     if (status != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        webauth_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
+        wai_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
         goto done;
     }
     s = WA_ERR_NONE;

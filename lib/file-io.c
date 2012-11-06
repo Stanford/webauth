@@ -47,7 +47,7 @@ wai_file_read(struct webauth_context *ctx, const char *path,
             s = WA_ERR_FILE_NOT_FOUND;
         else
             s = WA_ERR_FILE_OPENREAD;
-        webauth_error_set_apr(ctx, s, code, "%s", path);
+        wai_error_set_apr(ctx, s, code, "%s", path);
         goto done;
     }
 
@@ -55,12 +55,12 @@ wai_file_read(struct webauth_context *ctx, const char *path,
     code = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_READ;
-        webauth_error_set_apr(ctx, s, code, "stat of %s", path);
+        wai_error_set_apr(ctx, s, code, "stat of %s", path);
         goto done;
     }
     if (finfo.size == 0) {
         s = WA_ERR_FILE_READ;
-        webauth_error_set(ctx, s, "%s is empty", path);
+        wai_error_set(ctx, s, "%s is empty", path);
         goto done;
     }
     buf = apr_palloc(ctx->pool, finfo.size);
@@ -69,12 +69,12 @@ wai_file_read(struct webauth_context *ctx, const char *path,
     code = apr_file_read_full(file, buf, finfo.size, &size);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_READ;
-        webauth_error_set_apr(ctx, s, code, "%s", path);
+        wai_error_set_apr(ctx, s, code, "%s", path);
         goto done;
     }
     if (size != finfo.size) {
         s = WA_ERR_FILE_READ;
-        webauth_error_set(ctx, s, "%s modified during read", path);
+        wai_error_set(ctx, s, "%s modified during read", path);
         goto done;
     }
     *output = buf;
@@ -112,7 +112,7 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
     code = apr_file_mktemp(&file, temp, flags, ctx->pool);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENWRITE;
-        webauth_error_set_apr(ctx, s, code, "temporary file %s", temp);
+        wai_error_set_apr(ctx, s, code, "temporary file %s", temp);
         goto done;
     }
 
@@ -124,7 +124,7 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
     }
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        webauth_error_set_apr(ctx, s, code, "temporary file %s", temp);
+        wai_error_set_apr(ctx, s, code, "temporary file %s", temp);
         goto done;
     }
 
@@ -132,7 +132,7 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
     code = apr_file_perms_set(temp, APR_FPROT_UREAD | APR_FPROT_UWRITE);
     if (code != APR_SUCCESS && code != APR_ENOTIMPL) {
         s = WA_ERR_FILE_WRITE;
-        webauth_error_set_apr(ctx, s, code, "setting permissions on %s", temp);
+        wai_error_set_apr(ctx, s, code, "setting permissions on %s", temp);
         goto done;
     }
 
@@ -140,7 +140,7 @@ wai_file_write(struct webauth_context *ctx, const void *data, size_t length,
     code = apr_file_rename(temp, path, ctx->pool);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        webauth_error_set_apr(ctx, s, code, "renaming %s to %s", temp, path);
+        wai_error_set_apr(ctx, s, code, "renaming %s to %s", temp, path);
         goto done;
     }
     temp = NULL;

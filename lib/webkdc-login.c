@@ -150,7 +150,7 @@ do_otp(struct webauth_context *ctx,
 
     /* Do the remote validation call. */
     if (ctx->user == NULL) {
-        webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
+        wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
         return WA_ERR_UNIMPLEMENTED;
     }
     status = webauth_user_validate(ctx, login->username, ip, login->otp,
@@ -658,8 +658,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
                          APR_FPROT_OS_DEFAULT, ctx->pool);
     if (code != APR_SUCCESS) {
         status = WA_ERR_FILE_OPENREAD;
-        webauth_error_set_apr(ctx, status, code, "identity ACL %s",
-                              ctx->webkdc->id_acl_path);
+        wai_error_set_apr(ctx, status, code, "identity ACL %s",
+                          ctx->webkdc->id_acl_path);
         return status;
     }
 
@@ -679,8 +679,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         line++;
         if (buf[strlen(buf) - 1] != '\n') {
             status = WA_ERR_FILE_READ;
-            webauth_error_set(ctx, status, "identity ACL %s line %lu too long",
-                              ctx->webkdc->id_acl_path, line);
+            wai_error_set(ctx, status, "identity ACL %s line %lu too long",
+                          ctx->webkdc->id_acl_path, line);
             goto done;
         }
         p = buf;
@@ -696,8 +696,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         was = apr_strtok(NULL, " \t\r\n", &last);
         if (was == NULL) {
             status = WA_ERR_FILE_READ;
-            webauth_error_set(ctx, status, "missing target on identity ACL %s"
-                              "line %lu", ctx->webkdc->id_acl_path, line);
+            wai_error_set(ctx, status, "missing target on identity ACL %s line"
+                          " %lu", ctx->webkdc->id_acl_path, line);
             goto done;
         }
         if (strcmp(target, was) != 0)
@@ -705,8 +705,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         authz = apr_strtok(NULL, " \t\r\n", &last);
         if (authz == NULL) {
             status = WA_ERR_FILE_READ;
-            webauth_error_set(ctx, status, "missing identity on identity ACL"
-                              " %s line %lu", ctx->webkdc->id_acl_path, line);
+            wai_error_set(ctx, status, "missing identity on identity ACL %s"
+                          " line %lu", ctx->webkdc->id_acl_path, line);
             goto done;
         }
         if (*identities == NULL)
@@ -715,8 +715,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
     }
     if (code != APR_SUCCESS && code != APR_EOF) {
         status = WA_ERR_FILE_READ;
-        webauth_error_set_apr(ctx, status, code, "identity ACL %s",
-                              ctx->webkdc->id_acl_path);
+        wai_error_set_apr(ctx, status, code, "identity ACL %s",
+                          ctx->webkdc->id_acl_path);
         goto done;
     }
     status = WA_ERR_NONE;
@@ -916,7 +916,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (request->service == NULL || request->creds == NULL
         || request->request == NULL) {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "incomplete login request data");
+        wai_error_set(ctx, status, "incomplete login request data");
         return status;
     }
 
@@ -1210,8 +1210,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                     ring);
     else {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unsupported requested token type %s",
-                          req->type);
+        wai_error_set(ctx, status, "unsupported requested token type %s",
+                      req->type);
     }
     return status;
 }

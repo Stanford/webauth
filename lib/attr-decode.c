@@ -53,10 +53,10 @@ decode_error_set(struct webauth_context *ctx, int status, const char *desc,
     if (status == WA_ERR_NOT_FOUND)
         status = WA_ERR_CORRUPT;
     if (context != NULL && element != 0)
-        webauth_error_set(ctx, status, "decoding %s %s %lu", context, desc,
-                          (unsigned long) element);
+        wai_error_set(ctx, status, "decoding %s %s %lu", context, desc,
+                      (unsigned long) element);
     else
-        webauth_error_set(ctx, status, "decoding %s", desc);
+        wai_error_set(ctx, status, "decoding %s", desc);
     return status;
 }
 
@@ -69,15 +69,15 @@ decode_error_set(struct webauth_context *ctx, int status, const char *desc,
  * are handling a repeated attribute encoding, and the element number is
  * appended to the attribute name when decoding it.
  *
- * This is an internal helper function used by webauth_decode.
+ * This is an internal helper function used by wai_decode.
  */
 static int
 decode_from_attrs(struct webauth_context *ctx, apr_pool_t *pool,
-                  const struct webauth_encoding *rules,
+                  const struct wai_encoding *rules,
                   WEBAUTH_ATTR_LIST *alist, const void *result,
                   const char *context, unsigned long element)
 {
-    const struct webauth_encoding *rule;
+    const struct wai_encoding *rule;
     const char *attr;
     unsigned long i;
     ssize_t index;
@@ -183,9 +183,9 @@ decode_from_attrs(struct webauth_context *ctx, apr_pool_t *pool,
  * be split off into its own implementation and made independent of that.
  */
 int
-webauth_decode(struct webauth_context *ctx, apr_pool_t *pool,
-               const struct webauth_encoding *rules, const void *input,
-               size_t length, void *data)
+wai_decode(struct webauth_context *ctx, apr_pool_t *pool,
+           const struct wai_encoding *rules, const void *input, size_t length,
+           void *data)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;
@@ -194,7 +194,7 @@ webauth_decode(struct webauth_context *ctx, apr_pool_t *pool,
     buf = apr_pmemdup(pool, input, length);
     status = webauth_attrs_decode(buf, length, &alist);
     if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "decoding attributes");
+        wai_error_set(ctx, status, "decoding attributes");
         return status;
     }
     status = decode_from_attrs(ctx, pool, rules, alist, data, NULL, 0);
@@ -204,42 +204,42 @@ webauth_decode(struct webauth_context *ctx, apr_pool_t *pool,
 
 
 /*
- * Similar to webauth_decode, but decodes a WebAuth token, including handling
- * the determination of the type of the token from the attributes.  Uses the
+ * Similar to wai_decode, but decodes a WebAuth token, including handling the
+ * determination of the type of the token from the attributes.  Uses the
  * memory pool from the WebAuth context.  This does not perform any sanity
  * checking on the token data; that must be done by higher-level code.
  */
 int
-webauth_decode_token(struct webauth_context *ctx, const void *input,
-                     size_t length, struct webauth_token *token)
+wai_decode_token(struct webauth_context *ctx, const void *input,
+                 size_t length, struct webauth_token *token)
 {
     WEBAUTH_ATTR_LIST *alist;
     int status;
     void *buf, *data;
     char *type;
     size_t vlen;
-    const struct webauth_encoding *rules;
+    const struct wai_encoding *rules;
 
     memset(token, 0, sizeof(*token));
     buf = apr_pmemdup(ctx->pool, input, length);
     status = webauth_attrs_decode(buf, length, &alist);
     if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "decoding attributes");
+        wai_error_set(ctx, status, "decoding attributes");
         return status;
     }
     status = webauth_attr_list_get_str(alist, "t", &type, &vlen, WA_F_NONE);
     if (status == WA_ERR_NOT_FOUND) {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "token has no type attribute");
+        wai_error_set(ctx, status, "token has no type attribute");
         goto done;
     } else if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "bad token");
+        wai_error_set(ctx, status, "bad token");
         goto done;
     }
     token->type = webauth_token_type_code(type);
     if (token->type == WA_TOKEN_UNKNOWN) {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unknown token type %s", type);
+        wai_error_set(ctx, status, "unknown token type %s", type);
         goto done;
     }
     status = wai_token_encoding(ctx, token, &rules, (const void **) &data);

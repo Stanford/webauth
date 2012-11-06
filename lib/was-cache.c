@@ -31,8 +31,8 @@ webauth_was_token_cache_read(struct webauth_context *ctx, const char *path,
     s = wai_file_read(ctx, path, &data, &length);
     if (s != WA_ERR_NONE)
         return s;
-    return webauth_decode(ctx, ctx->pool, wai_was_token_cache_encoding,
-                          data, length, cache);
+    return wai_decode(ctx, ctx->pool, wai_was_token_cache_encoding, data,
+                      length, cache);
 }
 
 
@@ -49,8 +49,8 @@ webauth_was_token_cache_write(struct webauth_context *ctx,
     size_t length;
     int s;
 
-    s = webauth_encode(ctx, ctx->pool, wai_was_token_cache_encoding,
-                       cache, &data, &length);
+    s = wai_encode(ctx, ctx->pool, wai_was_token_cache_encoding, cache,
+                   &data, &length);
     if (s != WA_ERR_NONE)
         return s;
     return wai_file_write(ctx, data, length, path);

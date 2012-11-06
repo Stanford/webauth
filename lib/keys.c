@@ -43,12 +43,12 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
     /* Return NULL on invalid key types and sizes. */
     if (type != WA_KEY_AES) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "unsupported key type %d", type);
+        wai_error_set(ctx, status, "unsupported key type %d", type);
         return status;
     }
     if (size != WA_AES_128 && size != WA_AES_192 && size != WA_AES_256) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "unsupported key size %d", size);
+        wai_error_set(ctx, status, "unsupported key size %d", size);
         return status;
     }
 
@@ -67,11 +67,11 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
             status = WA_ERR_RAND_FAILURE;
             err = ERR_get_error();
             if (err == 0)
-                webauth_error_set(ctx, status, "cannot generate random key");
+                wai_error_set(ctx, status, "cannot generate random key");
             else {
                 ERR_error_string_n(err, errbuf, sizeof(errbuf));
-                webauth_error_set(ctx, status,
-                                  "cannot generate random key: %s", errbuf);
+                wai_error_set(ctx, status, "cannot generate random key: %s",
+                              errbuf);
             }
             return status;
         }

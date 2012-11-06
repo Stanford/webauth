@@ -178,8 +178,7 @@ webauth_error_message(struct webauth_context *ctx, int err)
  * and is not exposed to external consumers.
  */
 void
-webauth_error_set(struct webauth_context *ctx, int err, const char *format,
-                  ...)
+wai_error_set(struct webauth_context *ctx, int err, const char *format, ...)
 {
     va_list args;
     char *string;
@@ -200,8 +199,8 @@ webauth_error_set(struct webauth_context *ctx, int err, const char *format,
  * exposed to external consumers.
  */
 void
-webauth_error_set_apr(struct webauth_context *ctx, int err,
-                      apr_status_t status, const char *format, ...)
+wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
+                  const char *format, ...)
 {
     va_list args;
     char *string;

@@ -76,10 +76,10 @@ openssl_error(struct webauth_context *ctx, int status, const char *format, ...)
     va_end(args);
     err = ERR_get_error();
     if (err == 0)
-        webauth_error_set(ctx, status, "%s", buf);
+        wai_error_set(ctx, status, "%s", buf);
     else {
         ERR_error_string_n(err, errbuf, sizeof(errbuf));
-        webauth_error_set(ctx, status, "%s: %s", buf, errbuf);
+        wai_error_set(ctx, status, "%s: %s", buf, errbuf);
     }
     return status;
 }
@@ -222,8 +222,7 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
 
     /* Basic sanity check. */
     if (length < T_HINT_S + T_NONCE_S + T_HMAC_S + AES_BLOCK_SIZE) {
-        webauth_error_set(ctx, WA_ERR_CORRUPT,
-                          "token too short while decoding");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "token too short while decoding");
         return WA_ERR_CORRUPT;
     }
 
@@ -254,22 +253,22 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
     if (hmac == NULL)
         return openssl_error(ctx, WA_ERR_CORRUPT, "cannot compute HMAC");
     if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_HMAC,
-                          "HMAC check failed while decrypting token");
+        wai_error_set(ctx, WA_ERR_BAD_HMAC,
+                      "HMAC check failed while decrypting token");
         return WA_ERR_BAD_HMAC;
     }
 
     /* Check padding length and data validity. */
     plen = output[length - 1];
     if (plen > AES_BLOCK_SIZE || plen > length) {
-        webauth_error_set(ctx, WA_ERR_CORRUPT,
-                          "token padding corrupt while decrypting token");
+        wai_error_set(ctx, WA_ERR_CORRUPT,
+                      "token padding corrupt while decrypting token");
         return WA_ERR_CORRUPT;
     }
     for (i = length - plen; i < length - 1; i++)
         if (output[i] != plen) {
-            webauth_error_set(ctx, WA_ERR_CORRUPT,
-                              "token padding corrupt while decrypting token");
+            wai_error_set(ctx, WA_ERR_CORRUPT,
+                          "token padding corrupt while decrypting token");
             return WA_ERR_CORRUPT;
         }
 
@@ -306,8 +305,8 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
 
     /* Sanity-check our keyring. */
     if (ring->entries->nelts == 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY,
-                          "empty keyring when decoding token");
+        wai_error_set(ctx, WA_ERR_BAD_KEY,
+                      "empty keyring while decoding token");
         return WA_ERR_BAD_KEY;
     }
 

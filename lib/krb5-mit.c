@@ -27,7 +27,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              time_t *expiration)
 {
     int status;
-    struct webauth_krb5_cred data;
+    struct wai_krb5_cred data;
 
     /* Start by copying the credential data into our standard struct. */
     memset(&data, 0, sizeof(data));
@@ -55,7 +55,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         for (n = 0, address = *creds->addresses; address != NULL; address++)
             n++;
         data.address_count = n;
-        size = n * sizeof(struct webauth_krb5_cred_address);
+        size = n * sizeof(struct wai_krb5_cred_address);
         data.address = apr_palloc(kc->pool, size);
         for (i = 0; i < n; i++) {
             data.address[i].type = creds->addresses[i]->addrtype;
@@ -78,7 +78,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         for (n = 0, authdata = *creds->authdata; authdata != NULL; authdata++)
             n++;
         data.authdata_count = n;
-        size = n * sizeof(struct webauth_krb5_cred_authdata);
+        size = n * sizeof(struct wai_krb5_cred_authdata);
         data.authdata = apr_palloc(kc->pool, size);
         for (i = 0; i < n; i++) {
             data.authdata[i].type = creds->authdata[i]->ad_type;
@@ -88,8 +88,8 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     }
 
     /* All done.  Do the attribute encoding. */
-    return webauth_encode(ctx, kc->pool, wai_krb5_cred_encoding, &data,
-                          output, length);
+    return wai_encode(ctx, kc->pool, wai_krb5_cred_encoding, &data, output,
+                      length);
 }
 
 
@@ -109,7 +109,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
 {
     void *buf;
     WEBAUTH_ATTR_LIST *alist = NULL;
-    struct webauth_krb5_cred data;
+    struct wai_krb5_cred data;
     int status;
     size_t size, i;
 
@@ -117,7 +117,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     buf = apr_pmemdup(kc->pool, input, length);
     status = webauth_attrs_decode(buf, length, &alist);
     if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "credential decode failed");
+        wai_error_set(ctx, status, "credential decode failed");
         return status;
     }
 
@@ -126,8 +126,8 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * struct.
      */
     memset(&data, 0, sizeof(data));
-    status = webauth_decode(ctx, kc->pool, wai_krb5_cred_encoding, input,
-                            length, &data);
+    status = wai_decode(ctx, kc->pool, wai_krb5_cred_encoding, input, length,
+                        &data);
     if (status != WA_ERR_NONE) {
         webauth_attr_list_free(alist);
         return status;

@@ -114,10 +114,10 @@ error_set(struct webauth_context *ctx, struct webauth_krb5 *kc,
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
     if (kc == NULL || kc->ctx == NULL)
-        webauth_error_set(ctx, WA_ERR_KRB5, "no Kerberos context");
+        wai_error_set(ctx, WA_ERR_KRB5, "no Kerberos context");
     else {
         k5_msg = krb5_get_error_message(kc->ctx, err);
-        webauth_error_set(ctx, WA_ERR_KRB5, "%s: %s", string, k5_msg);
+        wai_error_set(ctx, WA_ERR_KRB5, "%s: %s", string, k5_msg);
         krb5_free_error_message(kc->ctx, k5_msg);
     }
     return WA_ERR_KRB5;
@@ -267,7 +267,7 @@ webauth_krb5_new(struct webauth_context *ctx, struct webauth_krb5 **kc)
     krb5_error_code code;
 
     if (apr_pool_create(&pool, ctx->pool) != APR_SUCCESS) {
-        webauth_error_set(ctx, WA_ERR_APR, "cannot create new APR pool");
+        wai_error_set(ctx, WA_ERR_APR, "cannot create new APR pool");
         return WA_ERR_APR;
     }
     *kc = apr_pcalloc(pool, sizeof(struct webauth_krb5));
@@ -646,7 +646,7 @@ webauth_krb5_export_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
         realm = krb5_principal_get_realm(kc->ctx, in.client);
         if (realm == NULL) {
             status = WA_ERR_INVALID_CONTEXT;
-            webauth_error_set(ctx, status, "no realm");
+            wai_error_set(ctx, status, "no realm");
             goto done;
         }
         code = krb5_build_principal_ext(kc->ctx, &in.server,
@@ -732,8 +732,8 @@ webauth_krb5_get_principal(struct webauth_context *ctx,
                            enum webauth_krb5_canon canon)
 {
     if (kc->princ == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                          "Kerberos context not initialized");
+        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                      "Kerberos context not initialized");
         return WA_ERR_INVALID_CONTEXT;
     }
     return canonicalize_principal(ctx, kc, kc->princ, principal, canon);
@@ -752,13 +752,13 @@ webauth_krb5_get_realm(struct webauth_context *ctx, struct webauth_krb5 *kc,
     const char *result;
 
     if (kc->princ == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                          "Kerberos context not initialized");
+        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                      "Kerberos context not initialized");
         return WA_ERR_INVALID_CONTEXT;
     }
     result = krb5_principal_get_realm(kc->ctx, kc->princ);
     if (result == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID_CONTEXT, "no realm");
+        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT, "no realm");
         return WA_ERR_INVALID_CONTEXT;
     }
     *realm = apr_pstrdup(kc->pool, result);
@@ -779,8 +779,8 @@ webauth_krb5_get_cache(struct webauth_context *ctx, struct webauth_krb5 *kc,
     char *result;
 
     if (kc->cc == NULL) {
-        webauth_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                          "Kerberos context not initialized");
+        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                      "Kerberos context not initialized");
         return WA_ERR_INVALID_CONTEXT;
     }
     code = krb5_cc_get_full_name(kc->ctx, kc->cc, &result);
@@ -1125,13 +1125,13 @@ webauth_krb5_change_password(struct webauth_context *ctx,
         goto done;
     }
     if (result_code != 0) {
-        webauth_error_set(ctx, WA_ERR_KRB5, "password change failed for %s:"
-                          " (%d) %.*s%s%.*s", username, result_code,
-                          (int) result_code_string.length,
-                          (char *) result_code_string.data,
-                          result_string.length == 0 ? "" : ": ",
-                          (int) result_string.length,
-                          (char *) result_string.data);
+        wai_error_set(ctx, WA_ERR_KRB5, "password change failed for %s: (%d)"
+                      " %.*s%s%.*s", username, result_code,
+                      (int) result_code_string.length,
+                      (char *) result_code_string.data,
+                      result_string.length == 0 ? "" : ": ",
+                      (int) result_string.length,
+                      (char *) result_string.data);
         goto done;
     }
 
