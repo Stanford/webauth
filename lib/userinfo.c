@@ -114,7 +114,7 @@ convert_number(struct webauth_context *ctx, const char *string,
     *value = strtoul(string, &end, 10);
     if (*end != '\0' || (*value == ULONG_MAX && errno != 0)) {
         status = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, status, "invalid number %s", string);
+        wai_error_set(ctx, status, "invalid number %s in XML", string);
         return status;
     }
     return WA_ERR_NONE;
@@ -305,8 +305,9 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     /* Initialize the remctl context. */
     r = remctl_new();
     if (r == NULL) {
-        wai_error_set(ctx, WA_ERR_NO_MEM, "%s", strerror(errno));
-        return WA_ERR_NO_MEM;
+        status = WA_ERR_NO_MEM;
+        wai_error_set(ctx, status, "initializing remctl: %s", strerror(errno));
+        return status;
     }
 
     /*
@@ -333,7 +334,8 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     if (!remctl_set_ccache(r, cache)) {
         if (setenv("KRB5CCNAME", cache, 1) < 0) {
             status = WA_ERR_NO_MEM;
-            wai_error_set(ctx, status, "setting KRB5CCNAME");
+            wai_error_set(ctx, status, "setting KRB5CCNAME for remctl: %s",
+                          strerror(errno));
             goto fail;
         }
     }
@@ -561,7 +563,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
-        wai_error_set(ctx, WA_ERR_INVALID, "invalid protocol");
+        wai_error_set(ctx, WA_ERR_INVALID, "invalid user info protocol");
         return WA_ERR_INVALID;
     }
 
@@ -611,7 +613,7 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
-        wai_error_set(ctx, WA_ERR_INVALID, "invalid protocol");
+        wai_error_set(ctx, WA_ERR_INVALID, "invalid user info protocol");
         return WA_ERR_INVALID;
     }
 }

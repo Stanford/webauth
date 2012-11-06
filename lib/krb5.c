@@ -265,9 +265,11 @@ webauth_krb5_new(struct webauth_context *ctx, struct webauth_krb5 **kc)
 {
     apr_pool_t *pool;
     krb5_error_code code;
+    apr_status_t acode;
 
-    if (apr_pool_create(&pool, ctx->pool) != APR_SUCCESS) {
-        wai_error_set(ctx, WA_ERR_APR, "cannot create new APR pool");
+    acode = apr_pool_create(&pool, ctx->pool);
+    if (acode != APR_SUCCESS) {
+        wai_error_set_apr(ctx, WA_ERR_APR, acode, "cannot create new pool");
         return WA_ERR_APR;
     }
     *kc = apr_pcalloc(pool, sizeof(struct webauth_krb5));
@@ -309,12 +311,10 @@ setup_cache(struct webauth_context *ctx, struct webauth_krb5 *kc,
         cache = apr_psprintf(kc->pool, "MEMORY:%#lx", (unsigned long) kc);
     code = krb5_cc_resolve(kc->ctx, cache, &kc->cc);
     if (code != 0)
-        return error_set(ctx, kc, code, "cannot create Kerberos cache %s",
-                         cache);
+        return error_set(ctx, kc, code, "cannot create cache %s", cache);
     code = krb5_cc_initialize(kc->ctx, kc->cc, kc->princ);
     if (code != 0)
-        return error_set(ctx, kc, code, "cannot initialize Kerberos cache %s",
-                         cache);
+        return error_set(ctx, kc, code, "cannot initialize cache %s", cache);
     return WA_ERR_NONE;
 }
 
@@ -646,7 +646,7 @@ webauth_krb5_export_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
         realm = krb5_principal_get_realm(kc->ctx, in.client);
         if (realm == NULL) {
             status = WA_ERR_INVALID_CONTEXT;
-            wai_error_set(ctx, status, "no realm");
+            wai_error_set(ctx, status, "no realm for principal");
             goto done;
         }
         code = krb5_build_principal_ext(kc->ctx, &in.server,
@@ -758,7 +758,7 @@ webauth_krb5_get_realm(struct webauth_context *ctx, struct webauth_krb5 *kc,
     }
     result = krb5_principal_get_realm(kc->ctx, kc->princ);
     if (result == NULL) {
-        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT, "no realm");
+        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT, "no realm for principal");
         return WA_ERR_INVALID_CONTEXT;
     }
     *realm = apr_pstrdup(kc->pool, result);

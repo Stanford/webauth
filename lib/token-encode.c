@@ -232,7 +232,7 @@ check_expiration(struct webauth_context *ctx, time_t expiration)
     now = time(NULL);
     if (expiration < now) {
         status = WA_ERR_TOKEN_EXPIRED;
-        wai_error_set(ctx, status, "token expired at %lu",
+        wai_error_set(ctx, status, "expired at %lu",
                       (unsigned long) expiration);
     }
     return status;
@@ -526,7 +526,7 @@ check_token(struct webauth_context *ctx, const struct webauth_token *token,
     case WA_TOKEN_ANY:
     default:
         wai_error_set(ctx, WA_ERR_INVALID,
-                      "invalid token type %d in encode", token->type);
+                      "unknown token type %d in encode", token->type);
         return WA_ERR_INVALID;
     }
 }

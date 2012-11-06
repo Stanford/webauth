@@ -238,7 +238,7 @@ main(void)
     check_error(ctx, WA_TOKEN_APP, "app-empty", ring, WA_ERR_CORRUPT,
                 "missing subject in app token");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type cred, expected app");
 
@@ -271,7 +271,7 @@ main(void)
     check_error(ctx, WA_TOKEN_CRED, "cred-empty", ring, WA_ERR_CORRUPT,
                 "decoding subject");
     check_error(ctx, WA_TOKEN_CRED, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type error, expected cred");
 
@@ -334,7 +334,7 @@ main(void)
 
     /* Test decoding error cases for id tokens. */
     check_error(ctx, WA_TOKEN_ID, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
     check_error(ctx, WA_TOKEN_ID, "login-pass", ring, WA_ERR_CORRUPT,
                 "wrong token type login, expected id");
 
@@ -382,7 +382,7 @@ main(void)
     check_error(ctx, WA_TOKEN_PROXY, "proxy-empty", ring, WA_ERR_CORRUPT,
                 "decoding subject");
     check_error(ctx, WA_TOKEN_PROXY, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
                 "wrong token type req, expected proxy");
 
@@ -505,7 +505,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-proxy tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app, expected webkdc-proxy");
 
@@ -524,7 +524,7 @@ main(void)
 
     /* Test decoding error cases for webkdc-service tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app, expected webkdc-service");
 

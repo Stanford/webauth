@@ -860,7 +860,7 @@ main(void)
     bad_ring = webauth_keyring_from_key(ctx, key);
     status = webauth_token_encode(ctx, &in, bad_ring, &result);
     is_int(WA_ERR_BAD_KEY, status, "Encoding with invalid key fails");
-    is_string("unable to use key (error setting encryption key)",
+    is_string("unable to use key (cannot set encryption key)",
               webauth_error_message(ctx, status),
               "...with correct error message");
 

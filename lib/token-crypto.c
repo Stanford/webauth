@@ -146,7 +146,7 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     status = AES_set_encrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
         status = WA_ERR_BAD_KEY;
-        return openssl_error(ctx, status, "error setting encryption key");
+        return openssl_error(ctx, status, "cannot set encryption key");
     }
 
     /* {key-hint}{nonce}{hmac}{attr}{padding} */
@@ -230,7 +230,7 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
     status = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
     if (status != 0) {
         status = WA_ERR_BAD_KEY;
-        return openssl_error(ctx, status, "error setting encryption key");
+        return openssl_error(ctx, status, "cannot set encryption key");
     }
 
     /*

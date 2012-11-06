@@ -67,11 +67,10 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
             status = WA_ERR_RAND_FAILURE;
             err = ERR_get_error();
             if (err == 0)
-                wai_error_set(ctx, status, "cannot generate random key");
+                wai_error_set(ctx, status, "cannot generate key");
             else {
                 ERR_error_string_n(err, errbuf, sizeof(errbuf));
-                wai_error_set(ctx, status, "cannot generate random key: %s",
-                              errbuf);
+                wai_error_set(ctx, status, "cannot generate key: %s", errbuf);
             }
             return status;
         }

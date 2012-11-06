@@ -143,7 +143,7 @@ webauth_keyring_best_key(struct webauth_context *ctx,
         }
     }
     if (best == NULL) {
-        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys found");
+        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
         return WA_ERR_NOT_FOUND;
     } else {
         *output = best->key;
