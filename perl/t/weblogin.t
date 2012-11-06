@@ -124,17 +124,19 @@ my $fname_passwd = 't/data/test.password';
 my ($user, $pass) = get_userinfo ($fname_passwd) if -f $fname_passwd;
 
 # Miscellaneous config settings.
-$WebKDC::Config::EXPIRING_PW_URL  = '/pwchange';
+$WebKDC::Config::EXPIRING_PW_URL = '/pwchange';
 $WebKDC::Config::EXPIRING_PW_WARNING = 60 * 60 * 24 * 7;
 $WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD = 0;
 $WebKDC::Config::REMUSER_REDIRECT = 0;
-@WebKDC::Config::REMUSER_REALMS   = ();
-$WebKDC::Config::BYPASS_CONFIRM   = '';
+@WebKDC::Config::REMUSER_LOCAL_REALMS = ();
+@WebKDC::Config::REMUSER_PERMITTED_REALMS = ();
+$WebKDC::Config::BYPASS_CONFIRM = '';
 
 # If the username is fully qualified, set a default realm.
 if ($user =~ /\@(\S+)/) {
     $WebKDC::Config::DEFAULT_REALM = $1;
-    @WebKDC::Config::REMUSER_REALMS = ($1);
+    @WebKDC::Config::REMUSER_PERMITTED_REALMS = ($1);
+    @WebKDC::Config::REMUSER_LOCAL_REALMS = ($1);
 }
 
 # Load a version of the page templates that just prints out the vars sent.

@@ -3,7 +3,7 @@
 # Miscellaneous tests for WebLogin code.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -253,8 +253,9 @@ is ($page, undef, ' and test_pwchange with all fields correct works');
 
 $ENV{REMOTE_USER} = 'testuser@testrealm.org';
 $WebKDC::Config::REMUSER_EXPIRES  = 60 * 10;
-@WebKDC::Config::REMUSER_REALMS   = ('testrealm.org', 'win.testrealm.org');
 $WebKDC::Config::KEYRING_PATH     = 't/data/test.keyring';
+@WebKDC::Config::REMUSER_PERMITTED_REALMS
+    = ('testrealm.org', 'win.testrealm.org');
 create_keyring ($WebKDC::Config::KEYRING_PATH);
 
 $WebKDC::Config::WEBKDC_PRINCIPAL = contents ('t/data/test.principal')
