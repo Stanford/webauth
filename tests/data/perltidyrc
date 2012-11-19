@@ -1,0 +1,8 @@
+# -*- conf -*-
+#
+# Default options for perltidy for proper Perl code reformatting.
+
+-l=79           # usually use 78, but don't want 79-long lines reformatted
+-pt=2           # don't add extra whitespace around parentheses
+-sbt=2          # ...or square brackets
+-sfs            # no space before semicolon in for (not that I use this form)

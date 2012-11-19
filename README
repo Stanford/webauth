@@ -156,6 +156,15 @@ REQUIREMENTS
   generate the manual pages and protocol documentation from a fresh Git
   checkout.
 
+  Some parts of the test suite are suppressed by default because those
+  tests are normally only useful for the maintainer.  This includes tests
+  of POD spelling and Perl coding style.  To enable those tests, set the
+  environment variable RRA_MAINTAINER_TESTS to a true value.  The Perl
+  modules Pod::Spell and Perl::Critic are required (available from CPAN),
+  and either either aspell or ispell with the american dictionary are also
+  required.  The user's path is searched for aspell or ispell and aspell
+  is preferred.
+
 SUPPORT
 
   New WebAuth releases are announced via the low-volume webauth-announce

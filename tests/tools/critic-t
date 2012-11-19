@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+#
+# Check for perlcritic errors in included Perl scripts.
+#
+# Checks all Perl scripts in the tree for problems uncovered by perlcritic.
+# This test is disabled unless RRA_MAINTAINER_TESTS is set, since coding style
+# will not interfere with functionality.
+#
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use Test::More;
+
+# Files to test.
+my @FILES = qw(lib/encoding-rules);
+
+# Skip tests unless we're running the test suite in maintainer mode.
+plan skip_all => 'Coding style tests only run for maintainer'
+    if !$ENV{RRA_MAINTAINER_TESTS};
+
+# Skip tests if Test::Perl::Critic is not installed.
+eval { require Test::Perl::Critic };
+if ($@) {
+    plan skip_all => 'Test::Perl::Critic required to test coding style';
+}
+
+# Convert a file name, relative to SOURCE, into a full path.
+sub path_of_file {
+    my ($file) = @_;
+    my $path = $ENV{SOURCE} . '/../' . $file;
+    $path =~ s{ [^/]+ / .. / }{}xms;
+    return $path;
+}
+
+# Build the list of files to test.
+my @paths = map { path_of_file($_) } @FILES;
+
+# Declare a plan, now that we know the list of files to check.
+plan tests => scalar @paths;
+
+# Force the embedded Perl::Tidy check to use the correct configuration.
+$ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
+
+# Import the configuration file and run Perl::Critic.
+my $profile = "$ENV{SOURCE}/data/perlcriticrc";
+Test::Perl::Critic->import(-profile => $profile);
+critic_ok(@paths);
