@@ -2,69 +2,27 @@
 #
 # encoding-rules -- Generate encoding rules for WebAuth data.
 #
-# This script is used by WebAuth maintainers to generate encoding rules, used
-# by the webauth_encode and webauth_decode internal library functions, to
-# translate structs to and from the WebAuth data serialization format.  This
-# is used for token generation, Kerberos credential serialization, and other
-# places serialization is needed (such as keyrings and service token caches).
-#
-# encoding-rules takes as arguments a source file that defines one more more
-# structs and then a list of structs for which to generate encodings.  It
-# creates, from this, a C source file that defines an array of
-# webauth_encoding structs that will translate those structs to and from the
-# WebAuth attribute serialization format.
-#
-# The following options are supported:
-#
-#   ascii
-#
-#     Only used for numeric and data attributes.  Encode the attribute in
-#     ASCII rather than using a binary form.  For numeric attributes, this
-#     means encoding the value as ASCII digits.  For data attributes, this
-#     means encoding the value in hex.  The inverse is done when decoding.
-#
-#   creation
-#
-#     Only valid for TIME attributes.  This attribute represents a creation
-#     time.  If it is not set when encoding, the current time will be encoded
-#     as the value of this attribute.
-#
-#   optional
-#
-#     Indicates that this attribute is optional in the encoding.  If it is
-#     NULL or 0, the attribute will be ommitted when encoding.  If the
-#     attribute is missing from an encoded form, this is not a problem.
-#     Absent this option, numeric attributes will be encoded as 0 if the value
-#     is 0, NULL string and data attributes are an error, and the attribute
-#     must be present when parsing the encoded form or an error is reported.
-#
-#   repeat
-#
-#     This attribute represents the count of a repeated nested struct, which
-#     will be the next attribute in the struct.
-#
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
+use 5.010;
+
+use autodie;
 use strict;
 use warnings;
 
-# Mappings from C types to encoding types.
-our %TYPES =
-    ('char *'        => 'STRING',
-     'const char *'  => 'STRING',
-     'int32_t'       => 'INT32',
-     'uint32_t'      => 'UINT32',
-     'unsigned long' => 'ULONG',
-     'time_t'        => 'TIME',
-     'void *'        => 'DATA',
-     'const void *'  => 'DATA');
+use Carp qw(croak);
+use Readonly;
+
+##############################################################################
+# Global variables
+##############################################################################
 
 # The heading on the generated source file.
-our $HEADING = <<EOH;
+Readonly my $HEADING => <<'END_HEADER';
 /*
  * Automatically generated -- do not edit!
  *
@@ -82,105 +40,388 @@ our $HEADING = <<EOH;
 #include <portable/system.h>
 
 #include <lib/internal.h>
-EOH
+END_HEADER
+
+# Mappings from C types to encoding types.
+Readonly my %TYPES => (
+    'char *'        => 'STRING',
+    'const char *'  => 'STRING',
+    'int32_t'       => 'INT32',
+    'uint32_t'      => 'UINT32',
+    'unsigned long' => 'ULONG',
+    'time_t'        => 'TIME',
+    'void *'        => 'DATA',
+    'const void *'  => 'DATA',
+);
+
+# The start of a struct definition.
+#     $1 == struct name
+Readonly my $STRUCT_REGEX => qr/ \A \s* struct \s+ (\S+) \s* \{ /xms;
+
+# A struct member.
+#     $1 == C type of member
+#     $2 == member name
+#     $3 == encoded name and any options (comma-separated)
+Readonly my $MEMBER_REGEX => qr{
+    \A \s+
+       (.*?)                    # C type (1)
+       ([\w_]+)                 # member name (2)
+       ; \s+
+       /\*                      # trailing encode comment
+         [ ] encode: [ ]        #   always starts with encode:
+         (.*?)                  #   encoded name and any options (3)
+         [ ]
+       \*/                      # end of comment
+   }xms;
+
+# A struct member that nests another encoded struct.
+#     $1 == nested struct C type (including "struct")
+#     $2 == member name
+Readonly my $NESTED_REGEX =>
+  qr{ \A \s+ (struct \s+ [\w_]+) \s* \*([\w_]+) ; }xms;
+
+# The end of a struct definition.
+Readonly my $END_REGEX => qr/ \A \s* \} /xms;
+
+##############################################################################
+# Functions
+##############################################################################
+
+# Convert a boolean to the string 'true' or 'false'.
+sub _bool_as_string {
+    my ($bool) = @_;
+    return $bool ? 'true' : 'false';
+}
+
+# say and print with error checking.  autodie unfortunately can't help us with
+# these because they can't be prototyped and hence can't be overridden.
+
+## no critic (Subroutines::RequireArgUnpacking)
+sub print_checked { print @_ or croak 'print failed'; return }
+sub say_checked   { say @_   or croak 'say failed';   return }
+## use critic
+
+# Usage      : parse_struct($source, $source_fh)
+# Purpose    : Parse the C definition of a struct into encoding rules
+# Returns    : A reference to an array of encoding rules for that struct
+# Parameters : $source    - Input file name (for error reporting)
+#              $source_fh - File handle for open C header source
+# Throws     : I/O exceptions on read failure
+#              String exceptions on parsing failure
+sub parse_struct {
+    my ($source, $source_fh) = @_;
+
+    my @rules;
+  RULE:
+    while (defined(my $line = <$source_fh>)) {
+        return \@rules if $line =~ $END_REGEX;
+
+        # Only lines with an encoding specified result in any action.
+        my ($c_type, $attr, $encode) = $line =~ $MEMBER_REGEX;
+        next RULE if !defined $c_type;
+
+        # Parse encoding arguments.  The first is the encoded name.
+        my ($encode_name, @encode_args) = split /,\s*/xms, $encode;
+        my %option = map { $_ => 1 } @encode_args;
+
+        # Convert the type from C to the attribute encoder type.
+        $c_type =~ s{ \s+ \z }{}xms;
+        if (!$TYPES{$c_type}) {
+            die "$source:$.: unknown type $c_type\n";
+        }
+        my $type = $option{repeat} ? 'REPEAT' : $TYPES{$c_type};
+
+        # The creation option is only valid with TIME types.
+        if ($type ne 'TIME' && $option{creation}) {
+            die "$source:$.: creation flag specified on non-TIME attribute"
+              . " $attr\n";
+        }
+
+        # If type REPEAT, the next line must be the nested embedded struct.
+        my ($nest_type, $nest_member);
+        if ($type eq 'REPEAT') {
+            $line = <$source_fh>;
+            if (defined $line) {
+                ($nest_type, $nest_member) = $line =~ $NESTED_REGEX;
+            }
+            if (!defined($line) || !defined $nest_type) {
+                die "$source:$.: missing repeated struct member for $attr\n";
+            }
+            $attr = $nest_member;
+        }
+
+        # Build the repesentation of this rule and add it to the rules.
+        my $rule_ref = [$attr, $type, $encode_name, \%option, $nest_type];
+        push @rules, $rule_ref;
+    }
+
+    # We fell off the end of the struct.
+    die "$source:$.: could not find end of struct\n";
+}
+
+# Usage      : print_rule($struct, $rule_ref)
+# Purpose    : Print out an encoding rule for a single attribute
+# Returns    : undef
+# Parameters : $struct   - Name of the struct for which we're printing rules
+#              $rule_ref - Reference to array representing a rule as follows:
+#                [0] Name of the attribute
+#                [1] Type of the attribute
+#                [2] Attribute name encoded in the wire token
+#                [3] Reference to hash of options
+#                [4] C data type of nested structure
+# Throws     : I/O exceptions on print failure
+sub print_rule {
+    my ($struct, $rule_ref) = @_;
+    my ($name, $type, $encode_name, $option_ref, $nest_type) = @{$rule_ref};
+
+    # Do some preliminary formatting of the rule data.
+    my $desc = $name;
+    $desc =~ tr{_}{ };
+    my $creation = _bool_as_string($option_ref->{creation});
+    my $optional = _bool_as_string($option_ref->{optional});
+    my $ascii    = _bool_as_string($option_ref->{ascii});
+
+    # Print out the basic information.
+    #<<<
+    say_checked  q[    {];
+    say_checked qq[        "$encode_name",];
+    say_checked qq[        "$desc",];
+    say_checked qq[        WA_TYPE_${type},];
+    #>>>
+
+    # Print out the flags derived from the options.
+    #<<<
+    say_checked sprintf '        %-6s /* optional */', $optional . q{,};
+    say_checked sprintf '        %-6s /* ascii    */', $ascii    . q{,};
+    say_checked sprintf '        %-6s /* creation */', $creation . q{,};
+    #>>>
+
+    # Print out the offset.
+    say_checked qq[        offsetof(struct $struct, $name),];
+
+    # DATA attributes have an additional offset to the length attribute.
+    if ($type eq 'DATA') {
+        #<<<
+        say_checked qq[        offsetof(struct $struct, ${name}_len),];
+        say_checked  q[        0,];
+        say_checked  q[        NULL];
+        #>>>
+    }
+
+    # Repeated attributes have a count offset and a nested size and encoding.
+    elsif ($type eq 'REPEAT') {
+        my $nest_name = $nest_type;
+        $nest_name =~ s{ \A struct \s+ (?: (webauth|wai) _ ) }{wai_}xms;
+
+        say_checked qq[        offsetof(struct $struct, ${name}_count),];
+        say_checked qq[        sizeof($nest_type),];
+        say_checked qq[        ${nest_name}_encoding];
+    }
+
+    # Initialization placeholders for all other types.
+    else {
+        say_checked '        0,';
+        say_checked '        0,';
+        say_checked '        NULL';
+    }
+
+    # End of the encoding.
+    say_checked '    },';
+    return;
+}
+
+# Usage      : print_rules($source, $rules_ref)
+# Purpose    : Print the encoding rules for structs found in source header
+# Returns    : undef
+# Parameters : $source    - Path to source header
+#              $rules_ref - Reference to hash of struct name to rule array
+# Throws     : I/O exceptions on print failure
+sub print_rules {
+    my ($source, $rules_ref) = @_;
+
+    # Print out the initial heading.
+    print_checked $HEADING;
+    if ($source ne 'lib/internal.h') {
+        say_checked "#include <$source>";
+    }
+    print_checked "\n";
+
+    # For each struct, print out the rules for that struct.
+    for my $struct (sort keys %{$rules_ref}) {
+        my $name = $struct;
+
+        # Print variable definition for the encoding rules for this struct.
+        $name =~ s{ \A (webauth|wai) _ }{wai_}xms;
+        say_checked "const struct wai_encoding ${name}_encoding[] = {";
+
+        # Print the rules for this struct.
+        for my $rule (@{ $rules_ref->{$struct} }) {
+            print_rule($struct, $rule);
+        }
+
+        # Print the end of rules marker.
+        say_checked '    WA_ENCODING_END';
+        say_checked '};';
+    }
+    return;
+}
+
+##############################################################################
+# Main routine
+##############################################################################
 
 # Parse command-line arguments.
-my ($source, @structs) = @ARGV;
-unless (@structs) {
+if (@ARGV < 2) {
     die "Syntax: encoding-rules <source> <struct> [<struct> ...]\n";
 }
-my %structs = map { $_ => 1 } @structs;
+my $source = shift;
+my %encode_struct = map { $_ => 1 } @ARGV;
 
 # Parse the source file and build our encoding rules.
-open (SOURCE, '<', $source) or die "Cannot open $source: $!\n";
-my (%rules, $struct, $last);
-while (<SOURCE>) {
-    if (/^struct (\S+) \{/) {
-        next unless $structs{$1};
-        $struct = $1;
-    } elsif (/^\}/) {
-        undef $struct;
-        undef $last;
-    }
-    next unless $struct;
-
-    # Found an attribute with an encoding specified.
-    if (m,^\s+(.*?)([\w_]+);\s+/\* encode: (.*?) \*/,) {
-        my ($type, $attr, $encode) = ($1, $2, $3);
-        $type =~ s/\s+$//;
-        unless ($TYPES{$type}) {
-            die "$source:$.: unknown type $type\n";
-        }
-
-        # The first encode: argument is the name of the attribute.  Any
-        # remaining ones are options.
-        my @encode = split (/,\s*/, $encode);
-        $encode = shift @encode;
-        my %options = map { $_ => 1 } @encode;
-        if ($options{repeat}) {
-            $type = 'REPEAT';
-        } else {
-            $type = $TYPES{$type};
-        }
-        if ($type ne 'TIME' && $options{creation}) {
-            die "$source:$.: creation option specified on non-TIME attribute"
-                . " $attr\n";
-        }
-        my @rule = ($attr, $type, $encode, \%options);
-        $rules{$struct} ||= [];
-        push (@{ $rules{$struct} }, \@rule);
-
-        # If this is an attribute of type REPEAT, the next attribute will be
-        # the nested struct from which we should derive the nested encoding
-        # variable.
-        $last = $options{repeat} ? \@rule : undef;
-    } elsif ($last && m,^\s+(struct [\w_]+) \*([\w_]+);,) {
-        $last->[0] = $2;
-        push (@$last, $1);
-        undef $last;
+my %rules;
+open my $source_fh, '<', $source;
+while (defined(my $line = <$source_fh>)) {
+    if ($line =~ $STRUCT_REGEX) {
+        my $name = $1;
+        next if !$encode_struct{$name};
+        $rules{$name} = parse_struct($source, $source_fh);
     }
 }
+close $source_fh;
 
 # Generate the encoding rules.
-print $HEADING;
-print "#include <$source>\n" unless $source eq 'lib/internal.h';
-print "\n";
-for my $struct (sort keys %rules) {
-    my $name = $struct;
-    $name =~ s/^(webauth|wai)_/wai_/;
-    print "const struct wai_encoding ${name}_encoding[] = {\n";
-    for my $rule (@{ $rules{$struct} }) {
-        my ($attr, $type, $encode, $options, $nest) = @$rule;
-        my $creation = $options->{creation} ? 'true' : 'false';
-        my $optional = $options->{optional} ? 'true' : 'false';
-        my $ascii = $options->{ascii} ? 'true' : 'false';
-        my $desc = $attr;
-        $desc =~ tr/_/ /;
-        print   "    {\n";
-        print qq(        "$encode",\n);
-        print qq(        "$desc",\n);
-        print   "        WA_TYPE_$type,\n";
-        print   "        $optional, /* optional */\n";
-        print   "        $ascii,    /* ascii */\n";
-        print   "        $creation, /* creation */\n";
-        print   "        offsetof(struct $struct, $attr),\n";
-        if ($type eq 'DATA') {
-            print "        offsetof(struct $struct, ${attr}_len),\n";
-            print "        0,\n";
-            print "        NULL\n";
-        } elsif ($type eq 'REPEAT') {
-            my $nest_name = $nest;
-            $nest_name =~ s/^struct (?:(webauth|wai)_)/wai_/;
-            print "        offsetof(struct $struct, ${attr}_count),\n";
-            print "        sizeof($nest),\n";
-            print "        ${nest_name}_encoding\n";
-        } else {
-            print "        0,\n";
-            print "        0,\n";
-            print "        NULL\n";
-        }
-        print "    \},\n";
-    }
-    print "    WA_ENCODING_END\n";
-    print "};\n";
-}
+print_rules($source, \%rules);
+
+__END__
+
+=for stopwords
+WebAuth struct structs Kerberos keyrings encodings timestamps sublicense
+MERCHANTABILITY NONINFRINGEMENT
+
+=head1 NAME
+
+encoding-rules - Generate encoding rules for WebAuth data
+
+=head1 SYNOPSIS
+
+B<encoding-rules> I<header> I<struct> [I<struct> ...]
+
+=head1 DESCRIPTION
+
+This script is used by WebAuth maintainers to generate encoding rules,
+used by the wai_encode() and wai_decode() internal library functions, to
+translate structs to and from the WebAuth data serialization format.  This
+is used for token generation, Kerberos credential serialization, and other
+places serialization is needed (such as keyrings and service token
+caches).
+
+B<encoding-rules> takes as arguments a source file that defines one more
+more structs and then a list of structs for which to generate encodings.
+It creates, from this, a C source file that defines an array of
+webauth_encoding structs that will translate those structs to and from the
+WebAuth attribute serialization format.  That C source is printed to
+standard output.
+
+The encoding rules for a struct are based on the data type of the struct
+members and then a comment at the end of the line defining that struct
+member.  The comment must be in the form:
+
+    /* encode: <attr>[, <flag>[, <flag> ...]] */
+
+where <attr> is the attribute used in the token encoding (the key in the
+key/value pair format of WebAuth token encoding).
+
+The following optional flags are supported:
+
+=over 4
+
+=item C<ascii>
+
+Only used for numeric and data attributes.  Encode the attribute in ASCII
+rather than using a binary form.  For numeric attributes, this means
+encoding the value as ASCII digits.  For data attributes, this means
+encoding the value in hex.  The inverse is done when decoding.
+
+=item C<creation>
+
+Only valid for TIME attributes (struct members of type C<time_t>).  This
+attribute represents a creation time.  If it is not set when encoding, the
+current time will be encoded as the value of this attribute.
+
+=item C<optional>
+
+Indicates that this attribute is optional in the encoding.  If it is NULL
+or 0, the attribute will be omitted when encoding.  If the attribute is
+missing from an encoded form, this is not a problem.  Absent this flag,
+numeric attributes will be encoded as 0 if the value is 0, NULL string and
+data attributes are an error, and the attribute must be present when
+parsing the encoded form or an error is reported.
+
+=item C<repeat>
+
+This attribute represents the count of a repeated nested struct, which
+will be the next member in the struct and the next line of the C header
+file.  The nested struct must have its own encoding rules defined.
+
+=back
+
+=head1 DIAGNOSTICS
+
+=over 4
+
+=item %s:%d: could not find end of struct
+
+While parsing a struct with encoding rules, the end of the input file was
+seen before the end of the struct definition.
+
+=item %s:%d: creation flag specified on non-TIME attribute %s
+
+The given struct attribute has a C type other than C<time_t>.  The
+C<creation> flag is only supported for timestamps.
+
+=item %s:%d: missing repeated struct member for %s
+
+This struct member was flagged as the count of a repeated nested struct,
+but the nested struct member was not the next line of the C header as was
+expected.
+
+=item %s:%d: unknown type %s
+
+The specified line of the specified source file contains a struct member
+definition whose type is not one of the recognized types.
+B<encoding-rules> contains a mapping of C data types to WebAuth token
+attribute types, which may need to be updated for this data type.
+
+=back
+
+In addition, failure to open the source file or to print out the encoding
+rules will result in I/O exceptions.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2012 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=cut
