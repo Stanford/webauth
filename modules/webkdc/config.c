@@ -44,6 +44,7 @@
     static const type DF_ ## name = def;
 
 DIRN(Debug,               "whether to log debug messages")
+DIRN(IdentityAcl,         "path to the identity ACL file")
 DIRN(KerberosFactors,     "list of factors used as initial factors")
 DIRN(Keyring,             "path to the keyring file")
 DIRD(KeyringAutoUpdate,   "whether to automatically update keyring", bool, true)
@@ -62,6 +63,7 @@ DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
 
 enum {
     E_Debug,
+    E_IdentityAcl,
     E_KerberosFactors,
     E_Keyring,
     E_KeyringAutoUpdate,
@@ -156,6 +158,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     bconf = basev;
     oconf = overv;
 
+    MERGE_PTR(identity_acl_path);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
     MERGE_PTR_OTHER(keytab_principal, keytab_path);
@@ -340,6 +343,9 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     sconf = ap_get_module_config(cmd->server->module_config, &webkdc_module);
 
     switch (directive) {
+    case E_IdentityAcl:
+        sconf->identity_acl_path = ap_server_root_relative(cmd->pool, arg);
+        break;
     case E_Keyring:
         sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
         break;
@@ -468,6 +474,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
 
 const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  Debug),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   IdentityAcl),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   KerberosFactors),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   Keyring),
     DIRECTIVE(AP_INIT_TAKE12,  cfg_str12, Keytab),

@@ -1656,6 +1656,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             request_token = get_elem_text(rc, child, mwk_func);
             if (request_token == NULL)
                 return MWK_ERROR;
+        } else if (strcmp(child->name, "authzSubject") == 0) {
+            request.identity = get_elem_text(rc, child, mwk_func);
+            if (request.identity == NULL)
+                return MWK_ERROR;
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
                 return MWK_ERROR;
@@ -1811,6 +1815,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         ap_rvputs(rc->r, "</proxyTokens>", NULL);
     }
+
     /* put out return-url */
     ap_rvputs(rc->r,"<returnUrl>",
               apr_xml_quote_string(rc->r->pool, response->return_url, 1),
@@ -1822,12 +1827,34 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
               apr_xml_quote_string(rc->r->pool, response->requester, 1),
               "</requesterSubject>", NULL);
 
-    /* subject */
+    /* subject (if present) */
     if (response->subject != NULL) {
         ap_rvputs(rc->r,
                   "<subject>",
                   apr_xml_quote_string(rc->r->pool, response->subject, 1),
                   "</subject>", NULL);
+    }
+
+    /* authzSubject (if present) */
+    if (response->identity != NULL) {
+        ap_rvputs(rc->r,
+                  "<authzSubject>",
+                  apr_xml_quote_string(rc->r->pool, response->identity, 1),
+                  "</authzSubject>", NULL);
+    }
+
+    /* permittedAuthzSubjects (if present) */
+    if (response->identities != NULL) {
+        const char *identity;
+
+        ap_rvputs(rc->r, "<permittedAuthzSubjects>", NULL);
+        for (i = 0; i < response->identities->nelts; i++) {
+            identity = APR_ARRAY_IDX(response->identities, i, const char *);
+            ap_rvputs(rc->r, "<authzSubject>",
+                      apr_xml_quote_string(rc->r->pool, identity, 1),
+                      "</authzSubject>", NULL);
+        }
+        ap_rvputs(rc->r, "</permittedAuthzSubjects>", NULL);
     }
 
     /* requestedToken, don't need to quote */
@@ -1888,7 +1915,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
+                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s%s",
                  rc->r->useragent_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
                  response->requester, log_escape(rc, response->return_url),
@@ -1900,6 +1927,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
                  (login_type == NULL) ? "" : " login=",
                  (login_type == NULL) ? "" : login_type,
+                 (response->identity == NULL ? "" :
+                  apr_psprintf(rc->r->pool, " authz=%s", response->identity)),
                  (response->initial_factors == NULL ? "" :
                   apr_psprintf(rc->r->pool, " ifactors=%s",
                                response->initial_factors)),
@@ -2365,6 +2394,7 @@ handler_hook(request_rec *r)
 
     rc.r = r;
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
+    config.id_acl_path = rc.sconf->identity_acl_path;
     config.keytab_path = rc.sconf->keytab_path;
     config.principal = rc.sconf->keytab_principal;
     config.proxy_lifetime = rc.sconf->proxy_lifetime;

@@ -57,6 +57,7 @@ extern const command_rec webkdc_cmds[];
  * variable that holds whether that directive is set in a particular scope.
  */
 struct config {
+    const char *identity_acl_path;
     const char *keyring_path;
     const char *keytab_path;
     const char *keytab_principal;
