@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='August' year='2012' />
+    <date month='November' year='2012' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1139,6 +1139,9 @@
     <!-- request token from WAS -->
     <requestToken>{base64-request-token}</requestToken>
 
+    <!-- requested authorization identity (optional) -->
+    <authzSubject>...</authzSubject>
+
     <!-- request info from front-end, for logging purposes -->
     <requestInfo>
       <remoteUser>xxxx</remoteUser>
@@ -1194,6 +1197,9 @@
 
     <!-- subject from subjectCredential -->
     <subject>...</subject>
+
+    <!-- authorization identity if requested and permitted -->
+    <authzSubject>...</authzSubject>
 
     <!-- requestedToken will either be an error, id, or proxy token.
          not set if <loginErrorCode> is set. -->
@@ -1695,11 +1701,12 @@
             <vspace blankLines='0'/>The authenticated subject.  In
             webkdc-service tokens, this is the server identity that
             authenticated to get the webkdc-service token.  In all other
-            tokens, it is the user who authenticated.  Server subjects
+            tokens, it is the user who authenticated.  Server subjects in
+            webkdc-service tokens (and only those, not other subjects)
             have the form "type:identifier".  Currently, the only defined
             type is "krb5" indicating that the server authenticated with
-            Kerberos, and in that case the identifier is the text form
-            of a fully qualified Kerberos principal.</t>
+            Kerberos, and in that case the identifier is the text form of
+            a fully qualified Kerberos principal.</t>
 
             <t hangText='sa (string)'>
             <vspace blankLines='0'/>Subject authenticator type in an id
@@ -1719,6 +1726,15 @@
             WAS for a successful authentication.  This is a list of factor
             codes separated by commas.  For the list of registered factor
             names, see <xref target='factors' />.</t>
+
+            <t hangText='sz (string)'>
+            <vspace blankLines='0'/>The authorization subject.  A user (if
+            permitted by the WebKDC) may assert an authorization subject in
+            addition to their authenticated identity.  If they do so, the
+            subject (s) will continue to hold their authenticated identity,
+            and this attribute will contain the asserted authorization
+            identity.  The WAS may choose whether or not to honor the
+            asserted authorization identity.</t>
 
             <t hangText='t (string)'>
             <vspace blankLines='0'/>The token type.  Currently recognized
@@ -1982,6 +1998,8 @@
   s={username}
   # for sa=krb5
   sad={result-of-krb5-mk-req-for-webauth/hostname}
+  # for any sa
+  [sz={authorization-subject}]
   ct={creation-time}
   et={expiration-time}
   [ia={factor-list}]
@@ -2027,6 +2045,7 @@
   t=proxy
   pt=krb5|...
   s={username}
+  [sz={authorization-subject}]
   wt={webkdc-proxy-token}
   ct={creation-time}
   et={expiration-time}
@@ -2114,6 +2133,7 @@
   et={expiration-time}
   [ct={creation-time}]
   [s={username}]
+  [sz={authorization-subject}]
   [k=session-key]
   [lt={last-use-time}]
   [ia={factor-list}]
@@ -2375,6 +2395,13 @@
           which normally mean a Kerberos credential that includes the TGT
           plus other supporting data such as the session key.  Replace
           remaining K5 references with just Kerberos.</t>
+
+          <t hangText='3.3.0 (2012-11-20, rra)'>
+          <vspace blankLines='0'/>Add &lt;authzSubject&gt; to
+          &lt;requestTokenRequest&gt; and &lt;requestTokenResponse&gt; to
+          allow requesting and returning authorization identities.  Add
+          the sz attribute to app, id, and proxy tokens to hold the
+          asserted authorization identity.</t>
         </list>
       </t>
     </section>
