@@ -100,7 +100,7 @@ EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
 	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 8:0:0 $(VERSION_LDFLAGS)	    \
+lib_libwebauth_la_LDFLAGS = -version-info 9:0:0 $(VERSION_LDFLAGS)	    \
 	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
