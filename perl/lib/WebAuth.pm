@@ -39,7 +39,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.05';
+    $VERSION = '3.06';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
