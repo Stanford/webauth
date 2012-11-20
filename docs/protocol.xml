@@ -1201,6 +1201,13 @@
     <!-- authorization identity if requested and permitted -->
     <authzSubject>...</authzSubject>
 
+    <!-- permitted authorization identities if this user may assert
+         an authorization identity to this destination -->
+    <permittedAuthzSubjects>
+      <authzSubject>...</authzSubject>
+      <!-- repeat for all permitted authorization identities -->
+    </permittedAuthzSubjects>
+
     <!-- requestedToken will either be an error, id, or proxy token.
          not set if <loginErrorCode> is set. -->
     <requestedToken>{base64-token}</requestedToken>
@@ -2400,8 +2407,10 @@
           <vspace blankLines='0'/>Add &lt;authzSubject&gt; to
           &lt;requestTokenRequest&gt; and &lt;requestTokenResponse&gt; to
           allow requesting and returning authorization identities.  Add
-          the sz attribute to app, id, and proxy tokens to hold the
-          asserted authorization identity.</t>
+          &lt;permittedAuthzSubjects&gt; to &lt;requestTokenResponse&gt;
+          to tell WebLogin what authorization identities the user may
+          assert.  Add the sz attribute to app, id, and proxy tokens to
+          hold the asserted authorization identity.</t>
         </list>
       </t>
     </section>
