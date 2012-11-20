@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 135;
+use Test::More tests => 159;
 
 use WebAuth ();
 BEGIN {

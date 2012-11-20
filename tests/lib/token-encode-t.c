@@ -119,6 +119,7 @@ check_app_token(struct webauth_context *ctx, struct webauth_token_app *app,
         return;
     app2 = &result->token.app;
     is_string(app->subject, app2->subject, "...subject");
+    is_string(app->authz_subject, app2->authz_subject, "...authz subject");
     ok(memcmp(app->session_key, app2->session_key, app->session_key_len) == 0,
        "...session key");
     is_int(app->session_key_len, app2->session_key_len,
@@ -215,6 +216,7 @@ check_id_token(struct webauth_context *ctx, struct webauth_token_id *id,
         return;
     id2 = &result->token.id;
     is_string(id->subject, id2->subject, "...subject");
+    is_string(id->authz_subject, id2->authz_subject, "...authz subject");
     is_string(id->auth, id2->auth, "...subject auth");
     ok(memcmp(id->auth_data, id2->auth_data, id->auth_data_len) == 0,
        "...auth data");
@@ -281,6 +283,8 @@ check_proxy_token(struct webauth_context *ctx,
         return;
     proxy2 = &result->token.proxy;
     is_string(proxy->subject, proxy2->subject, "...subject");
+    is_string(proxy->authz_subject, proxy2->authz_subject,
+              "...authz subject");
     is_string(proxy->type, proxy2->type, "...type");
     ok(memcmp(proxy->webkdc_proxy, proxy2->webkdc_proxy,
               proxy->webkdc_proxy_len) == 0, "...webkdc_proxy");
@@ -476,7 +480,7 @@ main(void)
     struct webauth_token *out;
     const char *result;
 
-    plan(424);
+    plan(435);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -492,6 +496,7 @@ main(void)
     /* Now, flesh out a application token, and then encode and decode it. */
     now = time(NULL);
     app.subject = "testuser";
+    app.authz_subject = "otheruser";
     app.session_key = NULL;
     app.session_key_len = 0;
     app.last_used = now;
@@ -503,6 +508,7 @@ main(void)
     check_app_token(ctx, &app, ring, "full");
 
     /* Test with a minimal set of attributes. */
+    app.authz_subject = NULL;
     app.last_used = 0;
     app.initial_factors = NULL;
     app.session_factors = NULL;
@@ -534,6 +540,10 @@ main(void)
     app.last_used = now;
     check_app_error(ctx, &app, ring, "with session key and last used",
                     "last_used not valid with session key in app token");
+    app.last_used = 0;
+    app.authz_subject = "otheruser";
+    check_app_error(ctx, &app, ring, "with session key and last used",
+                    "authz_subject not valid with session key in app token");
 
     /* Flesh out a credential token, and then encode and decode it. */
     cred.subject = "testuser";
@@ -596,6 +606,7 @@ main(void)
 
     /* Flesh out an id token, and then encode and decode it. */
     id.subject = NULL;
+    id.authz_subject = "someone";
     id.auth = "krb5";
     id.auth_data = "s=ome\0da;;ta";
     id.auth_data_len = 12;
@@ -607,6 +618,7 @@ main(void)
     check_id_token(ctx, &id, ring, "krb5");
     id.subject = "testuser";
     check_id_token(ctx, &id, ring, "full");
+    id.authz_subject = NULL;
     id.auth = "webkdc";
     id.auth_data = NULL;
     id.auth_data_len = 0;
@@ -665,6 +677,7 @@ main(void)
 
     /* Flesh out a proxy token, and then encode and decode it. */
     proxy.subject = "testuser";
+    proxy.authz_subject = "otheruser";
     proxy.type = "krb5";
     proxy.webkdc_proxy = "s=ome\0da;;ta";
     proxy.webkdc_proxy_len = 12;
@@ -676,6 +689,7 @@ main(void)
     check_proxy_token(ctx, &proxy, ring, "full");
 
     /* Test with a minimal set of attributes. */
+    proxy.authz_subject = NULL;
     proxy.creation = 0;
     check_proxy_token(ctx, &proxy, ring, "minimal");
 

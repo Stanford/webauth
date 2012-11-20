@@ -22,7 +22,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
-use Test::More tests => 208;
+use Test::More tests => 248;
 
 use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);
 BEGIN {

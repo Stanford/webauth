@@ -169,7 +169,7 @@ main(void)
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
-    plan(295);
+    plan_lazy();
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -195,6 +195,7 @@ main(void)
     if (result != NULL) {
         app = &result->token.app;
         is_string("testuser", app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(app->session_key == NULL, "...session key");
         is_int(0, app->session_key_len, "...session key length");
         is_int(1308777930, app->last_used, "...last used");
@@ -208,6 +209,7 @@ main(void)
     if (result != NULL) {
         app = &result->token.app;
         is_string("testuser", app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(app->session_key == NULL, "...session key");
         is_int(0, app->session_key_len, "...session key length");
         is_int(0, app->last_used, "...last used");
@@ -217,10 +219,25 @@ main(void)
         is_int(0, app->creation, "...creation");
         is_int(2147483600, app->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_APP, "app-authz", ring, 9);
+    if (result != NULL) {
+        app = &result->token.app;
+        is_string("testuser", app->subject, "...subject");
+        is_string("otheruser", app->authz_subject, "...authz subject");
+        ok(app->session_key == NULL, "...session key");
+        is_int(0, app->session_key_len, "...session key length");
+        is_int(0, app->last_used, "...last used");
+        is_string(NULL, app->initial_factors, "...initial factors");
+        is_string(NULL, app->session_factors, "...session factors");
+        is_int(0, app->loa, "...level of assurance");
+        is_int(1308777900, app->creation, "...creation");
+        is_int(2147483600, app->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_APP, "app-session", ring, 9);
     if (result != NULL) {
         app = &result->token.app;
         is_string(NULL, app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(memcmp("\0\0;s=test;\0", app->session_key, 11) == 0,
            "...session key");
         is_int(11, app->session_key_len, "...session key length");
@@ -295,6 +312,7 @@ main(void)
     if (result != NULL) {
         id = &result->token.id;
         is_string("testuser", id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("webkdc", id->auth, "...subject auth");
         ok(id->auth_data == NULL, "...subject auth data");
         is_int(0, id->auth_data_len, "...subject auth data length");
@@ -304,10 +322,25 @@ main(void)
         is_int(1308777900, id->creation, "...creation");
         is_int(2147483600, id->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_ID, "id-authz", ring, 9);
+    if (result != NULL) {
+        id = &result->token.id;
+        is_string("testuser", id->subject, "...subject");
+        is_string("other", id->authz_subject, "...authz subject");
+        is_string("webkdc", id->auth, "...subject auth");
+        ok(id->auth_data == NULL, "...subject auth data");
+        is_int(0, id->auth_data_len, "...subject auth data length");
+        is_string(NULL, id->initial_factors, "...initial factors");
+        is_string(NULL, id->session_factors, "...session factors");
+        is_int(0, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_ID, "id-krb5", ring, 9);
     if (result != NULL) {
         id = &result->token.id;
         is_string(NULL, id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("krb5", id->auth, "...subject auth");
         ok(memcmp("s=foo\0s=bar;;da", id->auth_data, 15) == 0,
                   "...subject auth data");
@@ -318,10 +351,26 @@ main(void)
         is_int(1308777900, id->creation, "...creation");
         is_int(2147483600, id->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_ID, "id-krb5-authz", ring, 9);
+    if (result != NULL) {
+        id = &result->token.id;
+        is_string(NULL, id->subject, "...subject");
+        is_string("otheruser", id->authz_subject, "...authz subject");
+        is_string("krb5", id->auth, "...subject auth");
+        ok(memcmp("s=foo\0s=bar;;da", id->auth_data, 15) == 0,
+                  "...subject auth data");
+        is_int(15, id->auth_data_len, "...subject auth data length");
+        is_string(NULL, id->initial_factors, "...initial factors");
+        is_string(NULL, id->session_factors, "...session factors");
+        is_int(0, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_ID, "id-minimal", ring, 9);
     if (result != NULL) {
         id = &result->token.id;
         is_string("testuser", id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("webkdc", id->auth, "...subject auth");
         ok(id->auth_data == NULL, "...subject auth data");
         is_int(0, id->auth_data_len, "...subject auth data length");
@@ -367,6 +416,7 @@ main(void)
     if (result != NULL) {
         proxy = &result->token.proxy;
         is_string("testuser", proxy->subject, "...subject");
+        is_string(NULL, proxy->authz_subject, "...authz subject");
         is_string("krb5", proxy->type, "...type");
         ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
            "...WebKDC proxy token");
@@ -374,6 +424,21 @@ main(void)
         is_string("p,o1,o,m", proxy->initial_factors, "...initial factors");
         is_string("p,o1,o,m", proxy->session_factors, "...session factors");
         is_int(2, proxy->loa, "...level of assurance");
+        is_int(1308777900, proxy->creation, "...creation");
+        is_int(2147483600, proxy->expiration, "...expiration");
+    }
+    result = check_decode(ctx, WA_TOKEN_PROXY, "proxy-authz", ring, 9);
+    if (result != NULL) {
+        proxy = &result->token.proxy;
+        is_string("testuser", proxy->subject, "...subject");
+        is_string("other", proxy->authz_subject, "...authz subject");
+        is_string("krb5", proxy->type, "...type");
+        ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
+           "...WebKDC proxy token");
+        is_int(15, proxy->webkdc_proxy_len, "...WebKDC proxy token length");
+        is_string(NULL, proxy->initial_factors, "...initial factors");
+        is_string(NULL, proxy->session_factors, "...session factors");
+        is_int(0, proxy->loa, "...level of assurance");
         is_int(1308777900, proxy->creation, "...creation");
         is_int(2147483600, proxy->expiration, "...expiration");
     }

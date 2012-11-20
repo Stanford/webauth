@@ -106,6 +106,7 @@ struct token_mapping {
 /* App tokens. */
 struct token_mapping token_mapping_app[] = {
     M(webauth_token_app, subject,         STRING),
+    M(webauth_token_app, authz_subject,   STRING),
     M(webauth_token_app, last_used,       TIME),
     M(webauth_token_app, session_key,     DATA),
     M(webauth_token_app, session_key_len, DATALEN),
@@ -140,6 +141,7 @@ struct token_mapping token_mapping_error[] = {
 /* Id tokens. */
 struct token_mapping token_mapping_id[] = {
     M(webauth_token_id, subject,         STRING),
+    M(webauth_token_id, authz_subject,   STRING),
     M(webauth_token_id, auth,            STRING),
     M(webauth_token_id, auth_data,       DATA),
     M(webauth_token_id, auth_data_len,   DATALEN),
@@ -163,6 +165,7 @@ struct token_mapping token_mapping_login[] = {
 /* Proxy tokens. */
 struct token_mapping token_mapping_proxy[] = {
     M(webauth_token_proxy, subject,          STRING),
+    M(webauth_token_proxy, authz_subject,    STRING),
     M(webauth_token_proxy, type,             STRING),
     M(webauth_token_proxy, webkdc_proxy,     DATA),
     M(webauth_token_proxy, webkdc_proxy_len, DATALEN),

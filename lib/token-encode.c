@@ -314,6 +314,7 @@ check_app(struct webauth_context *ctx, const struct webauth_token_app *app,
         CHECK_STR(app, subject);
     else {
         CHECK_NULL(app, subject,         "session key");
+        CHECK_NULL(app, authz_subject,   "session key");
         CHECK_ZERO(app, last_used,       "session key");
         CHECK_NULL(app, initial_factors, "session key");
         CHECK_NULL(app, session_factors, "session key");

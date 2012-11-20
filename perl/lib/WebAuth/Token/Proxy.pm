@@ -33,10 +33,11 @@ use base qw(WebAuth::Token);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # Accessor methods.
 sub subject         ($;$) { my $t = shift; $t->_attr ('subject',         @_) }
+sub authz_subject   ($;$) { my $t = shift; $t->_attr ('authz_subject',   @_) }
 sub type            ($;$) { my $t = shift; $t->_attr ('type',            @_) }
 sub webkdc_proxy    ($;$) { my $t = shift; $t->_attr ('webkdc_proxy',    @_) }
 sub initial_factors ($;$) { my $t = shift; $t->_attr ('initial_factors', @_) }
@@ -109,6 +110,14 @@ best_key() method of WebAuth::Keyring on that KEYRING.
 
 Get or set the subject, which holds the authenticated identity of the user
 whose credentials and id tokens can be retrieved using this token.
+
+=item authz_subject ([SUBJECT])
+
+Get or set the authorization subject, which holds the asserted
+authorization identity of the user holding this token.  The authorization
+identity may not match the authenticated identity.  It represents a
+request to use the authorization identity instead of the authentication
+subject when applying ACLs or determining identity in the application.
 
 =item type ([TYPE])
 

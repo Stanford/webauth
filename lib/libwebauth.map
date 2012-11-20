@@ -20,7 +20,6 @@ WEBAUTH_4_1 {
         webauth_user_config;
         webauth_user_info;
         webauth_user_validate;
-        webauth_webkdc_config;
 } WEBAUTH_3;
 
 WEBAUTH_4_2 {
@@ -35,11 +34,6 @@ WEBAUTH_4_2 {
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
-        webauth_token_decode;
-        webauth_token_decode_raw;
-        webauth_token_encode;
-        webauth_token_encode_raw;
-        webauth_webkdc_login;
 } WEBAUTH_4_1;
 
 WEBAUTH_4_3 {
@@ -66,6 +60,12 @@ WEBAUTH_4_4 {
     global:
         webauth_keyring_decode;
         webauth_keyring_encode;
+        webauth_token_decode;
+        webauth_token_decode_raw;
+        webauth_token_encode;
+        webauth_token_encode_raw;
         webauth_was_token_cache_read;
         webauth_was_token_cache_write;
+        webauth_webkdc_config;
+        webauth_webkdc_login;
 } WEBAUTH_4_3;

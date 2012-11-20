@@ -122,6 +122,7 @@ enum webauth_token_type {
  */
 struct webauth_token_app {
     const char *subject;                /* encode: s, optional */
+    const char *authz_subject;          /* encode: sz, optional */
     time_t last_used;                   /* encode: lt, optional */
     const void *session_key;            /* encode: k, optional */
     size_t session_key_len;
@@ -165,6 +166,7 @@ struct webauth_token_error {
  */
 struct webauth_token_id {
     const char *subject;                /* encode: s, optional */
+    const char *authz_subject;          /* encode: sz, optional */
     const char *auth;                   /* encode: sa */
     const void *auth_data;              /* encode: sad, optional */
     size_t auth_data_len;
@@ -194,6 +196,7 @@ struct webauth_token_login {
  */
 struct webauth_token_proxy {
     const char *subject;                /* encode: s */
+    const char *authz_subject;          /* encode: sz, optional */
     const char *type;                   /* encode: pt */
     const void *webkdc_proxy;           /* encode: wt */
     size_t webkdc_proxy_len;
