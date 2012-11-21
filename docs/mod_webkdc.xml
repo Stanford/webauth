@@ -157,6 +157,18 @@ WebKdcTokenAcl conf/webkdc/token.acl
       key=value.  The possible keys are:
     </p>
     <dl>
+      <dt>authz</dt>
+      <dd>
+        <p>
+          Only for <code>requestToken</code> requests, this indicates that
+          the user is asserting an authorization identity to this WAS.
+          The value of this key will be the authorization identity that
+          was asserted.  The authorization identity was validated against
+          the identity ACL file.  See
+          <a href="#webkdcidentityacl"><directive>WebKdcIdentityAcl</directive></a>
+          for more information.
+        </p>
+      </dd>
       <dt>clientIp</dt>
       <dd>
         <p>
@@ -535,6 +547,108 @@ done
       <example>
         <title>Example</title>
 WebKdcDebug on
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
+    <name>WebKdcIdentityAcl</name>
+    <description>
+      Path to the ACL file for authorization identities
+    </description>
+    <syntax>WebKdcIdentityAcl <em>path</em></syntax>
+    <default>(none)</default>
+    <contextlist>
+      <context>server config</context>
+      <context>virtual host</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        This directive, if set, points to an ACL file that controls
+        whether a user can assert an authorization identity to a
+        particular WebAuth Application Server that is different than their
+        authenticated identity.  By default, it is not set, which disables
+        all authorization identity support in the WebKDC.
+      </p>
+      <p>
+        An authorization identity is an alternate identity, different than
+        the identity as which the user authenticated, that should be used
+        for identification and access control in the WebAuth Application
+        Server.  When an authorization identity is provided, both it and
+        the authentication identity are passed to the WAS, and the WAS can
+        choose which to honor.  By default, even if this directive is
+        enabled on the WebKDC and the user asserts an authorization
+        identity, that identity is ignored by the WAS.  Support for
+        authorization identities must also be explicitly enabled on the
+        WAS.
+      </p>
+      <p>
+        Each line in the identity ACL file is a space-separated grant of
+        permission for a particular user to assert a particular
+        authorization identity to a particular site.  Each line has three
+        fields:
+      </p>
+      <ol>
+        <li>
+          <p>
+            The authenticated identity of the user to which this
+            permission is granted.  This is the identity after any
+            normalization or realm stripping and should match the identity
+            that would be passed to the WebAuth Application Server, put in
+            REMOTE_USER, and so forth.
+          </p>
+        </li>
+        <li>
+          <p>
+            The identity of the WAS to which that user can assert an
+            authorization identity.  This is an identity, not a URL, and
+            is the same value that is matched against the token ACL file
+            (see <a
+            href="#webkdctokenacl"><directive>WebKdcTokenAcl</directive></a>).
+            At present, just as with the token ACL file, it is always a
+            Kerberos principal preceded by <code>krb5:</code>.
+          </p>
+        </li>
+        <li>
+          <p>
+            The authorization identity that the user is permitted to
+            assert.  This must be exactly the value that will be passed to
+            the WebAuth Application Server.
+          </p>
+        </li>
+      </ol>
+      <p>
+        No wildcards are supported.  Multiple lines for the same user and
+        same WAS are allowed, representing multiple different
+        authorization identities that user is allowed to assert to that
+        WAS.  Blank lines and lines beginning with <code>#</code> are
+        ignored.
+      </p>
+
+      <example>
+        <title>Example ACL File</title>
+<pre>
+# Allow alice to assert an identity of bob to foo.example.org.
+alice krb5:webauth/foo.example.org@EXAMPLE.ORG bob
+
+# Allow alice to assert a cross-realm identity to foo.example.org.
+alice krb5:webauth/foo.example.org@EXAMPLE.ORG alice@EXAMPLE.COM
+
+# Allow joe to assert an identity of testuser on foo-test.example.org.
+joe krb5:webauth/foo-test.example.org@EXAMPLE.ORG testuser
+</pre>
+      </example>
+
+      <p>
+        If the path is not absolute, it will be considered relative to
+        <directive>ServerRoot</directive>.
+      </p>
+
+      <example>
+        <title>Example</title>
+WebKdcIdentityAcl conf/webkdc/id.acl
       </example>
     </usage>
   </directivesynopsis>
