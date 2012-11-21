@@ -33,8 +33,8 @@ use LWP::UserAgent;
 use WebAuth qw(3.00 :const);
 use WebAuth::Keyring ();
 use WebKDC::Config;
-use WebKDC::WebRequest;
-use WebKDC::WebResponse;
+use WebKDC::WebRequest 1.02;
+use WebKDC::WebResponse 1.02;
 use WebKDC::WebKDCException;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.04';
+    $VERSION = '2.05';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -239,8 +239,11 @@ sub request_token_request ($$) {
     }
     $webkdc_doc->end('subjectCredential');
 
-    # Add the request token and request information.
-    $webkdc_doc->start ('requestToken',  undef, $request_token)->end;
+    # Add the request token, authorization identity, and request information.
+    $webkdc_doc->start ('requestToken', undef, $request_token)->end;
+    if ($wreq->authz_subject) {
+        $webkdc_doc->start ('authzSubject', undef, $wreq->authz_subject)->end;
+    }
     if ($wreq->local_ip_addr || $wreq->remote_user) {
         $webkdc_doc->start('requestInfo');
         if ($wreq->local_ip_addr) {
@@ -300,6 +303,7 @@ sub request_token_request ($$) {
         my $return_url = get_child_value ($root, 'returnUrl', 0);
         my $requester_sub = get_child_value ($root, 'requesterSubject', 0);
         my $subject = get_child_value ($root, 'subject', 1);
+        my $authz_subject = get_child_value ($root, 'authzSubject', 1);
         my $returned_token = get_child_value ($root, 'requestedToken', 1);
         my $returned_token_type
             = get_child_value ($root, 'requestedTokenType', 1);
@@ -332,6 +336,17 @@ sub request_token_request ($$) {
             }
         }
 
+        my $permitted_authz = $root->find_child ('permittedAuthzSubjects');
+        if (defined $permitted_authz) {
+            my @authz;
+            for my $authz (@{ $permitted_authz->children }) {
+                if ($authz->name eq 'authzSubject') {
+                    push (@authz, $authz->content);
+                }
+            }
+            $wresp->permitted_authz (@authz);
+        }
+
         my $login_history = $root->find_child ('loginHistory');
         if (defined $login_history) {
             for my $login (@{ $login_history->children }) {
@@ -351,6 +366,7 @@ sub request_token_request ($$) {
         $wresp->login_canceled_token ($login_canceled_token)
             if defined $login_canceled_token;
         $wresp->subject ($subject) if defined $subject;
+        $wresp->authz_subject ($authz_subject) if defined $authz_subject;
 
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}

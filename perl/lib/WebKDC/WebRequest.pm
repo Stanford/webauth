@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.01';
+    $VERSION = '1.02';
 }
 
 # Create a new, empty request.
@@ -53,6 +53,7 @@ sub _attr ($$;$) {
 }
 
 # Simple accessor methods.
+sub authz_subject  ($;$) { my $r = shift; $r->_attr ('authz_subject',  @_) }
 sub local_ip_addr  ($;$) { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
 sub local_ip_port  ($;$) { my $r = shift; $r->_attr ('local_ip_port',  @_) }
 sub otp            ($;$) { my $r = shift; $r->_attr ('otp',            @_) }
@@ -142,6 +143,13 @@ useful with the object.
 =head1 INSTANCE METHODS
 
 =over 4
+
+=item authz_subject ([USER])
+
+Retrieve or set the requested authorization identity.  This is an identity
+that the user wishes to assert for authorization purposes to the remote
+site.  It must be vetted by the WebKDC and will be included in the id or
+proxy token if asserting that authorization identity is permitted.
 
 =item local_ip_addr ([ADDR])
 

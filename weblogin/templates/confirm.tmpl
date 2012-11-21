@@ -14,6 +14,8 @@ page, as well as (optionally) a way to set preferences for doing
 REMOTE_USER authentication.  Variables used:
 
 username               : the authenticated identity of the user
+authz_subject          : the authorization identity of the user
+permitted_authz        : array of permitted authorization identities
 return_url             : the WebAuth-protected page now authenticated for
 pretty_return_url      : same, but cleaned up for use as link text
 login_cancel           : a cancel URL was specified
@@ -104,6 +106,10 @@ works of this work.
             <div class="logintext">
               <p>You are logged into WebAuth as user
               <strong>[% username FILTER html %]</strong></p>
+              [% IF authz_subject %]
+                <p>You will be identified to the website as
+                <strong>[% authz_subject FILTER html %]</strong></p>
+              [% END %]
               <p>Click this link to continue to the website you
               requested:</p>
               <p><a href="[% return_url FILTER html %]">
@@ -119,6 +125,12 @@ works of this work.
                   <!-- [% right.instance FILTER html %] -->
                   <!-- [% right.realm FILTER html %] -->
                 [% END %]</p></blockquote>
+              [% END %]
+              [% IF permitted_authz.size %]
+                <p>You could have been one of the following users:</p>
+                <ul>[% FOREACH authz IN permitted_authz %]
+                  <li>[% authz FILTER html %]</li>
+                [% END %]</ul>
               [% END %]
               <p><strong>Protect your assets:</strong><br />
                  Quit your web browser when you are finished (see below

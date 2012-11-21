@@ -27,6 +27,14 @@ package WebKDC::Config;
 use strict;
 use warnings;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
+BEGIN {
+    $VERSION = '1.00';
+}
+
 my $conf = $ENV{WEBKDC_CONFIG} || '/etc/webkdc/webkdc.conf';
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";

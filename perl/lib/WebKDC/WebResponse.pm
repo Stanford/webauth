@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.01';
+    $VERSION = '1.02';
 }
 
 # Create a new, empty request.
@@ -57,6 +57,10 @@ sub app_state            ($;$) { my $r = shift; $r->_attr ('app_state',  @_) }
 sub login_canceled_token ($;$) { my $r = shift; $r->_attr ('lc_token',   @_) }
 sub return_url           ($;$) { my $r = shift; $r->_attr ('return_url', @_) }
 sub subject              ($;$) { my $r = shift; $r->_attr ('subject',    @_) }
+sub authz_subject ($;$) {
+    my $r = shift;
+    $r->_attr ('authz_subject', @_);
+}
 sub requester_subject ($;$) {
     my $r = shift;
     $r->_attr ('requester_subject', @_);
@@ -68,6 +72,17 @@ sub response_token ($;$) {
 sub response_token_type ($;$) {
     my $r = shift;
     $r->_attr ('response_token_type', @_);
+}
+
+# Set or return the list of permitted authorization identities.
+sub permitted_authz {
+    my ($self, @values) = @_;
+    if (@values) {
+        $self->{permitted_authz} = [ @values ];
+    } else {
+        $self->{permitted_authz} ||= [];
+    }
+    return @{ $self->{permitted_authz} };
 }
 
 # Cookies are stored by type in a hash.  Use proxy_cookies to retrieve the
@@ -158,6 +173,14 @@ Returns or sets the application state token.  If this is set in the
 response, the WebLogin server should return it to the WebAuth application
 server as the WEBAUTHS parameter in the URL.
 
+=item authz_subject ([SUBJECT])
+
+Retrieve or set the asserted authorization identity.  This is an identity
+separate from the authentication identity that is vetted by the WebKDC and
+asserted for authorization purposes to the remote site.  It is included in
+the id or proxy token, but is also included directly in the response for
+display reasons in the WebLogin code.
+
 =item factor_configured ([FACTOR, ...])
 
 =item factor_needed ([FACTOR, ...])
@@ -187,6 +210,13 @@ the IP address from which the user logged in and a C<timestamp> key whose
 value is the time of that login in seconds since epoch.  There may
 optionally be a C<hostname> key that, if present, gives the hostname from
 which the user logged in.
+
+=item permitted_authz ([SUBJECT, ...])
+
+Returns the list of permitted authorization identities or sets them.  If
+any parameters are given, the list of acceptable authorization identities
+is replaced with the list of subjects given.  The permitted authorization
+identities are unique to this authenticated user and destination site.
 
 =item proxy_cookie (TYPE[, VALUE])
 

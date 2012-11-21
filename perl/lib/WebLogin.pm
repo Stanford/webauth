@@ -45,10 +45,10 @@ use CGI::Cookie ();
 use CGI::Fast ();
 use MIME::Base64 qw(encode_base64);
 use Template ();
-use WebAuth qw(3.02 :const);
-use WebKDC ();
-use WebKDC::Config ();
-use WebKDC::WebKDCException qw(1.04);
+use WebAuth 3.06 qw(:const);
+use WebKDC 2.05;
+use WebKDC::Config 1.00;
+use WebKDC::WebKDCException 1.04;
 use URI ();
 use URI::QueryParam ();
 
@@ -57,7 +57,7 @@ use URI::QueryParam ();
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.00';
+    $VERSION = '1.01';
 }
 
 # These are required only if we are going to check for expiring passwords.
@@ -624,15 +624,18 @@ sub print_confirm_page {
     # redirect to the final page instead of displaying a confirmation page.
     # If the page was the target of the post, we'll return a 303 redirect
     # later on but present the regular confirmation page as the body in case
-    # the browser doesn't support it.  We also skip the bypass if the user
-    # has an upcoming password expiration warning, or if they have a login
-    # history from the WebKDC that needs to be displayed due to suspicious
-    # activity.
+    # the browser doesn't support it.
+    #
+    # We also skip the bypass if the user has an upcoming password expiration
+    # warning, if they have a login history from the WebKDC that needs to be
+    # displayed due to suspicious activity, or if they've asserted an
+    # authorization identity.
     my $post = ($q->request_method eq 'POST') ? 1 : 0;
     my $history = $resp->login_history;
     my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
     $bypass = 0 if $expire_warning;
     $bypass = 0 if $history;
+    $bypass = 0 if $resp->authz_subject;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
     }
@@ -645,6 +648,8 @@ sub print_confirm_page {
     # Find our page and set general template parameters.
     $params->{return_url} = $return_url;
     $params->{username} = $resp->subject;
+    $params->{authz_subject} = $resp->authz_subject;
+    $params->{permitted_authz} = [ $resp->permitted_authz ];
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
     $params->{history} = $history;
@@ -1293,6 +1298,8 @@ sub setup_kdc_request {
         if $q->param ('password');
     $self->{request}->otp ($q->param ('otp'))
         if $q->param ('otp');
+    $self->{request}->authz_subject ($q->param ('authz_subject'))
+        if $q->param ('authz_subject');
 
     # For the initial login page, we may need to map the username.  For OTP,
     # we've already done this, so we don't need to do it again.
