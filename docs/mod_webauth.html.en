@@ -77,6 +77,7 @@
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthstripurl">WebAuthStripURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthtrustauthzidentity">WebAuthTrustAuthzIdentity</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
@@ -185,7 +186,14 @@ WebAuthWebKdcPrincipal service/webkdc
       </tr>
       <tr>
         <td><code>REMOTE_USER</code></td>
-        <td>Name of the WebAuth authenticated user</td>
+        <td>
+          Name of the WebAuth authenticated user (or authorization
+          identity if trusted; see <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>)
+        </td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_AUTHZ_USER</code></td>
+        <td>Name of the WebAuth authorization identity if present</td>
       </tr>
       <tr>
         <td><code>WEBAUTH_FACTORS_INITIAL</code></td>
@@ -209,28 +217,30 @@ WebAuthWebKdcPrincipal service/webkdc
       <tr>
         <td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>
         <td>
-          When the token will expire.  Note: if
-          <a href="#webauthinactiveexpire"><code class="directive">WebAuthInactiveExpire</code></a>
+          When the token will expire.  If <a href="#webauthinactiveexpire"><code class="directive">WebAuthInactiveExpire</code></a>
           is set then the token may expire sooner due to inactivity.
         </td>
       </tr>
       <tr>
         <td><code>WEBAUTH_TOKEN_LASTUSED</code></td>
         <td>
-          When the token was last used. Only available if
-          <a href="#webauthlastuseupdateinterval"><code class="directive">WebAuthLastUseUpdateInterval</code></a>
-          is non-zero
+          When the token was last used.  Only available if <a href="#webauthlastuseupdateinterval"><code class="directive">WebAuthLastUseUpdateInterval</code></a>
+          is non-zero.
         </td>
       </tr>
       <tr>
         <td><code>WEBAUTH_USER</code></td>
-        <td>Name of the WebAuth authenticated user</td>
+        <td>
+          Name of the WebAuth authenticated user regardless of
+          authorization identity
+        </td>
       </tr>
     </table>
 
     <div class="example"><h3>Example Environment Variables</h3><pre>
 AUTH_TYPE=WebAuth
-REMOTE_USER=schemers
+REMOTE_USER=roland
+WEBAUTH_AUTHZ_USER=roland
 WEBAUTH_FACTORS_INITIAL=p,o,o2,m
 WEBAUTH_FACTORS_SESSION=c
 WEBAUTH_LOA=2
@@ -241,13 +251,49 @@ WEBAUTH_USER=schemers
 </pre></div>
 
     <p>
-      When checking for the authenticated username, use WEBAUTH_USER if
-      you want to be sure that the authentication happened via WebAuth (or
-      check AUTH_TYPE to be sure that it is set to WebAuth).  If you want
-      your application to be able to support any Apache authentication
-      mechanism, use REMOTE_USER, as this is the standard inside Apache.
-      Most web applications should use REMOTE_USER by preference so that
-      they are independent of the authentication system used.
+      WebAuth can support a separate authentication identity and an
+      authorization identity as seen in the above example.  The
+      authentication identity is the identity for which the user presented
+      credentials (such as a password).  The authorization identity is the
+      identity that should be used for authorization checks and
+      application access.  Normally, these are the same, but the WebKDC
+      can be configured to allow users to assert an authorization identity
+      different than their authentication identity to certain sites.  This
+      allows a privileged user to pretend to be another user when
+      accessing a WebAuth-protected resource (for testing purposes, for
+      example).
+    </p>
+    <p>
+      WEBAUTH_USER will always be set to the authenticated identity,
+      regardless of any authorization identity.  WEBAUTH_AUTHZ_USER will
+      always be set to the authorization identity if one was asserted, and
+      will not be set otherwise.
+    </p>
+    <p>
+      The value of REMOTE_USER is normally the authenticated identity
+      (same as WEBAUTH_USER), but its value depends on whether there is an
+      authorization identity and on whether the <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>
+      is set.  If that directive is set, REMOTE_USER will instead be set
+      to the authorization identity if one is present.  The value of
+      REMOTE_USER is also the identity used internally by Apache to check
+      authorization rules and group membership, do LDAP data lookups, and
+      so forth.
+    </p>
+    <p>
+      When checking for the authenticated username, one should normally
+      use REMOTE_USER, since this is the standard inside Apache and makes
+      the application independent of the authentication system used.  This
+      will also work correctly with authorization identities.  If you want
+      to use the authentication identity regardless of any authorization
+      identity, use WEBAUTH_USER instead.  (You can also use WEBAUTH_USER
+      to ensure that the authentication happened via WebAuth, although
+      that can also be accomplished by checking AUTH_TYPE.)  To retrieve
+      the authorization identity, even if it wasn't trusted and used for
+      REMOTE_USER, look at the value of WEBAUTH_AUTHZ_USER.
+    </p>
+    <p>
+      If this seems excessively confusing, use REMOTE_USER.  That will do
+      the correct thing in most circumstances.
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
@@ -2067,6 +2113,57 @@ WebAuthSubjectAuthType krb5
 # ten minute TTL
 WebAuthTokenMaxTTL 10m
 </pre></div>
+    
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthTrustAuthzIdentity" id="WebAuthTrustAuthzIdentity">WebAuthTrustAuthzIdentity</a> <a name="webauthtrustauthzidentity" id="webauthtrustauthzidentity">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether to use the authorization identity as the authenticated user
+    </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTrustAuthzIdentity on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTrustAuthzIdentity off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+      <p>
+        By default, WebAuth ignores any authorization identity sent by the
+        WebKDC and uses the user's authenticated identity as the Apache
+        identity (for authorization checks and logging) and for the
+        REMOTE_USER environment variable.  To allow the user (with the
+        WebKDC's permission and vetting) to assert a different
+        authorization identity than their authenticated identity, set this
+        directive to <code>on</code>.  This can be set or changed at any
+        scope, including .htaccess files if AuthConfig overrides are
+        allowed.
+      </p>
+      <p>
+        Even if this directive is left off (the default), the
+        authorization identity (if present) is available in the
+        WEBAUTH_AUTHZ_USER environment variable.  However, if this
+        directive is not turned on, the authorization identity won't be
+        used for any purpose other than populating that environment
+        variable.
+      </p>
+      <p>
+        If this directive is enabled, the authorization identity will be
+        passed to Apache as the user's identity, just as if they'd
+        authenticated as that user.  That will affect any further
+        authorization checks, group membership checks, or other modules
+        that retrieve information based on the authenticated identity,
+        such as LDAP modules.
+      </p>
+      <p>
+        Even if this directive is enabled, the WEBAUTH_USER environment
+        variable will always be set to the authenticated identity,
+        ignoring any authorization identity.
+      </p>
+
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthTrustAuthzIdentity on
+      </code></p></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
