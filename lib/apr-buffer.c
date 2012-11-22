@@ -41,8 +41,8 @@ wai_buffer_new(apr_pool_t *pool)
 
 /*
  * Resize a buffer to be at least as large as the provided second argument.
- * Resize buffers to multiples of 1KB to keep the number of reallocations to a
- * minimum.  Refuse to resize a buffer to make it smaller.
+ * Resize buffers to multiples of 64 bytes to reduce the number of
+ * reallocations.  Refuse to resize a buffer to make it smaller.
  */
 static void
 buffer_resize(struct buffer *buffer, size_t size)
