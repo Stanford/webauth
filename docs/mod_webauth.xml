@@ -926,8 +926,8 @@ WebAuthAuthType StanfordAuth
       <p>
         Note that service is optional.  If service is not present, then
         this is used to indicate that a page further down in the hierarchy
-        will eventually acquire credentials of the specified type, by
-        specifying credentials with a service name, and setting
+        will eventually acquire credentials of the specified type by
+        specifying credentials with a service name and setting
         <a href="#webauthusecreds"><directive>WebAuthUseCreds</directive></a>
         to "on".
       </p>
@@ -1919,6 +1919,7 @@ WebAuthSSLRedirectPort 8443
     <default>WebAuthSSLReturn off</default>
     <contextlist>
       <context>directory</context>
+      <context>.htaccess</context>
     </contextlist>
 
     <usage>
@@ -1988,51 +1989,74 @@ WebAuthStripURL off
 
   <directivesynopsis>
     <name>WebAuthSubjectAuthType</name>
-    <description>Type of subject authenticator the WebKDC will use in the returned
-    id-token</description>
+    <description>
+      Type of subject authenticator the WebKDC will use in the returned
+      id-token
+    </description>
     <syntax>WebAuthSubjectAuthType <em>type</em></syntax>
     <default>WebAuthSubjectAuthType webkdc</default>
-    <contextlist><context>server config</context>
-    <context>virtual host</context></contextlist>
+    <contextlist>
+      <context>server config</context>
+      <context>virtual host</context>
+    </contextlist>
 
     <usage>
       <p>
-        When mod_webauth needs to make a request for an id-token, it needs to
-        specify what type of subject authenticator that it expects returned. This
-        directive configures which type of subject authenticator is requested
-      by <em>type</em>:</p>
-      <ul>
-        <li><code>krb5</code>
-        <p>
-          When this type of subject authenticator is used, the WebKDC will use
-          the user's Kerberos credentials to make a <code>krb5_mk_req</code>
-          call, using the requesting web server's Kerberos principal. When
-          mod_webauth gets back the id-token, it will then use it's keytab to
-        verify the subject authenticator using <code>krb5_rd_req</code>.</p>
-        <p>This basically means that even if the WebKDC is compromised, a
-        user's identity cannot be forged, unless that user happens to be logged
-        in and using the WebKDC.</p>
-        <p>The downside to using this option is that returned id-token will
-        be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
-        <p>
-          Specifying this also requires that
-          <a href="#webauthkeytab">WebAuthKeytab</a> be set.
-          (FIXME: it is already always required for obtaining a service-token, though
-        it will probably become optional at some point).</p>
-        </li>
-        <li><code>webkdc</code>
-        <p>
-        This is the default.</p>
-        <p>
-          When this type of subject authenticator is used, the WebKDC will
-          place the already verified username in the returned id-token (encrypted,
-          of course). When mod_webauth gets back the id-token, it will trust that
-          the WebKDC as sufficiently authenticated the user, and use the returned
-        username.</p>
-        </li>
-      </ul>
-      <example><title>Example</title>
-      WebAuthSubjectAuthType krb5
+        When mod_webauth needs to make a request for an id-token, it needs
+        to specify what type of subject authenticator that it expects
+        returned.  This directive configures which type of subject
+        authenticator is requested by <em>type</em>:
+      </p>
+      <dl>
+        <dt><code>krb5</code></dt>
+        <dd>
+          <p>
+            When this type of subject authenticator is used, the WebKDC
+            will use the user's Kerberos credentials to make a
+            <code>krb5_mk_req</code> call, using the requesting web
+            server's Kerberos principal.  When mod_webauth gets back the
+            id-token, it will then use it's keytab to verify the subject
+            authenticator using <code>krb5_rd_req</code>.
+          </p>
+          <p>
+            This means that, even if the WebKDC is compromised, a user's
+            identity cannot be forged unless that user happens to be
+            logged in and using the WebKDC.
+          </p>
+          <p>
+            The downside to using this option is that returned id-token
+            will be about 500 bytes longer then when using a type of
+            <code>webkdc</code>.
+          </p>
+          <p>
+            Also be aware that using this option means that the WebAuth
+            server will not get the benefit of any identity
+            canonicalization or mapping that is done by the WebLogin
+            server.  Instead, it will authenticate the user as the
+            principal present in the Kerberos authenticator, converted to
+            a local name through the normal Kerberos local name mapping
+            mechanism.  This may be a feature or a drawback depending on
+            the situation.
+          </p>
+        </dd>
+        <dt><code>webkdc</code></dt>
+        <dd>
+          <p>
+            This is the default.
+          </p>
+          <p>
+            When this type of subject authenticator is used, the WebKDC
+            will place the already verified username in the returned
+            id-token (encrypted, of course).  When mod_webauth gets back
+            the id-token, it will trust that the WebKDC as sufficiently
+            authenticated the user, and use the returned username.
+          </p>
+        </dd>
+      </dl>
+
+      <example>
+        <title>Example</title>
+WebAuthSubjectAuthType krb5
       </example>
     </usage>
   </directivesynopsis>
