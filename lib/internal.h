@@ -350,12 +350,24 @@ int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **)
 struct buffer *wai_buffer_new(apr_pool_t *)
     __attribute__((__nonnull__));
 
+/*
+ * Resize a buffer to be at least as large as the provided size.  Invalidates
+ * pointers into the buffer.
+ */
+void wai_buffer_resize(struct buffer *, size_t);
+
 /* Set the buffer contents, ignoring anything currently there. */
 void wai_buffer_set(struct buffer *, const char *data, size_t length)
     __attribute__((__nonnull__));
 
 /* Append data to the buffer. */
 void wai_buffer_append(struct buffer *, const char *data, size_t length)
+    __attribute__((__nonnull__));
+
+/* Append printf-style data to the buffer. */
+void wai_buffer_append_sprintf(struct buffer *, const char *, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_buffer_append_vsprintf(struct buffer *, const char *, va_list)
     __attribute__((__nonnull__));
 
 /*

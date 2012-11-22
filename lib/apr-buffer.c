@@ -44,8 +44,8 @@ wai_buffer_new(apr_pool_t *pool)
  * Resize buffers to multiples of 64 bytes to reduce the number of
  * reallocations.  Refuse to resize a buffer to make it smaller.
  */
-static void
-buffer_resize(struct buffer *buffer, size_t size)
+void
+wai_buffer_resize(struct buffer *buffer, size_t size)
 {
     char *data;
 
@@ -66,7 +66,7 @@ buffer_resize(struct buffer *buffer, size_t size)
 void
 wai_buffer_set(struct buffer *buffer, const char *data, size_t length)
 {
-    buffer_resize(buffer, length + 1);
+    wai_buffer_resize(buffer, length + 1);
     if (length > 0)
         memmove(buffer->data, data, length + 1);
     buffer->data[length] = '\0';
@@ -83,10 +83,54 @@ wai_buffer_append(struct buffer *buffer, const char *data, size_t length)
 {
     if (length == 0)
         return;
-    buffer_resize(buffer, buffer->used + length + 1);
+    wai_buffer_resize(buffer, buffer->used + length + 1);
     memcpy(buffer->data + buffer->used, data, length);
     buffer->used += length;
     buffer->data[buffer->used] = '\0';
+}
+
+
+/*
+ * Print data into a buffer from the supplied va_list, appending to the end.
+ * The trailing nul is not added to the buffer.
+ */
+void
+wai_buffer_append_vsprintf(struct buffer *buffer, const char *format,
+                           va_list args)
+{
+    size_t avail;
+    ssize_t status;
+    va_list args_copy;
+
+    avail = buffer->size - buffer->used;
+    va_copy(args_copy, args);
+    status = vsnprintf(buffer->data + buffer->used, avail, format, args_copy);
+    va_end(args_copy);
+    if (status < 0)
+        return;
+    if ((size_t) status + 1 > avail) {
+        wai_buffer_resize(buffer, buffer->used + status + 1);
+        avail = buffer->size - buffer->used;
+        status = vsnprintf(buffer->data + buffer->used, avail, format, args);
+        if (status < 0 || (size_t) status + 1 > avail)
+            return;
+    }
+    buffer->used += status;
+}
+
+
+/*
+ * Print data into a buffer, appending to the end.  Resize the buffer if
+ * needed.  The trailing nul is not added to the buffer.
+ */
+void
+wai_buffer_append_sprintf(struct buffer *buffer, const char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    wai_buffer_append_vsprintf(buffer, format, args);
+    va_end(args);
 }
 
 
