@@ -77,6 +77,7 @@ DIRN(SSLReturn,          "whether to force the return URL to be https")
 DIRD(StripURL,           "whether to strip tokens in internal URL", bool, true)
 DIRD(SubjectAuthType,    "requested subject authenticator", char *, "webkdc")
 DIRD(TokenMaxTTL,        "maximum lifetime of recent tokens", int, 300)
+DIRN(TrustAuthzIdentity, "whether to trust asserted authorization identities")
 DIRN(WebKdcPrincipal,    "WebKDC Kerberos principal name")
 DIRD(WebKdcSSLCertCheck, "whether to check the WebKDC certificate", bool, true)
 DIRN(WebKdcSSLCertFile,  "file containing the WebKDC's certificate")
@@ -142,6 +143,7 @@ enum {
     E_StripURL,
     E_SubjectAuthType,
     E_TokenMaxTTL,
+    E_TrustAuthzIdentity,
     E_UseCreds,
     E_VarPrefix,
     E_WebKdcPrincipal,
@@ -261,6 +263,7 @@ mwa_server_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(st_cache_path);
     MERGE_SET(strip_url);
     MERGE_SET(subject_auth_type);
+    MERGE_SET(trust_authz_identity);
     MERGE_SET(webkdc_cert_check);
     MERGE_PTR(webkdc_cert_file);
     MERGE_PTR(webkdc_principal);
@@ -302,6 +305,7 @@ mwa_dir_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(return_url);
     MERGE_PTR(session_factors);
     MERGE_SET(ssl_return);
+    MERGE_SET(trust_authz_identity);
     MERGE_SET(use_creds);
     MERGE_PTR(var_prefix);
 #ifndef NO_STANFORD_SUPPORT
@@ -692,6 +696,14 @@ cfg_flag(cmd_parms *cmd, void *mconf, int flag)
             dconf->extra_redirect_set = true;
         }
         break;
+    case E_TrustAuthzIdentity:
+        if (cmd->path == NULL) {
+            sconf->trust_authz_identity = flag;
+            sconf->trust_authz_identity_set = true;
+        } else {
+            dconf->trust_authz_identity = flag;
+            dconf->trust_authz_identity_set = true;
+        }
 
     /* Directory scope only. */
     case E_DoLogout:
@@ -791,6 +803,7 @@ const command_rec webauth_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  ACCESS_CONF, UseCreds),
 
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_ORAUTH, ExtraRedirect),
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_ORAUTH, TrustAuthzIdentity),
 
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DoLogout),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DontCache),

@@ -47,6 +47,7 @@ extern const command_rec webauth_cmds[];
 
 /* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
+#define ENV_WEBAUTH_AUTHZ_USER "WEBAUTH_AUTHZ_USER"
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
@@ -56,9 +57,10 @@ extern const command_rec webauth_cmds[];
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* r->notes keys */
-#define N_WEBAUTHR "mod_webauth_WEBAUTHR"
-#define N_WEBAUTHS "mod_webauth_WEBAUTHS"
-#define N_SUBJECT  "mod_webauth_SUBJECT"
+#define N_WEBAUTHR      "mod_webauth_WEBAUTHR"
+#define N_WEBAUTHS      "mod_webauth_WEBAUTHS"
+#define N_SUBJECT       "mod_webauth_SUBJECT"
+#define N_AUTHZ_SUBJECT "mod_webauth_AUTHZ"
 
 
 /* a service token and associated data, all memory (including key)
@@ -100,6 +102,7 @@ struct server_config {
     bool strip_url;
     const char *subject_auth_type;
     unsigned long token_max_ttl;
+    bool trust_authz_identity;
     bool webkdc_cert_check;
     const char *webkdc_cert_file;
     const char *webkdc_principal;
@@ -117,6 +120,7 @@ struct server_config {
     bool strip_url_set;
     bool subject_auth_type_set;
     bool token_max_ttl_set;
+    bool trust_authz_identity_set;
     bool webkdc_cert_check_set;
 
     /*
@@ -148,6 +152,7 @@ struct dir_config {
     const char *post_return_url;
     const char *return_url;
     bool ssl_return;
+    bool trust_authz_identity;
     bool use_creds;
     const char *var_prefix;
     apr_array_header_t *creds;           /* Array of MWA_WACRED */
@@ -166,6 +171,7 @@ struct dir_config {
     bool loa_set;
     bool optional_set;
     bool ssl_return_set;
+    bool trust_authz_identity_set;
     bool use_creds_set;
 };
 
