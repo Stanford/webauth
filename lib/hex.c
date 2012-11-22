@@ -65,7 +65,7 @@ webauth_hex_decoded_length(size_t length, size_t *out_length)
  * WA_ERR code.
  */
 int
-webauth_hex_encode(char *input, size_t input_len, char *output,
+webauth_hex_encode(const char *input, size_t input_len, char *output,
                    size_t *output_len, size_t max_output_len)
 {
     size_t out_len;
