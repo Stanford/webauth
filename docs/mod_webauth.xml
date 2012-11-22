@@ -1773,9 +1773,90 @@ WebAuthRequireSessionFactor m
 
 
   <directivesynopsis>
-    <name>WebAuthReturnURL</name>
-    <description>URL to return to after authenticating
+    <name>WebAuthRequireSSL</name>
+    <description>
+      Whether SSL is required to access a WebAuth-protected resource
     </description>
+    <syntax>WebAuthRequireSSL on|off</syntax>
+    <default>WebAuthRequireSSL on</default>
+    <contextlist>
+      <context>server config</context>
+      <context>virtual host</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        Normally, all WebAuth-protected resources must be accessed via
+        SSL.  Attempts to access a WebAuth-protected resources without SSL
+        will either be rejected with an authorization denied error (the
+        default) or will be redirected to the equivalent SSL URL (if
+        <a href="#webauthsslredirect"><directive>WebAuthSSLRedirect</directive></a>
+        is set to <code>on</code>).
+      </p>
+      <p>
+        If this directive is set to <code>on</code>, access to a
+        WebAuth-protected resource is permitted without the protection of
+        SSL.
+      </p>
+
+      <note>
+        <title>Warning</title>
+        <p>
+          Turning off this directive can create a significant security
+          vulnerability.  Without required use of SSL, there is no
+          protection for the WebAuth app token.  Anyone in the network
+          path from the client to the server can trivially steal the token
+          and then authenticate to that server as that user.  Under normal
+          circumstances, this directive should never be turned off.
+        </p>
+        <p>
+          There are, however, two circumstances in which turning off this
+          directive might make sense.
+        </p>
+        <p>
+          One is if the WebAuth-protected resource is behind a separate
+          SSL accelerator and connected to it via a trusted network link.
+          In this case, by the time Apache sees the request, it appears to
+          not be using SSL, but the request has SSL protection on all
+          untrusted network connections.  In this case, it may be
+          necessary to turn off this directive and to turn on <a
+          href="#webauthsslreturn"><directive>WebAuthSSLReturn</directive></a>
+          so that the client is returned to the correct URL after
+          authentication.
+        </p>
+        <p>
+          The other case where turning this directive off may make sense
+          is if WebAuth is being used to protect a proxy for low-value,
+          low-security content where theft of the authentication
+          credentials for that site is not a concern.  This may be the
+          case if, for example, WebAuth is being used to protect a
+          subscription service that's not of sufficiently high value that
+          theft of authentication credentials is an expected risk.  Even
+          in this case, requiring SSL is strongly preferred, but some
+          PAC-based proxy configurations may not permit forcing SSL to the
+          proxy server.
+        </p>
+      </note>
+
+      <example>
+        <title>Example</title>
+<pre>
+# This server is behind an SSL accelerator, so Apache only sees
+# non-SSL traffic.  Permit non-SSL WebAuth access, but ensure the
+# return URL for authentication tells the client to use SSL.
+WebAuthRequireSSL off
+&lt;Location /&gt;
+  WebAuthSSLReturn on
+&lt;/Location&gt;
+</pre>
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
+    <name>WebAuthReturnURL</name>
+    <description>URL to return to after authenticating</description>
     <syntax>WebAuthReturnURL <em>url</em></syntax>
     <default>(url user originally requested)</default>
     <contextlist>

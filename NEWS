@@ -20,6 +20,11 @@ WebAuth 4.4.0 (unreleased)
     compatibility, but will only be used if the more-specific variable is
     not set.  Patch from Tom Jones.
 
+    Document the WebAuthRequireSSL configuration directive.  Under normal
+    circumstances, this directive should always be left on (the default)
+    to avoid serious security vulnerabilities, but there are some specific
+    situations where it may be necessary to turn it off.
+
     The webauth_base64_* functions have been removed from libwebauth, as
     have the corresponding Perl bindings.  For C programs, use the
     apr_base64_* functions from APR-Util instead.  For Perl programs, use
