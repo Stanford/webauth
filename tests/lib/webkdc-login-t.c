@@ -47,7 +47,7 @@ main(void)
     struct webauth_webkdc_proxy_data *pd;
     const char *identity;
 
-    plan(83);
+    plan(85);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -187,11 +187,13 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(7, 0, "...no result token: %s",
+        ok_block(8, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("testuser", token->token.id.subject,
                   "...result subject is right");
+        is_string(NULL, token->token.id.authz_subject,
+                  "...and there is no authz subject");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
         is_string("x,x1", token->token.proxy.initial_factors,
@@ -248,11 +250,13 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(7, 0, "...no result token: %s",
+        ok_block(8, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("testuser", token->token.id.subject,
                   "...result subject is right");
+        is_string("otheruser", token->token.id.authz_subject,
+                  "...result authz subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
         is_string("x,x1", token->token.proxy.initial_factors,
