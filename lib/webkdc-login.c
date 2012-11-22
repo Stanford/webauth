@@ -800,6 +800,7 @@ create_id_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_ID;
     id = &token.token.id;
     id->subject = wkproxy->subject;
+    id->authz_subject = response->identity;
     id->auth = req->auth;
     if (strcmp(req->auth, "krb5") == 0) {
         status = get_krb5_authenticator(ctx, request->service->subject,
@@ -855,6 +856,7 @@ create_proxy_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_PROXY;
     proxy = &token.token.proxy;
     proxy->subject = wkproxy->subject;
+    proxy->authz_subject = response->identity;
     proxy->type = req->proxy_type;
     proxy->initial_factors = wkproxy->initial_factors;
     proxy->session_factors = wkproxy->session_factors;
