@@ -2463,7 +2463,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         webkdc_config_init(scheck, sconf, pconf);
     }
 
-    ap_add_version_component(pconf, "WebKDC/" PACKAGE_VERSION);
+    ap_add_version_component(pconf, "WebKDC/" VERSION);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,
