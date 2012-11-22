@@ -1657,8 +1657,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             if (request_token == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "authzSubject") == 0) {
-            request.identity = get_elem_text(rc, child, mwk_func);
-            if (request.identity == NULL)
+            request.authz_subject = get_elem_text(rc, child, mwk_func);
+            if (request.authz_subject == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
@@ -1836,22 +1836,23 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* authzSubject (if present) */
-    if (response->identity != NULL) {
+    if (response->authz_subject != NULL) {
         ap_rvputs(rc->r,
                   "<authzSubject>",
-                  apr_xml_quote_string(rc->r->pool, response->identity, 1),
+                  apr_xml_quote_string(rc->r->pool, response->authz_subject,
+                                       1),
                   "</authzSubject>", NULL);
     }
 
     /* permittedAuthzSubjects (if present) */
-    if (response->identities != NULL) {
-        const char *identity;
+    if (response->permitted_authz != NULL) {
+        const char *authz;
 
         ap_rvputs(rc->r, "<permittedAuthzSubjects>", NULL);
-        for (i = 0; i < response->identities->nelts; i++) {
-            identity = APR_ARRAY_IDX(response->identities, i, const char *);
+        for (i = 0; i < response->permitted_authz->nelts; i++) {
+            authz = APR_ARRAY_IDX(response->permitted_authz, i, const char *);
             ap_rvputs(rc->r, "<authzSubject>",
-                      apr_xml_quote_string(rc->r->pool, identity, 1),
+                      apr_xml_quote_string(rc->r->pool, authz, 1),
                       "</authzSubject>", NULL);
         }
         ap_rvputs(rc->r, "</permittedAuthzSubjects>", NULL);
@@ -1927,8 +1928,9 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
                  (login_type == NULL) ? "" : " login=",
                  (login_type == NULL) ? "" : login_type,
-                 (response->identity == NULL ? "" :
-                  apr_psprintf(rc->r->pool, " authz=%s", response->identity)),
+                 (response->authz_subject == NULL ? "" :
+                  apr_psprintf(rc->r->pool, " authz=%s",
+                               response->authz_subject)),
                  (response->initial_factors == NULL ? "" :
                   apr_psprintf(rc->r->pool, " ifactors=%s",
                                response->initial_factors)),

@@ -45,7 +45,7 @@ main(void)
     struct webauth_token_webkdc_proxy *pt;
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
-    const char *identity;
+    const char *authz;
 
     plan(85);
 
@@ -208,8 +208,8 @@ main(void)
     is_string("x,x1", response->initial_factors, "...initial factors");
     is_string(NULL, response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
-    ok(response->identity == NULL, "...identity");
-    ok(response->identities == NULL, "...allowed identities");
+    ok(response->authz_subject == NULL, "...authz subject");
+    ok(response->permitted_authz == NULL, "...allowed identities");
 
     /* Set an identity ACL file and try again. */
     config.id_acl_path = test_file_path("data/id.acl");
@@ -223,27 +223,30 @@ main(void)
     is_int(WA_ERR_NONE, status, "Allowed identities returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
-    ok(response->identity == NULL, "...and no identity");
-    ok(response->identities != NULL, "...and there are allowed identities");
-    if (response->identities == NULL)
+    ok(response->authz_subject == NULL, "...and no authz subject");
+    ok(response->permitted_authz != NULL,
+       "...and there are allowed identities");
+    if (response->permitted_authz == NULL)
         ok_block(3, 0, "...no identities");
     else {
-        is_int(2, response->identities->nelts, "...two allowed identities");
-        identity = APR_ARRAY_IDX(response->identities, 0, const char *);
-        is_string("otheruser", identity, "...first is correct");
-        identity = APR_ARRAY_IDX(response->identities, 1, const char *);
-        is_string("bar", identity, "...second is correct");
+        is_int(2, response->permitted_authz->nelts,
+               "...two allowed identities");
+        authz = APR_ARRAY_IDX(response->permitted_authz, 0, const char *);
+        is_string("otheruser", authz, "...first is correct");
+        authz = APR_ARRAY_IDX(response->permitted_authz, 1, const char *);
+        is_string("bar", authz, "...second is correct");
     }
 
     /* Attempt to assert an identity and try again. */
-    request.identity = "otheruser";
+    request.authz_subject = "otheruser";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Asserting an identity returns success");
+    is_int(WA_ERR_NONE, status, "Asserting an authz subject returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
-    is_string("otheruser", response->identity, "...and the correct identity");
+    is_string("otheruser", response->authz_subject,
+              "...and the correct authz subject");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
     status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
@@ -270,20 +273,20 @@ main(void)
     }
 
     /* Try asserting an identity we're not allowed to assert. */
-    request.identity = "foo";
+    request.authz_subject = "foo";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));
     is_int(WA_ERR_NONE, status,
-           "Asserting a disallowed identity returns success");
+           "Asserting a disallowed authz subject returns success");
     is_int(WA_PEC_UNAUTHORIZED, response->login_error,
            "...with the right error");
     is_string("not authorized to assert that identity",
               response->login_message, "...and the right message");
-    ok(response->identity == NULL, "...and identity is NULL");
+    ok(response->authz_subject == NULL, "...and authz subject is NULL");
 
     /* Set forced authentication and try again. */
-    request.identity = NULL;
+    request.authz_subject = NULL;
     req.options = "fa";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Proxy auth w/forced login returns success");

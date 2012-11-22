@@ -73,7 +73,7 @@ struct webauth_webkdc_proxy_data {
 struct webauth_webkdc_login_request {
     struct webauth_token_webkdc_service *service;
     WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
-    const char *identity;               /* Requested authorization identity. */
+    const char *authz_subject;          /* Requested authorization identity. */
     struct webauth_token_request *request;
     const char *remote_user;
     const char *local_ip;
@@ -100,7 +100,7 @@ struct webauth_webkdc_login_response {
     const char *return_url;
     const char *requester;
     const char *subject;
-    const char *identity;       /* Authorization identity, if different. */
+    const char *authz_subject;  /* Authorization identity, if different. */
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
     const char *initial_factors;
@@ -111,7 +111,7 @@ struct webauth_webkdc_login_response {
     size_t app_state_len;
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
     time_t password_expires;            /* Time of password expiration or 0. */
-    WA_APR_ARRAY_HEADER_T *identities;  /* Allowable authorization ids. */
+    WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authorization ids. */
 };    
 
 /*

@@ -800,7 +800,7 @@ create_id_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_ID;
     id = &token.token.id;
     id->subject = wkproxy->subject;
-    id->authz_subject = response->identity;
+    id->authz_subject = response->authz_subject;
     id->auth = req->auth;
     if (strcmp(req->auth, "krb5") == 0) {
         status = get_krb5_authenticator(ctx, request->service->subject,
@@ -856,7 +856,7 @@ create_proxy_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_PROXY;
     proxy = &token.token.proxy;
     proxy->subject = wkproxy->subject;
-    proxy->authz_subject = response->identity;
+    proxy->authz_subject = response->authz_subject;
     proxy->type = req->proxy_type;
     proxy->initial_factors = wkproxy->initial_factors;
     proxy->session_factors = wkproxy->session_factors;
@@ -1174,7 +1174,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     /* Determine if the user is allowed to assert alternate identities. */
     status = build_identity_list(ctx, (*response)->subject,
                                  request->service->subject,
-                                 &(*response)->identities);
+                                 &(*response)->permitted_authz);
     if (status != WA_ERR_NONE)
         return status;
 
@@ -1182,15 +1182,15 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * If the user attempts to assert an alternate identity, see if that's
      * allowed.  If so, copy that into the response.
      */
-    if (request->identity != NULL && (*response)->identities != NULL)
-        for (i = 0; i < (*response)->identities->nelts; i++) {
-            allowed = APR_ARRAY_IDX((*response)->identities, i, const char *);
-            if (strcmp(allowed, request->identity) == 0) {
-                (*response)->identity = apr_pstrdup(ctx->pool, allowed);
+    if (request->authz_subject != NULL && (*response)->permitted_authz != NULL)
+        for (i = 0; i < (*response)->permitted_authz->nelts; i++) {
+            allowed = APR_ARRAY_IDX((*response)->permitted_authz, i, char *);
+            if (strcmp(allowed, request->authz_subject) == 0) {
+                (*response)->authz_subject = apr_pstrdup(ctx->pool, allowed);
                 break;
             }
         }
-    if (request->identity != NULL && (*response)->identity == NULL) {
+    if (request->authz_subject != NULL && (*response)->authz_subject == NULL) {
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to assert that identity";
         return WA_ERR_NONE;

@@ -333,13 +333,14 @@ main(void)
     is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
     request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
-    request.identity = "otheruser";
+    request.authz_subject = "otheruser";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login for proxy token returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
     is_string(krbconf->userprinc, response->subject, "...subject is correct");
-    is_string("otheruser", response->identity, "...authz subject is correct");
+    is_string("otheruser", response->authz_subject,
+              "...authz subject is correct");
     ok(response->result != NULL, "...there is a result token");
     is_string("proxy", response->result_type, "...which is a proxy token");
     status = webauth_token_decode(ctx, WA_TOKEN_PROXY, response->result,
@@ -369,7 +370,7 @@ main(void)
         diag("configuration failed: %s", webauth_error_message(ctx, status));
     is_int(WA_ERR_NONE, status, "Clearing id_acl_path succeeded");
     test_tmpdir_free(tmpdir);
-    request.identity = NULL;
+    request.authz_subject = NULL;
 
     /*
      * Try a mismatched proxy token and login token for two different users.
