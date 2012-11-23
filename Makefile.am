@@ -89,12 +89,12 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/util.h include/webauth/was.h			\
 	include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
-	lib/attr-encode.c lib/attrs.c lib/context.c lib/factors.c	  \
-	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
-	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
-	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
-	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	  \
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		\
+	lib/attr-encode.c lib/context.c lib/factors.c lib/file-io.c	\
+	lib/hex.c lib/internal.h lib/keyring.c lib/keys.c lib/krb5.c	\
+	lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c		\
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	\
+	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	\
 	lib/webkdc-login.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
@@ -273,16 +273,16 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/factors-t	  \
-	tests/lib/hex-t tests/lib/interval-t tests/lib/keyring-t	  \
-	tests/lib/keys-t tests/lib/krb5-t tests/lib/krb5-tgt-t		  \
-	tests/lib/userinfo-t tests/lib/token-decode-t			  \
-	tests/lib/token-encode-t tests/lib/was-cache-t			  \
-	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			  \
-	tests/lib/webkdc-mf-t tests/portable/asprintf-t			  \
-	tests/portable/mkstemp-t tests/portable/setenv-t		  \
-	tests/portable/snprintf-t tests/portable/strlcat-t		  \
-	tests/portable/strlcpy-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/factors-t tests/lib/hex-t	\
+	tests/lib/interval-t tests/lib/keyring-t tests/lib/keys-t	\
+	tests/lib/krb5-t tests/lib/krb5-tgt-t tests/lib/userinfo-t	\
+	tests/lib/token-decode-t tests/lib/token-encode-t		\
+	tests/lib/was-cache-t tests/lib/webkdc-krb-t			\
+	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			\
+	tests/portable/asprintf-t tests/portable/mkstemp-t		\
+	tests/portable/setenv-t tests/portable/snprintf-t		\
+	tests/portable/strlcat-t tests/portable/strlcpy-t		\
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -295,10 +295,6 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
-tests_lib_attrs_t_SOURCES = lib/attrs.c lib/hex.c tests/lib/attrs-t.c
-tests_lib_attrs_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la $(APR_LIBS)

@@ -18,14 +18,6 @@
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_xml.h>            /* apr_xml_elem */
 
-/* Flags to webauth_attr_list_add functions. */
-#define WA_F_NONE       0x00
-#define WA_F_COPY_VALUE 0x01
-#define WA_F_COPY_NAME  0x02
-#define WA_F_FMT_STR    0x04
-#define WA_F_FMT_HEX    0x08
-#define WA_F_COPY_BOTH  (WA_F_COPY_NAME | WA_F_COPY_VALUE)
-
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
 #define WA_FA_PASSWORD             "p"
@@ -69,30 +61,6 @@ struct buffer {
     size_t used;
     char *data;
 };
-
-/*
- * Holds a generic name/value attribute for constructing and parsing tokens.
- * Names must not contain "=", and values may contain binary data, since the
- * length must be specified.
- */
-typedef struct {
-    const char *name;           /* Name of attribute. */
-    unsigned int flags;         /* Flags passed in during add */
-    void *value;                /* Value of attribute (binary data). */
-    size_t length;              /* Length of attribute value in bytes. */
-    char val_buff[32];          /* Temp buffer to avoid malloc on encoding. */
-} WEBAUTH_ATTR;
-
-/*
- * Holds a list of attributes.  You must always use use webauth_attr_list_new
- * to construct a new attr list so that webauth_attr_list_{add,free} work
- * correctly.
- */
-typedef struct {
-    size_t num_attrs;
-    size_t capacity;
-    WEBAUTH_ATTR *attrs;
-} WEBAUTH_ATTR_LIST;
 
 /*
  * The types of data that can be encoded.  WA_TYPE_REPEAT is special and
@@ -229,122 +197,6 @@ BEGIN_DECLS
 
 /* Default to a hidden visibility for all internal functions. */
 #pragma GCC visibility push(hidden)
-
-/* Creates a new attribute list, returning it or NULL if no memory. */
-WEBAUTH_ATTR_LIST *webauth_attr_list_new(size_t initial_capacity);
-
-/*
- * Adds an attribute to the attribute list, growing the list if need be.  Both
- * the name and value are copied, and value always has a null added to the end
- * of it.  Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_attr_list_add(WEBAUTH_ATTR_LIST *, const char *name, void *value,
-                          size_t vlen, unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Adds an attribute string to the attribute list, growing the list if need
- * be.  Name and value are not copied by default; the pointers are added
- * directly unless WA_F_COPY_* are used in flags.  If vlen is 0, then
- * strlen(value) is used.  Returns WA_ERR_NONE or WA_ERR_NO_MEM.
- */
-int webauth_attr_list_add_str(WEBAUTH_ATTR_LIST *, const char *name,
-                              const char *value, size_t vlen,
-                              unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Adds a number to an attribute list, growing the list if need be.  All of
- * these interfaces imply WA_COPY_VALUE.  Returns WA_ERR_NONE or
- * WA_ERR_NO_MEM.
- */
-int webauth_attr_list_add_uint32(WEBAUTH_ATTR_LIST *, const char *name,
-                                 uint32_t value, unsigned int flags)
-    __attribute__((__nonnull__));
-int webauth_attr_list_add_int32(WEBAUTH_ATTR_LIST *, const char *name,
-                                int32_t value, unsigned int flags)
-    __attribute__((__nonnull__));
-int webauth_attr_list_add_time(WEBAUTH_ATTR_LIST *, const char *name,
-                               time_t value, unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Retrieve a specific attribute by name.  Stores its value in the value
- * parameter and its length in the value_len parameter.
- *
- * If flags contains WA_F_FMT_HEX, hex-decode the value.  If flags contains
- * WA_F_COPY_VALUE or WA_F_FMT_HEX, return a copy of the value rather than a
- * pointer into the attribute.
- *
- * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
- */
-int webauth_attr_list_get(WEBAUTH_ATTR_LIST *, const char *name, void **value,
-                          size_t *value_len, unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Retrieve a string attribute by name.  Stores the string in value and the
- * length of the string in value_len.  Takes the same flags as
- * webauth_attr_list_get.  Returns WA_ERR_NONE, WA_ERR_NOT_FOUND,
- * WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
- */
-int webauth_attr_list_get_str(WEBAUTH_ATTR_LIST *, const char *name,
-                              char **value, size_t *value_len,
-                              unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Retrieve a numeric attribute by name, storing it in value.  Takes the same
- * flags as webauth_attr_list_get, but WA_F_COPY_VALUE is meaningless.
- * Returns WA_ERR_NONE, WA_ERR_NOT_FOUND, WA_ERR_CORRUPT, or WA_ERR_NO_MEM.
- */
-int webauth_attr_list_get_uint32(WEBAUTH_ATTR_LIST *, const char *name,
-                                 uint32_t *value, unsigned int flags)
-    __attribute__((__nonnull__));
-int webauth_attr_list_get_int32(WEBAUTH_ATTR_LIST *, const char *name,
-                                int32_t *value, unsigned int flags)
-    __attribute__((__nonnull__));
-int webauth_attr_list_get_time(WEBAUTH_ATTR_LIST *, const char *name,
-                               time_t *value, unsigned int flags)
-    __attribute__((__nonnull__));
-
-/*
- * Searches for the named attribute in the list and returns the index in i and
- * WA_ERR_NONE or sets i to -1 and returns WA_ERR_NOT_FOUND.
- */
-int webauth_attr_list_find(WEBAUTH_ATTR_LIST *, const char *name, ssize_t *i)
-    __attribute__((__nonnull__));
-
-/*
- * Frees the memory associated with an attribute list, including all the
- * attributes in the list.
- */
-void webauth_attr_list_free(WEBAUTH_ATTR_LIST *)
-    __attribute__((__nonnull__));
-
-/*
- * Given an array of attributes, returns the amount of space required to
- * encode them.
- */
-size_t webauth_attrs_encoded_length(const WEBAUTH_ATTR_LIST *)
-    __attribute__((__nonnull__));
-
-/*
- * Given an array of attributes, encode them into the buffer.  max_buffer_len
- * must be set to the maxium size of the output buffer.  output is NOT
- * null-terminated Returns WA_ERR_NONE or WA_ERR_NO_ROOM.
- */
-int webauth_attrs_encode(const WEBAUTH_ATTR_LIST *, char *output,
-                         size_t *output_len, size_t max_output_len)
-    __attribute__((__nonnull__));
-
-/*
- * Decodes the given buffer into an array of attributes.  The buffer is
- * modifed as part of the decoding.  Returns WA_ERR_NONE, WA_ERR_CORRUPT, or
- * WA_ERR_NO_MEM.
- */
-int webauth_attrs_decode(char *, size_t, WEBAUTH_ATTR_LIST **)
-    __attribute__((__nonnull__));
 
 /* Allocate a new buffer and initialize its contents. */
 struct buffer *wai_buffer_new(apr_pool_t *)

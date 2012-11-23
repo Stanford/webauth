@@ -107,31 +107,16 @@ static int
 decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              const void *input, size_t length, krb5_creds *creds)
 {
-    void *buf;
-    WEBAUTH_ATTR_LIST *alist = NULL;
     struct wai_krb5_cred data;
     int status;
     size_t size, i;
 
-    /* Decode the input into an attribute list. */
-    buf = apr_pmemdup(kc->pool, input, length);
-    status = webauth_attrs_decode(buf, length, &alist);
-    if (status != WA_ERR_NONE) {
-        wai_error_set(ctx, status, "credential decode failed");
-        return status;
-    }
-
     /*
-     * Decode the attribute list and copy the results into the credential
-     * struct.
+     * Decode the input into the credential struct and then copy it into
+     * the data structure used by the library.
      */
     memset(&data, 0, sizeof(data));
     status = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
-    if (status != WA_ERR_NONE) {
-        webauth_attr_list_free(alist);
-        return status;
-    }
-    webauth_attr_list_free(alist);
     memset(creds, 0, sizeof(krb5_creds));
     if (data.client_principal != NULL) {
         status = decode_principal(ctx, kc, data.client_principal,
