@@ -12,13 +12,13 @@ lib/was-cache
 lib/webkdc-krb
 lib/webkdc-login
 lib/webkdc-mf
+perl/critic
 portable/asprintf
 portable/snprintf
 portable/mkstemp
 portable/setenv
 portable/strlcat
 portable/strlcpy
-tools/critic
 tools/wa_keyring
 util/messages
 util/xmalloc
