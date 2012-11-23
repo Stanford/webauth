@@ -43,6 +43,7 @@
 /tests/config/keytab
 /tests/config/password
 /tests/data/conf-webkdc
+/tests/lib/apr-buffer-t
 /tests/lib/attrs-t
 /tests/lib/hex-t
 /tests/lib/factors-t

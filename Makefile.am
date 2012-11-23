@@ -273,16 +273,16 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/factors-t tests/lib/hex-t	\
-	tests/lib/interval-t tests/lib/keyring-t tests/lib/keys-t	\
-	tests/lib/krb5-t tests/lib/krb5-tgt-t tests/lib/userinfo-t	\
-	tests/lib/token-decode-t tests/lib/token-encode-t		\
-	tests/lib/was-cache-t tests/lib/webkdc-krb-t			\
-	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			\
-	tests/portable/asprintf-t tests/portable/mkstemp-t		\
-	tests/portable/setenv-t tests/portable/snprintf-t		\
-	tests/portable/strlcat-t tests/portable/strlcpy-t		\
-	tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/factors-t \
+	tests/lib/hex-t tests/lib/interval-t tests/lib/keyring-t	   \
+	tests/lib/keys-t tests/lib/krb5-t tests/lib/krb5-tgt-t		   \
+	tests/lib/userinfo-t tests/lib/token-decode-t			   \
+	tests/lib/token-encode-t tests/lib/was-cache-t			   \
+	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
+	tests/lib/webkdc-mf-t tests/portable/asprintf-t			   \
+	tests/portable/mkstemp-t tests/portable/setenv-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -295,6 +295,10 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
+tests_lib_apr_buffer_t_SOURCES = lib/apr-buffer.c tests/lib/apr-buffer-t.c
+tests_lib_apr_buffer_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_apr_buffer_t_LDADD = tests/tap/libtap.a portable/libportable.la \
+	$(APR_LIBS)
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la $(APR_LIBS)
