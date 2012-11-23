@@ -252,12 +252,10 @@ int wai_decode_token(struct webauth_context *, const void *input, size_t,
 /*
  * Encode the struct pointed to by data according to given the rules into the
  * output parameter, storing the encoded data length.  The result will be in
- * WebAuth attribute encoding format.  Takes a separate pool to use for memory
- * allocation.
+ * WebAuth attribute encoding format.
  */
-int wai_encode(struct webauth_context *, apr_pool_t *,
-               const struct wai_encoding *, const void *data, void **,
-               size_t *)
+int wai_encode(struct webauth_context *, const struct wai_encoding *,
+               const void *data, void **, size_t *)
     __attribute__((__nonnull__));
 
 /*

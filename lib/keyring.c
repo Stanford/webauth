@@ -259,8 +259,8 @@ webauth_keyring_encode(struct webauth_context *ctx,
     }
 
     /* Do the encoding. */
-    return wai_encode(ctx, ctx->pool, wai_keyring_encoding, &data,
-                      (void **) output, length);
+    return wai_encode(ctx, wai_keyring_encoding, &data, (void **) output,
+                      length);
 }
 
 

@@ -79,8 +79,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     }
 
     /* All done.  Do the attribute encoding. */
-    return wai_encode(ctx, kc->pool, wai_krb5_cred_encoding, &data, output,
-                      length);
+    return wai_encode(ctx, wai_krb5_cred_encoding, &data, output, length);
 }
 
 

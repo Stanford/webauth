@@ -232,14 +232,13 @@ encode_to_attrs(struct webauth_context *ctx, const struct wai_encoding *rules,
  * context pool, since attribute encoding can churn a lot of memory.
  */
 int
-wai_encode(struct webauth_context *ctx, apr_pool_t *pool,
-           const struct wai_encoding *rules, const void *data, void **output,
-           size_t *length)
+wai_encode(struct webauth_context *ctx, const struct wai_encoding *rules,
+           const void *data, void **output, size_t *length)
 {
     struct buffer *buffer;
     int status;
 
-    buffer = wai_buffer_new(pool);
+    buffer = wai_buffer_new(ctx->pool);
     status = encode_to_attrs(ctx, rules, data, buffer, NULL, 0);
     if (status != WA_ERR_NONE)
         return status;

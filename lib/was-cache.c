@@ -48,8 +48,7 @@ webauth_was_token_cache_write(struct webauth_context *ctx,
     size_t length;
     int s;
 
-    s = wai_encode(ctx, ctx->pool, wai_was_token_cache_encoding, cache,
-                   &data, &length);
+    s = wai_encode(ctx, wai_was_token_cache_encoding, cache, &data, &length);
     if (s != WA_ERR_NONE)
         return s;
     return wai_file_write(ctx, data, length, path);
