@@ -1548,9 +1548,10 @@
         uses.</t>
 
         <t>{token-attributes} is a sequence of name=value pairs, separated
-        by a ';' character.  Names are not allowed to contain either '='
-        or ';'.  Values MAY contain binary data, but MUST escape any ';'
-        in the data by adding an additional ';'.</t>
+        by a ';' character.  Names must be one or more ASCII alphanumeric
+        characters.  Values MAY contain arbitrary binary data, but MUST
+        escape any ';' in the data by adding an additional ';' before
+        it.</t>
 
         <figure>
           <preamble>For example, if we had the following names and
