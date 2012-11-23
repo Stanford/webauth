@@ -36,15 +36,15 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.01';
 
 # Accessor methods.
-sub subject         ($;$) { my $t = shift; $t->_attr ('subject',         @_) }
-sub authz_subject   ($;$) { my $t = shift; $t->_attr ('authz_subject',   @_) }
-sub auth            ($;$) { my $t = shift; $t->_attr ('auth',            @_) }
-sub auth_data       ($;$) { my $t = shift; $t->_attr ('auth_data',       @_) }
-sub initial_factors ($;$) { my $t = shift; $t->_attr ('initial_factors', @_) }
-sub session_factors ($;$) { my $t = shift; $t->_attr ('session_factors', @_) }
-sub loa             ($;$) { my $t = shift; $t->_attr ('loa',             @_) }
-sub creation        ($;$) { my $t = shift; $t->_attr ('creation',        @_) }
-sub expiration      ($;$) { my $t = shift; $t->_attr ('expiration',      @_) }
+sub subject         { my $t = shift; $t->_attr ('subject',         @_) }
+sub authz_subject   { my $t = shift; $t->_attr ('authz_subject',   @_) }
+sub auth            { my $t = shift; $t->_attr ('auth',            @_) }
+sub auth_data       { my $t = shift; $t->_attr ('auth_data',       @_) }
+sub initial_factors { my $t = shift; $t->_attr ('initial_factors', @_) }
+sub session_factors { my $t = shift; $t->_attr ('session_factors', @_) }
+sub loa             { my $t = shift; $t->_attr ('loa',             @_) }
+sub creation        { my $t = shift; $t->_attr ('creation',        @_) }
+sub expiration      { my $t = shift; $t->_attr ('expiration',      @_) }
 
 1;
 

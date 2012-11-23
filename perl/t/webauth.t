@@ -17,7 +17,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(3.00 :const);
 use WebAuth::Key ();
 
-BEGIN { plan tests => 30 }
+BEGIN { plan tests => 31 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
@@ -86,3 +86,10 @@ eval {
     unlink ('webauth_keyring2') if -f 'webauth_keyring2';
 };
 is ($@, '', 'No unexpected exceptions');
+
+# Check that Perl throws an error if we call an API function with the wrong
+# number of arguments.
+my $wa = WebAuth->new;
+my $key = eval { $wa->key_create (WA_KEY_AES) };
+like ($@, qr{ \A Usage: }xms,
+      'Usage exception for insufficient arguments to key_create');

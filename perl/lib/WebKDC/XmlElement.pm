@@ -34,7 +34,7 @@ use XML::Parser ();
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.01';
+    $VERSION = '1.02';
 }
 
 # An internaml method to convert the tree returned by XML::Parse into a tree
@@ -123,17 +123,17 @@ sub new {
 # Shared code for all simple accessor methods.  Takes the object, the
 # attribute name, and the value.  Sets the value if one was given, and returns
 # the current value of that attribute.
-sub _attr ($$;$) {
+sub _attr {
     my ($self, $attr, $value) = @_;
     $self->{$attr} = $value if defined ($value);
     return $self->{$attr};
 }
 
 # Simple accessor functions.
-sub attrs    ($;$) { my $e = shift; $e->_attr ('attrs',    @_) };
-sub children ($;$) { my $e = shift; $e->_attr ('children', @_) };
-sub content  ($;$) { my $e = shift; $e->_attr ('content',  @_) };
-sub name     ($;$) { my $e = shift; $e->_attr ('name',     @_) };
+sub attrs    { my $e = shift; $e->_attr ('attrs',    @_) };
+sub children { my $e = shift; $e->_attr ('children', @_) };
+sub content  { my $e = shift; $e->_attr ('content',  @_) };
+sub name     { my $e = shift; $e->_attr ('name',     @_) };
 
 # Returns the content trimmed of whitespace.
 sub content_trimmed {

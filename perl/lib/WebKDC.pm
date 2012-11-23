@@ -84,14 +84,14 @@ our %pec_mapping = (
 # Get a keyring from the configured WebLogin keyring path.  This used to
 # cache, but we have to tie the lifetime to the WebAuth context, so it's not
 # easy to cache.
-sub get_keyring ($) {
+sub get_keyring {
     my ($wa) = @_;
     return WebAuth::Keyring->read ($wa, $WebKDC::Config::KEYRING_PATH);
 }
 
 # Throw a WebKDCException with the given error code and error message and
 # optional protocol error code and data
-sub throw ($$;$$) {
+sub throw {
     my ($code, $error, $pec, $data) = @_;
     die WebKDC::WebKDCException->new ($code, $error, $pec, $data);
 }
@@ -116,7 +116,7 @@ sub get_child_value {
 #
 # Returns the status code, the exception (if any), the token (on success), and
 # the subject (on success).
-sub make_proxy_token_request ($$) {
+sub make_proxy_token_request {
     my ($req, $tgt) = @_;
     my ($token, $subject);
     ($token, $subject) = eval { WebKDC::proxy_token_request ($req, $tgt) };
@@ -132,7 +132,7 @@ sub make_proxy_token_request ($$) {
 
 # Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
 # on success.  Returns a status code and the exception as a list.
-sub make_request_token_request ($$) {
+sub make_request_token_request {
     my ($req, $resp) = @_;
     eval { WebKDC::request_token_request($req, $resp) };
     my $e = $@;
@@ -147,7 +147,7 @@ sub make_request_token_request ($$) {
 
 # Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  Throws an exception on failure.
-sub proxy_token_request ($$) {
+sub proxy_token_request {
     my ($req, $tgt) = @_;
 
     # Build the XML request.
@@ -196,7 +196,7 @@ sub proxy_token_request ($$) {
 
 # Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
 # on success.  Throws an exception on failure.
-sub request_token_request ($$) {
+sub request_token_request {
     my ($wreq, $wresp) = @_;
     my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
     my $request_token = $wreq->request_token;

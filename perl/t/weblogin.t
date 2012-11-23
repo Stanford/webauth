@@ -30,7 +30,7 @@ mkdir ('./t/tmp');
 our ($TEST_STATUS, $TEST_ERROR);
 package WebKDC;
 no warnings 'redefine';
-sub make_request_token_request ($$) {
+sub make_request_token_request {
     return ($TEST_STATUS, $TEST_ERROR);
 }
 use warnings 'redefine';

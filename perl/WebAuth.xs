@@ -346,8 +346,6 @@ webauth_croak(struct webauth_context *ctx, const char *detail, int s)
 
 MODULE = WebAuth        PACKAGE = WebAuth    PREFIX = webauth_
 
-PROTOTYPES: ENABLE
-
 
 # Generate all the constant subs for all the exported WebAuth constants.
 BOOT:
@@ -432,7 +430,6 @@ BOOT:
 WebAuth
 new(class)
     const char *class
-  PROTOTYPE: ;$
   PREINIT:
     struct webauth_context *ctx;
     int status;
@@ -461,7 +458,6 @@ const char *
 webauth_error_message(self, status)
     WebAuth self
     int status
-  PROTOTYPE: $$
   CODE:
     RETVAL = webauth_error_message(self, status);
   OUTPUT:
@@ -474,7 +470,6 @@ key_create(self, type, size, key_material = NULL)
     enum webauth_key_type type
     enum webauth_key_size size
     const unsigned char *key_material
-  PROTOTYPE: $$$;$
   PREINIT:
     struct webauth_key *key;
     int status;
@@ -493,7 +488,6 @@ WebAuth::Keyring
 keyring_new(self, ks)
     WebAuth self
     SV *ks
-  PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
   CODE:
@@ -520,7 +514,6 @@ WebAuth::Keyring
 keyring_decode(self, data)
     WebAuth self
     SV *data
-  PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
     int status;
@@ -546,7 +539,6 @@ WebAuth::Keyring
 keyring_read(self, file)
     WebAuth self
     const char *file
-  PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
     int status;
@@ -570,7 +562,6 @@ token_decode(self, input, ring)
     WebAuth self
     SV *input
     WebAuth::Keyring ring
-  PROTOTYPE: $$$
   PREINIT:
     const char *encoded;
     struct webauth_token *token;
@@ -650,7 +641,6 @@ token_decode(self, input, ring)
 WebAuth::Krb5
 krb5_new(self)
     WebAuth self
-  PROTOTYPE: $
   PREINIT:
     struct webauth_krb5 *kc = NULL;
     WebAuth__Krb5 krb5;
@@ -676,7 +666,6 @@ MODULE = WebAuth  PACKAGE = WebAuth::Key
 enum webauth_key_type
 type(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->type;
   OUTPUT:
@@ -685,7 +674,6 @@ type(self)
 enum webauth_key_size
 length(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->length;
   OUTPUT:
@@ -694,7 +682,6 @@ length(self)
 SV *
 data(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = newSVpvn((const void *) self->data, self->length);
   OUTPUT:
@@ -706,7 +693,6 @@ MODULE = WebAuth  PACKAGE = WebAuth::Keyring
 void
 DESTROY(self)
     WebAuth::Keyring self
-  PROTOTYPE: $
   CODE:
     free(self);
 
@@ -717,7 +703,6 @@ add(self, creation, valid_after, key)
     time_t creation
     time_t valid_after
     WebAuth::Key key
-  PROTOTYPE: $$$$
   PREINIT:
     int s;
   PPCODE:
@@ -732,7 +717,6 @@ best_key(self, usage, hint)
     WebAuth::Keyring self
     enum webauth_key_usage usage
     time_t hint
-  PROTOTYPE: $$$
   PREINIT:
     const struct webauth_key *key;
     int s;
@@ -753,7 +737,6 @@ best_key(self, usage, hint)
 SV *
 encode(self)
     WebAuth::Keyring self
-  PROTOTYPE: $$
   PREINIT:
     int s;
     char *data;
@@ -772,7 +755,6 @@ encode(self)
 void
 entries(self)
     WebAuth::Keyring self
-  PROTOTYPE: $
   PREINIT:
     struct webauth_keyring *ring;
   PPCODE:
@@ -802,7 +784,6 @@ void
 remove(self, n)
     WebAuth::Keyring self
     size_t n
-  PROTOTYPE: $$
   PREINIT:
     int s;
   PPCODE:
@@ -818,7 +799,6 @@ void
 write(self, path)
     WebAuth::Keyring self
     char *path
-  PROTOTYPE: $$
   PREINIT:
     int s;
   PPCODE:
@@ -835,7 +815,6 @@ MODULE = WebAuth        PACKAGE = WebAuth::KeyringEntry
 time_t
 creation(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->creation;
   OUTPUT:
@@ -845,7 +824,6 @@ creation(self)
 time_t
 valid_after(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->valid_after;
   OUTPUT:
@@ -855,7 +833,6 @@ valid_after(self)
 WebAuth::Key
 key(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->key;
   OUTPUT:
@@ -867,7 +844,6 @@ MODULE = WebAuth  PACKAGE = WebAuth::Krb5
 void
 DESTROY(self)
     WebAuth::Krb5 self
-  PROTOTYPE: $
   CODE:
 {
     webauth_krb5_free(self->ctx, self->kc);
@@ -879,7 +855,6 @@ void
 init_via_cache(self, cache = NULL)
     WebAuth::Krb5 self
     const char *cache
-  PROTOTYPE: $;$
   PREINIT:
     int status;
   CODE:
@@ -896,7 +871,6 @@ init_via_keytab(self, keytab, server = NULL, cache = NULL)
     const char *keytab
     const char *server
     const char *cache
-  PROTOTYPE: $$;$$
   PREINIT:
     int status;
   CODE:
@@ -920,7 +894,6 @@ init_via_password(self, username, password, principal = NULL, keytab = NULL, \
     const char *keytab
     const char *server
     const char *cache
-  PROTOTYPE: $$$;$$$$
   PREINIT:
     char *servername;
     int status;
@@ -948,7 +921,6 @@ void
 export_cred(self, principal = NULL)
     WebAuth::Krb5 self
     const char *principal
-  PROTOTYPE: $;$
   PPCODE:
 {
     void *cred;
@@ -984,7 +956,6 @@ import_cred(self, cred, cache = NULL)
     WebAuth::Krb5 self
     SV *cred
     const char *cache
-  PROTOTYPE: $$;$
   PREINIT:
     const void *data;
     size_t length;
@@ -1003,7 +974,6 @@ char *
 get_principal(self, canon = 0)
     WebAuth::Krb5 self
     enum webauth_krb5_canon canon
-  PROTOTYPE: $;$
   PREINIT:
     int status;
     char *principal;
@@ -1024,7 +994,6 @@ make_auth(self, server, data = NULL)
     WebAuth::Krb5 self
     const char *server
     SV *data
-  PROTOTYPE: $$;$
   PPCODE:
 {
     void *req, *out_data;
@@ -1070,7 +1039,6 @@ read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
     const char *server
     enum webauth_krb5_canon canon
     SV *data
-  PROTOTYPE: $$$;$$$
   PPCODE:
 {
     const void *req;
@@ -1114,7 +1082,6 @@ void
 change_password(self, password)
     WebAuth::Krb5 self
     const char *password
-  PROTOTYPE: $$
   PREINIT:
     int status;
   CODE:
@@ -1131,7 +1098,6 @@ const char *
 encode(self, ring)
     SV *self
     WebAuth::Keyring ring
-  PROTOTYPE: $$
   PREINIT:
     HV *hash;
     SV **ctx_sv;

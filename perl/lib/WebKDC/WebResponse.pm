@@ -46,30 +46,21 @@ sub new {
 # Shared code for all simple accessor methods.  Takes the object, the
 # attribute name, and the value.  Sets the value if one was given, and returns
 # the current value of that attribute.
-sub _attr ($$;$) {
+sub _attr {
     my ($self, $attr, $value) = @_;
     $self->{$attr} = $value if defined ($value);
     return $self->{$attr};
 }
 
 # Simple accessor methods.
-sub app_state            ($;$) { my $r = shift; $r->_attr ('app_state',  @_) }
-sub login_canceled_token ($;$) { my $r = shift; $r->_attr ('lc_token',   @_) }
-sub return_url           ($;$) { my $r = shift; $r->_attr ('return_url', @_) }
-sub subject              ($;$) { my $r = shift; $r->_attr ('subject',    @_) }
-sub authz_subject ($;$) {
-    my $r = shift;
-    $r->_attr ('authz_subject', @_);
-}
-sub requester_subject ($;$) {
-    my $r = shift;
-    $r->_attr ('requester_subject', @_);
-}
-sub response_token ($;$) {
-    my $r = shift;
-    $r->_attr ('response_token', @_);
-}
-sub response_token_type ($;$) {
+sub app_state            { my $r = shift; $r->_attr ('app_state',         @_) }
+sub login_canceled_token { my $r = shift; $r->_attr ('lc_token',          @_) }
+sub return_url           { my $r = shift; $r->_attr ('return_url',        @_) }
+sub subject              { my $r = shift; $r->_attr ('subject',           @_) }
+sub authz_subject        { my $r = shift; $r->_attr ('authz_subject',     @_) }
+sub requester_subject    { my $r = shift; $r->_attr ('requester_subject', @_) }
+sub response_token       { my $r = shift; $r->_attr ('response_token',    @_) }
+sub response_token_type {
     my $r = shift;
     $r->_attr ('response_token_type', @_);
 }

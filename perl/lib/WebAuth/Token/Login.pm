@@ -33,13 +33,13 @@ use base qw(WebAuth::Token);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # Accessor methods.
-sub username ($;$) { my $t = shift; $t->_attr ('username', @_) }
-sub password ($;$) { my $t = shift; $t->_attr ('password', @_) }
-sub otp      ($;$) { my $t = shift; $t->_attr ('otp',      @_) }
-sub creation ($;$) { my $t = shift; $t->_attr ('creation', @_) }
+sub username { my $t = shift; $t->_attr ('username', @_) }
+sub password { my $t = shift; $t->_attr ('password', @_) }
+sub otp      { my $t = shift; $t->_attr ('otp',      @_) }
+sub creation { my $t = shift; $t->_attr ('creation', @_) }
 
 1;
 

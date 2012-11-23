@@ -39,12 +39,12 @@ use WebAuth ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 # Constructor.  Takes a WebAuth context and either a capacity or a key to wrap
 # a keyring around.  Note that subclasses are not supported since the object
 # is created by the XS module and will always be a WebAuth::Keyring.
-sub new ($$$) {
+sub new {
     my ($type, $ctx, $key_or_size) = @_;
     if ($type ne 'WebAuth::Keyring') {
         croak ('subclassing of WebAuth::Keyring is not supported');
@@ -59,7 +59,7 @@ sub new ($$$) {
 # WebAuth context and the encoded data.  As above, subclasses are not
 # supported since the object is created by the XS module and will always be a
 # WebAuth::Keyring.
-sub decode ($$$) {
+sub decode {
     my ($type, $ctx, $data) = @_;
     if ($type ne 'WebAuth::Keyring') {
         croak ('subclassing of WebAuth::Keyring is not supported');
@@ -74,7 +74,7 @@ sub decode ($$$) {
 # and the name of the file to read.  As above, subclasses are not supported
 # since the object is created by the XS module and will always be a
 # WebAuth::Keyring.
-sub read ($$$) {
+sub read {
     my ($type, $ctx, $file) = @_;
     if ($type ne 'WebAuth::Keyring') {
         croak ('subclassing of WebAuth::Keyring is not supported');
