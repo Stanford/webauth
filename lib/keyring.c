@@ -171,8 +171,7 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
      */
     *output = NULL;
     memset(&data, 0, sizeof(data));
-    status = wai_decode(ctx, ctx->pool, wai_keyring_encoding, input, length,
-                        &data);
+    status = wai_decode(ctx, wai_keyring_encoding, input, length, &data);
     if (status != WA_ERR_NONE)
         return status;
     if (data.version != KEYRING_VERSION) {

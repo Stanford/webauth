@@ -381,12 +381,10 @@ bool wai_buffer_find_string(struct buffer *, const char *, size_t start,
 
 /*
  * Decode the binary attribute representation into the struct pointed to by
- * data following the provided rules.  Takes a separate pool to use for memory
- * allocation.
+ * data following the provided rules.
  */
-int wai_decode(struct webauth_context *, apr_pool_t *,
-               const struct wai_encoding *, const void *input, size_t,
-               void *data)
+int wai_decode(struct webauth_context *, const struct wai_encoding *,
+               const void *input, size_t, void *data)
     __attribute__((__nonnull__));
 
 /*

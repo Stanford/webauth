@@ -303,7 +303,7 @@ main(void)
 
     /* Test decoding error cases for error tokens. */
     check_error(ctx, WA_TOKEN_ERROR, "error-code", ring, WA_ERR_CORRUPT,
-                "decoding code");
+                "invalid encoded number");
     check_error(ctx, WA_TOKEN_ERROR, "id-krb5", ring, WA_ERR_CORRUPT,
                 "wrong token type id, expected error");
 

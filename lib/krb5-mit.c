@@ -126,8 +126,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * struct.
      */
     memset(&data, 0, sizeof(data));
-    status = wai_decode(ctx, kc->pool, wai_krb5_cred_encoding, input, length,
-                        &data);
+    status = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
     if (status != WA_ERR_NONE) {
         webauth_attr_list_free(alist);
         return status;
