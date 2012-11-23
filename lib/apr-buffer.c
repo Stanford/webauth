@@ -146,7 +146,12 @@ wai_buffer_find_string(struct buffer *buffer, const char *string,
     char *terminator, *data;
     size_t length;
 
+    /* If there isn't room for the search string, always return false. */
     length = strlen(string);
+    if (buffer->size < length || start > buffer->size - length)
+        return false;
+
+    /* Check each possible match point by searching for the first octet. */
     do {
         data = buffer->data + start;
         terminator = memchr(data, string[0], buffer->used - start);
@@ -157,6 +162,8 @@ wai_buffer_find_string(struct buffer *buffer, const char *string,
             return false;
         start++;
     } while (memcmp(terminator, string, length) != 0);
+
+    /* Success.  Return the offset. */
     *offset = start - 1;
     return true;
 }
