@@ -30,10 +30,10 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/webkdc.conf perl/t/exception.t perl/t/krb5.t	    \
 	perl/t/lib/Util.pm perl/t/keyring.t perl/t/misc.t		    \
 	perl/t/page-pwchange.t perl/t/pending-expire.t			    \
-	perl/t/pod-spelling.t perl/t/pod.t perl/t/token-decode.t	    \
-	perl/t/token-encode.t perl/t/web-request.t perl/t/web-response.t    \
-	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t	    \
-	perl/typemap
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/strict.t		    \
+	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
+	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
+	perl/t/weblogin.t perl/t/xml.t perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \

@@ -7,11 +7,13 @@
 # RRA_MAINTAINER_TESTS is set, since spelling dictionaries vary too much
 # between environments.
 #
-# Copyright 2008, 2009 Russ Allbery <rra@stanford.edu>
+# Copyright 2008, 2009, 2012 Russ Allbery <rra@stanford.edu>
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
+
 use Test::More;
 
 # Skip all spelling tests unless the maintainer environment variable is set.
