@@ -21,7 +21,6 @@ BEGIN { plan tests => 30 }
 
 # Do all tests in an eval block to catch otherwise-uncaught exceptions.
 eval {
-    sub compareHashes;
     my ($len, $output);
     my $wa = WebAuth->new;
 
@@ -87,37 +86,3 @@ eval {
     unlink ('webauth_keyring2') if -f 'webauth_keyring2';
 };
 is ($@, '', 'No unexpected exceptions');
-
-# A short hash comparison function in order to verify that hash output is as
-# expected.
-sub compareHashes {
-    my $a = shift;
-    my $b = shift;
-
-    my @akeys = sort keys %$a;
-    my @bkeys = sort keys %$b;
-
-    my $an = scalar @akeys;
-    my $bn = scalar @bkeys;
-
-    my ($i, $key);
-
-    if ($an != $bn) {
-	return 0;
-    }
-
-    # Compare keys
-    for ($i=0; $i < $an; $i++) {
-	if ($akeys[$i] ne $bkeys[$i]) {
-	    return 0;
-	}
-    }
-
-    # Compare values
-    foreach $key (@akeys) {
-	if ($$a{$key} ne $$b{$key}) {
-	    return 0;
-	}
-    }
-    return 1;
-}
