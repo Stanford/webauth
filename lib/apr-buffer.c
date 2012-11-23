@@ -51,7 +51,7 @@ wai_buffer_resize(struct buffer *buffer, size_t size)
 
     if (size < buffer->size)
         return;
-    buffer->size = (size + 64) & ~64UL;
+    buffer->size = (size + 63) & ~63UL;
     data = apr_palloc(buffer->pool, buffer->size);
     if (buffer->data != NULL)
         memcpy(data, buffer->data, buffer->used);
