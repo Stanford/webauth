@@ -13,6 +13,7 @@ lib/webkdc-krb
 lib/webkdc-login
 lib/webkdc-mf
 perl/critic
+perl/strict
 portable/asprintf
 portable/snprintf
 portable/mkstemp

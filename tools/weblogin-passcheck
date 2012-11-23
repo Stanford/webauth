@@ -17,6 +17,7 @@
 ##############################################################################
 
 use strict;
+use warnings;
 
 use Date::Parse qw(str2time);
 use Getopt::Long qw(GetOptions);

@@ -56,8 +56,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	tests/config/README tests/data/cmd-webkdc tests/data/id.acl	    \
 	tests/data/keyring tests/data/tokens.conf tests/data/tokens	    \
 	tests/data/xml tests/mod_webauth tests/perl/critic-t		    \
-	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
-	tools/wa_keyring.pod tools/webauth-make-tokens			    \
+	tests/perl/strict-t tests/tap/libtap.sh tests/tools/wa_keyring-t    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/webauth-make-tokens \
 	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
 	weblogin/images/error.xcf weblogin/images/help.xcf		    \
 	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
