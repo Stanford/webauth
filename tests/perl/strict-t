@@ -17,10 +17,12 @@ use warnings;
 use Test::More;
 
 # Skip tests if Test::Strict is not installed.
-eval { use Test::Strict };
+eval { require Test::Strict };
 if ($@) {
     plan skip_all => 'Test::Strict required to test Perl scripts';
+    $Test::Strict::TEST_WARNINGS = 0; # suppress warning
 }
+Test::Strict->import;
 
 # Convert a directory name, relative to the parent of SOURCE, into a full
 # path.
