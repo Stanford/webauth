@@ -108,9 +108,9 @@ BEGIN {
                        WA_KRB5_CANON_LOCAL
                        WA_KRB5_CANON_STRIP);
 
-    our %EXPORT_TAGS = ('const' => [ @constants ]);
-    our @EXPORT_OK = (@{ $EXPORT_TAGS{'const'} });
-    our @EXPORT = ();
+    %EXPORT_TAGS = ('const' => [ @constants ]);
+    @EXPORT_OK = (@{ $EXPORT_TAGS{'const'} });
+    @EXPORT = ();
 }
 
 # Our C code also creates WebAuth::Token::* objects and throws
