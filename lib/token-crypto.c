@@ -215,13 +215,14 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
               const struct webauth_key *key)
 {
     unsigned char computed_hmac[T_HMAC_S];
-    size_t plen, i;
+    size_t needed, plen, i;
     int status;
     unsigned char *hmac;
     AES_KEY aes_key;
 
     /* Basic sanity check. */
-    if (length < T_HINT_S + T_NONCE_S + T_HMAC_S + AES_BLOCK_SIZE) {
+    needed = T_HINT_S + T_NONCE_S + T_HMAC_S;
+    if (length < needed + needed % AES_BLOCK_SIZE) {
         wai_error_set(ctx, WA_ERR_CORRUPT, "token too short while decoding");
         return WA_ERR_CORRUPT;
     }
