@@ -335,7 +335,7 @@ main(void)
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     request.authz_subject = "otheruser";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Login for proxy token returns success");
+    is_int(WA_ERR_NONE, status, "Login with identity ACL returns success");
     is_int(0, response->login_error, "...with no error");
     is_string(NULL, response->login_message, "...and no message");
     is_string(krbconf->userprinc, response->subject, "...subject is correct");
@@ -357,8 +357,7 @@ main(void)
         is_string("krb5", token->token.proxy.type,
                   "...result proxy type is right");
         ok(token->token.proxy.creation - now < 10, "...and creation is sane");
-        is_int(expiration, token->token.proxy.expiration,
-               "...and expiration matches the expiration of the proxy token");
+        ok(token->token.proxy.expiration > now, "...and expiration is sane");
     }
 
     /* Clean up authorization identity. */
