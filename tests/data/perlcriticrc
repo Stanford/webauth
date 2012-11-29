@@ -5,7 +5,10 @@
 # reproducible test results.
   
 severity = 1
-verbose  = %f:%l:%c: [%p] %m (Severity: %s)\n
+verbose  = %f:%l:%c: [%p] %m (%e, Severity: %s)\n
+
+# This is handled with a separate test case that uses Test::Spelling.
+[-Documentation::PodSpelling]
 
 # The POD sections Perl::Critic wants are incompatible with the POD template
 # from perlpodstyle, which is what I use for my POD documentation.
@@ -23,6 +26,13 @@ verbose  = %f:%l:%c: [%p] %m (Severity: %s)\n
 # Nice idea, but it *utterly* confuses cperl-mode when used with braces, so
 # it's more trouble than it's worth.
 [-RegularExpressions::ProhibitEscapedMetacharacters]
+
+# Literal 0777 means to use the umask for permissions when creating files.
+# Using a constant for this just makes it more obscure.  0777 is 511 in
+# decimal.
+[ValuesAndExpressions::ProhibitMagicNumbers]
+allowed_types  = Octal
+allowed_values = 0 1 2 511
 
 # use English was one of the worst ideas in the history of Perl.  It makes the
 # code slightly more readable for amateurs at the cost of confusing
