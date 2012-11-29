@@ -1,12 +1,6 @@
 #!/usr/bin/perl
 #
-# encoding-rules -- Generate encoding rules for WebAuth data.
-#
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
-#     The Board of Trustees of the Leland Stanford Junior University
-#
-# See LICENSE for licensing terms.
+# Generate encoding rules for WebAuth data.
 
 use 5.010;
 
