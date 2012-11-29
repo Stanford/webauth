@@ -5,6 +5,7 @@ lib/keyring
 lib/keys
 lib/krb5
 lib/krb5-tgt
+lib/token-crypto
 lib/token-decode
 lib/token-encode
 lib/userinfo

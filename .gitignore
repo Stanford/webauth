@@ -53,6 +53,7 @@
 /tests/lib/krb5-t
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
+/tests/lib/token-crypto-t
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
 /tests/lib/userinfo-t

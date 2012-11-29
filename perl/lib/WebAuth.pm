@@ -136,7 +136,7 @@ __END__
 
 =for stopwords
 WebAuth API keyring keyrings KEYRING CTX ATTRS login Allbery const
-Kerberos TGT SPRINC Canonicalization Kerberos-related decrypt
+Kerberos TGT SPRINC Canonicalization Kerberos-related decrypt decrypted
 
 =head1 NAME
 
@@ -299,6 +299,27 @@ possible token object types.
 Callers will normally want to check via isa() whether the returned token
 is of the type that the caller expected.  Not performing that check can
 lead to security issues.
+
+=item token_decrypt (INPUT, KEYRING)
+
+Decrypt the input string, which should be raw encrypted token data (not
+base64-encoded), using the provided keyring and return the decrypted data.
+
+This provides access to the low-level token decryption routine and should
+not normally be used.  It's primarily available to aid in constructing
+test suites.  token_decode() should normally be used instead.
+
+=item token_encrypt (INPUT, KEYRING)
+
+Encrypt the input string, which should be raw token attribute data, using
+the provided keyring and return the encrypted data.  The encryption key
+used will be the one returned by the best_key() method of WebAuth::Keyring
+on that KEYRING.
+
+This provides access to the low-level token encryption routine and should
+not normally be used.  It's primarily available to aid in constructing
+test suites.  A WebAuth::Token subclass and its encode() method should
+normally be used instead.
 
 =back
 

@@ -25,6 +25,13 @@ WebAuth 4.4.0 (unreleased)
     to avoid serious security vulnerabilities, but there are some specific
     situations where it may be necessary to turn it off.
 
+    Add webauth_token_encrypt and webauth_token_decrypt to the public API,
+    including the Perl API.  These functions provide access to the
+    low-level token encryption and decryption routines.  Normally, the
+    high-level webauth_token_{encode,decode} functions will be used
+    instead, but these functions are useful for constructing low-level
+    tests.
+
     The webauth_base64_* functions have been removed from libwebauth, as
     have the corresponding Perl bindings.  For C programs, use the
     apr_base64_* functions from APR-Util instead.  For Perl programs, use

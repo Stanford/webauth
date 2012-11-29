@@ -15,8 +15,9 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 159;
+use Test::More tests => 164;
 
+use MIME::Base64 qw(encode_base64);
 use WebAuth ();
 BEGIN {
     use_ok ('WebAuth::Token');
@@ -72,3 +73,17 @@ isa_ok ($object, 'WebAuth::Token');
 isa_ok ($object, 'WebAuth::Token::App');
 ok (defined ($object->{ctx}), '... and has a context');
 is (ref ($object->{ctx}), 'WebAuth', '... which is the correct type');
+
+# Build a token manually and test that it decodes properly, and test
+# token_encrypt in the process.
+my $now = time;
+my $creation = pack ('N', $now);
+my $expiration = pack ('N', $now + 60);
+my $attrs = "t=app;s=test;ct=$creation;et=$expiration;";
+my $token = encode_base64($wa->token_encrypt ($attrs, $keyring), '');
+ok ($token, 'Encrypting a token works');
+my $app = WebAuth::Token->new ($wa, $token, $keyring);
+isa_ok ($app, 'WebAuth::Token::App');
+is ($app->subject, 'test', '... subject test');
+is ($app->creation, $now, "... creation $now");
+is ($app->expiration, $now + 60, '... expiration ' . ($now + 60));

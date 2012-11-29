@@ -342,33 +342,6 @@ int wai_token_encoding(struct webauth_context *, const struct webauth_token *,
                        const struct wai_encoding **, const void **)
     __attribute__((__nonnull__));
 
-/*
- * Encrypts an input buffer (normally encoded attributes) into a token, using
- * the key from the keyring that has the most recent valid valid_from time.
- * The encoded token will be stored in newly pool-allocated memory in the
- * provided output argument, with its length stored in output_len.
- *
- * Returns a WebAuth status code, which may be WA_ERR_BAD_KEY if no suitable
- * and valid encryption key could be found in the keyring.
- */
-int webauth_token_encrypt(struct webauth_context *, const void *input,
-                          size_t len, void **output, size_t *output_len,
-                          const struct webauth_keyring *)
-    __attribute__((__nonnull__));
-
-/*
- * Decrypts a token.  The best decryption key on the ring will be tried first,
- * and if that fails all the remaining keys will be tried.  Returns the
- * decrypted data in output and its length in output_len.
- *
- * Returns WA_ERR_NONE, WA_ERR_NO_MEM, WA_ERR_CORRUPT, WA_ERR_BAD_HMAC, or
- * WA_ERR_BAD_KEY.
- */
-int webauth_token_decrypt(struct webauth_context *, const void *input,
-                          size_t input_len, void **output, size_t *output_len,
-                          const struct webauth_keyring *)
-    __attribute__((__nonnull__));
-
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)
     __attribute__((__nonnull__));

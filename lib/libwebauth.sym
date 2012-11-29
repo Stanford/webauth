@@ -36,8 +36,10 @@ webauth_krb5_read_auth_data
 webauth_parse_interval
 webauth_token_decode
 webauth_token_decode_raw
+webauth_token_decrypt
 webauth_token_encode
 webauth_token_encode_raw
+webauth_token_encrypt
 webauth_token_type_code
 webauth_token_type_string
 webauth_user_config

@@ -557,6 +557,29 @@ keyring_read(self, file)
     RETVAL
 
 
+WebAuth::Krb5
+krb5_new(self)
+    WebAuth self
+  PREINIT:
+    struct webauth_krb5 *kc = NULL;
+    WebAuth__Krb5 krb5;
+    int status;
+    SV *output;
+  CODE:
+{
+    krb5 = malloc(sizeof(*krb5));
+    if (krb5 == NULL)
+        croak("cannot allocate memory");
+    status = webauth_krb5_new(self, &krb5->kc);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_krb5_new", status);
+    krb5->ctx = self;
+    RETVAL = krb5;
+}
+  OUTPUT:
+    RETVAL
+
+
 SV *
 token_decode(self, input, ring)
     WebAuth self
@@ -638,24 +661,49 @@ token_decode(self, input, ring)
     RETVAL
 
 
-WebAuth::Krb5
-krb5_new(self)
+SV *
+token_decrypt(self, input, ring)
     WebAuth self
+    SV *input
+    WebAuth::Keyring ring
   PREINIT:
-    struct webauth_krb5 *kc = NULL;
-    WebAuth__Krb5 krb5;
+    const void *encoded;
+    STRLEN length;
     int status;
-    SV *output;
+    void *output;
+    size_t outlen;
   CODE:
 {
-    krb5 = malloc(sizeof(*krb5));
-    if (krb5 == NULL)
-        croak("cannot allocate memory");
-    status = webauth_krb5_new(self, &krb5->kc);
+    encoded = SvPV(input, length);
+    status = webauth_token_decrypt(self, encoded, length, &output, &outlen,
+                                   ring->ring);
     if (status != WA_ERR_NONE)
-        webauth_croak(self, "webauth_krb5_new", status);
-    krb5->ctx = self;
-    RETVAL = krb5;
+        webauth_croak(self, "webauth_token_decrypt", status);
+    RETVAL = newSVpvn(output, outlen);
+}
+  OUTPUT:
+    RETVAL
+
+
+SV *
+token_encrypt(self, input, ring)
+    WebAuth self
+    SV *input
+    WebAuth::Keyring ring
+  PREINIT:
+    const void *data;
+    STRLEN length;
+    int status;
+    void *output;
+    size_t outlen;
+  CODE:
+{
+    data = SvPV(input, length);
+    status = webauth_token_encrypt(self, data, length, &output, &outlen,
+                                   ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_token_encrypt", status);
+    RETVAL = newSVpvn(output, outlen);
 }
   OUTPUT:
     RETVAL
@@ -671,6 +719,7 @@ type(self)
   OUTPUT:
     RETVAL
 
+
 enum webauth_key_size
 length(self)
     WebAuth::Key self
@@ -678,6 +727,7 @@ length(self)
     RETVAL = self->length;
   OUTPUT:
     RETVAL
+
 
 SV *
 data(self)
