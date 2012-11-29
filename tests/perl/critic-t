@@ -17,7 +17,7 @@ use warnings;
 use Test::More;
 
 # Files to test.
-my @FILES = qw(lib/encoding-rules);
+my @FILES = qw(lib/encoding-rules tools/webauth-make-tokens);
 
 # Skip tests unless we're running the test suite in maintainer mode.
 plan skip_all => 'Coding style tests only run for maintainer'
@@ -49,4 +49,6 @@ $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
 # Import the configuration file and run Perl::Critic.
 my $profile = "$ENV{SOURCE}/data/perlcriticrc";
 Test::Perl::Critic->import(-profile => $profile);
-critic_ok(@paths);
+for my $path (@paths) {
+    critic_ok($path);
+}
