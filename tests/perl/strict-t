@@ -14,37 +14,43 @@
 use strict;
 use warnings;
 
+use File::Spec;
 use Test::More;
 
 # Skip tests if Test::Strict is not installed.
-eval { require Test::Strict };
-if ($@) {
+if (!eval { require Test::Strict }) {
     plan skip_all => 'Test::Strict required to test Perl scripts';
-    $Test::Strict::TEST_WARNINGS = 0; # suppress warning
+    $Test::Strict::TEST_WARNINGS = 0;    # suppress warning
 }
 Test::Strict->import;
 
-# Convert a directory name, relative to the parent of SOURCE, into a full
-# path.
+# Bail if SOURCE is not set, and determine the directory that all further
+# file names will be relative to.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
+}
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $BASE = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs));
+
+# Convert a file name, relative to SOURCE/.., into a full path.
 sub path_of_dir {
     my ($dir) = @_;
-    my $path = $ENV{SOURCE} . '/../' . $dir;
-    $path =~ s{ [^/]+ / .. / }{}xms;
-    return $path;
+    my $base = File::Spec->updir($ENV{SOURCE});
+    return File::Spec->catdir($base, $dir);
 }
 
 # Build the list of directories to test.  We test all Perl scripts in all
 # top-level directories except those in perl, since the files under perl
 # are trested as a Perl module distribution and have their own standalone
 # test suite.
-if (!$ENV{SOURCE}) {
-    BAIL_OUT('SOURCE not defined (run under runtests)');
-}
-opendir my $root, $ENV{SOURCE} . '/..'
-    or die "Cannot open $ENV{SOURCE}/..";
-my @dirs = grep { -d $_ && !m{ \A [.] }xms && $_ ne 'perl' } readdir $root;
+opendir my $root, File::Spec->updir($ENV{SOURCE})
+  or BAIL_OUT('Cannot open ' . File::Spec->updir($ENV{SOURCE}));
+my @dirs = grep { -d $_ && $_ ne 'perl' } readdir $root;
 closedir $root;
-my @paths = map { path_of_dir($_) } @dirs;
+@dirs = File::Spec->no_upwards(@dirs);
+my @paths = map { File::Spec->catdir($BASE, $_) } @dirs;
 
 # Finally, run the actual tests.  We also want to check use warnings.
 $Test::Strict::TEST_WARNINGS = 1;

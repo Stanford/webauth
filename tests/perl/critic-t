@@ -14,37 +14,45 @@
 use strict;
 use warnings;
 
+use File::Spec;
 use Test::More;
 
 # Files to test.
-my @FILES = qw(lib/encoding-rules tools/webauth-make-tokens);
+my @FILES = qw(
+  lib/encoding-rules
+  tests/perl/critic-t
+  tests/perl/strict-t
+  tools/webauth-make-tokens
+);
+
+# Bail if SOURCE is not set, and determine the directory that all further
+# file names will be relative to.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
+}
+my ($volume, $dirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @dirs = File::Spec->splitdir($dirs);
+pop @dirs;
+my $BASE = File::Spec->catpath($volume, File::Spec->catdir(@dirs));
 
 # Skip tests unless we're running the test suite in maintainer mode.
-plan skip_all => 'Coding style tests only run for maintainer'
-    if !$ENV{RRA_MAINTAINER_TESTS};
+if (!$ENV{RRA_MAINTAINER_TESTS}) {
+    plan skip_all => 'Coding style tests only run for maintainer';
+}
 
 # Skip tests if Test::Perl::Critic is not installed.
-eval { require Test::Perl::Critic };
-if ($@) {
+if (!eval { require Test::Perl::Critic }) {
     plan skip_all => 'Test::Perl::Critic required to test coding style';
 }
 
-# Convert a file name, relative to SOURCE, into a full path.
-sub path_of_file {
-    my ($file) = @_;
-    my $path = $ENV{SOURCE} . '/../' . $file;
-    $path =~ s{ [^/]+ / .. / }{}xms;
-    return $path;
-}
-
 # Build the list of files to test.
-my @paths = map { path_of_file($_) } @FILES;
+my @paths = map { File::Spec->catfile($BASE, $_) } @FILES;
 
 # Declare a plan, now that we know the list of files to check.
 plan tests => scalar @paths;
 
 # Force the embedded Perl::Tidy check to use the correct configuration.
-$ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
+local $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
 
 # Import the configuration file and run Perl::Critic.
 my $profile = "$ENV{SOURCE}/data/perlcriticrc";
