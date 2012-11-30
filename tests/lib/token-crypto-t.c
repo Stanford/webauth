@@ -59,8 +59,8 @@ main(void)
     size_t length, outlen;
     const char raw_data[] = { ';', ';', 0, ';', 't', '4', 1, 255 };
     const char app_raw[] =
-        "loa=\0\0\0\1;et=\177\377\377\320;san=c;s=testuser;ia=p;ct=N\2]\254;"
-        "lt=N\2]\312;t=app;";
+        "t=app;s=testuser;lt=N\2]\312;ia=p;san=c;loa=\0\0\0\1;ct=N\2]\254;"
+        "et=\177\377\377\320;";
 
     plan(10);
 

@@ -252,7 +252,7 @@ main(void)
     /* Test decoding error cases for app tokens. */
     check_error(ctx, WA_TOKEN_APP, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
                 "HMAC check failed while decrypting token");
-    check_error(ctx, WA_TOKEN_APP, "app-empty", ring, WA_ERR_CORRUPT,
+    check_error(ctx, WA_TOKEN_APP, "app-missing", ring, WA_ERR_CORRUPT,
                 "missing subject in app token");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
                 "expired at 1308871632");
@@ -285,10 +285,10 @@ main(void)
     }
 
     /* Test decoding error cases for cred tokens. */
-    check_error(ctx, WA_TOKEN_CRED, "cred-empty", ring, WA_ERR_CORRUPT,
+    check_error(ctx, WA_TOKEN_CRED, "cred-missing", ring, WA_ERR_CORRUPT,
                 "decoding subject");
-    check_error(ctx, WA_TOKEN_CRED, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_CRED, "cred-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type error, expected cred");
 
@@ -406,7 +406,7 @@ main(void)
     }
 
     /* Test decoding error cases for login tokens. */
-    check_error(ctx, WA_TOKEN_LOGIN, "login-empty", ring, WA_ERR_CORRUPT,
+    check_error(ctx, WA_TOKEN_LOGIN, "login-missing", ring, WA_ERR_CORRUPT,
                 "decoding creation");
     check_error(ctx, WA_TOKEN_LOGIN, "proxy-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type proxy, expected login");
@@ -444,10 +444,10 @@ main(void)
     }
 
     /* Test decoding error cases for proxy tokens. */
-    check_error(ctx, WA_TOKEN_PROXY, "proxy-empty", ring, WA_ERR_CORRUPT,
+    check_error(ctx, WA_TOKEN_PROXY, "proxy-missing", ring, WA_ERR_CORRUPT,
                 "decoding subject");
-    check_error(ctx, WA_TOKEN_PROXY, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_PROXY, "proxy-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
                 "wrong token type req, expected proxy");
 
@@ -569,13 +569,14 @@ main(void)
     }
 
     /* Test decoding error cases for webkdc-proxy tokens. */
-    check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-exp", ring,
+    check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-expired", ring,
                 WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app, expected webkdc-proxy");
 
     /* Test decoding of a webkdc-service token. */
-    result = check_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-ok", ring, 5);
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-ok",
+                          ring, 5);
     if (result != NULL) {
         service = &result->token.webkdc_service;
         is_string("krb5:service/foo@EXAMPLE.COM", service->subject,
@@ -588,7 +589,7 @@ main(void)
     }
 
     /* Test decoding error cases for webkdc-service tokens. */
-    check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-exp", ring,
+    check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-expired", ring,
                 WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type app, expected webkdc-service");
@@ -650,7 +651,7 @@ main(void)
         is_string("krb5:service/foo@EXAMPLE.COM", wkproxy->proxy_subject,
                   "...proxy subject");
     }
-    result = check_decode(ctx, WA_TOKEN_ANY, "service-ok", ring, 2);
+    result = check_decode(ctx, WA_TOKEN_ANY, "wkservice-ok", ring, 2);
     if (result != NULL) {
         is_int(WA_TOKEN_WEBKDC_SERVICE, result->type, "...with correct type");
         service = &result->token.webkdc_service;
