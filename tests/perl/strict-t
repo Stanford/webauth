@@ -17,6 +17,9 @@ use warnings;
 use File::Spec;
 use Test::More;
 
+# Top-level directories to ignore.
+my %IGNORE = map { $_ => 1 } qw(.git perl);
+
 # Skip tests if Test::Strict is not installed.
 if (!eval { require Test::Strict }) {
     plan skip_all => 'Test::Strict required to test Perl scripts';
@@ -34,20 +37,12 @@ my @rootdirs = File::Spec->splitdir($rootdirs);
 pop @rootdirs;
 my $BASE = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs));
 
-# Convert a file name, relative to SOURCE/.., into a full path.
-sub path_of_dir {
-    my ($dir) = @_;
-    my $base = File::Spec->updir($ENV{SOURCE});
-    return File::Spec->catdir($base, $dir);
-}
-
 # Build the list of directories to test.  We test all Perl scripts in all
 # top-level directories except those in perl, since the files under perl
 # are trested as a Perl module distribution and have their own standalone
 # test suite.
-opendir my $root, File::Spec->updir($ENV{SOURCE})
-  or BAIL_OUT('Cannot open ' . File::Spec->updir($ENV{SOURCE}));
-my @dirs = grep { -d $_ && $_ ne 'perl' } readdir $root;
+opendir my $root, $BASE or BAIL_OUT("Cannot open $BASE");
+my @dirs = grep { -d $_ && !$IGNORE{$_} } readdir $root;
 closedir $root;
 @dirs = File::Spec->no_upwards(@dirs);
 my @paths = map { File::Spec->catdir($BASE, $_) } @dirs;
