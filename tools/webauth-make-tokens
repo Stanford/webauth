@@ -21,8 +21,10 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(GetOptions);
+use File::Spec;
+use MIME::Base64 qw(decode_base64 encode_base64);
 use Readonly;
-use WebAuth;
+use WebAuth 3.06;
 use WebAuth::Keyring;
 use WebAuth::Token::App;
 use WebAuth::Token::Cred;
@@ -34,29 +36,47 @@ use WebAuth::Token::Request;
 use WebAuth::Token::WebKDCProxy;
 use WebAuth::Token::WebKDCService;
 
+# Expiration far into the future for tokens that shouldn't expire.
+Readonly my $LONG_EXPIRE => 2_147_483_600;
+
 # Will be loaded from the configuration.
 our %TOKENS_GOOD;
 our %TOKENS_ERROR;
 our %TOKENS_BAD;
 
-# Usage      : generate_token($wa, $ring, $class, \%attrs)
-# Purpose    : Given a token specification, create the encoded form
-# Returns    : The newly-created, encrypted token, and base64-encoded token
-# Parameters : $wa        - WebAuth object to use for token creation
-#              $ring      - Keyring to use for token creation
-#              $class     - WebAuth::Token::* class to create
-#              $attrs_ref - Reference to hash of attributes (token methods)
-# Throws     : Exceptions on failure to load class or call attribute setter
-# Notes      : Only supports the classes that are preloaded by the script,
-#              so another use in the script is required when adding new
-#              token types.
-sub generate_token {
-    my ($wa, $ring, $class, $attrs_ref) = @_;
+# Usage      : build_token($spec_ref, $wa, $ring)
+# Purpose    : Construct an encoded token via normal object methods
+# Returns    : base64-encoded, encrypted token
+# Parameters : $spec_ref - Reference to the token specification
+#              $wa       - WebAuth object to use for WebAuth operations
+#              $ring     - Keyring to use for encryption
+sub build_token {
+    my ($spec_ref, $wa, $ring) = @_;
+    my ($class, $data_ref) = @{$spec_ref};
     my $token = $class->new($wa);
-    for my $attr (keys %{$attrs_ref}) {
-        $token->$attr($attrs_ref->{$attr});
+    for my $attr (keys %{$data_ref}) {
+        $token->$attr($data_ref->{$attr});
     }
     return $token->encode($ring);
+}
+
+# Usage      : write_token($token, $dir, $file)
+# Purpose    : Given en encoded token, directory, and file, write it to disk
+# Returns    : undef
+# Parameters : $token - The encoded token (or other arbitrary data)
+#              $dir   - Directory into which to write the token
+#              $file  - File name into which to write the token
+# Throws     : I/O exceptions on failure to write the file
+# Notes      : Appends a newline to the end of the token, and therefore cannot
+#              be used for raw tokens.
+sub write_token {
+    my ($token, $dir, $file) = @_;
+    my $path = File::Spec->catfile($dir, $file);
+    open my $token_fh, '>', "$path";
+    print {$token_fh} "$token\n"
+      or die "cannot write to $path: $!\n";
+    close $token_fh;
+    return;
 }
 
 # Parse command-line options.  By default, this script looks for the
@@ -80,29 +100,71 @@ require $config;
 my $wa = WebAuth->new;
 my $ring = WebAuth::Keyring->read($wa, $keyring);
 
-# Generate the tokens listed in the configuration file.
+# Create the output directory of necessary.
 if (!-d $output) {
     mkdir $output, 0777;
 }
-TOKENS:
-for my $tokens (\%TOKENS_GOOD, \%TOKENS_ERROR) {
-    for my $file (sort keys %{$tokens}) {
+
+# Generate the good and error tokens listed in the configuration file.
+for my $tokens_ref (\%TOKENS_GOOD, \%TOKENS_ERROR) {
+  TOKENS:
+    for my $file (sort keys %{$tokens_ref}) {
         next TOKENS if (%generate and not $generate{$file});
-        my ($class, $data) = @{ $tokens->{$file} };
-        my $token = generate_token($wa, $ring, $class, $data);
-        open my $token_fh, '>', "$output/$file";
-        print {$token_fh} "$token\n"
-          or die "cannot write to $output/$file: $!\n";
-        close $token_fh;
+        my $token = build_token($tokens_ref->{$file}, $wa, $ring);
+        write_token($token, $output, $file);
+        delete $generate{$file};
     }
 }
 
-# FIXME: %TOKENS_BAD not yet supported and will require generic token encoding
-# or some other way to create tokens while bypassing sanity checks.
+# Generate the bad tokens listed in the configuration file.  This requires
+# building the token encoding manually and then using the generic crypto
+# routines since these tokens contain errors that would be rejected by the
+# higher-level token library functions.
+BAD:
+for my $file (sort keys %TOKENS_BAD) {
+    next BAD if (%generate and not $generate{$file});
+    my $token    = q{};
+    my $data_ref = $TOKENS_BAD{$file};
+    for my $attr (sort keys %{$data_ref}) {
+        my $data = $data_ref->{$attr};
+        $data =~ s{;}{;;}xmsg;
+        $token .= $attr . q{=} . $data . q{;};
+    }
+    $token = encode_base64($wa->token_encrypt($token, $ring), q{});
+    write_token($token, $output, $file);
+    delete $generate{$file};
+}
 
-# FIXME: Restore the ability to generate app-bad-hmac (which replaces one
-# character of the encoded token) and app-raw (a valid token that isn't
-# base64-encoded).
+# Generate app-bad-hmac, which corrupts an otherwise-valid token.
+if (!%generate || $generate{'app-bad-hmac'}) {
+    my $token = WebAuth::Token::App->new($wa);
+    $token->session_key('some data');
+    $token->expiration($LONG_EXPIRE);
+    $token = $token->encode($ring);
+    $token =~ s{ ^ (.{40}) .. }{ $1 . 'AA' }xmse;
+    write_token($token, $output, 'app-bad-hmac');
+    delete $generate{'app-bad-hmac'};
+}
+
+# Generate app-raw, which is the same as app-ok except without base64.
+if (!$TOKENS_GOOD{'app-ok'} && $generate{'app-raw'}) {
+    die "app-ok specification not found, required for app-raw\n";
+}
+if ((!%generate || $generate{'app-raw'}) && $TOKENS_GOOD{'app-ok'}) {
+    my $token = build_token($TOKENS_GOOD{'app-ok'}, $wa, $ring);
+    my $raw   = decode_base64($token);
+    my $path  = File::Spec->catfile($output, 'app-raw');
+    open my $token_fh, '>', "$path";
+    print {$token_fh} $raw or die "cannot write to $path: $!\n";
+    close $token_fh;
+    delete $generate{'app-raw'};
+}
+
+# Report an error if we failed to generate any tokens.
+if (%generate) {
+    my @tokens = sort keys %generate;
+    die "missing configuration for @tokens\n";
+}
 
 __END__
 
@@ -182,28 +244,28 @@ expired tokens), and %TOKENS_BAD should be syntactically invalid tokens
 
 For example:
 
-    our %TOKENS_GOOD =
-        (
-         'app-minimal' => [ 'WebAuth::Token::App',
-                            { subject         => 'testuser',
-                              expiration_time => 2147483600 }
-                          ],
-         'app-session' => [ 'WebAuth::Token::App',
-                            { session_key     => "\0\0;s=test;\0",
-                              expiration_time => 2147483600 }
-                          ],
-        );
+    our %TOKENS_GOOD = (
+        'app-minimal' => [
+            'WebAuth::Token::App',
+            {
+                subject    => 'testuser',
+                expiration => 2147483600,
+            }
+        ],
+        'app-session' => [
+            'WebAuth::Token::App',
+            {
+                session_key => "\0\0;s=test;\0",
+                expiration  => 2147483600,
+             }
+        ],
+    );
 
 This configuration defines two tokens, F<app-minimal> and F<app-session>,
 which are both WebAuth::Token::App tokens containing test data.
 
 The names used in this file will be the file names of the tokens created.
 They are otherwise arbitrary and have no protocol significance.
-
-=head1 BUGS
-
-Only the %TOKENS_GOOD and %TOKENS_ERROR tokens are handled currently.
-%TOKENS_BAD is ignored.
 
 =head1 SEE ALSO
 
