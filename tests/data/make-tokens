@@ -136,7 +136,7 @@ for my $file (sort keys %TOKENS_BAD) {
 }
 
 # Generate app-bad-hmac, which corrupts an otherwise-valid token.
-if (!%generate || $generate{'app-bad-hmac'}) {
+if (!@ARGV || $generate{'app-bad-hmac'}) {
     my $token = WebAuth::Token::App->new($wa);
     $token->session_key('some data');
     $token->expiration($LONG_EXPIRE);
@@ -150,7 +150,7 @@ if (!%generate || $generate{'app-bad-hmac'}) {
 if (!$TOKENS_GOOD{'app-ok'} && $generate{'app-raw'}) {
     die "app-ok specification not found, required for app-raw\n";
 }
-if ((!%generate || $generate{'app-raw'}) && $TOKENS_GOOD{'app-ok'}) {
+if ((!@ARGV || $generate{'app-raw'}) && $TOKENS_GOOD{'app-ok'}) {
     my $token = build_token($TOKENS_GOOD{'app-ok'}, $wa, $ring);
     my $raw   = decode_base64($token);
     my $path  = File::Spec->catfile($output, 'app-raw');
