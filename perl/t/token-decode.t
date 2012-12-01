@@ -15,7 +15,7 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 164;
+use Test::More tests => 210;
 
 use MIME::Base64 qw(encode_base64);
 use WebAuth ();
@@ -87,3 +87,19 @@ isa_ok ($app, 'WebAuth::Token::App');
 is ($app->subject, 'test', '... subject test');
 is ($app->creation, $now, "... creation $now");
 is ($app->expiration, $now + 60, '... expiration ' . ($now + 60));
+
+# Decode the error and bad tokens and check that they throw exceptions.
+for my $tokens_ref (\%TOKENS_ERROR, \%TOKENS_BAD) {
+    for my $name (sort keys %{$tokens_ref}) {
+        my $data = read_token ($name);
+        my $object = eval { WebAuth::Token->new ($wa, $data, $keyring) };
+        is ($object, undef, "Parsing token $name failed correctly");
+        isa_ok ($@, 'WebAuth::Exception', 'thrown exception');
+    }
+}
+
+# Do the same for the special error token.
+$data = read_token ('app-bad-hmac');
+$object = eval { WebAuth::Token->new ($wa, $data, $keyring) };
+is ($object, undef, "Parsing token app-bad-hmac failed correctly");
+isa_ok ($@, 'WebAuth::Exception', 'thrown exception');
