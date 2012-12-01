@@ -20,9 +20,9 @@ use Test::More;
 # Files to test.
 my @FILES = qw(
   lib/encoding-rules
+  tests/data/make-tokens
   tests/perl/critic-t
   tests/perl/strict-t
-  tools/webauth-make-tokens
 );
 
 # Bail if SOURCE is not set.
