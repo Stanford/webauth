@@ -25,15 +25,10 @@ my @FILES = qw(
   tools/webauth-make-tokens
 );
 
-# Bail if SOURCE is not set, and determine the directory that all further
-# file names will be relative to.
+# Bail if SOURCE is not set.
 if (!$ENV{SOURCE}) {
     BAIL_OUT('SOURCE not defined (run under runtests)');
 }
-my ($volume, $dirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
-my @dirs = File::Spec->splitdir($dirs);
-pop @dirs;
-my $BASE = File::Spec->catpath($volume, File::Spec->catdir(@dirs));
 
 # Skip tests unless we're running the test suite in maintainer mode.
 if (!$ENV{RRA_MAINTAINER_TESTS}) {
@@ -45,11 +40,15 @@ if (!eval { require Test::Perl::Critic }) {
     plan skip_all => 'Test::Perl::Critic required to test coding style';
 }
 
-# Build the list of files to test.
-my @paths = map { File::Spec->catfile($BASE, $_) } @FILES;
+# SOURCE will be the test directory.  Change to the parent directory.
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
+chdir $root or BAIL_OUT("cannot chdir to $root: $!");
 
-# Declare a plan, now that we know the list of files to check.
-plan tests => scalar @paths;
+# Declare a plan, now that we know we can proceed.
+plan tests => scalar @FILES;
 
 # Force the embedded Perl::Tidy check to use the correct configuration.
 local $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
@@ -57,6 +56,6 @@ local $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
 # Import the configuration file and run Perl::Critic.
 my $profile = "$ENV{SOURCE}/data/perlcriticrc";
 Test::Perl::Critic->import(-profile => $profile);
-for my $path (@paths) {
-    critic_ok($path);
+for my $file (@FILES) {
+    critic_ok($file);
 }
