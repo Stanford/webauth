@@ -173,29 +173,28 @@ __END__
 ##############################################################################
 
 =for stopwords
-webauth-make-tokens WebAuth config keyring sublicense MERCHANTABILITY
-NONINFRINGEMENT
+WebAuth config keyring sublicense MERCHANTABILITY NONINFRINGEMENT
 
 =head1
 
-webauth-make-tokens - Generate WebAuth tokens from a configuration file
+make-tokens - Generate WebAuth tokens from a configuration file
 
 =head1 SYNOPSIS
 
-B<webauth-make-tokens> [B<-c> I<config>] [B<-k> I<keyring>] [B<-o> I<output>]
+B<make-tokens> [B<-c> I<config>] [B<-k> I<keyring>] [B<-o> I<output>]
     [I<token> ...]
 
 =head1 REQUIREMENTS
 
-Perl 5.6 or later and the WebAuth Perl modules (from WebAuth 4.2.0 or
-later).
+Perl 5.10 or later and the WebAuth Perl modules from WebAuth 4.4.0 or
+later.
 
 =head1 DESCRIPTION
 
-B<webauth-make-tokens> reads information about WebAuth tokens from a
-configuration file and generates encoded tokens stored in files.  This is
-primarily intended as a testing tool, but can occasionally be useful in
-other situations where manually generating WebAuth tokens is required.
+B<make-tokens> reads information about WebAuth tokens from a configuration
+file and generates encoded tokens stored in files.  This is primarily
+intended as a testing tool, but can occasionally be useful in other
+situations where manually generating WebAuth tokens is required.
 
 By default, it expects the configuration file to be named F<tokens.conf>
 and found in the current directory and a keyring named F<keyring> in the
@@ -233,14 +232,15 @@ named after their short names.
 
 This file is Perl code and is intended to be loaded via require.  It
 defines three variables: %TOKENS_GOOD, %TOKENS_ERROR, and %TOKENS_BAD.
-Each is a hash of short token names to anonymous arrays.  The first
-element of the array is the name of a WebAuth::Token::* class; the second
-element is a hash of token attributes to values.
+%TOKENS_GOOD defines fully valid tokens, %TOKENS_ERROR defines tokens with
+valid syntax but that will produce errors when decoded (such as expired
+tokens), and %TOKENS_BAD define syntactically invalid tokens (such as ones
+with missing attributes).
 
-%TOKENS_GOOD should be fully valid tokens, %TOKENS_ERROR should be tokens
-with valid syntax but that will produce errors when decoded (such as
-expired tokens), and %TOKENS_BAD should be syntactically invalid tokens
-(such as ones with missing attributes).
+%TOKENS_GOOD and %TOKENS_ERROR should be hashes of short token names to
+anonymous arrays.  The first element of the array is the name of a
+WebAuth::Token::* class; the second element is a hash of token attributes
+to values.
 
 For example:
 
@@ -263,6 +263,28 @@ For example:
 
 This configuration defines two tokens, F<app-minimal> and F<app-session>,
 which are both WebAuth::Token::App tokens containing test data.
+
+%TOKENS_BAD defines syntactically-invalid tokens that cannot be generated
+directly with the WebAuth library, and therefore are defined with a
+different syntax that's closer to the wire representation.  It should be
+a hash of short token names to anonymous hashes, and the hash should specify
+the attribute names and values to encode.  For example:
+
+    our %TOKENS_BAD = (
+        'cred-missing' => {
+            t   => 'cred',
+            crt => 'krb5',
+            crs => 'webauth/example.com@EXAMPLE.COM',
+            crd => "some\0cred;da;;ta",
+            ct  => pack('N', 1308777900),
+            et  => pack('N', 2147483600),
+        },
+    };
+
+This configuration defines one token, F<cred-missing>, which is a
+credential token with a required field (subject) missing.  Note that
+attributes encoded as binary numbers need to be represented as such in the
+configuration file using pack().
 
 The names used in this file will be the file names of the tokens created.
 They are otherwise arbitrary and have no protocol significance.
