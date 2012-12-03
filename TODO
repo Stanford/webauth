@@ -122,18 +122,6 @@ libwebauth:
    and use that to report user information service failures when
    ignore_failure is set.
 
- * WEBAUTH-7: Convert the rest of the libwebauth interface to use APR and
-   to set the error message in the WebAuth context instead of just
-   returning error codes.
-
- * WEBAUTH-7: The current library interface is very low-level.  Ideally,
-   the library should treat particular WebAuth tokens as first-class
-   objects with their own manipulation functions and not expose all of the
-   low-level marshal and unmarshal functions to clients.
-
- * WEBAUTH-7: Switch all the WebAuth library interfaces to using opaque
-   structs instead of typedefs, matching our current coding style.
-
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so
    that two processes don't simultaneously update a keyring.
 
@@ -146,11 +134,6 @@ libwebauth:
 
  * WEBAUTH-92: Provide a way of appending a context to an error message
    thrown by a lower-level function without changing the error message.
-
- * WEBAUTH-110: Review all errors reported in libwebauth to ensure that
-   the supplemental information added makes sense when presented in
-   context with the default error message for that error code.  Some of
-   the error messages reported right now are too verbose.
 
  * WEBAUTH-115: Split the app and request tokens into two separate structs
    in the library API.  We have to continue to use the same encoding on
