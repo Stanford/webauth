@@ -23,16 +23,27 @@ verbose  = %f:%l:%c: [%p] %m (%e, Severity: %s)\n
 # globally.
 [-Modules::RequireVersionVar]
 
+# The default is a bit too aggressive.  I was unable to write an Apache access
+# log regex with each major expression broken into a separate variable and fit
+# the default limit of 40 characters.  (It's not clear how the variable names
+# are counted, but they don't seem to be by number of characters in the
+# variable reference.)
+[RegularExpressions::ProhibitComplexRegexes]
+max_characters = 65
+
 # Nice idea, but it *utterly* confuses cperl-mode when used with braces, so
 # it's more trouble than it's worth.
 [-RegularExpressions::ProhibitEscapedMetacharacters]
 
+# 100 is used for calculating percentages.  Making it a constant is just
+# confusing.
+#
 # Literal 0777 means to use the umask for permissions when creating files.
 # Using a constant for this just makes it more obscure.  0777 is 511 in
 # decimal.
 [ValuesAndExpressions::ProhibitMagicNumbers]
 allowed_types  = Octal
-allowed_values = 0 1 2 511
+allowed_values = 0 1 2 100 511
 
 # use English was one of the worst ideas in the history of Perl.  It makes the
 # code slightly more readable for amateurs at the cost of confusing
