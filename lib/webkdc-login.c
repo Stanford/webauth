@@ -542,13 +542,13 @@ is_interactive_login(struct webauth_context *ctx,
 
     /*
      * The login is considered interactive if the session factors include
-     * anything other than cookie, Kerberos, or unknown.
+     * password, OTP, or X.509.
      */
     for (i = 0; i < factors->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(factors->factors, i, const char *);
-        if (strcmp(factor, WA_FA_COOKIE) != 0
-            && strcmp(factor, WA_FA_KERBEROS) != 0
-            && strcmp(factor, WA_FA_UNKNOWN) != 0)
+        if (strcmp(factor, WA_FA_PASSWORD) == 0
+            || strcmp(factor, WA_FA_OTP) == 0
+            || strcmp(factor, WA_FA_X509) == 0)
             return true;
     }
     return false;
