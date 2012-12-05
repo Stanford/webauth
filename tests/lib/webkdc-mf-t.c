@@ -79,7 +79,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(174);
+    plan(178);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -233,8 +233,9 @@ main(void)
               "...and the right message");
 
     /*
-     * Even if the proxy token is recent enough, its factors aren't session
-     * factors unless we did a login.
+     * If the proxy token is recent enough, this works, since the initial
+     * factors are then elevated to session factors, but this still doesn't
+     * work since we don't have a password factor.
      */
     wkproxy.token.webkdc_proxy.creation = now;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -245,17 +246,21 @@ main(void)
               "...and the right message");
 
     /*
-     * If instead we request an X.509 session factor, we'll fail with the
-     * error saying we have no multifactor configuration, since we have no
-     * user metadata service.
+     * If instead we request an X.509 session factor, this succeeds, since the
+     * proxy token is recent enough to provide session factors.
      */
     req.session_factors = "x";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor session returns success");
-    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
-           "...with the right error");
-    is_string("multifactor required but not configured",
-              response->login_message, "...and the right message");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    if (response->result == NULL)
+        ok(0, "...which is an id token");
+    else
+        is_string("id", response->result_type, "...which is an id token");
+    is_string("x,x1", response->initial_factors, "...initial factors");
+    is_string("x,x1", response->session_factors, "...session factors");
 
     /*
      * Change the WebKDC proxy token to assert just a password factor and ask
@@ -529,18 +534,20 @@ main(void)
     else {
         is_string("p,rm", token->token.id.initial_factors,
                   "...result initial factors is right");
-        is_string("c,rm", token->token.id.session_factors,
+        is_string("p,rm", token->token.id.session_factors,
                   "...result session factors is right");
     }
 
     /*
      * Change the proxy token to indicate that random multifactor has already
      * been checked for, and then try someone who would not get lucky and
-     * confirm that they're still allowed in.
+     * confirm that they're still allowed in.  Also make the proxy token older
+     * so that it doesn't contribute to session factors.
      */
     wkproxy.token.webkdc_proxy.subject = "random";
     wkproxy.token.webkdc_proxy.initial_factors = "p,rm";
     wkproxy.token.webkdc_proxy.session_factors = "c";
+    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));
@@ -563,9 +570,10 @@ main(void)
     }
 
     /*
-     * Require random multifactor for the session, which should force a
-     * check even though the webkdc-proxy token indicates a check was already
-     * done.  This should fail and indicate multifactor is required.
+     * Require random multifactor for the session, which should force a check
+     * even though the webkdc-proxy token indicates a check was already done
+     * since the webkdc-proxy token is too old to provide session factors.
+     * This should fail and indicate multifactor is required.
      */
     wkproxy.token.webkdc_proxy.session_factors = "c";
     req.session_factors = "rm";
