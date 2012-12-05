@@ -47,7 +47,7 @@ main(void)
     struct webauth_webkdc_proxy_data *pd;
     const char *authz;
 
-    plan(85);
+    plan(95);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -216,7 +216,7 @@ main(void)
     status = webauth_webkdc_config(ctx, &config);
     if (status != WA_ERR_NONE)
         diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+    is_int(WA_ERR_NONE, status, "Identity ACL configuration succeeded");
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));
@@ -295,6 +295,34 @@ main(void)
     is_string("forced authentication, need to login", response->login_message,
               "...and the right message");
     is_string("testuser", response->subject, "...but we do know the subject");
+
+    /*
+     * Retry forced authentication with a 15 minute login timeout.  The
+     * webkdc-proxy token is dated 10 minutes ago, so this should succeed.
+     */
+    config.login_time_limit = 15 * 60;
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Auth w/forced login and long timeout returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok(0, "...no result token: %s",
+           webauth_error_message(ctx, status));
+    else
+        is_string("testuser", token->token.id.subject,
+                  "...result subject is right");
+    is_string("x,x1", response->initial_factors, "...initial factors");
+    is_string("x,x1", response->session_factors, "...session factors");
 
     /* Remove forced authentication but ask for a proxy token. */
     req.options = NULL;
