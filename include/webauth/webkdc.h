@@ -48,6 +48,7 @@ struct webauth_webkdc_config {
     const char *id_acl_path;    /* Path to WebKDC's identity ACL file. */
     const char *principal;      /* WebKDC's Kerberos principal. */
     time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
+    time_t login_time_limit;    /* Time limit for completing login process. */
     WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms. */
     WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms. */
 };

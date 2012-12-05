@@ -317,13 +317,13 @@ cleanup:
  *    to correctly handle when to lift initial factors into session factors.
  * 6. Session factors are merged from a webkdc-proxy token if and only if the
  *    webkdc-proxy token contributes in some way to the result.
- * 7. The session factors are used as-is unless the token is less than five
- *    minutes old and we processed a login token, in which case its initial
- *    factors count as session factors.
+ * 7. Initial factors also count as session factors if the contributing
+ *    webkdc-proxy token is within its freshness limit.  Otherwise, session
+ *    factors are used as-is.
  */
 static int
 merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
-                   bool did_login, struct webauth_token **result)
+                   struct webauth_token **result)
 {
     bool created = false;
     struct webauth_token *token, *tmp;
@@ -344,7 +344,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     /*
      * We merge the proxy tokens in reverse order, since any proxy tokens that
      * we created via fresh login tokens should take precedence over anything
-     * that we had from older cookies and we added those to the end of the
+     * that we had from older cookies.  We added those to the end of the
      * array.
      */
     i = creds->nelts - 1;
@@ -399,8 +399,11 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
         if (status != WA_ERR_NONE)
             return status;
 
-        /* FIXME: Hard-coded magic five minute time interval. */
-        if (did_login && wkproxy->creation > time(NULL) - 5 * 60)
+        /*
+         * webkdc-proxy tokens contribute to initial factors if they're still
+         * fresh.
+         */
+        if (wkproxy->creation >= time(NULL) - ctx->webkdc->login_time_limit)
             status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                            &sfactors);
         else
@@ -505,6 +508,40 @@ get_user_info(struct webauth_context *ctx,
                               WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
     }
     return WA_ERR_NONE;
+}
+
+
+/*
+ * Given the (possibly merged) webkdc-proxy token, determine whether the
+ * current login is interactive.  Returns true if so, false if not.  Internal
+ * errors just return false.
+ */
+static bool
+is_interactive_login(struct webauth_context *ctx,
+                     struct webauth_token_webkdc_proxy *wkproxy)
+{
+    struct webauth_factors *factors;
+    int status;
+    const char *factor;
+    ssize_t i;
+
+    /* FIXME: Report a warning if this fails. */
+    status = webauth_factors_parse(ctx, wkproxy->session_factors, &factors);
+    if (status != WA_ERR_NONE)
+        return false;
+
+    /*
+     * The login is considered interactive if the session factors include
+     * anything other than cookie, Kerberos, or unknown.
+     */
+    for (i = 0; i < factors->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(factors->factors, i, const char *);
+        if (strcmp(factor, WA_FA_COOKIE) != 0
+            && strcmp(factor, WA_FA_KERBEROS) != 0
+            && strcmp(factor, WA_FA_UNKNOWN) != 0)
+            return true;
+    }
+    return false;
 }
 
 
@@ -1064,7 +1101,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * want to copy that new webkdc-proxy token into our output.
      */
     wkproxy = NULL;
-    status = merge_webkdc_proxy(ctx, request->creds, did_login, &newproxy);
+    status = merge_webkdc_proxy(ctx, request->creds, &newproxy);
     if (status != WA_ERR_NONE)
         return status;
     if (newproxy != NULL) {
@@ -1117,14 +1154,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
-     * If forced login is set and we didn't just process a login token, error
-     * out with the error code for forced login, instructing WebLogin to put
-     * up the login screen.
+     * If forced login is set, we require an interactive login.  Otherwise,
+     * error out with the error code for forced login, instructing WebLogin to
+     * put up the login screen.
      *
      * FIXME: strstr is still lame.
      */
-    if (!did_login)
-        if (req->options != NULL && strstr(req->options, "fa") != NULL) {
+    if (req->options != NULL && strstr(req->options, "fa") != NULL)
+        if (!is_interactive_login(ctx, wkproxy)) {
             (*response)->login_error = WA_PEC_LOGIN_FORCED;
             (*response)->login_message = "forced authentication, need to login";
             return WA_ERR_NONE;

@@ -2396,12 +2396,13 @@ handler_hook(request_rec *r)
 
     rc.r = r;
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
-    config.id_acl_path = rc.sconf->identity_acl_path;
-    config.keytab_path = rc.sconf->keytab_path;
-    config.principal = rc.sconf->keytab_principal;
-    config.proxy_lifetime = rc.sconf->proxy_lifetime;
+    config.id_acl_path      = rc.sconf->identity_acl_path;
+    config.keytab_path      = rc.sconf->keytab_path;
+    config.principal        = rc.sconf->keytab_principal;
+    config.proxy_lifetime   = rc.sconf->proxy_lifetime;
+    config.login_time_limit = rc.sconf->login_time_limit;
     config.permitted_realms = rc.sconf->permitted_realms;
-    config.local_realms = rc.sconf->local_realms;
+    config.local_realms     = rc.sconf->local_realms;
     status = webauth_webkdc_config(rc.ctx, &config);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,

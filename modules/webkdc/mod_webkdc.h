@@ -69,6 +69,7 @@ struct config {
     bool debug;
     bool keyring_auto_update;
     unsigned long key_lifetime;
+    unsigned long login_time_limit;
     unsigned long proxy_lifetime;
     unsigned long service_lifetime;
     unsigned long token_max_ttl;
@@ -82,6 +83,7 @@ struct config {
     bool debug_set;
     bool keyring_auto_update_set;
     bool key_lifetime_set;
+    bool login_time_limit_set;
     bool proxy_lifetime_set;
     bool token_max_ttl_set;
 

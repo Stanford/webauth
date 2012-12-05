@@ -67,6 +67,7 @@ main(void)
     memset(&user_config, 0, sizeof(user_config));
     config.keytab_path = krbconf->keytab;
     config.principal = krbconf->principal;
+    config.login_time_limit = 5 * 60;
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
