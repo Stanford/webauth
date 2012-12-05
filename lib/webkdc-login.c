@@ -936,6 +936,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_response **response,
                      struct webauth_keyring *ring)
 {
+    apr_array_header_t *creds = NULL;
     struct webauth_token *cred, *newproxy;
     struct webauth_token **token;
     struct webauth_token cancel;
@@ -961,6 +962,10 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
     /* Shorter names for things we'll be referring to often. */
     req = request->request;
+
+    /* Make a copy of the credentials.  We may modify them during login. */
+    if (request->creds != NULL)
+        creds = apr_array_copy_hdr(ctx->pool, request->creds);
 
     /* Fill in the basics of our response. */
     *response = apr_pcalloc(ctx->pool, sizeof(**response));
@@ -1006,15 +1011,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
     /*
      * Check for a login token in the supplied creds.  If there is one, use it
      * to authenticate and transform it into a webkdc-proxy token.
-     *
-     * FIXME: Stop modifying the array in place.  This is surprising to the
-     * caller and makes the test suite more annoying.
      */
-    for (i = 0; i < request->creds->nelts; i++) {
-        cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+    for (i = 0; i < creds->nelts; i++) {
+        cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
         if (cred->type != WA_TOKEN_LOGIN)
             continue;
-        token = apr_array_push(request->creds);
+        token = apr_array_push(creds);
         if (cred->token.login.otp != NULL)
             status = do_otp(ctx, *response, &cred->token.login,
                             request->remote_ip, token);
@@ -1023,7 +1025,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (status != WA_ERR_NONE)
             return status;
         if (*token == NULL)
-            apr_array_pop(request->creds);
+            apr_array_pop(creds);
         else
             did_login = true;
 
@@ -1040,12 +1042,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * skip login tokens, since we've already turned them into webkdc-proxy
      * tokens above.
      */
-    if (request->creds != NULL && request->creds->nelts > 0) {
+    if (creds != NULL && creds->nelts > 0) {
         const char *subject = NULL;
         const char *proxy_subject = NULL;
 
-        for (i = 0; i < request->creds->nelts; i++) {
-            cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+        for (i = 0; i < creds->nelts; i++) {
+            cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
             if (cred->type == WA_TOKEN_LOGIN)
                 continue;
             wkproxy = &cred->token.webkdc_proxy;
@@ -1079,8 +1081,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * with a login token.
      */
     if (did_login)
-        for (i = 0; i < request->creds->nelts; i++) {
-            cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+        for (i = 0; i < creds->nelts; i++) {
+            cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
             if (cred->type != WA_TOKEN_WEBKDC_PROXY)
                 continue;
             wkproxy = &cred->token.webkdc_proxy;
@@ -1101,7 +1103,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * want to copy that new webkdc-proxy token into our output.
      */
     wkproxy = NULL;
-    status = merge_webkdc_proxy(ctx, request->creds, &newproxy);
+    status = merge_webkdc_proxy(ctx, creds, &newproxy);
     if (status != WA_ERR_NONE)
         return status;
     if (newproxy != NULL) {

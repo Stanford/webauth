@@ -64,7 +64,6 @@ main(void)
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    memset(&user_config, 0, sizeof(user_config));
     config.keytab_path = krbconf->keytab;
     config.principal = krbconf->principal;
     config.login_time_limit = 5 * 60;
@@ -107,7 +106,6 @@ main(void)
     req.return_url = "https://example.com/";
     req.creation = now;
     request.request = &req;
-    request.creds = apr_array_make(pool, 1, sizeof(struct token *));
 
     /* Create some tokens. */
     memset(&login, 0, sizeof(login));
@@ -132,6 +130,7 @@ main(void)
      * Add configuration for user information and try authentication with just
      * the proxy token.
      */
+    memset(&user_config, 0, sizeof(user_config));
     user_config.protocol = WA_PROTOCOL_REMCTL;
     user_config.host = "localhost";
     user_config.port = 14373;
@@ -141,7 +140,7 @@ main(void)
     user_config.principal = config.principal;
     status = webauth_user_config(ctx, &user_config);
     is_int(WA_ERR_NONE, status, "User information config accepted");
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
@@ -393,7 +392,7 @@ main(void)
     login.token.login.username = "full";
     login.token.login.password = NULL;
     login.token.login.otp = "654321";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Invalid OTP returns success");
@@ -451,9 +450,6 @@ main(void)
      */
     req.session_factors = "m";
     wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor OTP session returns success");
     is_int(WA_PEC_LOGIN_FORCED, response->login_error,
@@ -463,9 +459,6 @@ main(void)
 
     /* But if the webkdc-proxy token is current, this does work. */
     wkproxy.token.webkdc_proxy.creation = now;
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));
@@ -519,8 +512,6 @@ main(void)
     req.initial_factors = "rm";
     req.session_factors = NULL;
     req.loa = 0;
-    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));

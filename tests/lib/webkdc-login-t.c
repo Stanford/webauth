@@ -155,7 +155,7 @@ main(void)
     wkproxy.token.webkdc_proxy.loa = 3;
     wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     req.type = "id";
     req.auth = "webkdc";

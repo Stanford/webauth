@@ -76,7 +76,7 @@ main(void)
              webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
-    plan(113);
+    plan(115);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -173,10 +173,13 @@ main(void)
     is_string("p", response->session_factors, "...session factors");
     is_int(0, response->loa, "...level of assurance");
 
+    /* The login process should not have modified request.creds. */
+    is_int(1, request.creds->nelts, "Still one token in request.creds");
+    ok(&login == APR_ARRAY_IDX(request.creds, 0, struct webauth_token *),
+       "...which is the login token");
+
     /* Get an id token with a Kerberos authenticator and test forced auth. */
     req.options = "lc,fa";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     service.subject = apr_pstrcat(pool, "krb5:", config.principal, NULL);
     req.auth = "krb5";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -206,8 +209,6 @@ main(void)
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
     req.options = NULL;
     req.auth = "webkdc";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
     is_int(0, response->login_error, "...with no error");
@@ -232,8 +233,6 @@ main(void)
     APR_ARRAY_PUSH(config.permitted_realms, const char *) = "FOO.EXAMPLE.COM";
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
     is_int(WA_PEC_USER_REJECTED, response->login_error,
@@ -246,8 +245,6 @@ main(void)
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Clearing permitted realms succeeds");
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "proxy";
     req.auth = NULL;
     req.proxy_type = "krb5";
@@ -331,8 +328,6 @@ main(void)
     if (status != WA_ERR_NONE)
         diag("configuration failed: %s", webauth_error_message(ctx, status));
     is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     request.authz_subject = "otheruser";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login with identity ACL returns success");
@@ -388,7 +383,7 @@ main(void)
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
     wkproxy.token.webkdc_proxy.initial_factors = "p";
     wkproxy.token.webkdc_proxy.session_factors = "c";
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "id";
@@ -407,9 +402,6 @@ main(void)
      * the "c" cookie session information in the resulting id token.
      */
     wkproxy.token.webkdc_proxy.subject = krbconf->userprinc;
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "id";
     req.auth = "webkdc";
     req.proxy_type = NULL;
