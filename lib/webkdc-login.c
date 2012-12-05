@@ -400,10 +400,10 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             return status;
 
         /*
-         * webkdc-proxy tokens contribute to initial factors if they're still
-         * fresh.
+         * webkdc-proxy tokens contribute their initial factors to session
+         * factors if they're still fresh.
          */
-        if (wkproxy->creation >= time(NULL) - ctx->webkdc->login_time_limit)
+        if (wkproxy->creation >= now - ctx->webkdc->login_time_limit)
             status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                            &sfactors);
         else
@@ -418,10 +418,20 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
         if (wkproxy->loa > best->loa)
             best->loa = wkproxy->loa;
     } while (i-- > 0);
+
+    /* If we created a new token, set its factors to our assembled ones. */
     if (created) {
         best->initial_factors = webauth_factors_string(ctx, factors);
         best->session_factors = webauth_factors_string(ctx, sfactors);
     }
+
+    /*
+     * If we did not create a new token, promote its initial factors to
+     * session factors if the creation date is within the login time period.
+     */
+    if (!created && best->creation >= now - ctx->webkdc->login_time_limit)
+        best->session_factors = best->initial_factors;
+
     *result = genbest;
     return WA_ERR_NONE;
 }
