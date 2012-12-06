@@ -19,7 +19,7 @@ use Test::More;
 
 # Top-level directories to ignore.  We ignore the perl directory since it is
 # treated as a Perl module distribution and has its own standalone test suite.
-my %IGNORE = map { $_ => 1 } qw(.git perl tests weblogin);
+my %IGNORE = map { $_ => 1 } qw(.git perl tests);
 
 # Bail if SOURCE is not set.
 if (!$ENV{SOURCE}) {
