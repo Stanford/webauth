@@ -26,6 +26,8 @@ warn_expire            : show warning for upcoming password expiration
 expire_date            : the date and time of password expiration
 expire_time_left       : the amount of time left until password expiration
 pwchange_url           : URL for the password change form
+ST                     : Original service token
+RT                     : Original request token
 
 You may customize this file however you wish for your site.
 
@@ -126,12 +128,6 @@ works of this work.
                   <!-- [% right.realm FILTER html %] -->
                 [% END %]</p></blockquote>
               [% END %]
-              [% IF permitted_authz.size %]
-                <p>You could have been one of the following users:</p>
-                <ul>[% FOREACH authz IN permitted_authz %]
-                  <li>[% authz FILTER html %]</li>
-                [% END %]</ul>
-              [% END %]
               <p><strong>Protect your assets:</strong><br />
                  Quit your web browser when you are finished (see below
                  for more details)</p>
@@ -144,6 +140,40 @@ works of this work.
         </tr>
       </table>
     </div>
+
+    [% IF permitted_authz.size %]
+    <div class="authzbox" style="width: 70%; margin-left: auto;
+                                 margin-right: auto">
+      <p>
+        You are permitted to identify to this web site as a user other
+        than your normal identity.  If you want to do that, select a
+        different identity from the list below.
+      </p>
+      <form action="[% script_name FILTER html %]" method="post"
+            enctype="application/x-www-form-urlencoded"
+            align="center">
+        <input type="hidden" name="rm" value="edit_authz_identity">
+        <input type="hidden" name="ST" value="[% ST FILTER html %]">
+        <input type="hidden" name="RT" value="[% RT FILTER html %]">
+        <table>
+          <tr>
+            <td><strong>Identity:</strong></td>
+            <td>
+              <select name="authz_subject">
+                <option selected>[% username FILTER html %]</option>
+                [% FOREACH authz IN permitted_authz %]
+                <option>[% authz FILTER html %]</option>
+                [% END %]
+              </select>
+            </td>
+            <td>
+              <input type="submit" name="Submit" value="Change Identity">
+            </td>
+          </tr>
+        </table>
+      </form>
+    </div>
+    [% END %]
 
     [% IF show_remuser %]
       <div class="remuserbox" align="center">

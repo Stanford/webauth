@@ -558,7 +558,7 @@ sub print_error_fatal {
 }
 
 # Given the query, the local variables, and the WebKDC response, print the
-# login page, filling in all of the various bits of data that the page
+# confirmation page, filling in all of the various bits of data that the page
 # template needs.
 #
 # Setting the runmode occurs in the actual template file.
@@ -653,6 +653,8 @@ sub print_confirm_page {
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
     $params->{history} = $history;
+    $params->{ST} = $q->param ('ST');
+    $params->{RT} = $q->param ('RT');
 
     # If there is a login cancel option, handle creating the link for it.
     my $lc = $resp->login_canceled_token;
@@ -725,6 +727,8 @@ sub redisplay_confirm_page {
     $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $params->{remuser} = $remuser;
+    $params->{ST} = $q->param ('ST');
+    $params->{RT} = $q->param ('RT');
 
     # If there is a login cancel option, handle creating the link for it.
     my $cancel_url = $q->param ('cancel_url');
@@ -1826,6 +1830,40 @@ sub multifactor_sendauth : Runmode {
             return $self->print_multifactor_page ($req->request_token,
                                                   $req->service_token);
         }
+    }
+}
+
+# Handle the request from the user to change the authorization identity,
+# called from the confirm screen.  For this case, we'll need to resubmit the
+# authentication request and get a new id or proxy token.
+# Pages: confirm screen
+sub edit_authz_identity : Runmode {
+    my ($self) = @_;
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $self->setup_kdc_request (%cart);
+
+    # Resubmit the authentication request.
+    my $req = $self->{request};
+    my $resp = $self->{response};
+    my ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    if ($status == WK_SUCCESS) {
+        print STDERR "WebKDC::make_request_token_request success\n"
+            if $self->param ('debug');
+        return $self->print_confirm_page;
+    } else {
+        # FIXME: Probably want to handle $status more, particularly ones
+        #        indicating the page timed out and the user needs to start
+        #        again or that they're not allowed to assert that identity
+        print STDERR "setting authz subject failed with $error\n"
+            if $self->param ('logging');
+        $self->template_params ({err_webkdc => 1});
+        $self->template_params ({
+            err_msg => "cannot set authorization identity"
+        });
+        return $self->print_error_page;
     }
 }
 
