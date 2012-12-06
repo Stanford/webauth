@@ -900,6 +900,81 @@ WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
 
 
   <directivesynopsis>
+    <name>WebKdcLoginTimeLimit</name>
+    <description>
+      Time limit for completing login process and for considering a login
+      to be recent
+    </description>
+    <syntax>WebKdcLoginTimeLimit <em>nnnn[s|m|h|d|w]</em></syntax>
+    <default>WebKdcLoginTimeLimit 5m</default>
+    <contextlist>
+      <context>server config</context>
+      <context>virtual host</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        This directive controls how long a user is permitted to take to
+        complete the login process, and, related, how long before a user's
+        login is not considered to have "just happened."
+      </p>
+      <p>
+        In some cases, particularly when multifactor authentication is in
+        use or the user is permitted to assert an authorization identity,
+        the interaction with WebLogin can involve multiple independent
+        steps.  This directive sets a time limit within which each of
+        those actions is considered to be part of the same session.  If
+        the user takes longer than this time limit to complete the login
+        process, their first actions will expire and they are likely to
+        have to begin again.
+      </p>
+      <p>
+        This is also the time limit within which the authentication
+        factors presented by the user will be considered session factors
+        as well as initial factors.  This affects both restrictions on
+        session factors set by the WebAuth Application Server (using
+        <a href="http://webauth.stanford.edu/manual/mod/mod_webauth.html#webauthrequiresessionfactor"><directive>WebAuthRequireSessionFactor</directive></a>,
+        for example) and forced login (using
+        <a href="http://webauth.stanford.edu/manual/mod/mod_webauth.html#webauthforcelogin"><directive>WebAuthForceLogin</directive></a>).
+        If the user has authenticated within this time limit, they will
+        not be forced to reauthenticate, even when going to a different
+        WebAuth Application Server than the one that prompted their
+        original authentication.
+      </p>
+      <p>
+        The units for the time are specified by appending a single letter.
+        This letter may be one of <code>s</code>, <code>m</code>,
+        <code>h</code>, <code>d</code>, or <code>w</code>, which
+        correspond to seconds, minutes, hours, days, and weeks,
+        respectively.
+      </p>
+      <p>
+        This directive may be set to <code>0s</code> to disable this grace
+        period entirely.  This will mean that any session factor
+        requirement and any forced login will result in a required
+        reauthentication, at the cost of making multistage multifactor
+        authentication impossible.  It will also prevent asserting an
+        authorization identity while satisfying either a forced login
+        requirement or a session factor requirement impossible unless the
+        user is prompted for an authorization identity at the time of
+        login.
+      </p>
+
+      <example>
+        <title>Examples</title>
+<pre>
+# The user must complete the login process in 90 seconds
+WebKdcLoginTimeLimit 90s
+
+# Disable the grace period entirely.
+WebKdcLoginTimeLimit 0s
+</pre>
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
     <name>WebKdcPermittedRealms</name>
     <description>List of permitted authentication realms</description>
     <syntax>WebKdcPermittedRealms <em>realm</em> ...</syntax>

@@ -2,6 +2,26 @@
 
 WebAuth 4.4.0 (unreleased)
 
+    Add new mod_webkdc Apache directive WebKdcLoginTimeLimit, which
+    controls the time limit for completing a multi-step login process
+    (such as with multifactor authentication) and how recently
+    authentication must have occurred to count for session factors and
+    forced login.  The default value is five minutes, matching the
+    previous default behavior for multifactor logins.
+
+    WebAuthForceLogin no longer forces re-entry of the user's password if
+    the user has done an interactive authentication within the
+    WebKdcLoginTimeLimit interval (five minutes by default).  Initial
+    authentication factors also count as session factors for single
+    sign-on authentications within that time interval.  This allows
+    WebAuthForceLogin to work in combination with other features such as
+    multi-step authentication processes and authorization identities and
+    improves the user experience when simultaneously visiting multiple
+    sites with forced login set.  To disable this behavior and always
+    force reauthentication, WebKdcLoginTimeLimit can be set to 0s, but
+    this will make multi-stage login processes, such as multifactor,
+    impossible.
+
     In WebLogin, set single sign-on cookies if present even when
     displaying an error.  This establishes single sign-on when errors are
     returned after authentication, such as authentication rejected errors
