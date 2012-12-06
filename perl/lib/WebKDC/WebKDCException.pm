@@ -35,7 +35,7 @@ use overload '""' => \&to_string;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.04';
+    $VERSION = '1.05';
 }
 
 # Export the error codes.  This list MUST be kept in sync and follow the same
@@ -59,14 +59,14 @@ BEGIN {
                  WK_ERR_AUTH_REJECTED);
 }
 
-# This hash maps the error code names, used when stringifying.
+# This hash maps the error codes to names, used when stringifying.
 our %ERROR_NAMES;
 {
     my $i = 0;
     %ERROR_NAMES = map {
         my $n = $_;
         $n =~ s/^WK_(?:ERR_)?//;
-        $n => $i++;
+        $i++ => $n;
     } @EXPORT;
 }
 

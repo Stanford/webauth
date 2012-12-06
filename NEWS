@@ -40,6 +40,10 @@ WebAuth 4.4.0 (unreleased)
     compatibility, but will only be used if the more-specific variable is
     not set.  Patch from Tom Jones.
 
+    Fix mapping of WebKDC error codes to names when reporting errors in
+    WebLogin, fixing mostly cosmetic Perl warnings in the WebLogin server
+    logs.
+
     Document the WebAuthRequireSSL configuration directive.  Under normal
     circumstances, this directive should always be left on (the default)
     to avoid serious security vulnerabilities, but there are some specific
