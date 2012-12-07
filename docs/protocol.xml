@@ -1000,6 +1000,9 @@
               user, missing prerequisite actions that the user must take
               (such as training or a usage agreement), or some other local
               factor.</t>
+
+              <t hangText='25'>This authentication appears to be a
+              replay.</t>
             </list>
           </t>
         </section>
@@ -2411,7 +2414,12 @@
           &lt;permittedAuthzSubjects&gt; to &lt;requestTokenResponse&gt;
           to tell WebLogin what authorization identities the user may
           assert.  Add the sz attribute to app, id, and proxy tokens to
-          hold the asserted authorization identity.</t>
+          hold the asserted authorization identity.  Clarify that attribute
+          names are alphanumeric.</t>
+
+          <t hangText='3.3.1 (2012-12-06, rra)'>
+          <vspace blankLines='0'/>Add error code 25, representing an
+          authentication that appears to be a replay.</t>
         </list>
       </t>
     </section>

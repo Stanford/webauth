@@ -70,7 +70,8 @@ enum webauth_error_code {
     WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
     WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
     WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
-    WA_PEC_AUTH_REJECTED               = 24  /* Auth to this site rejected */
+    WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
+    WA_PEC_REPLAY                      = 25  /* Auth was a replay */
 };
 
 /*

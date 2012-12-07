@@ -56,7 +56,8 @@ BEGIN {
                  WK_ERR_MULTIFACTOR_UNAVAILABLE
                  WK_ERR_LOGIN_REJECTED
                  WK_ERR_LOA_UNAVAILABLE
-                 WK_ERR_AUTH_REJECTED);
+                 WK_ERR_AUTH_REJECTED
+                 WK_ERR_REPLAY);
 }
 
 # This hash maps the error codes to names, used when stringifying.
@@ -85,6 +86,7 @@ sub WK_ERR_MULTIFACTOR_UNAVAILABLE () { 10 }
 sub WK_ERR_LOGIN_REJECTED          () { 11 }
 sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
+sub WK_ERR_REPLAY                  () { 14 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, protocol error, and data.
@@ -130,7 +132,7 @@ __END__
 
 =for stopwords
 WebKDC username login WebAuth WebKdcPermittedRealms multifactor logins
-errorCode Allbery
+errorCode Allbery WebLogin
 
 =head1 NAME
 
@@ -257,6 +259,21 @@ This status code indicates that the site requested a Level of Assurance
 for the user's authentication that is higher than this user can provide,
 either because of insufficient proof of identity available to the system
 or due to an insufficiently strong configured authentication method.
+
+=item WK_ERR_AUTH_REJECTED
+
+This user is not permitted to authenticate to the desired destination
+WebAuth Application Server at this time.  This may be due to local policy,
+security limitations placed on the user, missing prerequisite actions that
+the user must take (such as training or a usage agreement), or some other
+local factor.
+
+=item WK_ERR_REPLAY
+
+This authentication attempt appears to be a replay.  Replays may be
+rejected as a security measure to protect against people who walked away
+with a browser open and left the WebLogin form submission in the browser
+cache.
 
 =back
 
