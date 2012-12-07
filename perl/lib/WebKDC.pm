@@ -35,7 +35,7 @@ use WebAuth::Keyring ();
 use WebKDC::Config;
 use WebKDC::WebRequest 1.02;
 use WebKDC::WebResponse 1.02;
-use WebKDC::WebKDCException;
+use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
@@ -80,6 +80,7 @@ our %pec_mapping = (
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
     &WA_PEC_AUTH_REJECTED               => WK_ERR_AUTH_REJECTED,
     &WA_PEC_REPLAY                      => WK_ERR_REPLAY,
+    &WA_PEC_AUTH_RATE_LIMITED           => WK_ERR_AUTH_RATE_LIMITED,
 );
 
 # Get a keyring from the configured WebLogin keyring path.  This used to

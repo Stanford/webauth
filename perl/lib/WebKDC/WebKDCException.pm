@@ -57,7 +57,8 @@ BEGIN {
                  WK_ERR_LOGIN_REJECTED
                  WK_ERR_LOA_UNAVAILABLE
                  WK_ERR_AUTH_REJECTED
-                 WK_ERR_REPLAY);
+                 WK_ERR_REPLAY
+                 WK_ERR_AUTH_RATE_LIMITED);
 }
 
 # This hash maps the error codes to names, used when stringifying.
@@ -87,6 +88,7 @@ sub WK_ERR_LOGIN_REJECTED          () { 11 }
 sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
 sub WK_ERR_REPLAY                  () { 14 }
+sub WK_ERR_AUTH_RATE_LIMITED       () { 15 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, protocol error, and data.

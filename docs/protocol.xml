@@ -1003,6 +1003,10 @@
 
               <t hangText='25'>This authentication appears to be a
               replay.</t>
+
+              <t hangText='26'>This authentication was rejected due to too
+              many failed authentication attempts for this user.  The
+              authentication should be retried later.</t>
             </list>
           </t>
         </section>
@@ -2419,7 +2423,9 @@
 
           <t hangText='3.3.1 (2012-12-06, rra)'>
           <vspace blankLines='0'/>Add error code 25, representing an
-          authentication that appears to be a replay.</t>
+          authentication that appears to be a replay, and error code 26,
+          indicating a rejected authentication due to too many failed
+          authentication attempts for this user.</t>
         </list>
       </t>
     </section>
