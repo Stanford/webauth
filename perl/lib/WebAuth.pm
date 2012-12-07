@@ -95,6 +95,7 @@ BEGIN {
                        WA_PEC_LOA_UNAVAILABLE
                        WA_PEC_AUTH_REJECTED
                        WA_PEC_REPLAY
+                       WA_PEC_AUTH_RATE_LIMITED
 
                        WA_KEY_AES
 
@@ -382,6 +383,7 @@ WebAuth protocol error codes used for login errors:
     WA_PEC_LOA_UNAVAILABLE
     WA_PEC_AUTH_REJECTED
     WA_PEC_REPLAY
+    WA_PEC_AUTH_RATE_LIMITED
 
 Key types for key_create() and C<< WebAuth::Key->new >>:
 

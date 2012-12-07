@@ -47,7 +47,7 @@ use Template ();
 use WebAuth 3.06 qw(:const);
 use WebKDC 2.05;
 use WebKDC::Config 1.00;
-use WebKDC::WebKDCException 1.04;
+use WebKDC::WebKDCException 1.05;
 use URI ();
 use URI::QueryParam ();
 
@@ -74,7 +74,7 @@ if (@WebKDC::Config::MEMCACHED_SERVERS) {
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
-our $DEBUG = 1;
+our $DEBUG = 0;
 
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;
@@ -1298,6 +1298,87 @@ sub error_invalid_pwchange_fields {
 }
 
 ##############################################################################
+# Rate limiting and replay caching
+##############################################################################
+
+# Check whether a given request is a replay.  Takes the request token and
+# returns true if it is a replay, false otherwise (including if we aren't
+# checking for replays).
+sub is_replay {
+    my ($self, $rt) = @_;
+    if (!$self->{memcache}) {
+        return;
+    }
+    my $hash = Digest::SHA::sha512_base64($rt);
+    print STDERR "Looking up request token hash $hash\n"
+        if $self->param ('debug');
+    my $seen = $self->{memcache}->get ("rt:$hash");
+    if ($seen) {
+        print STDERR "Rejecting request token $rt as a replay, last seen "
+            . strftime ('%Y-%m-%d %T', localtime $seen) . "\n"
+            if $self->param ('logging');
+        print STDERR "Replacing request token hash $hash\n"
+            if $self->param ('debug');
+        my $now = time;
+        my $expires = $now + $REPLAY_TIMEOUT;
+        $self->{memcache}->replace ("rt:$hash", $now, $expires);
+        return 1;
+    }
+    return;
+}
+
+# Check whether a given username is rate limited.  Takes the username and
+# returns true if they are, false otherwise (including if we aren't doing rate
+# limiting).
+sub is_rate_limited {
+    my ($self, $username) = @_;
+    if (!$self->{memcache} || !$WebKDC::Config::RATE_LIMIT_THRESHOLD) {
+        return;
+    }
+    my $count = $self->{memcache}->get ("fail:$username");
+    if (defined $count && $count >= $WebKDC::Config::RATE_LIMIT_THRESHOLD) {
+        print STDERR "Rate limited authentication for $username\n"
+            if $self->param ('logging');
+        return 1;
+    }
+    return;
+}
+
+# Register a successful authentication using a request token so that we can
+# detect if it is replayed.  Takes the request token and the username.
+sub register_auth {
+    my ($self, $rt, $username) = @_;
+    my $hash = Digest::SHA::sha512_base64($rt);
+    if (!$self->{memcache}) {
+        return;
+    }
+    print STDERR "Storing request token hash $hash\n"
+        if $self->param ('debug');
+    my $now = time;
+    $self->{memcache}->set ($hash, $now, $now + $REPLAY_TIMEOUT);
+    if ($WebKDC::Config::RATE_LIMIT_THRESHOLD) {
+        $self->{memcache}->delete ("fail:$username");
+    }
+}
+
+# Register a failed authentication for rate limiting.  Takes the username.
+sub register_auth_fail {
+    my ($self, $username) = @_;
+    if (!$self->{memcache} || !$WebKDC::Config::RATE_LIMIT_THRESHOLD) {
+        return;
+    }
+    print STDERR "Storing $username authentication failure for rate limit\n"
+        if $self->param ('debug');
+    my $expires = time + $WebKDC::Config::RATE_LIMIT_INTERVAL;
+    my $count = $self->{memcache}->get ("fail:$username");
+    if (!defined $count) {
+        $count = 0;
+    }
+    $count++;
+    $self->{memcache}->set ("fail:$username", $count, $expires);
+}
+
+##############################################################################
 # KDC interactions
 ##############################################################################
 
@@ -1343,6 +1424,11 @@ sub setup_kdc_request {
         if ($self->is_replay ($self->{request}->request_token)) {
             $status = WK_ERR_REPLAY;
         }
+
+        # Check for rate limiting.
+        if ($self->is_rate_limited ($username)) {
+            $status = WK_ERR_AUTH_RATE_LIMITED;
+        }
     }
     $self->{request}->user ($q->param ('username')) if $q->param ('username');
 
@@ -1387,49 +1473,6 @@ sub setup_kdc_request {
         }
     }
     return $status;
-}
-
-##############################################################################
-# Rate limiting and replay caching
-##############################################################################
-
-# Check whether a given request is a replay.  Takes the request token and
-# returns true if it is a replay, false otherwise (including if we aren't
-# checking for replays).
-sub is_replay {
-    my ($self, $rt) = @_;
-    if (!$self->{memcache}) {
-        return;
-    }
-    my $hash = Digest::SHA::sha512_base64($rt);
-    print STDERR "Looking up request token hash $hash\n"
-        if $self->param ('debug');
-    my $seen = $self->{memcache}->get ($hash);
-    if ($seen) {
-        print STDERR "Rejecting request token $rt as a replay, last seen "
-            . strftime ('%Y-%m-%d %T', localtime $seen) . "\n"
-            if $self->param ('logging');
-        print STDERR "Replacing request token hash $hash\n"
-            if $self->param ('debug');
-        my $now = time;
-        $self->{memcache}->replace ($hash, $now, $now + $REPLAY_TIMEOUT);
-        return 1;
-    }
-    return;
-}
-
-# Register a successful authentication using a request token so that we can
-# detect if it is replayed.  Takes the request token.
-sub register_auth {
-    my ($self, $rt) = @_;
-    my $hash = Digest::SHA::sha512_base64($rt);
-    if (!$self->{memcache}) {
-        return;
-    }
-    print STDERR "Storing request token hash $hash\n"
-        if $self->param ('debug');
-    my $now = time;
-    $self->{memcache}->set ($hash, $now, $now + $REPLAY_TIMEOUT);
 }
 
 #############################################################################
@@ -1569,6 +1612,11 @@ sub index : StartRunmode {
             $self->param ('forced_login', 1);
         }
 
+        # If the login failed, register that for rate limiting.
+        if ($status == WK_ERR_LOGIN_FAILED) {
+            $self->register_auth_fail ($req->user);
+        }
+
         print STDERR "WebKDC::make_request_token_request failed,"
             . " displaying login page\n"
             if $self->param ('debug');
@@ -1659,6 +1707,10 @@ sub index : StartRunmode {
                 . " If you reached this page via the back button in your"
                 . " browser, start over by going directly to the web site"
                 . " you want to visit.";
+
+        # User reached the rate limit of failed logins.
+        } elsif ($status = WK_ERR_AUTH_RATE_LIMITED) {
+            $errmsg = "too many login failures. Try again later.";
         }
 
         # Display the error page.

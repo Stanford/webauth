@@ -264,6 +264,26 @@ Configuration
 
       Default: not set.
 
+  $RATE_LIMIT_INTERVAL
+
+      How long failed login attempts are remembered in seconds.  This
+      setting is only used if $RATE_LIMIT_THRESHOLD and @MEMCACHED_SERVERS
+      are set.  It controls how long a failed login attempt is remembered.
+      After this interval, any failures are discarded (whether or not the
+      user was locked out).  Default: 300 (5 minutes).
+
+  $RATE_LIMIT_THRESHOLD
+
+      If set, configures the threshold for failed login attempts.  After
+      this many failed attempts to authenticate as a user, all subsequent
+      password authentications for that user will be rejected, valid or
+      not, until $RATE_LIMIT_INTERVAL seconds have passed.
+
+      This also requires @MEMCACHED_SERVERS be set.  If not, this setting
+      is ignored.
+
+      Default: not set.
+
   $REMUSER_ENABLED (was $HONOR_REMOTE_USER)
 
       Whether to honor Apache authentication.  If this variable is set to

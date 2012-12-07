@@ -31,6 +31,13 @@ WebAuth 4.4.0 (unreleased)
     data storage and the Perl modules Cache::Memcached and Digest::SHA.
     The latter is available as part of Perl since 5.9.3.
 
+    Add rate limiting of login attempts in WebLogin.  If enabled, after a
+    configured number of failed login attempts, all password
+    authentications for a given username will be rejected (valid or not)
+    until a configurable interval of time has passed.  This support also
+    requires a memcached server for data storage and the Perl module
+    Cache::Memcached.
+
     In WebLogin, set single sign-on cookies if present even when
     displaying an error.  This establishes single sign-on when errors are
     returned after authentication, such as authentication rejected errors

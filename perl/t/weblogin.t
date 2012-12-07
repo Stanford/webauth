@@ -133,6 +133,9 @@ $WebKDC::Config::REMUSER_REDIRECT = 0;
 @WebKDC::Config::REMUSER_PERMITTED_REALMS = ();
 $WebKDC::Config::BYPASS_CONFIRM = '';
 
+# Disable all the memcached stuff for now.
+@WebKDC::Config::MEMCACHED_SERVERS = ();
+
 # If the username is fully qualified, set a default realm.
 if ($user =~ /\@(\S+)/) {
     $WebKDC::Config::DEFAULT_REALM = $1;
