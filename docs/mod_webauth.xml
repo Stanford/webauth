@@ -2316,6 +2316,55 @@ WebAuthTokenMaxTTL 10m
         <title>Example</title>
 WebAuthTrustAuthzIdentity on
       </example>
+
+      <note>
+        <title>Note on Logging</title>
+        <p>
+          By default, the Apache access log includes, in the third field,
+          the identity of the user accessing a page that requires
+          authentication.  This is the authorization identity: the
+          identity stored in the REMOTE_USER environment variable and used
+          for authorization checks.
+        </p>
+        <p>
+          When the <directive>WebAuthTrustAuthzIdentity</directive>
+          directive is enabled, it may be useful to also log the
+          authentication identity.  The WebAuth module will log to the
+          error log the authentication and authorization identities after
+          the initial authentication to that server, but it can be hard to
+          correlate that with access log entries.
+        </p>
+        <p>
+          There is a field in the access log that can be used for this
+          purpose, although it requires a change to the default Apache log
+          format.  The second field in a standard access log entry is
+          normally the remote connection identity as determined by the
+          ident protocol.  However, this protocol is obsolete and
+          insecure, and this check is disabled by default, so in a typical
+          Apache installation, this field is always empty
+          (<code>-</code>).  Existing log parsers understand this field,
+          so it can be reused to store the authentication identity so that
+          both identities can be logged.
+        </p>
+        <p>
+          To do this, change the second field of the Apache access log
+          format from <code>%l</code> to <code>%{WEBAUTH_USER}e</code>.
+          This will log the WebAuth authentication identity, if any, in
+          the second field, and leave the second field as <code>-</code>
+          if no authentication identity is established.
+        </p>
+      </note>
+
+      <example>
+        <title>Logging Example</title>
+<pre>
+# Replace ident field with WebAuth authentication identity.
+LogFormat \
+ "%h %{WEBAUTH_USER}e %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" \
+ webauth_combined
+CustomLog /var/log/apache2/access.log webauth_combined
+</pre>
+      </example>
     </usage>
   </directivesynopsis>
 
