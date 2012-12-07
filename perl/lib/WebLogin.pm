@@ -42,6 +42,7 @@ use warnings;
 
 use CGI::Cookie ();
 use MIME::Base64 qw(encode_base64);
+use POSIX qw(strftime);
 use Template ();
 use WebAuth 3.06 qw(:const);
 use WebKDC 2.05;
@@ -65,9 +66,15 @@ if ($WebKDC::Config::EXPIRING_PW_SERVER) {
     require Net::Remctl;
 }
 
+# Required only if we're going to do replay caching or rate limiting.
+if (@WebKDC::Config::MEMCACHED_SERVERS) {
+    require Cache::Memcached;
+    require Digest::SHA;
+}
+
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
-our $DEBUG = 0;
+our $DEBUG = 1;
 
 # Set to true to log interesting error messages to stderr.
 our $LOGGING = 1;
@@ -87,6 +94,9 @@ our $REMUSER_LIFETIME = '+365d';
 
 # The lifetime of the kadmin/changepw token.
 our $CHANGEPW_EXPIRES = 5 * 60;
+
+# How long to retain request tokens in the replay cache.
+our $REPLAY_TIMEOUT = 2 * 60 * 60;
 
 # If the WebKDC is localhost, disable LWP certificate verification.  The
 # WebKDC will have a certificate matching its public name, which will
@@ -158,6 +168,14 @@ sub setup {
 
     # Put this into place for later.
     $self->param ('wpt_cookie', '');
+
+    # If rate limiting or replay caching is enabled, connect to the memcached
+    # server.
+    if (@WebKDC::Config::MEMCACHED_SERVERS) {
+        $self->{memcache} = Cache::Memcached->new ({
+            servers => [ @WebKDC::Config::MEMCACHED_SERVERS ]
+        });
+    }
 
     # Work around a bug in CGI.  Then copy the script name so that it can
     # be easily updated when we switch between password and login scripts.
@@ -1304,7 +1322,8 @@ sub setup_kdc_request {
         if $q->param ('authz_subject');
 
     # For the initial login page, we may need to map the username.  For OTP,
-    # we've already done this, so we don't need to do it again.
+    # we've already done this, so we don't need to do it again.  Also check
+    # here if this request is a replay and reject it if so.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1319,6 +1338,11 @@ sub setup_kdc_request {
             $status = WK_ERR_LOGIN_FAILED;
         }
         $q->param ('username', $username);
+
+        # Check for replay.
+        if ($self->is_replay ($self->{request}->request_token)) {
+            $status = WK_ERR_REPLAY;
+        }
     }
     $self->{request}->user ($q->param ('username')) if $q->param ('username');
 
@@ -1363,6 +1387,49 @@ sub setup_kdc_request {
         }
     }
     return $status;
+}
+
+##############################################################################
+# Rate limiting and replay caching
+##############################################################################
+
+# Check whether a given request is a replay.  Takes the request token and
+# returns true if it is a replay, false otherwise (including if we aren't
+# checking for replays).
+sub is_replay {
+    my ($self, $rt) = @_;
+    if (!$self->{memcache}) {
+        return;
+    }
+    my $hash = Digest::SHA::sha512_base64($rt);
+    print STDERR "Looking up request token hash $hash\n"
+        if $self->param ('debug');
+    my $seen = $self->{memcache}->get ($hash);
+    if ($seen) {
+        print STDERR "Rejecting request token $rt as a replay, last seen "
+            . strftime ('%Y-%m-%d %T', localtime $seen) . "\n"
+            if $self->param ('logging');
+        print STDERR "Replacing request token hash $hash\n"
+            if $self->param ('debug');
+        my $now = time;
+        $self->{memcache}->replace ($hash, $now, $now + $REPLAY_TIMEOUT);
+        return 1;
+    }
+    return;
+}
+
+# Register a successful authentication using a request token so that we can
+# detect if it is replayed.  Takes the request token.
+sub register_auth {
+    my ($self, $rt) = @_;
+    my $hash = Digest::SHA::sha512_base64($rt);
+    if (!$self->{memcache}) {
+        return;
+    }
+    print STDERR "Storing request token hash $hash\n"
+        if $self->param ('debug');
+    my $now = time;
+    $self->{memcache}->set ($hash, $now, $now + $REPLAY_TIMEOUT);
 }
 
 #############################################################################
@@ -1427,6 +1494,9 @@ sub index : StartRunmode {
     if ($status == WK_SUCCESS) {
         if (defined (&WebKDC::Config::record_login)) {
             WebKDC::Config::record_login ($resp->subject);
+        }
+        if ($q->param ('password')) {
+            $self->register_auth ($req->request_token);
         }
 
         print STDERR "WebKDC::make_request_token_request success\n"
@@ -1579,6 +1649,16 @@ sub index : StartRunmode {
             $errmsg = "there is most likely a configuration problem with"
                 . " the server that redirected you. Please contact its"
                 . " administrator.";
+
+        # Request was a replay.  Users are only allowed to do a username and
+        # password authentication with a given request token once, since
+        # otherwise someone may use the back button in an abandoned browser to
+        # log in again.
+        } elsif ($status == WK_ERR_REPLAY) {
+            $errmsg = "cannot repeat your authentication to this site."
+                . " If you reached this page via the back button in your"
+                . " browser, start over by going directly to the web site"
+                . " you want to visit.";
         }
 
         # Display the error page.
@@ -1639,7 +1719,7 @@ sub pwchange : Runmode {
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
-    $self->setup_kdc_request (%cart);
+    my $status = $self->setup_kdc_request (%cart);
 
     my $q = $self->query;
     my $req = $self->{request};
@@ -1666,8 +1746,11 @@ sub pwchange : Runmode {
     return $page if ($page = $self->error_if_no_cookies);
     return $page if ($page = $self->error_password_no_post);
 
-    # Attempt password change via krb5_change_password API
-    my ($status, $error) = $self->change_user_password;
+    # Attempt password change via krb5_change_password API.
+    my $error = '';
+    if ($status != 0) {
+        ($status, $error) = $self->change_user_password;
+    }
 
     # We've successfully changed the password.  Depending on if we were sent
     # by an expired password, either pass along to the normal page or give a
@@ -1744,15 +1827,18 @@ sub multifactor : Runmode {
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
-    $self->setup_kdc_request (%cart);
+    my $status = $self->setup_kdc_request (%cart);
 
     if ($q->param ('otp')) {
         my $req = $self->{request};
         my $resp = $self->{response};
         $req->user ($q->param ('username'));
         $req->otp ($q->param ('otp'));
-        my ($status, $error)
-            = WebKDC::make_request_token_request ($req, $resp);
+        my $error;
+        if ($status == 0) {
+            ($status, $error)
+                = WebKDC::make_request_token_request ($req, $resp);
+        }
 
         if ($status == WK_SUCCESS) {
             print STDERR "WebKDC::make_request_token_request success\n"
@@ -1841,12 +1927,15 @@ sub edit_authz_identity : Runmode {
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
-    $self->setup_kdc_request (%cart);
+    my $status = $self->setup_kdc_request (%cart);
 
     # Resubmit the authentication request.
     my $req = $self->{request};
     my $resp = $self->{response};
-    my ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    my $error;
+    if ($status == 0) {
+        ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    }
     if ($status == WK_SUCCESS) {
         print STDERR "WebKDC::make_request_token_request success\n"
             if $self->param ('debug');

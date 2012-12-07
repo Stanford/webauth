@@ -50,6 +50,12 @@ that's longer than the HTTP protocol permits.
          URI
          XML::Parser
 
+    If you want support for replay detection and rate limiting, you will
+    also need:
+
+         Cache::Memcached
+         Digest::SHA (part of Perl itself since 5.9.3)
+
     You'll probably also want to install and configure mod_fastcgi as
     well, though it's not a requirement.  If you decide to install it,
     you'll need to configure it like so:

@@ -135,6 +135,12 @@ REQUIREMENTS
   mod_fcgi or mod_fastcgi, is also recommended to improve performance of
   the WebLogin interface, but this is not required.
 
+  To support replay detection and rate limiting in WebLogin, the following
+  modules are also required:
+
+      Cache::Memcached
+      Digest::SHA (part of Perl itself since 5.9.3)
+
   For optional WebLogin support for warning users of expired passwords,
   the Date::Parse, Time::Duration, and Net::Remctl Perl modules are
   required and the local Kerberos realm must provide the remctl interface

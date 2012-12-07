@@ -239,6 +239,31 @@ Configuration
       that principals containing embedded escaped "@" characters will not
       have $DEFAULT_REALM appended.)  Default: not set.
 
+  @MEMCACHED_SERVERS
+
+      WebLogin can support replay caching of successful logins and rate
+      limiting of failed logins.  Both require a memcached server to use
+      for storage.  Setting this variable will enable replay caching and
+      will allow rate limiting to be configured (using
+      $RATE_LIMIT_THRESHOLD and $RATE_LIMIT_INTERVAL).
+
+      The value should be a list of memcached servers of the form
+      <ip>:<port>.  A common value will be:
+
+          @MEMCACHED_SERVERS = ('127.0.0.1:11211');
+
+      which will use a memcached on localhost on the default port.  Note
+      that a pool of WebLogin servers should all share the same memcached
+      server correct behavior.  WebLogin will dynamically disable replay
+      caching and rate limiting if the memcached server is not available.
+
+      More complex settings are possible.  This variable may actually be
+      set to any list of values that are accepted by the servers option of
+      the Cache::Memcached constructor.  See its documentation for more
+      information.
+
+      Default: not set.
+
   $REMUSER_ENABLED (was $HONOR_REMOTE_USER)
 
       Whether to honor Apache authentication.  If this variable is set to

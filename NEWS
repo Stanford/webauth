@@ -22,6 +22,15 @@ WebAuth 4.4.0 (unreleased)
     this will make multi-stage login processes, such as multifactor,
     impossible.
 
+    Add replay detection to WebLogin.  When enabled, only one username and
+    password authentication is permitted with a given request token, and
+    further authentications with the same request token are rejected as
+    replays.  This can protect against an attacker using the back button
+    in an abandoned browser to replay the form submission on the WebLogin
+    server.  This support requires a memcached server be available for
+    data storage and the Perl modules Cache::Memcached and Digest::SHA.
+    The latter is available as part of Perl since 5.9.3.
+
     In WebLogin, set single sign-on cookies if present even when
     displaying an error.  This establishes single sign-on when errors are
     returned after authentication, such as authentication rejected errors
