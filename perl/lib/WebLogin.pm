@@ -40,9 +40,7 @@ require 5.006;
 use strict;
 use warnings;
 
-use CGI ();
 use CGI::Cookie ();
-use CGI::Fast ();
 use MIME::Base64 qw(encode_base64);
 use Template ();
 use WebAuth 3.06 qw(:const);
