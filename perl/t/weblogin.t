@@ -19,6 +19,7 @@ use WebAuth qw(3.00 :const);
 use WebKDC ();
 use WebKDC::Config;
 
+use CGI;
 use CGI::Cookie;
 use File::Path qw (rmtree);
 use Test::More;
