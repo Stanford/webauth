@@ -21,6 +21,10 @@ use warnings;
 use CGI::Fast;
 use WebLogin;
 
+# Set to true in our signal handler to indicate that the script should exit
+# once it finishes processing the current request.
+our $EXITING = 0;
+
 # The names of the page templates, relative to the template path configured in
 # the WebLogin configuration file.  This is set in this driver so that a
 # modified driver script can use different template names, allowing multiple
