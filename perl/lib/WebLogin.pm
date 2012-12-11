@@ -1420,12 +1420,12 @@ sub setup_kdc_request {
 
         # Check for replay.
         if ($self->is_replay ($self->{request}->request_token)) {
-            $status = WK_ERR_REPLAY;
+            $status = WK_ERR_AUTH_REPLAY;
         }
 
         # Check for rate limiting.
         if ($self->is_rate_limited ($username)) {
-            $status = WK_ERR_AUTH_RATE_LIMITED;
+            $status = WK_ERR_AUTH_LOCKOUT;
         }
     }
     $self->{request}->user ($q->param ('username')) if $q->param ('username');
@@ -1700,14 +1700,14 @@ sub index : StartRunmode {
         # password authentication with a given request token once, since
         # otherwise someone may use the back button in an abandoned browser to
         # log in again.
-        } elsif ($status == WK_ERR_REPLAY) {
+        } elsif ($status == WK_ERR_AUTH_REPLAY) {
             $errmsg = "cannot repeat your authentication to this site."
                 . " If you reached this page via the back button in your"
                 . " browser, start over by going directly to the web site"
                 . " you want to visit.";
 
         # User reached the rate limit of failed logins.
-        } elsif ($status = WK_ERR_AUTH_RATE_LIMITED) {
+        } elsif ($status = WK_ERR_AUTH_LOCKOUT) {
             $errmsg = "too many login failures. Try again later.";
         }
 

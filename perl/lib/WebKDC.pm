@@ -79,8 +79,8 @@ our %pec_mapping = (
     &WA_PEC_LOGIN_REJECTED              => WK_ERR_LOGIN_REJECTED,
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
     &WA_PEC_AUTH_REJECTED               => WK_ERR_AUTH_REJECTED,
-    &WA_PEC_REPLAY                      => WK_ERR_REPLAY,
-    &WA_PEC_AUTH_RATE_LIMITED           => WK_ERR_AUTH_RATE_LIMITED,
+    &WA_PEC_AUTH_REPLAY                 => WK_ERR_AUTH_REPLAY,
+    &WA_PEC_AUTH_LOCKOUT                => WK_ERR_AUTH_LOCKOUT,
 );
 
 # Get a keyring from the configured WebLogin keyring path.  This used to

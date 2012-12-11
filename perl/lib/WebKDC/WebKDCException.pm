@@ -57,8 +57,8 @@ BEGIN {
                  WK_ERR_LOGIN_REJECTED
                  WK_ERR_LOA_UNAVAILABLE
                  WK_ERR_AUTH_REJECTED
-                 WK_ERR_REPLAY
-                 WK_ERR_AUTH_RATE_LIMITED);
+                 WK_ERR_AUTH_REPLAY
+                 WK_ERR_AUTH_LOCKOUT);
 }
 
 # This hash maps the error codes to names, used when stringifying.
@@ -87,8 +87,8 @@ sub WK_ERR_MULTIFACTOR_UNAVAILABLE () { 10 }
 sub WK_ERR_LOGIN_REJECTED          () { 11 }
 sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
-sub WK_ERR_REPLAY                  () { 14 }
-sub WK_ERR_AUTH_RATE_LIMITED       () { 15 }
+sub WK_ERR_AUTH_REPLAY             () { 14 }
+sub WK_ERR_AUTH_LOCKOUT            () { 15 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, protocol error, and data.
@@ -270,12 +270,17 @@ security limitations placed on the user, missing prerequisite actions that
 the user must take (such as training or a usage agreement), or some other
 local factor.
 
-=item WK_ERR_REPLAY
+=item WK_ERR_AUTH_REPLAY
 
 This authentication attempt appears to be a replay.  Replays may be
 rejected as a security measure to protect against people who walked away
 with a browser open and left the WebLogin form submission in the browser
 cache.
+
+=item WK_ERR_AUTH_LOCKOUT
+
+This account has been locked out due to too many unsuccessful login
+attempts.  The login should be retried later.
 
 =back
 

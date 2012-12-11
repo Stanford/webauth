@@ -60,7 +60,7 @@ enum webauth_error_code {
     WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
     WA_PEC_LOGIN_TOKEN_STALE           = 12,
     WA_PEC_LOGIN_TOKEN_INVALID         = 13, /* Can't decrypt / bad format */
-    WA_PEC_LOGIN_FAILED                = 14, /* Username/passwword failed */
+    WA_PEC_LOGIN_FAILED                = 14, /* Username/password failed */
     WA_PEC_PROXY_TOKEN_REQUIRED        = 15, /* Missing required proxy-token */
     WA_PEC_LOGIN_CANCELED              = 16, /* User cancelled login */
     WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
@@ -71,8 +71,8 @@ enum webauth_error_code {
     WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
     WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
     WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
-    WA_PEC_REPLAY                      = 25, /* Auth was a replay */
-    WA_PEC_AUTH_RATE_LIMITED           = 26  /* Too many failed attempts */
+    WA_PEC_AUTH_REPLAY                 = 25, /* Auth was a replay */
+    WA_PEC_AUTH_LOCKOUT                = 26  /* Too many failed attempts */
 };
 
 /*
