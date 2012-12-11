@@ -2,6 +2,31 @@
 
 WebAuth 4.4.0 (unreleased)
 
+    The WebKDC and WebLogin server now support allowing a user to assert
+    an authorization identity other than their own identity.  This can be
+    used to allow a user to access a test account on a particular WebAuth
+    Application Server, pretend to be another user for testing or
+    administrative reasons, or otherwise use an identity other than their
+    own.  This support is disabled by default; to enable it, set the
+    WebKdcIdentityAcl Apache directive to the path to an ACL file
+    describing acceptable combinations of authentication and authorization
+    identities for each site.  See the WebKdcIdentityAcl documentation in
+    the mod_webkdc manual for more information.  Updates to the confirm
+    and possibly the login templates in WebLogin will also be required.
+    See the sample templates for the new parameters and fields.
+
+    mod_webauth by default ignores the new authorization identities (and
+    old versions will always ignore them) except for recording the
+    authorization identity in the new environment variable
+    WEBAUTH_AUTHZ_USER.  There is a new mod_webauth Apache directive,
+    WebAuthTrustAuthzIdentity, which can be enabled to set REMOTE_USER to
+    the authorization identity instead of the authentication identity and
+    to use the authorization identity for access control (such as
+    mod_webauthldap privilege group lookups).  WEBAUTH_USER will always be
+    set to the authentication identity.  This directive is allowed in
+    .htaccess files (if authentication overrides are allowed) as well as
+    anywhere in the main Apache configuration.
+
     Add new mod_webkdc Apache directive WebKdcLoginTimeLimit, which
     controls the time limit for completing a multi-step login process
     (such as with multifactor authentication) and how recently
