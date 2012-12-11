@@ -1473,83 +1473,30 @@ sub setup_kdc_request {
     return $status;
 }
 
-#############################################################################
-# Actions to various requests
-#############################################################################
-
-# Main index, to log users in or display the login page if they are required
-# to enter login data.
-# Pages: multifactor page (success + multifactor required)
-#        login page (login failure)
-#        password reset page (success + password expired)
-#        confirm page (success + no multifactor + confirm required)
-#        redirect to base site (success + no multifactor + no confirm)
-#        error page (some critical failure)
-#        internal service error page (could not call template)
-sub index : StartRunmode {
-    my ($self) = @_;
-
+# Handle errors from the login process.  This code is shared between the login
+# screen and the resubmission of the confirmation screen when the
+# authorization identity was changed.
+#
+# Call this method with the status and the error message (if any).  The return
+# value will be the page to display, which means that the caller can just
+# return the return value of this method.
+sub handle_login_error {
+    my ($self, $status, $error) = @_;
     my $q = $self->query;
     my $req = $self->{request};
     my $resp = $self->{response};
-    my ($status, $error);
 
-    # Test for lack of a request token, cookies not being enabled, or
-    # sending passwords over a non-POST method.  If found, these will
-    # internally handle the error pages, so we stop processing this
-    # request.
-    my $page;
-    return $page if ($page = $self->error_no_request_token);
-    return $page if ($page = $self->error_if_no_cookies);
-    return $page if ($page = $self->error_password_no_post);
-
-    # Set up all WebKDC parameters, including tokens, proxy tokens, and
-    # REMOTE_USER parameters.
-    my %cart = CGI::Cookie->fetch;
-    $status = $self->setup_kdc_request (%cart);
-
-    # Pass the information along to the WebKDC and get the response.
-    if (!$status) {
-        ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
-    }
-
-    # Parse the result from the WebKDC and get the login cancel information if
-    # any.
-    # FIXME: (The login cancel stuff is oddly placed here, like it was added
-    # as an afterthought, and should probably be handled in a cleaner
-    # fashion.)
-    $self->get_login_cancel_url;
-
-    # parse_uri returns 1 on failure to parse the return_url.
-    if ($status == WK_SUCCESS && $self->parse_uri) {
-        $status = WK_ERR_WEBAUTH_SERVER_ERROR;
-    }
-
-    # Now, display the appropriate page.  If $status is WK_SUCCESS, we have a
-    # successful authentication (by way of proxy token or username/password
-    # login).  Otherwise, WK_ERR_USER_AND_PASS_REQUIRED indicates the first
-    # visit to the login page, WK_ERR_LOGIN_FAILED indicates the user needs to
-    # try logging in again, and WK_ERR_LOGIN_FORCED indicates this site
-    # requires username/password even if the user has other auth methods.
-    # Auth branch on "WebKDC return status" 1A
-    if ($status == WK_SUCCESS) {
-        if (defined (&WebKDC::Config::record_login)) {
-            WebKDC::Config::record_login ($resp->subject);
-        }
-        if ($q->param ('password')) {
-            $self->register_auth ($req->request_token);
-        }
-
-        print STDERR "WebKDC::make_request_token_request success\n"
-            if $self->param ('debug');
-        return $self->print_confirm_page;
+    # WK_ERR_USER_AND_PASS_REQUIRED indicates the first visit to the login
+    # page, WK_ERR_LOGIN_FAILED indicates the user needs to try logging in
+    # again, and WK_ERR_LOGIN_FORCED indicates this site requires
+    # username/password even if the user has other auth methods.
 
     # User's password has expired and we have somewhere to send them to get it
     # changed.  Get the CPT (unless we require resending the password) and
     # update the script name.
     # 1B
-    } elsif ($status == WK_ERR_CREDS_EXPIRED
-             && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
+    if ($status == WK_ERR_CREDS_EXPIRED
+        && defined ($WebKDC::Config::EXPIRING_PW_URL)) {
 
         if (!$WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD) {
             $self->add_changepw_token;
@@ -1717,6 +1664,78 @@ sub index : StartRunmode {
         $self->template_params ({err_webkdc => 1});
         $self->template_params ({err_msg => $errmsg});
         return $self->print_error_page;
+    }
+}
+
+##############################################################################
+# Actions to various requests
+##############################################################################
+
+# Main index, to log users in or display the login page if they are required
+# to enter login data.
+# Pages: multifactor page (success + multifactor required)
+#        login page (login failure)
+#        password reset page (success + password expired)
+#        confirm page (success + no multifactor + confirm required)
+#        redirect to base site (success + no multifactor + no confirm)
+#        error page (some critical failure)
+#        internal service error page (could not call template)
+sub index : StartRunmode {
+    my ($self) = @_;
+
+    my $q = $self->query;
+    my $req = $self->{request};
+    my $resp = $self->{response};
+    my ($status, $error);
+
+    # Test for lack of a request token, cookies not being enabled, or
+    # sending passwords over a non-POST method.  If found, these will
+    # internally handle the error pages, so we stop processing this
+    # request.
+    my $page;
+    return $page if ($page = $self->error_no_request_token);
+    return $page if ($page = $self->error_if_no_cookies);
+    return $page if ($page = $self->error_password_no_post);
+
+    # Set up all WebKDC parameters, including tokens, proxy tokens, and
+    # REMOTE_USER parameters.
+    my %cart = CGI::Cookie->fetch;
+    $status = $self->setup_kdc_request (%cart);
+
+    # Pass the information along to the WebKDC and get the response.
+    if (!$status) {
+        ($status, $error) = WebKDC::make_request_token_request ($req, $resp);
+    }
+
+    # Parse the result from the WebKDC and get the login cancel information if
+    # any.
+    # FIXME: (The login cancel stuff is oddly placed here, like it was added
+    # as an afterthought, and should probably be handled in a cleaner
+    # fashion.)
+    $self->get_login_cancel_url;
+
+    # parse_uri returns 1 on failure to parse the return_url.
+    if ($status == WK_SUCCESS && $self->parse_uri) {
+        $status = WK_ERR_WEBAUTH_SERVER_ERROR;
+    }
+
+    # Now, display the appropriate page.  If $status is WK_SUCCESS, we have a
+    # successful authentication (by way of proxy token or username/password
+    # login).  Otherwise, process the error.
+    # Auth branch on "WebKDC return status" 1A
+    if ($status == WK_SUCCESS) {
+        if (defined (&WebKDC::Config::record_login)) {
+            WebKDC::Config::record_login ($resp->subject);
+        }
+        if ($q->param ('password')) {
+            $self->register_auth ($req->request_token);
+        }
+
+        print STDERR "WebKDC::make_request_token_request success\n"
+            if $self->param ('debug');
+        return $self->print_confirm_page;
+    } else {
+        return $self->handle_login_error ($status, $error);
     }
 }
 
@@ -1991,16 +2010,7 @@ sub edit_authz_identity : Runmode {
             if $self->param ('debug');
         return $self->print_confirm_page;
     } else {
-        # FIXME: Probably want to handle $status more, particularly ones
-        #        indicating the page timed out and the user needs to start
-        #        again or that they're not allowed to assert that identity
-        print STDERR "setting authz subject failed with $error\n"
-            if $self->param ('logging');
-        $self->template_params ({err_webkdc => 1});
-        $self->template_params ({
-            err_msg => "cannot set authorization identity"
-        });
-        return $self->print_error_page;
+        return $self->handle_login_error ($status, $error);
     }
 }
 
