@@ -171,46 +171,6 @@ Configuration
   old version is supported for backward compatibility; this is noted in
   parens after the variable name.
 
-  $KEYRING_PATH
-
-      The path to the WebKDC keyring.  This is used to encrypt some
-      communications with the WebKDC, particularly when allowing
-      authentication to the WebLogin server via a native Apache method
-      such as Negotiate-Auth.  Default: "../conf/webkdc/keyring" (which
-      works for the default installation paths inside the Apache
-      configuration directory).
-
-  $TEMPLATE_PATH
-
-      The path to the directory containing the login.tmpl, confirm.tmpl,
-      error.tmpl, and logout.tmpl templates.  Default:
-      "/usr/local/share/weblogin/generic/templates" (which works for the
-      default installation paths).
-
-  $TEMPLATE_COMPILE_PATH
-
-      The path to the directory that Template Toolkit will use to
-      create compiled versions of the template for speed.  Default:
-      "/usr/local/share/weblogin/generic/templates/ttc" (which works for
-      the default installation paths).
-
-  $URL
-
-      URL to use to contact the WebKDC.  This should always point to
-      localhost.  It probably doesn't have to use SSL, given that it's
-      using localhost, but the performance impact isn't high and being
-      paranoid is nice.  Default: "https://localhost/webkdc-service/".
-      You generally only want to change the local part of the URL, and
-      then only if you want to use a non-standard URL for the WebKDC.
-
-  $FATAL_PAGE
-
-      In case of an error in trying to generate a page from a template,
-      we will print out a 500 page.  If this is not set, we simply die
-      with an error for logs and let Apache handle the page.  If this
-      is set, we load the file given as an error page and display it on
-      template errors.
-
   $BYPASS_CONFIRM
 
       By default, a confirmation page is always shown to the user and they
@@ -247,7 +207,107 @@ Configuration
       should be authenticated in a different Kerberos realm than the
       default realm for the system on which the WebKDC is running.  (Note
       that principals containing embedded escaped "@" characters will not
-      have $DEFAULT_REALM appended.)  Default: not set.
+      have $DEFAULT_REALM appended.)
+
+      Default: not set.
+
+  $EXPIRING_PW_PORT
+
+      The remctl port of the server used for authentication to the
+      kadmin-remctl interface.  Usually this should be left as the default
+      and not be set, in which case WebLogin will use the default remctl
+      port.
+
+      Default: not set.
+
+  $EXPIRING_PW_PRINC
+
+      The principal of the server used for authentication to the
+      kadmin-remctl interface.  Usually this should be left as the default
+      and not be set, in which case the host principal for the server set
+      in $EXPIRING_PW_SERVER will be used.  However, if your remctl server
+      is using a different Kerberos principal than the default, you may
+      need to set this.
+
+      Default: not set.
+
+  $EXPIRING_PW_RESEND_PASSWORD
+
+      Whether or not to require the user to retype their password after
+      having their login fail for an expired password and being prompted
+      to change their password.  If set to a false value (such as 0),
+      WebLogin will create a CPW token from the initial failure using the
+      old password already entered during the login attempt.  When this is
+      set to a true value (such as 1), WebLogin will instead require that
+      the user retype their password at the same time they enter their new
+      password.
+
+      Default: true (require the users to resend password).
+
+  $EXPIRING_PW_SERVER
+
+      A server that implements the kadmin-remctl interface for querying
+      the time a principal has until password expiration (via the
+      check_expire command).
+
+      Default: not set.
+
+  $EXPIRING_PW_TGT
+
+      The TGT file used to query against the kadmin-remctl interface used
+      in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
+      outside of WebLogin.
+
+      Default: not set.
+
+  $EXPIRING_PW_URL
+
+      The location for the password redirect form, used to redirect users
+      with expiring or expired passwords to update those passwords.  If
+      this is not set, then the check to see if the user's password is
+      expiring soon is disabled and expired passwords will result in an
+      error message rather than a password change dialog.
+
+      Default: not set.
+
+  $EXPIRING_PW_WARNING
+
+      The time period in seconds that we check against for password
+      expirations.  Any password with an expiration time less than this
+      number of seconds should bring up a warning on the login confirmation
+      screen.
+
+      Default: not set.
+
+  $FATAL_PAGE
+
+      In case of an error in trying to generate a page from a template,
+      we will print out a 500 page.  If this is not set, we simply die
+      with an error for logs and let Apache handle the page.  If this
+      is set, we load the file given as an error page and display it on
+      template errors.
+
+      Default: not set.
+
+  $KEYRING_PATH
+
+      The path to the WebKDC keyring.  This is used to encrypt some
+      communications with the WebKDC, particularly when allowing
+      authentication to the WebLogin server via a native Apache method
+      such as Negotiate-Auth.
+
+      Default: "../conf/webkdc/keyring" (which works for the default
+      installation paths inside the Apache configuration directory).
+
+  $LOGIN_URL
+
+      The URL used to log in to the site.  This is used only with the
+      password change feature, and only when $REMUSER_REDIRECT is also
+      used.  In that case, this is required in order to know which page
+      to direct the form action back to after using the password change
+      page.
+
+      Default: not set.
 
   @MEMCACHED_SERVERS
 
@@ -274,13 +334,62 @@ Configuration
 
       Default: not set.
 
+  $MULTIFACTOR_COMMAND
+
+      The command to pass through to the remctl interface for sending
+      OTPs.  This will probably be a string of at least two words, for
+      command and sub-command.  WebLogin will split on whitespace and
+      then append the username before sending to the server specified
+      in $MULTIFACTOR_SERVER.
+
+      Default: not set.
+
+  $MULTIFACTOR_PORT
+
+      The remctl port of the server used for authentication to the remctl
+      interface for sending OTPs.  Usually this should be left as the
+      default and not be set, in which case WebLogin will use the default
+      remctl port.
+
+      Default: not set.
+
+  $MULTIFACTOR_PRINC
+
+      The principal of the server used for authentication to the remctl
+      interface for sending OTPs.  Usually this should be left as the
+      default and not be set, in which case the host principal for the
+      server set in $MULTIFACTOR_SERVER will be used.  However, if your
+      remctl server is using a different Kerberos principal than the
+      default, you may need to set this.
+
+      Default: not set.
+
+  $MULTIFACTOR_SERVER
+
+      A server that implements a remctl interface for sending one-time
+      passwords via some external mechanism, such as SMS.  This will
+      only be called if a custom template has been set up for the
+      multifactor page.
+
+      Default: not set.
+
+  $MULTIFACTOR_TGT
+
+      The TGT file used to query against the remctl interface used in
+      $MULTIFACTOR_SERVER.  The TGT should be maintained by a process
+      outside of WebLogin.
+
+      Default: not set.
+
   $RATE_LIMIT_INTERVAL
 
       How long failed login attempts are remembered in seconds.  This
       setting is only used if $RATE_LIMIT_THRESHOLD and @MEMCACHED_SERVERS
       are set.  It controls how long a failed login attempt is remembered.
       After this interval, any failures are discarded (whether or not the
-      user was locked out).  Default: 300 (5 minutes).
+      user was locked out).
+
+      Default: 300 (5 minutes).
 
   $RATE_LIMIT_THRESHOLD
 
@@ -306,13 +415,16 @@ Configuration
       true unless you really trust your Apache authentication and you know
       exactly which Apache authentication methods would be used for
       running the login.fcgi script.  See install-spnego for more details.
+
       Default: false.
 
   $REMUSER_EXPIRES
 
       Only used when $REMUSER_ENABLED is set.  The credentials generated
       from REMOTE_USER will expire after this many seconds (given as a
-      number).  Default: 28800 (eight hours).
+      number).
+
+      Default: 28800 (eight hours).
 
   @REMUSER_LOCAL_REALMS
 
@@ -382,22 +494,15 @@ Configuration
       Apache authentication or if the cookie is already present.
 
       If using this option, you must also set $REMUSER_ENABLED (otherwise
-      there would be no point).  Default: false.
+      there would be no point).
 
-  $LOGIN_URL
-
-      The URL used to log in to the site.  This is used only with the
-      password change feature, and only when $REMUSER_REDIRECT is also
-      used.  In that case, this is required in order to know which page
-      to direct the form action back to after using the password change
-      page.  Default: not set.
-
-  $REALM
-
-      Equivalent to setting @REMUSER_REALMS to the single realm set here.
-      Use @REMUSER_REALMS instead.  Default: not set.
+      Default: false.
 
   @SHIBBOLETH_IDPS
+
+      This setting is mostly obsolete and probably will not work as
+      desired with Shibboleth 2.x or later.  It only works when the target
+      site is present in the URL, which is no longer the common case.
 
       The hostnames (as used in URLs) of a local Shibboleth IdP protected
       by WebAuth.  An example setting:
@@ -416,110 +521,61 @@ Configuration
       IdP.  This further hides from the user the underlying mechanics of
       Shibboleth and shows them the final destination host instead of the
       intermediate IdP host.  This setting only affects the text on the
-      page; the underlying links are left unchanged.  Default: not set.
+      page; the underlying links are left unchanged.
+
+      Default: not set.
+
+  $TEMPLATE_PATH
+
+      The path to the directory containing the confirm.tmpl, error.tmpl,
+      login.tmpl, logout.tmpl, multifactor.tmpl, and pwchange.tmpl
+      templates.
+
+      Default:  "/usr/local/share/weblogin/generic/templates" (which works
+      for the default installation paths).
+
+  $TEMPLATE_COMPILE_PATH
+
+      The path to the directory that Template Toolkit will use to
+      create compiled versions of the template for speed.
+
+      Default:  "/usr/local/share/weblogin/generic/templates/ttc" (which
+      works for the default installation paths).
 
   $TOKEN_ACL
 
       The path to the token.acl file used by mod_webkdc.  This variable
       must be set if you wish to include a summary of the delegated
       credentials that a WAS may request in the confirmation page.
+
       Default: not set.
+
+  $URL
+
+      URL to use to contact the WebKDC.  This should always point to
+      localhost.  It probably doesn't have to use SSL, given that it's
+      using localhost, but the performance impact isn't high and being
+      paranoid is nice.
+
+      Default: "https://localhost/webkdc-service/".  You generally only
+      want to change the local part of the URL, and then only if you want
+      to use a non-standard URL for the WebKDC.
 
   $WEBKDC_PRINCIPAL
 
       The Kerberos principal used by the WebKDC.  Currently, this
       configuration variable is only used with Apache REMOTE_USER support
       and ticket delegation to generate a proxy token based on a forwarded
-      ticket, but it must be set in that case.  Default: not set.
+      ticket, but it must be set in that case.
 
-  $EXPIRING_PW_URL
+      Default: not set.
 
-      The location for the password redirect form, used to redirect users
-      with expiring or expired passwords to update those passwords.  If
-      this is not set, then the check to see if the user's password is
-      expiring soon is disabled and expired passwords will result in an
-      error message rather than a password change dialog.  Default: not
-      set.
+  Obsolete configuratino options:
 
-  $EXPIRING_PW_SERVER
+  $REALM
 
-      A server that implements the kadmin-remctl interface for querying
-      the time a principal has until password expiration (via the
-      check_expire command).  Default: not set.
-
-  $EXPIRING_PW_TGT
-
-      The TGT file used to query against the kadmin-remctl interface used
-      in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
-      outside of webauth.  Default: not set.
-
-  $EXPIRING_PW_PRINC
-
-      The principal of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, where Net::Remctl will do the correct thing.  However,
-      during the test suite we need to set this to test against a local
-      remctl.  Default: empty string.
-
-  $EXPIRING_PW_PORT
-
-      The remctl port of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, where Net::Remctl will do the correct thing.  Default:
-      0.
-
-  $EXPIRING_PW_WARNING
-
-      The time period in seconds that we check against for password
-      expirations.  Any password with an expiration time less than this
-      number of seconds should bring up a warning on the login confirmation
-      screen.  Default: not set.
-
-  $EXPIRING_PW_RESEND_PASSWORD
-
-      Whether or not to require the user to retype their password after
-      having their login fail for an expired password and being prompted to
-      change their password.  When this is not set, we will create a CPW
-      token from the initial failure using the old password already entered
-      during the login attempt.  When this is set, we will instead require
-      that the user retype their password at the same time they enter their
-      new password.  Default: 1 (require the users to resend password).
-
-  $MULTIFACTOR_SERVER
-
-      A server that implements a remctl interface for sending one-time
-      passwords via some external mechanism, such as SMS.  This will
-      only be called if a custom template has been set up for the
-      multifactor page.  Default: not set.
-
-  $MULTIFACTOR_TGT
-
-      The TGT file used to query against the remctl interface used in
-      $MULTIFACTOR_SERVER.  The TGT should be maintained by a process
-      outside of webauth.  Default: not set.
-
-  $MULTIFACTOR_PRINC
-
-      The principal of the server used for authentication to the
-      remctl interface for sending OTPs.  Usually this should be left
-      as the default and not be set, where Net::Remctl will do the
-      correct thing.  However, during the test suite we need to set
-      this to test against a local remctl.  Default: empty string.
-
-  $MULTIFACTOR_PORT
-
-      The remctl port of the server used for authentication to the
-      remctl interface for sending OTPs.  Usually this should be left
-      as the default and not be set, where Net::Remctl will do the
-      correct thing.  Default: 0.
-
-  $MULTIFACTOR_COMMAND
-
-      The command to pass through to the remctl interface for sending
-      OTPs.  This will probably be a string of at least two words, for
-      command and sub-command.  WebLogin will split on whitespace and
-      then append the username before sending to the server specified
-      in $MULTIFACTOR_SERVER.  Default: not set.
+      Equivalent to setting @REMUSER_REALMS to the single realm set here.
+      Use @REMUSER_REALMS instead.
 
   In addition to the above variable settings, the configuration file may
   define Perl functions.  If these functions are defined, they're called
