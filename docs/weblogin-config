@@ -107,15 +107,21 @@ Templates
 
       err_html                  If set, the entire HTML to display
       err_bad_method            If set, login form submitted without POST
-      err_cookies_disabled      If set, user doesn't have cookies enabled
-      err_no_request_token      If set, user had no request token
       err_confirm               If set, incomplete data for confirm page
-      err_sendauth              If set, error running sendauth program
+      err_cookies_disabled      If set, user doesn't have cookies enabled
       err_insufficient_mfactor  If set, user multifactor below requested level
       err_insufficient_loa      If set, user LoA below requested level
       err_no_mfactor            If set, user has no configured multifactor
+      err_no_request_token      If set, user had no request token
+      err_sendauth              If set, error running sendauth program
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message
+
+      multifactor_required      List (for FOREACH) of factors required
+      multifactor_configured    List (for FOREACH) of factors user can have
+
+      login_cancel              If set, application provided a cancel URL
+      cancel_url                The cancel URL (return URL plus cancel token)
 
   When encountering a login that requires multifactor, we send the user
   to a page that will prompt them for entering a multifactor one-time
