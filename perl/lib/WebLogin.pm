@@ -95,9 +95,6 @@ our $REMUSER_LIFETIME = '+365d';
 # The lifetime of the kadmin/changepw token.
 our $CHANGEPW_EXPIRES = 5 * 60;
 
-# How long to retain request tokens in the replay cache.
-our $REPLAY_TIMEOUT = 2 * 60 * 60;
-
 # If the WebKDC is localhost, disable LWP certificate verification.  The
 # WebKDC will have a certificate matching its public name, which will
 # never match localhost, and we should be able to trust the server when
@@ -1306,7 +1303,7 @@ sub error_invalid_pwchange_fields {
 # checking for replays).
 sub is_replay {
     my ($self, $rt) = @_;
-    if (!$self->{memcache}) {
+    if (!$self->{memcache} || !$WebKDC::Config::REPLAY_TIMEOUT) {
         return;
     }
     my $hash = Digest::SHA::sha512_base64($rt);
@@ -1320,7 +1317,7 @@ sub is_replay {
         print STDERR "Replacing request token hash $hash\n"
             if $self->param ('debug');
         my $now = time;
-        my $expires = $now + $REPLAY_TIMEOUT;
+        my $expires = $now + $WebKDC::Config::REPLAY_TIMEOUT;
         $self->{memcache}->replace ("rt:$hash", $now, $expires);
         return 1;
     }
@@ -1348,14 +1345,15 @@ sub is_rate_limited {
 # detect if it is replayed.  Takes the request token and the username.
 sub register_auth {
     my ($self, $rt, $username) = @_;
-    my $hash = Digest::SHA::sha512_base64($rt);
-    if (!$self->{memcache}) {
+    if (!$self->{memcache} || !$WebKDC::Config::REPLAY_TIMEOUT) {
         return;
     }
+    my $hash = Digest::SHA::sha512_base64($rt);
     print STDERR "Storing request token hash $hash\n"
         if $self->param ('debug');
     my $now = time;
-    $self->{memcache}->set ($hash, $now, $now + $REPLAY_TIMEOUT);
+    my $timeout = $now + $WebKDC::Config::REPLAY_TIMEOUT;
+    $self->{memcache}->set ($hash, $now, $timeout);
     if ($WebKDC::Config::RATE_LIMIT_THRESHOLD) {
         $self->{memcache}->delete ("fail:$username");
     }

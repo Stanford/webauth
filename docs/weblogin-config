@@ -313,9 +313,9 @@ Configuration
 
       WebLogin can support replay caching of successful logins and rate
       limiting of failed logins.  Both require a memcached server to use
-      for storage.  Setting this variable will enable replay caching and
-      will allow rate limiting to be configured (using
-      $RATE_LIMIT_THRESHOLD and $RATE_LIMIT_INTERVAL).
+      for storage.  Setting this variable will allow replay rejection
+      ($REPLAY_TIMEOUT) and rate limiting ($RATE_LIMIT_THRESHOLD and
+      $RATE_LIMIT_INTERVAL) to be configured.
 
       The value should be a list of memcached servers of the form
       <ip>:<port>.  A common value will be:
@@ -497,6 +497,33 @@ Configuration
       there would be no point).
 
       Default: false.
+
+  $REPLAY_TIMEOUT
+
+      If set, configures how long request tokens are remembered to detect
+      and reject replays (in seconds).  By default, replay rejection is
+      not done.
+
+      If replay rejection is enabled, only one successful authentication
+      using a given request token is permitted within the time interval
+      defined by this setting.  This prevents the user from successfully
+      authenticating to a site and then using the back button on the
+      browser to go back to the login form and replay that authentication.
+      It provides some security against attackers with access to the
+      browser history, although the WebLogin server also attempts to tell
+      browsers to not cache the login page.  If this is enabled, users
+      have to return to the original WebAuth-protected site if they want
+      to restart the authentication process.
+
+      When replay rejection is in use, this configuration option should be
+      set to the same timeout that the WebKDC uses for request tokens (the
+      WebkdcTokenMaxTTL Apache directive).  The default value of that
+      directive is 300 (five minutes).
+
+      This also requires @MEMCACHED_SERVERS be set.  If not, this setting
+      is ignored.
+
+      Default: not set.
 
   @SHIBBOLETH_IDPS
 
