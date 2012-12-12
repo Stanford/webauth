@@ -1159,7 +1159,9 @@ sub time_to_pwexpire {
     return undef if $result->error;
 
     my $expiration = $result->stdout;
-    chomp $expiration;
+    if ($expiration) {
+        chomp $expiration;
+    }
 
     # Empty string should mean there is no password expiration date.  An
     # expiration time that doesn't match the format we expect has us put a
