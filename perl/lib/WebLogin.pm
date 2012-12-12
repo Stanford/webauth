@@ -1147,25 +1147,21 @@ sub time_to_pwexpire {
     # Get the current password expire time from the server.  Save the current
     # tgt, use the one for password expiration, then restore the old.
     my $username = $q->param ('username');
-    my $normaltgt = $ENV{KRB5CCNAME};
-    $ENV{KRB5CCNAME} = $WebKDC::Config::EXPIRING_PW_TGT;
+    local $ENV{KRB5CCNAME} = $WebKDC::Config::EXPIRING_PW_TGT;
     my $result = Net::Remctl::remctl ($WebKDC::Config::EXPIRING_PW_SERVER,
                                       $WebKDC::Config::EXPIRING_PW_PORT,
                                       $WebKDC::Config::EXPIRING_PW_PRINC,
                                       'kadmin', 'check_expire',
                                       $username, 'pwexpire');
-    $ENV{KRB5CCNAME} = $normaltgt;
-
     return undef if $result->error;
-
-    my $expiration = $result->stdout;
-    if ($expiration) {
-        chomp $expiration;
-    }
 
     # Empty string should mean there is no password expiration date.  An
     # expiration time that doesn't match the format we expect has us put a
     # warning into the log but not stop page processing.
+    my $expiration = $result->stdout;
+    if ($expiration) {
+        chomp $expiration;
+    }
     return undef unless $expiration;
     if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
         print STDERR "invalid password expire time for $username: "
