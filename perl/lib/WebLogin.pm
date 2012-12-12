@@ -1606,8 +1606,9 @@ sub handle_login_error {
         $self->template_params ({err_insufficient_loa => 1});
         return $self->print_error_page;
 
-    # The authentication was rejected.  We should have a custom error page to
-    # display to the user.
+    # The authentication was rejected, probably by the user information
+    # service, with a custom error message from the WebKDC.  We should have a
+    # custom error page to display to the user.
     } elsif ($status == WK_ERR_AUTH_REJECTED) {
         if ($error->data) {
             $self->template_params ({err_html => $error->data});
@@ -1615,6 +1616,18 @@ sub handle_login_error {
             $self->template_params ({err_webkdc => 1});
             $self->template_params ({err_msg => 'authentication rejected.'});
         }
+        return $self->print_error_page;
+
+    # Request was a replay.  Users are only allowed to do a username and
+    # password authentication with a given request token once, since otherwise
+    # someone may use the back button in an abandoned browser to log in again.
+    } elsif ($status == WK_ERR_AUTH_REPLAY) {
+        $self->template_params ({err_replay => 1});
+        return $self->print_error_page;
+
+    # User reached the rate limit of failed logins.
+    } elsif ($status = WK_ERR_AUTH_LOCKOUT) {
+        $self->template_params ({err_lockout => 1});
         return $self->print_error_page;
 
     # Something abnormal happened.  Figure out what error message to display
@@ -1642,21 +1655,6 @@ sub handle_login_error {
             $errmsg = "there is most likely a configuration problem with"
                 . " the server that redirected you. Please contact its"
                 . " administrator.";
-
-        # Request was a replay.  Users are only allowed to do a username and
-        # password authentication with a given request token once, since
-        # otherwise someone may use the back button in an abandoned browser to
-        # log in again.
-        } elsif ($status == WK_ERR_AUTH_REPLAY) {
-            $errmsg = "cannot repeat your authentication to this site."
-                . " If you reached this page via the back button in your"
-                . " browser, start over by going directly to the web site"
-                . " you want to visit.";
-
-        # User reached the rate limit of failed logins.
-        } elsif ($status = WK_ERR_AUTH_LOCKOUT) {
-            $errmsg = "too many login failures. Try again later.";
-        }
 
         # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"

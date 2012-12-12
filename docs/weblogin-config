@@ -111,8 +111,10 @@ Templates
       err_cookies_disabled      If set, user doesn't have cookies enabled
       err_insufficient_mfactor  If set, user multifactor below requested level
       err_insufficient_loa      If set, user LoA below requested level
+      err_lockout               If set, locked out due to excessive failures
       err_no_mfactor            If set, user has no configured multifactor
       err_no_request_token      If set, user had no request token
+      err_replay                If set, authentication was a replay
       err_sendauth              If set, error running sendauth program
       err_webkdc                If set, the WebKDC reported an error
       err_msg                   WebKDC error message

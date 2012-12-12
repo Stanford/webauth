@@ -63,6 +63,12 @@ WebAuth 4.4.0 (unreleased)
     requires a memcached server for data storage and the Perl module
     Cache::Memcached.
 
+    The WebLogin error template has two new parameters: err_lockout and
+    err_replay, corresponding to a replayed authentication and an account
+    that was locked out due to too many login failures.  Local templates
+    should be updated to handle those parameters, particularly if either
+    of these features are in use.
+
     In WebLogin, set single sign-on cookies if present even when
     displaying an error.  This establishes single sign-on when errors are
     returned after authentication, such as authentication rejected errors
