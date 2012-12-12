@@ -873,9 +873,7 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
       <p>
         Otherwise, the space-separated arguments to this directive are
         taken to be realms that should be stripped from the authenticated
-        identity.  The realms must be given in escaped form in the WebKDC
-        configuration (for example, any <code>@</code> in a realm must be
-        given as <code>\@</code>).
+        identity.
       </p>
 
       <note>
@@ -989,9 +987,7 @@ WebKdcLoginTimeLimit 0s
         By default, the WebKDC allows authentication via any realm with
         which there is cross-realm trust.  If this directive is given, it
         restricts authentication to principals in one of the realms listed
-        in this directive.  The realms must be given in escaped form in
-        the WebKDC configuration (for example, any <code>@</code> in a
-        realm must be given as <code>\@</code>).
+        in this directive.
       </p>
 
       <example>
