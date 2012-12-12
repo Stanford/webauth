@@ -56,25 +56,6 @@ Protocol:
    obvious; perhaps require that REMOTE_USER be a full principal name if
    krb5 authenticators are used?
 
- * WEBAUTH-16: Provide a way to separate authentication identity and
-   authorization identity and convey both of those to the WAS, including
-   configuration on the WAS to use the authorization identity for access
-   control instead of the authentication identity.  This must satisfy the
-   following constraints:
-
-   + Backward-compatible so that existing WebAuth servers use the
-     authentication identity.
-
-   + Use of the authorization identity must be strictly opt-in.
-
-   Requires some sort of configuration database on the WebLogin server
-   to configure who can proxy as another user and to which sites (and to
-   which users), with logic in the WebLogin screen to allow the user to
-   choose an identity after authentication.  Requires sending the separate
-   authorization identity as a new protocol element in the id token.  Best
-   done after the proxy fix is complete so that we don't also have to
-   modify proxy tokens.
-
  * WEBAUTH-103: Switch to URL-safe base-64 encoding for tokens.  This
    should be done in combination with some of the other changes for use of
    ? in URLs as a bundle of new-format token changes.
@@ -143,6 +124,8 @@ libwebauth:
  * WEBAUTH-116: Implement automatic encoding for enums and use that to
    replace the custom encoding and decoding code for tokens.
 
+ * WEBAUTH-122: Support enterprise principal names.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
@@ -200,6 +183,9 @@ mod_webauthldap:
 
  * WEBAUTH-2: Support configuring multiple LDAP servers to query so that
    failover is supported.
+
+ * WEBAUTH-124: Clean up the Apache 2.4 support and improve the way that
+   the Apache version conditionals are handled.
 
 mod_webkdc:
 
@@ -270,23 +256,21 @@ WebLogin:
    included WebLogin scripts, used to set the cookie saying to use
    Negotiate-Auth.
 
- * WEBAUTH-10: Add a replay cache for WebLogin interactions, possibly
-   using memcached, so that one cannot use the browser back button to
-   reply a password login after the previous user has logged out.
-
- * WEBAUTH-11: Add a rate limit for WebLogin logins that blocks excessive
-   failed password attempts for a specific user.
-
- * WEBAUTH-70: Separate the two functions of @REMUSER_REALMS so that
-   people can configure a set of realms to be stripped separately from a
-   set of realms that are permitted.
-
  * WEBAUTH-13: Add a checkbox to the login page indicating that the user
    is coming from a public cluster.  If checked, don't set a single
    sign-on cookie.
 
  * WEBAUTH-113: Add a new WebLogin hook to map environment variables (from
    client X.509 authentication, for example) to user identities.
+
+ * WEBAUTH-118: In support of localization and site customization,
+   WebLogin should not be generating any error strings in the Perl code
+   where possible.  Instead, it should set parameters that are used on the
+   login template to display appropriate text.  Move the remaining error
+   messages into the template.
+
+ * WEBAUTH-119: Document how to set up multiple WebLogin servers with
+   different themes.
 
 Perl Modules:
 
@@ -295,6 +279,12 @@ Perl Modules:
    WebAuth::WebLogin::* namespace.  WebLogin should be renamed
    WebAuth::WebLogin.
 
+ * WEBAUTH-123: Add Perl WebKDC implementation.
+
+ * WEBAUTH-125: Fix parsing of the return data from the remctl calls to
+   send multifactor messages.  The current parsing doesn't take apart the
+   XML document and retrieve the actual status result.
+
 Test Suite:
 
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
@@ -302,6 +292,12 @@ Test Suite:
    Apache modules.
 
  * WEBAUTH-111: Add better tests for the Kerberos libwebauth functions.
+
+ * WEBAUTH-121: Rewrite tests for the Apache modules to avoid using lots
+   of separate directories, merge the Perl code into a more manageable
+   structure, and update the coding style.
+
+ * WEBAUTH-126: Generate C token tests from the Perl configuration data.
 
 Documentation:
 
@@ -349,3 +345,5 @@ Style:
  * WEBAUTH-81: All of WebAuth needs a general dead code removal pass and
    evaluation of all the places marked FIXME, spawning either entries for
    this list or removal as unimportant.
+
+ * WEBAUTH-120: Update coding style for the WebAuth Perl modules.
