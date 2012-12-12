@@ -51,6 +51,7 @@ t/page-pwchange.t
 t/pending-expire.t
 t/pod-spelling.t
 t/pod.t
+t/strict.t
 t/TODO
 t/token-decode.t
 t/token-encode.t
