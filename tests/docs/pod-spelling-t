@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+#
+# Check for spelling errors in POD documentation
+#
+# Checks all POD files in the tree for spelling errors using Test::Spelling.
+# This test is disabled unless RRA_MAINTAINER_TESTS is set, since spelling
+# dictionaries vary too much between environments.
+#
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use Test::More;
+
+# Top-level directories to ignore.  We ignore the perl directory since it is
+# treated as a Perl module distribution and has its own standalone test suite.
+my %IGNORE = map { $_ => 1 } qw(.git perl);
+
+# Bail if SOURCE is not set.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
+}
+
+# Skip tests unless we're running the test suite in maintainer mode.
+if (!$ENV{RRA_MAINTAINER_TESTS}) {
+    plan skip_all => 'Coding style tests only run for maintainer';
+}
+
+# Skip tests if Test::Spelling is not installed.
+if (!eval { require Test::Spelling }) {
+    plan skip_all => 'Test::Spelling required to test POD spelling';
+}
+Test::Spelling->import;
+
+# SOURCE will be the test directory.  Change to the parent directory.
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
+chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+
+# Build the list of directories to test.
+opendir my $rootdir, q{.} or BAIL_OUT("cannot open .: $!");
+my @dirs = grep { -d $_ && !$IGNORE{$_} } readdir $rootdir;
+closedir $rootdir;
+@dirs = File::Spec->no_upwards(@dirs);
+
+# Finally, run the actual tests on all POD files in those directories.
+all_pod_files_spelling_ok(@dirs);

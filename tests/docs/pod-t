@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+#
+# Check for POD formatting errors.
+#
+# Check all POD documents in the tree, except for any embedded Perl module
+# distribution, for POD formatting errors.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use File::Spec;
+use Test::More;
+
+# Top-level directories to ignore.  We ignore the perl directory since it is
+# treated as a Perl module distribution and has its own standalone test suite.
+my %IGNORE = map { $_ => 1 } qw(.git perl);
+
+# Bail if SOURCE is not set.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
+}
+
+# Skip tests if Test::Pod is not installed.
+if (!eval { require Test::Pod }) {
+    plan skip_all => 'Test::Pod required to test POD formatting';
+}
+Test::Pod->import;
+
+# SOURCE will be the test directory.  Change to the parent directory.
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
+chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+
+# Build the list of directories to test.
+opendir my $rootdir, q{.} or BAIL_OUT("cannot open .: $!");
+my @dirs = grep { -d $_ && !$IGNORE{$_} } readdir $rootdir;
+closedir $rootdir;
+@dirs = File::Spec->no_upwards(@dirs);
+
+# Finally, run the actual tests on all POD files in those directories.
+all_pod_files_ok(@dirs);
