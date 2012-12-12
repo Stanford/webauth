@@ -1624,7 +1624,7 @@ sub handle_login_error {
         return $self->print_error_page;
 
     # User reached the rate limit of failed logins.
-    } elsif ($status = WK_ERR_AUTH_LOCKOUT) {
+    } elsif ($status == WK_ERR_AUTH_LOCKOUT) {
         $self->template_params ({err_lockout => 1});
         return $self->print_error_page;
 
@@ -1653,6 +1653,7 @@ sub handle_login_error {
             $errmsg = "there is most likely a configuration problem with"
                 . " the server that redirected you. Please contact its"
                 . " administrator.";
+        }
 
         # Display the error page.
         print STDERR "WebKDC::make_request_token_request failed with"
