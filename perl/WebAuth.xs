@@ -911,6 +911,8 @@ init_via_cache(self, cache = NULL)
     int status;
   CODE:
 {
+    if (cache != NULL && cache[0] == '\0')
+        cache = NULL;
     status = webauth_krb5_init_via_cache(self->ctx, self->kc, cache);
     if (status != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_krb5_init_via_cache", status);
@@ -981,6 +983,8 @@ export_cred(self, principal = NULL)
     SV *out;
     int status;
 
+    if (principal != NULL && principal[0] == '\0')
+        principal = NULL;
     status = webauth_krb5_export_cred(self->ctx, self->kc, principal, &cred,
                                       &cred_len, &expiration);
     if (status != WA_ERR_NONE)
