@@ -166,7 +166,7 @@ struct wai_krb5_cred {
     struct wai_krb5_cred_address *address;
     void *ticket;                       /* encode: t, optional */
     size_t ticket_len;
-    void *second_ticket;                /* encode: t, optional */
+    void *second_ticket;                /* encode: t2, optional */
     size_t second_ticket_len;
     uint32_t authdata_count;            /* encode: nd, optional, repeat */
     struct wai_krb5_cred_authdata *authdata;
