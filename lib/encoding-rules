@@ -81,12 +81,6 @@ Readonly my $END_REGEX => qr/ \A \s* \} /xms;
 # Functions
 ##############################################################################
 
-# Convert a boolean to the string 'true' or 'false'.
-sub _bool_as_string {
-    my ($bool) = @_;
-    return $bool ? 'true' : 'false';
-}
-
 # say and print with error checking.  autodie unfortunately can't help us with
 # these because they can't be prototyped and hence can't be overridden.
 
@@ -95,13 +89,16 @@ sub print_checked { print @_ or croak 'print failed'; return }
 sub say_checked   { say @_   or croak 'say failed';   return }
 ## use critic
 
-# Usage      : parse_struct($source, $source_fh)
-# Purpose    : Parse the C definition of a struct into encoding rules
-# Returns    : A reference to an array of encoding rules for that struct
-# Parameters : $source    - Input file name (for error reporting)
-#              $source_fh - File handle for open C header source
-# Throws     : I/O exceptions on read failure
-#              String exceptions on parsing failure
+# Parse the C definition of a struct into encoding rules.  The open file
+# handle should point to the start of the body of the struct.  This function
+# is somewhat sensitive to coding style, requiring at least that each member
+# be on a separate line and making some assumptions about whitespace.
+#
+# $source    - Input file name (for error reporting)
+# $source_fh - File handle for open C header source
+#
+# Returns a reference to an array of encoding rules for that struct.  Throws
+# I/O exceptions on read failure and string exceptions on parsing failure.
 sub parse_struct {
     my ($source, $source_fh) = @_;
 
@@ -153,17 +150,24 @@ sub parse_struct {
     die "$source:$.: could not find end of struct\n";
 }
 
-# Usage      : print_rule($struct, $rule_ref)
-# Purpose    : Print out an encoding rule for a single attribute
-# Returns    : undef
-# Parameters : $struct   - Name of the struct for which we're printing rules
-#              $rule_ref - Reference to array representing a rule as follows:
-#                [0] Name of the attribute
-#                [1] Type of the attribute
-#                [2] Attribute name encoded in the wire token
-#                [3] Reference to hash of options
-#                [4] C data type of nested structure
-# Throws     : I/O exceptions on print failure
+# Convert a boolean to the string 'true' or 'false'.  Helper function for
+# print_rule.
+sub _bool_as_string {
+    my ($bool) = @_;
+    return $bool ? 'true' : 'false';
+}
+
+# Print out an encoding rule for a single attribute to standard output.
+#
+# $struct   - Name of the struct for which we're printing rules
+# $rule_ref - Reference to array representing a rule as follows:
+#   [0] Name of the attribute
+#   [1] Type of the attribute
+#   [2] Attribute name encoded in the wire token
+#   [3] Reference to hash of options
+#   [4] C data type of nested structure
+#
+# Returns undef.  Throws I/O exceptions on print failure.
 sub print_rule {
     my ($struct, $rule_ref) = @_;
     my ($name, $type, $encode_name, $option_ref, $nest_type) = @{$rule_ref};
@@ -224,12 +228,12 @@ sub print_rule {
     return;
 }
 
-# Usage      : print_rules($source, $rules_ref)
 # Purpose    : Print the encoding rules for structs found in source header
-# Returns    : undef
-# Parameters : $source    - Path to source header
-#              $rules_ref - Reference to hash of struct name to rule array
-# Throws     : I/O exceptions on print failure
+#
+# $source    - Path to source header
+# $rules_ref - Reference to hash of struct name to rule array
+#
+# Returns undef.  Throws I/O exceptions on print failure.
 sub print_rules {
     my ($source, $rules_ref) = @_;
 

@@ -7,7 +7,7 @@
 # store the username, user agent, and date.
 
 ##############################################################################
-# Modules and declarations
+# Modules and globals
 ##############################################################################
 
 require 5.006;
@@ -64,7 +64,7 @@ my $QUERY_REGEX = qr{
 # Utility functions
 ##############################################################################
 
-# Decode a single CGI parameter.
+# Decode a single CGI parameter.  Helper function for decode_params.
 sub _decode_param {
     my ($param) = @_;
     my ($key, $value) = split m{=}xms, $param, 2;
@@ -72,10 +72,11 @@ sub _decode_param {
     return ($key, $value);
 }
 
-# Usage      : $params_ref = decode_params($params_string)
-# Purpose    : Parse the CGI parameters from a URL into a hash
-# Returns    : A reference to a hash of parameter keys and values
-# Parameters : $params - CGI parameters from a URL as a string
+# Parse the CGI parameters from a URL into a hash.
+#
+# $params - CGI parameters from a URL as a string
+#
+# Returns a reference to a hash of parameter keys and values.
 sub decode_params {
     my ($params) = @_;
     my @params = split m{ [;&] }xms, $params;
@@ -83,13 +84,14 @@ sub decode_params {
     return \%params;
 }
 
-# Usage      : $valid = password_valid($user, $password, $realm)
-# Purpose    : Determine if a Kerberos password is valid for a user
-# Returns    : True if valid, false otherwise
-# Parameters : $user     - Username (Kerberos principal)
-#              $password - Password to attempt
-#              $realm    - Kerberos realm, used to qualify $user if needed
-# Throws     : String exceptions on internal Kerberos errors
+# Determine if a Kerberos password is valid for a user.
+#
+# $user     - Username (Kerberos principal)
+# $password - Password to attempt
+# $realm    - Kerberos realm, used to qualify $user if needed
+#
+# Returns true if valid, false otherwise.  Throws string exceptions on
+# internal Kerberos errors.
 sub password_validate {
     my ($user, $password, $realm) = @_;
 
@@ -109,12 +111,15 @@ sub password_validate {
 # Reporting
 ##############################################################################
 
-# Usage      : store_count($count, $counts_ref)
-# Purpose    : Add an authentication count to a table of instances by number
-#              of authentications, respecting $COUNT_THRESHOLD
-# Returns    : undef
-# Parameters : $count      - Number of authentications
-#              $counts_ref - Hash reference storing frequency buckets
+# Add an authentication count to a table that records number of users found by
+# number of authentications, respecting $COUNT_THRESHOLD.  In other words,
+# each key of the hash is the number of times that user's password was seen in
+# the logs, and the value is the number of users seen with that frequency.
+#
+# $count      - Number of authentications
+# $counts_ref - Hash reference storing frequency buckets
+#
+# Returns undef.
 sub store_count {
     my ($count, $counts_ref) = @_;
     my $key = $count;
@@ -125,15 +130,16 @@ sub store_count {
     return;
 }
 
-# Usage      : analyze_auth_data($auth_ref, $realm)
-# Purpose    : Analyze log parsing results and print out reports
-# Returns    : undef
-# Parameters : $auth_ref   - Reference to hash of authentication data w/keys:
-#                date     - Date of authentication
-#                agent    - User agent from Apache logs
-#                host     - Client host
-#                password - User's password
-#              $realm      - If present, Kerberos realm for checking passwords
+# Analyze log parsing results and print out reports.
+#
+# $auth_ref   - Reference to hash of authentication data w/keys:
+#   date     - Date of authentication
+#   agent    - User agent from Apache logs
+#   host     - Client host
+#   password - User's password
+# $realm      - If present, Kerberos realm for checking passwords
+#
+# Returns undef.
 sub analyze_auth_data {
     my ($auth_ref, $realm) = @_;
     my (%count_of, %valid_count_of);

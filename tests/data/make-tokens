@@ -44,12 +44,13 @@ our %TOKENS_GOOD;
 our %TOKENS_ERROR;
 our %TOKENS_BAD;
 
-# Usage      : build_token($spec_ref, $wa, $ring)
-# Purpose    : Construct an encoded token via normal object methods
-# Returns    : base64-encoded, encrypted token
-# Parameters : $spec_ref - Reference to the token specification
-#              $wa       - WebAuth object to use for WebAuth operations
-#              $ring     - Keyring to use for encryption
+# Construct an encoded token via normal object methods.
+#
+# $spec_ref - Reference to the token specification
+# $wa       - WebAuth object to use for WebAuth operations
+# $ring     - Keyring to use for encryption
+#
+# Returns the base64-encoded, encrypted token.
 sub build_token {
     my ($spec_ref, $wa, $ring) = @_;
     my ($class, $data_ref) = @{$spec_ref};
@@ -60,15 +61,15 @@ sub build_token {
     return $token->encode($ring);
 }
 
-# Usage      : write_token($token, $dir, $file)
-# Purpose    : Given en encoded token, directory, and file, write it to disk
-# Returns    : undef
-# Parameters : $token - The encoded token (or other arbitrary data)
-#              $dir   - Directory into which to write the token
-#              $file  - File name into which to write the token
-# Throws     : I/O exceptions on failure to write the file
-# Notes      : Appends a newline to the end of the token, and therefore cannot
-#              be used for raw tokens.
+# Given an encoded token, directory, and file, write it to disk.  Appends a
+# newline to the end of the token, and therefore cannot be used for raw
+# tokens.
+#
+# $token - The encoded token (or other arbitrary data)
+# $dir   - Directory into which to write the token
+# $file  - File name (relative to that directory) for the token file
+#
+# Returns undef.  Throws I/O exceptions on failure to write the file.
 sub write_token {
     my ($token, $dir, $file) = @_;
     my $path = File::Spec->catfile($dir, $file);
