@@ -194,31 +194,19 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * However, unfortunately, we used to store the flag bits on the wire in
      * memory format (causing lack of correct interoperability between Heimdal
      * and MIT).  Try to figure out if we did that by seeing if any of the
-     * high flag bits are set and, if not, don't swap the bits for backwards
-     * compatibility with older versions of WebAuth built against Heimdal.  We
-     * do this by detecting the local host byte order, building a mask of the
-     * most significant bits using that byte order to figure out how to build
-     * that mask, and then swapping the order of the wire flag bits only if
-     * one of those bits is set.  This relies on the fact that credentials
-     * always have at least one flag set, and all the currently used flags are
-     * in the top half of the wire encoding.
+     * high flag bits are set and only swapping the bits if one of them is
+     * set.  This relies on the fact that credentials always have at least one
+     * flag set, and all the currently used flags are in the top half of the
+     * wire encoding.
      *
      * WebAuth 4.4.0 and later will always write out the flag bits in the
      * correct order.  This code could theoretically be simplified to always
      * swap if nothing older is still in the wild.
      */
-    {
-        uint32_t mask = 0xffff0000;
-
-        creds->flags.i = 0;
-        creds->flags.b.anonymous = 1;
-        if (creds->flags.i & mask)
-            mask = ~mask;
-        if (data.flags & mask)
-            creds->flags.i = swap_flag_bits(data.flags);
-        else
-            creds->flags.i = data.flags;
-    }
+    if (data.flags & mask)
+        creds->flags.i = swap_flag_bits(data.flags);
+    else
+        creds->flags.i = data.flags;
 
     return WA_ERR_NONE;
 }
