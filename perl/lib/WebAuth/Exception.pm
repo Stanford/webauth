@@ -34,19 +34,19 @@
 
 package WebAuth::Exception;
 
-require 5.006;
+use 5.006;
+
 use strict;
 use warnings;
 
-use WebAuth qw(3.02);
-
-use base qw(Exporter);
 use overload '""' => \&to_string, 'cmp' => \&spaceship;
+
+use WebAuth qw(3.02);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '3.03';
+our $VERSION = '3.04';
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.
