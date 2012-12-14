@@ -51,7 +51,6 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     if (creds->addresses != NULL && creds->addresses[0] != NULL) {
         size_t n, i, size;
 
-        fprintf(stderr, "Encoding addresses\n");
         for (n = 0; creds->addresses[n] != NULL; n++)
             ;
         data.address_count = n;
