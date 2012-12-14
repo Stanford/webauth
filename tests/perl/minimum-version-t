@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+#
+# Check that too-new features of Perl are not being used.
+#
+# This version of the check script supports mapping various directories to
+# different version numbers.  This allows a newer version of Perl to be
+# required for internal tools than for public code.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use Test::More;
+
+# A map of versions to directories or files.  All of the target files and any
+# Perl scripts in those directories will be checked against the version
+# requirement.
+my %REQUIREMENTS = (
+    '5.008' => [
+        qw(tests/mod_webauth tools weblogin/login.fcgi
+          weblogin/logout.fcgi weblogin/pwchange.fcgi)
+    ],
+    '5.010' => [qw(lib tests/data)],
+);
+
+# Skip tests if Test::MinimumVersion is not installed.
+if (!eval { require Test::MinimumVersion }) {
+    plan skip_all => 'Test::MinimumVersion required to test version limits';
+}
+Test::MinimumVersion->import;
+
+# SOURCE will be the test directory.  Change to the parent directory.
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
+chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+
+# For each root directory in %REQUIREMENTS, check files in that directory.
+for my $minimum (sort keys %REQUIREMENTS) {
+    my $paths_ref = $REQUIREMENTS{$minimum};
+    all_minimum_version_ok($minimum, { paths => $paths_ref, no_plan => 1 });
+}
+done_testing();

@@ -46,6 +46,7 @@ t/krb5.t
 t/lib/RRA/TAP/Automake.pm
 t/lib/RRA/TAP/Automake.pm.in
 t/lib/Util.pm
+t/minimum-version.t
 t/misc.t
 t/page-pwchange.t
 t/pending-expire.t

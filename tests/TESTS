@@ -17,6 +17,7 @@ lib/webkdc-krb
 lib/webkdc-login
 lib/webkdc-mf
 perl/critic
+perl/minimum-version
 perl/strict
 portable/asprintf
 portable/snprintf
