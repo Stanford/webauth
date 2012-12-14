@@ -41,32 +41,32 @@ typedef krb5_address **krb5_addresses;
  * in tests/data/creds/service, the second is in tests/data/creds/addresses,
  * and the third is the IPv6 address in tests/data/creds/addresses.
  */
-const unsigned char test_addr1_data[4] = { 171, 67, 24, 175 };
-const unsigned char test_addr2_data[4] = { 171, 67, 225, 134 };
-const unsigned char test_addr3_data[16] = {
+static const unsigned char test_addr1_data[4] = { 171, 67, 24, 175 };
+static const unsigned char test_addr2_data[4] = { 171, 67, 225, 134 };
+static const unsigned char test_addr3_data[16] = {
     0x26, 0x07, 0xf6, 0xd0, 0x00, 0x00, 0xa2, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65
 };
 
 /* Build krb5_address structs, which are different across implementations. */
 #ifdef HAVE_KRB5_MIT
-const krb5_address test_addr1 = {
+static const krb5_address test_addr1 = {
     KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr1_data
 };
-const krb5_address test_addr2 = {
+static const krb5_address test_addr2 = {
     KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr2_data
 };
-const krb5_address test_addr3 = {
+static const krb5_address test_addr3 = {
     KV5M_ADDRESS, ADDRTYPE_INET6, 16, (unsigned char *) test_addr3_data
 };
 #else
-const krb5_address test_addr1 = {
+static const krb5_address test_addr1 = {
     KRB5_ADDRTYPE_INET, { 4, (void *) test_addr1_data }
 };
-const krb5_address test_addr2 = {
+static const krb5_address test_addr2 = {
     KRB5_ADDRTYPE_INET, { 4, (void *) test_addr2_data }
 };
-const krb5_address test_addr3 = {
+static const krb5_address test_addr3 = {
     KRB5_ADDRTYPE_INET6, { 16, (void *) test_addr3_data }
 };
 #endif

@@ -6,6 +6,7 @@ lib/interval
 lib/keyring
 lib/keys
 lib/krb5
+lib/krb5-cred
 lib/krb5-tgt
 lib/token-crypto
 lib/token-decode
