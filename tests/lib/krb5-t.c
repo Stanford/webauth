@@ -10,6 +10,7 @@
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
 #include <tests/tap/basic.h>
@@ -17,6 +18,26 @@
 #include <tests/tap/string.h>
 #include <webauth/basic.h>
 #include <webauth/krb5.h>
+
+/*
+ * An address list for testing.  The data structure is completely different
+ * between MIT and Heimdal.
+ */
+static const unsigned char test_addr_data[4] = { 171, 67, 225, 134 };
+#ifdef HAVE_KRB5_MIT
+static const krb5_address test_addr = {
+    KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr_data
+};
+static const krb5_address *const test_addrlist[2] = { &test_addr, NULL };
+static krb5_address **const test_addrlist_ptr
+    = (krb5_address **) test_addrlist;
+#else
+static const krb5_address test_addr = {
+    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr_data }
+};
+static const krb5_addresses test_addrlist = { 1, &test_addr };
+static const krb5_addresses *const test_addrlist_ptr = &test_addrlist;
+#endif
 
 #define CHECK(ctx, s, m) check_status((ctx), (s), (m), __FILE__, __LINE__)
 
@@ -29,6 +50,78 @@ check_status(struct webauth_context *ctx, int s, const char *message,
         diag("webauth call failed %s line %lu: %s (%d)\n", file, line,
              webauth_error_message(ctx, s), s);
     is_int(s, WA_ERR_NONE, "%s", message);
+}
+
+
+/*
+ * Obtain Kerberos credentials from the configured keytab, but set addresses
+ * on the ticket.  This tests encoding of tickets with addresses (which has
+ * had bugs in the past).  Returns the path to a new Kerberos cache.
+ */
+static char *
+kinit_with_addresses(struct kerberos_config *config)
+{
+    char *tmpdir, *krbtgt, *cache;
+    krb5_error_code code;
+    krb5_context ctx;
+    krb5_ccache ccache;
+    krb5_principal kprinc;
+    krb5_keytab keytab;
+    krb5_get_init_creds_opt *opts;
+    krb5_creds creds;
+    const char *realm;
+
+    /* Determine the path to the temporary cache we'll use. */
+    tmpdir = test_tmpdir();
+    basprintf(&cache, "%s/krb5cc_addresses", tmpdir);
+
+    /* Create a Kerberos context. */
+    code = krb5_init_context(&ctx);
+    if (code != 0)
+        bail_krb5(ctx, code, "error initializing Kerberos");
+
+    /* Determine the principal names we'll use. */
+    code = krb5_parse_name(ctx, config->principal, &kprinc);
+    if (code != 0)
+        bail_krb5(ctx, code, "error parsing principal %s", config->principal);
+    realm = krb5_principal_get_realm(ctx, kprinc);
+    basprintf(&krbtgt, "krbtgt/%s@%s", realm, realm);
+
+    /* Configure the credential options, enabling addresses. */
+    code = krb5_get_init_creds_opt_alloc(ctx, &opts);
+    if (code != 0)
+        bail_krb5(ctx, code, "cannot allocate credential options");
+    krb5_get_init_creds_opt_set_default_flags(ctx, NULL, realm, opts);
+    krb5_get_init_creds_opt_set_address_list(opts, test_addrlist_ptr);
+    krb5_get_init_creds_opt_set_forwardable(opts, 0);
+    krb5_get_init_creds_opt_set_proxiable(opts, 0);
+
+    /* Obtain the credentials. */
+    code = krb5_kt_resolve(ctx, config->keytab, &keytab);
+    if (code != 0)
+        bail_krb5(ctx, code, "cannot open keytab %s", config->keytab);
+    code = krb5_get_init_creds_keytab(ctx, &creds, kprinc, keytab, 0, krbtgt,
+                                      opts);
+    if (code != 0)
+        bail_krb5(ctx, code, "cannot get Kerberos tickets");
+
+    /* Store them in the ticket cache. */
+    code = krb5_cc_resolve(ctx, cache, &ccache);
+    if (code != 0)
+        bail_krb5(ctx, code, "error setting ticket cache");
+    code = krb5_cc_initialize(ctx, ccache, kprinc);
+    if (code != 0)
+        bail_krb5(ctx, code, "error initializing ticket cache");
+    code = krb5_cc_store_cred(ctx, ccache, &creds);
+    if (code != 0)
+        bail_krb5(ctx, code, "error storing credentials");
+    krb5_cc_close(ctx, ccache);
+    krb5_free_cred_contents(ctx, &creds);
+    krb5_kt_close(ctx, keytab);
+    krb5_free_principal(ctx, kprinc);
+    krb5_free_context(ctx);
+    test_tmpdir_free(tmpdir);
+    return cache;
 }
 
    
@@ -50,7 +143,7 @@ main(void)
     /* Read the configuration information. */
     config = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     
-    plan(44);
+    plan(48);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -185,6 +278,19 @@ main(void)
     s = webauth_krb5_get_principal(ctx, kc, &cp, WA_KRB5_CANON_NONE);
     CHECK(ctx, s, "...and we can get the principal name");
     is_string(config->principal, cp, "...and it matches expectations");
+    webauth_krb5_free(ctx, kc);
+
+    /* Test getting a ticket with addresses and then exporting it. */
+    cache = kinit_with_addresses(config);
+    s = webauth_krb5_new(ctx, &kc);
+    CHECK(ctx, s, "Creating a new context");
+    s = webauth_krb5_init_via_cache(ctx, kc, cache);
+    CHECK(ctx, s, "Initializing from a cache of address-locked tickets");
+    tgt = NULL;
+    s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgtlen, NULL);
+    CHECK(ctx, s, "Exporting a TGT");
+    ok(tgt != NULL, "...and the TGT is not NULL");
+    free(cache);
     webauth_krb5_free(ctx, kc);
 
     /* Test specifying an explicit cache file and getting it back. */
