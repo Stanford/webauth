@@ -9,6 +9,15 @@ updated values.
 
 The key properties of these credentials are as follows:
 
+ad-heimdal
+         Client: thoron@NT.STANFORD.EDU
+         Server: krbtgt/NT.STANFORD.EDU@NT.STANFORD.EDU
+       End Time: 1355559675
+          Renew: 1356074475
+    Forwardable: yes
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
 addresses
          Client: thoron@heimdal.stanford.edu
          Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
@@ -25,6 +34,15 @@ basic
        End Time: 1355447711
           Renew: (none)
     Forwardable: no
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
+old-heimdal
+         Client: thoron@heimdal.stanford.edu
+         Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
+       End Time: 1355556533
+          Renew: 1356074930
+    Forwardable: yes
         Enctype: aes256-cts-hmac-sha1-96
       Addresses: (none)
 
@@ -45,6 +63,12 @@ service
     Forwardable: yes
         Enctype: des3-cbc-sha1
       Addresses: 171.67.24.175 (IPv4)
+
+Most of these credentials were generated from MIT Kerberos libraries but
+were issued by a Heimdal KDC.  The ad-heimdal credential was issued by
+Active Directory and generated from Heimdal libraries.  The old-heimdal
+credential was generated using the old (incorrect) Heimdal encoding that
+has the flag bits reversed.
 
 -----
 

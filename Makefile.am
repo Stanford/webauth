@@ -315,8 +315,10 @@ tests_lib_keyring_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_krb5_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+	portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \

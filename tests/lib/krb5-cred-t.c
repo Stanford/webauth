@@ -26,14 +26,25 @@ typedef krb5_address **krb5_addresses;
 #endif
 
 /*
- * Whether addresses are present.  This has to be done differently in MIT and
- * Heimdal since the data structures they use for addresses are much
- * different.
+ * How to reference addresses, whether addresses are present, and how to free
+ * them.  This has to be done differently in MIT and Heimdal since the data
+ * structures they use for addresses are much different.
  */
 #ifdef HAVE_KRB5_MIT
-# define HAS_ADDRESSES(data) (data->addresses != NULL)
+# define ADDRESSES(data)        (data->addresses)
+# define HAS_ADDRESSES(data)    (data->addresses != NULL)
+# define FREE_ADDRESSES(data)                                   \
+    do {                                                        \
+        if (data->addresses != NULL)                            \
+            krb5_free_addresses(data->ctx, data->addresses);    \
+    } while (0)
 #else
-# define HAS_ADDRESSES(data) (data->addresses.len > 0)
+# define ADDRESSES(data)        (&data->addresses)
+# define HAS_ADDRESSES(data)    (data->addresses.len > 0)
+# define FREE_ADDRESSES(data)                                   \
+    do {                                                        \
+        krb5_free_addresses(data->ctx, &data->addresses);       \
+    } while (0)
 #endif
 
 /*
@@ -61,13 +72,13 @@ static const krb5_address test_addr3 = {
 };
 #else
 static const krb5_address test_addr1 = {
-    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr1_data }
+    KRB5_ADDRESS_INET, { 4, (void *) test_addr1_data }
 };
 static const krb5_address test_addr2 = {
-    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr2_data }
+    KRB5_ADDRESS_INET, { 4, (void *) test_addr2_data }
 };
 static const krb5_address test_addr3 = {
-    KRB5_ADDRTYPE_INET6, { 16, (void *) test_addr3_data }
+    KRB5_ADDRESS_INET6, { 16, (void *) test_addr3_data }
 };
 #endif
 
@@ -142,7 +153,7 @@ static void
 extract_cred_data_impl(krb5_context ctx, krb5_creds *cred,
                        struct cred_data *data)
 {
-    data->forwardable = cred->flags.b.forwardable;
+    data->forwardable = (cred->flags.i & KDC_OPT_FORWARDABLE) != 0;
     data->enctype = cred->session.keytype;
     if (cred->addresses.len > 0)
         krb5_copy_addresses(ctx, &cred->addresses, &data->addresses);
@@ -186,8 +197,7 @@ free_cred_data(struct cred_data *data)
 {
     free(data->server);
     free(data->client);
-    if (data->addresses != NULL)
-        krb5_free_addresses(data->ctx, data->addresses);
+    FREE_ADDRESSES(data);
     krb5_free_context(data->ctx);
     free(data);
 }
@@ -273,7 +283,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(43);
+    plan(63);
 
     /* Basic credential with nothing special. */
     data = import_cred(ctx, "data/creds/basic");
@@ -314,7 +324,7 @@ main(void)
     ok(data->forwardable, "... forwardable");
     is_int(ENCTYPE_DES3_CBC_SHA1, data->enctype, "... session enctype");
     ok(HAS_ADDRESSES(data), "... addresses are present");
-    ok(krb5_address_search(data->ctx, &test_addr1, data->addresses),
+    ok(krb5_address_search(data->ctx, &test_addr1, ADDRESSES(data)),
        "... found expected IPv4 address");
     free_cred_data(data);
 
@@ -330,10 +340,38 @@ main(void)
     is_int(ENCTYPE_AES256_CTS_HMAC_SHA1_96, data->enctype,
            "... session enctype");
     ok(HAS_ADDRESSES(data), "... addresses are present");
-    ok(krb5_address_search(data->ctx, &test_addr2, data->addresses),
+    ok(krb5_address_search(data->ctx, &test_addr2, ADDRESSES(data)),
        "... found expected IPv4 address");
-    ok(krb5_address_search(data->ctx, &test_addr3, data->addresses),
+    ok(krb5_address_search(data->ctx, &test_addr3, ADDRESSES(data)),
        "... found expected IPv6 address");
+    free_cred_data(data);
+
+    /* Active Directory ticket encoded using Heimdal libraries. */
+    data = import_cred(ctx, "data/creds/ad-heimdal");
+    is_string("thoron@NT.STANFORD.EDU", data->client,
+              "... client principal");
+    is_string("krbtgt/NT.STANFORD.EDU@NT.STANFORD.EDU",
+              data->server, "... server principal");
+    is_int(1355559675, data->endtime, "... end time");
+    is_int(1356074475, data->renew_till, "... renew until time");
+    ok(data->forwardable, "... forwardable");
+    is_int(ENCTYPE_AES256_CTS_HMAC_SHA1_96, data->enctype,
+           "... session enctype");
+    ok(!HAS_ADDRESSES(data), "... no addresses");
+    free_cred_data(data);
+
+    /* Heimdal ticket with the old encoding (reversed flag bits). */
+    data = import_cred(ctx, "data/creds/old-heimdal");
+    is_string("thoron@heimdal.stanford.edu", data->client,
+              "... client principal");
+    is_string("krbtgt/heimdal.stanford.edu@heimdal.stanford.edu",
+              data->server, "... server principal");
+    is_int(1355556533, data->endtime, "... end time");
+    is_int(1356074930, data->renew_till, "... renew until time");
+    ok(data->forwardable, "... forwardable");
+    is_int(ENCTYPE_AES256_CTS_HMAC_SHA1_96, data->enctype,
+           "... session enctype");
+    ok(!HAS_ADDRESSES(data), "... no addresses");
     free_cred_data(data);
 
     /* Clean up. */

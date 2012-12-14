@@ -33,10 +33,11 @@ static krb5_address **const test_addrlist_ptr
     = (krb5_address **) test_addrlist;
 #else
 static const krb5_address test_addr = {
-    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr_data }
+    KRB5_ADDRESS_INET, { 4, (void *) test_addr_data }
 };
-static const krb5_addresses test_addrlist = { 1, &test_addr };
-static const krb5_addresses *const test_addrlist_ptr = &test_addrlist;
+static const krb5_addresses test_addrlist = { 1, (krb5_address *) &test_addr };
+static krb5_addresses *const test_addrlist_ptr
+    = (krb5_addresses *) &test_addrlist;
 #endif
 
 #define CHECK(ctx, s, m) check_status((ctx), (s), (m), __FILE__, __LINE__)
