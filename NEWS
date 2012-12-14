@@ -94,6 +94,19 @@ WebAuth 4.4.0 (unreleased)
     Kerberos configured to add addresses to tickets, which are relatively
     rare configurations.
 
+    Fix encoding of ticket flags with Heimdal Kerberos and tolerate the
+    old, incorrect encoding.  All previous versions of WebAuth, when built
+    with Heimdal, encoded the ticket flags on the wire with the flag bits
+    reversed (matching the in-memory Heimdal format).  Prior to this
+    version, flags would be lost when reading credentials encoded via MIT
+    Kerberos with Heimdal or vice versa.  As of this release, the portable
+    flag encoding used for ticket caches is used when writing credentials
+    with both MIT and Heimdal, and the flag order is detected when
+    decoding credentials and fixed if necessary.  If you use delegated
+    credentials and link with Heimdal Kerberos, upgrade mod_webauth prior
+    to upgrading the WebKDC to ensure the ticket flags are conveyed
+    correctly.
+
     Fix mapping of WebKDC error codes to names when reporting errors in
     WebLogin, fixing mostly cosmetic Perl warnings in the WebLogin server
     logs.

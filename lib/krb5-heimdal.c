@@ -12,6 +12,26 @@
  * See LICENSE for licensing terms.
  */
 
+
+/*
+ * Reverse the order of the Kerberos credential flag bits.  This converts from
+ * the Heimdal memory format to the format used in credential caches and
+ * therefore on the wire by our code.
+ */
+static int32_t
+swap_flag_bits(int32_t flags)
+{
+    int32_t result = 0;
+    unsigned int i;
+
+    for (i = 0; i < 32; i++) {
+        result = (result << 1) | (flags & 1);
+        flags = flags >> 1;
+    }
+    return result;
+}
+
+
 /*
  * Take a single Kerberos credential and serialize it into a buffer, using the
  * encoding required for putting it into tokens.  output will be a pointer to
@@ -44,7 +64,6 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     if (expiration != NULL)
         *expiration = creds->times.endtime;
     data.renew_until       = creds->times.renew_till;
-    data.flags             = creds->flags.i;
     if (creds->addresses.len > 0) {
         size_t i, size;
 
@@ -77,6 +96,15 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
             data.authdata[i].data_len = creds->authdata.val[i].ad_data.length;
         }
     }
+
+    /*
+     * Flags are special.  MIT Kerberos's memory representation has the flag
+     * bits with forwardable at the most significant end.  Heimdal's memory
+     * representation has forwardable at the least significant end.  The
+     * interchangeable data format is the MIT format, so we want to write them
+     * that way on the wire.
+     */
+    data.flags = swap_flag_bits(creds->flags.i);
 
     /* All done.  Do the attribute encoding. */
     return wai_encode(ctx, wai_krb5_cred_encoding, &data, output, length);
@@ -128,7 +156,6 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     creds->times.starttime = data.start_time;
     creds->times.endtime = data.end_time;
     creds->times.renew_till = data.renew_until;
-    creds->flags.i = data.flags;
     if (data.address_count > 0) {
         creds->addresses.len = data.address_count;
         size = data.address_count * sizeof(krb5_address);
@@ -157,5 +184,41 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
             creds->authdata.val[i].ad_data.length = data.authdata[i].data_len;
         }
     }
+
+    /*
+     * The portable representation of the flag bits has forwardable near the
+     * most significant end.  Heimdal's memory representation has it at the
+     * least significant end.  So normally we want to just swap the flag bits
+     * when reading them off the wire.
+     *
+     * However, unfortunately, we used to store the flag bits on the wire in
+     * memory format (causing lack of correct interoperability between Heimdal
+     * and MIT).  Try to figure out if we did that by seeing if any of the
+     * high flag bits are set and, if not, don't swap the bits for backwards
+     * compatibility with older versions of WebAuth built against Heimdal.  We
+     * do this by detecting the local host byte order, building a mask of the
+     * most significant bits using that byte order to figure out how to build
+     * that mask, and then swapping the order of the wire flag bits only if
+     * one of those bits is set.  This relies on the fact that credentials
+     * always have at least one flag set, and all the currently used flags are
+     * in the top half of the wire encoding.
+     *
+     * WebAuth 4.4.0 and later will always write out the flag bits in the
+     * correct order.  This code could theoretically be simplified to always
+     * swap if nothing older is still in the wild.
+     */
+    {
+        uint32_t mask = 0xffff0000;
+
+        creds->flags.i = 0;
+        creds->flags.b.anonymous = 1;
+        if (creds->flags.i & mask)
+            mask = ~mask;
+        if (data.flags & mask)
+            creds->flags.i = swap_flag_bits(data.flags);
+        else
+            creds->flags.i = data.flags;
+    }
+
     return WA_ERR_NONE;
 }
