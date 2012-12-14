@@ -37,6 +37,41 @@ typedef krb5_address **krb5_addresses;
 #endif
 
 /*
+ * Three addresses that we use for testing.  The first IPv4 address is the one
+ * in tests/data/creds/service, the second is in tests/data/creds/addresses,
+ * and the third is the IPv6 address in tests/data/creds/addresses.
+ */
+const unsigned char test_addr1_data[4] = { 171, 67, 24, 175 };
+const unsigned char test_addr2_data[4] = { 171, 67, 225, 134 };
+const unsigned char test_addr3_data[16] = {
+    0x26, 0x07, 0xf6, 0xd0, 0x00, 0x00, 0xa2, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65
+};
+
+/* Build krb5_address structs, which are different across implementations. */
+#ifdef HAVE_KRB5_MIT
+const krb5_address test_addr1 = {
+    KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr1_data
+};
+const krb5_address test_addr2 = {
+    KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr2_data
+};
+const krb5_address test_addr3 = {
+    KV5M_ADDRESS, ADDRTYPE_INET6, 16, (unsigned char *) test_addr3_data
+};
+#else
+const krb5_address test_addr1 = {
+    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr1_data }
+};
+const krb5_address test_addr2 = {
+    KRB5_ADDRTYPE_INET, { 4, (void *) test_addr2_data }
+};
+const krb5_address test_addr3 = {
+    KRB5_ADDRTYPE_INET6, { 16, (void *) test_addr3_data }
+};
+#endif
+
+/*
  * Holds Kerberos credential data that we can use in the test.  We
  * intentionally don't extract difficult things like the actual ticket.  This
  * is a separate struct so that we can write two different functions to
@@ -238,7 +273,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(40);
+    plan(43);
 
     /* Basic credential with nothing special. */
     data = import_cred(ctx, "data/creds/basic");
@@ -279,6 +314,8 @@ main(void)
     ok(data->forwardable, "... forwardable");
     is_int(ENCTYPE_DES3_CBC_SHA1, data->enctype, "... session enctype");
     ok(HAS_ADDRESSES(data), "... addresses are present");
+    ok(krb5_address_search(data->ctx, &test_addr1, data->addresses),
+       "... found expected IPv4 address");
     free_cred_data(data);
 
     /* Ticket with multiple addresses. */
@@ -293,6 +330,10 @@ main(void)
     is_int(ENCTYPE_AES256_CTS_HMAC_SHA1_96, data->enctype,
            "... session enctype");
     ok(HAS_ADDRESSES(data), "... addresses are present");
+    ok(krb5_address_search(data->ctx, &test_addr2, data->addresses),
+       "... found expected IPv4 address");
+    ok(krb5_address_search(data->ctx, &test_addr3, data->addresses),
+       "... found expected IPv6 address");
     free_cred_data(data);
 
     /* Clean up. */
