@@ -1,8 +1,9 @@
 /*
- * Test suite for libwebauth Kerberos credential export.
+ * Test suite for libwebauth Kerberos authenticator support
  *
- * This tests exporting a Kerberos credential from a newly-created Kerberos
- * ticket cache, and hence requires Kerberos configuration.
+ * This tests creating an authenticator and sending it in combination with an
+ * exported Kerberos TGT.  It requires Kerberos configuration to get the
+ * tickets.
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
@@ -86,11 +87,12 @@ do_import(struct webauth_context *ctx, struct kerberos_config *config,
     int s;
     struct webauth_krb5 *kc;
     char breq[4192], btgt[4192];
-    size_t req_len, tgt_len, dec_tgt_len;
-    void *req, *tgt, *dec_tgt;
+    size_t req_len, tgt_len, dec_tgt_len, cred_len;
+    void *req, *tgt, *dec_tgt, *cred;
     char *cprinc, *sprinc;
     FILE *data;
 
+    /* Read the request and exported credential back from disk. */
     data = fopen(path, "r");
     if (data == NULL)
         sysbail("cannot open %s", path);
@@ -106,12 +108,15 @@ do_import(struct webauth_context *ctx, struct kerberos_config *config,
     btgt[strlen(btgt) - 1] = '\0';
     fclose(data);
 
+    /* Decode the base64. */
     req_len = apr_base64_decode_len(breq);
     req = bmalloc(req_len);
     apr_base64_decode(req, breq);
     tgt_len = apr_base64_decode_len(btgt);
     tgt = bmalloc(tgt_len);
     apr_base64_decode(tgt, btgt);
+
+    /* Read the request and associated data. */
     s = webauth_krb5_new(ctx, &kc);
     CHECK(ctx, s, "Create new context");
     s = webauth_krb5_read_auth_data(ctx, kc, req, req_len, config->keytab,
@@ -119,10 +124,21 @@ do_import(struct webauth_context *ctx, struct kerberos_config *config,
                                     WA_KRB5_CANON_NONE, tgt, tgt_len,
                                     &dec_tgt, &dec_tgt_len);
     CHECK(ctx, s, "Read request and data");
+
+    /* Confirm that basic information is correct. */
     is_string(config->principal, cprinc, "Client principal matches keytab");
     is_string(config->principal, sprinc, "Server principal matches keytab");
     s = webauth_krb5_import_cred(ctx, kc, dec_tgt, dec_tgt_len, NULL);
     CHECK(ctx, s, "Initialize from credentials");
+
+    /*
+     * Now, confirm that we can export a different credential than the TGT,
+     * since that will test our ability to get a different service ticket
+     * using the TGT that we just exported and imported.
+     */
+    s = webauth_krb5_export_cred(ctx, kc, config->principal, &cred, &cred_len,
+                                 NULL);
+    CHECK(ctx, s, "Export service ticket");
     free(req);
     free(tgt);
     webauth_krb5_free(ctx, kc);
@@ -141,7 +157,7 @@ main(void)
     tmpdir = test_tmpdir();
     basprintf(&path, "%s/test-cred", tmpdir);
 
-    plan(9);
+    plan(10);
 
     /* Export and then import a credential. */
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
