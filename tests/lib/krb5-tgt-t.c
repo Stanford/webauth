@@ -1,5 +1,8 @@
 /*
- * Test suite for libwebauth Kerberos TGT manipulation.
+ * Test suite for libwebauth Kerberos credential export.
+ *
+ * This tests exporting a Kerberos credential from a newly-created Kerberos
+ * ticket cache, and hence requires Kerberos configuration.
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
@@ -138,8 +141,9 @@ main(void)
     tmpdir = test_tmpdir();
     basprintf(&path, "%s/test-cred", tmpdir);
 
-    /* Do the tests. */
     plan(9);
+
+    /* Export and then import a credential. */
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
     do_export(ctx, config->principal, getenv("KRB5CCNAME"), path);

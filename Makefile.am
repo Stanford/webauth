@@ -53,12 +53,12 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
 	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
 	lib/libwebauth.sym perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/config/README tests/data/cmd-webkdc tests/data/id.acl	    \
-	tests/data/keyring tests/data/tokens.conf tests/data/tokens	    \
-	tests/data/xml tests/docs/pod-spelling-t tests/docs/pod-t	    \
-	tests/mod_webauth tests/perl/critic-t tests/perl/strict-t	    \
-	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
-	tools/wa_keyring.pod tools/webauth-make-tokens			    \
+	tests/config/README tests/data/cmd-webkdc tests/data/creds	    \
+	tests/data/id.acl tests/data/keyring tests/data/tokens.conf	    \
+	tests/data/tokens tests/data/xml tests/docs/pod-spelling-t	    \
+	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
+	tests/perl/strict-t tests/tap/libtap.sh tests/tools/wa_keyring-t    \
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/webauth-make-tokens \
 	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
 	weblogin/images/error.xcf weblogin/images/help.xcf		    \
 	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
@@ -276,8 +276,8 @@ warnings:
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/factors-t \
 	tests/lib/hex-t tests/lib/interval-t tests/lib/keyring-t	   \
-	tests/lib/keys-t tests/lib/krb5-t tests/lib/krb5-tgt-t		   \
-	tests/lib/userinfo-t tests/lib/token-crypto-t			   \
+	tests/lib/keys-t tests/lib/krb5-t tests/lib/krb5-cred-t		   \
+	tests/lib/krb5-tgt-t tests/lib/userinfo-t tests/lib/token-crypto-t \
 	tests/lib/token-decode-t tests/lib/token-encode-t		   \
 	tests/lib/was-cache-t tests/lib/webkdc-krb-t			   \
 	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			   \
@@ -316,6 +316,10 @@ tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \

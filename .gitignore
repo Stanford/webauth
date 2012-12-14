@@ -51,6 +51,7 @@
 /tests/lib/keyring-t
 /tests/lib/keys-t
 /tests/lib/krb5-t
+/tests/lib/krb5-cred-t
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
 /tests/lib/token-crypto-t
