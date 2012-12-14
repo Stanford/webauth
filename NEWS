@@ -87,6 +87,13 @@ WebAuth 4.4.0 (unreleased)
     compatibility, but will only be used if the more-specific variable is
     not set.  Patch from Tom Jones.
 
+    Fix encoding of Kerberos credentials containing addresses or authdata
+    when built against MIT Kerberos.  WebAuth 4.3.0 and later would fail
+    to encode those credentials properly.  This bug only affects people
+    using credential delegation with either Active Directory or with
+    Kerberos configured to add addresses to tickets, which are relatively
+    rare configurations.
+
     Fix mapping of WebKDC error codes to names when reporting errors in
     WebLogin, fixing mostly cosmetic Perl warnings in the WebLogin server
     logs.

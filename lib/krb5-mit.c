@@ -48,12 +48,12 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     data.renew_until       = creds->times.renew_till;
     data.is_skey           = creds->is_skey;
     data.flags             = creds->ticket_flags;
-    if (creds->addresses != NULL) {
+    if (creds->addresses != NULL && creds->addresses[0] != NULL) {
         size_t n, i, size;
-        krb5_address *address;
 
-        for (n = 0, address = *creds->addresses; address != NULL; address++)
-            n++;
+        fprintf(stderr, "Encoding addresses\n");
+        for (n = 0; creds->addresses[n] != NULL; n++)
+            ;
         data.address_count = n;
         size = n * sizeof(struct wai_krb5_cred_address);
         data.address = apr_palloc(kc->pool, size);
@@ -71,12 +71,11 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         data.second_ticket     = creds->second_ticket.data;
         data.second_ticket_len = creds->second_ticket.length;
     }
-    if (creds->authdata != NULL) {
+    if (creds->authdata != NULL && creds->authdata[0] != NULL) {
         size_t n, i, size;
-        krb5_authdata *authdata;
 
-        for (n = 0, authdata = *creds->authdata; authdata != NULL; authdata++)
-            n++;
+        for (n = 0; creds->authdata[n] != NULL; n++)
+            ;
         data.authdata_count = n;
         size = n * sizeof(struct wai_krb5_cred_authdata);
         data.authdata = apr_palloc(kc->pool, size);
