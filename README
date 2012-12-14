@@ -78,8 +78,8 @@ REQUIREMENTS
   for Apache modules.  Heimdal 0.6 may work, but has not been well-tested.
   Heimdal 0.7 and later have been tested more extensively.
 
-  The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
-  but are no longer tested with versions earlier than 5.10.
+  The WebAuth Perl bindings should work with Perl 5.8 and later, but are
+  no longer tested with versions earlier than 5.10.
 
   For optional support for a user information service, which allows
   WebAuth to do multifactor authentication, support login history, provide
