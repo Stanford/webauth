@@ -2173,6 +2173,19 @@ WebAuthStripURL off
         authenticator is requested by <em>type</em>:
       </p>
       <dl>
+        <dt><code>webkdc</code></dt>
+        <dd>
+          <p>
+            This is the default.
+          </p>
+          <p>
+            When this type of subject authenticator is used, the WebKDC
+            will place the already verified username in the returned
+            id-token (encrypted, of course).  When mod_webauth gets back
+            the id-token, it will trust that the WebKDC as sufficiently
+            authenticated the user, and use the returned username.
+          </p>
+        </dd>
         <dt><code>krb5</code></dt>
         <dd>
           <p>
@@ -2189,9 +2202,19 @@ WebAuthStripURL off
             logged in and using the WebKDC.
           </p>
           <p>
-            The downside to using this option is that returned id-token
-            will be about 500 bytes longer then when using a type of
-            <code>webkdc</code>.
+            Setting this subject auth type will make all id tokens about
+            500 bytes longer then when using a type of
+            <code>webkdc</code>.  This may cause problems with the HTTP
+            header limit if the site uses other large cookies, or uses
+            Active Directory as the Kerberos KDC (which may make Kerberos
+            tickets significantly longer).
+          </p>
+          <p>
+            This setting will also cause mod_webauth to ignore all
+            authorization identities (since they cannot be independently
+            verified), meaning that <a
+            href="#webauthtrustauthzidentity"><directive>WebAuthTrustAuthzIdentity</directive></a>
+            directives will be ignored.
           </p>
           <p>
             Also be aware that using this option means that the WebAuth
@@ -2202,19 +2225,6 @@ WebAuthStripURL off
             a local name through the normal Kerberos local name mapping
             mechanism.  This may be a feature or a drawback depending on
             the situation.
-          </p>
-        </dd>
-        <dt><code>webkdc</code></dt>
-        <dd>
-          <p>
-            This is the default.
-          </p>
-          <p>
-            When this type of subject authenticator is used, the WebKDC
-            will place the already verified username in the returned
-            id-token (encrypted, of course).  When mod_webauth gets back
-            the id-token, it will trust that the WebKDC as sufficiently
-            authenticated the user, and use the returned username.
           </p>
         </dd>
       </dl>
@@ -2311,6 +2321,35 @@ WebAuthTokenMaxTTL 10m
         variable will always be set to the authenticated identity,
         ignoring any authorization identity.
       </p>
+
+      <note>
+        <title>Warning</title>
+        <p>
+          The interaction between this directive and either <a
+          href="#webauthsubjectauthtype"><directive>WebAuthSubjectAuthType</directive></a>
+          or <a href="webauthcred"><directive>WebAuthCred</directive></a>
+          may be unexpected.
+        </p>
+        <p>
+          Setting <directive>WebAuthSubjectAuthType</directive> to
+          <code>krb5</code> indicates that mod_webauth should not solely
+          trust the WebKDC's assertion of identity and instead
+          independently verify the authentication credentials of the user.
+          However, there is no way to independently verify the
+          authorization identity.  Therefore, setting
+          <directive>WebAuthSubjectAuthType</directive> to
+          <code>krb5</code> tells mod_webauth to ignore the authorization
+          identity.  The <code>webkdc</code> subject auth type (the
+          default) must be used to use this feature.
+        </p>
+        <p>
+          <directive>WebAuthCred</directive> can be used in combination
+          with this directive, but all obtained credentials will be for
+          the authentication identity, not for the authorization identity.
+          There is currently no way to obtain credentials for the
+          authorization identity.
+        </p>
+      </note>
 
       <example>
         <title>Example</title>

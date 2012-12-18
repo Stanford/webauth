@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='November' year='2012' />
+    <date month='December' year='2012' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -2090,6 +2090,17 @@
           <t>wt is the webkdc-proxy token (in binary form).  It can be
           used by the WAS later to request credential tokens from the
           WebKDC.</t>
+
+          <t>Note that the authorization subject included in the proxy
+          token will not be reflected in any id tokens obtained via the
+          proxy token.  The id tokens will be based on the webkdc-proxy
+          token, which is for the authentication identity alone.
+          Therefore, a WebAuth Application Server that wants to use the
+          authorization identity in some way needs to note the
+          authorization subject from the proxy token and not rely on
+          getting it from any subsequent id token.  Similarly, any cred
+          tokens obtained from a proxy token will be for the
+          authentication identity, not the authorization identity.</t>
         </section>
 
         <section anchor='tokencred' title='credential Token Encoding'>
