@@ -25,7 +25,8 @@ WebAuth 4.4.0 (unreleased)
     mod_webauthldap privilege group lookups).  WEBAUTH_USER will always be
     set to the authentication identity.  This directive is allowed in
     .htaccess files (if authentication overrides are allowed) as well as
-    anywhere in the main Apache configuration.
+    anywhere in the main Apache configuration.  Authorization identities
+    will still be ignored if WebAuthSubjectAuthType is set to krb5.
 
     Add new mod_webkdc Apache directive WebKdcLoginTimeLimit, which
     controls the time limit for completing a multi-step login process
