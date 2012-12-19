@@ -92,9 +92,9 @@ REQUIREMENTS
   For all dependency libraries, be aware that primary testing is done on
   Debian testing and Debian stable with the versions of the libraries
   currently available there at the time of the release.  Using
-  substantially older libraries may require some portability fixes since
-  those builds are not frequently checked, but such fixes (and bug
-  reports) are definitely welcome.
+  substantially older libraries, or operating systems other than Linux,
+  may require some portability fixes since those builds are not frequently
+  checked, but such fixes (and bug reports) are definitely welcome.
 
   For the end user, WebAuth requires that the user's browser be able to
   handle cookies of moderate length (up to 1KB) and URLs of a similar
@@ -105,16 +105,16 @@ REQUIREMENTS
 
   WebAuth is written in C and requires a C compiler and a standard make
   program to build.  It does not (at least intentionally) use any special
-  make features.  WebAuth also requires Perl 5.6.1 or later and a variety
-  of additional Perl modules for the WebLogin server.  Perl is not
-  required for the basic WebAuth module.
+  make features.  WebAuth also requires Perl 5.8 or later and a variety of
+  additional Perl modules for the WebLogin server.  Perl is not required
+  for the basic WebAuth module.
 
-  WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).  It
-  has been lightly tested on Solaris and Mac OS X, and earlier releases
-  were tested on AIX 4.3.  Other UNIX and UNIX-like platforms that support
-  Apache should also work, but have not been tested.  Some amount of
-  porting may be required.  WebAuth does use libtool to try to build
-  shared libraries portably.  Windows is not supported.
+  WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).
+  Earlier releases have been lightly tested on Solaris, Mac OS X, and AIX
+  4.3.  Other UNIX and UNIX-like platforms that support Apache should also
+  work, but have not been tested.  Some amount of porting may be required.
+  WebAuth does use libtool to try to build shared libraries portably.
+  Windows is not supported.
 
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
@@ -125,7 +125,8 @@ REQUIREMENTS
       CGI::Application::Plugin::Redirect
       CGI::Application::Plugin::TT
       libwww (LWP)
-      IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
+      IO::Socket::SSL
+        -or- Crypt::SSLeay (for LWP https support)
       MIME::Base64 (part of Perl itself since 5.7.3)
       Template (Template Toolkit)
       URI
@@ -141,35 +142,56 @@ REQUIREMENTS
       Cache::Memcached
       Digest::SHA (part of Perl itself since 5.9.3)
 
-  For optional WebLogin support for warning users of expired passwords,
-  the Date::Parse, Time::Duration, and Net::Remctl Perl modules are
-  required and the local Kerberos realm must provide the remctl interface
-  from the kadmin-remctl package for the WebLogin script to query.
-  Date::Parse and Time::Duration are available from CPAN (Date::Parse in
-  the TimeDate distribution).  You can obtain Net::Remctl and
-  kadmin-remctl from:
+  The optional WebLogin support for warning users of expired passwords
+  also requires the Perl modules:
+
+      Date::Parse (TimeDate)
+      Net::Remctl
+      Time::Duration
+
+  The local Kerberos realm must also provide the remctl interface from the
+  kadmin-remctl package for the WebLogin script to query.  Other than
+  Net::Remctl, these are available from CPAN.  You can obtain Net::Remctl
+  and kadmin-remctl from:
 
       http://www.eyrie.org/~eagle/software/remctl/
       http://www.eyrie.org/~eagle/software/kadmin-remctl/
 
   respectively.
 
-  To bootstrap from a Git checkout, or if you change the Automake files
-  and need to regenerate Makefile.in, you will need Automake 1.11 or
-  later.  For bootstrap or if you change configure.ac or any of the m4
-  files it includes and need to regenerate configure or config.h.in, you
-  will need Autoconf 2.64 or later.  Perl and xml2rfc are also required to
-  generate the manual pages and protocol documentation from a fresh Git
-  checkout.
+  The test suite requires Perl and Test::More (part of Perl since 5.6.2).
+  It also makes use of additional Perl modules for some tests.  These
+  tests will be skipped automatically if the modules aren't available.  To
+  run the full set of default tests, you will need the Perl modules:
+
+      Test::MinimumVersion
+      Test::Pod
+      Test::Spelling
+      Test::Strict
+
+  and their dependencies as well as all of the prerequisites listed above.
+  These modules are all available from CPAN.
+
+  Bootstrapping from a Git checkout, or making changes to some of the
+  generated files, will require the following additional packages:
+
+      Autoconf 2.64 or later
+      Automake 1.11 or later
+      Perl 5.10 or later
+      xml2rfc
 
   Some parts of the test suite are suppressed by default because those
   tests are normally only useful for the maintainer.  This includes tests
   of POD spelling and Perl coding style.  To enable those tests, set the
-  environment variable RRA_MAINTAINER_TESTS to a true value.  The Perl
-  modules Pod::Spell and Perl::Critic are required (available from CPAN),
-  and either either aspell or ispell with the american dictionary are also
-  required.  The user's path is searched for aspell or ispell and aspell
-  is preferred.
+  environment variable RRA_MAINTAINER_TESTS to a true value.  For these
+  tests, the additional Perl modules:
+
+      Test::Perl::Critic
+      Test::Spelling
+
+  and their dependencies as well as a spell-checking program (several are
+  supported by Test::Spelling) are required.  These modules are all
+  available from CPAN.
 
 SUPPORT
 
