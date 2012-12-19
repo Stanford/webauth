@@ -34,10 +34,10 @@
 #include <config.h>
 #include <portable/system.h>
 
+#include <tests/tap/macros.h>
 #include <tests/tap/messages.h>
-#include <util/macros.h>
+#include <tests/tap/string.h>
 #include <util/messages.h>
-#include <util/xmalloc.h>
 
 /* A global buffer into which message_log_buffer stores error messages. */
 char *errors = NULL;
@@ -48,16 +48,18 @@ char *errors = NULL;
  * error_capture.
  */
 static void
-message_log_buffer(int len, const char *fmt, va_list args, int error UNUSED)
+message_log_buffer(int len UNUSED, const char *fmt, va_list args,
+                   int error UNUSED)
 {
-    char *message, *new_errors;
+    char *message;
 
-    message = xmalloc(len + 1);
-    vsnprintf(message, len + 1, fmt, args);
-    if (errors == NULL) {
-        xasprintf(&errors, "%s\n", message);
-    } else {
-        xasprintf(&new_errors, "%s%s\n", errors, message);
+    bvasprintf(&message, fmt, args);
+    if (errors == NULL)
+        basprintf(&errors, "%s\n", message);
+    else {
+        char *new_errors;
+
+        basprintf(&new_errors, "%s%s\n", errors, message);
         free(errors);
         errors = new_errors;
     }
