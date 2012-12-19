@@ -49,13 +49,6 @@ Protocol:
    option should probably be on by default with new versions of
    mod_webauth, since it's cleaner and doesn't cause any harm.
 
- * WEBAUTH-33: Validation of Kerberos authenticators in mod_webauth just
-   blindly does a krb5_aname_to_localname and then compares against the
-   subject.  The decision of whether to strip the realm may be more
-   complex than that.  Figure out the right thing to do here, which is not
-   obvious; perhaps require that REMOTE_USER be a full principal name if
-   krb5 authenticators are used?
-
  * WEBAUTH-103: Switch to URL-safe base-64 encoding for tokens.  This
    should be done in combination with some of the other changes for use of
    ? in URLs as a bundle of new-format token changes.
@@ -161,6 +154,13 @@ mod_webauth:
    allows multifactor restrictions only for off-campus addresses, for
    example.  This may be easier with the Apache 2.4 rework of the
    authorization infrastructure.
+
+ * WEBAUTH-33: Validation of Kerberos authenticators in mod_webauth just
+   blindly does a krb5_aname_to_localname and then compares against the
+   subject.  The decision of whether to strip the realm may be more
+   complex than that.  Figure out the right thing to do here, which is not
+   obvious; perhaps require that REMOTE_USER be a full principal name if
+   krb5 authenticators are used?
 
 mod_webauthldap:
 
@@ -271,6 +271,11 @@ WebLogin:
 
  * WEBAUTH-119: Document how to set up multiple WebLogin servers with
    different themes.
+
+ * WEBAUTH-127: Currently, a new CGI::Application object is created for
+   each loop through the FastCGI scripts.  Separate out initialization
+   properly so that only the required work is done for each iteration
+   through the loop and most initialization is done only once.
 
 Perl Modules:
 
