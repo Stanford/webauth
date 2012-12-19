@@ -196,22 +196,19 @@ REQUIREMENTS
 SUPPORT
 
   New WebAuth releases are announced via the low-volume webauth-announce
-  mailing list.  To subscribe, send mail to majordomo@lists.stanford.edu
-  with:
+  mailing list.  To subscribe or see the list archives, go to:
 
-      subscribe webauth-announce
-
-  in the body of the message.
+      https://mailman.stanford.edu/mailman/listinfo/webauth-announce
 
   There is also a separate mailing list for general discussion and
   requests for help, which is also read by members of the WebAuth project
-  team.  To subscribe, send mail to majordomo@lists.stanford.edu with:
+  team.  To subscribe or see the list archives, go to:
 
-      subscribe webauth-info
+      https://mailman.stanford.edu/mailman/listinfo/webauth-info
 
-  in the body of the message.  Stanford users may instead read and post to
-  the newsgroup su.computers.webauth, which is bidirectionally gatewayed
-  to webauth-info.  The newsgroup additionally gets all messages to
+  Stanford users may instead read and post to the newsgroup
+  su.computers.webauth, which is bidirectionally gatewayed to
+  webauth-info.  The newsgroup additionally gets all messages to
   webauth-announce as well.
 
   For Stanford affiliates, the WebAuth modules are a supported product of
