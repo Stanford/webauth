@@ -45,9 +45,16 @@ that's longer than the HTTP protocol permits.
          CGI::Application::Plugin::TT
          libwww (LWP)
          Crypt::SSLeay -or- IO::Socket::SSL (for LWP https support)
+         MIME::Base64 (part of Perl itself since 5.7.3)
          Template (Template Toolkit)
          URI
          XML::Parser
+
+    If you want support for replay detection and rate limiting, you will
+    also need:
+
+         Cache::Memcached
+         Digest::SHA (part of Perl itself since 5.9.3)
 
     You'll probably also want to install and configure mod_fastcgi as
     well, though it's not a requirement.  If you decide to install it,
@@ -179,7 +186,58 @@ that's longer than the HTTP protocol permits.
     id token (which identifies a user but conveys no other privileges).
     This is a good place to start.  See the mod_webkdc manual for more.
 
-11. Restart the Apache web server.  You should now have a working WebKDC
+11. If you want to use replay caching of successful login attempts or rate
+    limiting of failed login attempts, set up a memcached server.  If you
+    have a single WebLogin server, configure memcached to listen only to
+    localhost.  If you have a pool of WebLogin servers, they will need to
+    share a memcached server.  Note that memcached doesn't have much in
+    the way of protocol security, so normally it is protected using
+    firewalls or iptables to disallow connections from systems other than
+    the WebLogin servers.
+
+    Then, set the following variable in /etc/webkdc/webkdc.conf:
+
+        @MEMCACHED_SERVERS = ('127.0.0.1:11211');
+
+    This server setting is for a memcached only listening to localhost, on
+    the default port.  Change the IP address and port as necessary for
+    your environment.
+
+    Nothing particularly critical or security-sensitive is stored in
+    memcached; the most an attacker can do is remove an account rate limit
+    or create a denial of service attack.
+
+12. Configure replay rejection of successful login attempts if desired.
+    This requires setting up a memcached server (step 11).
+
+    Replay rejection prevents using the back button in a browser to replay
+    the authentication to WebLogin and is recommended as partial security
+    protection against attackers with access to browser history.  To
+    enable it, set the following variable in /etc/webkdc/webkdc.conf:
+
+        $REPLAY_TIMEOUT = 300;
+
+    The value should be set to whatever the WebKdcTokenMaxTTL setting is
+    for your WebKDC, which by default is 300 seconds (five minutes).
+
+13. Configure rate limiting of failed logins if desired.  This requires
+    setting up a memcached server (step 11).
+
+    If configured, WebLogin will lock out an account after the configured
+    number of failed login attempts, rejecting all attempts to
+    authenticate (successful or unsuccessful) until the timeout interval
+    expires.  To enable it, set the following variable in
+    /etc/webkdc/webkdc.conf:
+
+        $RATE_LIMIT_THRESHOLD = 5;
+
+    The rate limit setting allows five failed login attempts before
+    locking out a user for the default interval (five minutes).  Adjust
+    this setting based on your local requirements.  You may also want to
+    change $RATE_LIMIT_INTERVAL to something other than 300 (five minutes
+    in seconds).  See docs/weblogin-config for more information.
+
+14. Restart the Apache web server.  You should now have a working WebKDC
     and login server, which you can point a WebAuth server at.  You will
     need to install a regular WebAuth server following the instructions in
     INSTALL to be able to test your WebKDC.
@@ -193,7 +251,7 @@ install-multifactor documentation.
 
 -----
 
-Copyright 2003, 2004, 2006, 2009, 2010, 2011
+Copyright 2003, 2004, 2006, 2009, 2010, 2011, 2012
     The Board of Trustees of the Leland Stanford Junior University
 
 Copying and distribution of this file, with or without modification, are

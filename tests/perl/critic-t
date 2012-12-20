@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+#
+# Check for perlcritic errors in included Perl scripts.
+#
+# Checks all Perl scripts in the tree for problems uncovered by perlcritic.
+# This test is disabled unless RRA_MAINTAINER_TESTS is set, since coding style
+# will not interfere with functionality.
+#
+# The canonical version of this file is maintained in the rra-c-util package,
+# which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+use 5.006;
+use strict;
+use warnings;
+
+use File::Spec;
+use Test::More;
+
+# Top-level directories to ignore.  We ignore the perl directory if it exists
+# since, in my packages, it is treated as a Perl module distribution and has
+# its own standalone test suite.
+my %IGNORE = map { $_ => 1 } qw(.git perl tests);
+
+# Bail if SOURCE is not set.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
+}
+
+# Skip tests unless we're running the test suite in maintainer mode.
+if (!$ENV{RRA_MAINTAINER_TESTS}) {
+    plan skip_all => 'Coding style tests only run for maintainer';
+}
+
+# Skip tests if Test::Perl::Critic is not installed.
+if (!eval { require Test::Perl::Critic }) {
+    plan skip_all => 'Test::Perl::Critic required to test coding style';
+}
+
+# SOURCE will be the test directory.  Change to the parent directory.
+my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
+my @rootdirs = File::Spec->splitdir($rootdirs);
+pop @rootdirs;
+my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
+chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+
+# Force the embedded Perl::Tidy check to use the correct configuration.
+local $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';
+
+# Import the configuration file and run Perl::Critic.
+my $profile = "$ENV{SOURCE}/data/perlcriticrc";
+Test::Perl::Critic->import(-profile => $profile);
+
+# Build the list of directories to test.
+opendir my $rootdir, q{.} or BAIL_OUT("cannot open .: $!");
+my @dirs = grep { -d $_ && !$IGNORE{$_} } readdir $rootdir;
+closedir $rootdir;
+@dirs = File::Spec->no_upwards(@dirs);
+
+# Finally, run the actual tests.
+all_critic_ok(@dirs);

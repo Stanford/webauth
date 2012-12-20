@@ -130,11 +130,11 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_BAD_HMAC:          return "HMAC check failed";
     case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_BAD_KEY:           return "unable to use key";
-    case WA_ERR_KEYRING_OPENWRITE: return "unable to open keyring for writing";
-    case WA_ERR_KEYRING_WRITE:     return "error writing to keyring file";
-    case WA_ERR_KEYRING_OPENREAD:  return "unable to open keyring for reading";
-    case WA_ERR_KEYRING_READ:      return "error reading from keyring file";
-    case WA_ERR_KEYRING_VERSION:   return "bad keyring version";
+    case WA_ERR_FILE_OPENWRITE:    return "unable to open file for writing";
+    case WA_ERR_FILE_WRITE:        return "error writing to file";
+    case WA_ERR_FILE_OPENREAD:     return "unable to open file for reading";
+    case WA_ERR_FILE_READ:         return "error reading from file";
+    case WA_ERR_FILE_VERSION:      return "bad file data version";
     case WA_ERR_NOT_FOUND:         return "item not found while searching";
     case WA_ERR_KRB5:              return "Kerberos error";
     case WA_ERR_INVALID_CONTEXT:   return "invalid context passed to function";
@@ -146,6 +146,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
     case WA_ERR_INVALID:           return "invalid argument to function";
     case WA_ERR_REMOTE_FAILURE:    return "a remote service call failed";
+    case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown error code %d", code);
@@ -177,8 +178,7 @@ webauth_error_message(struct webauth_context *ctx, int err)
  * and is not exposed to external consumers.
  */
 void
-webauth_error_set(struct webauth_context *ctx, int err, const char *format,
-                  ...)
+wai_error_set(struct webauth_context *ctx, int err, const char *format, ...)
 {
     va_list args;
     char *string;
@@ -199,8 +199,8 @@ webauth_error_set(struct webauth_context *ctx, int err, const char *format,
  * exposed to external consumers.
  */
 void
-webauth_error_set_apr(struct webauth_context *ctx, int err,
-                      apr_status_t status, const char *format, ...)
+wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
+                  const char *format, ...)
 {
     va_list args;
     char *string;
@@ -211,5 +211,27 @@ webauth_error_set_apr(struct webauth_context *ctx, int err,
     va_end(args);
     ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
                               string, apr_strerror(status, buf, sizeof(buf)));
+    ctx->code = err;
+}
+
+
+/*
+ * Set the error message and code to the provided values, supporting
+ * printf-style formatting and including the string explanation of an errno.
+ * This function is internal to the WebAuth library and is not exposed to
+ * external consumers.
+ */
+void
+wai_error_set_system(struct webauth_context *ctx, int err, int syserr,
+                     const char *format, ...)
+{
+    va_list args;
+    char *string;
+
+    va_start(args, format);
+    string = apr_pvsprintf(ctx->pool, format, args);
+    va_end(args);
+    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
+                              string, strerror(syserr));
     ctx->code = err;
 }

@@ -33,17 +33,18 @@ use base qw(WebAuth::Token);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # Accessor methods.
-sub subject         ($;$) { my $t = shift; $t->_attr ('subject',         @_) }
-sub auth            ($;$) { my $t = shift; $t->_attr ('auth',            @_) }
-sub auth_data       ($;$) { my $t = shift; $t->_attr ('auth_data',       @_) }
-sub initial_factors ($;$) { my $t = shift; $t->_attr ('initial_factors', @_) }
-sub session_factors ($;$) { my $t = shift; $t->_attr ('session_factors', @_) }
-sub loa             ($;$) { my $t = shift; $t->_attr ('loa',             @_) }
-sub creation        ($;$) { my $t = shift; $t->_attr ('creation',        @_) }
-sub expiration      ($;$) { my $t = shift; $t->_attr ('expiration',      @_) }
+sub subject         { my $t = shift; $t->_attr ('subject',         @_) }
+sub authz_subject   { my $t = shift; $t->_attr ('authz_subject',   @_) }
+sub auth            { my $t = shift; $t->_attr ('auth',            @_) }
+sub auth_data       { my $t = shift; $t->_attr ('auth_data',       @_) }
+sub initial_factors { my $t = shift; $t->_attr ('initial_factors', @_) }
+sub session_factors { my $t = shift; $t->_attr ('session_factors', @_) }
+sub loa             { my $t = shift; $t->_attr ('loa',             @_) }
+sub creation        { my $t = shift; $t->_attr ('creation',        @_) }
+sub expiration      { my $t = shift; $t->_attr ('expiration',      @_) }
 
 1;
 
@@ -109,6 +110,14 @@ best_key() method of WebAuth::Keyring on that KEYRING.
 Get or set the subject, which holds the authenticated identity of the user
 holding this token.  This is set for tokens of authenticator type
 C<webkdc>, but not for tokens of authenticator type C<krb5>.
+
+=item authz_subject ([SUBJECT])
+
+Get or set the authorization subject, which holds the asserted
+authorization identity of the user holding this token.  The authorization
+identity may not match the authenticated identity.  It represents a
+request to use the authorization identity instead of the authentication
+subject when applying ACLs or determining identity in the application.
 
 =item auth ([TYPE])
 

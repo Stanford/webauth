@@ -473,7 +473,8 @@ status_check_access(const char *path, apr_int32_t flag, request_rec *r)
     apr_file_t *f;
     char errbuff[512];
 
-    st = apr_file_open(&f, path, flag, APR_UREAD|APR_UWRITE, r->pool);
+    st = apr_file_open(&f, path, flag, APR_FPROT_UREAD | APR_FPROT_UWRITE,
+                       r->pool);
     if (st != APR_SUCCESS) {
         errbuff[0] = 0;
         apr_strerror(st, errbuff, sizeof(errbuff)-1);
@@ -533,6 +534,7 @@ handler_hook(request_rec *r)
 {
     struct server_config *sconf;
     MWA_SERVICE_TOKEN *st;
+    apr_int32_t flags;
 
     if (strcmp(r->handler, "webauth")) {
         return DECLINED;
@@ -614,7 +616,7 @@ handler_hook(request_rec *r)
 
     ap_rputs("<dl>", r);
     dt_str("Keyring read check",
-           status_check_access(sconf->keyring_path, APR_READ, r), r);
+           status_check_access(sconf->keyring_path, APR_FOPEN_READ, r), r);
     ap_rputs("<dt><strong>Keyring info:</strong></dt>\n", r);
 
     if (sconf->ring == NULL) {
@@ -643,7 +645,7 @@ handler_hook(request_rec *r)
     ap_rputs("<dl>", r);
 
     dt_str("Keytab read check",
-           status_check_access(sconf->keytab_path, APR_READ, r), r);
+           status_check_access(sconf->keytab_path, APR_FOPEN_READ, r), r);
     ap_rputs("</dl>", r);
     ap_rputs("<hr/>", r);
 
@@ -651,9 +653,9 @@ handler_hook(request_rec *r)
 
     st = mwa_get_service_token(r->server, sconf, r->pool, 0);
 
+    flags = APR_FOPEN_READ | APR_FOPEN_WRITE | APR_FOPEN_CREATE;
     dt_str("Service Token Cache read/write check",
-           status_check_access(sconf->st_cache_path,
-                               APR_READ|APR_WRITE|APR_CREATE, r), r);
+           status_check_access(sconf->st_cache_path, flags, r), r);
     ap_rputs("<dt><strong>Service Token info:</strong></dt>\n", r);
 
     if (st == NULL) {
@@ -806,6 +808,7 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
  */
 static int
 make_app_cookie(const char *subject,
+                const char *authz_subject,
                 time_t creation_time,
                 time_t expiration_time,
                 time_t last_used_time,
@@ -833,6 +836,8 @@ make_app_cookie(const char *subject,
     data->type = WA_TOKEN_APP;
     app = &data->token.app;
     app->subject = apr_pstrdup(rc->r->pool, subject);
+    if (authz_subject != NULL)
+        app->authz_subject = apr_pstrdup(rc->r->pool, authz_subject);
     app->last_used = last_used_time;
     if (initial_factors != NULL)
         app->initial_factors = apr_pstrdup(rc->r->pool, initial_factors);
@@ -892,6 +897,7 @@ app_token_maint(MWA_REQ_CTXT *rc)
         return 1;
     rc->at->last_used = curr;
     make_app_cookie(rc->at->subject,
+                    rc->at->authz_subject,
                     rc->at->creation,
                     rc->at->expiration,
                     rc->at->last_used,
@@ -1069,7 +1075,7 @@ static int
 handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
 {
     const char *mwa_func = "handle_id_token";
-    const char *subject;
+    const char *subject, *authz_subject;
     unsigned long now;
 
     now = time(NULL);
@@ -1078,6 +1084,14 @@ handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
                      "mod_webauth: %s: id token too old", mwa_func);
         return 0;
     }
+
+    /*
+     * The authz_subject value from the id token is only honored if the token
+     * type is webkdc.  A krb5 subject auth type means we're supposed to
+     * independently verify their identity, but there's no way to
+     * independently verify the authorization identity.
+     */
+    authz_subject = id->authz_subject;
     if (id->auth_data != NULL) {
         MWA_CRED_INTERFACE *mci;
 
@@ -1085,7 +1099,8 @@ handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
         if (mci == NULL)
             return 0;
         subject = mci->validate_sad(rc, id->auth_data, id->auth_data_len);
-    } else if (strcmp(id->auth, WA_SA_WEBKDC) == 0) {
+        authz_subject = NULL;
+    } else if (strcmp(id->auth, "webkdc") == 0) {
         subject = id->subject;
     } else {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
@@ -1100,8 +1115,8 @@ handle_id_token(const struct webauth_token_id *id, MWA_REQ_CTXT *rc)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                          "mod_webauth: %s: got subject(%s) from id token",
                          mwa_func, subject);
-        make_app_cookie(subject, 0, id->expiration, 0, id->initial_factors,
-                        id->session_factors, id->loa, rc);
+        make_app_cookie(subject, authz_subject, 0, id->expiration, 0,
+                        id->initial_factors, id->session_factors, id->loa, rc);
     } else {
         /* everyone else should have logged something, right? */
     }
@@ -1136,8 +1151,8 @@ handle_proxy_token(const struct webauth_token_proxy *proxy, MWA_REQ_CTXT *rc)
                                proxy->initial_factors, proxy->session_factors,
                                proxy->loa, proxy->expiration, rc);
     if (status)
-        status = make_app_cookie(proxy->subject, 0, proxy->expiration, 0,
-                                 proxy->initial_factors,
+        status = make_app_cookie(proxy->subject, proxy->authz_subject, 0,
+                                 proxy->expiration, 0, proxy->initial_factors,
                                  proxy->session_factors, proxy->loa, rc);
     return status;
 }
@@ -1922,7 +1937,8 @@ check_user_id_hook(request_rec *r)
 {
     const char *at = ap_auth_type(r);
     char *wte, *wtc, *wtlu, *wif, *wsf, *wloa;
-    const char *subject;
+    const char *subject, *authz;
+    bool trust_authz;
     MWA_REQ_CTXT rc;
     int status;
 
@@ -1972,17 +1988,22 @@ check_user_id_hook(request_rec *r)
             return code;
         if (rc.at != NULL) {
             /* stick it in note for future reference */
+            subject = rc.at->subject;
+            authz = rc.at->authz_subject;
             if (rc.sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                             "mod_webauth: stash note, user(%s)",
-                             rc.at->subject);
-            mwa_setn_note(r, N_SUBJECT, NULL, "%s", rc.at->subject);
+                             "mod_webauth: stash note, user(%s), authz(%s)",
+                             subject, authz == NULL ? "" : authz);
+            mwa_setn_note(r, N_SUBJECT, NULL, "%s", subject);
+            if (authz != NULL)
+                mwa_setn_note(r, N_AUTHZ_SUBJECT, NULL, "%s", authz);
         }
     } else {
+        authz = mwa_get_note(r, N_AUTHZ_SUBJECT);
         if (rc.sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                         "mod_webauth: found note, user(%s)",
-                         subject);
+                         "mod_webauth: found note, user(%s), authz(%s)",
+                         subject, authz == NULL ? "" : authz);
     }
 
     /* If WebAuth is optional and the user isn't authenticated, we're done. */
@@ -2000,21 +2021,38 @@ check_user_id_hook(request_rec *r)
         return HTTP_UNAUTHORIZED;
     }
 
+    /*
+     * If we're trusting authorization identities, set r->user to the
+     * authorization identity if there is one.  Otherwise, set it to the
+     * authentication identity.
+     */
+    trust_authz = rc.dconf->trust_authz_identity_set
+        ? rc.dconf->trust_authz_identity
+        : rc.sconf->trust_authz_identity;
+    if (trust_authz && authz != NULL) {
+        ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                     "mod_webauth: user %s authorized as %s", subject, authz);
+        r->user = (char *) authz;
+    } else {
+        r->user = (char *) subject;
+    }
+    r->ap_auth_type = (char *) at;
     if (rc.sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: check_user_id_hook setting user(%s)",
-                     (subject != NULL) ? subject : rc.at->subject);
-
-    r->user = (subject != NULL) ? (char *) subject : (char *) rc.at->subject;
-    r->ap_auth_type = (char *) at;
+                     r->user);
 
     /*
-     * Set environment variables.
+     * Set environment variables.  WEBAUTH_USER is always the authentication
+     * identity.  WEBAUTH_AUTHZ_USER is the authorization identity if one is
+     * set, even if we're not trusting them.
      *
      * FIXME: This is only run when we have an app token, which means that if
      * we get the identity from a note, we skip all of that.  Is that correct?
      */
-    mwa_setenv(&rc, ENV_WEBAUTH_USER, r->user);
+    mwa_setenv(&rc, ENV_WEBAUTH_USER, subject);
+    if (authz != NULL)
+        mwa_setenv(&rc, ENV_WEBAUTH_AUTHZ_USER, authz);
     if (rc.at != NULL) {
         wte = rc.at->expiration ?
             apr_psprintf(rc.r->pool, "%d", (int) rc.at->expiration) : NULL;

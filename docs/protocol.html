@@ -144,7 +144,7 @@
 <tr><td class="header">WebAuth Documentation</td><td class="header">R. Schemers</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">R. Allbery</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Stanford University</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">July 2012</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">December 19, 2012</td></tr>
 </table></td></tr></table>
 <h1><br />WebAuth Technical Specification</h1>
 
@@ -681,7 +681,7 @@ No Tokens (Initial Sign-On)</h3>
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
-                         send K5 auth for webkdc-service token
+                         send Kerberos auth for webkdc-service token
   1.                     WAS ---------&gt; WebKDC
 
                          return session key, webkdc-service token
@@ -1035,11 +1035,11 @@ No App Token, Credentials Required</h3>
 <p>Normally, the requested credential tokens will be Kerberos
         service tickets that the WAS can then use to talk to other
         services that use Kerberos authentication.  Since the webkdc-proxy
-        token is generally a Kerberos TGT, this works together well and
-        allows WebAuth to treat the UA's cookie jar as essentially a
-        Kerberos ticket cache.  However, this is not required by the
-        protocol and credential tokens may be any form of credential
-        supported by the WAS and WebKDC.
+        token is generally a Kerberos TGT credential, this works together
+        well and allows WebAuth to treat the UA's cookie jar as
+        essentially a Kerberos ticket cache.  However, this is not
+        required by the protocol and credential tokens may be any form of
+        credential supported by the WAS and WebKDC.
 </p>
 <p>As with an id token, the WAS may choose not to put the
         credentials in an app token for subsequent use.  It may instead
@@ -1335,6 +1335,15 @@ Common XML Elements</h3>
               (such as training or a usage agreement), or some other local
               factor.
 </dd>
+<dt>25</dt>
+<dd>This authentication appears to be a
+              replay.
+</dd>
+<dt>26</dt>
+<dd>This authentication was rejected due to too
+              many failed authentication attempts for this user.  The
+              authentication should be retried later.
+</dd>
 </dl></blockquote><p>
           
 </p>
@@ -1360,11 +1369,11 @@ XML Commands</h3>
         requestToken command is used by the WebLogin component of the
         WebKDC to process a request token sent in a URL from a WAS.  The
         webkdcProxyToken command converts an existing credential (such as
-        a Kerberos TGT) into a webkdc-proxy token and can be used to
-        bootstrap WebAuth authentication from an existing Kerberos ticket
-        cache for improved single sign-on.  The webkdcProxyTokenInfo
-        command returns information about an existing webkdc-proxy
-        token.
+        a Kerberos credential for the ticket-granting service) into a
+        webkdc-proxy token and can be used to bootstrap WebAuth
+        authentication from an existing Kerberos ticket cache for improved
+        single sign-on.  The webkdcProxyTokenInfo command returns
+        information about an existing webkdc-proxy token.
 </p>
 <a name="xmlgettokens"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -1479,6 +1488,9 @@ requestToken</h3>
     &lt;!-- request token from WAS --&gt;
     &lt;requestToken&gt;{base64-request-token}&lt;/requestToken&gt;
 
+    &lt;!-- requested authorization identity (optional) --&gt;
+    &lt;authzSubject&gt;...&lt;/authzSubject&gt;
+
     &lt;!-- request info from front-end, for logging purposes --&gt;
     &lt;requestInfo&gt;
       &lt;remoteUser&gt;xxxx&lt;/remoteUser&gt;
@@ -1531,6 +1543,16 @@ requestToken</h3>
 
     &lt;!-- subject from subjectCredential --&gt;
     &lt;subject&gt;...&lt;/subject&gt;
+
+    &lt;!-- authorization identity if requested and permitted --&gt;
+    &lt;authzSubject&gt;...&lt;/authzSubject&gt;
+
+    &lt;!-- permitted authorization identities if this user may assert
+         an authorization identity to this destination --&gt;
+    &lt;permittedAuthzSubjects&gt;
+      &lt;authzSubject&gt;...&lt;/authzSubject&gt;
+      &lt;!-- repeat for all permitted authorization identities --&gt;
+    &lt;/permittedAuthzSubjects&gt;
 
     &lt;!-- requestedToken will either be an error, id, or proxy token.
          not set if &lt;loginErrorCode&gt; is set. --&gt;
@@ -1682,10 +1704,10 @@ requestToken</h3>
 webkdcProxyToken</h3>
 
 <p>The webkdcProxyToken command is used to convert an existing
-          credential, such as a Kerberos TGT, into a webkdc-proxy
-          token.  It can be used to bootstrap WebAuth authentication from
-          an existing Kerberos ticket cache for improved single
-          sign-on.
+          credential, such as a Kerberos TGT credential, into a
+          webkdc-proxy token.  It can be used to bootstrap WebAuth
+          authentication from an existing Kerberos ticket cache for
+          improved single sign-on.
 </p>
 <p>The request message is:
 </p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
@@ -1800,7 +1822,7 @@ WAS Asking for webkdc-service Token</h3>
 <a name="rfc.section.4.5.2"></a><h3>4.5.2.&nbsp;
 WAS Asking for a credential Token</h3>
 
-<p>In this example, the WAS requests an K5 ticket using a
+<p>In this example, the WAS requests an Kerberos ticket using a
           previously obtained webkdc-proxy token (presumably obtained from
           the UA via a redirect to the WebKDC with a request token).  The
           webkdc-proxy token's type MUST match the requested credential's
@@ -1877,9 +1899,10 @@ Token Encoding</h3>
         uses.
 </p>
 <p>{token-attributes} is a sequence of name=value pairs, separated
-        by a ';' character.  Names are not allowed to contain either '='
-        or ';'.  Values MAY contain binary data, but MUST escape any ';'
-        in the data by adding an additional ';'.
+        by a ';' character.  Names must be one or more ASCII alphanumeric
+        characters.  Values MAY contain arbitrary binary data, but MUST
+        escape any ';' in the data by adding an additional ';' before
+        it.
 </p>
 <p>For example, if we had the following names and
           values:
@@ -2015,7 +2038,9 @@ Assigned Token Attributes</h3>
 <dt>pd (binary)</dt>
 <dd>
             Proxy data, such as an encoded
-            Kerberos ticket-granting ticket (TGT).
+            Kerberos credential for the ticket-granting service (a
+            Kerberos TGT plus its supporting data such as the session
+            key).
 </dd>
 <dt>ps (string)</dt>
 <dd>
@@ -2053,11 +2078,12 @@ Assigned Token Attributes</h3>
             The authenticated subject.  In
             webkdc-service tokens, this is the server identity that
             authenticated to get the webkdc-service token.  In all other
-            tokens, it is the user who authenticated.  Server subjects
+            tokens, it is the user who authenticated.  Server subjects in
+            webkdc-service tokens (and only those, not other subjects)
             have the form "type:identifier".  Currently, the only defined
             type is "krb5" indicating that the server authenticated with
-            Kerberos, and in that case the identifier is the text form
-            of a fully qualified Kerberos principal.
+            Kerberos, and in that case the identifier is the text form of
+            a fully qualified Kerberos principal.
 </dd>
 <dt>sa (string)</dt>
 <dd>
@@ -2080,6 +2106,16 @@ Assigned Token Attributes</h3>
             WAS for a successful authentication.  This is a list of factor
             codes separated by commas.  For the list of registered factor
             names, see <a class='info' href='#factors'>Section&nbsp;5.3<span> (</span><span class='info'>Authentication Factors</span><span>)</span></a>.
+</dd>
+<dt>sz (string)</dt>
+<dd>
+            The authorization subject.  A user (if
+            permitted by the WebKDC) may assert an authorization subject in
+            addition to their authenticated identity.  If they do so, the
+            subject (s) will continue to hold their authenticated identity,
+            and this attribute will contain the asserted authorization
+            identity.  The WAS may choose whether or not to honor the
+            asserted authorization identity.
 </dd>
 <dt>t (string)</dt>
 <dd>
@@ -2241,7 +2277,9 @@ webkdc-proxy Token
 
 <p>A webkdc-proxy token is a proxy authentication token
           maintained by the WebKDC on behalf of another user, or on behalf
-          of itself.  Normally it contains a Kerberos TGT.
+          of itself.  Normally it contains a Kerberos credential for the
+          ticket-granting service (a Kerberos TGT plus its supporting data
+          such as the session key).
 </p>
 <p>Token format:
 </p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
@@ -2361,6 +2399,8 @@ id Token Encoding</h3>
   s={username}
   # for sa=krb5
   sad={result-of-krb5-mk-req-for-webauth/hostname}
+  # for any sa
+  [sz={authorization-subject}]
   ct={creation-time}
   et={expiration-time}
   [ia={factor-list}]
@@ -2373,7 +2413,7 @@ id Token Encoding</h3>
 <p>If "at" is krb5, then "sad" (subject authenticator data) is a
           KRB_AP_REQ for the WAS service principal (as determined from the
           subject of the webkdc-service token) using the user's TGT from a
-          krb5 webkdc-procy token.
+          krb5 webkdc-proxy token.
 </p>
 <p>If at is webkdc, we are trusting the webkdc and "s" contains
           the authenticated user's identity (generally as a Kerberos
@@ -2406,6 +2446,7 @@ proxy Token Encoding</h3>
   t=proxy
   pt=krb5|...
   s={username}
+  [sz={authorization-subject}]
   wt={webkdc-proxy-token}
   ct={creation-time}
   et={expiration-time}
@@ -2434,6 +2475,17 @@ proxy Token Encoding</h3>
           used by the WAS later to request credential tokens from the
           WebKDC.
 </p>
+<p>Note that the authorization subject included in the proxy
+          token will not be reflected in any id tokens obtained via the
+          proxy token.  The id tokens will be based on the webkdc-proxy
+          token, which is for the authentication identity alone.
+          Therefore, a WebAuth Application Server that wants to use the
+          authorization identity in some way needs to note the
+          authorization subject from the proxy token and not rely on
+          getting it from any subsequent id token.  Similarly, any cred
+          tokens obtained from a proxy token will be for the
+          authentication identity, not the authorization identity.
+</p>
 <a name="tokencred"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.5.4.7"></a><h3>5.4.7.&nbsp;
@@ -2441,8 +2493,8 @@ credential Token Encoding</h3>
 
 <p>A credential token is an authentication credential for the
           user for some other service, used by the WAS for proxied
-          authentication.  It is normally a K5 service ticket generated by
-          the WebKDC from the user's TGT.
+          authentication.  It is normally a Kerberos service ticket
+          generated by the WebKDC from the user's TGT.
 </p>
 <p>Token format:
 </p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
@@ -2493,6 +2545,7 @@ app Token Encoding</h3>
   et={expiration-time}
   [ct={creation-time}]
   [s={username}]
+  [sz={authorization-subject}]
   [k=session-key]
   [lt={last-use-time}]
   [ia={factor-list}]
@@ -2786,6 +2839,31 @@ Document Revision History</h3>
           Add error code 24, representing a rejected
           authentication, and add optional element &lt;userMessage&gt; to
           &lt;requestTokenResponse&gt;.
+</dd>
+<dt>3.2.1 (2012-09-07, rra)</dt>
+<dd>
+          Clarify references to a "Kerberos TGT",
+          which normally mean a Kerberos credential that includes the TGT
+          plus other supporting data such as the session key.  Replace
+          remaining K5 references with just Kerberos.
+</dd>
+<dt>3.3.0 (2012-11-20, rra)</dt>
+<dd>
+          Add &lt;authzSubject&gt; to
+          &lt;requestTokenRequest&gt; and &lt;requestTokenResponse&gt; to
+          allow requesting and returning authorization identities.  Add
+          &lt;permittedAuthzSubjects&gt; to &lt;requestTokenResponse&gt;
+          to tell WebLogin what authorization identities the user may
+          assert.  Add the sz attribute to app, id, and proxy tokens to
+          hold the asserted authorization identity.  Clarify that attribute
+          names are alphanumeric.
+</dd>
+<dt>3.3.1 (2012-12-06, rra)</dt>
+<dd>
+          Add error code 25, representing an
+          authentication that appears to be a replay, and error code 26,
+          indicating a rejected authentication due to too many failed
+          authentication attempts for this user.
 </dd>
 </dl></blockquote><p>
       

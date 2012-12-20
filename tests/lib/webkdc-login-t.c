@@ -6,7 +6,7 @@
  * tests even if no Kerberos configuration is provided.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2012
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -45,8 +45,9 @@ main(void)
     struct webauth_token_webkdc_proxy *pt;
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
+    const char *authz;
 
-    plan(54);
+    plan(95);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -77,7 +78,6 @@ main(void)
     memset(&request, 0, sizeof(request));
     memset(&service, 0, sizeof(service));
     service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-
     status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
                                 &session_key);
     if (status != WA_ERR_NONE)
@@ -155,7 +155,7 @@ main(void)
     wkproxy.token.webkdc_proxy.loa = 3;
     wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     req.type = "id";
     req.auth = "webkdc";
@@ -187,11 +187,13 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(7, 0, "...no result token: %s",
+        ok_block(8, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string("testuser", token->token.id.subject,
                   "...result subject is right");
+        is_string(NULL, token->token.id.authz_subject,
+                  "...and there is no authz subject");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
         is_string("x,x1", token->token.proxy.initial_factors,
@@ -206,8 +208,85 @@ main(void)
     is_string("x,x1", response->initial_factors, "...initial factors");
     is_string(NULL, response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
+    ok(response->authz_subject == NULL, "...authz subject");
+    ok(response->permitted_authz == NULL, "...allowed identities");
+
+    /* Set an identity ACL file and try again. */
+    config.id_acl_path = test_file_path("data/id.acl");
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Identity ACL configuration succeeded");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Allowed identities returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->authz_subject == NULL, "...and no authz subject");
+    ok(response->permitted_authz != NULL,
+       "...and there are allowed identities");
+    if (response->permitted_authz == NULL)
+        ok_block(3, 0, "...no identities");
+    else {
+        is_int(2, response->permitted_authz->nelts,
+               "...two allowed identities");
+        authz = APR_ARRAY_IDX(response->permitted_authz, 0, const char *);
+        is_string("otheruser", authz, "...first is correct");
+        authz = APR_ARRAY_IDX(response->permitted_authz, 1, const char *);
+        is_string("bar", authz, "...second is correct");
+    }
+
+    /* Attempt to assert an identity and try again. */
+    request.authz_subject = "otheruser";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Asserting an authz subject returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    is_string("otheruser", response->authz_subject,
+              "...and the correct authz subject");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(8, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("testuser", token->token.id.subject,
+                  "...result subject is right");
+        is_string("otheruser", token->token.id.authz_subject,
+                  "...result authz subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("x,x1", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_string(NULL, token->token.proxy.session_factors,
+                  "...and there are no session factors");
+        is_int(3, token->token.id.loa, "...result LoA is right");
+        ok(token->token.id.creation - now < 3, "...and creation is sane");
+        is_int(now + 60 * 60, token->token.id.expiration,
+               "...and expiration matches the expiration of the proxy token");
+    }
+
+    /* Try asserting an identity we're not allowed to assert. */
+    request.authz_subject = "foo";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status,
+           "Asserting a disallowed authz subject returns success");
+    is_int(WA_PEC_UNAUTHORIZED, response->login_error,
+           "...with the right error");
+    is_string("not authorized to assert that identity",
+              response->login_message, "...and the right message");
+    ok(response->authz_subject == NULL, "...and authz subject is NULL");
 
     /* Set forced authentication and try again. */
+    request.authz_subject = NULL;
     req.options = "fa";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Proxy auth w/forced login returns success");
@@ -216,6 +295,34 @@ main(void)
     is_string("forced authentication, need to login", response->login_message,
               "...and the right message");
     is_string("testuser", response->subject, "...but we do know the subject");
+
+    /*
+     * Retry forced authentication with a 15 minute login timeout.  The
+     * webkdc-proxy token is dated 10 minutes ago, so this should succeed.
+     */
+    config.login_time_limit = 15 * 60;
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Auth w/forced login and long timeout returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok(0, "...no result token: %s",
+           webauth_error_message(ctx, status));
+    else
+        is_string("testuser", token->token.id.subject,
+                  "...result subject is right");
+    is_string("x,x1", response->initial_factors, "...initial factors");
+    is_string("x,x1", response->session_factors, "...session factors");
 
     /* Remove forced authentication but ask for a proxy token. */
     req.options = NULL;
@@ -232,5 +339,6 @@ main(void)
 
     /* Clean up. */
     apr_terminate();
+    test_file_path_free((char *) config.id_acl_path);
     return 0;
 }

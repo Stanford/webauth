@@ -10,7 +10,7 @@
 
 use strict;
 
-use Test::More tests => 48;
+use Test::More tests => 55;
 
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(:const);
@@ -59,7 +59,6 @@ eval {
         ' and has the correct mode');
     my $keyring2 = eval { $wa->keyring_read ('webauth_keyring') };
     is ($@, '', 'Reading the keyring back in works');
-    unlink ('webauth_keyring');
     my @entries2 = $keyring2->entries;
     is (scalar (@entries2), scalar (@entries),
         ' and the keyrings are the same size');
@@ -83,6 +82,29 @@ eval {
         ' and right key length');
     is ($entries2[1]->key->data, $entries[1]->key->data,
         ' and right key data');
+
+    # Read in the encoded data and try decoding it.
+    ok (open (KEYRING, '<', 'webauth_keyring'), 'Can open the saved file');
+    my $data2;
+    {
+        local $/;
+        $data2 = <KEYRING>;
+    }
+    close KEYRING;
+    $keyring2 = eval { $wa->keyring_decode ($data2) };
+    is ($@, '', 'Decoding the keyring works');
+    @entries2 = $keyring2->entries;
+    is (scalar (@entries2), scalar (@entries),
+        ' and the keyrings are the same size');
+    $keyring2 = eval { WebAuth::Keyring->decode ($wa, $data2) };
+    is ($@, '', 'Decoding the keyring via WebAuth::Keyring helper works');
+    @entries2 = $keyring2->entries;
+    is (scalar (@entries2), scalar (@entries),
+        ' and the keyrings are the same size');
+    my $data = eval { $keyring->encode };
+    is ($@, '', 'Encoding the keyring works');
+    is ($data, $data2, ' and the encoded data matches');
+    unlink ('webauth_keyring');
 
     # Check whether we get back the correct key when we ask for the best
     # key for the "current" time.  This should be the first key, since the

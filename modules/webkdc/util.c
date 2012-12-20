@@ -18,7 +18,6 @@
 #include <unistd.h>
 
 #include <modules/webkdc/mod_webkdc.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
@@ -166,30 +165,6 @@ mwk_append_string(MWK_STRING *string, const char *in_data, size_t in_size)
 
     /* Always nul-terminate.  We have space becase of the +1 above. */
     string->data[string->size] = '\0';
-}
-
-
-/*
- * Get a required string attribute from a token, with logging if not present.
- * Returns value or NULL on error,
- */
-char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name, request_rec *r,
-                 const char *func, size_t *vlen)
-{
-    int status;
-    ssize_t i;
-
-    status = webauth_attr_list_find(alist, name, &i);
-    if (status != WA_ERR_NONE || i == -1) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                     "mod_webkdc: %s: can't find attr(%s) in attr list",
-                     func, name);
-        return NULL;
-    }
-    if (vlen)
-        *vlen = alist->attrs[i].length;
-    return (char *) alist->attrs[i].value;
 }
 
 

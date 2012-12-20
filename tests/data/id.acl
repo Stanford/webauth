@@ -1,0 +1,6 @@
+# This is a test identity ACL file.
+
+other    krb5:webauth/example.com@EXAMPLE.COM     test
+testuser krb5:webauth/example.com@EXAMPLE.COM     otheruser
+testuser krb5:webauth/foo.example.com@EXAMPLE.COM foo
+testuser krb5:webauth/example.com@EXAMPLE.COM     bar

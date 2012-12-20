@@ -16,10 +16,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <openssl/md5.h>
+#include <time.h>
 
 #include <util/messages.h>
 #include <util/xmalloc.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 
@@ -145,25 +145,17 @@ print_time(time_t t)
  * whether two keys are the same without exposing the actual key value.
  */
 static void
-print_fingerprint(struct webauth_context *ctx, struct webauth_key *key)
+print_fingerprint(struct webauth_key *key)
 {
-    char md5[MD5_DIGEST_LENGTH];
-    char *hex;
-    size_t length, maxlen;
-    int s;
+    unsigned char md5[MD5_DIGEST_LENGTH];
+    size_t i;
     MD5_CTX c;
 
     MD5_Init(&c);
     MD5_Update(&c, key->data, key->length);
-    MD5_Final((unsigned char *) md5, &c);
-    maxlen = webauth_hex_encoded_length(MD5_DIGEST_LENGTH);
-    hex = xmalloc(maxlen + 1);
-    s = webauth_hex_encode(md5, MD5_DIGEST_LENGTH, hex, &length, maxlen);
-    if (s != WA_ERR_NONE)
-        die_webauth(ctx, s, "cannot encode fingerprint of key");
-    hex[length] = '\0';
-    printf("%s", hex);
-    free(hex);
+    MD5_Final(md5, &c);
+    for (i = 0; i < sizeof(md5); i++)
+        printf("%.2x", (unsigned int) md5[i]);
 }
 
 
@@ -179,15 +171,14 @@ print_fingerprint(struct webauth_context *ctx, struct webauth_key *key)
  * used as the key ID.
  */
 static void
-print_short(struct webauth_context *ctx, struct webauth_keyring_entry *e,
-            size_t i)
+print_short(struct webauth_keyring_entry *e, size_t i)
 {
     printf("%2lu  ", (unsigned long) i);
     print_time(e->creation);
     printf("  ");
     print_time(e->valid_after);
     printf("  ");
-    print_fingerprint(ctx, e->key);
+    print_fingerprint(e->key);
     printf("\n");
 }
 
@@ -206,8 +197,7 @@ print_short(struct webauth_context *ctx, struct webauth_keyring_entry *e,
  * Takes the keyring entry and its index, which is used as the key ID.
  */
 static void
-print_long(struct webauth_context *ctx, struct webauth_keyring_entry *e,
-           size_t i)
+print_long(struct webauth_keyring_entry *e, size_t i)
 {
     printf("       Key-Id: %lu\n", (unsigned long) i);
     printf("      Created: ");
@@ -228,7 +218,7 @@ print_long(struct webauth_context *ctx, struct webauth_keyring_entry *e,
     printf(")\n");
     printf("   Key-Length: %d bits\n", e->key->length * 8);
     printf("  Fingerprint: ");
-    print_fingerprint(ctx, e->key);
+    print_fingerprint(e->key);
     printf("\n\n");
 }
 
@@ -277,9 +267,9 @@ list_keyring(struct webauth_context *ctx, const char *keyring, bool verbose)
     for (i = 0; i < (size_t) ring->entries->nelts; i++) {
         entry = &APR_ARRAY_IDX(ring->entries, i, struct webauth_keyring_entry);
         if (verbose)
-            print_long(ctx, entry, i);
+            print_long(entry, i);
         else
-            print_short(ctx, entry, i);
+            print_short(entry, i);
     }
 }
 
@@ -449,5 +439,6 @@ main(int argc, char **argv)
     } else {
         usage(1);
     }
+    webauth_context_free(ctx);
     exit(0);
 }

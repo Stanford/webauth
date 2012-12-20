@@ -5,78 +5,206 @@
 # Takes as input Apache access logs, possibly preceded by the filename and a
 # colon.  Parse each line to see if it contains a login via GET, and if so,
 # store the username, user agent, and date.
-#
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009
-#     The Board of Trustees of the Leland Stanford Junior University
-#
-# See LICENSE for licensing terms.
 
 ##############################################################################
-# Modules and declarations
+# Modules and globals
 ##############################################################################
 
+require 5.006;
 use strict;
+use warnings;
 
 use Date::Parse qw(str2time);
 use Getopt::Long qw(GetOptions);
 use POSIX qw(strftime);
 
-# Set to the local Kerberos realm.  This is set by the --realm command-line
-# option and, if set, means that the password will be checked to see if it's
-# still valid.
-our $REALM;
+# We intentionally don't require Readonly to be more portable.
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 
-# The path to a file listing the valid users.  Log entries referring to users
-# who are not listed in this file will be ignored.  This is set by the --users
-# command-line option.  The file can either be a simple list of usernames, one
-# per line, or be in the UNIX password file format.
-our $USERS;
+# Grouping threshold for incidents.  Above this count of authentications, the
+# number of affected users will be grouped together.
+my $COUNT_THRESHOLD = 5;
+
+# Components of an Apache access log.
+my $VHOST_REGEX  = qr{ (?: [\w._-]+ : )? }xms;
+my $CLIENT_REGEX = qr{ ( [\d.]+ )        }xms;
+my $AUTH_REGEX   = qr{ \S+ [ ] \S+       }xms;
+my $TIME_REGEX   = qr{ \[ ([^\]]+) \]    }xms;
+my $STRING_REGEX = qr{ \" ([^\"]+) \"    }xms;
+my $STATUS_REGEX = qr{ (\d+)             }xms;
+
+# Regex to match a single line of Apache access log output.
+my $LOG_REGEX = qr{
+    ^
+    $VHOST_REGEX                # optional virtual host
+    $CLIENT_REGEX \s            # client IP address (1)
+    $AUTH_REGEX \s              # authentication information
+    $TIME_REGEX \s              # timestamp (2)
+    $STRING_REGEX \s            # query (3)
+    $STATUS_REGEX \s            # HTTP status (4)
+    \S+                         # size
+    (?:                         # look for user agent (optional)
+      [ ]
+      $STRING_REGEX \s          # referer (5)
+      $STRING_REGEX             # user agent (6)
+    )?
+    \s* \z
+}xms;
+
+# Regex to match a single query that we care about.
+my $QUERY_REGEX = qr{
+    ^
+    GET \s+                     # Only match GET; POST didn't have a problem
+    /login(?:-spnego)?          # Queries to the login form
+    /*
+    ( [^/\s] \S* )              # Query parameters (1)
+}xms;
 
 ##############################################################################
 # Utility functions
 ##############################################################################
 
-# Decode form parameters in a URL.  Separates parameters on & or ; and then
-# decodes URL-encoded attribute values.  This is a simplified decoding routine
-# that is just enough to handle what we need for this scan.
+# Decode a single CGI parameter.  Helper function for decode_params.
+sub _decode_param {
+    my ($param) = @_;
+    my ($key, $value) = split m{=}xms, $param, 2;
+    $value =~ s{ % (..) }{ chr hex $1 }xmsge;
+    return ($key, $value);
+}
+
+# Parse the CGI parameters from a URL into a hash.
+#
+# $params - CGI parameters from a URL as a string
+#
+# Returns a reference to a hash of parameter keys and values.
 sub decode_params {
     my ($params) = @_;
-    my @params = split (/[;&]/, $params);
-    my %params = map {
-        my ($k, $v) = split (/=/, $_, 2);
-        $v =~ s/%(..)/chr (hex ($1))/ge;
-        ($k, $v);
-    } @params;
+    my @params = split m{ [;&] }xms, $params;
+    my %params = map { _decode_param($_) } @params;
     return \%params;
 }
 
-# Given a principal and password, attempt authentication and return true if
-# authentication succeeded, false otherwise.  Requires Authen::Krb5 and
-# assumes that it's already been initialized.
+# Determine if a Kerberos password is valid for a user.
+#
+# $user     - Username (Kerberos principal)
+# $password - Password to attempt
+# $realm    - Kerberos realm, used to qualify $user if needed
+#
+# Returns true if valid, false otherwise.  Throws string exceptions on
+# internal Kerberos errors.
 sub password_validate {
-    my ($user, $password) = @_;
-    $user .= '@' . $REALM unless $user =~ /\@/;
-    my $client = Authen::Krb5::parse_name ($user)
-        or die "Internal error parsing Kerberos principal";
-    my $cache = Authen::Krb5::cc_resolve ('MEMORY:weblogin')
-        or die "Internal error creating temporary ticket cache";
-    $cache->initialize ($client)
-        or die "Internal error initializing temporary ticket cache";
-    my $server = Authen::Krb5::build_principal_ext ($client)
-        or die "Internal error creating server principal";
-    my $status = Authen::Krb5::get_in_tkt_with_password ($client, $server,
-                                                         $password, $cache);
+    my ($user, $password, $realm) = @_;
 
-    # I have no idea why get_in_tkt_with_password returns 1.  I think it has
-    # something to do with writing to the ticket cache, but I can't figure out
-    # what's causing it.  However, if authentication doesn't succeed, it
-    # returns something other than 1, so we can detect success that way.
-    if (defined ($status) && ($status == 0 || $status == 1)) {
-        return 1;
-    } else {
-        return;
+    # Fully-qualify the principal as needed and parse it.
+    if ($user !~ m{ \@ }xms) {
+        $user .= q{@} . $realm;
     }
+    my $client = Authen::Krb5::parse_name($user)
+      or die "Internal error parsing Kerberos principal\n";
+
+    # Attempt the authentication.
+    my $creds = Authen::Krb5::get_init_creds_password($client, $password);
+    return defined $creds;
+}
+
+##############################################################################
+# Reporting
+##############################################################################
+
+# Add an authentication count to a table that records number of users found by
+# number of authentications, respecting $COUNT_THRESHOLD.  In other words,
+# each key of the hash is the number of times that user's password was seen in
+# the logs, and the value is the number of users seen with that frequency.
+#
+# $count      - Number of authentications
+# $counts_ref - Hash reference storing frequency buckets
+#
+# Returns undef.
+sub store_count {
+    my ($count, $counts_ref) = @_;
+    my $key = $count;
+    if ($count > $COUNT_THRESHOLD) {
+        $key = '>' . $COUNT_THRESHOLD;
+    }
+    $counts_ref->{$key}++;
+    return;
+}
+
+# Analyze log parsing results and print out reports.
+#
+# $auth_ref   - Reference to hash of authentication data w/keys:
+#   date     - Date of authentication
+#   agent    - User agent from Apache logs
+#   host     - Client host
+#   password - User's password
+# $realm      - If present, Kerberos realm for checking passwords
+#
+# Returns undef.
+sub analyze_auth_data {
+    my ($auth_ref, $realm) = @_;
+    my (%count_of, %valid_count_of);
+    my $total  = 0;
+    my $atrisk = 0;
+
+    # Walk through the data hash and total up the results.
+  USER:
+    for my $user (sort keys %{$auth_ref}) {
+        my $date = strftime('%Y-%m-%d %T', localtime $auth_ref->{$user}{date});
+        my $count    = $auth_ref->{$user}{count};
+        my $password = $auth_ref->{$user}{password};
+
+        # If a Kerberos realm was given, check whether this password is valid.
+        my $valid;
+        if ($realm) {
+            $valid = password_valid($user, $password, $realm);
+        }
+
+        # Print out the record of this user.
+        printf "%-8s  %4d time%s  Last: %s %s (from %s)\n", $user, $count,
+          ($count == 1 ? q{ } : q{s}), ($valid ? 'GP' : q{  }), $date,
+          $auth_ref->{$user}{host}
+          or die "Cannot write to STDOUT: $!\n";
+
+        # Increment our counts.
+        $total++;
+        store_count($count, \%count_of);
+        if ($valid) {
+            $atrisk++;
+            store_count($count, \%valid_count_of);
+        }
+    }
+
+    # Report the total number of users.
+    printf "\n%4d total users\n", $total
+      or die "Cannot write to STDOUT: $!\n";
+    if ($realm) {
+        printf "%4d users with still-valid passwords\n", $atrisk
+          or die "Cannot write to STDOUT: $!\n";
+    }
+
+    # Give a breakdown of users by the number of incidents.
+    print "\nBreakdown of all users:\n"
+      or die "Cannot write to STDOUT: $!\n";
+    for my $count (sort keys %count_of) {
+        printf "%2s time%s  %4d users (%4.1f%%)\n", $count,
+          ($count eq '1' ? q{ } : q{s}), $count_of{$count},
+          ($count_of{$count} / $total * 100)
+          or die "Cannot write to STDOUT: $!\n";
+    }
+
+    # If we were checking passwords, also break down the users with
+    # still-valid passwords based on the number of incidents.
+    if ($realm) {
+        print "\nBreakdown of users with still-good passwords:\n"
+          or die "Cannot write to STDOUT: $!\n";
+        for my $count (sort keys %valid_count_of) {
+            printf "%2s time%s  %4d users (%4.1f%%)\n", $count,
+              ($count eq '1' ? q{ } : q{s}), $valid_count_of{$count},
+              ($valid_count_of{$count} / $total * 100)
+              or die "Cannot write to STDOUT: $!\n";
+        }
+    }
+    return;
 }
 
 ##############################################################################
@@ -84,119 +212,95 @@ sub password_validate {
 ##############################################################################
 
 # Parse command-line options.
-my $help;
-Getopt::Long::config ('bundling');
-GetOptions ('h|help'    => \$help,
-            'r|realm=s' => \$REALM,
-            'u|users=s' => \$USERS) or exit 1;
+my ($help, $realm, $users_file);
+Getopt::Long::config('bundling');
+GetOptions(
+    'h|help'    => \$help,
+    'r|realm=s' => \$realm,
+    'u|users=s' => \$users_file
+) or exit 1;
 if ($help) {
-    print "Feeding myself to perldoc, please wait....\n";
-    exec ('perldoc', '-t', $0);
+    print "Feeding myself to perldoc, please wait....\n"
+      or die "Cannot write to STDOUT: $!\n";
+    exec 'perldoc', '-t', $0;
 }
 
 # Parse the password file to get a list of valid users.
-my %full;
-if ($USERS) {
-    open (PASSWD, '<', $USERS) or die "Cannot open $USERS: $!\n";
-    while (<PASSWD>) {
-        my ($user) = split ':';
-        $full{$user} = 1;
+my %valid_users;
+if ($users_file) {
+    open my $users_fh, '<', $users_file
+      or die "Cannot open $users_file: $!\n";
+    local $_ = q{};
+    while (<$users_fh>) {
+        my ($user) = split m{:}xms;
+        $valid_users{$user} = 1;
     }
-    close PASSWD;
+    close $users_fh or die "Cannot close $users_file: $!\n";
 }
 
 # Initialize Kerberos if a realm was specified.
-if ($REALM) {
+if ($realm) {
     require Authen::Krb5;
-    Authen::Krb5::init_context ();
+    Authen::Krb5::init_context();
 }
 
-# Parse the Apache log and accumulate user information in %users.  We also
-# accumulate user agent information in %agents, although that information is
-# not currently used.
-my (%users, %agents);
-while (<>) {
-    s,^[\w./-]+:,,;
-    my ($host, $date, $query, $status, $refer, $agent)
-        = /^(?:[\w._-]+:)?([\d.]+)\ \S+\ \S+\ \[([^\]]+)\]\ \"([^\"]+)\"
-            \ (\d+)\ \S+(?:\ \"([^\"]+)\"\ \"([^\"]+)\")?\s*$/x;
-    next unless $host;
-    next unless $query =~ m,^GET\s+/login(?:-spnego)?/?(\S+),;
-    my $params = decode_params ($1);
-    next unless ($params->{username} and $params->{password});
-    next unless $params->{login};
-    my $user = $params->{username};
-    next if (%full and not $full{$user});
-    $date =~ s/:/ /;
-    $date = str2time ($date);
-    $agents{$agent}++ if $agent;
-    $users{$user}{count}++;
-    if (not $users{$user}{date} or $users{$user}{date} < $date) {
-        $users{$user}{date} = $date;
-        $users{$user}{agent} = $agent;
-        $users{$user}{host} = $host;
-        $users{$user}{password} = $params->{password};
+# Parse the Apache log and accumulate user information in %users and user
+# agent information (not currently used) in %agents.
+my (%auth_for, %agents);
+ACCESS:
+while (defined(my $line = <>)) {
+    $line =~ s{ ^ [\w./-]+ : }{}xms;
+
+    # See if this is a long line that we care about.
+    my ($host, $date, $query, $status, $refer, $agent) = $line =~ $LOG_REGEX;
+    next ACCESS if !defined $host;
+
+    # See if this is a GET of the login form.
+    my ($params) = $query =~ $QUERY_REGEX;
+    next ACCESS if !defined $params;
+
+    # Check whether username, password, and login are set in the form.
+    my $params_ref = decode_params($params);
+    next ACCESS if (!$params_ref->{username} || !$params_ref->{password});
+    next ACCESS if !$params_ref->{login};
+
+    # This is a problematic login.  But skip if not in the user list.
+    my $user = $params_ref->{username};
+    next ACCESS if (%valid_users && !$valid_users{$user});
+
+    # Convert the date to seconds since epoch.
+    $date =~ s{ : }{ }xms;
+    $date = str2time($date);
+
+    # Remember the user agent.
+    if ($agent) {
+        $agents{$agent}++;
     }
-    $users{$user}{notest} = 1 unless $params->{test_cookie};
+
+    # Remember the user.
+    $auth_for{$user}{count}++;
+
+    # If this is a new user or later login, remember the information.
+    if (!$auth_for{$user}{date} || $auth_for{$user}{date} < $date) {
+        $auth_for{$user}{date}     = $date;
+        $auth_for{$user}{agent}    = $agent;
+        $auth_for{$user}{host}     = $host;
+        $auth_for{$user}{password} = $params_ref->{password};
+    }
 }
 
 # We now have all the data.  Report on the users.
-my (%counts, %vcounts, $total, $atrisk, $notest);
-for my $user (sort keys %users) {
-    my $date = strftime ('%Y-%m-%d %T', localtime $users{$user}{date});
-    my $count = $users{$user}{count};
-    my $valid;
-    if ($REALM) {
-        $valid = password_validate ($user, $users{$user}{password});
-    }
-    printf "%-8s  %4d time%s  Last: %s %s (from %s)\n", $user, $count,
-        ($count == 1 ? ' ' : 's'), ($valid ? 'GP' : '  '), $date,
-        $users{$user}{host};
-    $total++;
-    $atrisk++ if $valid;
-    if ($count > 5) {
-        $counts{'>5'}++;
-    } else {
-        $counts{$count}++;
-    }
-    if ($valid) {
-        if ($count > 5) {
-            $vcounts{'>5'}++;
-        } else {
-            $vcounts{$count}++;
-        }
-    }
-    $notest++ if $users{$user}{notest};
-}
+analyze_auth_data(\%auth_for, $realm);
 
-# Report the total number of users.
-printf "\n%4d total users\n", $total;
-if ($REALM) {
-    printf "%4d users with still-valid passwords\n", $atrisk;
-}
-
-# Give a breakdown of users by the number of incidents.
-print "\nBreakdown of all users:\n";
-for my $count (sort keys %counts) {
-    printf "%2s time%s  %4d users (%4.1f%%)\n", $count,
-        ($count == 1 ? ' ' : 's'), $counts{$count},
-        ($counts{$count} / $total * 100);
-}
-
-# If we were checking passwords, also break down the users with still-valid
-# passwords based on the number of incidents.
-if ($REALM) {
-    print "\nBreakdown of users with still-good passwords:\n";
-    for my $count (sort keys %vcounts) {
-        printf "%2s time%s  %4d users (%4.1f%%)\n", $count,
-            ($count == 1 ? ' ' : 's'), $vcounts{$count},
-            ($vcounts{$count} / $total * 100);
-    }
-}
+__END__
 
 ##############################################################################
 # Documentation
 ##############################################################################
+
+=for stopwords
+weblogin-passcheck WebLogin TimeDate CPAN WebAuth login logins usernames
+Kerberos username sublicense MERCHANTABILITY NONINFRINGEMENT
 
 =head1 NAME
 
@@ -205,7 +309,7 @@ weblogin-passcheck - Check Apache access logs for disclosed WebLogin passwords
 =head1 SYNOPSIS
 
 B<weblogin-passcheck> [B<-h>] [B<-r> I<realm>] [B<-u> I<users>] I<log>
-[I<log> ...]
+    [I<log> ...]
 
 =head1 REQUIREMENTS
 
@@ -273,5 +377,28 @@ which can be found at L<http://webauth.stanford.edu/>.
 =head1 AUTHOR
 
 Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2009, 2012 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 =cut

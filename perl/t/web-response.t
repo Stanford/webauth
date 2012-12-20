@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 39;
+use Test::More tests => 47;
 
 BEGIN {
     use_ok ('WebKDC::WebResponse');
@@ -18,8 +18,9 @@ BEGIN {
 # Test all the basic accessors to make sure they're sane.  This will need
 # modification later if we ever do any sort of type checking on the values.
 my $resp = WebKDC::WebResponse->new;
-for my $method (qw(app_state login_canceled_token requester_subject
-                   response_token response_token_type return_url subject)) {
+for my $method (qw(app_state authz_subject login_canceled_token
+                   requester_subject response_token response_token_type
+                   return_url subject)) {
     is ($resp->$method, undef, "$method starts undef");
     is ($resp->$method ('foo'), 'foo', '... and can be set to foo');
     is ($resp->$method, 'foo', '... and is now set to foo');
@@ -43,3 +44,15 @@ for my $method (qw(factor_configured factor_needed login_history)) {
     is_deeply ($resp->$method, [ 'foo', 'bar', 'baz' ],
                '... and returns all values');
 }
+
+# Test the permitted_authz interface, which accepts and returns a list of
+# identities.
+is ($resp->permitted_authz, 0, 'permitted_authz starts empty');
+is_deeply ([ $resp->permitted_authz ('foo') ], [ 'foo' ],
+           '... and can be set to foo');
+is_deeply ([ $resp->permitted_authz ], [ 'foo' ],
+           '... and is now set to foo');
+is_deeply ([ $resp->permitted_authz ('bar', 'baz') ], [ 'bar', 'baz' ],
+           '... and can be set to (bar, baz)');
+is_deeply ([ $resp->permitted_authz ], [ 'bar', 'baz' ],
+           '... and returns all values');

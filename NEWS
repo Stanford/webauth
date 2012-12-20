@@ -1,5 +1,168 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.0 (2012-12-19)
+
+    The WebKDC and WebLogin server now support allowing a user to assert
+    an authorization identity other than their own identity.  This can be
+    used to allow a user to access a test account on a particular WebAuth
+    Application Server, pretend to be another user for testing or
+    administrative reasons, or otherwise use an identity other than their
+    own.  This support is disabled by default; to enable it, set the
+    WebKdcIdentityAcl Apache directive to the path to an ACL file
+    describing acceptable combinations of authentication and authorization
+    identities for each site.  See the WebKdcIdentityAcl documentation in
+    the mod_webkdc manual for more information.  Updates to the confirm
+    and possibly the login templates in WebLogin will also be required.
+    See the sample templates for the new parameters and fields.
+
+    mod_webauth by default ignores the new authorization identities (and
+    old versions will always ignore them) except for recording the
+    authorization identity in the new environment variable
+    WEBAUTH_AUTHZ_USER.  There is a new mod_webauth Apache directive,
+    WebAuthTrustAuthzIdentity, which can be enabled to set REMOTE_USER to
+    the authorization identity instead of the authentication identity and
+    to use the authorization identity for access control (such as
+    mod_webauthldap privilege group lookups).  WEBAUTH_USER will always be
+    set to the authentication identity.  This directive is allowed in
+    .htaccess files (if authentication overrides are allowed) as well as
+    anywhere in the main Apache configuration.  Authorization identities
+    will still be ignored if WebAuthSubjectAuthType is set to krb5.
+
+    Add new mod_webkdc Apache directive WebKdcLoginTimeLimit, which
+    controls the time limit for completing a multi-step login process
+    (such as with multifactor authentication) and how recently
+    authentication must have occurred to count for session factors and
+    forced login.  The default value is five minutes, matching the
+    previous default behavior for multifactor logins.
+
+    WebAuthForceLogin no longer forces re-entry of the user's password if
+    the user has done an interactive authentication within the
+    WebKdcLoginTimeLimit interval (five minutes by default).  Initial
+    authentication factors also count as session factors for single
+    sign-on authentications within that time interval.  This allows
+    WebAuthForceLogin to work in combination with other features such as
+    multi-step authentication processes and authorization identities and
+    improves the user experience when simultaneously visiting multiple
+    sites with forced login set.  To disable this behavior and always
+    force reauthentication, WebKdcLoginTimeLimit can be set to 0s, but
+    this will make multi-stage login processes, such as multifactor,
+    impossible.
+
+    Add replay detection to WebLogin.  When enabled, only one username and
+    password authentication is permitted with a given request token, and
+    further authentications with the same request token are rejected as
+    replays.  This can protect against an attacker using the back button
+    in an abandoned browser to replay the form submission on the WebLogin
+    server.  This support requires a memcached server be available for
+    data storage and the Perl modules Cache::Memcached and Digest::SHA.
+    The latter is available as part of Perl since 5.9.3.
+
+    Add rate limiting of login attempts in WebLogin.  If enabled, after a
+    configured number of failed login attempts, all password
+    authentications for a given username will be rejected (valid or not)
+    until a configurable interval of time has passed.  This support also
+    requires a memcached server for data storage and the Perl module
+    Cache::Memcached.
+
+    The WebLogin error template has two new parameters: err_lockout and
+    err_replay, corresponding to a replayed authentication and an account
+    that was locked out due to too many login failures.  Local templates
+    should be updated to handle those parameters, particularly if either
+    of these features are in use.
+
+    In WebLogin, set single sign-on cookies if present even when
+    displaying an error.  This establishes single sign-on when errors are
+    returned after authentication, such as authentication rejected errors
+    from the user information service.  Without this behavior, if the
+    custom error sent the user to another page that also required
+    authentication, the user would have to log in again and may given up,
+    thinking that authentication was looping.
+
+    Support two additional WebLogin configuration settings:
+    @REMUSER_LOCAL_REALMS and @REMUSER_PERMITTED_REALMS.  These provide
+    the equivalent of WebKdcLocalRealms and WebKdcPermittedRealms for
+    Apache REMOTE_USER authentication handled by the WebLogin front-end
+    (such as when using Negotiate-Auth with mod_auth_kerb).  Previously,
+    there was only a @REMUSER_REALMS setting, which combined both
+    meanings.  @REMUSER_REALMS continues to be supported for backward
+    compatibility, but will only be used if the more-specific variable is
+    not set.  Patch from Tom Jones.
+
+    Fix encoding of Kerberos credentials containing addresses or authdata
+    when built against MIT Kerberos.  WebAuth 4.3.0 and later would fail
+    to encode those credentials properly.  This bug only affects people
+    using credential delegation with either Active Directory or with
+    Kerberos configured to add addresses to tickets, which are relatively
+    rare configurations.
+
+    Fix encoding of ticket flags with Heimdal Kerberos and tolerate the
+    old, incorrect encoding.  All previous versions of WebAuth, when built
+    with Heimdal, encoded the ticket flags on the wire with the flag bits
+    reversed (matching the in-memory Heimdal format).  Prior to this
+    version, flags would be lost when reading credentials encoded via MIT
+    Kerberos with Heimdal or vice versa.  As of this release, the portable
+    flag encoding used for ticket caches is used when writing credentials
+    with both MIT and Heimdal, and the flag order is detected when
+    decoding credentials and fixed if necessary.  If you use delegated
+    credentials and link with Heimdal Kerberos, upgrade mod_webauth prior
+    to upgrading the WebKDC to ensure the ticket flags are conveyed
+    correctly.
+
+    Fix mapping of WebKDC error codes to names when reporting errors in
+    WebLogin, fixing mostly cosmetic Perl warnings in the WebLogin server
+    logs.
+
+    Document the WebAuthRequireSSL configuration directive.  Under normal
+    circumstances, this directive should always be left on (the default)
+    to avoid serious security vulnerabilities, but there are some specific
+    situations where it may be necessary to turn it off.
+
+    Add webauth_token_encrypt and webauth_token_decrypt to the public API,
+    including the Perl API.  These functions provide access to the
+    low-level token encryption and decryption routines.  Normally, the
+    high-level webauth_token_{encode,decode} functions will be used
+    instead, but these functions are useful for constructing low-level
+    tests.
+
+    The webauth_base64_* functions have been removed from libwebauth, as
+    have the corresponding Perl bindings.  For C programs, use the
+    apr_base64_* functions from APR-Util instead.  For Perl programs, use
+    MIME::Base64.
+
+    The webauth_attr_*, webauth_attrs_*, and webauth_hex_* functions have
+    been removed from libwebauth, as have the corresponding Perl bindings.
+    These functions provided a low-level interface to internal WebAuth
+    data structures that is no longer necessary.
+
+    Remove webauth.h.  The only remaining contents of interest to clients
+    were the WebAuth protocol error constants, which have now moved to
+    webauth/tokens.h.
+
+    Add public webauth_keyring_encode and webauth_keyring_decode functions
+    that encode and decode keyrings into the serialization format used for
+    storing them in files.  These are useful for sending WebAuth keyrings
+    over other protocols.  Add a corresponding keyring_decode method to
+    the Perl WebAuth class and encode and decode methods to the
+    WebAuth::Keyring class.
+
+    The WA_TK_*, WA_TT_*, and WA_SA_* preprocessor constants are no longer
+    provided by webauth.h.  These contained a subset of the encoding rules
+    for the WebAuth wire protocol, but were not really useful to clients
+    of the library.
+
+    The WA_ERR_KEYRING_* error codes have changed to WA_ERR_FILE_* and
+    will be used for any errors inside the WebAuth library when reading or
+    writing to files.  Now that WebAuth can report rich error messages,
+    there is no need for the codes to be this specific.  Add new
+    WA_ERR_FILE_NOT_FOUND error, which replaces WA_ERR_KEYRING_OPENREAD
+    when the error is due to the file not existing.
+
+    Update to rra-c-util 4.7:
+
+    * Fix probing for Heimdal's libroken to work with older versions.
+    * Checked asprintf variants are now void functions and cannot fail.
+    * Include a replacement strndup for systems that don't have it.
+
 WebAuth 4.3.3 (2012-11-05)
 
     Fix a memory initialization issue in the WebKDC that could cause
@@ -166,11 +329,6 @@ WebAuth 4.2.0 (2012-07-13)
     release.  This means that the WebKDC and WebLogin Perl modules in this
     release require the WebAuth module from this release and vice versa,
     so be careful of partial upgrades.
-
-    Add new tools/webauth-make-tokens script to generate WebAuth tokens
-    given a configuration file and keyring.  This is not installed by
-    default and is normally only used to generate test data, but it may be
-    useful in some other cases of manual token generation.
 
     webauth_token_encode now correctly allows id tokens of type krb5 to
     omit the subject attribute.  The receiver is supposed to determine the

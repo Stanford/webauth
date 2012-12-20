@@ -23,7 +23,7 @@ Files: HACKING INSTALL conf/README conf/sample-webauth.conf
  docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth
  docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow
  docs/weblogin-testing perl/lib/WebAuth/KeyringEntry.pod perl/t/data/README
- tests/mod_webauth/htdocs/ldaptests/index.html
+ tests/data/creds/README tests/mod_webauth/htdocs/ldaptests/index.html
  tests/mod_webauth/htdocs/tests/index.html
  tests/mod_webauth/htdocs/tests/php/test1.php tools/wa_keyring.1
  tools/wa_keyring.pod
@@ -103,10 +103,10 @@ License: FSF-unlimited, and GPL-2+ with Libtool exception or Expat
 Files: portable/apache.h portable/apr.h portable/asprintf.c
  portable/dummy.c portable/krb5-extra.c portable/krb5.h portable/macros.h
  portable/mkstemp.c portable/setenv.c portable/stdbool.h portable/strlcat.c
- portable/strlcpy.c portable/system.h tests/portable/asprintf-t.c
- tests/portable/mkstemp-t.c tests/portable/setenv-t.c
- tests/portable/strlcat-t.c tests/portable/strlcpy-t.c
- tests/util/concat-t.c util/concat.c util/concat.h util/macros.h
+ portable/strlcpy.c portable/strndup.c portable/system.h
+ tests/portable/asprintf-t.c tests/portable/mkstemp-t.c
+ tests/portable/setenv-t.c tests/portable/strlcat-t.c
+ tests/portable/strlcpy-t.c tests/portable/strndup-t.c util/macros.h
  weblogin/templates/confirm.tmpl weblogin/templates/error.tmpl
  weblogin/templates/help.html weblogin/templates/login.tmpl
  weblogin/templates/logout.tmpl weblogin/templates/multifactor.tmpl
@@ -134,7 +134,8 @@ License: Powell-snprintf
 Files: util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
 Copyright: 1991, 1994-2003 The Internet Software Consortium and Rich Salz
   2004-2006 Internet Systems Consortium, Inc.
-  2008-2010 The Board of Trustees of the Leland Stanford Junior University
+  2008-2010, 2012
+    The Board of Trustees of the Leland Stanford Junior University
 License: ISC
  Permission to use, copy, modify, and distribute this software for any
  purpose with or without fee is hereby granted, provided that the above

@@ -4,7 +4,7 @@
 WebAuth Documentation                                        R. Schemers
                                                               R. Allbery
                                                      Stanford University
-                                                               July 2012
+                                                       December 19, 2012
 
 
                     WebAuth Technical Specification
@@ -54,7 +54,7 @@ Abstract
 
 Schemers & Allbery                                              [Page 1]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 Table of Contents
@@ -87,7 +87,7 @@ Table of Contents
        4.3.1.  getTokens  . . . . . . . . . . . . . . . . . . . . . . 24
        4.3.2.  requestToken . . . . . . . . . . . . . . . . . . . . . 26
        4.3.3.  webkdcProxyToken . . . . . . . . . . . . . . . . . . . 31
-       4.3.4.  webkdcProxyTokenInfo . . . . . . . . . . . . . . . . . 31
+       4.3.4.  webkdcProxyTokenInfo . . . . . . . . . . . . . . . . . 32
      4.4.  Posting XML to the WebKDC  . . . . . . . . . . . . . . . . 32
      4.5.  XML Examples . . . . . . . . . . . . . . . . . . . . . . . 32
        4.5.1.  WAS Asking for webkdc-service Token  . . . . . . . . . 32
@@ -101,24 +101,24 @@ Table of Contents
        5.4.2.  webkdc-proxy Token Encoding  . . . . . . . . . . . . . 41
        5.4.3.  request Token Encoding . . . . . . . . . . . . . . . . 42
        5.4.4.  error Token Encoding . . . . . . . . . . . . . . . . . 43
-       5.4.5.  id Token Encoding  . . . . . . . . . . . . . . . . . . 43
-       5.4.6.  proxy Token Encoding . . . . . . . . . . . . . . . . . 44
-       5.4.7.  credential Token Encoding  . . . . . . . . . . . . . . 45
-       5.4.8.  login Token Encoding . . . . . . . . . . . . . . . . . 45
+       5.4.5.  id Token Encoding  . . . . . . . . . . . . . . . . . . 44
+       5.4.6.  proxy Token Encoding . . . . . . . . . . . . . . . . . 45
+       5.4.7.  credential Token Encoding  . . . . . . . . . . . . . . 46
+       5.4.8.  login Token Encoding . . . . . . . . . . . . . . . . . 46
 
 
 
 Schemers & Allbery                                              [Page 2]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
        5.4.9.  app Token Encoding . . . . . . . . . . . . . . . . . . 46
-     5.5.  Kerberos Credential Encoding . . . . . . . . . . . . . . . 46
-   6.  Cookie Formats . . . . . . . . . . . . . . . . . . . . . . . . 49
-   Appendix A.  Document Revision History . . . . . . . . . . . . . . 50
-   Appendix B.  License . . . . . . . . . . . . . . . . . . . . . . . 52
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 53
+     5.5.  Kerberos Credential Encoding . . . . . . . . . . . . . . . 47
+   6.  Cookie Formats . . . . . . . . . . . . . . . . . . . . . . . . 50
+   Appendix A.  Document Revision History . . . . . . . . . . . . . . 51
+   Appendix B.  License . . . . . . . . . . . . . . . . . . . . . . . 54
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 55
 
 
 
@@ -166,7 +166,7 @@ Schemers & Allbery                                              [Page 2]
 
 Schemers & Allbery                                              [Page 3]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 1.  Introduction
@@ -222,7 +222,7 @@ Schemers & Allbery                                              [Page 3]
 
 Schemers & Allbery                                              [Page 4]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 1.1.3.  WebKDC
@@ -278,7 +278,7 @@ Schemers & Allbery                                              [Page 4]
 
 Schemers & Allbery                                              [Page 5]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    POST data, cookies, and XML documents.  They are AES-encrypted using
@@ -334,7 +334,7 @@ Schemers & Allbery                                              [Page 5]
 
 Schemers & Allbery                                              [Page 6]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    cred (encrypted with session key)
@@ -390,7 +390,7 @@ Schemers & Allbery                                              [Page 6]
 
 Schemers & Allbery                                              [Page 7]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 1.3.1.  Distributing and Managing Session Keys
@@ -446,7 +446,7 @@ Schemers & Allbery                                              [Page 7]
 
 Schemers & Allbery                                              [Page 8]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    key type
@@ -502,7 +502,7 @@ Schemers & Allbery                                              [Page 8]
 
 Schemers & Allbery                                              [Page 9]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The most flexible and recommended solution is for WAS servers to
@@ -558,7 +558,7 @@ Schemers & Allbery                                              [Page 9]
 
 Schemers & Allbery                                             [Page 10]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 2.  WebAuth Scenarios
@@ -575,7 +575,7 @@ Schemers & Allbery                                             [Page 10]
      ---------------------------------------------------------------
          UA                 WAS            WebKDC
      ---------------------------------------------------------------
-                            send K5 auth for webkdc-service token
+                            send Kerberos auth for webkdc-service token
      1.                     WAS ---------> WebKDC
 
                             return session key, webkdc-service token
@@ -614,7 +614,7 @@ Schemers & Allbery                                             [Page 10]
 
 Schemers & Allbery                                             [Page 11]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    for completeness.  They are omitted in all further scenarios, but
@@ -670,7 +670,7 @@ Schemers & Allbery                                             [Page 11]
 
 Schemers & Allbery                                             [Page 12]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
         constructs a webkdc-proxy token and the id token and then sends
@@ -726,7 +726,7 @@ Schemers & Allbery                                             [Page 12]
 
 Schemers & Allbery                                             [Page 13]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 2.2.  App Token
@@ -782,7 +782,7 @@ Schemers & Allbery                                             [Page 13]
 
 Schemers & Allbery                                             [Page 14]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 2.3.  No App Token, Proxy Token (Single Sign-On)
@@ -838,7 +838,7 @@ Schemers & Allbery                                             [Page 14]
 
 Schemers & Allbery                                             [Page 15]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    4.  The WebKDC detects and decrypts the valid webkdc-proxy token
@@ -894,7 +894,7 @@ Schemers & Allbery                                             [Page 15]
 
 Schemers & Allbery                                             [Page 16]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 2.4.  No App Token, Credentials Required
@@ -950,7 +950,7 @@ Schemers & Allbery                                             [Page 16]
 
 Schemers & Allbery                                             [Page 17]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
        as previously.  The only difference is in the contents of the
@@ -992,10 +992,10 @@ Schemers & Allbery                                             [Page 17]
    Normally, the requested credential tokens will be Kerberos service
    tickets that the WAS can then use to talk to other services that use
    Kerberos authentication.  Since the webkdc-proxy token is generally a
-   Kerberos TGT, this works together well and allows WebAuth to treat
-   the UA's cookie jar as essentially a Kerberos ticket cache.  However,
-   this is not required by the protocol and credential tokens may be any
-   form of credential supported by the WAS and WebKDC.
+   Kerberos TGT credential, this works together well and allows WebAuth
+   to treat the UA's cookie jar as essentially a Kerberos ticket cache.
+   However, this is not required by the protocol and credential tokens
+   may be any form of credential supported by the WAS and WebKDC.
 
    As with an id token, the WAS may choose not to put the credentials in
    an app token for subsequent use.  It may instead want to store them
@@ -1006,7 +1006,7 @@ Schemers & Allbery                                             [Page 17]
 
 Schemers & Allbery                                             [Page 18]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    (particularly expiration time) MUST be honored.
@@ -1062,7 +1062,7 @@ Schemers & Allbery                                             [Page 18]
 
 Schemers & Allbery                                             [Page 19]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 3.  URL Formats
@@ -1118,7 +1118,7 @@ Schemers & Allbery                                             [Page 19]
 
 Schemers & Allbery                                             [Page 20]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 4.  WebKDC XML Protocol
@@ -1174,7 +1174,7 @@ Schemers & Allbery                                             [Page 20]
 
 Schemers & Allbery                                             [Page 21]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The command response format on failure is:
@@ -1230,7 +1230,7 @@ Schemers & Allbery                                             [Page 21]
 
 Schemers & Allbery                                             [Page 22]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    11  The krb5 <requesterCredential> was bad.
@@ -1286,10 +1286,16 @@ Schemers & Allbery                                             [Page 22]
 
 Schemers & Allbery                                             [Page 23]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
        agreement), or some other local factor.
+
+   25  This authentication appears to be a replay.
+
+   26  This authentication was rejected due to too many failed
+       authentication attempts for this user.  The authentication should
+       be retried later.
 
 4.2.2.  <errorMessage>
 
@@ -1306,11 +1312,11 @@ Schemers & Allbery                                             [Page 23]
    credential tokens from a proxy token.  The requestToken command is
    used by the WebLogin component of the WebKDC to process a request
    token sent in a URL from a WAS.  The webkdcProxyToken command
-   converts an existing credential (such as a Kerberos TGT) into a
-   webkdc-proxy token and can be used to bootstrap WebAuth
-   authentication from an existing Kerberos ticket cache for improved
-   single sign-on.  The webkdcProxyTokenInfo command returns information
-   about an existing webkdc-proxy token.
+   converts an existing credential (such as a Kerberos credential for
+   the ticket-granting service) into a webkdc-proxy token and can be
+   used to bootstrap WebAuth authentication from an existing Kerberos
+   ticket cache for improved single sign-on.  The webkdcProxyTokenInfo
+   command returns information about an existing webkdc-proxy token.
 
 4.3.1.  getTokens
 
@@ -1334,15 +1340,9 @@ Schemers & Allbery                                             [Page 23]
 
 
 
-
-
-
-
-
-
 Schemers & Allbery                                             [Page 24]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The request message is:
@@ -1398,7 +1398,7 @@ Schemers & Allbery                                             [Page 24]
 
 Schemers & Allbery                                             [Page 25]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The response message is:
@@ -1454,7 +1454,7 @@ Schemers & Allbery                                             [Page 25]
 
 Schemers & Allbery                                             [Page 26]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The request message is:
@@ -1482,6 +1482,9 @@ Schemers & Allbery                                             [Page 26]
        <!-- request token from WAS -->
        <requestToken>{base64-request-token}</requestToken>
 
+       <!-- requested authorization identity (optional) -->
+       <authzSubject>...</authzSubject>
+
        <!-- request info from front-end, for logging purposes -->
        <requestInfo>
          <remoteUser>xxxx</remoteUser>
@@ -1503,16 +1506,15 @@ Schemers & Allbery                                             [Page 26]
        <loginErrorCode>{numeric}<loginErrorCode>
        <loginErrorMessage>{message}<loginErrorMessage>
 
-       <!-- userMessage will be set if loginErrorCode is 24 and is an
-            HTML message intended for the end user.  It will normally
-
 
 
 Schemers & Allbery                                             [Page 27]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
+       <!-- userMessage will be set if loginErrorCode is 24 and is an
+            HTML message intended for the end user.  It will normally
             be in a CDATA block to protect markup. -->
        <userMessage>{message}</userMessage>
 
@@ -1543,12 +1545,30 @@ Schemers & Allbery                                             [Page 27]
        <!-- subject from subjectCredential -->
        <subject>...</subject>
 
+       <!-- authorization identity if requested and permitted -->
+       <authzSubject>...</authzSubject>
+
+       <!-- permitted authorization identities if this user may assert
+            an authorization identity to this destination -->
+       <permittedAuthzSubjects>
+         <authzSubject>...</authzSubject>
+         <!-- repeat for all permitted authorization identities -->
+       </permittedAuthzSubjects>
+
        <!-- requestedToken will either be an error, id, or proxy token.
             not set if <loginErrorCode> is set. -->
        <requestedToken>{base64-token}</requestedToken>
 
        <!-- requestedTokenType will be the type of requestedToken,
             one of error, id, or proxy.  not set if <LoginErrorCode> is
+
+
+
+Schemers & Allbery                                             [Page 28]
+
+                     WebAuth Technical Specification       December 2012
+
+
             set. -->
        <requestedTokenType>error|id|proxy</requestedToken>
 
@@ -1561,14 +1581,6 @@ Schemers & Allbery                                             [Page 27]
 
        <!-- optional, included if the user's login history should be
             displayed (if, for example, it was suspicious) -->
-
-
-
-Schemers & Allbery                                             [Page 28]
-
-                     WebAuth Technical Specification           July 2012
-
-
        <loginHistory>
          <!-- the name and timestamp information is optional -->
          <loginLocation name="{hostname}" time="{timestamp}">
@@ -1605,6 +1617,14 @@ Schemers & Allbery                                             [Page 28]
        generate proxy tokens, this error code is returned, prompting the
        front-end to do stronger authentication.
 
+
+
+
+Schemers & Allbery                                             [Page 29]
+
+                     WebAuth Technical Specification       December 2012
+
+
    17  The WAS server requested a forced login.  The web front-end
        should prompt for the username and password even though a webkdc-
        proxy token is available.
@@ -1615,15 +1635,6 @@ Schemers & Allbery                                             [Page 28]
 
    19  The user's password has expired.  The web front-end may prompt
        the user to change it and then reattempt authentication.
-
-
-
-
-
-Schemers & Allbery                                             [Page 29]
-
-                     WebAuth Technical Specification           July 2012
-
 
    20  The WAS server requested multifactor authentication.  The web
        front-end should prompt the user for their second factor based on
@@ -1662,6 +1673,14 @@ Schemers & Allbery                                             [Page 29]
 
    requestedTokenType is included so that the WebLogin component can
    make display decisions based on whether the remote site requested an
+
+
+
+Schemers & Allbery                                             [Page 30]
+
+                     WebAuth Technical Specification       December 2012
+
+
    id token or a proxy token.
 
    If the request option attribute in the request token has "lc" in it,
@@ -1673,14 +1692,6 @@ Schemers & Allbery                                             [Page 29]
    button.
 
    If the request option attribute in the request token has "fa" in it
-
-
-
-Schemers & Allbery                                             [Page 30]
-
-                     WebAuth Technical Specification           July 2012
-
-
    and a login token is not provided, this command will return a
    <loginErrorCode> of 17, which indicates that the user is being forced
    to log in.  Any passed-in webkdc-proxy tokens are ignored.
@@ -1691,9 +1702,9 @@ Schemers & Allbery                                             [Page 30]
 4.3.3.  webkdcProxyToken
 
    The webkdcProxyToken command is used to convert an existing
-   credential, such as a Kerberos TGT, into a webkdc-proxy token.  It
-   can be used to bootstrap WebAuth authentication from an existing
-   Kerberos ticket cache for improved single sign-on.
+   credential, such as a Kerberos TGT credential, into a webkdc-proxy
+   token.  It can be used to bootstrap WebAuth authentication from an
+   existing Kerberos ticket cache for improved single sign-on.
 
    The request message is:
 
@@ -1718,6 +1729,14 @@ Schemers & Allbery                                             [Page 30]
        <subject>...</subject>
      </webkdcProxyTokenResponse>
 
+
+
+
+Schemers & Allbery                                             [Page 31]
+
+                     WebAuth Technical Specification       December 2012
+
+
    If any errors occur, an <errorResponse> message will be returned
    instead.
 
@@ -1725,17 +1744,6 @@ Schemers & Allbery                                             [Page 30]
 
    The webkdcProxyTokenInfo command is used to get information about an
    existing webkdc-proxy-token.
-
-
-
-
-
-
-
-Schemers & Allbery                                             [Page 31]
-
-                     WebAuth Technical Specification           July 2012
-
 
    The request message is:
 
@@ -1777,21 +1785,15 @@ Schemers & Allbery                                             [Page 31]
    WAS needs to send requests to the WebKDC and doesn't have a non-
    expired webkdc-service token cached.  The WAS will cache the token
    and the corresponding session key until it nears expiration time, at
-   which point it SHOULD request a new one.
-
-
-
-
-
-
-
 
 
 
 Schemers & Allbery                                             [Page 32]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
+
+   which point it SHOULD request a new one.
 
    The request:
 
@@ -1818,12 +1820,10 @@ Schemers & Allbery                                             [Page 32]
 
 4.5.2.  WAS Asking for a credential Token
 
-   In this example, the WAS requests an K5 ticket using a previously
-   obtained webkdc-proxy token (presumably obtained from the UA via a
-   redirect to the WebKDC with a request token).  The webkdc-proxy
-   token's type MUST match the requested credential's type.
-
-
+   In this example, the WAS requests an Kerberos ticket using a
+   previously obtained webkdc-proxy token (presumably obtained from the
+   UA via a redirect to the WebKDC with a request token).  The webkdc-
+   proxy token's type MUST match the requested credential's type.
 
 
 
@@ -1846,7 +1846,7 @@ Schemers & Allbery                                             [Page 32]
 
 Schemers & Allbery                                             [Page 33]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    The request:
@@ -1902,7 +1902,7 @@ Schemers & Allbery                                             [Page 33]
 
 Schemers & Allbery                                             [Page 34]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 5.  Token Format
@@ -1934,9 +1934,9 @@ Schemers & Allbery                                             [Page 34]
    key-derivation function like TLS uses.
 
    {token-attributes} is a sequence of name=value pairs, separated by a
-   ';' character.  Names are not allowed to contain either '=' or ';'.
-   Values MAY contain binary data, but MUST escape any ';' in the data
-   by adding an additional ';'.
+   ';' character.  Names must be one or more ASCII alphanumeric
+   characters.  Values MAY contain arbitrary binary data, but MUST
+   escape any ';' in the data by adding an additional ';' before it.
 
    For example, if we had the following names and values:
 
@@ -1958,7 +1958,7 @@ Schemers & Allbery                                             [Page 34]
 
 Schemers & Allbery                                             [Page 35]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    equal to the length of the padding.  For example, if the padding
@@ -2014,7 +2014,7 @@ Schemers & Allbery                                             [Page 35]
 
 Schemers & Allbery                                             [Page 36]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    em (string)
@@ -2059,9 +2059,9 @@ Schemers & Allbery                                             [Page 36]
        User's password, in a login token.
 
    pd (binary)
-       Proxy data, such as an encoded Kerberos ticket-granting ticket
-       (TGT).
-
+       Proxy data, such as an encoded Kerberos credential for the
+       ticket-granting service (a Kerberos TGT plus its supporting data
+       such as the session key).
 
 
 
@@ -2070,7 +2070,7 @@ Schemers & Allbery                                             [Page 36]
 
 Schemers & Allbery                                             [Page 37]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    ps (string)
@@ -2100,7 +2100,8 @@ Schemers & Allbery                                             [Page 37]
        The authenticated subject.  In webkdc-service tokens, this is the
        server identity that authenticated to get the webkdc-service
        token.  In all other tokens, it is the user who authenticated.
-       Server subjects have the form "type:identifier".  Currently, the
+       Server subjects in webkdc-service tokens (and only those, not
+       other subjects) have the form "type:identifier".  Currently, the
        only defined type is "krb5" indicating that the server
        authenticated with Kerberos, and in that case the identifier is
        the text form of a fully qualified Kerberos principal.
@@ -2120,16 +2121,25 @@ Schemers & Allbery                                             [Page 37]
        The list of authentication factors used by the authenticated user
        for session authentication, or the session authentication factors
        that are required by this WAS for a successful authentication.
-       This is a list of factor codes separated by commas.  For the list
 
 
 
 Schemers & Allbery                                             [Page 38]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
+       This is a list of factor codes separated by commas.  For the list
        of registered factor names, see Section 5.3.
+
+   sz (string)
+       The authorization subject.  A user (if permitted by the WebKDC)
+       may assert an authorization subject in addition to their
+       authenticated identity.  If they do so, the subject (s) will
+       continue to hold their authenticated identity, and this attribute
+       will contain the asserted authorization identity.  The WAS may
+       choose whether or not to honor the asserted authorization
+       identity.
 
    t (string)
        The token type.  Currently recognized token types are webkdc-
@@ -2164,6 +2174,17 @@ Schemers & Allbery                                             [Page 38]
        authentication (generally via Negotiate-Auth, but possibly via
        other methods).
 
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 39]
+
+                     WebAuth Technical Specification       December 2012
+
+
    m (multifactor)
        Multiple independent authentication factors were used.  The exact
        requirements for this are site-defined, but traditionally means
@@ -2174,16 +2195,6 @@ Schemers & Allbery                                             [Page 38]
        Some one-time password method was used for authentication.  This
        factor code is often used in combination with one of the o# codes
        defined below.
-
-
-
-
-
-
-Schemers & Allbery                                             [Page 39]
-
-                     WebAuth Technical Specification           July 2012
-
 
    o# (OTP)
        The one-time password method numbered # was used.  The meaning of
@@ -2222,6 +2233,14 @@ Schemers & Allbery                                             [Page 39]
        of the numbers is site-defined, but the numbers should be
        integers starting with 1 and higher numbers should indicate a
        stronger X.509 method.  For example, x1 could indicate an X.509
+
+
+
+Schemers & Allbery                                             [Page 40]
+
+                     WebAuth Technical Specification       December 2012
+
+
        certificate that may be stored on the file system of a user's
        system or on a removable drive, and x2 could indicate a hardware
        smart card.
@@ -2229,17 +2248,6 @@ Schemers & Allbery                                             [Page 39]
    Sites may define and use their own factor codes, but they risk
    conflict with future standardized codes unless they coordinate that
    use with this list.
-
-
-
-
-
-
-
-Schemers & Allbery                                             [Page 40]
-
-                     WebAuth Technical Specification           July 2012
-
 
 5.4.  Specific Token Encoding
 
@@ -2272,7 +2280,22 @@ Schemers & Allbery                                             [Page 40]
 
    A webkdc-proxy token is a proxy authentication token maintained by
    the WebKDC on behalf of another user, or on behalf of itself.
-   Normally it contains a Kerberos TGT.
+   Normally it contains a Kerberos credential for the ticket-granting
+   service (a Kerberos TGT plus its supporting data such as the session
+   key).
+
+
+
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 41]
+
+                     WebAuth Technical Specification       December 2012
+
 
    Token format:
 
@@ -2289,14 +2312,6 @@ Schemers & Allbery                                             [Page 40]
    All attributes are AES-encrypted in the WebKDC's private key.
 
    As a special case, krb5 webkdc-proxy tokens that the WebKDC obtains
-
-
-
-Schemers & Allbery                                             [Page 41]
-
-                     WebAuth Technical Specification           July 2012
-
-
    on behalf of itself (returned as part of a requestTokenRequest, for
    example) have a ps attribute value of WEBKDC:krb5:{server-principal}
    where {server-principal} is the Kerberos principal of the WebKDC.
@@ -2318,6 +2333,25 @@ Schemers & Allbery                                             [Page 41]
    restricted form) to allow the WebKDC to verify that a request being
    made with a webkdc-service token is both recent and for the specified
    command.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 42]
+
+                     WebAuth Technical Specification       December 2012
+
 
    The first form is used with the requestTokenRequest command:
 
@@ -2345,14 +2379,6 @@ Schemers & Allbery                                             [Page 41]
    All attributes are AES-encrypted in the webkdc-service token session
    key.
 
-
-
-
-Schemers & Allbery                                             [Page 42]
-
-                     WebAuth Technical Specification           July 2012
-
-
    The value of ct is used to prevent replay attacks.  Values older than
    a certain time (probably 5 minutes by default) should be rejected as
    a replay.
@@ -2375,6 +2401,14 @@ Schemers & Allbery                                             [Page 42]
      ec={error-code}
      em={error-message}
 
+
+
+
+Schemers & Allbery                                             [Page 43]
+
+                     WebAuth Technical Specification       December 2012
+
+
    All attributes are AES-encrypted in the webkdc-service token session
    key.
 
@@ -2395,19 +2429,13 @@ Schemers & Allbery                                             [Page 42]
      s={username}
      # for sa=krb5
      sad={result-of-krb5-mk-req-for-webauth/hostname}
+     # for any sa
+     [sz={authorization-subject}]
      ct={creation-time}
      et={expiration-time}
      [ia={factor-list}]
      [san={factor-list}]
      [loa={level-of-assurance}]
-
-
-
-
-Schemers & Allbery                                             [Page 43]
-
-                     WebAuth Technical Specification           July 2012
-
 
    All attributes are AES-encrypted in the webkdc-service token session
    key.
@@ -2415,7 +2443,7 @@ Schemers & Allbery                                             [Page 43]
    If "at" is krb5, then "sad" (subject authenticator data) is a
    KRB_AP_REQ for the WAS service principal (as determined from the
    subject of the webkdc-service token) using the user's TGT from a krb5
-   webkdc-procy token.
+   webkdc-proxy token.
 
    If at is webkdc, we are trusting the webkdc and "s" contains the
    authenticated user's identity (generally as a Kerberos principal name
@@ -2429,6 +2457,14 @@ Schemers & Allbery                                             [Page 43]
    The value of et is used to let the application know how long the
    authentication information in the id token should be considered valid
    for.  The value for et is at latest the expiration time of the proxy-
+
+
+
+Schemers & Allbery                                             [Page 44]
+
+                     WebAuth Technical Specification       December 2012
+
+
    token used to create it.
 
 5.4.6.  proxy Token Encoding
@@ -2444,6 +2480,7 @@ Schemers & Allbery                                             [Page 43]
      t=proxy
      pt=krb5|...
      s={username}
+     [sz={authorization-subject}]
      wt={webkdc-proxy-token}
      ct={creation-time}
      et={expiration-time}
@@ -2457,14 +2494,6 @@ Schemers & Allbery                                             [Page 43]
    In addition to the webkdc-proxy token, a proxy token provides all the
    same authentication information about a user as an id token with a
    subject auth of "webkdc".  If the WAS only needs id token information
-
-
-
-Schemers & Allbery                                             [Page 44]
-
-                     WebAuth Technical Specification           July 2012
-
-
    at the level provided by the "webkdc" subject auth type, it can use
    the proxy token for that information without requesting an id token.
    If it wants an id token with a "krb5" subject auth type, it will have
@@ -2478,12 +2507,30 @@ Schemers & Allbery                                             [Page 44]
    wt is the webkdc-proxy token (in binary form).  It can be used by the
    WAS later to request credential tokens from the WebKDC.
 
+   Note that the authorization subject included in the proxy token will
+   not be reflected in any id tokens obtained via the proxy token.  The
+   id tokens will be based on the webkdc-proxy token, which is for the
+   authentication identity alone.  Therefore, a WebAuth Application
+   Server that wants to use the authorization identity in some way needs
+   to note the authorization subject from the proxy token and not rely
+
+
+
+Schemers & Allbery                                             [Page 45]
+
+                     WebAuth Technical Specification       December 2012
+
+
+   on getting it from any subsequent id token.  Similarly, any cred
+   tokens obtained from a proxy token will be for the authentication
+   identity, not the authorization identity.
+
 5.4.7.  credential Token Encoding
 
    A credential token is an authentication credential for the user for
    some other service, used by the WAS for proxied authentication.  It
-   is normally a K5 service ticket generated by the WebKDC from the
-   user's TGT.
+   is normally a Kerberos service ticket generated by the WebKDC from
+   the user's TGT.
 
    Token format:
 
@@ -2513,14 +2560,6 @@ Schemers & Allbery                                             [Page 44]
      [otp={one-time-password-code}]
 
    All attributes are AES-encrypted in the WebKDC's private key.  One of
-
-
-
-Schemers & Allbery                                             [Page 45]
-
-                     WebAuth Technical Specification           July 2012
-
-
    p or otp must be provided.
 
 5.4.9.  app Token Encoding
@@ -2529,12 +2568,22 @@ Schemers & Allbery                                             [Page 45]
    an app token is to cache the idenity within an id token after it has
    been verified.
 
+
+
+
+
+Schemers & Allbery                                             [Page 46]
+
+                     WebAuth Technical Specification       December 2012
+
+
    Token format:
 
      t=app
      et={expiration-time}
      [ct={creation-time}]
      [s={username}]
+     [sz={authorization-subject}]
      [k=session-key]
      [lt={last-use-time}]
      [ia={factor-list}]
@@ -2568,20 +2617,21 @@ Schemers & Allbery                                             [Page 45]
    number is a 32-bit number in network byte order and binary time is a
    32-bit time in seconds since 1970-01-01 00:00:00 UTC:
 
-
-
-
-
-Schemers & Allbery                                             [Page 46]
-
-                     WebAuth Technical Specification           July 2012
-
-
    c (string)
        Client principal name.
 
    s (string)
        Server principal name.
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 47]
+
+                     WebAuth Technical Specification       December 2012
+
 
    K (binary number)
        Kerberos encryption type for the session key.  This will be
@@ -2623,21 +2673,21 @@ Schemers & Allbery                                             [Page 46]
        each address, there is a corresponding "A" attribute holding the
        address type and an "a" attribute holding the address itself.
 
-
-
-
-
-
-Schemers & Allbery                                             [Page 47]
-
-                     WebAuth Technical Specification           July 2012
-
-
    A# (binary number)
        The type of address for the #th address. # is replaced by the
        index number of the address.  Addresses are numbered starting
        with 0, so if na was 2, there will be an A0 attribute and an A1
        attribute (but no A2 attribute).
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 48]
+
+                     WebAuth Technical Specification       December 2012
+
 
    a# (binary)
        The #th address in the credential. # is replaced by the index
@@ -2684,9 +2734,15 @@ Schemers & Allbery                                             [Page 47]
 
 
 
-Schemers & Allbery                                             [Page 48]
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 49]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 6.  Cookie Formats
@@ -2740,9 +2796,9 @@ Schemers & Allbery                                             [Page 48]
 
 
 
-Schemers & Allbery                                             [Page 49]
+Schemers & Allbery                                             [Page 50]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 Appendix A.  Document Revision History
@@ -2796,9 +2852,9 @@ Appendix A.  Document Revision History
 
 
 
-Schemers & Allbery                                             [Page 50]
+Schemers & Allbery                                             [Page 51]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
    2.1.2 (2009-06-24, rra)
@@ -2834,27 +2890,83 @@ Schemers & Allbery                                             [Page 50]
        Add error code 24, representing a rejected authentication, and
        add optional element <userMessage> to <requestTokenResponse>.
 
+   3.2.1 (2012-09-07, rra)
+       Clarify references to a "Kerberos TGT", which normally mean a
+       Kerberos credential that includes the TGT plus other supporting
+       data such as the session key.  Replace remaining K5 references
+       with just Kerberos.
+
+   3.3.0 (2012-11-20, rra)
+       Add <authzSubject> to <requestTokenRequest> and
+       <requestTokenResponse> to allow requesting and returning
+       authorization identities.  Add <permittedAuthzSubjects> to
+       <requestTokenResponse> to tell WebLogin what authorization
+       identities the user may assert.  Add the sz attribute to app, id,
+       and proxy tokens to hold the asserted authorization identity.
+       Clarify that attribute names are alphanumeric.
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Schemers & Allbery                                             [Page 51]
+Schemers & Allbery                                             [Page 52]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
+
+
+   3.3.1 (2012-12-06, rra)
+       Add error code 25, representing an authentication that appears to
+       be a replay, and error code 26, indicating a rejected
+       authentication due to too many failed authentication attempts for
+       this user.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Schemers & Allbery                                             [Page 53]
+
+                     WebAuth Technical Specification       December 2012
 
 
 Appendix B.  License
@@ -2908,9 +3020,9 @@ Appendix B.  License
 
 
 
-Schemers & Allbery                                             [Page 52]
+Schemers & Allbery                                             [Page 54]
 
-                     WebAuth Technical Specification           July 2012
+                     WebAuth Technical Specification       December 2012
 
 
 Authors' Addresses
@@ -2964,5 +3076,5 @@ Authors' Addresses
 
 
 
-Schemers & Allbery                                             [Page 53]
+Schemers & Allbery                                             [Page 55]
 

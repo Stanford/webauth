@@ -34,30 +34,30 @@
 
 package WebAuth::Exception;
 
-require 5.006;
+use 5.006;
+
 use strict;
 use warnings;
 
-use WebAuth qw(3.02);
-
-use base qw(Exporter);
 use overload '""' => \&to_string, 'cmp' => \&spaceship;
+
+use WebAuth qw(3.02);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '3.02';
+our $VERSION = '3.04';
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.
 
 # Basic accessors.
-sub detail_message () { my $self = shift; return $self->{'detail'}  }
-sub error_message ()  { my $self = shift; return $self->{'message'} }
-sub status ()         { my $self = shift; return $self->{'status'}  }
+sub detail_message { my $self = shift; return $self->{'detail'}  }
+sub error_message  { my $self = shift; return $self->{'message'} }
+sub status         { my $self = shift; return $self->{'status'}  }
 
 # A full verbose message with all the information from the exception.
-sub verbose_message () {
+sub verbose_message {
     my ($self) = @_;
     my $status = $self->{'status'};
     my $file = $self->{'file'};
@@ -75,7 +75,7 @@ sub verbose_message () {
 }
 
 # The string conversion of this exception is the full verbose message.
-sub to_string () {
+sub to_string {
     my ($self) = @_;
     return $self->verbose_message;
 }

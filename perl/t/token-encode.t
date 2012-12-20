@@ -22,8 +22,9 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
-use Test::More tests => 208;
+use Test::More tests => 250;
 
+use MIME::Base64 qw(decode_base64);
 use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);
 BEGIN {
     use_ok ('WebAuth::Token::App');
@@ -88,3 +89,16 @@ for my $name (sort keys %TOKENS_GOOD) {
     }
     encode_decode ($wa, $token, $keyring);
 }
+
+# Do some additional spot-checking of a single encoded token and test
+# token_decrypt at the same time.
+my $app = WebAuth::Token::App->new ($wa);
+$app->subject ('test');
+$app->creation ($now);
+$app->expiration ($now + 60);
+my $encoded = $app->encode ($keyring);
+my $data = eval { $wa->token_decrypt (decode_base64($encoded), $keyring) };
+is ($@, '', 'App token decodes without errors');
+my $expected = 't=app;s=test;ct=' . pack ('N', $now) . ';et='
+    . pack ('N', $now + 60) . ';';
+is ($data, $expected, 'Encoded form is correct');

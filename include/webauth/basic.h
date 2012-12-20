@@ -69,11 +69,11 @@ enum webauth_status {
     WA_ERR_BAD_HMAC,         /* HMAC check failed. */
     WA_ERR_RAND_FAILURE,     /* Unable to get random data. */
     WA_ERR_BAD_KEY,          /* Unable to use key. */
-    WA_ERR_KEYRING_OPENWRITE,/* Unable to open key ring for writing. */
-    WA_ERR_KEYRING_WRITE,    /* Unable to write to key ring. */
-    WA_ERR_KEYRING_OPENREAD, /* Unable to open key ring for reading. */
-    WA_ERR_KEYRING_READ,     /* Unable to read key ring file. */
-    WA_ERR_KEYRING_VERSION,  /* Bad keyring version. */
+    WA_ERR_FILE_OPENWRITE,   /* Unable to open file for writing. */
+    WA_ERR_FILE_WRITE,       /* Unable to write to file. */
+    WA_ERR_FILE_OPENREAD,    /* Unable to open file for reading. */
+    WA_ERR_FILE_READ,        /* Unable to read file file. */
+    WA_ERR_FILE_VERSION,     /* Bad file data version. */
     WA_ERR_NOT_FOUND,        /* Item not found while searching. */
     WA_ERR_KRB5,             /* A Kerberos error occured. */
     WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function. */
@@ -86,6 +86,7 @@ enum webauth_status {
     WA_ERR_UNIMPLEMENTED,    /* Operation not supported. */
     WA_ERR_INVALID,          /* Invalid argument to function. */
     WA_ERR_REMOTE_FAILURE,   /* A remote service call failed. */
+    WA_ERR_FILE_NOT_FOUND,   /* File does not exist. */
 
     /* Update webauth_error_message when adding more codes. */
 };

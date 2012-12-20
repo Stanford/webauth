@@ -21,6 +21,7 @@
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
 #include <tests/tap/remctl.h>
+#include <tests/tap/string.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
@@ -35,7 +36,7 @@ main(void)
     struct webauth_key *session_key;
     struct kerberos_config *krbconf;
     int status;
-    char *keyring, *err;
+    char *keyring, *err, *tmpdir;
     time_t now;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
@@ -48,6 +49,7 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
     time_t expiration = 0;
+    FILE *id_acl;
 
     /* Initialize APR and WebAuth. */
     if (apr_initialize() != APR_SUCCESS)
@@ -74,7 +76,7 @@ main(void)
              webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
-    plan(96);
+    plan(115);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -147,11 +149,13 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(8, 0, "...no result token: %s",
+        ok_block(9, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string(krbconf->userprinc, token->token.id.subject,
                   "...result subject is right");
+        is_string(NULL, token->token.id.authz_subject,
+                  "...and there is no authz subject");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
         ok(token->token.id.auth_data == NULL, "...and there is no auth data");
@@ -169,10 +173,13 @@ main(void)
     is_string("p", response->session_factors, "...session factors");
     is_int(0, response->loa, "...level of assurance");
 
+    /* The login process should not have modified request.creds. */
+    is_int(1, request.creds->nelts, "Still one token in request.creds");
+    ok(&login == APR_ARRAY_IDX(request.creds, 0, struct webauth_token *),
+       "...which is the login token");
+
     /* Get an id token with a Kerberos authenticator and test forced auth. */
     req.options = "lc,fa";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     service.subject = apr_pstrcat(pool, "krb5:", config.principal, NULL);
     req.auth = "krb5";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -202,8 +209,6 @@ main(void)
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
     req.options = NULL;
     req.auth = "webkdc";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
     is_int(0, response->login_error, "...with no error");
@@ -228,8 +233,6 @@ main(void)
     APR_ARRAY_PUSH(config.permitted_realms, const char *) = "FOO.EXAMPLE.COM";
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Login for krb5 auth returns success");
     is_int(WA_PEC_USER_REJECTED, response->login_error,
@@ -242,8 +245,6 @@ main(void)
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Clearing permitted realms succeeds");
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "proxy";
     req.auth = NULL;
     req.proxy_type = "krb5";
@@ -272,11 +273,13 @@ main(void)
                                   session, &token);
     is_int(WA_ERR_NONE, status, "...result token decodes properly");
     if (status != WA_ERR_NONE)
-        ok_block(7, 0, "...no result token: %s",
+        ok_block(16, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
         is_string(krbconf->userprinc, token->token.proxy.subject,
                   "...result subject is right");
+        is_string(NULL, token->token.proxy.authz_subject,
+                  "...and there is no authz subject");
         is_string("krb5", token->token.proxy.type,
                   "...result proxy type is right");
         is_string("p", token->token.proxy.initial_factors,
@@ -284,7 +287,7 @@ main(void)
         is_string("p", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(0, token->token.proxy.loa, "...and no LoA");
-        ok(token->token.proxy.creation - now < 5, "...and creation is sane");
+        ok(token->token.proxy.creation - now < 10, "...and creation is sane");
         is_int(expiration, token->token.proxy.expiration,
                "...and expiration matches the expiration of the proxy token");
         status = webauth_token_decode_raw(ctx, WA_TOKEN_WEBKDC_PROXY,
@@ -304,10 +307,64 @@ main(void)
                "...and correct proxy subject identity");
             ok(pt->data != NULL, "...and data is not NULL");
             is_string("p", pt->initial_factors, "...and factors is password");
-            ok(pt->creation - now < 5, "...and creation is okay");
+            ok(pt->creation - now < 10, "...and creation is okay");
             ok(pt->expiration > now, "...and expiration is sane");
         }
     }
+
+    /*
+     * Set an identity ACL file and then get a proxy token with an
+     * authorization identity.
+     */
+    tmpdir = test_tmpdir();
+    basprintf((char **) &config.id_acl_path, "%s/id.acl", tmpdir);
+    id_acl = fopen(config.id_acl_path, "w");
+    if (id_acl == NULL)
+        sysbail("cannot create %s", config.id_acl_path);
+    fprintf(id_acl, "%s %s otheruser\n", krbconf->userprinc,
+            request.service->subject);
+    fclose(id_acl);
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+    request.authz_subject = "otheruser";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status, "Login with identity ACL returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    is_string(krbconf->userprinc, response->subject, "...subject is correct");
+    is_string("otheruser", response->authz_subject,
+              "...authz subject is correct");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("proxy", response->result_type, "...which is a proxy token");
+    status = webauth_token_decode(ctx, WA_TOKEN_PROXY, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(5, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string(krbconf->userprinc, token->token.proxy.subject,
+                  "...result subject is right");
+        is_string("otheruser", token->token.proxy.authz_subject,
+                  "...result authz subject is correct");
+        is_string("krb5", token->token.proxy.type,
+                  "...result proxy type is right");
+        ok(token->token.proxy.creation - now < 10, "...and creation is sane");
+        ok(token->token.proxy.expiration > now, "...and expiration is sane");
+    }
+
+    /* Clean up authorization identity. */
+    unlink(config.id_acl_path);
+    free((char *) config.id_acl_path);
+    config.id_acl_path = NULL;
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Clearing id_acl_path succeeded");
+    test_tmpdir_free(tmpdir);
+    request.authz_subject = NULL;
 
     /*
      * Try a mismatched proxy token and login token for two different users.
@@ -326,7 +383,7 @@ main(void)
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
     wkproxy.token.webkdc_proxy.initial_factors = "p";
     wkproxy.token.webkdc_proxy.session_factors = "c";
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "id";
@@ -345,9 +402,6 @@ main(void)
      * the "c" cookie session information in the resulting id token.
      */
     wkproxy.token.webkdc_proxy.subject = krbconf->userprinc;
-    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     req.type = "id";
     req.auth = "webkdc";
     req.proxy_type = NULL;

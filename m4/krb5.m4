@@ -87,6 +87,19 @@ AC_DEFUN([_RRA_LIB_KRB5_PATHS],
         [AS_IF([test x"$rra_krb5_root" != x/usr],
             [KRB5_CPPFLAGS="-I${rra_krb5_root}/include"])])])])
 
+dnl Check for a header using a file existence check rather than using
+dnl AC_CHECK_HEADERS.  This is used if there were arguments to configure
+dnl specifying the Kerberos header path, since we may have one header in the
+dnl default include path and another under our explicitly-configured Kerberos
+dnl location.
+AC_DEFUN([_RRA_LIB_KRB5_CHECK_HEADER],
+[AC_MSG_CHECKING([for $1])
+ AS_IF([test -f "${rra_krb5_incroot}/$1"],
+    [AC_DEFINE_UNQUOTED(AS_TR_CPP([HAVE_$1]), [1],
+        [Define to 1 if you have the <$1> header file.])
+     AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])])
+
 dnl Does the appropriate library checks for reduced-dependency Kerberos
 dnl linkage.  The single argument, if true, says to fail if Kerberos could not
 dnl be found.
@@ -96,7 +109,10 @@ AC_DEFUN([_RRA_LIB_KRB5_REDUCED],
      [AS_IF([test x"$1" = xtrue],
          [AC_MSG_ERROR([cannot find usable Kerberos library])])])
  LIBS="$KRB5_LIBS $LIBS"
- AC_CHECK_HEADERS([krb5.h krb5/krb5.h])
+ AS_IF([test x"$rra_krb5_incroot" = x],
+     [AC_CHECK_HEADERS([krb5.h krb5/krb5.h])],
+     [_RRA_LIB_KRB5_CHECK_HEADER([krb5.h])
+      _RRA_LIB_KRB5_CHECK_HEADER([krb5/krb5.h])])
  AC_CHECK_FUNCS([krb5_get_error_message],
      [AC_CHECK_FUNCS([krb5_free_error_message])],
      [AC_CHECK_FUNCS([krb5_get_error_string], [],
@@ -126,7 +142,7 @@ AC_DEFUN([_RRA_LIB_KRB5_MANUAL],
     [AC_CHECK_LIB([nsl], [socket], [LIBS="-lnsl -lsocket $LIBS"], [],
         [-lsocket])])
  AC_SEARCH_LIBS([crypt], [crypt])
- AC_SEARCH_LIBS([rk_simple_execve], [roken])
+ AC_SEARCH_LIBS([roken_concat], [roken])
  rra_krb5_extra="$LIBS"
  LIBS="$rra_krb5_save_LIBS"
  AC_CHECK_LIB([krb5], [krb5_init_context],
@@ -156,7 +172,10 @@ AC_DEFUN([_RRA_LIB_KRB5_MANUAL],
         [$rra_krb5_extra])],
     [-lasn1 -lcom_err -lcrypto $rra_krb5_extra])
  LIBS="$KRB5_LIBS $LIBS"
- AC_CHECK_HEADERS([krb5.h krb5/krb5.h])
+ AS_IF([test x"$rra_krb5_incroot" = x],
+     [AC_CHECK_HEADERS([krb5.h krb5/krb5.h])],
+     [_RRA_LIB_KRB5_CHECK_HEADER([krb5.h])
+      _RRA_LIB_KRB5_CHECK_HEADER([krb5/krb5.h])])
  AC_CHECK_FUNCS([krb5_get_error_message],
      [AC_CHECK_FUNCS([krb5_free_error_message])],
      [AC_CHECK_FUNCS([krb5_get_error_string], [],
@@ -188,7 +207,10 @@ AC_DEFUN([_RRA_LIB_KRB5_CONFIG],
 [RRA_KRB5_CONFIG([${rra_krb5_root}], [krb5], [KRB5],
     [_RRA_LIB_KRB5_CHECK([$1])
      RRA_LIB_KRB5_SWITCH
-     AC_CHECK_HEADERS([krb5.h krb5/krb5.h])
+     AS_IF([test x"$rra_krb5_incroot" = x],
+         [AC_CHECK_HEADERS([krb5.h krb5/krb5.h])],
+         [_RRA_LIB_KRB5_CHECK_HEADER([krb5.h])
+          _RRA_LIB_KRB5_CHECK_HEADER([krb5/krb5.h])])
      AC_CHECK_FUNCS([krb5_get_error_message],
          [AC_CHECK_FUNCS([krb5_free_error_message])],
          [AC_CHECK_FUNCS([krb5_get_error_string], [],
@@ -203,9 +225,15 @@ AC_DEFUN([_RRA_LIB_KRB5_CONFIG],
 
 dnl The core of the library checking, shared between RRA_LIB_KRB5 and
 dnl RRA_LIB_KRB5_OPTIONAL.  The single argument, if "true", says to fail if
-dnl Kerberos could not be found.
+dnl Kerberos could not be found.  Set up rra_krb5_incroot for later header
+dnl checking.
 AC_DEFUN([_RRA_LIB_KRB5_INTERNAL],
 [AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
+ rra_krb5_incroot=
+ AS_IF([test x"$rra_krb5_includedir" != x],
+    [rra_krb5_incroot="$rra_krb5_includedir"],
+    [AS_IF([test x"$rra_krb5_root" != x],
+        [rra_krb5_incroot="${rra_krb5_root}/include"])])
  AS_IF([test x"$rra_reduced_depends" = xtrue],
     [_RRA_LIB_KRB5_PATHS
      _RRA_LIB_KRB5_REDUCED([$1])],

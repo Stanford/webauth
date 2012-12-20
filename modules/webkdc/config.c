@@ -44,12 +44,14 @@
     static const type DF_ ## name = def;
 
 DIRN(Debug,               "whether to log debug messages")
+DIRN(IdentityAcl,         "path to the identity ACL file")
 DIRN(KerberosFactors,     "list of factors used as initial factors")
 DIRN(Keyring,             "path to the keyring file")
 DIRD(KeyringAutoUpdate,   "whether to automatically update keyring", bool, true)
 DIRD(KeyringKeyLifetime,  "lifetime of keys we create", int, 60 * 60 * 24 * 30)
 DIRN(Keytab,              "path to the Kerberos keytab file")
 DIRN(LocalRealms,         "realms to strip, \"none\", or \"local\"")
+DIRD(LoginTimeLimit,      "time limit for completing login", int, 60 * 5)
 DIRN(PermittedRealms,     "list of realms permitted for authentication")
 DIRN(ProxyTokenLifetime,  "lifetime of webkdc-proxy tokens")
 DIRN(ServiceTokenLifetime,"lifetime of webkdc-service tokens")
@@ -62,12 +64,14 @@ DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
 
 enum {
     E_Debug,
+    E_IdentityAcl,
     E_KerberosFactors,
     E_Keyring,
     E_KeyringAutoUpdate,
     E_KeyringKeyLifetime,
     E_Keytab,
     E_LocalRealms,
+    E_LoginTimeLimit,
     E_PermittedRealms,
     E_ProxyTokenLifetime,
     E_ServiceTokenLifetime,
@@ -130,6 +134,7 @@ webkdc_config_create(apr_pool_t *pool, server_rec *s UNUSED)
     sconf = apr_pcalloc(pool, sizeof(struct config));
     sconf->keyring_auto_update = DF_KeyringAutoUpdate;
     sconf->key_lifetime        = DF_KeyringKeyLifetime;
+    sconf->login_time_limit    = DF_LoginTimeLimit;
     sconf->token_max_ttl       = DF_TokenMaxTTL;
     sconf->userinfo_timeout    = DF_UserInfoTimeout;
     sconf->local_realms        = apr_array_make(pool, 0, sizeof(const char *));
@@ -156,6 +161,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     bconf = basev;
     oconf = overv;
 
+    MERGE_PTR(identity_acl_path);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
     MERGE_PTR_OTHER(keytab_principal, keytab_path);
@@ -167,6 +173,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_SET(debug);
     MERGE_SET(keyring_auto_update);
     MERGE_SET(key_lifetime);
+    MERGE_SET(login_time_limit);
     MERGE_SET(proxy_lifetime);
     MERGE_INT(service_lifetime);
     MERGE_SET(token_max_ttl);
@@ -340,6 +347,9 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     sconf = ap_get_module_config(cmd->server->module_config, &webkdc_module);
 
     switch (directive) {
+    case E_IdentityAcl:
+        sconf->identity_acl_path = ap_server_root_relative(cmd->pool, arg);
+        break;
     case E_Keyring:
         sconf->keyring_path = ap_server_root_relative(cmd->pool, arg);
         break;
@@ -351,6 +361,11 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     case E_LocalRealms:
         realm = apr_array_push(sconf->local_realms);
         *realm = apr_pstrdup(cmd->pool, arg);
+        break;
+    case E_LoginTimeLimit:
+        err = parse_interval(cmd, arg, &sconf->login_time_limit);
+        if (err == NULL)
+            sconf->login_time_limit_set = true;
         break;
     case E_PermittedRealms:
         realm = apr_array_push(sconf->permitted_realms);
@@ -468,12 +483,14 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
 
 const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  Debug),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   IdentityAcl),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   KerberosFactors),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   Keyring),
     DIRECTIVE(AP_INIT_TAKE12,  cfg_str12, Keytab),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  KeyringAutoUpdate),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   KeyringKeyLifetime),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   LocalRealms),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   LoginTimeLimit),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   PermittedRealms),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ProxyTokenLifetime),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ServiceTokenLifetime),

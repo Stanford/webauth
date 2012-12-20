@@ -115,6 +115,21 @@ works of this work.
                     <td><strong>Password:</strong></td>
                     <td><input name="password" type="password" size="18"></td>
                   </tr>
+[% IF notdefined %]
+<!--
+One may allow the user to set an authorization identity during login.  It
+will be rejected if not allowed for this site.  However, since an
+authorization identity is normally rare rather than common, prompting
+during every login is usually not appropriate.  Instead, it's handled by
+the code in the confirm template that allows the user to change
+authorization identities if appropriate.
+
+                  <tr>
+                    <td><strong>Identity:</strong></td>
+                    <td><input name="authz_subject" type="text" size="18"></td>
+                  </tr>
+-->
+[% END %]
                   <tr>
                     <td colspan="2" align="right">
                       <input type="submit" name="Submit" value="Login">

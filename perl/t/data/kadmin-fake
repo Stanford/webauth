@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Fake kadmin-remctl implementation.
 #
@@ -11,7 +11,11 @@
 #
 # See LICENSE for licensing terms.
 
-use POSIX;
+use strict;
+use warnings;
+
+use POSIX qw(strftime);
+
 my ($command, $princ) = @ARGV;
 die "Invalid command $command\n" unless $command eq 'check_expire';
 

@@ -12,6 +12,26 @@
  * See LICENSE for licensing terms.
  */
 
+
+/*
+ * Reverse the order of the Kerberos credential flag bits.  This converts from
+ * the Heimdal memory format to the format used in credential caches and
+ * therefore on the wire by our code.
+ */
+static int32_t
+swap_flag_bits(int32_t flags)
+{
+    int32_t result = 0;
+    unsigned int i;
+
+    for (i = 0; i < 32; i++) {
+        result = (result << 1) | (flags & 1);
+        flags = flags >> 1;
+    }
+    return result;
+}
+
+
 /*
  * Take a single Kerberos credential and serialize it into a buffer, using the
  * encoding required for putting it into tokens.  output will be a pointer to
@@ -25,7 +45,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              time_t *expiration)
 {
     int status;
-    struct webauth_krb5_cred data;
+    struct wai_krb5_cred data;
 
     /* Start by copying the credential data into our standard struct. */
     memset(&data, 0, sizeof(data));
@@ -44,12 +64,11 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     if (expiration != NULL)
         *expiration = creds->times.endtime;
     data.renew_until       = creds->times.renew_till;
-    data.flags             = creds->flags.i;
     if (creds->addresses.len > 0) {
         size_t i, size;
 
         data.address_count = creds->addresses.len;
-        size = creds->addresses.len * sizeof(struct webauth_krb5_cred_address);
+        size = creds->addresses.len * sizeof(struct wai_krb5_cred_address);
         data.address = apr_palloc(kc->pool, size);
         for (i = 0; i < creds->addresses.len; i++) {
             data.address[i].type = creds->addresses.val[i].addr_type;
@@ -69,7 +88,7 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         size_t i, size;
 
         data.authdata_count = creds->authdata.len;
-        size = creds->authdata.len * sizeof(struct webauth_krb5_cred_authdata);
+        size = creds->authdata.len * sizeof(struct wai_krb5_cred_authdata);
         data.authdata = apr_palloc(kc->pool, size);
         for (i = 0; i < creds->authdata.len; i++) {
             data.authdata[i].type = creds->authdata.val[i].ad_type;
@@ -78,8 +97,17 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
         }
     }
 
+    /*
+     * Flags are special.  MIT Kerberos's memory representation has the flag
+     * bits with forwardable at the most significant end.  Heimdal's memory
+     * representation has forwardable at the least significant end.  The
+     * interchangeable data format is the MIT format, so we want to write them
+     * that way on the wire.
+     */
+    data.flags = swap_flag_bits(creds->flags.i);
+
     /* All done.  Do the attribute encoding. */
-    return webauth_encode(ctx, kc->pool, cred_encoding, &data, output, length);
+    return wai_encode(ctx, wai_krb5_cred_encoding, &data, output, length);
 }
 
 
@@ -97,32 +125,17 @@ static int
 decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              const void *input, size_t length, krb5_creds *creds)
 {
-    void *buf;
-    WEBAUTH_ATTR_LIST *alist = NULL;
-    struct webauth_krb5_cred data;
+    struct wai_krb5_cred data;
     int status;
     size_t size, i;
 
-    /* Decode the input into an attribute list. */
-    buf = apr_pmemdup(kc->pool, input, length);
-    status = webauth_attrs_decode(buf, length, &alist);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "credential decode failed");
-        return status;
-    }
-
     /*
-     * Decode the attribute list and copy the results into the credential
-     * struct.  is_skey is not supported by Heimdal, so ignore it.
+     * Decode the input into the credential struct and then copy it into the
+     * data structure used by the library.  is_skey is not supported by
+     * Heimdal, so ignore it.
      */
     memset(&data, 0, sizeof(data));
-    status = webauth_decode(ctx, kc->pool, cred_encoding, input, length,
-                            &data);
-    if (status != WA_ERR_NONE) {
-        webauth_attr_list_free(alist);
-        return status;
-    }
-    webauth_attr_list_free(alist);
+    status = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
     memset(creds, 0, sizeof(krb5_creds));
     if (data.client_principal != NULL) {
         status = decode_principal(ctx, kc, data.client_principal,
@@ -143,7 +156,6 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
     creds->times.starttime = data.start_time;
     creds->times.endtime = data.end_time;
     creds->times.renew_till = data.renew_until;
-    creds->flags.i = data.flags;
     if (data.address_count > 0) {
         creds->addresses.len = data.address_count;
         size = data.address_count * sizeof(krb5_address);
@@ -172,5 +184,29 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
             creds->authdata.val[i].ad_data.length = data.authdata[i].data_len;
         }
     }
+
+    /*
+     * The portable representation of the flag bits has forwardable near the
+     * most significant end.  Heimdal's memory representation has it at the
+     * least significant end.  So normally we want to just swap the flag bits
+     * when reading them off the wire.
+     *
+     * However, unfortunately, we used to store the flag bits on the wire in
+     * memory format (causing lack of correct interoperability between Heimdal
+     * and MIT).  Try to figure out if we did that by seeing if any of the
+     * high flag bits are set and only swapping the bits if one of them is
+     * set.  This relies on the fact that credentials always have at least one
+     * flag set, and all the currently used flags are in the top half of the
+     * wire encoding.
+     *
+     * WebAuth 4.4.0 and later will always write out the flag bits in the
+     * correct order.  This code could theoretically be simplified to always
+     * swap if nothing older is still in the wild.
+     */
+    if (data.flags & mask)
+        creds->flags.i = swap_flag_bits(data.flags);
+    else
+        creds->flags.i = data.flags;
+
     return WA_ERR_NONE;
 }

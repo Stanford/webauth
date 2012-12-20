@@ -28,12 +28,12 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/exception.t perl/t/krb5.t	    \
-	perl/t/lib/Util.pm perl/t/keyring.t perl/t/misc.t		    \
-	perl/t/page-pwchange.t perl/t/pending-expire.t			    \
-	perl/t/pod-spelling.t perl/t/pod.t perl/t/token-decode.t	    \
-	perl/t/token-encode.t perl/t/web-request.t perl/t/web-response.t    \
-	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t	    \
-	perl/typemap
+	perl/t/lib/Util.pm perl/t/keyring.t perl/t/minimum-version.t	    \
+	perl/t/misc.t perl/t/page-pwchange.t perl/t/pending-expire.t	    \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/strict.t		    \
+	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
+	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
+	perl/t/weblogin.t perl/t/xml.t perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -51,15 +51,21 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
-	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
-	lib/libwebauth.sym perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/config/README tests/data/cmd-webkdc tests/data/keyring	    \
-	tests/data/tokens.conf tests/data/tokens tests/data/xml		    \
-	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/webauth-make-tokens \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+	lib/encoding-rules lib/internal.h lib/libwebauth.map		    \
+	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
+	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
+	tests/data/cmd-webkdc tests/data/creds tests/data/id.acl	    \
+	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
+	tests/data/perlcriticrc tests/data/perltidyrc			    \
+	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
+	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
+	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
+	tests/perl/minimum-version-t tests/perl/strict-t		    \
+	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
+	tools/wa_keyring.pod tools/weblogin-passcheck			    \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
@@ -82,23 +88,24 @@ else
 endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
-include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/krb5.h include/webauth/tokens.h			\
-	include/webauth/util.h include/webauth/webkdc.h
+	include/webauth/util.h include/webauth/was.h			\
+	include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
-	lib/attr-encode.c lib/attrs.c lib/base64.c lib/context.c	    \
-	lib/factors.c lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h    \
-	lib/misc.c lib/token-crypto.c lib/token-decode.c lib/token-encode.c \
-	lib/userinfo.c lib/util.c lib/webkdc-config.c lib/webkdc-login.c    \
-	lib/xml.c
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		\
+	lib/attr-encode.c lib/context.c lib/factors.c lib/file-io.c	\
+	lib/hex.c lib/internal.h lib/keyring.c lib/keys.c lib/krb5.c	\
+	lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c		\
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	\
+	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	\
+	lib/webkdc-login.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
 	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 8:0:0 $(VERSION_LDFLAGS)	    \
+lib_libwebauth_la_LDFLAGS = -version-info 9:0:0 $(VERSION_LDFLAGS)	    \
 	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
@@ -271,16 +278,17 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/attrs-t tests/lib/base64-t	   \
-	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
-	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		   \
-	tests/lib/krb5-tgt-t tests/lib/userinfo-t tests/lib/token-decode-t \
-	tests/lib/token-encode-t tests/lib/webkdc-krb-t			   \
+check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/factors-t \
+	tests/lib/hex-t tests/lib/interval-t tests/lib/keyring-t	   \
+	tests/lib/keys-t tests/lib/krb5-t tests/lib/krb5-cred-t		   \
+	tests/lib/krb5-tgt-t tests/lib/userinfo-t tests/lib/token-crypto-t \
+	tests/lib/token-decode-t tests/lib/token-encode-t		   \
+	tests/lib/was-cache-t tests/lib/webkdc-krb-t			   \
 	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			   \
 	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
 	tests/portable/setenv-t tests/portable/snprintf-t		   \
 	tests/portable/strlcat-t tests/portable/strlcpy-t		   \
-	tests/util/messages-t tests/util/xmalloc
+	tests/portable/strndup-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -293,15 +301,16 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
-tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
-tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+tests_lib_apr_buffer_t_SOURCES = lib/apr-buffer.c tests/lib/apr-buffer-t.c
+tests_lib_apr_buffer_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_apr_buffer_t_LDADD = tests/tap/libtap.a portable/libportable.la \
+	$(APR_LIBS)
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la $(APR_LIBS)
-tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+tests_lib_hex_t_SOURCES = lib/hex.c tests/lib/hex-t.c
+tests_lib_hex_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_hex_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_keyring_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
@@ -309,18 +318,29 @@ tests_lib_keyring_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_krb5_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
-tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
-tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(KRB5_LIBS)
+tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
+tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS)
+tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APRUTIL_LIBS)
 tests_lib_userinfo_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_userinfo_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_userinfo_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+tests_lib_token_crypto_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la
+tests_lib_was_cache_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
@@ -352,6 +372,9 @@ tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_strndup_t_SOURCES = tests/portable/strndup-t.c \
+	tests/portable/strndup.c
+tests_portable_strndup_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
@@ -363,3 +386,17 @@ check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	    cd perl && LD_LIBRARY_PATH=$(abs_top_builddir)/lib/.libs \
 		$(MAKE) test ; \
 	fi
+
+# Used by maintainers to run the main test suite under valgrind.  Suppress
+# the xmalloc and pod-spelling tests because the former won't work properly
+# under valgrind (due to increased memory usage) and the latter is pointless
+# to run under valgrind.
+check-valgrind: $(check_PROGRAMS)
+	rm -rf $(abs_top_builddir)/tmp-valgrind
+	mkdir $(abs_top_builddir)/tmp-valgrind
+	env RRA_MAINTAINER_TESTS= valgrind --leak-check=full		   \
+	    --track-fds=yes --trace-children=yes			   \
+	    --log-file=$(abs_top_builddir)/tmp-valgrind/log.%p		   \
+	    --suppressions=$(abs_top_srcdir)/tests/data/valgrind.supp	   \
+	    --trace-children-skip="/bin/sh,*/cat,*/cut,*/expr,*/getopt,*/kinit,*/ls,*/mkdir,*/rm,*/rmdir,*/sed,*/sleep,*/wc,*/data/cmd-*,*/docs/pod*-t" \
+	    tests/runtests $(abs_top_srcdir)/tests/TESTS

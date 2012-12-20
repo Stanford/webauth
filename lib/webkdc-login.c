@@ -17,6 +17,8 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <ctype.h>
+
 #include <lib/internal.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
@@ -148,7 +150,7 @@ do_otp(struct webauth_context *ctx,
 
     /* Do the remote validation call. */
     if (ctx->user == NULL) {
-        webauth_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
+        wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
         return WA_ERR_UNIMPLEMENTED;
     }
     status = webauth_user_validate(ctx, login->username, ip, login->otp,
@@ -315,13 +317,13 @@ cleanup:
  *    to correctly handle when to lift initial factors into session factors.
  * 6. Session factors are merged from a webkdc-proxy token if and only if the
  *    webkdc-proxy token contributes in some way to the result.
- * 7. The session factors are used as-is unless the token is less than five
- *    minutes old and we processed a login token, in which case its initial
- *    factors count as session factors.
+ * 7. Initial factors also count as session factors if the contributing
+ *    webkdc-proxy token is within its freshness limit.  Otherwise, session
+ *    factors are used as-is.
  */
 static int
 merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
-                   bool did_login, struct webauth_token **result)
+                   struct webauth_token **result)
 {
     bool created = false;
     struct webauth_token *token, *tmp;
@@ -342,7 +344,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     /*
      * We merge the proxy tokens in reverse order, since any proxy tokens that
      * we created via fresh login tokens should take precedence over anything
-     * that we had from older cookies and we added those to the end of the
+     * that we had from older cookies.  We added those to the end of the
      * array.
      */
     i = creds->nelts - 1;
@@ -397,8 +399,11 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
         if (status != WA_ERR_NONE)
             return status;
 
-        /* FIXME: Hard-coded magic five minute time interval. */
-        if (did_login && wkproxy->creation > time(NULL) - 5 * 60)
+        /*
+         * webkdc-proxy tokens contribute their initial factors to session
+         * factors if they're still fresh.
+         */
+        if (wkproxy->creation >= now - ctx->webkdc->login_time_limit)
             status = webauth_factors_parse(ctx, wkproxy->initial_factors,
                                            &sfactors);
         else
@@ -413,10 +418,20 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
         if (wkproxy->loa > best->loa)
             best->loa = wkproxy->loa;
     } while (i-- > 0);
+
+    /* If we created a new token, set its factors to our assembled ones. */
     if (created) {
         best->initial_factors = webauth_factors_string(ctx, factors);
         best->session_factors = webauth_factors_string(ctx, sfactors);
     }
+
+    /*
+     * If we did not create a new token, promote its initial factors to
+     * session factors if the creation date is within the login time period.
+     */
+    if (!created && best->creation >= now - ctx->webkdc->login_time_limit)
+        best->session_factors = best->initial_factors;
+
     *result = genbest;
     return WA_ERR_NONE;
 }
@@ -503,6 +518,40 @@ get_user_info(struct webauth_context *ctx,
                               WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
     }
     return WA_ERR_NONE;
+}
+
+
+/*
+ * Given the (possibly merged) webkdc-proxy token, determine whether the
+ * current login is interactive.  Returns true if so, false if not.  Internal
+ * errors just return false.
+ */
+static bool
+is_interactive_login(struct webauth_context *ctx,
+                     struct webauth_token_webkdc_proxy *wkproxy)
+{
+    struct webauth_factors *factors;
+    int status;
+    const char *factor;
+    ssize_t i;
+
+    /* FIXME: Report a warning if this fails. */
+    status = webauth_factors_parse(ctx, wkproxy->session_factors, &factors);
+    if (status != WA_ERR_NONE)
+        return false;
+
+    /*
+     * The login is considered interactive if the session factors include
+     * password, OTP, or X.509.
+     */
+    for (i = 0; i < factors->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(factors->factors, i, const char *);
+        if (strcmp(factor, WA_FA_PASSWORD) == 0
+            || strcmp(factor, WA_FA_OTP) == 0
+            || strcmp(factor, WA_FA_X509) == 0)
+            return true;
+    }
+    return false;
 }
 
 
@@ -627,6 +676,105 @@ check_multifactor(struct webauth_context *ctx,
 
 
 /*
+ * Given the authenticated user and the destination site, determine the
+ * permissible authentication identities for that destination site.  Stores
+ * that list in a newly-allocated array, which may be set to NULL if there is
+ * no identity ACL or if none of its entries apply to the current
+ * authentication.  Returns an error code.
+ */
+static int
+build_identity_list(struct webauth_context *ctx, const char *subject,
+                    const char *target, apr_array_header_t **identities)
+{
+    int status;
+    unsigned long line;
+    apr_file_t *acl;
+    apr_int32_t flags;
+    apr_status_t code;
+    char buf[BUFSIZ];
+    char *p, *authn, *was, *authz, *last;
+
+    /* If there is no identity ACL file, there is a NULL array. */
+    *identities = NULL;
+    if (ctx->webkdc->id_acl_path == NULL)
+        return WA_ERR_NONE;
+
+    /* Open the identity ACL file. */
+    flags = APR_FOPEN_READ | APR_FOPEN_BUFFERED | APR_FOPEN_NOCLEANUP;
+    code = apr_file_open(&acl, ctx->webkdc->id_acl_path, flags,
+                         APR_FPROT_OS_DEFAULT, ctx->pool);
+    if (code != APR_SUCCESS) {
+        status = WA_ERR_FILE_OPENREAD;
+        wai_error_set_apr(ctx, status, code, "identity ACL %s",
+                          ctx->webkdc->id_acl_path);
+        return status;
+    }
+
+    /*
+     * Read the file line by line, and store the relevant potential
+     * identities.  The format is:
+     *
+     *     <authn> <target> <authz>
+     *
+     * where <authn> is the user's actual authenticated identity, <target> is
+     * the identity of the site to which the user is going, and <authz> is an
+     * alternate authorization identity the user is allowed to express to that
+     * site.
+     */
+    line = 0;
+    while ((code = apr_file_gets(buf, sizeof(buf), acl)) == APR_SUCCESS) {
+        line++;
+        if (buf[strlen(buf) - 1] != '\n') {
+            status = WA_ERR_FILE_READ;
+            wai_error_set(ctx, status, "identity ACL %s line %lu too long",
+                          ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        p = buf;
+        while (isspace((int) *p))
+            p++;
+        if (*p == '#' || *p == '\0')
+            continue;
+        authn = apr_strtok(p, " \t\r\n", &last);
+        if (authn == NULL)
+            continue;
+        if (strcmp(subject, authn) != 0)
+            continue;
+        was = apr_strtok(NULL, " \t\r\n", &last);
+        if (was == NULL) {
+            status = WA_ERR_FILE_READ;
+            wai_error_set(ctx, status, "missing target on identity ACL %s line"
+                          " %lu", ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        if (strcmp(target, was) != 0)
+            continue;
+        authz = apr_strtok(NULL, " \t\r\n", &last);
+        if (authz == NULL) {
+            status = WA_ERR_FILE_READ;
+            wai_error_set(ctx, status, "missing identity on identity ACL %s"
+                          " line %lu", ctx->webkdc->id_acl_path, line);
+            goto done;
+        }
+        if (*identities == NULL)
+            *identities = apr_array_make(ctx->pool, 1, sizeof(char *));
+        APR_ARRAY_PUSH(*identities, char *) = apr_pstrdup(ctx->pool, authz);
+    }
+    if (code != APR_SUCCESS && code != APR_EOF) {
+        status = WA_ERR_FILE_READ;
+        wai_error_set_apr(ctx, status, code, "identity ACL %s",
+                          ctx->webkdc->id_acl_path);
+        goto done;
+    }
+    status = WA_ERR_NONE;
+
+done:
+    apr_file_close(acl);
+    return status;
+}
+
+
+/*
  * Given the identity of a WAS and a webkdc-proxy token identifying the user,
  * obtain a Kerberos authenticator identifying that user to that WAS.  Store
  * it in the provided buffer.  Returns either WA_ERR_NONE on success or a
@@ -699,6 +847,7 @@ create_id_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_ID;
     id = &token.token.id;
     id->subject = wkproxy->subject;
+    id->authz_subject = response->authz_subject;
     id->auth = req->auth;
     if (strcmp(req->auth, "krb5") == 0) {
         status = get_krb5_authenticator(ctx, request->service->subject,
@@ -754,6 +903,7 @@ create_proxy_token(struct webauth_context *ctx,
     token.type = WA_TOKEN_PROXY;
     proxy = &token.token.proxy;
     proxy->subject = wkproxy->subject;
+    proxy->authz_subject = response->authz_subject;
     proxy->type = req->proxy_type;
     proxy->initial_factors = wkproxy->initial_factors;
     proxy->session_factors = wkproxy->session_factors;
@@ -796,6 +946,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_response **response,
                      struct webauth_keyring *ring)
 {
+    apr_array_header_t *creds = NULL;
     struct webauth_token *cred, *newproxy;
     struct webauth_token **token;
     struct webauth_token cancel;
@@ -809,17 +960,22 @@ webauth_webkdc_login(struct webauth_context *ctx,
     const void *key_data;
     struct webauth_key *key;
     struct webauth_keyring *session;
+    const char *allowed;
 
     /* Basic sanity checking. */
     if (request->service == NULL || request->creds == NULL
         || request->request == NULL) {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "incomplete login request data");
+        wai_error_set(ctx, status, "incomplete login request data");
         return status;
     }
 
     /* Shorter names for things we'll be referring to often. */
     req = request->request;
+
+    /* Make a copy of the credentials.  We may modify them during login. */
+    if (request->creds != NULL)
+        creds = apr_array_copy_hdr(ctx->pool, request->creds);
 
     /* Fill in the basics of our response. */
     *response = apr_pcalloc(ctx->pool, sizeof(**response));
@@ -865,15 +1021,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
     /*
      * Check for a login token in the supplied creds.  If there is one, use it
      * to authenticate and transform it into a webkdc-proxy token.
-     *
-     * FIXME: Stop modifying the array in place.  This is surprising to the
-     * caller and makes the test suite more annoying.
      */
-    for (i = 0; i < request->creds->nelts; i++) {
-        cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+    for (i = 0; i < creds->nelts; i++) {
+        cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
         if (cred->type != WA_TOKEN_LOGIN)
             continue;
-        token = apr_array_push(request->creds);
+        token = apr_array_push(creds);
         if (cred->token.login.otp != NULL)
             status = do_otp(ctx, *response, &cred->token.login,
                             request->remote_ip, token);
@@ -882,7 +1035,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (status != WA_ERR_NONE)
             return status;
         if (*token == NULL)
-            apr_array_pop(request->creds);
+            apr_array_pop(creds);
         else
             did_login = true;
 
@@ -899,12 +1052,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * skip login tokens, since we've already turned them into webkdc-proxy
      * tokens above.
      */
-    if (request->creds != NULL && request->creds->nelts > 0) {
+    if (creds != NULL && creds->nelts > 0) {
         const char *subject = NULL;
         const char *proxy_subject = NULL;
 
-        for (i = 0; i < request->creds->nelts; i++) {
-            cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+        for (i = 0; i < creds->nelts; i++) {
+            cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
             if (cred->type == WA_TOKEN_LOGIN)
                 continue;
             wkproxy = &cred->token.webkdc_proxy;
@@ -938,8 +1091,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * with a login token.
      */
     if (did_login)
-        for (i = 0; i < request->creds->nelts; i++) {
-            cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+        for (i = 0; i < creds->nelts; i++) {
+            cred = APR_ARRAY_IDX(creds, i, struct webauth_token *);
             if (cred->type != WA_TOKEN_WEBKDC_PROXY)
                 continue;
             wkproxy = &cred->token.webkdc_proxy;
@@ -960,7 +1113,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * want to copy that new webkdc-proxy token into our output.
      */
     wkproxy = NULL;
-    status = merge_webkdc_proxy(ctx, request->creds, did_login, &newproxy);
+    status = merge_webkdc_proxy(ctx, creds, &newproxy);
     if (status != WA_ERR_NONE)
         return status;
     if (newproxy != NULL) {
@@ -1013,14 +1166,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
-     * If forced login is set and we didn't just process a login token, error
-     * out with the error code for forced login, instructing WebLogin to put
-     * up the login screen.
+     * If forced login is set, we require an interactive login.  Otherwise,
+     * error out with the error code for forced login, instructing WebLogin to
+     * put up the login screen.
      *
      * FIXME: strstr is still lame.
      */
-    if (!did_login)
-        if (req->options != NULL && strstr(req->options, "fa") != NULL) {
+    if (req->options != NULL && strstr(req->options, "fa") != NULL)
+        if (!is_interactive_login(ctx, wkproxy)) {
             (*response)->login_error = WA_PEC_LOGIN_FORCED;
             (*response)->login_message = "forced authentication, need to login";
             return WA_ERR_NONE;
@@ -1067,6 +1220,31 @@ webauth_webkdc_login(struct webauth_context *ctx,
         return WA_ERR_NONE;
     }
 
+    /* Determine if the user is allowed to assert alternate identities. */
+    status = build_identity_list(ctx, (*response)->subject,
+                                 request->service->subject,
+                                 &(*response)->permitted_authz);
+    if (status != WA_ERR_NONE)
+        return status;
+
+    /*
+     * If the user attempts to assert an alternate identity, see if that's
+     * allowed.  If so, copy that into the response.
+     */
+    if (request->authz_subject != NULL && (*response)->permitted_authz != NULL)
+        for (i = 0; i < (*response)->permitted_authz->nelts; i++) {
+            allowed = APR_ARRAY_IDX((*response)->permitted_authz, i, char *);
+            if (strcmp(allowed, request->authz_subject) == 0) {
+                (*response)->authz_subject = apr_pstrdup(ctx->pool, allowed);
+                break;
+            }
+        }
+    if (request->authz_subject != NULL && (*response)->authz_subject == NULL) {
+        (*response)->login_error = WA_PEC_UNAUTHORIZED;
+        (*response)->login_message = "not authorized to assert that identity";
+        return WA_ERR_NONE;
+    }
+
     /*
      * We have a single (or no) webkdc-proxy token that contains everything we
      * know about the user.  Attempt to satisfy their request.
@@ -1083,8 +1261,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                     ring);
     else {
         status = WA_ERR_CORRUPT;
-        webauth_error_set(ctx, status, "unsupported requested token type %s",
-                          req->type);
+        wai_error_set(ctx, status, "unsupported requested token type %s",
+                      req->type);
     }
     return status;
 }

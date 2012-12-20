@@ -13,7 +13,6 @@
 
 #include <tests/tap/basic.h>
 #include <util/xmalloc.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
@@ -170,7 +169,7 @@ main(void)
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
-    plan(295);
+    plan_lazy();
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -196,6 +195,7 @@ main(void)
     if (result != NULL) {
         app = &result->token.app;
         is_string("testuser", app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(app->session_key == NULL, "...session key");
         is_int(0, app->session_key_len, "...session key length");
         is_int(1308777930, app->last_used, "...last used");
@@ -209,6 +209,7 @@ main(void)
     if (result != NULL) {
         app = &result->token.app;
         is_string("testuser", app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(app->session_key == NULL, "...session key");
         is_int(0, app->session_key_len, "...session key length");
         is_int(0, app->last_used, "...last used");
@@ -218,10 +219,25 @@ main(void)
         is_int(0, app->creation, "...creation");
         is_int(2147483600, app->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_APP, "app-authz", ring, 9);
+    if (result != NULL) {
+        app = &result->token.app;
+        is_string("testuser", app->subject, "...subject");
+        is_string("otheruser", app->authz_subject, "...authz subject");
+        ok(app->session_key == NULL, "...session key");
+        is_int(0, app->session_key_len, "...session key length");
+        is_int(0, app->last_used, "...last used");
+        is_string(NULL, app->initial_factors, "...initial factors");
+        is_string(NULL, app->session_factors, "...session factors");
+        is_int(0, app->loa, "...level of assurance");
+        is_int(1308777900, app->creation, "...creation");
+        is_int(2147483600, app->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_APP, "app-session", ring, 9);
     if (result != NULL) {
         app = &result->token.app;
         is_string(NULL, app->subject, "...subject");
+        is_string(NULL, app->authz_subject, "...authz subject");
         ok(memcmp("\0\0;s=test;\0", app->session_key, 11) == 0,
            "...session key");
         is_int(11, app->session_key_len, "...session key length");
@@ -236,12 +252,14 @@ main(void)
     /* Test decoding error cases for app tokens. */
     check_error(ctx, WA_TOKEN_APP, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
                 "HMAC check failed while decrypting token");
-    check_error(ctx, WA_TOKEN_APP, "app-empty", ring, WA_ERR_CORRUPT,
-                "decoding attribute s failed");
+    check_error(ctx, WA_TOKEN_APP, "app-bad-session", ring, WA_ERR_CORRUPT,
+                "subject not valid with session key in app token");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_APP, "app-missing", ring, WA_ERR_CORRUPT,
+                "missing subject in app token");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type cred while decoding app token");
+                "wrong token type cred, expected app");
 
     /*
      * Create a different keyring and test decoding a token using a keyring
@@ -269,12 +287,14 @@ main(void)
     }
 
     /* Test decoding error cases for cred tokens. */
-    check_error(ctx, WA_TOKEN_CRED, "cred-empty", ring, WA_ERR_CORRUPT,
-                "decoding attribute s failed");
-    check_error(ctx, WA_TOKEN_CRED, "cred-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+    check_error(ctx, WA_TOKEN_CRED, "cred-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_CRED, "cred-missing", ring, WA_ERR_CORRUPT,
+                "decoding subject");
+    check_error(ctx, WA_TOKEN_CRED, "cred-type", ring, WA_ERR_CORRUPT,
+                "unknown credential type foo in cred token");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type error while decoding cred token");
+                "wrong token type error, expected cred");
 
     /* Test decoding of an error token. */
     result = check_decode(ctx, WA_TOKEN_ERROR, "error-ok", ring, 3);
@@ -287,15 +307,16 @@ main(void)
 
     /* Test decoding error cases for error tokens. */
     check_error(ctx, WA_TOKEN_ERROR, "error-code", ring, WA_ERR_CORRUPT,
-                "error code foo is not a number");
+                "invalid encoded number");
     check_error(ctx, WA_TOKEN_ERROR, "id-krb5", ring, WA_ERR_CORRUPT,
-                "wrong token type id while decoding error token");
+                "wrong token type id, expected error");
 
     /* Test decoding of a id tokens.  There are several variants. */
     result = check_decode(ctx, WA_TOKEN_ID, "id-webkdc", ring, 9);
     if (result != NULL) {
         id = &result->token.id;
         is_string("testuser", id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("webkdc", id->auth, "...subject auth");
         ok(id->auth_data == NULL, "...subject auth data");
         is_int(0, id->auth_data_len, "...subject auth data length");
@@ -305,10 +326,25 @@ main(void)
         is_int(1308777900, id->creation, "...creation");
         is_int(2147483600, id->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_ID, "id-authz", ring, 9);
+    if (result != NULL) {
+        id = &result->token.id;
+        is_string("testuser", id->subject, "...subject");
+        is_string("other", id->authz_subject, "...authz subject");
+        is_string("webkdc", id->auth, "...subject auth");
+        ok(id->auth_data == NULL, "...subject auth data");
+        is_int(0, id->auth_data_len, "...subject auth data length");
+        is_string(NULL, id->initial_factors, "...initial factors");
+        is_string(NULL, id->session_factors, "...session factors");
+        is_int(0, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_ID, "id-krb5", ring, 9);
     if (result != NULL) {
         id = &result->token.id;
         is_string(NULL, id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("krb5", id->auth, "...subject auth");
         ok(memcmp("s=foo\0s=bar;;da", id->auth_data, 15) == 0,
                   "...subject auth data");
@@ -319,10 +355,26 @@ main(void)
         is_int(1308777900, id->creation, "...creation");
         is_int(2147483600, id->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_ID, "id-krb5-authz", ring, 9);
+    if (result != NULL) {
+        id = &result->token.id;
+        is_string(NULL, id->subject, "...subject");
+        is_string("otheruser", id->authz_subject, "...authz subject");
+        is_string("krb5", id->auth, "...subject auth");
+        ok(memcmp("s=foo\0s=bar;;da", id->auth_data, 15) == 0,
+                  "...subject auth data");
+        is_int(15, id->auth_data_len, "...subject auth data length");
+        is_string(NULL, id->initial_factors, "...initial factors");
+        is_string(NULL, id->session_factors, "...session factors");
+        is_int(0, id->loa, "...level of assurance");
+        is_int(1308777900, id->creation, "...creation");
+        is_int(2147483600, id->expiration, "...expiration");
+    }
     result = check_decode(ctx, WA_TOKEN_ID, "id-minimal", ring, 9);
     if (result != NULL) {
         id = &result->token.id;
         is_string("testuser", id->subject, "...subject");
+        is_string(NULL, id->authz_subject, "...authz subject");
         is_string("webkdc", id->auth, "...subject auth");
         ok(id->auth_data == NULL, "...subject auth data");
         is_int(0, id->auth_data_len, "...subject auth data length");
@@ -335,9 +387,11 @@ main(void)
 
     /* Test decoding error cases for id tokens. */
     check_error(ctx, WA_TOKEN_ID, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+                "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_ID, "id-type", ring, WA_ERR_CORRUPT,
+                "unknown auth type foo in id token");
     check_error(ctx, WA_TOKEN_ID, "login-pass", ring, WA_ERR_CORRUPT,
-                "wrong token type login while decoding id token");
+                "wrong token type login, expected id");
 
     /* Test decoding of login tokens. */
     result = check_decode(ctx, WA_TOKEN_LOGIN, "login-pass", ring, 4);
@@ -358,16 +412,21 @@ main(void)
     }
 
     /* Test decoding error cases for login tokens. */
-    check_error(ctx, WA_TOKEN_LOGIN, "login-empty", ring, WA_ERR_CORRUPT,
-                "decoding attribute ct failed");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-both", ring, WA_ERR_CORRUPT,
+                "both password and otp set in login token");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-missing", ring, WA_ERR_CORRUPT,
+                "decoding creation");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-neither", ring, WA_ERR_CORRUPT,
+                "either password or otp required in login token");
     check_error(ctx, WA_TOKEN_LOGIN, "proxy-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type proxy while decoding login token");
+                "wrong token type proxy, expected login");
 
     /* Test decoding of a proxy token. */
     result = check_decode(ctx, WA_TOKEN_PROXY, "proxy-ok", ring, 9);
     if (result != NULL) {
         proxy = &result->token.proxy;
         is_string("testuser", proxy->subject, "...subject");
+        is_string(NULL, proxy->authz_subject, "...authz subject");
         is_string("krb5", proxy->type, "...type");
         ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
            "...WebKDC proxy token");
@@ -378,14 +437,31 @@ main(void)
         is_int(1308777900, proxy->creation, "...creation");
         is_int(2147483600, proxy->expiration, "...expiration");
     }
+    result = check_decode(ctx, WA_TOKEN_PROXY, "proxy-authz", ring, 9);
+    if (result != NULL) {
+        proxy = &result->token.proxy;
+        is_string("testuser", proxy->subject, "...subject");
+        is_string("other", proxy->authz_subject, "...authz subject");
+        is_string("krb5", proxy->type, "...type");
+        ok(memcmp("s=foo\0s=bar;;da", proxy->webkdc_proxy, 15) == 0,
+           "...WebKDC proxy token");
+        is_int(15, proxy->webkdc_proxy_len, "...WebKDC proxy token length");
+        is_string(NULL, proxy->initial_factors, "...initial factors");
+        is_string(NULL, proxy->session_factors, "...session factors");
+        is_int(0, proxy->loa, "...level of assurance");
+        is_int(1308777900, proxy->creation, "...creation");
+        is_int(2147483600, proxy->expiration, "...expiration");
+    }
 
     /* Test decoding error cases for proxy tokens. */
-    check_error(ctx, WA_TOKEN_PROXY, "proxy-empty", ring, WA_ERR_CORRUPT,
-                "decoding attribute s failed");
-    check_error(ctx, WA_TOKEN_PROXY, "proxy-exp", ring, WA_ERR_TOKEN_EXPIRED,
-                "token expired at 1308871632");
+    check_error(ctx, WA_TOKEN_PROXY, "proxy-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_PROXY, "proxy-missing", ring, WA_ERR_CORRUPT,
+                "decoding subject");
+    check_error(ctx, WA_TOKEN_PROXY, "proxy-type", ring, WA_ERR_CORRUPT,
+                "unknown proxy type foo in proxy token");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
-                "wrong token type req while decoding proxy token");
+                "wrong token type req, expected proxy");
 
     /* Test decoding of several types of request tokens. */
     result = check_decode(ctx, WA_TOKEN_REQUEST, "req-id", ring, 12);
@@ -470,8 +546,17 @@ main(void)
     }
 
     /* Test decoding error cases for request tokens. */
+    check_error(ctx, WA_TOKEN_REQUEST, "req-auth-type", ring,
+                WA_ERR_CORRUPT, "unknown auth type foo in request token");
+    check_error(ctx, WA_TOKEN_REQUEST, "req-bad-command", ring,
+                WA_ERR_CORRUPT,
+                "type not valid with command in request token");
+    check_error(ctx, WA_TOKEN_REQUEST, "req-proxy-type", ring, WA_ERR_CORRUPT,
+                "unknown proxy type foo in request token");
+    check_error(ctx, WA_TOKEN_REQUEST, "req-type", ring, WA_ERR_CORRUPT,
+                "unknown requested token type foo in request token");
     check_error(ctx, WA_TOKEN_REQUEST, "wkproxy-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type webkdc-proxy while decoding req token");
+                "wrong token type webkdc-proxy, expected req");
 
     /* Test decoding of several webkdc-proxy tokens. */
     result = check_decode(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-ok", ring, 9);
@@ -505,13 +590,17 @@ main(void)
     }
 
     /* Test decoding error cases for webkdc-proxy tokens. */
-    check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
+    check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-type", ring,
+                WA_ERR_CORRUPT,
+                "unknown proxy type foo in webkdc-proxy token");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type app while decoding webkdc-proxy token");
+                "wrong token type app, expected webkdc-proxy");
 
     /* Test decoding of a webkdc-service token. */
-    result = check_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-ok", ring, 5);
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-ok",
+                          ring, 5);
     if (result != NULL) {
         service = &result->token.webkdc_service;
         is_string("krb5:service/foo@EXAMPLE.COM", service->subject,
@@ -524,10 +613,10 @@ main(void)
     }
 
     /* Test decoding error cases for webkdc-service tokens. */
-    check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "service-exp", ring,
-                WA_ERR_TOKEN_EXPIRED, "token expired at 1308871632");
+    check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type app while decoding webkdc-service token");
+                "wrong token type app, expected webkdc-service");
 
     /*
      * Now test for the generic decoding function.  We'll run each of the
@@ -586,7 +675,7 @@ main(void)
         is_string("krb5:service/foo@EXAMPLE.COM", wkproxy->proxy_subject,
                   "...proxy subject");
     }
-    result = check_decode(ctx, WA_TOKEN_ANY, "service-ok", ring, 2);
+    result = check_decode(ctx, WA_TOKEN_ANY, "wkservice-ok", ring, 2);
     if (result != NULL) {
         is_int(WA_TOKEN_WEBKDC_SERVICE, result->type, "...with correct type");
         service = &result->token.webkdc_service;
