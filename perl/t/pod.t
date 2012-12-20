@@ -18,7 +18,7 @@ use Test::More;
 
 # Skip tests if Test::Pod is not installed.
 if (!eval { require Test::Pod }) {
-    plan skip_all => 'Test::Pod required to test POD formatting';
+    plan skip_all => 'Test::Pod required to test POD syntax';
 }
 Test::Pod->import;
 

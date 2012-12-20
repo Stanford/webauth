@@ -15,7 +15,7 @@ use Test::More;
 # Skip tests if Test::Strict is not installed.
 eval { require Test::Strict };
 if ($@) {
-    plan skip_all => 'Test::Strict required to test Perl scripts';
+    plan skip_all => 'Test::Strict required to test Perl syntax';
     $Test::Strict::TEST_WARNINGS = 0; # suppress warning
 }
 Test::Strict->import;
