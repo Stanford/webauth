@@ -5,6 +5,11 @@
 # Checks all Perl scripts in the tree for problems uncovered by Test::Strict.
 # This includes using strict and warnings for every script and ensuring they
 # all pass a syntax check.  Currently, test suite coverage is not checked.
+# This test is disabled unless RRA_MAINTAINER_TESTS is set, since some scripts
+# may require dependencies that aren't necessarily present.
+#
+# This test currently does not arrange to add any in-tree Perl modules to the
+# library search path.
 #
 # The canonical version of this file is maintained in the rra-c-util package,
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
