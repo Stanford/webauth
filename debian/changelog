@@ -36,7 +36,7 @@ webauth (4.4.0-1) experimental; urgency=low
   * Update standards version to 3.9.4.
     - Update Vcs-Git to specify the Debian packaging branch.
 
- -- Russ Allbery <rra@debian.org>  Wed, 19 Dec 2012 18:18:57 -0800
+ -- Russ Allbery <rra@debian.org>  Wed, 19 Dec 2012 20:57:09 -0800
 
 webauth (4.3.3-1) experimental; urgency=low
 
