@@ -78,7 +78,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(99);
+    plan(100);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -229,7 +229,7 @@ main(void)
               webauth_error_message(ctx, status), "...with correct error");
 
     /* Try the query again with ignore_failure set. */
-    config.ignore_failure = 1;
+    config.ignore_failure = true;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
     status = webauth_user_info(ctx, "delay", NULL, 0, url, &info);
@@ -268,6 +268,10 @@ main(void)
               webauth_error_message(ctx, status), "...with correct error");
 
     /* Attempt a login to a restricted site.  This should return an error. */
+    config.ignore_failure = false;
+    config.timeout = 0;
+    status = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, status, "Config back to normal");
     status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, &info);
     is_int(status, WA_ERR_NONE, "Metadata for restricted URL succeeds");
     if (info == NULL)
@@ -283,5 +287,7 @@ main(void)
         ok(info->logins == NULL, "...logins is NULL");
     }
 
+    /* Clean up. */
+    webauth_context_free(ctx);
     return 0;
 }

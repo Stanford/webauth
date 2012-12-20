@@ -1656,6 +1656,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             request_token = get_elem_text(rc, child, mwk_func);
             if (request_token == NULL)
                 return MWK_ERROR;
+        } else if (strcmp(child->name, "authzSubject") == 0) {
+            request.authz_subject = get_elem_text(rc, child, mwk_func);
+            if (request.authz_subject == NULL)
+                return MWK_ERROR;
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
                 return MWK_ERROR;
@@ -1811,6 +1815,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         ap_rvputs(rc->r, "</proxyTokens>", NULL);
     }
+
     /* put out return-url */
     ap_rvputs(rc->r,"<returnUrl>",
               apr_xml_quote_string(rc->r->pool, response->return_url, 1),
@@ -1822,12 +1827,35 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
               apr_xml_quote_string(rc->r->pool, response->requester, 1),
               "</requesterSubject>", NULL);
 
-    /* subject */
+    /* subject (if present) */
     if (response->subject != NULL) {
         ap_rvputs(rc->r,
                   "<subject>",
                   apr_xml_quote_string(rc->r->pool, response->subject, 1),
                   "</subject>", NULL);
+    }
+
+    /* authzSubject (if present) */
+    if (response->authz_subject != NULL) {
+        ap_rvputs(rc->r,
+                  "<authzSubject>",
+                  apr_xml_quote_string(rc->r->pool, response->authz_subject,
+                                       1),
+                  "</authzSubject>", NULL);
+    }
+
+    /* permittedAuthzSubjects (if present) */
+    if (response->permitted_authz != NULL) {
+        const char *authz;
+
+        ap_rvputs(rc->r, "<permittedAuthzSubjects>", NULL);
+        for (i = 0; i < response->permitted_authz->nelts; i++) {
+            authz = APR_ARRAY_IDX(response->permitted_authz, i, const char *);
+            ap_rvputs(rc->r, "<authzSubject>",
+                      apr_xml_quote_string(rc->r->pool, authz, 1),
+                      "</authzSubject>", NULL);
+        }
+        ap_rvputs(rc->r, "</permittedAuthzSubjects>", NULL);
     }
 
     /* requestedToken, don't need to quote */
@@ -1888,7 +1916,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     ap_rflush(rc->r);
     ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
                  "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
+                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s%s",
                  rc->r->useragent_ip,
                  (request.remote_ip == NULL ? "" : request.remote_ip),
                  response->requester, log_escape(rc, response->return_url),
@@ -1900,6 +1928,9 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                  apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
                  (login_type == NULL) ? "" : " login=",
                  (login_type == NULL) ? "" : login_type,
+                 (response->authz_subject == NULL ? "" :
+                  apr_psprintf(rc->r->pool, " authz=%s",
+                               response->authz_subject)),
                  (response->initial_factors == NULL ? "" :
                   apr_psprintf(rc->r->pool, " ifactors=%s",
                                response->initial_factors)),
@@ -1925,10 +1956,11 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     static const char *mwk_func = "handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
-    char *sc_data, *pd_data;
-    void *dpd_data, *tgt;
+    char *bsc_data = NULL;
+    char *bpd_data = NULL;
+    void *sc_data, *pd_data, *dpd_data, *tgt;
     const char *token_data;
-    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len;
+    size_t sc_len, pd_len, dpd_len, tgt_len;
     int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
@@ -1937,17 +1969,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     struct webauth_token token;
 
     *subject_out = apr_pstrdup(rc->r->pool, "<unknown>");
-    sc_data = NULL;
-    pd_data = NULL;
-
     client_principal = NULL;
     ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "proxyData") == 0) {
-            pd_data = get_elem_text(rc, child, mwk_func);
-            if (pd_data == NULL)
+            bpd_data = get_elem_text(rc, child, mwk_func);
+            if (bpd_data == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
             const char *at = get_attr_value(rc, child, "type",  1, mwk_func);
@@ -1961,8 +1990,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
                                          mwk_func, true);
             }
-            sc_data = get_elem_text(rc, child, mwk_func);
-            if (sc_data == NULL)
+            bsc_data = get_elem_text(rc, child, mwk_func);
+            if (bsc_data == NULL)
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
@@ -1971,42 +2000,26 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found proxyData */
-    if (pd_data == NULL) {
+    if (bpd_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <proxyData>",
                                  mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
-    if (sc_data == NULL) {
+    if (bsc_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
                                  mwk_func, true);
     }
 
-    sc_blen = strlen(sc_data);
-    status = webauth_base64_decode(sc_data, sc_blen,
-                                   sc_data, &sc_len,
-                                   sc_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                                              "webauth_base64_decode",
-                                              "subjectCredential");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
+    /* Decode the base64 encoding. */
+    sc_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bsc_data));
+    sc_len = apr_base64_decode(sc_data, bsc_data);
+    pd_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bpd_data));
+    pd_len = apr_base64_decode(pd_data, bpd_data);
 
-    pd_blen = strlen(pd_data);
-    status = webauth_base64_decode(pd_data, pd_blen,
-                                   pd_data, &pd_len,
-                                   pd_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                        "webauth_base64_decode", "proxyData");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
-
+    /* Process the Kerberos authenticator and encrypted data. */
     kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
     if (kc == NULL) {
@@ -2383,11 +2396,13 @@ handler_hook(request_rec *r)
 
     rc.r = r;
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
-    config.keytab_path = rc.sconf->keytab_path;
-    config.principal = rc.sconf->keytab_principal;
-    config.proxy_lifetime = rc.sconf->proxy_lifetime;
+    config.id_acl_path      = rc.sconf->identity_acl_path;
+    config.keytab_path      = rc.sconf->keytab_path;
+    config.principal        = rc.sconf->keytab_principal;
+    config.proxy_lifetime   = rc.sconf->proxy_lifetime;
+    config.login_time_limit = rc.sconf->login_time_limit;
     config.permitted_realms = rc.sconf->permitted_realms;
-    config.local_realms = rc.sconf->local_realms;
+    config.local_realms     = rc.sconf->local_realms;
     status = webauth_webkdc_config(rc.ctx, &config);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
@@ -2451,7 +2466,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         webkdc_config_init(scheck, sconf, pconf);
     }
 
-    ap_add_version_component(pconf, "WebKDC/" PACKAGE_VERSION);
+    ap_add_version_component(pconf, "WebKDC/" VERSION);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,

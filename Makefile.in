@@ -70,15 +70,16 @@ host_triplet = @host@
 bin_PROGRAMS = tools/wa_keyring$(EXEEXT)
 @BUILD_PERL_TRUE@am__append_4 = perl/WebAuth.o
 @BUILD_PERL_TRUE@am__append_5 = install-data-local-perl
-check_PROGRAMS = tests/runtests$(EXEEXT) tests/lib/attrs-t$(EXEEXT) \
-	tests/lib/base64-t$(EXEEXT) tests/lib/factors-t$(EXEEXT) \
+check_PROGRAMS = tests/runtests$(EXEEXT) \
+	tests/lib/apr-buffer-t$(EXEEXT) tests/lib/factors-t$(EXEEXT) \
 	tests/lib/hex-t$(EXEEXT) tests/lib/interval-t$(EXEEXT) \
 	tests/lib/keyring-t$(EXEEXT) tests/lib/keys-t$(EXEEXT) \
-	tests/lib/krb5-t$(EXEEXT) tests/lib/krb5-tgt-t$(EXEEXT) \
-	tests/lib/userinfo-t$(EXEEXT) \
+	tests/lib/krb5-t$(EXEEXT) tests/lib/krb5-cred-t$(EXEEXT) \
+	tests/lib/krb5-tgt-t$(EXEEXT) tests/lib/userinfo-t$(EXEEXT) \
+	tests/lib/token-crypto-t$(EXEEXT) \
 	tests/lib/token-decode-t$(EXEEXT) \
 	tests/lib/token-encode-t$(EXEEXT) \
-	tests/lib/webkdc-krb-t$(EXEEXT) \
+	tests/lib/was-cache-t$(EXEEXT) tests/lib/webkdc-krb-t$(EXEEXT) \
 	tests/lib/webkdc-login-t$(EXEEXT) \
 	tests/lib/webkdc-mf-t$(EXEEXT) \
 	tests/portable/asprintf-t$(EXEEXT) \
@@ -87,12 +88,13 @@ check_PROGRAMS = tests/runtests$(EXEEXT) tests/lib/attrs-t$(EXEEXT) \
 	tests/portable/snprintf-t$(EXEEXT) \
 	tests/portable/strlcat-t$(EXEEXT) \
 	tests/portable/strlcpy-t$(EXEEXT) \
+	tests/portable/strndup-t$(EXEEXT) \
 	tests/util/messages-t$(EXEEXT) tests/util/xmalloc$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(am__dist_image_DATA_DIST) \
 	$(am__dist_template_DATA_DIST) \
 	$(am__dist_weblogin_SCRIPTS_DIST) $(dist_man_MANS) \
-	$(include_HEADERS) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config-mod.h.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure $(top_srcdir)/perl/Makefile.PL.in \
 	$(top_srcdir)/perl/t/lib/RRA/TAP/Automake.pm.in \
@@ -101,7 +103,8 @@ DIST_COMMON = README $(am__configure_deps) $(am__dist_image_DATA_DIST) \
 	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
 	build-aux/install-sh build-aux/ltmain.sh build-aux/missing \
 	portable/asprintf.c portable/mkstemp.c portable/setenv.c \
-	portable/snprintf.c portable/strlcat.c portable/strlcpy.c
+	portable/snprintf.c portable/strlcat.c portable/strlcpy.c \
+	portable/strndup.c
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/apache.m4 \
 	$(top_srcdir)/m4/apr.m4 $(top_srcdir)/m4/aprutil.m4 \
@@ -179,7 +182,7 @@ am__installdirs = "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(weblogindir)" \
 	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" \
 	"$(DESTDIR)$(templatedir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(includedir)" "$(DESTDIR)$(webauthincludedir)" \
+	"$(DESTDIR)$(webauthincludedir)" \
 	"$(DESTDIR)$(webauthincludedir)"
 LTLIBRARIES = $(apache_LTLIBRARIES) $(lib_LTLIBRARIES) \
 	$(noinst_LTLIBRARIES)
@@ -191,16 +194,20 @@ lib_libwebauth_la_DEPENDENCIES = portable/libportable.la \
 am_lib_libwebauth_la_OBJECTS = lib/lib_libwebauth_la-apr-buffer.lo \
 	lib/lib_libwebauth_la-attr-decode.lo \
 	lib/lib_libwebauth_la-attr-encode.lo \
-	lib/lib_libwebauth_la-attrs.lo lib/lib_libwebauth_la-base64.lo \
 	lib/lib_libwebauth_la-context.lo \
 	lib/lib_libwebauth_la-factors.lo \
+	lib/lib_libwebauth_la-file-io.lo lib/lib_libwebauth_la-hex.lo \
 	lib/lib_libwebauth_la-keyring.lo lib/lib_libwebauth_la-keys.lo \
-	lib/lib_libwebauth_la-krb5.lo lib/lib_libwebauth_la-misc.lo \
+	lib/lib_libwebauth_la-krb5.lo \
+	lib/lib_libwebauth_la-rules-cache.lo \
+	lib/lib_libwebauth_la-rules-keyring.lo \
+	lib/lib_libwebauth_la-rules-krb5.lo \
+	lib/lib_libwebauth_la-rules-tokens.lo \
 	lib/lib_libwebauth_la-token-crypto.lo \
-	lib/lib_libwebauth_la-token-decode.lo \
 	lib/lib_libwebauth_la-token-encode.lo \
 	lib/lib_libwebauth_la-userinfo.lo \
 	lib/lib_libwebauth_la-util.lo \
+	lib/lib_libwebauth_la-was-cache.lo \
 	lib/lib_libwebauth_la-webkdc-config.lo \
 	lib/lib_libwebauth_la-webkdc-login.lo \
 	lib/lib_libwebauth_la-xml.lo
@@ -265,23 +272,22 @@ am_portable_libportable_la_OBJECTS =  \
 portable_libportable_la_OBJECTS =  \
 	$(am_portable_libportable_la_OBJECTS)
 PROGRAMS = $(bin_PROGRAMS)
-tests_lib_attrs_t_SOURCES = tests/lib/attrs-t.c
-tests_lib_attrs_t_OBJECTS = tests/lib/attrs-t.$(OBJEXT)
-tests_lib_attrs_t_DEPENDENCIES = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
-tests_lib_base64_t_SOURCES = tests/lib/base64-t.c
-tests_lib_base64_t_OBJECTS = tests/lib/base64-t.$(OBJEXT)
-tests_lib_base64_t_DEPENDENCIES = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+am_tests_lib_apr_buffer_t_OBJECTS =  \
+	lib/tests_lib_apr_buffer_t-apr-buffer.$(OBJEXT) \
+	tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.$(OBJEXT)
+tests_lib_apr_buffer_t_OBJECTS = $(am_tests_lib_apr_buffer_t_OBJECTS)
+tests_lib_apr_buffer_t_DEPENDENCIES = tests/tap/libtap.a \
+	portable/libportable.la $(am__DEPENDENCIES_1)
 tests_lib_factors_t_SOURCES = tests/lib/factors-t.c
 tests_lib_factors_t_OBJECTS =  \
 	tests/lib/tests_lib_factors_t-factors-t.$(OBJEXT)
 tests_lib_factors_t_DEPENDENCIES = tests/tap/libtap.a \
 	lib/libwebauth.la portable/libportable.la \
 	$(am__DEPENDENCIES_1)
-tests_lib_hex_t_SOURCES = tests/lib/hex-t.c
-tests_lib_hex_t_OBJECTS = tests/lib/hex-t.$(OBJEXT)
-tests_lib_hex_t_DEPENDENCIES = tests/tap/libtap.a lib/libwebauth.la \
+am_tests_lib_hex_t_OBJECTS = lib/tests_lib_hex_t-hex.$(OBJEXT) \
+	tests/lib/tests_lib_hex_t-hex-t.$(OBJEXT)
+tests_lib_hex_t_OBJECTS = $(am_tests_lib_hex_t_OBJECTS)
+tests_lib_hex_t_DEPENDENCIES = tests/tap/libtap.a \
 	portable/libportable.la
 tests_lib_interval_t_SOURCES = tests/lib/interval-t.c
 tests_lib_interval_t_OBJECTS = tests/lib/interval-t.$(OBJEXT)
@@ -296,12 +302,28 @@ tests_lib_keys_t_SOURCES = tests/lib/keys-t.c
 tests_lib_keys_t_OBJECTS = tests/lib/keys-t.$(OBJEXT)
 tests_lib_keys_t_DEPENDENCIES = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
+tests_lib_krb5_cred_t_SOURCES = tests/lib/krb5-cred-t.c
+tests_lib_krb5_cred_t_OBJECTS =  \
+	tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.$(OBJEXT)
+tests_lib_krb5_cred_t_DEPENDENCIES = tests/tap/libtap.a \
+	lib/libwebauth.la util/libutil.a portable/libportable.la \
+	$(am__DEPENDENCIES_1)
+tests_lib_krb5_cred_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_krb5_cred_t_LDFLAGS) \
+	$(LDFLAGS) -o $@
 tests_lib_krb5_t_SOURCES = tests/lib/krb5-t.c
-tests_lib_krb5_t_OBJECTS = tests/lib/krb5-t.$(OBJEXT)
+tests_lib_krb5_t_OBJECTS =  \
+	tests/lib/tests_lib_krb5_t-krb5-t.$(OBJEXT)
 tests_lib_krb5_t_DEPENDENCIES = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+	portable/libportable.la $(am__DEPENDENCIES_1)
+tests_lib_krb5_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_krb5_t_LDFLAGS) $(LDFLAGS) \
+	-o $@
 tests_lib_krb5_tgt_t_SOURCES = tests/lib/krb5-tgt-t.c
-tests_lib_krb5_tgt_t_OBJECTS = tests/lib/krb5-tgt-t.$(OBJEXT)
+tests_lib_krb5_tgt_t_OBJECTS =  \
+	tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.$(OBJEXT)
 tests_lib_krb5_tgt_t_DEPENDENCIES = tests/tap/libtap.a \
 	lib/libwebauth.la util/libutil.a portable/libportable.la \
 	$(am__DEPENDENCIES_1)
@@ -309,6 +331,10 @@ tests_lib_krb5_tgt_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_krb5_tgt_t_LDFLAGS) \
 	$(LDFLAGS) -o $@
+tests_lib_token_crypto_t_SOURCES = tests/lib/token-crypto-t.c
+tests_lib_token_crypto_t_OBJECTS = tests/lib/token-crypto-t.$(OBJEXT)
+tests_lib_token_crypto_t_DEPENDENCIES = tests/tap/libtap.a \
+	lib/libwebauth.la util/libutil.a portable/libportable.la
 tests_lib_token_decode_t_SOURCES = tests/lib/token-decode-t.c
 tests_lib_token_decode_t_OBJECTS = tests/lib/token-decode-t.$(OBJEXT)
 tests_lib_token_decode_t_DEPENDENCIES = tests/tap/libtap.a \
@@ -327,6 +353,10 @@ tests_lib_userinfo_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(tests_lib_userinfo_t_LDFLAGS) \
 	$(LDFLAGS) -o $@
+tests_lib_was_cache_t_SOURCES = tests/lib/was-cache-t.c
+tests_lib_was_cache_t_OBJECTS = tests/lib/was-cache-t.$(OBJEXT)
+tests_lib_was_cache_t_DEPENDENCIES = tests/tap/libtap.a \
+	lib/libwebauth.la util/libutil.a portable/libportable.la
 tests_lib_webkdc_krb_t_SOURCES = tests/lib/webkdc-krb-t.c
 tests_lib_webkdc_krb_t_OBJECTS =  \
 	tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT)
@@ -399,6 +429,13 @@ tests_portable_strlcpy_t_OBJECTS =  \
 	$(am_tests_portable_strlcpy_t_OBJECTS)
 tests_portable_strlcpy_t_DEPENDENCIES = tests/tap/libtap.a \
 	portable/libportable.la
+am_tests_portable_strndup_t_OBJECTS =  \
+	tests/portable/strndup-t.$(OBJEXT) \
+	tests/portable/strndup.$(OBJEXT)
+tests_portable_strndup_t_OBJECTS =  \
+	$(am_tests_portable_strndup_t_OBJECTS)
+tests_portable_strndup_t_DEPENDENCIES = tests/tap/libtap.a \
+	portable/libportable.la
 tests_runtests_SOURCES = tests/runtests.c
 tests_runtests_OBJECTS = tests/tests_runtests-runtests.$(OBJEXT)
 tests_runtests_LDADD = $(LDADD)
@@ -447,19 +484,22 @@ SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	$(modules_ldap_mod_webauthldap_la_SOURCES) \
 	$(modules_webauth_mod_webauth_la_SOURCES) \
 	$(modules_webkdc_mod_webkdc_la_SOURCES) \
-	$(portable_libportable_la_SOURCES) tests/lib/attrs-t.c \
-	tests/lib/base64-t.c tests/lib/factors-t.c tests/lib/hex-t.c \
-	tests/lib/interval-t.c tests/lib/keyring-t.c \
-	tests/lib/keys-t.c tests/lib/krb5-t.c tests/lib/krb5-tgt-t.c \
+	$(portable_libportable_la_SOURCES) \
+	$(tests_lib_apr_buffer_t_SOURCES) tests/lib/factors-t.c \
+	$(tests_lib_hex_t_SOURCES) tests/lib/interval-t.c \
+	tests/lib/keyring-t.c tests/lib/keys-t.c \
+	tests/lib/krb5-cred-t.c tests/lib/krb5-t.c \
+	tests/lib/krb5-tgt-t.c tests/lib/token-crypto-t.c \
 	tests/lib/token-decode-t.c tests/lib/token-encode-t.c \
-	tests/lib/userinfo-t.c tests/lib/webkdc-krb-t.c \
-	tests/lib/webkdc-login-t.c tests/lib/webkdc-mf-t.c \
-	$(tests_portable_asprintf_t_SOURCES) \
+	tests/lib/userinfo-t.c tests/lib/was-cache-t.c \
+	tests/lib/webkdc-krb-t.c tests/lib/webkdc-login-t.c \
+	tests/lib/webkdc-mf-t.c $(tests_portable_asprintf_t_SOURCES) \
 	$(tests_portable_mkstemp_t_SOURCES) \
 	$(tests_portable_setenv_t_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
 	$(tests_portable_strlcat_t_SOURCES) \
-	$(tests_portable_strlcpy_t_SOURCES) tests/runtests.c \
+	$(tests_portable_strlcpy_t_SOURCES) \
+	$(tests_portable_strndup_t_SOURCES) tests/runtests.c \
 	tests/util/messages-t.c tests/util/xmalloc.c \
 	tools/wa_keyring.c
 DIST_SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
@@ -468,19 +508,22 @@ DIST_SOURCES = $(tests_tap_libtap_a_SOURCES) $(util_libutil_a_SOURCES) \
 	$(modules_ldap_mod_webauthldap_la_SOURCES) \
 	$(modules_webauth_mod_webauth_la_SOURCES) \
 	$(modules_webkdc_mod_webkdc_la_SOURCES) \
-	$(portable_libportable_la_SOURCES) tests/lib/attrs-t.c \
-	tests/lib/base64-t.c tests/lib/factors-t.c tests/lib/hex-t.c \
-	tests/lib/interval-t.c tests/lib/keyring-t.c \
-	tests/lib/keys-t.c tests/lib/krb5-t.c tests/lib/krb5-tgt-t.c \
+	$(portable_libportable_la_SOURCES) \
+	$(tests_lib_apr_buffer_t_SOURCES) tests/lib/factors-t.c \
+	$(tests_lib_hex_t_SOURCES) tests/lib/interval-t.c \
+	tests/lib/keyring-t.c tests/lib/keys-t.c \
+	tests/lib/krb5-cred-t.c tests/lib/krb5-t.c \
+	tests/lib/krb5-tgt-t.c tests/lib/token-crypto-t.c \
 	tests/lib/token-decode-t.c tests/lib/token-encode-t.c \
-	tests/lib/userinfo-t.c tests/lib/webkdc-krb-t.c \
-	tests/lib/webkdc-login-t.c tests/lib/webkdc-mf-t.c \
-	$(tests_portable_asprintf_t_SOURCES) \
+	tests/lib/userinfo-t.c tests/lib/was-cache-t.c \
+	tests/lib/webkdc-krb-t.c tests/lib/webkdc-login-t.c \
+	tests/lib/webkdc-mf-t.c $(tests_portable_asprintf_t_SOURCES) \
 	$(tests_portable_mkstemp_t_SOURCES) \
 	$(tests_portable_setenv_t_SOURCES) \
 	$(tests_portable_snprintf_t_SOURCES) \
 	$(tests_portable_strlcat_t_SOURCES) \
-	$(tests_portable_strlcpy_t_SOURCES) tests/runtests.c \
+	$(tests_portable_strlcpy_t_SOURCES) \
+	$(tests_portable_strndup_t_SOURCES) tests/runtests.c \
 	tests/util/messages-t.c tests/util/xmalloc.c \
 	tools/wa_keyring.c
 am__can_run_installinfo = \
@@ -501,8 +544,7 @@ am__dist_template_DATA_DIST = weblogin/templates/confirm.tmpl \
 	weblogin/templates/pwchange.tmpl
 DATA = $(dist_image_DATA) $(dist_template_DATA) \
 	$(nodist_pkgconfig_DATA)
-HEADERS = $(include_HEADERS) $(nodist_webauthinclude_HEADERS) \
-	$(webauthinclude_HEADERS)
+HEADERS = $(nodist_webauthinclude_HEADERS) $(webauthinclude_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -696,12 +738,12 @@ PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
 	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/exception.t perl/t/krb5.t	    \
-	perl/t/lib/Util.pm perl/t/keyring.t perl/t/misc.t		    \
-	perl/t/page-pwchange.t perl/t/pending-expire.t			    \
-	perl/t/pod-spelling.t perl/t/pod.t perl/t/token-decode.t	    \
-	perl/t/token-encode.t perl/t/web-request.t perl/t/web-response.t    \
-	perl/t/webauth.t perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t	    \
-	perl/typemap
+	perl/t/lib/Util.pm perl/t/keyring.t perl/t/minimum-version.t	    \
+	perl/t/misc.t perl/t/page-pwchange.t perl/t/pending-expire.t	    \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/strict.t		    \
+	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
+	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
+	perl/t/weblogin.t perl/t/xml.t perl/typemap
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -719,15 +761,21 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
-	lib/internal.h lib/libwebauth.map lib/libwebauth.pc.in		    \
-	lib/libwebauth.sym perl/MANIFEST perl/MANIFEST.SKIP tests/TESTS	    \
-	tests/config/README tests/data/cmd-webkdc tests/data/keyring	    \
-	tests/data/tokens.conf tests/data/tokens tests/data/xml		    \
-	tests/mod_webauth tests/tap/libtap.sh tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/wa_keyring.pod tools/webauth-make-tokens \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+	lib/encoding-rules lib/internal.h lib/libwebauth.map		    \
+	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
+	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
+	tests/data/cmd-webkdc tests/data/creds tests/data/id.acl	    \
+	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
+	tests/data/perlcriticrc tests/data/perltidyrc			    \
+	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
+	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
+	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
+	tests/perl/minimum-version-t tests/perl/strict-t		    \
+	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
+	tools/wa_keyring.pod tools/weblogin-passcheck			    \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 
 # WebAuth library include files are in include.  Remember, when overriding
@@ -747,26 +795,27 @@ util_libutil_a_SOURCES = util/macros.h util/messages.c util/messages.h	\
 @HAVE_LD_VERSION_SCRIPT_FALSE@VERSION_LDFLAGS = -export-symbols ${srcdir}/lib/libwebauth.sym
 @HAVE_LD_VERSION_SCRIPT_TRUE@VERSION_LDFLAGS = -Wl,--version-script=${srcdir}/lib/libwebauth.map
 lib_LTLIBRARIES = lib/libwebauth.la
-include_HEADERS = include/webauth.h
 webauthincludedir = $(includedir)/webauth
 webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
 	include/webauth/krb5.h include/webauth/tokens.h			\
-	include/webauth/util.h include/webauth/webkdc.h
+	include/webauth/util.h include/webauth/was.h			\
+	include/webauth/webkdc.h
 
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
-	lib/attr-encode.c lib/attrs.c lib/base64.c lib/context.c	    \
-	lib/factors.c lib/keyring.c lib/keys.c lib/krb5.c lib/internal.h    \
-	lib/misc.c lib/token-crypto.c lib/token-decode.c lib/token-encode.c \
-	lib/userinfo.c lib/util.c lib/webkdc-config.c lib/webkdc-login.c    \
-	lib/xml.c
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		\
+	lib/attr-encode.c lib/context.c lib/factors.c lib/file-io.c	\
+	lib/hex.c lib/internal.h lib/keyring.c lib/keys.c lib/krb5.c	\
+	lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c		\
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	\
+	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	\
+	lib/webkdc-login.c lib/xml.c
 
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
 	$(CRYPTO_CPPFLAGS)
 
-lib_libwebauth_la_LDFLAGS = -version-info 8:0:0 $(VERSION_LDFLAGS)	    \
+lib_libwebauth_la_LDFLAGS = -version-info 9:0:0 $(VERSION_LDFLAGS)	    \
 	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
 
@@ -890,19 +939,18 @@ tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 
 
 # All of the test programs.
-tests_lib_attrs_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
-
-tests_lib_base64_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+tests_lib_apr_buffer_t_SOURCES = lib/apr-buffer.c tests/lib/apr-buffer-t.c
+tests_lib_apr_buffer_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_apr_buffer_t_LDADD = tests/tap/libtap.a portable/libportable.la \
+	$(APR_LIBS)
 
 tests_lib_factors_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_factors_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la $(APR_LIBS)
 
-tests_lib_hex_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
-
+tests_lib_hex_t_SOURCES = lib/hex.c tests/lib/hex-t.c
+tests_lib_hex_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_hex_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_lib_interval_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 
@@ -913,22 +961,36 @@ tests_lib_keyring_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 tests_lib_keys_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	portable/libportable.la
 
+tests_lib_krb5_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	portable/libportable.la
+	portable/libportable.la $(KRB5_LIBS)
 
-tests_lib_krb5_tgt_t_LDFLAGS = $(KRB5_LDFLAGS)
-tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
+
+tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS)
+tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la $(APRUTIL_LIBS)
 
 tests_lib_userinfo_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_userinfo_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_userinfo_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 
+tests_lib_token_crypto_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la
+
 tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	util/libutil.a portable/libportable.la
+
+tests_lib_was_cache_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 
 tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
@@ -970,6 +1032,10 @@ tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_strndup_t_SOURCES = tests/portable/strndup-t.c \
+	tests/portable/strndup.c
+
+tests_portable_strndup_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 
@@ -1169,13 +1235,13 @@ lib/lib_libwebauth_la-attr-decode.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-attr-encode.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
-lib/lib_libwebauth_la-attrs.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/lib_libwebauth_la-base64.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-context.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-factors.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-file-io.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-hex.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-keyring.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
@@ -1183,17 +1249,23 @@ lib/lib_libwebauth_la-keys.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-krb5.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
-lib/lib_libwebauth_la-misc.lo: lib/$(am__dirstamp) \
+lib/lib_libwebauth_la-rules-cache.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-rules-keyring.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-rules-krb5.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-rules-tokens.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-token-crypto.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/lib_libwebauth_la-token-decode.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-token-encode.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-userinfo.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-util.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-was-cache.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-webkdc-config.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
@@ -1331,28 +1403,27 @@ clean-checkPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+lib/tests_lib_apr_buffer_t-apr-buffer.$(OBJEXT): lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/$(am__dirstamp):
 	@$(MKDIR_P) tests/lib
 	@: > tests/lib/$(am__dirstamp)
 tests/lib/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/lib/$(DEPDIR)
 	@: > tests/lib/$(DEPDIR)/$(am__dirstamp)
-tests/lib/attrs-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
-	tests/lib/$(DEPDIR)/$(am__dirstamp)
-tests/lib/attrs-t$(EXEEXT): $(tests_lib_attrs_t_OBJECTS) $(tests_lib_attrs_t_DEPENDENCIES) $(EXTRA_tests_lib_attrs_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
-	@rm -f tests/lib/attrs-t$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(tests_lib_attrs_t_OBJECTS) $(tests_lib_attrs_t_LDADD) $(LIBS)
-tests/lib/base64-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
-	tests/lib/$(DEPDIR)/$(am__dirstamp)
-tests/lib/base64-t$(EXEEXT): $(tests_lib_base64_t_OBJECTS) $(tests_lib_base64_t_DEPENDENCIES) $(EXTRA_tests_lib_base64_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
-	@rm -f tests/lib/base64-t$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(tests_lib_base64_t_OBJECTS) $(tests_lib_base64_t_LDADD) $(LIBS)
+tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/apr-buffer-t$(EXEEXT): $(tests_lib_apr_buffer_t_OBJECTS) $(tests_lib_apr_buffer_t_DEPENDENCIES) $(EXTRA_tests_lib_apr_buffer_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/apr-buffer-t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tests_lib_apr_buffer_t_OBJECTS) $(tests_lib_apr_buffer_t_LDADD) $(LIBS)
 tests/lib/tests_lib_factors_t-factors-t.$(OBJEXT):  \
 	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/factors-t$(EXEEXT): $(tests_lib_factors_t_OBJECTS) $(tests_lib_factors_t_DEPENDENCIES) $(EXTRA_tests_lib_factors_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/factors-t$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tests_lib_factors_t_OBJECTS) $(tests_lib_factors_t_LDADD) $(LIBS)
-tests/lib/hex-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
+lib/tests_lib_hex_t-hex.$(OBJEXT): lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/tests_lib_hex_t-hex-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
 	tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/hex-t$(EXEEXT): $(tests_lib_hex_t_OBJECTS) $(tests_lib_hex_t_DEPENDENCIES) $(EXTRA_tests_lib_hex_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/hex-t$(EXEEXT)
@@ -1372,16 +1443,26 @@ tests/lib/keys-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
 tests/lib/keys-t$(EXEEXT): $(tests_lib_keys_t_OBJECTS) $(tests_lib_keys_t_DEPENDENCIES) $(EXTRA_tests_lib_keys_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/keys-t$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tests_lib_keys_t_OBJECTS) $(tests_lib_keys_t_LDADD) $(LIBS)
-tests/lib/krb5-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
-	tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/krb5-cred-t$(EXEEXT): $(tests_lib_krb5_cred_t_OBJECTS) $(tests_lib_krb5_cred_t_DEPENDENCIES) $(EXTRA_tests_lib_krb5_cred_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/krb5-cred-t$(EXEEXT)
+	$(AM_V_CCLD)$(tests_lib_krb5_cred_t_LINK) $(tests_lib_krb5_cred_t_OBJECTS) $(tests_lib_krb5_cred_t_LDADD) $(LIBS)
+tests/lib/tests_lib_krb5_t-krb5-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/krb5-t$(EXEEXT): $(tests_lib_krb5_t_OBJECTS) $(tests_lib_krb5_t_DEPENDENCIES) $(EXTRA_tests_lib_krb5_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/krb5-t$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(tests_lib_krb5_t_OBJECTS) $(tests_lib_krb5_t_LDADD) $(LIBS)
-tests/lib/krb5-tgt-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
-	tests/lib/$(DEPDIR)/$(am__dirstamp)
+	$(AM_V_CCLD)$(tests_lib_krb5_t_LINK) $(tests_lib_krb5_t_OBJECTS) $(tests_lib_krb5_t_LDADD) $(LIBS)
+tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.$(OBJEXT):  \
+	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/krb5-tgt-t$(EXEEXT): $(tests_lib_krb5_tgt_t_OBJECTS) $(tests_lib_krb5_tgt_t_DEPENDENCIES) $(EXTRA_tests_lib_krb5_tgt_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/krb5-tgt-t$(EXEEXT)
 	$(AM_V_CCLD)$(tests_lib_krb5_tgt_t_LINK) $(tests_lib_krb5_tgt_t_OBJECTS) $(tests_lib_krb5_tgt_t_LDADD) $(LIBS)
+tests/lib/token-crypto-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
+	tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/token-crypto-t$(EXEEXT): $(tests_lib_token_crypto_t_OBJECTS) $(tests_lib_token_crypto_t_DEPENDENCIES) $(EXTRA_tests_lib_token_crypto_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/token-crypto-t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tests_lib_token_crypto_t_OBJECTS) $(tests_lib_token_crypto_t_LDADD) $(LIBS)
 tests/lib/token-decode-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
 	tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/token-decode-t$(EXEEXT): $(tests_lib_token_decode_t_OBJECTS) $(tests_lib_token_decode_t_DEPENDENCIES) $(EXTRA_tests_lib_token_decode_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
@@ -1397,6 +1478,11 @@ tests/lib/tests_lib_userinfo_t-userinfo-t.$(OBJEXT):  \
 tests/lib/userinfo-t$(EXEEXT): $(tests_lib_userinfo_t_OBJECTS) $(tests_lib_userinfo_t_DEPENDENCIES) $(EXTRA_tests_lib_userinfo_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
 	@rm -f tests/lib/userinfo-t$(EXEEXT)
 	$(AM_V_CCLD)$(tests_lib_userinfo_t_LINK) $(tests_lib_userinfo_t_OBJECTS) $(tests_lib_userinfo_t_LDADD) $(LIBS)
+tests/lib/was-cache-t.$(OBJEXT): tests/lib/$(am__dirstamp) \
+	tests/lib/$(DEPDIR)/$(am__dirstamp)
+tests/lib/was-cache-t$(EXEEXT): $(tests_lib_was_cache_t_OBJECTS) $(tests_lib_was_cache_t_DEPENDENCIES) $(EXTRA_tests_lib_was_cache_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
+	@rm -f tests/lib/was-cache-t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tests_lib_was_cache_t_OBJECTS) $(tests_lib_was_cache_t_LDADD) $(LIBS)
 tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT):  \
 	tests/lib/$(am__dirstamp) tests/lib/$(DEPDIR)/$(am__dirstamp)
 tests/lib/webkdc-krb-t$(EXEEXT): $(tests_lib_webkdc_krb_t_OBJECTS) $(tests_lib_webkdc_krb_t_DEPENDENCIES) $(EXTRA_tests_lib_webkdc_krb_t_DEPENDENCIES) tests/lib/$(am__dirstamp)
@@ -1460,6 +1546,13 @@ tests/portable/strlcpy.$(OBJEXT): tests/portable/$(am__dirstamp) \
 tests/portable/strlcpy-t$(EXEEXT): $(tests_portable_strlcpy_t_OBJECTS) $(tests_portable_strlcpy_t_DEPENDENCIES) $(EXTRA_tests_portable_strlcpy_t_DEPENDENCIES) tests/portable/$(am__dirstamp)
 	@rm -f tests/portable/strlcpy-t$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(tests_portable_strlcpy_t_OBJECTS) $(tests_portable_strlcpy_t_LDADD) $(LIBS)
+tests/portable/strndup-t.$(OBJEXT): tests/portable/$(am__dirstamp) \
+	tests/portable/$(DEPDIR)/$(am__dirstamp)
+tests/portable/strndup.$(OBJEXT): tests/portable/$(am__dirstamp) \
+	tests/portable/$(DEPDIR)/$(am__dirstamp)
+tests/portable/strndup-t$(EXEEXT): $(tests_portable_strndup_t_OBJECTS) $(tests_portable_strndup_t_DEPENDENCIES) $(EXTRA_tests_portable_strndup_t_DEPENDENCIES) tests/portable/$(am__dirstamp)
+	@rm -f tests/portable/strndup-t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(tests_portable_strndup_t_OBJECTS) $(tests_portable_strndup_t_LDADD) $(LIBS)
 tests/$(am__dirstamp):
 	@$(MKDIR_P) tests
 	@: > tests/$(am__dirstamp)
@@ -1542,14 +1635,14 @@ mostlyclean-compile:
 	-rm -f lib/lib_libwebauth_la-attr-decode.lo
 	-rm -f lib/lib_libwebauth_la-attr-encode.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-attr-encode.lo
-	-rm -f lib/lib_libwebauth_la-attrs.$(OBJEXT)
-	-rm -f lib/lib_libwebauth_la-attrs.lo
-	-rm -f lib/lib_libwebauth_la-base64.$(OBJEXT)
-	-rm -f lib/lib_libwebauth_la-base64.lo
 	-rm -f lib/lib_libwebauth_la-context.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-context.lo
 	-rm -f lib/lib_libwebauth_la-factors.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-factors.lo
+	-rm -f lib/lib_libwebauth_la-file-io.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-file-io.lo
+	-rm -f lib/lib_libwebauth_la-hex.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-hex.lo
 	-rm -f lib/lib_libwebauth_la-keyring.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-keyring.lo
 	-rm -f lib/lib_libwebauth_la-keys.$(OBJEXT)
@@ -1560,24 +1653,32 @@ mostlyclean-compile:
 	-rm -f lib/lib_libwebauth_la-krb5-mit.lo
 	-rm -f lib/lib_libwebauth_la-krb5.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-krb5.lo
-	-rm -f lib/lib_libwebauth_la-misc.$(OBJEXT)
-	-rm -f lib/lib_libwebauth_la-misc.lo
+	-rm -f lib/lib_libwebauth_la-rules-cache.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-rules-cache.lo
+	-rm -f lib/lib_libwebauth_la-rules-keyring.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-rules-keyring.lo
+	-rm -f lib/lib_libwebauth_la-rules-krb5.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-rules-krb5.lo
+	-rm -f lib/lib_libwebauth_la-rules-tokens.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-rules-tokens.lo
 	-rm -f lib/lib_libwebauth_la-token-crypto.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-token-crypto.lo
-	-rm -f lib/lib_libwebauth_la-token-decode.$(OBJEXT)
-	-rm -f lib/lib_libwebauth_la-token-decode.lo
 	-rm -f lib/lib_libwebauth_la-token-encode.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-token-encode.lo
 	-rm -f lib/lib_libwebauth_la-userinfo.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-userinfo.lo
 	-rm -f lib/lib_libwebauth_la-util.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-util.lo
+	-rm -f lib/lib_libwebauth_la-was-cache.$(OBJEXT)
+	-rm -f lib/lib_libwebauth_la-was-cache.lo
 	-rm -f lib/lib_libwebauth_la-webkdc-config.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-webkdc-config.lo
 	-rm -f lib/lib_libwebauth_la-webkdc-login.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-webkdc-login.lo
 	-rm -f lib/lib_libwebauth_la-xml.$(OBJEXT)
 	-rm -f lib/lib_libwebauth_la-xml.lo
+	-rm -f lib/tests_lib_apr_buffer_t-apr-buffer.$(OBJEXT)
+	-rm -f lib/tests_lib_hex_t-hex.$(OBJEXT)
 	-rm -f modules/ldap/modules_ldap_mod_webauthldap_la-config.$(OBJEXT)
 	-rm -f modules/ldap/modules_ldap_mod_webauthldap_la-config.lo
 	-rm -f modules/ldap/modules_ldap_mod_webauthldap_la-mod_webauthldap.$(OBJEXT)
@@ -1604,21 +1705,23 @@ mostlyclean-compile:
 	-rm -f portable/portable_libportable_la-dummy.lo
 	-rm -f portable/portable_libportable_la-krb5-extra.$(OBJEXT)
 	-rm -f portable/portable_libportable_la-krb5-extra.lo
-	-rm -f tests/lib/attrs-t.$(OBJEXT)
-	-rm -f tests/lib/base64-t.$(OBJEXT)
-	-rm -f tests/lib/hex-t.$(OBJEXT)
 	-rm -f tests/lib/interval-t.$(OBJEXT)
 	-rm -f tests/lib/keys-t.$(OBJEXT)
-	-rm -f tests/lib/krb5-t.$(OBJEXT)
-	-rm -f tests/lib/krb5-tgt-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_factors_t-factors-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_hex_t-hex-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_keyring_t-keyring-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_krb5_t-krb5-t.$(OBJEXT)
+	-rm -f tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_userinfo_t-userinfo-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_webkdc_krb_t-webkdc-krb-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_webkdc_login_t-webkdc-login-t.$(OBJEXT)
 	-rm -f tests/lib/tests_lib_webkdc_mf_t-webkdc-mf-t.$(OBJEXT)
+	-rm -f tests/lib/token-crypto-t.$(OBJEXT)
 	-rm -f tests/lib/token-decode-t.$(OBJEXT)
 	-rm -f tests/lib/token-encode-t.$(OBJEXT)
+	-rm -f tests/lib/was-cache-t.$(OBJEXT)
 	-rm -f tests/portable/asprintf-t.$(OBJEXT)
 	-rm -f tests/portable/asprintf.$(OBJEXT)
 	-rm -f tests/portable/mkstemp-t.$(OBJEXT)
@@ -1631,6 +1734,8 @@ mostlyclean-compile:
 	-rm -f tests/portable/strlcat.$(OBJEXT)
 	-rm -f tests/portable/strlcpy-t.$(OBJEXT)
 	-rm -f tests/portable/strlcpy.$(OBJEXT)
+	-rm -f tests/portable/strndup-t.$(OBJEXT)
+	-rm -f tests/portable/strndup.$(OBJEXT)
 	-rm -f tests/tap/tests_tap_libtap_a-basic.$(OBJEXT)
 	-rm -f tests/tap/tests_tap_libtap_a-kerberos.$(OBJEXT)
 	-rm -f tests/tap/tests_tap_libtap_a-messages.$(OBJEXT)
@@ -1650,24 +1755,29 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-apr-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-attr-decode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-attr-encode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-attrs.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-base64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-factors.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-file-io.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-hex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-keyring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-keys.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-krb5-heimdal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-krb5-mit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-krb5.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-misc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-rules-cache.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-rules-keyring.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-rules-krb5.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-rules-tokens.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-crypto.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-decode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-encode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-userinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-was-cache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-webkdc-config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-webkdc-login.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-xml.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/tests_lib_hex_t-hex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/ldap/$(DEPDIR)/modules_ldap_mod_webauthldap_la-config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/ldap/$(DEPDIR)/modules_ldap_mod_webauthldap_la-mod_webauthldap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/webauth/$(DEPDIR)/modules_webauth_mod_webauth_la-config.Plo@am__quote@
@@ -1687,22 +1797,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@portable/$(DEPDIR)/snprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@portable/$(DEPDIR)/strlcat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@portable/$(DEPDIR)/strlcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@portable/$(DEPDIR)/strndup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_runtests-runtests.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/attrs-t.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/base64-t.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/hex-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/interval-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/keys-t.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/krb5-t.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/krb5-tgt-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_factors_t-factors-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_keyring_t-keyring-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_userinfo_t-userinfo-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_krb_t-webkdc-krb-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_login_t-webkdc-login-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/tests_lib_webkdc_mf_t-webkdc-mf-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-crypto-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-decode-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/token-encode-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/lib/$(DEPDIR)/was-cache-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/asprintf-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/asprintf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/mkstemp-t.Po@am__quote@
@@ -1715,6 +1828,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/strlcat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/strlcpy-t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/strlcpy.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/strndup-t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/portable/$(DEPDIR)/strndup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-basic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-kerberos.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/tap/$(DEPDIR)/tests_tap_libtap_a-messages.Po@am__quote@
@@ -1856,20 +1971,6 @@ lib/lib_libwebauth_la-attr-encode.lo: lib/attr-encode.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-attr-encode.lo `test -f 'lib/attr-encode.c' || echo '$(srcdir)/'`lib/attr-encode.c
 
-lib/lib_libwebauth_la-attrs.lo: lib/attrs.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-attrs.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-attrs.Tpo -c -o lib/lib_libwebauth_la-attrs.lo `test -f 'lib/attrs.c' || echo '$(srcdir)/'`lib/attrs.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-attrs.Tpo lib/$(DEPDIR)/lib_libwebauth_la-attrs.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/attrs.c' object='lib/lib_libwebauth_la-attrs.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-attrs.lo `test -f 'lib/attrs.c' || echo '$(srcdir)/'`lib/attrs.c
-
-lib/lib_libwebauth_la-base64.lo: lib/base64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-base64.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-base64.Tpo -c -o lib/lib_libwebauth_la-base64.lo `test -f 'lib/base64.c' || echo '$(srcdir)/'`lib/base64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-base64.Tpo lib/$(DEPDIR)/lib_libwebauth_la-base64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/base64.c' object='lib/lib_libwebauth_la-base64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-base64.lo `test -f 'lib/base64.c' || echo '$(srcdir)/'`lib/base64.c
-
 lib/lib_libwebauth_la-context.lo: lib/context.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-context.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-context.Tpo -c -o lib/lib_libwebauth_la-context.lo `test -f 'lib/context.c' || echo '$(srcdir)/'`lib/context.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-context.Tpo lib/$(DEPDIR)/lib_libwebauth_la-context.Plo
@@ -1883,6 +1984,20 @@ lib/lib_libwebauth_la-factors.lo: lib/factors.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/factors.c' object='lib/lib_libwebauth_la-factors.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-factors.lo `test -f 'lib/factors.c' || echo '$(srcdir)/'`lib/factors.c
+
+lib/lib_libwebauth_la-file-io.lo: lib/file-io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-file-io.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-file-io.Tpo -c -o lib/lib_libwebauth_la-file-io.lo `test -f 'lib/file-io.c' || echo '$(srcdir)/'`lib/file-io.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-file-io.Tpo lib/$(DEPDIR)/lib_libwebauth_la-file-io.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/file-io.c' object='lib/lib_libwebauth_la-file-io.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-file-io.lo `test -f 'lib/file-io.c' || echo '$(srcdir)/'`lib/file-io.c
+
+lib/lib_libwebauth_la-hex.lo: lib/hex.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-hex.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-hex.Tpo -c -o lib/lib_libwebauth_la-hex.lo `test -f 'lib/hex.c' || echo '$(srcdir)/'`lib/hex.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-hex.Tpo lib/$(DEPDIR)/lib_libwebauth_la-hex.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/hex.c' object='lib/lib_libwebauth_la-hex.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-hex.lo `test -f 'lib/hex.c' || echo '$(srcdir)/'`lib/hex.c
 
 lib/lib_libwebauth_la-keyring.lo: lib/keyring.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-keyring.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-keyring.Tpo -c -o lib/lib_libwebauth_la-keyring.lo `test -f 'lib/keyring.c' || echo '$(srcdir)/'`lib/keyring.c
@@ -1905,12 +2020,33 @@ lib/lib_libwebauth_la-krb5.lo: lib/krb5.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-krb5.lo `test -f 'lib/krb5.c' || echo '$(srcdir)/'`lib/krb5.c
 
-lib/lib_libwebauth_la-misc.lo: lib/misc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-misc.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-misc.Tpo -c -o lib/lib_libwebauth_la-misc.lo `test -f 'lib/misc.c' || echo '$(srcdir)/'`lib/misc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-misc.Tpo lib/$(DEPDIR)/lib_libwebauth_la-misc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/misc.c' object='lib/lib_libwebauth_la-misc.lo' libtool=yes @AMDEPBACKSLASH@
+lib/lib_libwebauth_la-rules-cache.lo: lib/rules-cache.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-rules-cache.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-rules-cache.Tpo -c -o lib/lib_libwebauth_la-rules-cache.lo `test -f 'lib/rules-cache.c' || echo '$(srcdir)/'`lib/rules-cache.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-rules-cache.Tpo lib/$(DEPDIR)/lib_libwebauth_la-rules-cache.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/rules-cache.c' object='lib/lib_libwebauth_la-rules-cache.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-misc.lo `test -f 'lib/misc.c' || echo '$(srcdir)/'`lib/misc.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-rules-cache.lo `test -f 'lib/rules-cache.c' || echo '$(srcdir)/'`lib/rules-cache.c
+
+lib/lib_libwebauth_la-rules-keyring.lo: lib/rules-keyring.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-rules-keyring.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-rules-keyring.Tpo -c -o lib/lib_libwebauth_la-rules-keyring.lo `test -f 'lib/rules-keyring.c' || echo '$(srcdir)/'`lib/rules-keyring.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-rules-keyring.Tpo lib/$(DEPDIR)/lib_libwebauth_la-rules-keyring.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/rules-keyring.c' object='lib/lib_libwebauth_la-rules-keyring.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-rules-keyring.lo `test -f 'lib/rules-keyring.c' || echo '$(srcdir)/'`lib/rules-keyring.c
+
+lib/lib_libwebauth_la-rules-krb5.lo: lib/rules-krb5.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-rules-krb5.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-rules-krb5.Tpo -c -o lib/lib_libwebauth_la-rules-krb5.lo `test -f 'lib/rules-krb5.c' || echo '$(srcdir)/'`lib/rules-krb5.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-rules-krb5.Tpo lib/$(DEPDIR)/lib_libwebauth_la-rules-krb5.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/rules-krb5.c' object='lib/lib_libwebauth_la-rules-krb5.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-rules-krb5.lo `test -f 'lib/rules-krb5.c' || echo '$(srcdir)/'`lib/rules-krb5.c
+
+lib/lib_libwebauth_la-rules-tokens.lo: lib/rules-tokens.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-rules-tokens.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-rules-tokens.Tpo -c -o lib/lib_libwebauth_la-rules-tokens.lo `test -f 'lib/rules-tokens.c' || echo '$(srcdir)/'`lib/rules-tokens.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-rules-tokens.Tpo lib/$(DEPDIR)/lib_libwebauth_la-rules-tokens.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/rules-tokens.c' object='lib/lib_libwebauth_la-rules-tokens.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-rules-tokens.lo `test -f 'lib/rules-tokens.c' || echo '$(srcdir)/'`lib/rules-tokens.c
 
 lib/lib_libwebauth_la-token-crypto.lo: lib/token-crypto.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-token-crypto.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-token-crypto.Tpo -c -o lib/lib_libwebauth_la-token-crypto.lo `test -f 'lib/token-crypto.c' || echo '$(srcdir)/'`lib/token-crypto.c
@@ -1918,13 +2054,6 @@ lib/lib_libwebauth_la-token-crypto.lo: lib/token-crypto.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/token-crypto.c' object='lib/lib_libwebauth_la-token-crypto.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-token-crypto.lo `test -f 'lib/token-crypto.c' || echo '$(srcdir)/'`lib/token-crypto.c
-
-lib/lib_libwebauth_la-token-decode.lo: lib/token-decode.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-token-decode.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-token-decode.Tpo -c -o lib/lib_libwebauth_la-token-decode.lo `test -f 'lib/token-decode.c' || echo '$(srcdir)/'`lib/token-decode.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-token-decode.Tpo lib/$(DEPDIR)/lib_libwebauth_la-token-decode.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/token-decode.c' object='lib/lib_libwebauth_la-token-decode.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-token-decode.lo `test -f 'lib/token-decode.c' || echo '$(srcdir)/'`lib/token-decode.c
 
 lib/lib_libwebauth_la-token-encode.lo: lib/token-encode.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-token-encode.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-token-encode.Tpo -c -o lib/lib_libwebauth_la-token-encode.lo `test -f 'lib/token-encode.c' || echo '$(srcdir)/'`lib/token-encode.c
@@ -1946,6 +2075,13 @@ lib/lib_libwebauth_la-util.lo: lib/util.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/util.c' object='lib/lib_libwebauth_la-util.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-util.lo `test -f 'lib/util.c' || echo '$(srcdir)/'`lib/util.c
+
+lib/lib_libwebauth_la-was-cache.lo: lib/was-cache.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-was-cache.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-was-cache.Tpo -c -o lib/lib_libwebauth_la-was-cache.lo `test -f 'lib/was-cache.c' || echo '$(srcdir)/'`lib/was-cache.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-was-cache.Tpo lib/$(DEPDIR)/lib_libwebauth_la-was-cache.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/was-cache.c' object='lib/lib_libwebauth_la-was-cache.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-was-cache.lo `test -f 'lib/was-cache.c' || echo '$(srcdir)/'`lib/was-cache.c
 
 lib/lib_libwebauth_la-webkdc-config.lo: lib/webkdc-config.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-webkdc-config.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-webkdc-config.Tpo -c -o lib/lib_libwebauth_la-webkdc-config.lo `test -f 'lib/webkdc-config.c' || echo '$(srcdir)/'`lib/webkdc-config.c
@@ -2073,6 +2209,34 @@ portable/portable_libportable_la-krb5-extra.lo: portable/krb5-extra.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(portable_libportable_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o portable/portable_libportable_la-krb5-extra.lo `test -f 'portable/krb5-extra.c' || echo '$(srcdir)/'`portable/krb5-extra.c
 
+lib/tests_lib_apr_buffer_t-apr-buffer.o: lib/apr-buffer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/tests_lib_apr_buffer_t-apr-buffer.o -MD -MP -MF lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Tpo -c -o lib/tests_lib_apr_buffer_t-apr-buffer.o `test -f 'lib/apr-buffer.c' || echo '$(srcdir)/'`lib/apr-buffer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Tpo lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/apr-buffer.c' object='lib/tests_lib_apr_buffer_t-apr-buffer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/tests_lib_apr_buffer_t-apr-buffer.o `test -f 'lib/apr-buffer.c' || echo '$(srcdir)/'`lib/apr-buffer.c
+
+lib/tests_lib_apr_buffer_t-apr-buffer.obj: lib/apr-buffer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/tests_lib_apr_buffer_t-apr-buffer.obj -MD -MP -MF lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Tpo -c -o lib/tests_lib_apr_buffer_t-apr-buffer.obj `if test -f 'lib/apr-buffer.c'; then $(CYGPATH_W) 'lib/apr-buffer.c'; else $(CYGPATH_W) '$(srcdir)/lib/apr-buffer.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Tpo lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/apr-buffer.c' object='lib/tests_lib_apr_buffer_t-apr-buffer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/tests_lib_apr_buffer_t-apr-buffer.obj `if test -f 'lib/apr-buffer.c'; then $(CYGPATH_W) 'lib/apr-buffer.c'; else $(CYGPATH_W) '$(srcdir)/lib/apr-buffer.c'; fi`
+
+tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.o: tests/lib/apr-buffer-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Tpo -c -o tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.o `test -f 'tests/lib/apr-buffer-t.c' || echo '$(srcdir)/'`tests/lib/apr-buffer-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Tpo tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/apr-buffer-t.c' object='tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.o `test -f 'tests/lib/apr-buffer-t.c' || echo '$(srcdir)/'`tests/lib/apr-buffer-t.c
+
+tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.obj: tests/lib/apr-buffer-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Tpo -c -o tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.obj `if test -f 'tests/lib/apr-buffer-t.c'; then $(CYGPATH_W) 'tests/lib/apr-buffer-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/apr-buffer-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Tpo tests/lib/$(DEPDIR)/tests_lib_apr_buffer_t-apr-buffer-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/apr-buffer-t.c' object='tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_apr_buffer_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_apr_buffer_t-apr-buffer-t.obj `if test -f 'tests/lib/apr-buffer-t.c'; then $(CYGPATH_W) 'tests/lib/apr-buffer-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/apr-buffer-t.c'; fi`
+
 tests/lib/tests_lib_factors_t-factors-t.o: tests/lib/factors-t.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_factors_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_factors_t-factors-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_factors_t-factors-t.Tpo -c -o tests/lib/tests_lib_factors_t-factors-t.o `test -f 'tests/lib/factors-t.c' || echo '$(srcdir)/'`tests/lib/factors-t.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_factors_t-factors-t.Tpo tests/lib/$(DEPDIR)/tests_lib_factors_t-factors-t.Po
@@ -2087,6 +2251,34 @@ tests/lib/tests_lib_factors_t-factors-t.obj: tests/lib/factors-t.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_factors_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_factors_t-factors-t.obj `if test -f 'tests/lib/factors-t.c'; then $(CYGPATH_W) 'tests/lib/factors-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/factors-t.c'; fi`
 
+lib/tests_lib_hex_t-hex.o: lib/hex.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/tests_lib_hex_t-hex.o -MD -MP -MF lib/$(DEPDIR)/tests_lib_hex_t-hex.Tpo -c -o lib/tests_lib_hex_t-hex.o `test -f 'lib/hex.c' || echo '$(srcdir)/'`lib/hex.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/tests_lib_hex_t-hex.Tpo lib/$(DEPDIR)/tests_lib_hex_t-hex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/hex.c' object='lib/tests_lib_hex_t-hex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/tests_lib_hex_t-hex.o `test -f 'lib/hex.c' || echo '$(srcdir)/'`lib/hex.c
+
+lib/tests_lib_hex_t-hex.obj: lib/hex.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/tests_lib_hex_t-hex.obj -MD -MP -MF lib/$(DEPDIR)/tests_lib_hex_t-hex.Tpo -c -o lib/tests_lib_hex_t-hex.obj `if test -f 'lib/hex.c'; then $(CYGPATH_W) 'lib/hex.c'; else $(CYGPATH_W) '$(srcdir)/lib/hex.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/tests_lib_hex_t-hex.Tpo lib/$(DEPDIR)/tests_lib_hex_t-hex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/hex.c' object='lib/tests_lib_hex_t-hex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/tests_lib_hex_t-hex.obj `if test -f 'lib/hex.c'; then $(CYGPATH_W) 'lib/hex.c'; else $(CYGPATH_W) '$(srcdir)/lib/hex.c'; fi`
+
+tests/lib/tests_lib_hex_t-hex-t.o: tests/lib/hex-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_hex_t-hex-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Tpo -c -o tests/lib/tests_lib_hex_t-hex-t.o `test -f 'tests/lib/hex-t.c' || echo '$(srcdir)/'`tests/lib/hex-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Tpo tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/hex-t.c' object='tests/lib/tests_lib_hex_t-hex-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_hex_t-hex-t.o `test -f 'tests/lib/hex-t.c' || echo '$(srcdir)/'`tests/lib/hex-t.c
+
+tests/lib/tests_lib_hex_t-hex-t.obj: tests/lib/hex-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_hex_t-hex-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Tpo -c -o tests/lib/tests_lib_hex_t-hex-t.obj `if test -f 'tests/lib/hex-t.c'; then $(CYGPATH_W) 'tests/lib/hex-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/hex-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Tpo tests/lib/$(DEPDIR)/tests_lib_hex_t-hex-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/hex-t.c' object='tests/lib/tests_lib_hex_t-hex-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_hex_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_hex_t-hex-t.obj `if test -f 'tests/lib/hex-t.c'; then $(CYGPATH_W) 'tests/lib/hex-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/hex-t.c'; fi`
+
 tests/lib/tests_lib_keyring_t-keyring-t.o: tests/lib/keyring-t.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_keyring_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_keyring_t-keyring-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_keyring_t-keyring-t.Tpo -c -o tests/lib/tests_lib_keyring_t-keyring-t.o `test -f 'tests/lib/keyring-t.c' || echo '$(srcdir)/'`tests/lib/keyring-t.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_keyring_t-keyring-t.Tpo tests/lib/$(DEPDIR)/tests_lib_keyring_t-keyring-t.Po
@@ -2100,6 +2292,48 @@ tests/lib/tests_lib_keyring_t-keyring-t.obj: tests/lib/keyring-t.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/keyring-t.c' object='tests/lib/tests_lib_keyring_t-keyring-t.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_keyring_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_keyring_t-keyring-t.obj `if test -f 'tests/lib/keyring-t.c'; then $(CYGPATH_W) 'tests/lib/keyring-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/keyring-t.c'; fi`
+
+tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.o: tests/lib/krb5-cred-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_cred_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Tpo -c -o tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.o `test -f 'tests/lib/krb5-cred-t.c' || echo '$(srcdir)/'`tests/lib/krb5-cred-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-cred-t.c' object='tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_cred_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.o `test -f 'tests/lib/krb5-cred-t.c' || echo '$(srcdir)/'`tests/lib/krb5-cred-t.c
+
+tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.obj: tests/lib/krb5-cred-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_cred_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Tpo -c -o tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.obj `if test -f 'tests/lib/krb5-cred-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-cred-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-cred-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_cred_t-krb5-cred-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-cred-t.c' object='tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_cred_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_cred_t-krb5-cred-t.obj `if test -f 'tests/lib/krb5-cred-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-cred-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-cred-t.c'; fi`
+
+tests/lib/tests_lib_krb5_t-krb5-t.o: tests/lib/krb5-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_t-krb5-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Tpo -c -o tests/lib/tests_lib_krb5_t-krb5-t.o `test -f 'tests/lib/krb5-t.c' || echo '$(srcdir)/'`tests/lib/krb5-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-t.c' object='tests/lib/tests_lib_krb5_t-krb5-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_t-krb5-t.o `test -f 'tests/lib/krb5-t.c' || echo '$(srcdir)/'`tests/lib/krb5-t.c
+
+tests/lib/tests_lib_krb5_t-krb5-t.obj: tests/lib/krb5-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_t-krb5-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Tpo -c -o tests/lib/tests_lib_krb5_t-krb5-t.obj `if test -f 'tests/lib/krb5-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_t-krb5-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-t.c' object='tests/lib/tests_lib_krb5_t-krb5-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_t-krb5-t.obj `if test -f 'tests/lib/krb5-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-t.c'; fi`
+
+tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.o: tests/lib/krb5-tgt-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_tgt_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Tpo -c -o tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.o `test -f 'tests/lib/krb5-tgt-t.c' || echo '$(srcdir)/'`tests/lib/krb5-tgt-t.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-tgt-t.c' object='tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_tgt_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.o `test -f 'tests/lib/krb5-tgt-t.c' || echo '$(srcdir)/'`tests/lib/krb5-tgt-t.c
+
+tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.obj: tests/lib/krb5-tgt-t.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_tgt_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.obj -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Tpo -c -o tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.obj `if test -f 'tests/lib/krb5-tgt-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-tgt-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-tgt-t.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Tpo tests/lib/$(DEPDIR)/tests_lib_krb5_tgt_t-krb5-tgt-t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/lib/krb5-tgt-t.c' object='tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_krb5_tgt_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tests/lib/tests_lib_krb5_tgt_t-krb5-tgt-t.obj `if test -f 'tests/lib/krb5-tgt-t.c'; then $(CYGPATH_W) 'tests/lib/krb5-tgt-t.c'; else $(CYGPATH_W) '$(srcdir)/tests/lib/krb5-tgt-t.c'; fi`
 
 tests/lib/tests_lib_userinfo_t-userinfo-t.o: tests/lib/userinfo-t.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tests_lib_userinfo_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tests/lib/tests_lib_userinfo_t-userinfo-t.o -MD -MP -MF tests/lib/$(DEPDIR)/tests_lib_userinfo_t-userinfo-t.Tpo -c -o tests/lib/tests_lib_userinfo_t-userinfo-t.o `test -f 'tests/lib/userinfo-t.c' || echo '$(srcdir)/'`tests/lib/userinfo-t.c
@@ -2309,27 +2543,6 @@ uninstall-nodist_pkgconfigDATA:
 	@list='$(nodist_pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
-install-includeHEADERS: $(include_HEADERS)
-	@$(NORMAL_INSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
-	done
-
-uninstall-includeHEADERS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 install-nodist_webauthincludeHEADERS: $(nodist_webauthinclude_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(nodist_webauthinclude_HEADERS)'; test -n "$(webauthincludedir)" || list=; \
@@ -2616,7 +2829,7 @@ all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(webauthincludedir)" "$(DESTDIR)$(webauthincludedir)"; do \
+	for dir in "$(DESTDIR)$(apachedir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(weblogindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(imagedir)" "$(DESTDIR)$(templatedir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(webauthincludedir)" "$(DESTDIR)$(webauthincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -2706,8 +2919,7 @@ info-am:
 
 install-data-am: install-apacheLTLIBRARIES install-dist_imageDATA \
 	install-dist_templateDATA install-dist_webloginSCRIPTS \
-	install-includeHEADERS install-man \
-	install-nodist_pkgconfigDATA \
+	install-man install-nodist_pkgconfigDATA \
 	install-nodist_webauthincludeHEADERS \
 	install-webauthincludeHEADERS
 
@@ -2760,9 +2972,8 @@ ps-am:
 
 uninstall-am: uninstall-apacheLTLIBRARIES uninstall-binPROGRAMS \
 	uninstall-dist_imageDATA uninstall-dist_templateDATA \
-	uninstall-dist_webloginSCRIPTS uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-man \
-	uninstall-nodist_pkgconfigDATA \
+	uninstall-dist_webloginSCRIPTS uninstall-libLTLIBRARIES \
+	uninstall-man uninstall-nodist_pkgconfigDATA \
 	uninstall-nodist_webauthincludeHEADERS \
 	uninstall-webauthincludeHEADERS
 
@@ -2785,10 +2996,9 @@ uninstall-man: uninstall-man1
 	install-data-am install-dist_imageDATA \
 	install-dist_templateDATA install-dist_webloginSCRIPTS \
 	install-dvi install-dvi-am install-exec install-exec-am \
-	install-exec-local install-html install-html-am \
-	install-includeHEADERS install-info install-info-am \
-	install-libLTLIBRARIES install-man install-man1 \
-	install-nodist_pkgconfigDATA \
+	install-exec-local install-html install-html-am install-info \
+	install-info-am install-libLTLIBRARIES install-man \
+	install-man1 install-nodist_pkgconfigDATA \
 	install-nodist_webauthincludeHEADERS install-pdf \
 	install-pdf-am install-ps install-ps-am install-strip \
 	install-webauthincludeHEADERS installcheck installcheck-am \
@@ -2797,9 +3007,8 @@ uninstall-man: uninstall-man1
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-apacheLTLIBRARIES uninstall-binPROGRAMS \
 	uninstall-dist_imageDATA uninstall-dist_templateDATA \
-	uninstall-dist_webloginSCRIPTS uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-man uninstall-man1 \
-	uninstall-nodist_pkgconfigDATA \
+	uninstall-dist_webloginSCRIPTS uninstall-libLTLIBRARIES \
+	uninstall-man uninstall-man1 uninstall-nodist_pkgconfigDATA \
 	uninstall-nodist_webauthincludeHEADERS \
 	uninstall-webauthincludeHEADERS
 
@@ -2868,6 +3077,20 @@ check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	    cd perl && LD_LIBRARY_PATH=$(abs_top_builddir)/lib/.libs \
 		$(MAKE) test ; \
 	fi
+
+# Used by maintainers to run the main test suite under valgrind.  Suppress
+# the xmalloc and pod-spelling tests because the former won't work properly
+# under valgrind (due to increased memory usage) and the latter is pointless
+# to run under valgrind.
+check-valgrind: $(check_PROGRAMS)
+	rm -rf $(abs_top_builddir)/tmp-valgrind
+	mkdir $(abs_top_builddir)/tmp-valgrind
+	env RRA_MAINTAINER_TESTS= valgrind --leak-check=full		   \
+	    --track-fds=yes --trace-children=yes			   \
+	    --log-file=$(abs_top_builddir)/tmp-valgrind/log.%p		   \
+	    --suppressions=$(abs_top_srcdir)/tests/data/valgrind.supp	   \
+	    --trace-children-skip="/bin/sh,*/cat,*/cut,*/expr,*/getopt,*/kinit,*/ls,*/mkdir,*/rm,*/rmdir,*/sed,*/sleep,*/wc,*/data/cmd-*,*/docs/pod*-t" \
+	    tests/runtests $(abs_top_srcdir)/tests/TESTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

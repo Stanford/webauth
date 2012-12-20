@@ -1,0 +1,325 @@
+#!/usr/bin/perl
+#
+# Generate WebAuth tokens from a configuration file.
+#
+# This script is not run automatically by the build process or by the test
+# suite.  It's here as an example for how to generate the test tokens using
+# the WebAuth modules.  Given a configuration and output path, it will
+# regenerate all the tokens that are currently used for testing or, if given a
+# list of specific tokens, generate only those tokens.
+#
+# Since each time a token is generated, it uses new random data and therefore
+# changes, this script should not normally be run.  It will change all of the
+# test tokens.  For regular testing, we want to use static tokens generated
+# previously with earlier known-good versions to ensure that no new symmetric
+# bugs have been introduced.
+
+use 5.010;
+
+use autodie;
+use strict;
+use warnings;
+
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use MIME::Base64 qw(decode_base64 encode_base64);
+use Readonly;
+use WebAuth 3.06;
+use WebAuth::Keyring;
+use WebAuth::Token::App;
+use WebAuth::Token::Cred;
+use WebAuth::Token::Error;
+use WebAuth::Token::Id;
+use WebAuth::Token::Login;
+use WebAuth::Token::Proxy;
+use WebAuth::Token::Request;
+use WebAuth::Token::WebKDCProxy;
+use WebAuth::Token::WebKDCService;
+
+# Expiration far into the future for tokens that shouldn't expire.
+Readonly my $LONG_EXPIRE => 2_147_483_600;
+
+# Will be loaded from the configuration.
+our %TOKENS_GOOD;
+our %TOKENS_ERROR;
+our %TOKENS_BAD;
+
+# Construct an encoded token via normal object methods.
+#
+# $spec_ref - Reference to the token specification
+# $wa       - WebAuth object to use for WebAuth operations
+# $ring     - Keyring to use for encryption
+#
+# Returns the base64-encoded, encrypted token.
+sub build_token {
+    my ($spec_ref, $wa, $ring) = @_;
+    my ($class, $data_ref) = @{$spec_ref};
+    my $token = $class->new($wa);
+    for my $attr (keys %{$data_ref}) {
+        $token->$attr($data_ref->{$attr});
+    }
+    return $token->encode($ring);
+}
+
+# Given an encoded token, directory, and file, write it to disk.  Appends a
+# newline to the end of the token, and therefore cannot be used for raw
+# tokens.
+#
+# $token - The encoded token (or other arbitrary data)
+# $dir   - Directory into which to write the token
+# $file  - File name (relative to that directory) for the token file
+#
+# Returns undef.  Throws I/O exceptions on failure to write the file.
+sub write_token {
+    my ($token, $dir, $file) = @_;
+    my $path = File::Spec->catfile($dir, $file);
+    open my $token_fh, '>', "$path";
+    print {$token_fh} "$token\n"
+      or die "cannot write to $path: $!\n";
+    close $token_fh;
+    return;
+}
+
+# Parse command-line options.  By default, this script looks for the
+# configuration file in the current directory, a keyring in the current
+# directory, and outputs tokens into a subdirectory named tokens.  All this
+# can be changed with options.
+my $config  = 'tokens.conf';
+my $keyring = 'keyring';
+my $output  = 'tokens';
+GetOptions(
+    'c|config=s'  => \$config,
+    'k|keyring=s' => \$keyring,
+    'o|output=s'  => \$output
+) or exit 1;
+
+# Get the tokens to create from the command line, if any.
+my %generate = map { $_ => 1 } @ARGV;
+
+# Load the configuration and keyring and create the WebAuth object.
+require $config;
+my $wa = WebAuth->new;
+my $ring = WebAuth::Keyring->read($wa, $keyring);
+
+# Create the output directory of necessary.
+if (!-d $output) {
+    mkdir $output, 0777;
+}
+
+# Generate the good and error tokens listed in the configuration file.
+for my $tokens_ref (\%TOKENS_GOOD, \%TOKENS_ERROR) {
+  TOKENS:
+    for my $file (sort keys %{$tokens_ref}) {
+        next TOKENS if (%generate and not $generate{$file});
+        my $token = build_token($tokens_ref->{$file}, $wa, $ring);
+        write_token($token, $output, $file);
+        delete $generate{$file};
+    }
+}
+
+# Generate the bad tokens listed in the configuration file.  This requires
+# building the token encoding manually and then using the generic crypto
+# routines since these tokens contain errors that would be rejected by the
+# higher-level token library functions.
+BAD:
+for my $file (sort keys %TOKENS_BAD) {
+    next BAD if (%generate and not $generate{$file});
+    my $token    = q{};
+    my $data_ref = $TOKENS_BAD{$file};
+    for my $attr (sort keys %{$data_ref}) {
+        my $data = $data_ref->{$attr};
+        $data =~ s{;}{;;}xmsg;
+        $token .= $attr . q{=} . $data . q{;};
+    }
+    $token = encode_base64($wa->token_encrypt($token, $ring), q{});
+    write_token($token, $output, $file);
+    delete $generate{$file};
+}
+
+# Generate app-bad-hmac, which corrupts an otherwise-valid token.
+if (!@ARGV || $generate{'app-bad-hmac'}) {
+    my $token = WebAuth::Token::App->new($wa);
+    $token->session_key('some data');
+    $token->expiration($LONG_EXPIRE);
+    $token = $token->encode($ring);
+    $token =~ s{ ^ (.{40}) .. }{ $1 . 'AA' }xmse;
+    write_token($token, $output, 'app-bad-hmac');
+    delete $generate{'app-bad-hmac'};
+}
+
+# Generate app-raw, which is the same as app-ok except without base64.
+if (!$TOKENS_GOOD{'app-ok'} && $generate{'app-raw'}) {
+    die "app-ok specification not found, required for app-raw\n";
+}
+if ((!@ARGV || $generate{'app-raw'}) && $TOKENS_GOOD{'app-ok'}) {
+    my $token = build_token($TOKENS_GOOD{'app-ok'}, $wa, $ring);
+    my $raw   = decode_base64($token);
+    my $path  = File::Spec->catfile($output, 'app-raw');
+    open my $token_fh, '>', "$path";
+    print {$token_fh} $raw or die "cannot write to $path: $!\n";
+    close $token_fh;
+    delete $generate{'app-raw'};
+}
+
+# Report an error if we failed to generate any tokens.
+if (%generate) {
+    my @tokens = sort keys %generate;
+    die "missing configuration for @tokens\n";
+}
+
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=for stopwords
+WebAuth config keyring sublicense MERCHANTABILITY NONINFRINGEMENT
+
+=head1
+
+make-tokens - Generate WebAuth tokens from a configuration file
+
+=head1 SYNOPSIS
+
+B<make-tokens> [B<-c> I<config>] [B<-k> I<keyring>] [B<-o> I<output>]
+    [I<token> ...]
+
+=head1 REQUIREMENTS
+
+Perl 5.10 or later and the WebAuth Perl modules from WebAuth 4.4.0 or
+later.
+
+=head1 DESCRIPTION
+
+B<make-tokens> reads information about WebAuth tokens from a configuration
+file and generates encoded tokens stored in files.  This is primarily
+intended as a testing tool, but can occasionally be useful in other
+situations where manually generating WebAuth tokens is required.
+
+By default, it expects the configuration file to be named F<tokens.conf>
+and found in the current directory and a keyring named F<keyring> in the
+current directory.  By default, it generates tokens in a directory named
+F<tokens> under the current directory.  All of these paths can be changed
+with command-line options.  For details of the configuration file syntax,
+see L<"CONFIGURATION FILE">.
+
+By default, every token specified in the configuration file is generated.
+However, this can be limited to specific tokens by listing the short names
+of the tokens to create on the command line.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-c> I<config>, B<--config>=I<config>
+
+Load the specified file instead of F<./tokens.conf>.
+
+=item B<-k> I<keyring>, B<--keyring>=I<keyring>
+
+Use I<keyring> as the WebAuth keyring file for token encryption instead of
+F<./keyring>.
+
+=item B<-o> I<output>, B<--output>=I<output>
+
+Use I<output> as the output directory for tokens instead of F<./tokens>.
+The generated tokens will be stored in separate files in this directory,
+named after their short names.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+This file is Perl code and is intended to be loaded via require.  It
+defines three variables: %TOKENS_GOOD, %TOKENS_ERROR, and %TOKENS_BAD.
+%TOKENS_GOOD defines fully valid tokens, %TOKENS_ERROR defines tokens with
+valid syntax but that will produce errors when decoded (such as expired
+tokens), and %TOKENS_BAD define syntactically invalid tokens (such as ones
+with missing attributes).
+
+%TOKENS_GOOD and %TOKENS_ERROR should be hashes of short token names to
+anonymous arrays.  The first element of the array is the name of a
+WebAuth::Token::* class; the second element is a hash of token attributes
+to values.
+
+For example:
+
+    our %TOKENS_GOOD = (
+        'app-minimal' => [
+            'WebAuth::Token::App',
+            {
+                subject    => 'testuser',
+                expiration => 2147483600,
+            }
+        ],
+        'app-session' => [
+            'WebAuth::Token::App',
+            {
+                session_key => "\0\0;s=test;\0",
+                expiration  => 2147483600,
+             }
+        ],
+    );
+
+This configuration defines two tokens, F<app-minimal> and F<app-session>,
+which are both WebAuth::Token::App tokens containing test data.
+
+%TOKENS_BAD defines syntactically-invalid tokens that cannot be generated
+directly with the WebAuth library, and therefore are defined with a
+different syntax that's closer to the wire representation.  It should be
+a hash of short token names to anonymous hashes, and the hash should specify
+the attribute names and values to encode.  For example:
+
+    our %TOKENS_BAD = (
+        'cred-missing' => {
+            t   => 'cred',
+            crt => 'krb5',
+            crs => 'webauth/example.com@EXAMPLE.COM',
+            crd => "some\0cred;da;;ta",
+            ct  => pack('N', 1308777900),
+            et  => pack('N', 2147483600),
+        },
+    };
+
+This configuration defines one token, F<cred-missing>, which is a
+credential token with a required field (subject) missing.  Note that
+attributes encoded as binary numbers need to be represented as such in the
+configuration file using pack().
+
+The names used in this file will be the file names of the tokens created.
+They are otherwise arbitrary and have no protocol significance.
+
+=head1 SEE ALSO
+
+This script is is part of the WebAuth distribution, the current version of
+which can be found at L<http://webauth.stanford.edu/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2011, 2012 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=cut

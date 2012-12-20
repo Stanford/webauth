@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Utility functions for the mod_webauthldap test suite.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use CGI qw/:standard/;
 use CGI::Cookie;
@@ -175,9 +178,9 @@ EOS
 
 my %cookies = CGI::Cookie->fetch;
 
-foreach $var (sort(keys(%cookies))) {
+foreach my $var (sort(keys(%cookies))) {
     next unless $var =~ /^webauth_/ && $var !~ /^webauth_wpt_/;
-    ($name, $val) = split('=', $cookies{$var});
+    my ($name, $val) = split('=', $cookies{$var});
     if (length($val) > 40) {
 	$val = substr($val, 0, 40) . "...(truncated)";
     }
@@ -199,9 +202,9 @@ print<<EOS;
  </tr>
 EOS
 
-foreach $var (sort(keys(%ENV))) {
+foreach my $var (sort(keys(%ENV))) {
 
-    $val = $ENV{$var};
+    my $val = $ENV{$var};
     if (length($val) > 80) {
 	$val = substr($val, 0, 80) . "...(truncated)";
     }

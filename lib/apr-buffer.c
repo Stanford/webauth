@@ -24,7 +24,7 @@
  * Allocate a new struct buffer and initialize it.
  */
 struct buffer *
-webauth_buffer_new(apr_pool_t *pool)
+wai_buffer_new(apr_pool_t *pool)
 {
     struct buffer *buffer;
 
@@ -41,17 +41,17 @@ webauth_buffer_new(apr_pool_t *pool)
 
 /*
  * Resize a buffer to be at least as large as the provided second argument.
- * Resize buffers to multiples of 1KB to keep the number of reallocations to a
- * minimum.  Refuse to resize a buffer to make it smaller.
+ * Resize buffers to multiples of 64 bytes to reduce the number of
+ * reallocations.  Refuse to resize a buffer to make it smaller.
  */
-static void
-buffer_resize(struct buffer *buffer, size_t size)
+void
+wai_buffer_resize(struct buffer *buffer, size_t size)
 {
     char *data;
 
     if (size < buffer->size)
         return;
-    buffer->size = (size + 64) & ~64UL;
+    buffer->size = (size + 63) & ~63UL;
     data = apr_palloc(buffer->pool, buffer->size);
     if (buffer->data != NULL)
         memcpy(data, buffer->data, buffer->used);
@@ -64,9 +64,9 @@ buffer_resize(struct buffer *buffer, size_t size)
  * Resize the buffer if needed.
  */
 void
-webauth_buffer_set(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_set(struct buffer *buffer, const char *data, size_t length)
 {
-    buffer_resize(buffer, length + 1);
+    wai_buffer_resize(buffer, length + 1);
     if (length > 0)
         memmove(buffer->data, data, length + 1);
     buffer->data[length] = '\0';
@@ -79,14 +79,58 @@ webauth_buffer_set(struct buffer *buffer, const char *data, size_t length)
  * at the end of the buffer.  Resize the buffer if needed.
  */
 void
-webauth_buffer_append(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_append(struct buffer *buffer, const char *data, size_t length)
 {
     if (length == 0)
         return;
-    buffer_resize(buffer, buffer->used + length + 1);
+    wai_buffer_resize(buffer, buffer->used + length + 1);
     memcpy(buffer->data + buffer->used, data, length);
     buffer->used += length;
     buffer->data[buffer->used] = '\0';
+}
+
+
+/*
+ * Print data into a buffer from the supplied va_list, appending to the end.
+ * The trailing nul is not added to the buffer.
+ */
+void
+wai_buffer_append_vsprintf(struct buffer *buffer, const char *format,
+                           va_list args)
+{
+    size_t avail;
+    ssize_t status;
+    va_list args_copy;
+
+    avail = buffer->size - buffer->used;
+    va_copy(args_copy, args);
+    status = vsnprintf(buffer->data + buffer->used, avail, format, args_copy);
+    va_end(args_copy);
+    if (status < 0)
+        return;
+    if ((size_t) status + 1 > avail) {
+        wai_buffer_resize(buffer, buffer->used + status + 1);
+        avail = buffer->size - buffer->used;
+        status = vsnprintf(buffer->data + buffer->used, avail, format, args);
+        if (status < 0 || (size_t) status + 1 > avail)
+            return;
+    }
+    buffer->used += status;
+}
+
+
+/*
+ * Print data into a buffer, appending to the end.  Resize the buffer if
+ * needed.  The trailing nul is not added to the buffer.
+ */
+void
+wai_buffer_append_sprintf(struct buffer *buffer, const char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    wai_buffer_append_vsprintf(buffer, format, args);
+    va_end(args);
 }
 
 
@@ -96,13 +140,18 @@ webauth_buffer_append(struct buffer *buffer, const char *data, size_t length)
  * terminator is found and false otherwise.
  */
 bool
-webauth_buffer_find_string(struct buffer *buffer, const char *string,
-                           size_t start, size_t *offset)
+wai_buffer_find_string(struct buffer *buffer, const char *string,
+                       size_t start, size_t *offset)
 {
     char *terminator, *data;
     size_t length;
 
+    /* If there isn't room for the search string, always return false. */
     length = strlen(string);
+    if (buffer->size < length || start > buffer->size - length)
+        return false;
+
+    /* Check each possible match point by searching for the first octet. */
     do {
         data = buffer->data + start;
         terminator = memchr(data, string[0], buffer->used - start);
@@ -113,6 +162,8 @@ webauth_buffer_find_string(struct buffer *buffer, const char *string,
             return false;
         start++;
     } while (memcmp(terminator, string, length) != 0);
+
+    /* Success.  Return the offset. */
     *offset = start - 1;
     return true;
 }

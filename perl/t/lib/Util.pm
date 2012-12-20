@@ -11,6 +11,7 @@ package Util;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA @EXPORT $VERSION);
 
 use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);

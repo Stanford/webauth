@@ -31,7 +31,6 @@
 #include <perl.h>
 #include <XSUB.h>
 
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
@@ -107,6 +106,7 @@ struct token_mapping {
 /* App tokens. */
 struct token_mapping token_mapping_app[] = {
     M(webauth_token_app, subject,         STRING),
+    M(webauth_token_app, authz_subject,   STRING),
     M(webauth_token_app, last_used,       TIME),
     M(webauth_token_app, session_key,     DATA),
     M(webauth_token_app, session_key_len, DATALEN),
@@ -141,6 +141,7 @@ struct token_mapping token_mapping_error[] = {
 /* Id tokens. */
 struct token_mapping token_mapping_id[] = {
     M(webauth_token_id, subject,         STRING),
+    M(webauth_token_id, authz_subject,   STRING),
     M(webauth_token_id, auth,            STRING),
     M(webauth_token_id, auth_data,       DATA),
     M(webauth_token_id, auth_data_len,   DATALEN),
@@ -164,6 +165,7 @@ struct token_mapping token_mapping_login[] = {
 /* Proxy tokens. */
 struct token_mapping token_mapping_proxy[] = {
     M(webauth_token_proxy, subject,          STRING),
+    M(webauth_token_proxy, authz_subject,    STRING),
     M(webauth_token_proxy, type,             STRING),
     M(webauth_token_proxy, webkdc_proxy,     DATA),
     M(webauth_token_proxy, webkdc_proxy_len, DATALEN),
@@ -344,8 +346,6 @@ webauth_croak(struct webauth_context *ctx, const char *detail, int s)
 
 MODULE = WebAuth        PACKAGE = WebAuth    PREFIX = webauth_
 
-PROTOTYPES: ENABLE
-
 
 # Generate all the constant subs for all the exported WebAuth constants.
 BOOT:
@@ -363,11 +363,11 @@ BOOT:
     IV_CONST(WA_ERR_BAD_HMAC);
     IV_CONST(WA_ERR_RAND_FAILURE);
     IV_CONST(WA_ERR_BAD_KEY);
-    IV_CONST(WA_ERR_KEYRING_OPENWRITE);
-    IV_CONST(WA_ERR_KEYRING_WRITE);
-    IV_CONST(WA_ERR_KEYRING_OPENREAD);
-    IV_CONST(WA_ERR_KEYRING_READ);
-    IV_CONST(WA_ERR_KEYRING_VERSION);
+    IV_CONST(WA_ERR_FILE_OPENWRITE);
+    IV_CONST(WA_ERR_FILE_WRITE);
+    IV_CONST(WA_ERR_FILE_OPENREAD);
+    IV_CONST(WA_ERR_FILE_READ);
+    IV_CONST(WA_ERR_FILE_VERSION);
     IV_CONST(WA_ERR_NOT_FOUND);
     IV_CONST(WA_ERR_KRB5);
     IV_CONST(WA_ERR_INVALID_CONTEXT);
@@ -380,6 +380,7 @@ BOOT:
     IV_CONST(WA_ERR_UNIMPLEMENTED);
     IV_CONST(WA_ERR_INVALID);
     IV_CONST(WA_ERR_REMOTE_FAILURE);
+    IV_CONST(WA_ERR_FILE_NOT_FOUND);
 
     /* Protocol error codes from the WebKDC. */
     IV_CONST(WA_PEC_SERVICE_TOKEN_EXPIRED);
@@ -406,6 +407,8 @@ BOOT:
     IV_CONST(WA_PEC_LOGIN_REJECTED);
     IV_CONST(WA_PEC_LOA_UNAVAILABLE);
     IV_CONST(WA_PEC_AUTH_REJECTED);
+    IV_CONST(WA_PEC_AUTH_REPLAY);
+    IV_CONST(WA_PEC_AUTH_LOCKOUT);
 
     /* Key types. */
     IV_CONST(WA_KEY_AES);
@@ -429,7 +432,6 @@ BOOT:
 WebAuth
 new(class)
     const char *class
-  PROTOTYPE: ;$
   PREINIT:
     struct webauth_context *ctx;
     int status;
@@ -458,218 +460,10 @@ const char *
 webauth_error_message(self, status)
     WebAuth self
     int status
-  PROTOTYPE: $$
   CODE:
     RETVAL = webauth_error_message(self, status);
   OUTPUT:
     RETVAL
-
-
-void
-webauth_base64_encode(self, input)
-    WebAuth self
-    SV *input
-  PROTOTYPE: $$
-  CODE:
-{
-    STRLEN n_input;
-    size_t out_len, out_max;
-    int s;
-    char *p_input;
-
-    p_input = SvPV(input, n_input);
-    out_max = webauth_base64_encoded_length(n_input);
-
-    ST(0) = sv_2mortal(NEWSV(0, out_max));
-
-    s = webauth_base64_encode(p_input, n_input, SvPVX(ST(0)), &out_len,
-                              out_max);
-
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_base64_encode", s);
-
-    SvCUR_set(ST(0), out_len);
-    SvPOK_only(ST(0));
-}
-
-
-void
-webauth_base64_decode(self, input)
-    WebAuth self
-    SV * input
-  PROTOTYPE: $$
-  PPCODE:
-{
-    STRLEN n_input;
-    size_t out_len;
-    int s;
-    char *p_input;
-    char *buff;
-    SV *output;
-
-    p_input = SvPV(input, n_input);
-    buff = NULL;
-
-    buff = malloc(n_input);
-    if (buff == NULL)
-        croak("can't create buffer");
-    s = webauth_base64_decode(p_input, n_input, buff, &out_len, n_input);
-
-    if (s != WA_ERR_NONE) {
-       if (buff != NULL)
-            free(buff);
-       webauth_croak(NULL, "webauth_base64_decode", s);
-    }
-
-    EXTEND(SP,1);
-    output = sv_newmortal();
-    sv_setpvn(output, buff, out_len);
-    PUSHs(output);
-    if (buff != NULL)
-        free(buff);
-}
-
-
-void
-webauth_hex_encode(self, input)
-    WebAuth self
-    SV * input
-  PROTOTYPE: $$
-  CODE:
-{
-    STRLEN n_input;
-    size_t out_len, out_max;
-    int s;
-    char *p_input;
-
-    p_input = SvPV(input, n_input);
-    out_max = webauth_hex_encoded_length(n_input);
-
-    ST(0) = sv_2mortal(NEWSV(0, out_max));
-    s = webauth_hex_encode(p_input, n_input, SvPVX(ST(0)), &out_len, out_max);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_hex_encode", s);
-    SvCUR_set(ST(0), out_len);
-    SvPOK_only(ST(0));
-}
-
-
-void
-webauth_hex_decode(self, input)
-    WebAuth self
-    SV * input
-  PROTOTYPE: $
-  PPCODE:
-{
-    STRLEN n_input;
-    size_t out_len, out_max;
-    int s;
-    char *p_input, *buff;
-    SV *output;
-    buff = NULL;
-
-    p_input = SvPV(input, n_input);
-    s = webauth_hex_decoded_length(n_input, &out_max);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_hex_decoded_length", s);
-    buff = malloc(out_max);
-    if (buff == NULL)
-        croak("can't create buffer");
-    s = webauth_hex_decode(p_input, n_input, buff, &out_len, out_max);
-    if (s != WA_ERR_NONE) {
-        if (buff != NULL)
-            free(buff);
-        webauth_croak(NULL, "webauth_hex_decode", s);
-    }
-
-    EXTEND(SP,1);
-    output = sv_newmortal();
-    sv_setpvn(output, buff, out_len);
-    PUSHs(output);
-
-    if (buff != NULL)
-        free(buff);
-}
-
-
-void
-webauth_attrs_encode(self, attrs)
-    WebAuth self
-    SV *attrs
-  PROTOTYPE: $$
-  PPCODE:
-{
-    HV *h;
-    SV *sv_val;
-    size_t num_attrs, out_len, out_max;
-    int s;
-    char *key, *val;
-    I32 klen;
-    STRLEN vlen;
-    WEBAUTH_ATTR_LIST *list;
-    SV *output;
-
-    if (!SvROK(attrs) || !(SvTYPE(SvRV(attrs)) == SVt_PVHV))
-        croak("attrs must be reference to a hash");
-    h = (HV *) SvRV(attrs);
-
-    num_attrs = hv_iterinit(h);
-    list = webauth_attr_list_new(num_attrs);
-    if (list == NULL)
-        croak("can't malloc attr list");
-
-    while ((sv_val = hv_iternextsv(h, &key, &klen)) != NULL) {
-        val = SvPV(sv_val, vlen);
-        webauth_attr_list_add(list, key, val, vlen, WA_F_NONE);
-    }
-
-    out_max = webauth_attrs_encoded_length(list);
-    output = sv_2mortal(NEWSV(0, out_max));
-    s = webauth_attrs_encode(list, SvPVX(output), &out_len, out_max);
-    webauth_attr_list_free(list);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_attrs_encode", s);
-    else {
-        SvCUR_set(output, out_len);
-        SvPOK_only(output);
-    }
-
-    EXTEND(SP,1);
-    PUSHs(output);
-}
-
-
-void
-webauth_attrs_decode(self, buffer)
-    WebAuth self
-    SV *buffer
-  PROTOTYPE: $$
-  PPCODE:
-{
-    size_t n_input;
-    char *p_input;
-    WEBAUTH_ATTR_LIST *list;
-    size_t i;
-    int s;
-    HV *hv;
-    SV *copy = sv_2mortal(newSVsv(buffer));
-    SV *output;
-
-    p_input = SvPV(copy, n_input);
-    s = webauth_attrs_decode(p_input, n_input, &list);
-    if (s != WA_ERR_NONE)
-        webauth_croak(NULL, "webauth_attrs_decode", s);
-
-    hv = newHV();
-    for (i = 0; i < list->num_attrs; i++)
-        (void) hv_store(hv, list->attrs[i].name, strlen(list->attrs[i].name),
-                        newSVpvn(list->attrs[i].value, list->attrs[i].length),
-                        0);
-    webauth_attr_list_free(list);
-    output = sv_2mortal(newRV_noinc((SV*)hv));
-    EXTEND(SP,1);
-    PUSHs(output);
-}
 
 
 WebAuth::Key
@@ -678,7 +472,6 @@ key_create(self, type, size, key_material = NULL)
     enum webauth_key_type type
     enum webauth_key_size size
     const unsigned char *key_material
-  PROTOTYPE: $$$;$
   PREINIT:
     struct webauth_key *key;
     int status;
@@ -697,7 +490,6 @@ WebAuth::Keyring
 keyring_new(self, ks)
     WebAuth self
     SV *ks
-  PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
   CODE:
@@ -721,10 +513,34 @@ keyring_new(self, ks)
 
 
 WebAuth::Keyring
+keyring_decode(self, data)
+    WebAuth self
+    SV *data
+  PREINIT:
+    WebAuth__Keyring ring;
+    int status;
+    const char *encoded;
+    STRLEN length;
+  CODE:
+{
+    ring = malloc(sizeof(*ring));
+    if (ring == NULL)
+        croak("cannot allocate memory");
+    encoded = SvPV(data, length);
+    status = webauth_keyring_decode(self, encoded, length, &ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_keyring_decode", status);
+    ring->ctx = self;
+    RETVAL = ring;
+}
+  OUTPUT:
+    RETVAL
+
+
+WebAuth::Keyring
 keyring_read(self, file)
     WebAuth self
     const char *file
-  PROTOTYPE: $$
   PREINIT:
     WebAuth__Keyring ring;
     int status;
@@ -743,12 +559,34 @@ keyring_read(self, file)
     RETVAL
 
 
+WebAuth::Krb5
+krb5_new(self)
+    WebAuth self
+  PREINIT:
+    struct webauth_krb5 *kc = NULL;
+    WebAuth__Krb5 krb5;
+    int status;
+    SV *output;
+  CODE:
+{
+    krb5 = malloc(sizeof(*krb5));
+    if (krb5 == NULL)
+        croak("cannot allocate memory");
+    status = webauth_krb5_new(self, &krb5->kc);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_krb5_new", status);
+    krb5->ctx = self;
+    RETVAL = krb5;
+}
+  OUTPUT:
+    RETVAL
+
+
 SV *
 token_decode(self, input, ring)
     WebAuth self
     SV *input
     WebAuth::Keyring ring
-  PROTOTYPE: $$$
   PREINIT:
     const char *encoded;
     struct webauth_token *token;
@@ -825,25 +663,49 @@ token_decode(self, input, ring)
     RETVAL
 
 
-WebAuth::Krb5
-krb5_new(self)
+SV *
+token_decrypt(self, input, ring)
     WebAuth self
-  PROTOTYPE: $
+    SV *input
+    WebAuth::Keyring ring
   PREINIT:
-    struct webauth_krb5 *kc = NULL;
-    WebAuth__Krb5 krb5;
+    const void *encoded;
+    STRLEN length;
     int status;
-    SV *output;
+    void *output;
+    size_t outlen;
   CODE:
 {
-    krb5 = malloc(sizeof(*krb5));
-    if (krb5 == NULL)
-        croak("cannot allocate memory");
-    status = webauth_krb5_new(self, &krb5->kc);
+    encoded = SvPV(input, length);
+    status = webauth_token_decrypt(self, encoded, length, &output, &outlen,
+                                   ring->ring);
     if (status != WA_ERR_NONE)
-        webauth_croak(self, "webauth_krb5_new", status);
-    krb5->ctx = self;
-    RETVAL = krb5;
+        webauth_croak(self, "webauth_token_decrypt", status);
+    RETVAL = newSVpvn(output, outlen);
+}
+  OUTPUT:
+    RETVAL
+
+
+SV *
+token_encrypt(self, input, ring)
+    WebAuth self
+    SV *input
+    WebAuth::Keyring ring
+  PREINIT:
+    const void *data;
+    STRLEN length;
+    int status;
+    void *output;
+    size_t outlen;
+  CODE:
+{
+    data = SvPV(input, length);
+    status = webauth_token_encrypt(self, data, length, &output, &outlen,
+                                   ring->ring);
+    if (status != WA_ERR_NONE)
+        webauth_croak(self, "webauth_token_encrypt", status);
+    RETVAL = newSVpvn(output, outlen);
 }
   OUTPUT:
     RETVAL
@@ -854,25 +716,24 @@ MODULE = WebAuth  PACKAGE = WebAuth::Key
 enum webauth_key_type
 type(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->type;
   OUTPUT:
     RETVAL
 
+
 enum webauth_key_size
 length(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->length;
   OUTPUT:
     RETVAL
 
+
 SV *
 data(self)
     WebAuth::Key self
-  PROTOTYPE: $
   CODE:
     RETVAL = newSVpvn((const void *) self->data, self->length);
   OUTPUT:
@@ -884,7 +745,6 @@ MODULE = WebAuth  PACKAGE = WebAuth::Keyring
 void
 DESTROY(self)
     WebAuth::Keyring self
-  PROTOTYPE: $
   CODE:
     free(self);
 
@@ -895,7 +755,6 @@ add(self, creation, valid_after, key)
     time_t creation
     time_t valid_after
     WebAuth::Key key
-  PROTOTYPE: $$$$
   PREINIT:
     int s;
   PPCODE:
@@ -910,7 +769,6 @@ best_key(self, usage, hint)
     WebAuth::Keyring self
     enum webauth_key_usage usage
     time_t hint
-  PROTOTYPE: $$$
   PREINIT:
     const struct webauth_key *key;
     int s;
@@ -928,10 +786,27 @@ best_key(self, usage, hint)
     RETVAL
 
 
+SV *
+encode(self)
+    WebAuth::Keyring self
+  PREINIT:
+    int s;
+    char *data;
+    size_t length;
+  CODE:
+{
+    s = webauth_keyring_encode(self->ctx, self->ring, &data, &length);
+    if (s != WA_ERR_NONE)
+        webauth_croak(self->ctx, "webauth_keyring_encode", s);
+    RETVAL = newSVpvn(data, length);
+}
+  OUTPUT:
+    RETVAL
+
+
 void
 entries(self)
     WebAuth::Keyring self
-  PROTOTYPE: $
   PREINIT:
     struct webauth_keyring *ring;
   PPCODE:
@@ -961,7 +836,6 @@ void
 remove(self, n)
     WebAuth::Keyring self
     size_t n
-  PROTOTYPE: $$
   PREINIT:
     int s;
   PPCODE:
@@ -977,14 +851,13 @@ void
 write(self, path)
     WebAuth::Keyring self
     char *path
-  PROTOTYPE: $$
   PREINIT:
     int s;
   PPCODE:
 {
     s = webauth_keyring_write(self->ctx, self->ring, path);
     if (s != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_keyring_write_file", s);
+        webauth_croak(self->ctx, "webauth_keyring_write", s);
     XSRETURN_YES;
 }
 
@@ -994,7 +867,6 @@ MODULE = WebAuth        PACKAGE = WebAuth::KeyringEntry
 time_t
 creation(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->creation;
   OUTPUT:
@@ -1004,7 +876,6 @@ creation(self)
 time_t
 valid_after(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->valid_after;
   OUTPUT:
@@ -1014,7 +885,6 @@ valid_after(self)
 WebAuth::Key
 key(self)
     WebAuth::KeyringEntry self
-  PROTOTYPE: $
   CODE:
     RETVAL = self->key;
   OUTPUT:
@@ -1026,7 +896,6 @@ MODULE = WebAuth  PACKAGE = WebAuth::Krb5
 void
 DESTROY(self)
     WebAuth::Krb5 self
-  PROTOTYPE: $
   CODE:
 {
     webauth_krb5_free(self->ctx, self->kc);
@@ -1038,11 +907,12 @@ void
 init_via_cache(self, cache = NULL)
     WebAuth::Krb5 self
     const char *cache
-  PROTOTYPE: $;$
   PREINIT:
     int status;
   CODE:
 {
+    if (cache != NULL && cache[0] == '\0')
+        cache = NULL;
     status = webauth_krb5_init_via_cache(self->ctx, self->kc, cache);
     if (status != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_krb5_init_via_cache", status);
@@ -1055,7 +925,6 @@ init_via_keytab(self, keytab, server = NULL, cache = NULL)
     const char *keytab
     const char *server
     const char *cache
-  PROTOTYPE: $$;$$
   PREINIT:
     int status;
   CODE:
@@ -1079,7 +948,6 @@ init_via_password(self, username, password, principal = NULL, keytab = NULL, \
     const char *keytab
     const char *server
     const char *cache
-  PROTOTYPE: $$$;$$$$
   PREINIT:
     char *servername;
     int status;
@@ -1107,7 +975,6 @@ void
 export_cred(self, principal = NULL)
     WebAuth::Krb5 self
     const char *principal
-  PROTOTYPE: $;$
   PPCODE:
 {
     void *cred;
@@ -1116,6 +983,8 @@ export_cred(self, principal = NULL)
     SV *out;
     int status;
 
+    if (principal != NULL && principal[0] == '\0')
+        principal = NULL;
     status = webauth_krb5_export_cred(self->ctx, self->kc, principal, &cred,
                                       &cred_len, &expiration);
     if (status != WA_ERR_NONE)
@@ -1143,7 +1012,6 @@ import_cred(self, cred, cache = NULL)
     WebAuth::Krb5 self
     SV *cred
     const char *cache
-  PROTOTYPE: $$;$
   PREINIT:
     const void *data;
     size_t length;
@@ -1162,7 +1030,6 @@ char *
 get_principal(self, canon = 0)
     WebAuth::Krb5 self
     enum webauth_krb5_canon canon
-  PROTOTYPE: $;$
   PREINIT:
     int status;
     char *principal;
@@ -1183,7 +1050,6 @@ make_auth(self, server, data = NULL)
     WebAuth::Krb5 self
     const char *server
     SV *data
-  PROTOTYPE: $$;$
   PPCODE:
 {
     void *req, *out_data;
@@ -1229,7 +1095,6 @@ read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
     const char *server
     enum webauth_krb5_canon canon
     SV *data
-  PROTOTYPE: $$$;$$$
   PPCODE:
 {
     const void *req;
@@ -1273,7 +1138,6 @@ void
 change_password(self, password)
     WebAuth::Krb5 self
     const char *password
-  PROTOTYPE: $$
   PREINIT:
     int status;
   CODE:
@@ -1290,7 +1154,6 @@ const char *
 encode(self, ring)
     SV *self
     WebAuth::Keyring ring
-  PROTOTYPE: $$
   PREINIT:
     HV *hash;
     SV **ctx_sv;

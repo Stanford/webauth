@@ -14,6 +14,8 @@ page, as well as (optionally) a way to set preferences for doing
 REMOTE_USER authentication.  Variables used:
 
 username               : the authenticated identity of the user
+authz_subject          : the authorization identity of the user
+permitted_authz        : array of permitted authorization identities
 return_url             : the WebAuth-protected page now authenticated for
 pretty_return_url      : same, but cleaned up for use as link text
 login_cancel           : a cancel URL was specified
@@ -24,6 +26,8 @@ warn_expire            : show warning for upcoming password expiration
 expire_date            : the date and time of password expiration
 expire_time_left       : the amount of time left until password expiration
 pwchange_url           : URL for the password change form
+ST                     : Original service token
+RT                     : Original request token
 
 You may customize this file however you wish for your site.
 
@@ -104,6 +108,10 @@ works of this work.
             <div class="logintext">
               <p>You are logged into WebAuth as user
               <strong>[% username FILTER html %]</strong></p>
+              [% IF authz_subject %]
+                <p>You will be identified to the website as
+                <strong>[% authz_subject FILTER html %]</strong></p>
+              [% END %]
               <p>Click this link to continue to the website you
               requested:</p>
               <p><a href="[% return_url FILTER html %]">
@@ -132,6 +140,40 @@ works of this work.
         </tr>
       </table>
     </div>
+
+    [% IF permitted_authz.size %]
+    <div class="authzbox" style="width: 70%; margin-left: auto;
+                                 margin-right: auto">
+      <p>
+        You are permitted to identify to this web site as a user other
+        than your normal identity.  If you want to do that, select a
+        different identity from the list below.
+      </p>
+      <form action="[% script_name FILTER html %]" method="post"
+            enctype="application/x-www-form-urlencoded"
+            align="center">
+        <input type="hidden" name="rm" value="edit_authz_identity">
+        <input type="hidden" name="ST" value="[% ST FILTER html %]">
+        <input type="hidden" name="RT" value="[% RT FILTER html %]">
+        <table>
+          <tr>
+            <td><strong>Identity:</strong></td>
+            <td>
+              <select name="authz_subject">
+                <option selected>[% username FILTER html %]</option>
+                [% FOREACH authz IN permitted_authz %]
+                <option>[% authz FILTER html %]</option>
+                [% END %]
+              </select>
+            </td>
+            <td>
+              <input type="submit" name="Submit" value="Change Identity">
+            </td>
+          </tr>
+        </table>
+      </form>
+    </div>
+    [% END %]
 
     [% IF show_remuser %]
       <div class="remuserbox" align="center">

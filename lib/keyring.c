@@ -12,38 +12,14 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_file_info.h>
-#include <apr_file_io.h>
 #include <time.h>
 
 #include <lib/internal.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 
 /* The version of the keyring file format that we implement. */
 #define KEYRING_VERSION 1
-
-/*
- * A keyring file as implemented in this code is a bunch of attributes.  Here
- * are the attributes and the types of their values:
- *
- *     v={version}           uint32_t
- *     n={num-entries}       uint32_t
- *     ct%d={creation-time}  time_t
- *     vf%d={valid-after}    time_t
- *     kt%d={key-type}       uint32_t
- *     key%d={key-data}      binary-data
- *
- * The attribute names containing %d repeat for each entry, starting with zero
- * for the first key.
- */
-#define A_VERSION       "v"
-#define A_NUM_ENTRIES   "n"
-#define A_CREATION_TIME "ct%lu"
-#define A_VALID_AFTER   "va%lu"
-#define A_KEY_TYPE      "kt%lu"
-#define A_KEY_DATA      "kd%lu"
 
 
 /*
@@ -113,9 +89,8 @@ webauth_keyring_remove(struct webauth_context *ctx,
     struct webauth_keyring_entry *entry;
 
     if (n >= (size_t) entries->nelts) {
-        webauth_error_set(ctx, WA_ERR_NOT_FOUND,
-                          "keyring index %lu out of range",
-                          (unsigned long) n);
+        wai_error_set(ctx, WA_ERR_NOT_FOUND, "keyring index %lu out of range",
+                      (unsigned long) n);
         return WA_ERR_NOT_FOUND;
     }
     for (i = n + 1; i < (size_t) entries->nelts; i++) {
@@ -168,7 +143,7 @@ webauth_keyring_best_key(struct webauth_context *ctx,
         }
     }
     if (best == NULL) {
-        webauth_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys found");
+        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
         return WA_ERR_NOT_FOUND;
     } else {
         *output = best->key;
@@ -178,183 +153,54 @@ webauth_keyring_best_key(struct webauth_context *ctx,
 
 
 /*
- * Read in the entirety of a file, continuing after partial reads or signal
- * interruptions.  Takes the WebAuth context, the file name, and pointers into
- * which to store the newly allocated buffer and length.  Returns a WebAuth
- * error code.
- *
- * FIXME: Currently does no locking.
- */
-static int
-read_keyring_file(struct webauth_context *ctx, const char *path,
-                  char **output, size_t *length)
-{
-    apr_file_t *file = NULL;
-    apr_finfo_t finfo;
-    apr_size_t size;
-    char *buf;
-    apr_status_t status;
-    int s;
-
-    /* Set output parameters in case of error. */
-    *output = NULL;
-    *length = 0;
-
-    /* Open the file. */
-    status = apr_file_open(&file, path, APR_READ, 0600, ctx->pool);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_OPENREAD;
-        webauth_error_set_apr(ctx, s, status, "%s", path);
-        goto done;
-    }
-
-    /* Allocate enough room for the contents. */
-    status = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set_apr(ctx, s, status, "stat of %s", path);
-        goto done;
-    }
-    if (finfo.size == 0) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, s, "file %s is empty", path);
-        goto done;
-    }
-    buf = apr_palloc(ctx->pool, finfo.size);
-
-    /* Read the contents. */
-    status = apr_file_read_full(file, buf, finfo.size, &size);
-    if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set_apr(ctx, s, status, "%s", path);
-        goto done;
-    }
-    if (size != finfo.size) {
-        s = WA_ERR_KEYRING_READ;
-        webauth_error_set(ctx, s, "file %s modified during read", path);
-        goto done;
-    }
-    *output = buf;
-    *length = size;
-    s = WA_ERR_NONE;
-
-done:
-    if (file != NULL)
-        apr_file_close(file);
-    return s;
-}
-
-
-/*
- * Macros for decoding attributes, which make code easier to read and audit.
- * These macros require that ctx be the context, alist be the attribute list,
- * status be available to and that the correct thing to do on an error is to
- * set an error and go to the done label.
- *
- * a is the attribute code, n is the name of the attribute (for errors), and
- * o is the location into which to store it.  l is the location in which to
- * store the length.
- */
-#define DECODE_CHECK(status, n)                                         \
-    if (status != WA_ERR_NONE) {                                        \
-        webauth_error_set(ctx, status, "error decoding " n " from"      \
-                          " keyring file");                             \
-        goto done;                                                      \
-    }
-#define DECODE_DATA(a, n, o, l)                                         \
-    do {                                                                \
-        status = webauth_attr_list_get(alist, (a), (o), (l),            \
-                                       WA_F_FMT_HEX);                   \
-        DECODE_CHECK(status, n);                                        \
-    } while (0)
-#define DECODE_TIME(a, n, o)                                            \
-    do {                                                                \
-        status = webauth_attr_list_get_time(alist, (a), (o),            \
-                                            WA_F_FMT_STR);              \
-        DECODE_CHECK(status, n);                                        \
-    } while (0)
-#define DECODE_UINT(a, n, o)                                            \
-    do {                                                                \
-        status = webauth_attr_list_get_uint32(alist, (a), (o),          \
-                                              WA_F_FMT_STR);            \
-        DECODE_CHECK(status, n);                                        \
-    } while (0)
-
-/*
- * Variants that decode the i'th attribute of a type.  Assumes the buffer name
- * is available to store the attribute name.
- */
-#define DECODE_DATA_N(a, i, n, o, l)                            \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        DECODE_DATA(name, n, (o), (l));                         \
-    } while (0)
-#define DECODE_TIME_N(a, i, n, o)                               \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        DECODE_TIME(name, n, (o));                              \
-    } while (0)
-#define DECODE_UINT_N(a, i, n, o)                               \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        DECODE_UINT(name, n, (o));                              \
-    } while (0)
-
-
-/*
  * Decode the encoded form of a keyring into a new keyring structure and store
  * that in the ring argument.  Returns a WA_ERR code.
  */
-static int
-decode(struct webauth_context *ctx, char *input, size_t length,
-       struct webauth_keyring **output)
+int
+webauth_keyring_decode(struct webauth_context *ctx, const char *input,
+                       size_t length, struct webauth_keyring **output)
 {
     size_t i;
     int status;
-    uint32_t version, count;
-    WEBAUTH_ATTR_LIST *alist = NULL;
     struct webauth_keyring *ring;
+    struct wai_keyring data;
 
-    /* Get basic information and create the keyring. */
+    /*
+     * Decode the keyring to our internal data structure and check the file
+     * format version.
+     */
     *output = NULL;
-    status = webauth_attrs_decode(input, length, &alist);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "error decoding keyring file");
-        goto done;
+    memset(&data, 0, sizeof(data));
+    status = wai_decode(ctx, wai_keyring_encoding, input, length, &data);
+    if (status != WA_ERR_NONE)
+        return status;
+    if (data.version != KEYRING_VERSION) {
+        status = WA_ERR_FILE_VERSION;
+        wai_error_set(ctx, status, "unsupported keyring data version %d",
+                      data.version);
+        return status;
     }
-    DECODE_UINT(A_VERSION, "version", &version);
-    if (version != KEYRING_VERSION) {
-        status = WA_ERR_KEYRING_VERSION;
-        webauth_error_set(ctx, status, "unsupported keyring file version");
-        goto done;
-    }
-    DECODE_UINT(A_NUM_ENTRIES, "key count", &count);
-    ring = webauth_keyring_new(ctx, count);
 
-    /* For each key in the file, decode it and store it in the keyring. */
-    for (i = 0; i < count; i++) {
-        time_t creation, valid_after;
-        uint32_t key_type;
-        char name[32];
-        void *key_data;
-        size_t key_len;
+    /*
+     * Convert the internal data structure to our keyring data structure and,
+     * while doing so, sanity-check the data that we read by using our regular
+     * API functions to turn it into keys and keyring entries.
+     */
+    ring = webauth_keyring_new(ctx, data.entry_count);
+    for (i = 0; i < data.entry_count; i++) {
+        struct wai_keyring_entry *entry;
         struct webauth_key *key;
 
-        DECODE_TIME_N(A_CREATION_TIME, i, "key creation", &creation);
-        DECODE_TIME_N(A_VALID_AFTER, i, "key valid after", &valid_after);
-        DECODE_UINT_N(A_KEY_TYPE, i, "key type", &key_type);
-        DECODE_DATA_N(A_KEY_DATA, i, "key data", &key_data, &key_len);
-        status = webauth_key_create(ctx, key_type, key_len, key_data, &key);
+        entry = &data.entry[i];
+        status = webauth_key_create(ctx, entry->key_type, entry->key_len,
+                                    entry->key, &key);
         if (status != WA_ERR_NONE)
-            goto done;
-        webauth_keyring_add(ctx, ring, creation, valid_after, key);
+            return status;
+        webauth_keyring_add(ctx, ring, entry->creation, entry->valid_after,
+                            key);
     }
     *output = ring;
-
-done:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
-    return status;
+    return WA_ERR_NONE;
 }
 
 
@@ -367,121 +213,54 @@ webauth_keyring_read(struct webauth_context *ctx, const char *path,
                      struct webauth_keyring **ring)
 {
     int status;
-    char *buf;
+    void *buf;
     size_t length;
 
     *ring = NULL;
-    status = read_keyring_file(ctx, path, &buf, &length);
+    status = wai_file_read(ctx, path, &buf, &length);
     if (status != WA_ERR_NONE)
         return status;
-    return decode(ctx, buf, length, ring);
+    return webauth_keyring_decode(ctx, buf, length, ring);
 }
 
 
 /*
- * Macros for encoding attributes, which make code easier to read and audit.
- * These macros require that ctx be the context, alist be the attribute list,
- * status be available to and that the correct thing to do on an error is to
- * set an error and go to the done label.
- *
- * a is the attribute code, n is the name of the attribute (for errors), and
- * v is the value.  l is the length for data attributes.
+ * Encode a keyring into the format for the file on disk.  Stores the encoded
+ * keyring in buffer (allocating new memory for it) and the length of the
+ * encoded buffer in buffer_len.  Returns an WA_ERR code.
  */
-#define ENCODE_CHECK(status, n)                                         \
-    if (status != WA_ERR_NONE) {                                        \
-        webauth_error_set(ctx, status, "error encoding " n " to"        \
-                          " keyring file");                             \
-        goto done;                                                      \
-    }
-#define ENCODE_DATA(a, n, v, l)                                         \
-    do {                                                                \
-        status = webauth_attr_list_add(alist, (a), (v), (l),            \
-                                       WA_F_COPY_BOTH | WA_F_FMT_HEX);  \
-        ENCODE_CHECK(status, n);                                        \
-    } while (0)
-#define ENCODE_TIME(a, n, v)                                            \
-    do {                                                                \
-        status = webauth_attr_list_add_time(alist, (a), (v),            \
-                     WA_F_COPY_NAME | WA_F_FMT_STR);                    \
-        ENCODE_CHECK(status, n);                                        \
-    } while (0)
-#define ENCODE_UINT(a, n, v)                                            \
-    do {                                                                \
-        status = webauth_attr_list_add_uint32(alist, (a), (v),          \
-                     WA_F_COPY_NAME | WA_F_FMT_STR);                    \
-        ENCODE_CHECK(status, n);                                        \
-    } while (0)
-
-/*
- * Variants that decode the i'th attribute of a type.  Assumes the buffer name
- * is available to store the attribute name.
- */
-#define ENCODE_DATA_N(a, i, n, v, l)                            \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        ENCODE_DATA(name, n, (v), (l));                         \
-    } while (0)
-#define ENCODE_TIME_N(a, i, n, v)                               \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        ENCODE_TIME(name, n, (v));                              \
-    } while (0)
-#define ENCODE_UINT_N(a, i, n, v)                               \
-    do {                                                        \
-        snprintf(name, sizeof(name), (a), (unsigned long) i);   \
-        ENCODE_UINT(name, n, (v));                              \
-    } while (0)
-
-
-/*
- * Encode a keyring into the format for the file on disk.  See the comments at
- * the top of this file for the format.  Stores the encoded keyring in buffer
- * (allocating new memory for it) and the length of the encoded buffer in
- * buffer_len.  Returns an WA_ERR code.
- */
-static int
-encode(struct webauth_context *ctx, const struct webauth_keyring *ring,
-       char **output, size_t *length)
+int
+webauth_keyring_encode(struct webauth_context *ctx,
+                       const struct webauth_keyring *ring, char **output,
+                       size_t *length)
 {
-    size_t i, attr_len;
-    WEBAUTH_ATTR_LIST *alist = NULL;
-    int status;
-    char *buf;
+    struct wai_keyring data;
+    size_t i, size;
 
+    /*
+     * Convert the keyring into the struct wai_keyring format, which is what
+     * we will serialize to disk.
+     */
     *output = NULL;
-    alist = webauth_attr_list_new(ring->entries->nelts * 5 + 2);
-    if (alist == NULL) {
-        status = WA_ERR_NO_MEM;
-        webauth_error_set(ctx, status, "cannot create attribute list");
-        goto done;
-    }
-    ENCODE_UINT(A_VERSION, "version", KEYRING_VERSION);
-    ENCODE_UINT(A_NUM_ENTRIES, "key count", ring->entries->nelts);
+    memset(&data, 0, sizeof(data));
+    data.version = KEYRING_VERSION;
+    data.entry_count = ring->entries->nelts;
+    size = sizeof(struct wai_keyring_entry) * data.entry_count;
+    data.entry = apr_palloc(ctx->pool, size);
     for (i = 0; i < (size_t) ring->entries->nelts; i++) {
-        char name[32];
         struct webauth_keyring_entry *entry;
 
         entry = &APR_ARRAY_IDX(ring->entries, i, struct webauth_keyring_entry);
-        ENCODE_TIME_N(A_CREATION_TIME, i, "key creation", entry->creation);
-        ENCODE_TIME_N(A_VALID_AFTER, i, "key valid after", entry->valid_after);
-        ENCODE_UINT_N(A_KEY_TYPE, i, "key type", entry->key->type);
-        ENCODE_DATA_N(A_KEY_DATA, i, "key data", entry->key->data,
-                      entry->key->length);
+        data.entry[i].creation = entry->creation;
+        data.entry[i].valid_after = entry->valid_after;
+        data.entry[i].key_type = entry->key->type;
+        data.entry[i].key = entry->key->data;
+        data.entry[i].key_len = entry->key->length;
     }
-    attr_len = webauth_attrs_encoded_length(alist);
-    buf = apr_palloc(ctx->pool, attr_len);
-    status = webauth_attrs_encode(alist, buf, length, attr_len);
-    if (status != WA_ERR_NONE) {
-        webauth_error_set(ctx, status, "cannot encode keyring attributes");
-        *length = 0;
-        goto done;
-    }
-    *output = buf;
 
-done:
-    if (alist != NULL)
-        webauth_attr_list_free(alist);
-    return status;
+    /* Do the encoding. */
+    return wai_encode(ctx, wai_keyring_encoding, &data, (void **) output,
+                      length);
 }
 
 
@@ -497,20 +276,22 @@ webauth_keyring_write(struct webauth_context *ctx,
     size_t length;
     char *temp, *buf;
     apr_status_t status;
+    apr_int32_t flags;
     int s;
 
     /* Create a temporary file for the new copy of the keyring. */
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
-    status = apr_file_mktemp(&file, temp, APR_CREATE | APR_WRITE | APR_EXCL,
-                             ctx->pool);
+    flags = (APR_FOPEN_CREATE | APR_FOPEN_WRITE | APR_FOPEN_EXCL
+             | APR_FOPEN_NOCLEANUP);
+    status = apr_file_mktemp(&file, temp, flags, ctx->pool);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_OPENWRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
+        s = WA_ERR_FILE_OPENWRITE;
+        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
     /* Encode and write out the file. */
-    s = encode(ctx, ring, &buf, &length);
+    s = webauth_keyring_encode(ctx, ring, &buf, &length);
     if (s != WA_ERR_NONE)
         goto done;
     status = apr_file_write_full(file, buf, length, NULL);
@@ -519,16 +300,16 @@ webauth_keyring_write(struct webauth_context *ctx,
         file = NULL;
     }
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_WRITE;
-        webauth_error_set_apr(ctx, s, status, "temporary file %s", temp);
+        s = WA_ERR_FILE_WRITE;
+        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
         goto done;
     }
 
     /* Rename the new file over the old path. */
     status = apr_file_rename(temp, path, ctx->pool);
     if (status != APR_SUCCESS) {
-        s = WA_ERR_KEYRING_WRITE;
-        webauth_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
+        s = WA_ERR_FILE_WRITE;
+        wai_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
         goto done;
     }
     s = WA_ERR_NONE;
@@ -634,7 +415,7 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
     *update_status = WA_ERR_NONE;
     status = webauth_keyring_read(ctx, path, ring);
     if (status != WA_ERR_NONE) {
-        if (!create || status != WA_ERR_KEYRING_OPENREAD)
+        if (!create || status != WA_ERR_FILE_NOT_FOUND)
             return status;
         *updated = WA_KAU_CREATE;
         return new_ring(ctx, path, ring);

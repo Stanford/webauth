@@ -45,8 +45,10 @@ struct webauth_keyring;
  */
 struct webauth_webkdc_config {
     const char *keytab_path;    /* Path to WebKDC's Kerberos keytab. */
+    const char *id_acl_path;    /* Path to WebKDC's identity ACL file. */
     const char *principal;      /* WebKDC's Kerberos principal. */
     time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
+    time_t login_time_limit;    /* Time limit for completing login process. */
     WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms. */
     WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms. */
 };
@@ -66,11 +68,13 @@ struct webauth_webkdc_proxy_data {
  * to the WebKDC and represents a request by a user to authenticate to a WAS.
  * This request may contain webkdc-proxy tokens, representing existing single
  * sign-on credentials, and a login token, representing a username and
- * authentication credential provided by the user in this session.
+ * authentication credential provided by the user in this session.  An
+ * authorization identity can also be requested in via the identity field.
  */
 struct webauth_webkdc_login_request {
     struct webauth_token_webkdc_service *service;
     WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
+    const char *authz_subject;          /* Requested authorization identity. */
     struct webauth_token_request *request;
     const char *remote_user;
     const char *local_ip;
@@ -97,6 +101,7 @@ struct webauth_webkdc_login_response {
     const char *return_url;
     const char *requester;
     const char *subject;
+    const char *authz_subject;  /* Authorization identity, if different. */
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
     const char *initial_factors;
@@ -107,6 +112,7 @@ struct webauth_webkdc_login_response {
     size_t app_state_len;
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
     time_t password_expires;            /* Time of password expiration or 0. */
+    WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authorization ids. */
 };    
 
 /*

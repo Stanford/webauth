@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.3.3], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.4.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -121,7 +121,7 @@ AC_CHECK_LIB([keyutils], [keyctl_search],
         [Define to 1 if you have the `keyutils' library (-lkeyutils).])])
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([strings.h sys/bittypes.h sys/select.h syslog.h])
+AC_CHECK_HEADERS([sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_FUNCS([setrlimit])
 RRA_C_C99_VAMACROS
@@ -133,7 +133,7 @@ AC_TYPE_INTPTR_T
 AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy strndup])
 
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
@@ -147,7 +147,7 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [DEPEND_LIBS="$APR_LDFLAGS $APR_LIBS $APRUTIL_LDFLAGS $APRUTIL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $REMCTL_LDFLAGS $REMCTL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $KRB5_LDFLAGS $KRB5_LIBS"
-     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
+     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])

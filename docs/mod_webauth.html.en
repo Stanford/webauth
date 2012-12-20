@@ -16,11 +16,11 @@
 <body>
 <div id="page-header">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.2</p>
+<p class="apache">Apache HTTP Server Version 2.4</p>
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.2</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.4</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauth</h1>
 <div class="toplang">
@@ -32,14 +32,16 @@
 <tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
 <h3>Summary</h3>
 
-<p>This module implements the authentication component of a WebAuth
-application server for Apache 2.x.  It should be used on each individual
-Apache server that wants to protect content with WebAuth.</p>
-
-<p>Further details are provided in the
-<a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
-
-</div>
+    <p>
+      This module implements the authentication component of a WebAuth
+      Application Server for Apache 2.x.  It should be used on each
+      individual Apache server that wants to protect content with WebAuth.
+    </p>
+    <p>
+      Further details are provided in the
+      <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.
+    </p>
+  </div>
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthapptokenlifetime">WebAuthAppTokenLifetime</a></li>
@@ -66,6 +68,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthrequireinitialfactor">WebAuthRequireInitialFactor</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthrequireloa">WebAuthRequireLOA</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthrequiresessionfactor">WebAuthRequireSessionFactor</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthrequiressl">WebAuthRequireSSL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthreturnurl">WebAuthReturnURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthservicetokencache">WebAuthServiceTokenCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsslredirect">WebAuthSSLRedirect</a></li>
@@ -74,6 +77,7 @@ Apache server that wants to protect content with WebAuth.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthstripurl">WebAuthStripURL</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthsubjectauthtype">WebAuthSubjectAuthType</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthtrustauthzidentity">WebAuthTrustAuthzIdentity</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthusecreds">WebAuthUseCreds</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthvarprefix">WebAuthVarPrefix</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthwebkdcprincipal">WebAuthWebKdcPrincipal</a></li>
@@ -99,207 +103,312 @@ Apache server that wants to protect content with WebAuth.</p>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Minimal Config File</h2>
+    
 
-<p>The following example shows the minimum config file required to
-configure mod_webauth.</p>
+    <p>
+      The following example shows the minimum config file required to
+      configure mod_webauth.
+    </p>
 
-<div class="example"><h3>Example</h3><p><code>
-LoadModule webauth_module modules/mod_webauth.so<br />
-<br />
-WebAuthKeyring conf/webauth/keyring<br />
-WebAuthKeytab conf/webauth/keytab<br />
-WebAuthServiceTokenCache conf/webauth/service_token_cache<br />
-WebAuthLoginURL https://webkdc/login/<br />
-WebAuthWebKdcURL https://webkdc/webkdc-service/<br />
+    <div class="example"><h3>Example</h3><pre>
+LoadModule webauth_module modules/mod_webauth.so
+
+WebAuthKeyring conf/webauth/keyring
+WebAuthKeytab conf/webauth/keytab
+WebAuthServiceTokenCache conf/webauth/service_token_cache
+WebAuthLoginURL https://webkdc/login/
+WebAuthWebKdcURL https://webkdc/webkdc-service/
 WebAuthWebKdcPrincipal service/webkdc
-</code></p></div>
+</pre></div>
 
-<p>This will enable the module, but not protect any pages.  To do that,
-you will need to add authentication and authorization directives to
-individual &lt;Location&gt;, &lt;Directory&gt;, or &lt;Files&gt;
-containers (or equivalents).</p>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      This will enable the module, but not protect any pages.  To do that,
+      you will need to add authentication and authorization directives to
+      individual &lt;Location&gt;, &lt;Directory&gt;, or &lt;Files&gt;
+      containers (or equivalents).
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuth Authentication</h2>
+    
 
-<p>Once configured, basic use of WebAuth is very simple.  Simply set up
-authentication normally, using <code>AuthType WebAuth</code> instead of
-the normal <code>AuthType Basic</code>, plus a <code>require
-valid-user</code> directive.</p>
+    <p>
+      Once configured, basic use of WebAuth is very simple.  Simply set up
+      authentication normally, using <code>AuthType WebAuth</code> instead
+      of the normal <code>AuthType Basic</code>, plus a <code>require
+      valid-user</code> directive.
+    </p>
 
-<div class="example"><h3>Example</h3><pre>
+    <div class="example"><h3>Example</h3><pre>
 &lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
 &lt;/Location&gt;
 </pre></div>
 
-<p>This will allow anyone who can authenticate using your WebAuth
-installation access to this content.  You can instead require specific
-users or require a group.  All of the standard Apache authorization
-directives are supported as normal.  For more advanced authorization
-decisions based on LDAP directory data, see the
-<a href="mod_webauthldap.html">mod_webauthldap module</a>.</p>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      This will allow anyone who can authenticate using your WebAuth
+      installation access to this content.  You can instead require
+      specific users or require a group.  All of the standard Apache
+      authorization directives are supported as normal.  For more advanced
+      authorization decisions based on LDAP directory data, see the
+      <a href="mod_webauthldap.html">mod_webauthldap module</a>.
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2><a name="sectionenv">Environment Variables</a></h2>
+    
 
-<p>This module provides some information as additional environment
-variables to the SSI and CGI namespace.  The generated variables are
-listed in the table below.  For CGI apps that have expectations about
-and/or restrictions on the names of environment variables they can handle,
-you can use the <a href="#webauthvarprefix">WebAuthVarPrefix</a> directive
-to have additional environment variables set.
-</p>
+    <p>
+      This module provides some information as additional environment
+      variables to the SSI and CGI namespace.  The generated variables are
+      listed in the table below.  For CGI apps that have expectations
+      about and/or restrictions on the names of environment variables they
+      can handle, you can use the
+      <a href="#webauthvarprefix"><code class="directive">WebAuthVarPrefix</code></a>
+      directive to have additional environment variables set.
+    </p>
+    <p>
+      Additionally, requesting credentials for a particular request may
+      cause environment variables to get set.  For example, requesting
+      Kerberos credentials will result in the KRB5CCNAME environment
+      variable being set.
+    </p>
 
-<p>Additionally, requesting credentials for a particular request may cause
-environment variables to get set.  For example, requesting Kerberos
-credentials will result in the KRB5CCNAME environment variable being
-set.</p>
+    <table class="bordered">
+      <tr>
+        <th>Variable Name:</th>
+        <th>Description:</th>
+      </tr>
+      <tr>
+        <td><code>AUTH_TYPE</code></td>
+        <td>Will be set to <code>WebAuth</code></td>
+      </tr>
+      <tr>
+        <td><code>REMOTE_USER</code></td>
+        <td>
+          Name of the WebAuth authenticated user (or authorization
+          identity if trusted; see <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>)
+        </td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_AUTHZ_USER</code></td>
+        <td>Name of the WebAuth authorization identity if present</td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_FACTORS_INITIAL</code></td>
+        <td>Authentication factors user authenticated with</td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_FACTORS_SESSION</code></td>
+        <td>
+          Authentication factors user authenticated with for this
+          particular site
+        </td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_LOA</code></td>
+        <td>Level of Assurance of the user authentication</td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_TOKEN_CREATION</code></td>
+        <td>When the token was created</td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>
+        <td>
+          When the token will expire.  If <a href="#webauthinactiveexpire"><code class="directive">WebAuthInactiveExpire</code></a>
+          is set then the token may expire sooner due to inactivity.
+        </td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_TOKEN_LASTUSED</code></td>
+        <td>
+          When the token was last used.  Only available if <a href="#webauthlastuseupdateinterval"><code class="directive">WebAuthLastUseUpdateInterval</code></a>
+          is non-zero.
+        </td>
+      </tr>
+      <tr>
+        <td><code>WEBAUTH_USER</code></td>
+        <td>
+          Name of the WebAuth authenticated user regardless of
+          authorization identity
+        </td>
+      </tr>
+    </table>
 
-<table class="bordered">
-<tr>
- <th>Variable Name:</th>
- <th>Description:</th>
-</tr>
+    <div class="example"><h3>Example Environment Variables</h3><pre>
+AUTH_TYPE=WebAuth
+REMOTE_USER=roland
+WEBAUTH_AUTHZ_USER=roland
+WEBAUTH_FACTORS_INITIAL=p,o,o2,m
+WEBAUTH_FACTORS_SESSION=c
+WEBAUTH_LOA=2
+WEBAUTH_TOKEN_CREATION=103872393
+WEBAUTH_TOKEN_EXPIRATION=1038759389
+WEBAUTH_TOKEN_LASTUSED=103872393
+WEBAUTH_USER=schemers
+</pre></div>
 
-<tr><td><code>AUTH_TYPE</code></td>
-<td>Will be set to <code>WebAuth</code></td></tr>
-
-<tr><td><code>REMOTE_USER</code></td>
-<td>Name of the WebAuth authenticated user</td></tr>
-
-<tr><td><code>WEBAUTH_FACTORS_INITIAL</code></td>
-<td>Authentication factors user authenticated with</td></tr>
-
-<tr><td><code>WEBAUTH_FACTORS_SESSION</code></td>
-<td>Authentication factors user authenticated with for this particular
-    site</td></tr>
-
-<tr><td><code>WEBAUTH_LOA</code></td>
-<td>Level of Assurance of the user authentication</td></tr>
-
-<tr><td><code>WEBAUTH_TOKEN_CREATION</code></td>
-<td>When the token was created</td></tr>
-
-<tr><td><code>WEBAUTH_TOKEN_EXPIRATION</code></td>
-<td>When the token will expire. Note: if
-    <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>
-    is set then the token may expire sooner due to inactivity.</td></tr>
-
-<tr><td><code>WEBAUTH_TOKEN_LASTUSED</code></td>
-<td>When the token was last used. Only available if
-    <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
-    is non-zero</td></tr>
-
-<tr><td><code>WEBAUTH_USER</code></td>
-<td>Name of the WebAuth authenticated user</td></tr>
-
-</table>
-
-<div class="example"><h3>Example</h3><p><code>
-AUTH_TYPE=WebAuth<br />
-REMOTE_USER=schemers<br />
-WEBAUTH_FACTORS_INITIAL=p,o,o2,m<br />
-WEBAUTH_FACTORS_SESSION=c<br />
-WEBAUTH_LOA=2<br />
-WEBAUTH_TOKEN_CREATION=103872393<br />
-WEBAUTH_TOKEN_EXPIRATION=1038759389<br />
-WEBAUTH_TOKEN_LASTUSED=103872393<br />
-WEBAUTH_USER=schemers<br />
-</code></p></div>
-
-<p>When checking for the authenticated username, use WEBAUTH_USER if you
-want to be sure that the authentication happened via WebAuth (or check
-AUTH_TYPE to be sure that it is set to WebAuth).  If you want your
-application to be able to support any Apache authentication mechanism, use
-REMOTE_USER, as this is the standard inside Apache.  Most web applications
-should use REMOTE_USER by preference so that they are independent of the
-authentication system used.</p>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      WebAuth can support a separate authentication identity and an
+      authorization identity as seen in the above example.  The
+      authentication identity is the identity for which the user presented
+      credentials (such as a password).  The authorization identity is the
+      identity that should be used for authorization checks and
+      application access.  Normally, these are the same, but the WebKDC
+      can be configured to allow users to assert an authorization identity
+      different than their authentication identity to certain sites.  This
+      allows a privileged user to pretend to be another user when
+      accessing a WebAuth-protected resource (for testing purposes, for
+      example).
+    </p>
+    <p>
+      WEBAUTH_USER will always be set to the authenticated identity,
+      regardless of any authorization identity.  WEBAUTH_AUTHZ_USER will
+      always be set to the authorization identity if one was asserted, and
+      will not be set otherwise.
+    </p>
+    <p>
+      The value of REMOTE_USER is normally the authenticated identity
+      (same as WEBAUTH_USER), but its value depends on whether there is an
+      authorization identity and on whether the <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>
+      is set.  If that directive is set, REMOTE_USER will instead be set
+      to the authorization identity if one is present.  The value of
+      REMOTE_USER is also the identity used internally by Apache to check
+      authorization rules and group membership, do LDAP data lookups, and
+      so forth.
+    </p>
+    <p>
+      When checking for the authenticated username, one should normally
+      use REMOTE_USER, since this is the standard inside Apache and makes
+      the application independent of the authentication system used.  This
+      will also work correctly with authorization identities.  If you want
+      to use the authentication identity regardless of any authorization
+      identity, use WEBAUTH_USER instead.  (You can also use WEBAUTH_USER
+      to ensure that the authentication happened via WebAuth, although
+      that can also be accomplished by checking AUTH_TYPE.)  To retrieve
+      the authorization identity, even if it wasn't trusted and used for
+      REMOTE_USER, look at the value of WEBAUTH_AUTHZ_USER.
+    </p>
+    <p>
+      If this seems excessively confusing, use REMOTE_USER.  That will do
+      the correct thing in most circumstances.
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2><a name="factors">Authentication Factors</a></h2>
+    
 
-<p>Below are the authentication factors that can be required via WebAuth
-directives or queried from the <a href="#sectionenv">environmental
-variables</a> WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.</p>
+    <p>
+      Below are the authentication factors that can be required via
+      WebAuth directives or queried from the <a href="#sectionenv">environmental variables</a>
+      WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.  The
+      interactive column indicates whether this factor, as a session
+      factor, satisfies a forced interactive login requirement (as
+      requested via <a href="webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>).
+    </p>
 
-<table class="bordered">
-<tr>
-  <th>Code:</th>
-  <th>Factor Name:</th>
-  <th>Description:</th>
-</tr>
-
-<tr><td><code>c</code></td><td>cookie</td>
-<td>Session authentication via cookie</td></tr>
-
-<tr><td><code>k</code></td><td>Kerberos</td>
-<td>Session authentication via Kerberos authentication</td></tr>
-
-<tr><td><code>m</code></td><td>multifactor</td>
-<td>Session or initial authentication via multiple independent authentication
-    factors (site-defined)</td></tr>
-
-<tr><td><code>o</code></td><td>OTP</td>
-<td>Session or initial authentication via one-time password</td></tr>
-
-<tr><td><code>o#</code></td><td>OTP</td>
-<td>A more specific subset of <code>o</code>. Number indicates a specific
-    OTP mechanism as defined by the local site, with higher numbers
-    indicating stronger methods</td></tr>
-
-<tr><td><code>p</code></td><td>password</td>
-<td>Session or initial authentication via traditional password</td></tr>
-
-<tr><td><code>rm</code></td><td>random multifactor</td>
-<td>User has a random chance of being challenged for a second factor;
-    frequency of challenges is site-defined</td></tr>
-
-<tr><td><code>u</code></td><td>unknown</td>
-<td>Session or initial authentication via an unknown method</td></tr>
-
-<tr><td><code>x</code></td><td>X.509</td>
-<td>Session or initial authentication via some form of X.509
-    authentication</td></tr>
-
-<tr><td><code>x#</code></td><td>X.509</td>
-<td>A more specific subset of <code>x</code>. Number indicates a
-    specific X.509 mechanism as defined by site, with higher numbers
-    indicating stronger methods</td></tr>
-
-</table>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <table class="bordered">
+      <tr>
+        <th>Code</th>
+        <th>Factor Name</th>
+        <th>Interactive?</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td><code>c</code></td><td>cookie</td><td>No</td>
+        <td>Session authentication via cookie</td>
+      </tr>
+      <tr>
+        <td><code>k</code></td><td>Kerberos</td><td>No</td>
+        <td>Session authentication via Kerberos authentication</td>
+      </tr>
+      <tr>
+        <td><code>m</code></td><td>multifactor</td><td>No</td>
+        <td>
+          Session or initial authentication via multiple independent
+          authentication factors (site-defined)
+        </td>
+      </tr>
+      <tr>
+        <td><code>o</code></td><td>OTP</td><td>Yes</td>
+        <td>Session or initial authentication via one-time password</td>
+      </tr>
+      <tr>
+        <td><code>o#</code></td><td>OTP</td><td>Yes</td>
+        <td>
+          A more specific subset of <code>o</code>. Number indicates a
+          specific OTP mechanism as defined by the local site, with higher
+          numbers indicating stronger methods
+        </td>
+      </tr>
+      <tr>
+        <td><code>p</code></td><td>password</td><td>Yes</td>
+        <td>Session or initial authentication via traditional password</td>
+      </tr>
+      <tr>
+        <td><code>rm</code></td><td>random multifactor</td><td>No</td>
+        <td>
+          User has a random chance of being challenged for a second
+          factor; frequency of challenges is site-defined
+        </td>
+      </tr>
+      <tr>
+        <td><code>u</code></td><td>unknown</td><td>No</td>
+        <td>Session or initial authentication via an unknown method</td>
+      </tr>
+      <tr>
+        <td><code>x</code></td><td>X.509</td><td>Yes</td>
+        <td>
+          Session or initial authentication via some form of X.509
+          authentication
+        </td>
+      </tr>
+      <tr>
+        <td><code>x#</code></td><td>X.509</td><td>Yes</td>
+        <td>
+          A more specific subset of <code>x</code>. Number indicates a
+          specific X.509 mechanism as defined by site, with higher numbers
+          indicating stronger methods
+        </td>
+      </tr>
+    </table>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Using WebAuth with Proxy Servers</h2>
+    
 
-<p>WebAuth authentication and authorization directives can be used in
-&lt;Proxy&gt; blocks just as in any other configuration block, so to
-protect a proxy where the remote proxy doesn't need to know about the
-authenticated user, just protect that resource like any other resource.</p>
+    <p>
+      WebAuth authentication and authorization directives can be used in
+      &lt;Proxy&gt; blocks just as in any other configuration block, so to
+      protect a proxy where the remote proxy doesn't need to know about
+      the authenticated user, just protect that resource like any other
+      resource.
+    </p>
+    <p>
+      Sometimes, it's also useful to pass the authentication information
+      to the remote site.  This option should only be used as a last
+      resort when the target server is unable to directly support WebAuth.
+      HTTP headers are not secure and can easily be forged.  The target
+      server should only accept connections from the proxy server running
+      <code>mod_webauth</code>.
+    </p>
+    <p>
+      To do this with a ProxyPass proxy, it's easiest to use
+      <a href="http://httpd.apache.org/docs-2.2/mod/mod_headers.html">mod_headers</a>
+      to set extra headers based on the values of <code>WEBAUTH_</code>
+      environment variables.  The remote web application then should pull
+      its authentication information from those headers.
+    </p>
+    <p>
+      For example, lets say you want to pass <code>WEBAUTH_USER</code>
+      through to a proxy server.  Assuming you've loaded
+      <code>mod_headers</code> and can therefore use the
+      <code>RequestHeader</code> directive, you could do the following:
+    </p>
 
-<p>Sometimes, it's also useful to pass the authentication information to
-the remote site.  This option should only be used as a last resort when
-the target server is unable to directly support WebAuth.  HTTP headers are
-not secure and can easily be forged.  The target server should only accept
-connections from the proxy server running <code>mod_webauth</code>.</p>
-
-<p>To do this with a ProxyPass proxy, it's easiest to use
-<a href="http://httpd.apache.org/docs-2.2/mod/mod_headers.html">mod_headers</a>
-to set extra headers based on the values of <code>WEBAUTH_</code>
-environment variables.  The remote web application then should pull its
-authentication information from those headers.</p>
-
-<p>For example, lets say you want to pass <code>WEBAUTH_USER</code>
-through to a proxy server.  Assuming you've loaded
-<code>mod_headers</code> and can therefore use the
-<code>RequestHeader</code> directive, you could do the following:</p>
-
-<div class="example"><h3>Example</h3><pre>
+    <div class="example"><h3>Example</h3><pre>
 &lt;Location /someplace&gt;
   AuthType WebAuth
   require valid-user
@@ -309,80 +418,100 @@ through to a proxy server.  Assuming you've loaded
 &lt;/Location&gt;
 </pre></div>
 
-<p>The <code>RequestHeader</code> directive causes the
-<code>X-WEBAUTH-USER</code> header to get set with the value of the
-<code>WEBAUTH_USER</code> environment variable.  The value of this header
-is then often available in the environment for the web application running
-on the remote system.</p>
+    <p>
+      The <code>RequestHeader</code> directive causes the
+      <code>X-WEBAUTH-USER</code> header to get set with the value of the
+      <code>WEBAUTH_USER</code> environment variable.  The value of this
+      header is then often available in the environment for the web
+      application running on the remote system.
+    </p>
 
-<div class="note"><h3>Note: WebAuth Cookies and Referer Header</h3>
-<code>mod_webauth</code> strips out any cookies that start with the prefix
-<code>webauth_</code>, so they do not get forwarded to the target server,
-it also strips out any WebAuth-related information in the Referer header.
-</div>
+    <div class="note">
+      <h3>Note: WebAuth Cookies and Referer Header</h3>
+      <p>
+        <code>mod_webauth</code> strips out any cookies that start with
+        the prefix <code>webauth_</code>, so they do not get forwarded to
+        the target server, it also strips out any WebAuth-related
+        information in the Referer header.
+      </p>
+    </div>
 
-<div class="note"><h3>Note: WebAuthDoLogout</h3>
-If you are planning on using WebAuthDoLogout with your proxied server, you
-should be aware that once you tell Apache to proxy a URL namespace (like
-<code>/someplace/</code>), then you can't have local <code>Location</code>
-directives for URLs within that namespace, like
-<code>/location/logout</code>.  Instead, you'll need to create a that
-script on the target server, and have it remove any cookie that starts
-with <code>webauth_</code>.  (Unfortunately, it won't see those cookies
-due to the above cookie stripping behavior, so you'll have to hard-code
-the cookie names that will be used.)
-</div>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <div class="note">
+      <h3>Note: WebAuthDoLogout</h3>
+      <p>
+        If you are planning on using WebAuthDoLogout with your proxied
+        server, you should be aware that once you tell Apache to proxy a
+        URL namespace (like <code>/someplace/</code>), then you can't have
+        local <code>Location</code> directives for URLs within that
+        namespace, like <code>/location/logout</code>.  Instead, you'll
+        need to create a that script on the target server, and have it
+        remove any cookie that starts with <code>webauth_</code>.
+        (Unfortunately, it won't see those cookies due to the above cookie
+        stripping behavior, so you'll have to hard-code the cookie names
+        that will be used.)
+      </p>
+    </div>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Perl Integration</h2>
+    
 
-<p>In order to use mod_webauth with Perl, you need to first
-WebAuth-protect the pages that are served by the CGI Perl scripts.  For
-example, lets assume that all pages under http://yourserver/private/ are
-to be protected:</p>
+    <p>
+      In order to use mod_webauth with Perl, you need to first
+      WebAuth-protect the pages that are served by the CGI Perl scripts.
+      For example, lets assume that all pages under
+      http://yourserver/private/ are to be protected:
+    </p>
 
-<div class="example"><h3>Apache Directives Example</h3><pre>
+    <div class="example"><h3>Apache Directives Example</h3><pre>
 &lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
 &lt;/Location&gt;
 </pre></div>
 
-<p>Then, in order to determine the user's identity from the Perl script,
-it is simply a matter of accessing the environment variables set by
-mod_webauth within your Perl script:</p>
+    <p>
+      Then, in order to determine the user's identity from the Perl
+      script, it is simply a matter of accessing the environment variables
+      set by mod_webauth within your Perl script:
+    </p>
 
-<div class="example"><h3>Perl Example</h3><p><code>
-my $REMOTE_USER = $ENV{'REMOTE_USER'};<br />
-print "Content-Type: text/plain\n\n";<br />
+    <div class="example"><h3>Perl Example</h3><pre>
+my $REMOTE_USER = $ENV{'REMOTE_USER'};
+print "Content-Type: text/plain\n\n";
 print "The authenticated user is $REMOTE_USER\n";
-</code></p></div>
+</pre></div>
 
-<p>Any of the environment variables described in the
-<a href="#sectionenv">environment variables</a> section may be accessed
-this way.</p>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      Any of the environment variables described in the
+      <a href="#sectionenv">environment variables</a> section may be
+      accessed this way.
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>PHP 4.x and 5.x Integration</h2>
+    
 
-<p>Using mod_webauth with PHP is very similar to using it from Perl.  You
-need to first WebAuth-protect the pages that are served by the PHP
-scripts.  For example:</p>
+    <p>
+      Using mod_webauth with PHP is very similar to using it from Perl.
+      You need to first WebAuth-protect the pages that are served by the
+      PHP scripts.  For example:
+    </p>
 
-<div class="example"><h3>Apache Directives Example</h3><pre>
+    <div class="example"><h3>Apache Directives Example</h3><pre>
 &lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
 &lt;/Location&gt;
 </pre></div>
 
-<p>Then, in order to determine the user's identity from the PHP script,
-you can either use the PHP getenv function, or access the special
-<code>$_SERVER</code> array variable.  For example:</p>
+    <p>
+      Then, in order to determine the user's identity from the PHP script,
+      you can either use the PHP getenv function, or access the special
+      <code>$_SERVER</code> array variable.  For example:
+    </p>
 
-<div class="example"><h3>PHP Example</h3><pre>
+    <div class="example"><h3>PHP Example</h3><pre>
 $WEBAUTH_USER = getenv('WEBAUTH_USER');
 
 # alternative, using the $_SERVER 'superglobal' array:
@@ -391,28 +520,34 @@ $WEBAUTH_USER = getenv('WEBAUTH_USER');
 print "The authenticated user is $WEBAUTH_USER\n";
 </pre></div>
 
-<p>In looking at the source for PHP 4.3, it appears that the
-<code>getenv</code> is looking only in the <code>$_SERVER</code> array, so
-there is a one-to-one mapping between the two.  Oddly enough, getenv isn't
-looking the <code>$_ENV</code> array. See the PHP documentation for more
-information on
-<a href="http://www.php.net/manual/en/reserved.variables.php">predefined
-variables</a> in PHP.</p>
-
-<p>Any of the environment variables described in the
-<a href="#sectionenv">environment variables</a> section may be accessed
-this way.</p>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      In looking at the source for PHP 4.3, it appears that the
+      <code>getenv</code> is looking only in the <code>$_SERVER</code>
+      array, so there is a one-to-one mapping between the two.  Oddly
+      enough, getenv isn't looking the <code>$_ENV</code> array.  See the
+      PHP documentation for more information on
+      <a href="http://www.php.net/manual/en/reserved.variables.php">predefined
+      variables</a> in PHP.
+    </p>
+    <p>
+      Any of the environment variables described in the
+      <a href="#sectionenv">environment variables</a> section may be
+      accessed this way.
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Java/Tomcat/mod_jk Integration</h2>
+    
 
-<p>Using mod_webauth with mod_jk requires some additional configuration of
-mod_jk in order to pass environment variables to the Java servlet.  So, in
-addition to WebAuth-protecting the pages served by Tomcat, you also need
-to specify which environment variables you want to pass.  For example:</p>
+    <p>
+      Using mod_webauth with mod_jk requires some additional configuration
+      of mod_jk in order to pass environment variables to the Java
+      servlet.  So, in addition to WebAuth-protecting the pages served by
+      Tomcat, you also need to specify which environment variables you
+      want to pass.  For example:
+    </p>
 
-<div class="example"><h3>Apache Directives Example</h3><pre>
+    <div class="example"><h3>Apache Directives Example</h3><pre>
 # WebAuth-protect /private/
 &lt;Location /private/&gt;
   AuthType WebAuth
@@ -429,60 +564,74 @@ JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"
 JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"
 </pre></div>
 
-<p>If all you are interested in is REMOTE_USER, then you don't need to
-pass the other variables as well.</p>
+    <p>
+      If all you are interested in is REMOTE_USER, then you don't need to
+      pass the other variables as well.
+    </p>
+    <p>
+      In order to determine the user's identity from the servlet, you need
+      to use the <code>getAttribute</code> method on the
+      <code>request</code> object.
+    </p>
 
-<p>In order to determine the user's identity from the servlet, you need to
-use the <code>getAttribute</code> method on the <code>request</code>
-object.</p>
-
-<div class="example"><h3>JSP Example</h3><pre>
+    <div class="example"><h3>JSP Example</h3><pre>
 WEBAUTH_USER is set to:
 &lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
 </pre></div>
 
-<p>Any variables you configure mod_jk to pass via <code>JkEnvVar</code>
-will end up as a request attribute as opposed to being accessible by
-<code>java.lang.System.getenv</code>, which is
-<strong>deprecated</strong>.</p>
+    <p>
+      Any variables you configure mod_jk to pass via <code>JkEnvVar</code>
+      will end up as a request attribute as opposed to being accessible by
+      <code>java.lang.System.getenv</code>, which is
+      <strong>deprecated</strong>.
+    </p>
 
-<div class="note"><h3>Note</h3>
-It appears that mod_jk requires you specify a default value for the
-environment variables in the event that they are unset. A value of "" was
-not allowed, so I picked the special value "&lt;UNSET&gt;" for this example.
-If all your pages are WebAuth-protected, then this default value will
-never be used.
-</div>
+    <div class="note">
+      <h3>Note</h3>
+      <p>
+        It appears that mod_jk requires you specify a default value for
+        the environment variables in the event that they are unset.  A
+        value of <code>""</code> was not allowed, so I picked the special
+        value <code>"&lt;UNSET&gt;"</code> for this example.  If all your
+        pages are WebAuth-protected, then this default value will never be
+        used.
+      </p>
+    </div>
 
-<p>You will also need to explicitly turn off Tomcat authentication in the
-<code>&lt;Connector&gt;</code> definition in the Tomcat
-<code>server.xml</code> file.  For example:</p>
+    <p>
+      You will also need to explicitly turn off Tomcat authentication in
+      the <code>&lt;Connector&gt;</code> definition in the Tomcat
+      <code>server.xml</code> file.  For example:
+    </p>
 
-<div class="example"><h3>Connector Example</h3><pre>
+    <div class="example"><h3>Connector Example</h3><pre>
 &lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
     port="8009" minProcessors="5" maxProcessors="75"
     tomcatAuthentication="false"
     acceptCount="10" debug="0"/&gt;
 </pre></div>
 
-<p>Be aware that Apache and Tomcat parse semicolons in URLs differently.
-Without careful configuration, attackers can bypass WebAuth protection
-when accessing a resource in Tomcat by exploiting this difference.  In
-Apache, the URLs <code>/srvlet/secret</code> and
-<code>/srvlet/secret;hello</code> are different URLs, but Tomcat considers
-the part after a semicolon to be a URI path parameter, ignores it, and
-treats them both as the same URL.  Therefore, if only
-<code>/srvlet/secret</code> is protected in Apache (with a
-<code>&lt;Location&gt;</code> directive, for example), an attacker can
-bypass that protection but still access the same underlying URL in
-Tomcat.</p>
+    <p>
+      Be aware that Apache and Tomcat parse semicolons in URLs
+      differently.  Without careful configuration, attackers can bypass
+      WebAuth protection when accessing a resource in Tomcat by exploiting
+      this difference.  In Apache, the URLs <code>/srvlet/secret</code>
+      and <code>/srvlet/secret;hello</code> are different URLs, but Tomcat
+      considers the part after a semicolon to be a URI path parameter,
+      ignores it, and treats them both as the same URL.  Therefore, if
+      only <code>/srvlet/secret</code> is protected in Apache (with a
+      <code>&lt;Location&gt;</code> directive, for example), an attacker
+      can bypass that protection but still access the same underlying URL
+      in Tomcat.
+    </p>
+    <p>
+      To protect against this, any <code>&lt;Location&gt;</code> directive
+      protecting a specific URL within a larger URL namespace proxied to
+      Tomcat should allow for any trailing URI path parameters, as in the
+      following example:
+    </p>
 
-<p>To protect against this, any <code>&lt;Location&gt;</code> directive
-protecting a specific URL within a larger URL namespace proxied to Tomcat
-should allow for any trailing URI path parameters, as in the following
-example:</p>
-
-<div class="example"><h3>Access Control Example</h3><pre>
+    <div class="example"><h3>Access Control Example</h3><pre>
 # DO NOT USE THIS -- insecure!
 &lt;Location "/srvlet/secret"&gt;
     AuthType WebAuth
@@ -499,40 +648,55 @@ example:</p>
 &lt;/Location&gt;
 </pre></div>
 
-<p>This problem applies to any Apache authentication mechanism applied to
-URLs that are proxied to Tomcat.  It is not specific to WebAuth.</p>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <p>
+      This problem applies to any Apache authentication mechanism applied
+      to URLs that are proxied to Tomcat.  It is not specific to
+      WebAuth.
+    </p>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Requesting Credentials</h2>
+    
 
-<p>One of the features of WebAuth is the ability to request credentials on
-behalf of the user for a particular request (or group of requests).  This
-allows authorized application servers to act on behalf of the user.</p>
+    <p>
+      One of the features of WebAuth is the ability to request credentials
+      on behalf of the user for a particular request (or group of
+      requests).  This allows authorized application servers to act on
+      behalf of the user.
+    </p>
+    <p>
+      Depending on the credential type (and always for Kerberos tickets,
+      which are currently the only supported credentials), temporary files
+      containing credentials may need to be created.  These credentials
+      will be stored in the directory specified by the
+      <a href="#webauthcredcachedir"><code class="directive">WebAuthCredCacheDir</code></a>
+      directive.
+    </p>
+    <p>
+      The <a href="#webauthcred"><code class="directive">WebAuthCred</code></a>
+      directive is used to specify which credentials a particular request
+      may need.  Credentials are not actually requested from the WebKDC
+      until a page with the
+      <a href="#webauthusecreds"><code class="directive">WebAuthUseCreds</code></a>
+      directive set to "on" is served.  At that point, they will be cached
+      (encrypted) in cookies and used to satisfy future requests.
+    </p>
+    <p>
+      Saving credentials on every single request (for example, an image or
+      static page) is expensive, since it may involve decrypting
+      credentials stored in a cookie, processing them, and storing them in
+      a temporary file.  The
+      <a href="#webauthusecreds"><code class="directive">WebAuthUseCreds</code></a>
+      directive is used to control which requests will actually go through
+      this process.
+    </p>
+    <p>
+      The following example shows one scenario where every page under
+      /myapp/ is WebAuth-protected, and every page under /myapp/commands/
+      requires the use of two Kerberos credentials.
+    </p>
 
-<p>Depending on the credential type (and always for Kerberos tickets,
-which are currently the only supported credentials), temporary files
-containing credentials may need to be created.  These credentials will be
-stored in the directory specified by the
-<a href="#webauthcredcachedir">WebAuthCredCacheDir</a> directive.</p>
-
-<p>The <a href="#webauthcred">WebAuthCred</a> directive is used to specify
-which credentials a particular request may need.  Credentials are not
-actually requested from the WebKDC until a page with the
-<a href="#webauthusecreds">WebAuthUseCreds</a> directive set to "on" is
-served.  At that point, they will be cached (encrypted) in cookies and
-used to satisfy future requests.</p>
-
-<p>Saving credentials on every single request (for example, an image or
-static page) is expensive, since it may involve decrypting credentials
-stored in a cookie, processing them, and storing them in a temporary file.
-The <a href="#webauthusecreds">WebAuthUseCreds</a> directive is used to
-control which requests will actually go through this process.</p>
-
-<p>The following example shows one scenario where every page under /myapp/
-is WebAuth-protected, and every page under /myapp/commands/ requires the
-use of two Kerberos credentials.</p>
-
-<div class="example"><h3>Example</h3><pre>
+    <div class="example"><h3>Example</h3><pre>
 # This first WebAuthCred directive will cause us to acquire a proxy token
 # on the initial redirect when determining the user's identity.  It saves
 # an extra redirect later on when we actually use/acquire credentials.
@@ -553,32 +717,42 @@ use of two Kerberos credentials.</p>
 &lt;/Location&gt;
 </pre></div>
 
-<div class="note"><h3>Warning</h3>
-  If you are using Active Directory as your KDC, be aware that Active
-  Directory Kerberos tickets can be relatively large because they contain
-  extra authorization information.  This means the corresponding cookies
-  set by WebAuth that hold delegated credentials can also be large, and in
-  combination with other cookies may exceed the maximum cookie size
-  allowed for by the HTTP protocol.  If you run into problems, you can
-  work around this by suppressing the PAC authorization information for
-  the services that don't need it in your Active Directory.
-</div>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+    <div class="note">
+      <h3>Warning</h3>
+      <p>
+        If you are using Active Directory as your KDC, be aware that
+        Active Directory Kerberos tickets can be relatively large because
+        they contain extra authorization information.  This means the
+        corresponding cookies set by WebAuth that hold delegated
+        credentials can also be large, and in combination with other
+        cookies may exceed the maximum cookie size allowed for by the HTTP
+        protocol.  If you run into problems, you can work around this by
+        suppressing the PAC authorization information for the services
+        that don't need it in your Active Directory.
+      </p>
+    </div>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Debugging mod_webauth</h2>
+    
 
-<p>If you are having trouble getting <code>mod_webauth</code> configured,
-you can enable the <code>webauth</code> handler and point your browser at
-the configured URL to get some information on whether or not mod_webauth
-is configured correctly.</p>
+    <p>
+      If you are having trouble getting <code>mod_webauth</code>
+      configured, you can enable the <code>webauth</code> handler and
+      point your browser at the configured URL to get some information on
+      whether or not mod_webauth is configured correctly.
+    </p>
 
-<div class="note"><h3>Note</h3>
-Just to be safe, you should probably disable the <code>webauth</code>
-handler after you have <code>mod_webauth</code> configured correctly.
-</div>
+    <div class="note">
+      <h3>Note</h3>
+      <p>
+        Just to be safe, you should probably disable the
+        <code>webauth</code> handler after you have
+        <code>mod_webauth</code> configured correctly.
+      </p>
+    </div>
 
-<div class="example"><h3>Example</h3><pre>
+    <div class="example"><h3>Example</h3><pre>
 # WebAuthDebug must be on
 WebAuthDebug on
 
@@ -588,90 +762,113 @@ WebAuthDebug on
   Allow from all
 &lt;/Location&gt;
 </pre></div>
-
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Setting up load-balanced WebAuth servers</h2>
+    
 
-<p>WebAuth was designed so that it would be fairly easy to setup multiple
-WebAuth servers for load balancing and redundancy.  In order to achieve
-this, the WebAuth keyring has to be shared between the WebAuth servers.
-The Kerberos keytab file does not have to be shared; each system can use a
-separate keytab file.</p>
+    <p>
+      WebAuth was designed so that it would be fairly easy to setup
+      multiple WebAuth servers for load balancing and redundancy.  In
+      order to achieve this, the WebAuth keyring has to be shared between
+      the WebAuth servers.  The Kerberos keytab file does not have to be
+      shared; each system can use a separate keytab file.
+    </p>
 
-<div class="note"><h3>Note</h3>
-<p>The keyring file should be securely transferred from the master to the
-slave(s) using a program like <code>scp</code> or kerberized
-<code>rcp</code>.</p>
-</div>
+    <div class="note">
+      <h3>Note</h3>
+      <p>
+        The keyring file should be securely transferred from the master to
+        the slave(s) using a program like <code>scp</code> or kerberized
+        <code>rcp</code>.
+      </p>
+    </div>
 
-<p>By convention, one of the WebAuth servers should be designated as the
-master and other servers should be designated as slaves.  The keyring
-should only be updated on the master and pushed manually to the
-slaves.</p>
+    <p>
+      By convention, one of the WebAuth servers should be designated as
+      the master and other servers should be designated as slaves.  The
+      keyring should only be updated on the master and pushed manually to
+      the slaves.
+    </p>
+    <p>
+      The WebAuth keyring file is specified using the
+      <a href="#webauthkeyring"><code class="directive">WebAuthKeyring</code></a>
+      directive.  This file contains the WebAuth server's private AES
+      key(s). If you are running multiple WebAuth servers, you must turn
+      off automatic updating of the keyring file on restarts. This is done
+      using the
+      <a href="#webauthkeyringautoupdate"><code class="directive">WebAuthKeyringAutoUpdate</code></a>
+      directive:
+    </p>
 
-<p>The WebAuth keyring file is specified using the
-<a href="#webauthkeyring">WebAuthKeyring</a> directive.  This file
-contains the WebAuth server's private AES key(s). If you are running
-multiple WebAuth servers, you must turn off automatic updating of the
-keyring file on restarts. This is done using the
-<a href="#webauthkeyringautoupdate">WebAuthKeyringAutoUpdate</a>
-directive:</p>
-
-<div class="example"><h3>Turning off auto update</h3><p><code>
+    <div class="example"><h3>Turning off auto update</h3><p><code>
+      
 WebAuthKeyringAutoUpdate off
-</code></p></div>
+    </code></p></div>
 
-<p>Once auto update is turned off, the keyring file will not get
-automatically updated and can manually be copied across all the servers.
-The keys in the keyring file still need to be changed periodically, and
-the <code>wa_keyring</code> command can be used to do this.  This command
-would be run on the keyring file on the master, at which point it would be
-copied to the slaves.  For example, to generate a new post-dated key in
-the file called <code>keyring</code> you should do the following:</p>
+    <p>
+      Once auto update is turned off, the keyring file will not get
+      automatically updated and can manually be copied across all the
+      servers.  The keys in the keyring file still need to be changed
+      periodically, and the <code>wa_keyring</code> command can be used to
+      do this.  This command would be run on the keyring file on the
+      master, at which point it would be copied to the slaves.  For
+      example, to generate a new post-dated key in the file called
+      <code>keyring</code> you should do the following:
+    </p>
 
-<div class="example"><h3>Generating a post-dated key</h3><p><code>
+    <div class="example"><h3>Generating a post-dated key</h3><p><code>
+      
 wa_keyring -f ./keyring add 7d
-</code></p></div>
+    </code></p></div>
 
-<p>That example generates a new key that will be valid in seven days. Any
-existing keys in the keyring file are left as-is so outstanding tokens
-continue to work. The new keyring file can then safely be distributed to
-the slave servers. Old keys in the keyring file should also periodically
-be removed. This can manually be done with <code>wa_keyring</code> using
-the <code>list</code> and <code>remove</code> commands. For example:</p>
+    <p>
+      That example generates a new key that will be valid in seven days.
+      Any existing keys in the keyring file are left as-is so outstanding
+      tokens continue to work.  The new keyring file can then safely be
+      distributed to the slave servers.  Old keys in the keyring file
+      should also periodically be removed.  This can manually be done with
+      <code>wa_keyring</code> using the <code>list</code> and
+      <code>remove</code> commands.  For example:
+    </p>
 
-<div class="example"><h3>Manually remove old keys</h3><pre>
+    <div class="example"><h3>Manually remove old keys</h3><pre>
 $ wa_keyring -f ./keyring list
 Path: ./keyring
 id  Created            Valid after        Fingerprint
- 0  02/13/2003 12:43:25  02/13/2003 12:43:25  664b48642f741ae343ef5ea46a8768e8
- 1  03/12/2003 16:21:57  03/12/2003 16:21:57  7c4971e760f75525bba277a308c092c0
+ 0  2003-02-13 12:43:25  2003-02-13 12:43:25  664b48642f741ae343ef5ea46a8768e8
+ 1  2003-03-12 16:21:57  2003-03-12 16:21:57  7c4971e760f75525bba277a308c092c0
 
 $ wa_keyring -f ./keyring remove 0
 </pre></div>
 
-<p>Or it can be done automatically, using the <code>gc</code> command:</p>
+    <p>
+      Or it can be done automatically, using the <code>gc</code> command:
+    </p>
 
-<div class="example"><h3>Automatically removing old keys</h3><pre>
+    <div class="example"><h3>Automatically removing old keys</h3><pre>
 # Remove any keys with a valid after date older then 90 days
 $ wa_keyring -f ./keyring gc -90d
 </pre></div>
 
-<p>To summarize, for each WebAuth (master and slaves), you'd want the
-following directives:</p>
+    <p>
+      To summarize, for each WebAuth (master and slaves), you'd want the
+      following directives:
+    </p>
 
-<div class="example"><h3>Example</h3><pre>
+    <div class="example"><h3>Example</h3><pre>
 WebAuthKeyring conf/webauth/keyring
 WebAuthKeytab conf/webauth/keytab
 WebAuthKeyringAutoUpdate off
 </pre></div>
 
-<p>Periodically (once a month should be reasonable), you'd want to
-generate a new key, remove old keys, and then update the keyring file on
-the slaves.  For example:</p>
+    <p>
+      Periodically (once a month should be reasonable), you'd want to
+      generate a new key, remove old keys, and then update the keyring
+      file on the slaves.  For example:
+    </p>
 
-<div class="example"><h3>Monthly Key maintenance</h3><pre>
+    <div class="example"><h3>Monthly Key maintenance</h3><pre>
 # Generate a new key that will be valid in 2 days.
 wa_keyring -f conf/webauth/keyring add 2d
 
@@ -686,249 +883,274 @@ done
 # Restart the master and all the slaves at any point before the new key is
 # valid.
 </pre></div>
-</div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+  </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
 <h2>Manual License</h2>
+    
 
-<p>Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The
-Board of Trustees of the Leland Stanford Junior University</p>
-
-<p>Copying and distribution of this file, with or without modification,
-are permitted in any medium without royalty provided the copyright notice
-and this notice are preserved.  This file is offered as-is, without any
-warranty.</p>
-</div>
+    <p>
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The
+      Board of Trustees of the Leland Stanford Junior University
+    </p>
+    <p>
+      Copying and distribution of this file, with or without modification,
+      are permitted in any medium without royalty provided the copyright
+      notice and this notice are preserved.  This file is offered as-is,
+      without any warranty.
+    </p>
+  </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAppTokenLifetime" id="WebAuthAppTokenLifetime">WebAuthAppTokenLifetime</a> <a name="webauthapptokenlifetime" id="webauthapptokenlifetime">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of app-tokens we create.
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of app-tokens we create.</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAppTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of id-token returned from WebKDC)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls how long the app-token (the main cookie containing
-a user's authenticated identity) is valid for. If not specified, the
-expiration time in the id-token returned from the WebKDC is used, which
-is the recommended configuration.
-</p>
+      <p>
+        This directive controls how long the app-token (the main cookie
+        containing a user's authenticated identity) is valid for. If not
+        specified, the expiration time in the id-token returned from the
+        WebKDC is used, which is the recommended configuration.
+      </p>
+      <p>
+        To be effective, this directive should be used with the
+        <a href="#webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>
+        directive, otherwise single-sign-on will automatically log the
+        user back in when the token expires.
+      </p>
+      <p>
+        The units for the time are specified by appending a single letter,
+        which can either be s, m, h, d, or w, which correspond to seconds,
+        minutes, hours, days, and weeks respectively.
+      </p>
 
-<p> To be effective, this directive should be used with the
-<a href="#webauthforcelogin">WebAuthForceLogin</a>
-directive, otherwise single-sign-on
-will automatically log the user back in when the token expires.
-</p>
-
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-# create an app-token valid for 2 hours<br />
+      <div class="example"><h3>Example</h3><pre>
+# create an app-token valid for 2 hours
 WebAuthAppTokenLifetime 2h
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthAuthType" id="WebAuthAuthType">WebAuthAuthType</a> <a name="webauthauthtype" id="webauthauthtype">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional AuthType name to support</td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAuthType <em>authtype</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAuthType <em>StanfordAuth</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>This sets an additional <code>AuthType</code> name that will
-be treated the same as <code>WebAuth</code> when used with the
-<code>AuthType</code> directive.
-</p>
+      <p>
+        This sets an additional <code>AuthType</code> name that will be
+        treated the same as <code>WebAuth</code> when used with the
+        <code>AuthType</code> directive.  The only interesting value to
+        use is <code>StanfordAuth</code>, which enables some backward
+        compatibility code for transitioning from WebAuth 2.x.
+      </p>
+      <p>
+        Setting this directive to <code>StanfordAuth</code> and then using
+        <code>StanfordAuth</code> in an <code>AuthType</code> directive
+        will also cause two additional environment variables to get set:
+        <code>SU_AUTH_USER</code> and <code>SU_AUTH_AGE</code>.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive exists to help people transition from other
-<code>AuthType</code> names to <code>WebAuth</code>. It is recommended
-that people transition over to using only <code>WebAuth</code> as soon
-as possible.</p>
-    <p>Setting this directive to <code>StanfordAuth</code> and then using
-<code>StanfordAuth</code> in an <code>AuthType</code> directive  will also
-cause two additional environment variables to get set:
-<code>SU_AUTH_USER</code> and <code>SU_AUTH_AGE</code>.
-</p>
-</div>
+      <div class="note">
+        <h3>Warning</h3>
+        <p>
+          This directive is deprecated and will be removed in a future
+          version of WebAuth.
+        </p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthAuthType StanfordAuth
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthCred" id="WebAuthCred">WebAuthCred</a> <a name="webauthcred" id="webauthcred">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Which credentials to acquire
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Which credentials to acquire</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCred <em>type</em> [<em>service</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive specifies which credentials a particular request may need.
-It should be used should be used in conjunction with the <a href="#webauthusecreds">WebAuthUseCreds</a>
-directive.
-</p>
+      <p>
+        This directive specifies which credentials a particular request
+        may need.  It should be used should be used in conjunction with
+        the
+        <a href="#webauthusecreds"><code class="directive">WebAuthUseCreds</code></a>
+        directive.
+      </p>
+      <p>
+        Note that service is optional.  If service is not present, then
+        this is used to indicate that a page further down in the hierarchy
+        will eventually acquire credentials of the specified type by
+        specifying credentials with a service name and setting
+        <a href="#webauthusecreds"><code class="directive">WebAuthUseCreds</code></a>
+        to "on".
+      </p>
+      <p>
+        This directive may be used multiple times in the same location to
+        specify that multiple credentials are required.
+      </p>
 
-<p>Note that service is optional. If service is not present, then this is
-used to indicate that a page further down in the hierarchy will eventually
-acquire credentials of the specified type, by specifying credentials
-with a service name, and setting <a href="#webauthusecreds">WebAuthUseCreds</a> to "on".</p>
-
-<p>This directive may be used multiple times in the same location to
-specify that multiple credentials are required.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-
-  # get and use the following krb5 credential on every<br />
-  # request under /myapp/.<br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  require valid-user<br />
-  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu<br />
-  &lt;/Location&gt; <br />
-  <br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+# get and use the following krb5 credential on every
+# request under /myapp/.
+&lt;Location /myapp/&gt;
+  AuthType WebAuth
+  require valid-user
+  WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu
+&lt;/Location&gt;
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthCredCacheDir" id="WebAuthCredCacheDir">WebAuthCredCacheDir</a> <a name="webauthcredcachedir" id="webauthcredcachedir">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the directory containing cached credentials
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Name of the directory containing cached credentials
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCredCacheDir <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of the directory where credentials are cached
-for the duration of a single request. </p>
+      <p>
+        This is the name of the directory where credentials are cached for
+        the duration of a single request.
+      </p>
+      <p>
+        If the path is not absolute, then it will be treated as being
+        relative to <code class="directive">ServerRoot</code>.
+      </p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          This directive must be set if the
+          <a href="#webauthcred"><code class="directive">WebAuthCred</code></a> and
+          <a href="#webauthusecreds"><code class="directive">WebAuthUseCreds</code></a>
+          directives are used.
+        </p>
+      </div>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set if the <a href="#webauthcred">WebAuthCred</a> and <a href="#webauthusecreds">WebAuthUseCreds</a>
-directives are used.</p>
-</div>
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthCredCacheDir conf/webauth/credcache
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDebug" id="WebAuthDebug">WebAuthDebug</a> <a name="webauthdebug" id="webauthdebug">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in Apache error_log
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on extra debugging in Apache error log</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-Whether or not to do extra debugging in error_log. You should
-also set Apache's <code>LogLevel</code> to <code>debug</code> as
-well.
-</p>
+      <p>
+        Whether or not to do extra debugging in the Apache error log.  You
+        should also set Apache's <code>LogLevel</code> to
+        <code>debug</code> as well.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-WebAuthDebug on<br />
-LogLevel debug<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+WebAuthDebug on
+LogLevel debug
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDoLogout" id="WebAuthDoLogout">WebAuthDoLogout</a> <a name="webauthdologout" id="webauthdologout">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Destroy all WebAuth-related cookies
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Destroy all WebAuth-related cookies</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDoLogout on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDoLogout off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls whether or not all WebAuth-related cookies
-are removed if the user accesses this URL. This directive also enables
-the <a href="#webauthdontcache">WebAuthDontCache</a> directive for the
-given location.</p>
+      <p>
+        This directive controls whether or not all WebAuth-related cookies
+        are removed if the user accesses this URL. This directive also enables
+        the
+        <a href="#webauthdontcache"><code class="directive">WebAuthDontCache</code></a>
+        directive for the given location.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /myapp/logout&gt;<br />
-  WebAuthDoLogout on<br />
-  &lt;/Location&gt;
-</code></p></div>
+      <div class="example"><h3>Example</h3><pre>
+&lt;Location /myapp/logout&gt;
+  WebAuthDoLogout on
+&lt;/Location&gt;
+</pre></div>
 
-<div class="note">
-  <h3>Note</h3>
-
-  <p>
-    WebAuth-related cookies are all cookis that start with the prefix
-    "webauth_", except for those beginning with "webauth_wpt".  The latter
-    are single sign-on cookies used with the WebLogin server and aren't
-    removed by this directive.
-  </p>
-</div>
-
-
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          WebAuth-related cookies are all cookis that start with the
+          prefix "webauth_", except for those beginning with
+          "webauth_wpt".  The latter are single sign-on cookies used with
+          the WebLogin server and aren't removed by this directive.
+        </p>
+      </div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthDontCache" id="WebAuthDontCache">WebAuthDontCache</a> <a name="webauthdontcache" id="webauthdontcache">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on expire header
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Turn on expire header</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDontCache on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDontCache off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-Setting this to <code>on</code> will cause the following headers to be
-included in the response to tell browsers not to cache the returned document.
-</p>
+      <p>
+        Setting this to <code>on</code> will cause the following headers
+        to be included in the response to tell browsers not to cache the
+        returned document.
+      </p>
 
-<table class="bordered">
-<tr>
- <th>Header Name</th>
- <th>Header Value</th>
-</tr>
-<tr><td><code>Expires</code></td>
-    <td>(current time)</td></tr>
+      <table class="bordered">
+        <tr>
+          <th>Header Name</th>
+          <th>Header Value</th>
+        </tr>
+        <tr>
+          <td><code>Expires</code></td>
+          <td>(current time)</td>
+        </tr>
+        <tr>
+          <td><code>Pragma</code></td>
+          <td>no-cache</td>
+        </tr>
+        <tr>
+          <td><code>Cache-Control</code></td>
+          <td>no-cache</td>
+        </tr>
+      </table>
 
-<tr><td><code>Pragma</code></td>
-     <td>no-cache</td></tr>
+      <p>
+        It is recommended this only be turned on for sensitive documents
+        and not all documents (and images) on the server.
+      </p>
 
-<tr><td><code>Cache-Control</code></td>
-<td>no-cache</td></tr>
-</table>
-
-<p>
-It is recommended this only be turned on for sensitive documents and not
-all documents (and images) on the server.
-</p>
-
-<div class="example"><h3>Example</h3><p><code>
-WebAuthDontCache on<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthDontCache on
+      </code></p></div>
+    
 <h3>See also</h3>
 <ul>
 <li><a href="mod_expires.html.en">mod_expires</a></li>
@@ -937,101 +1159,139 @@ WebAuthDontCache on<br />
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthExtraRedirect" id="WebAuthExtraRedirect">WebAuthExtraRedirect</a> <a name="webauthextraredirect" id="webauthextraredirect">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to do an extra redirect upon return from the WebKDC
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether or not to do an extra redirect upon return from the WebKDC
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthExtraRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthExtraRedirect on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
+      <p>
+        When browsers get redirected back from the WebKDC, tokens will be
+        returned in the URL, by appending the string
+        "<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>" to the URL.
+      </p>
+      <p>
+        This directive controls whether or not an extra redirect will be
+        sent to the browser, with this information removed from the URL
+        after the user has been authenticated.  The benefit of performing
+        the extra redirect is the user's won't see the extra WebAuth
+        information in the URL, and won't be able to bookmark it, etc.
+        Note that bookmarking a URL with the extra information shouldn't
+        really cause any problems, as the tokens in the extra information
+        will only be valid for a limited amount of time (see
+        <a href="#webauthtokenmaxttl"><code class="directive">WebAuthTokenMaxTTL</code></a>),
+        after which they will be ignored.
+      </p>
+      <p>
+        The downside to enabling this directive is the extra redirect will
+        require another round-trip from the server to the user's browser,
+        and under certain circumstances maybe also trigger a caching bug
+        in the user's browser (though hopefully this should never happen).
+      </p>
 
-<p>When browsers get redirected back from the WebKDC, tokens will be
-returned in the URL, by appending the string
-"<code>?WEBAUTHR=...;;WEBAUTHS=...;</code>" to the URL.</p>
-
-<p>This directive controls whether or not an extra redirect will be sent
-to the browser, with this information removed from the URL after the user
-has been authenticated. The benefit of performing the extra redirect is
-the user's won't see the extra WebAuth information in the URL, and won't
-be able to bookmark it, etc. Note that bookmarking a URL with the extra
-information shouldn't really cause any problems, as the tokens in the
-extra information will only be valid for a limited amount of time (see
-<a href="#webauthtokenmaxttl">WebAuthTokenMaxTTL</a>), after which they
-will be ignored.</p>
-
-<p>The downside to enabling this directive is the extra redirect will
-require another round-trip from the server to the user's browser, and
-under certain circumstances maybe also trigger a caching bug in the user's
-browser (though hopefully this should never happen).</p>
-
-<div class="example"><h3>Example</h3><p><code>
-&lt;Location /myapp/&gt;<br />
-  WebAuthExtraRedirect off<br />
-  ...<br />
+      <div class="example"><h3>Example</h3><pre>
+&lt;Location /myapp/&gt;
+  WebAuthExtraRedirect off
+  ...
 &lt;/Location&gt;
-</code></p></div>
+</pre></div>
 
-<div class="note">
-  <h3>Compatibility</h3>
-  <p>In versions of WebAuth prior to 3.5.0, the default for
-  WebAuthExtraRedirect was off.  Also, prior to 3.5.0, this directive was
-  only accepted in directory and .htaccess configuration contexts, not in
-  the server configuration or virtual host configurations.</p>
-</div>
-
+      <div class="note">
+        <h3>Compatibility</h3>
+        <p>
+          In versions of WebAuth prior to 3.5.0, the default for
+          <code class="directive">WebAuthExtraRedirect</code> was off.  Also,
+          prior to 3.5.0, this directive was only accepted in directory
+          and .htaccess configuration contexts, not in the server
+          configuration or virtual host configurations.
+        </p>
+      </div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthFailureURL" id="WebAuthFailureURL">WebAuthFailureURL</a> <a name="webauthfailureurl" id="webauthfailureurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL browsers get redirected to when a fatal mod_webauth
-error occurs
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      The URL browsers get redirected to when a fatal mod_webauth error
+      occurs
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthFaliureURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the URL browsers get redirected to when mod_webauth encounters
-a fatal error. If it is not set, then the server will return a
-"500 Internal Server Error" when a fatal error occurs.
-</p>
+      <p>
+        This is the URL browsers get redirected to when mod_webauth
+        encounters a fatal error.  If it is not set, then the server will
+        return a "500 Internal Server Error" when a fatal error occurs.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthFailureURL /app/sorry.html
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthForceLogin" id="WebAuthForceLogin">WebAuthForceLogin</a> <a name="webauthforcelogin" id="webauthforcelogin">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Forces username/password prompt when user is not authenticated
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Forces interactive authentication when user is not authenticated
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthForceLogin on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthForceLogin off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls whether or not a user will be prompted for a
-username/password if they need to be redirected to the WebKDC for
-authentication.
-</p>
+      <p>
+        This directive controls whether or not interactive authentication
+        will be forced if the user needs to be redirected to the WebLogin
+        server for authentication.
+      </p>
+      <p>
+        By default, the WebLogin server may set cookies for the user after
+        their first authentication and use those cookies for any
+        subsequent authentication until the user's credentials expire.
+        The user may therefore not have to present credentials again,
+        which poses some risk if the user walked away from a system
+        without destroying browser cookies.  This directive can be used to
+        force an interactive authentication if the user needs to go to
+        WebLogin.
+      </p>
+      <p>
+        Interactive is defined as involving one of the factors marked
+        interactive in the table in the <a href="#factors">Authentication
+        Factors</a> section of this manual.  Normally, it means that the
+        user will be re-prompted for their password, but some other
+        authentication mechanism may be possible depending on local
+        configuration.
+      </p>
+      <p>
+        Be aware that, depending on the WebKDC configuration, an
+        interactive login may not be required even if this directive is in
+        force if the user has completed an interactive login very
+        recently.  By default, an interactive login within the past five
+        minutes will satisfy this directive.  This is controlled by
+        configuration on the WebKDC and cannot be controlled by the
+        WebAuth Application Server.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-  # force the user to login, and create an app-token<br />
-  # that only lasts for 20 minutes<br />
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  WebAuthForceLogin on<br />
-  WebAuthAppTokenLifetime 20m<br />
-  &lt;/Location&gt;
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+# force the user to login, and create an app-token
+# that only lasts for 20 minutes
+&lt;Location /myapp/&gt;
+  AuthType WebAuth
+  Require valid-user
+  WebAuthForceLogin on
+  WebAuthAppTokenLifetime 20m
+&lt;/Location&gt;
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthHttpOnly" id="WebAuthHttpOnly">WebAuthHttpOnly</a> <a name="webauthhttponly" id="webauthhttponly">Directive</a></h2>
@@ -1043,376 +1303,403 @@ authentication.
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-    <p>
-      This directive controls whether the HttpOnly flag is set on WebAuth
-      session cookies.  It is turned on by default.  In the unusual event
-      that Javascript needs to be able to read these cookies, this
-      directive can be used to turn off the flag.
-    </p>
+      <p>
+        This directive controls whether the HttpOnly flag is set on WebAuth
+        session cookies.  It is turned on by default.  In the unusual event
+        that Javascript needs to be able to read these cookies, this
+        directive can be used to turn off the flag.
+      </p>
+      <p>
+        Be aware that the structure and format of the WebAuth cookies are
+        an internal implementation detail and decoding them or modifying
+        them outside of the WebAuth code itself is not recommended.  If
+        you need to turn this directive off, that normally indicates that
+        you are doing something unsupported with the WebAuth cookies.
+      </p>
 
-    <p>
-      Be aware that the structure and format of the WebAuth cookies are an
-      internal implementation detail and decoding them or modifying them
-      outside of the WebAuth code itself is not recommended.  If you need
-      to turn this directive off, that normally indicates that you are
-      doing something unsupported with the WebAuth cookies.
-    </p>
-
-    <div class="example"><h3>Example</h3><p><code>
-      
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthHttpOnly off
-    </code></p></div>
-  
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthInactiveExpire" id="WebAuthInactiveExpire">WebAuthInactiveExpire</a> <a name="webauthinactiveexpire" id="webauthinactiveexpire">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Expires app-tokens that haven't been used recently
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Expiration period for app tokens that haven't been used recently
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(disabled)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-    Duration of inactivity allowed before an app-token (webauth_at cookie)
-    is considered expired and re-auth occurs. Setting this requires
-    mod_webauth to periodically update the webauth_at cookie, based on the
-    setting of the
-  <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>
-  directive.
-</p>
+      <p>
+        Duration of inactivity allowed before an app token (webauth_at
+        cookie) is considered expired and re-auth occurs.  Setting this
+        requires mod_webauth to periodically update the webauth_at cookie,
+        based on the setting of the
+        <a href="#webauthlastuseupdateinterval"><code class="directive">WebAuthLastUseUpdateInterval</code></a>
+        directive.
+      </p>
+      <p>
+        To be effective, this directive should be used with either <a href="#webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>
+        or <a href="#webauthrequiresessionfactor"><code class="directive">WebAuthRequireSessionFactor</code></a>.
+        Otherwise, single-sign-on will automatically log the user back in
+        when the token expires due to inactivity.  Additionally, this
+        value should be higher then the value of <a href="#webauthlastuseupdateinterval"><code class="directive">WebAuthLastUseUpdateInterval</code></a>.
+        Otherwise, the cookie will expire before the last-used time is
+        updated.
+      </p>
+      <p>
+        The units for the time are specified by appending a single letter,
+        which can either be s, m, h, d, or w, which correspond to seconds,
+        minutes, hours, days, and weeks respectively.
+      </p>
 
-<p> To be effective, this directive should be used with the
-<a href="#webauthforcelogin">WebAuthForceLogin</a>
-directive, otherwise single-sign-on will automatically log the
-user back in when the token expires due to inactivity. Additionally,
-this value should be higher then the value of
-  <a href="#webauthlastuseupdateinterval">WebAuthLastUseUpdateInterval</a>,
-otherwise the cookie will expire before the last-used-time is updated.
-</p>
-
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-# timeout an app-token if it isn't used for more <br />
-# then 20 minutes<br />
-WebAuthInactiveExpire 20m<br />
-# update the last-used-time in the cookie if it's older<br />
-# then 10 minutes<br />
+      <div class="example"><h3>Example</h3><pre>
+# timeout an app-token if it isn't used for more
+# then 20 minutes
+WebAuthInactiveExpire 20m
+# update the last-used-time in the cookie if it's older
+# then 10 minutes
 WebAuthLastUseUpdateInterval 10m
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyring" id="WebAuthKeyring">WebAuthKeyring</a> <a name="webauthkeyring" id="webauthkeyring">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the webauth keyring
-</td></tr>
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of the file containing the webauth keyring, which is
-a file that contains the server's private AES key(s). </p>
+      <p>
+        This is the name of the file containing the webauth keyring, which
+        is a file that contains the server's private AES key(s).
+      </p>
+      <p>
+        The keyring file gets read once per child and cached for the
+        duration of a child.
+      </p>
+      <p>
+        If the path is not absolute, then it will be treated as being
+        relative to <code>ServerRoot</code>.
+      </p>
 
-<p>The keyring file gets read once per child and cached for the duration
-of a child.
-</p>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
-
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthKeyRing conf/webauth/keyring
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyringAutoUpdate" id="WebAuthKeyringAutoUpdate">WebAuthKeyringAutoUpdate</a> <a name="webauthkeyringautoupdate" id="webauthkeyringautoupdate">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not we auto-update the keyring file
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not we auto-update the keyring file</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls whether or not we auto-update the keyring file.
-This includes creating it if it doesn't exist, and generating a new
-key before the old key expires, and periodically garbage collecting
-old keys. Note that auto updating only occurs on server startup and restarts.
-</p>
+      <p>
+        This directive controls whether or not we auto-update the keyring
+        file.  This includes creating it if it doesn't exist, and
+        generating a new key before the old key expires, and periodically
+        garbage collecting old keys.  Note that auto updating only occurs
+        on server startup and restarts.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive should be turned off if multiple servers are
-sharing the same keyring file so the keyring file can be manually updated.
-That too will eventually be automated.</p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          This directive should be turned off if multiple servers are
+          sharing the same keyring file so the keyring file can be
+          manually updated.  That too will eventually be automated.
+        </p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
-WebAuthKeyringAutoUdpate off<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthKeyringAutoUdpate off
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyringKeyLifetime" id="WebAuthKeyringKeyLifetime">WebAuthKeyringKeyLifetime</a> <a name="webauthkeyringkeylifetime" id="webauthkeyringkeylifetime">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Lifetime of keys in the keyring if we auto-update
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Lifetime of keys in the keyring if we auto-update
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls how long keys we automatically create for
-the keyring are valid. Keys will be valid from the time they are
-created until the lifetime is reached. Note that key lifetime is only
-checked on server startup and restarts.
-</p>
+      <p>
+        This directive controls how long keys we automatically create for
+        the keyring are valid.  Keys will be valid from the time they are
+        created until the lifetime is reached.  Note that key lifetime is
+        only checked on server startup and restarts.
+      </p>
+      <p>
+        This directive is only consulted if
+        <code class="directive">WebKdcKeyringAutoUpdate</code> is enabled.
+      </p>
+      <p>
+        The units for the time are specified by appending a single letter,
+        which can either be s, m, h, d, or w, which correspond to seconds,
+        minutes, hours, days, and weeks respectively.
+      </p>
 
-<p>This
-directive is only consulted if WebKdcKeyringAutoUpdate is enabled.
-</p>
-
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-WebAuthKeyringKeyLifetime 60d<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthKeyringKeyLifetime 60d
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeytab" id="WebAuthKeytab">WebAuthKeytab</a> <a name="webauthkeytab" id="webauthkeytab">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos keytab file
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the Kerberos keytab file</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of the Kerberos keytab file. If principal is not
-specified, then the first principal in the keytab file be used.</p>
+      <p>
+        This is the name of the Kerberos keytab file.  If principal is not
+        specified, then the first principal in the keytab file be used.
+      </p>
+      <p>
+        If the path is not absolute, then it will be treated as being
+        relative to <code>ServerRoot</code>.
+      </p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLastUseUpdateInterval" id="WebAuthLastUseUpdateInterval">WebAuthLastUseUpdateInterval</a> <a name="webauthlastuseupdateinterval" id="webauthlastuseupdateinterval">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How often to update the main webauth cookie
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How often to update the main webauth cookie</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthLastUsedUpdateInterval 0</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-    This value determines how often we update the webauth_at cookie
-    to indicate when the token was last used. Setting this too small
-    will cause too many cookie updates.  A value of 0 will disable
-    updating of the cookie.
-</p>
+      <p>
+        This value determines how often we update the webauth_at cookie to
+        indicate when the token was last used. Setting this too small will
+        cause too many cookie updates.  A value of 0 will disable updating
+        of the cookie.
+      </p>
+      <p>
+        This directive is normally only used with
+        <a href="#webauthinactiveexpire"><code class="directive">WebAuthInactiveExpire</code></a>,
+        though it can be used independently if you just need the
+        <code>WEBAUTH_TOKEN_LASTUSED</code> environment variable updated.
+      </p>
+      <p>
+        The units for the time are specified by appending a single letter,
+        which can either be s, m, h, d, or w, which correspond to seconds,
+        minutes, hours, days, and weeks respectively.
+      </p>
 
-<p> This directive is normally only used with
-   <a href="#webauthinactiveexpire">WebAuthInactiveExpire</a>, though
-it can be used independently if you just need the <code>WEBAUTH_TOKEN_LASTUSED</code>
- environment variable updated.
-</p>
-
-<p>The units for the time are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-# timeout an app-token if it isn't used for <br />
-# more then 20 minutes<br />
-WebAuthInactiveExpire 20m<br />
-# update the last-used-time in the cookie if it's older<br />
-# then 10 minutes<br />
+      <div class="example"><h3>Example</h3><pre>
+# timeout an app-token if it isn't used for
+# more then 20 minutes
+WebAuthInactiveExpire 20m
+# update the last-used-time in the cookie if it's older
+# then 10 minutes
 WebAuthLastUseUpdateInterval 10m
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLoginCanceledURL" id="WebAuthLoginCanceledURL">WebAuthLoginCanceledURL</a> <a name="webauthlogincanceledurl" id="webauthlogincanceledurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to if user cancels out of login
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to if user cancels out of login</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginCanceledURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls which URL the user is returned to if they
-have to login, but hit the cancel button while logging in.
-</p>
-<p>If this directive is not set and the user hits the cancel button,
-they will be taken to a standard "login canceled" page at the WebKDC.
-</p>
+      <p>
+        This directive controls which URL the user is returned to if they
+        have to login, but hit the cancel button while logging in.
+        Normally, the cancel option will not be displayed, but if this
+        directive is set, the user will be shown an option to cancel
+        logging in on the WebLogin screen.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthLoginCanceledURL /nonwebauth/info.html
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLoginURL" id="WebAuthLoginURL">WebAuthLoginURL</a> <a name="webauthloginurl" id="webauthloginurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL browsers get redirected to when the user is
-unauthenticated
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      The URL browsers get redirected to when the user is unauthenticated
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the URL browsers get redirected to when the user is unauthenticated
-and needs to either login or reuse an existing single-sign-on credential.
-This should alway use SSL. </p>
+      <p>
+        This is the URL browsers get redirected to when the user is
+        unauthenticated and needs to either login or reuse an existing
+        single-sign-on credential.  This should alway use SSL.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
-WebAuthLoginURL https://webkdc.stanford.edu/login/
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthLoginURL https://weblogin.stanford.edu/login
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthOptional" id="WebAuthOptional">WebAuthOptional</a> <a name="webauthoptional" id="webauthoptional">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to require the use to authenticate</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether or not to require the use to authenticate
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthOptional on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-    <p>
-      Normally, if an unauthenticated user attempts to access a directory
-      protected by WebAuth, they will be redirected to the WebLogin server
-      to authenticate.  This directive allows that authentication to be
-      deferred.  If this option is set to on, an unauthenticated user will
-      still be permitted access to the protected resource (even with
-      <code>require valid-user</code> in effect), unless they're
-      prohibited by some other authorization rule.  Unauthenticated users
-      will not have the REMOTE_USER, WEBAUTH_USER, or AUTH_TYPE
-      environment variables set.  If the user has already authenticated,
-      then all the environment variables will be set as normal.
-    </p>
+      <p>
+        Normally, if an unauthenticated user attempts to access a
+        directory protected by WebAuth, they will be redirected to the
+        WebLogin server to authenticate.  This directive allows that
+        authentication to be deferred.  If this option is set to on, an
+        unauthenticated user will still be permitted access to the
+        protected resource (even with <code>require valid-user</code> in
+        effect), unless they're prohibited by some other authorization
+        rule.  Unauthenticated users will not have the REMOTE_USER,
+        WEBAUTH_USER, or AUTH_TYPE environment variables set.  If the user
+        has already authenticated, then all the environment variables will
+        be set as normal.
+      </p>
+      <p>
+        This directive is normally used to protect CGI scripts or other
+        dynamic content that will then inspect the REMOTE_USER environment
+        variable and show different content based on whether the user has
+        authenticated or not.  Generally, such content will include a
+        login link to a page protected by WebAuth with
+        <code class="directive">WebAuthOptional</code> set to off, so that the
+        user can authenticate if they wish.  After that authentication,
+        subsequent visits to content with
+        <code class="directive">WebAuthOptional</code> set to on will have
+        authentication information available in the environment.
+      </p>
 
-    <p>
-      This directive is normally used to protect CGI scripts or other
-      dynamic content that will then inspect the REMOTE_USER environment
-      variable and show different content based on whether the user has
-      authenticated or not.  Generally, such content will include a login
-      link to a page protected by WebAuth with
-      <code>WebAuthOptional</code> set to off, so that the user can
-      authenticate if they wish.  After that authentication, subsequent
-      visits to content with <code>WebAuthOptional</code> set to on will
-      have authentication information available in the environment.
-    </p>
-
-    <div class="example"><h3>Example</h3><p><code>
-      
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthOptional on
-    </code></p></div>
-  
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthPostReturnURL" id="WebAuthPostReturnURL">WebAuthPostReturnURL</a> <a name="webauthpostreturnurl" id="webauthpostreturnurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating during a POST
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      URL to return to after authenticating during a POST
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthPostReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls which URL the user is returned to after authenticating
-with the WebKDC when the HTTP method was a POST. By default, mod_webauth
-will return 401 (UNAUTHORIZED), as it is impractical to try and recover from a POST that failed due to no authentication.
-</p>
+      <p>
+        This directive controls which URL the user is returned to after
+        authenticating with the WebKDC when the HTTP method was a POST.
+        By default, mod_webauth will return 401 (UNAUTHORIZED), as it is
+        impractical to try and recover from a POST that failed due to no
+        authentication.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-# if unauthenticated when accessing a URL via a POST, <br />
-# authenticate and return to front-page<br />
+      <div class="example"><h3>Example</h3><pre>
+# if unauthenticated when accessing a URL via a POST,
+# authenticate and return to front-page
 WebAuthPostReturnURL /myapp/
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthRequireInitialFactor" id="WebAuthRequireInitialFactor">WebAuthRequireInitialFactor</a> <a name="webauthrequireinitialfactor" id="webauthrequireinitialfactor">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Required factors for initial authentication</td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireInitialFactor <em>factor</em> [<em>factor</em>
-  ...]</code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>
+      WebAuthRequireInitialFactor <em>factor</em> [<em>factor</em> ...]
+    </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-    <p>
-      Normally, WebAuth will accept any authentication method and allow
-      access to the protected resource.  This directive is used to require
-      that the user's initial authentication be done with a particular
-      factor.  The value is a space-separated list of factors, all of
-      which are required.  If any of those factors were not used for the
-      initial authentication, the user will be sent back to the WebLogin
-      server to reauthenticate.
-    </p>
-    <p>
-      The initial authentication is the authentication used to obtain
-      single sign-on cookies (if any).  That authentication may have been
-      done immediately before going to this web site, or earlier to obtain
-      single sign-on credentials.  See <a href="#webauthrequiresessionfactor"><code>WebAuthRequireSessionFactor</code></a>
-      to control the factors used to authenticate to this specific
-      resource, or <a href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
-      different approach to these sorts of restrictions.
-    </p>
+      <p>
+        Normally, WebAuth will accept any authentication method and allow
+        access to the protected resource.  This directive is used to
+        require that the user's initial authentication be done with a
+        particular factor.  The value is a space-separated list of
+        factors, all of which are required.  If any of those factors were
+        not used for the initial authentication, the user will be sent
+        back to the WebLogin server to reauthenticate.
+      </p>
+      <p>
+        The initial authentication is the authentication used to obtain
+        single sign-on cookies (if any).  That authentication may have
+        been done immediately before going to this web site, or earlier to
+        obtain single sign-on credentials.  See
+        <a href="#webauthrequiresessionfactor"><code class="directive">WebAuthRequireSessionFactor</code></a>
+        to control the factors used to authenticate to this specific
+        resource, or
+        <a href="#webauthrequireloa"><code class="directive">WebAuthRequireLOA</code></a>
+        for a different approach to these sorts of restrictions.
+      </p>
 
-    <div class="example"><h3>Example</h3><p><code>
-      
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthRequireInitialFactor p o
-    </code></p></div>
-  
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthRequireLOA" id="WebAuthRequireLOA">WebAuthRequireLOA</a> <a name="webauthrequireloa" id="webauthrequireloa">Directive</a></h2>
@@ -1424,490 +1711,759 @@ WebAuthRequireInitialFactor p o
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-    <p>
-      Normally, WebAuth will accept any authentication method and allow
-      access to the protected resource.  This directive is used to require
-      that the user's authentication meet a particular level of assurance.
-    </p>
-    <p>
-      A level of assurance is an integer number whose definition varies
-      from site to site, except that larger numbers indicate a stronger
-      assurance of the user's authentication and identity than smaller
-      numbers.  Level of assurance may combine multiple factors, such as
-      binding of identity (whether the user presented identification when
-      obtaining their account credentials), method of authentication, and
-      other site-defined information.  This directive should be used in
-      conjunction with site-specific supplemental documentation of what
-      the level of assurance numbers mean for that site.
-    </p>
+      <p>
+        Normally, WebAuth will accept any authentication method and allow
+        access to the protected resource.  This directive is used to
+        require that the user's authentication meet a particular level of
+        assurance.
+      </p>
+      <p>
+        A level of assurance is an integer number whose definition varies
+        from site to site, except that larger numbers indicate a stronger
+        assurance of the user's authentication and identity than smaller
+        numbers.  Level of assurance may combine multiple factors, such as
+        binding of identity (whether the user presented identification
+        when obtaining their account credentials), method of
+        authentication, and other site-defined information.  This
+        directive should be used in conjunction with site-specific
+        supplemental documentation of what the level of assurance numbers
+        mean for that site.
+      </p>
 
-    <div class="example"><h3>Example</h3><p><code>
-      
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthRequireLOA 2
-    </code></p></div>
-  
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthRequireSessionFactor" id="WebAuthRequireSessionFactor">WebAuthRequireSessionFactor</a> <a name="webauthrequiresessionfactor" id="webauthrequiresessionfactor">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Required factors for session authentication</td></tr>
-<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireSessionFactor <em>factor</em> [<em>factor</em>
-  ...]</code></td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>
+      WebAuthRequireSessionFactor <em>factor</em> [<em>factor</em> ...]
+    </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-    <p>
-      Normally, WebAuth will accept any authentication method and allow
-      access to the protected resource.  This directive is used to require
-      that the user's session authentication be done with a particular
-      factor.  The value is a space-separated list of factors, all of
-      which are required.  If any of those factors were not used for the
-      session authentication, the user will be sent back to the WebLogin
-      server to reauthenticate.
-    </p>
-    <p>
-      The session authentication is the authentication used to access this
-      particular resource (or, more specifically, to obtain an application
-      authentication cookie scoped to include this resource).  This will
-      match the initial authentication if the user did not use any single
-      sign-on method (or if <a href="#webauthforcelogin"><code>WebAuthForceLogin</code></a> is
-      set), but may be different if single sign-on is in use.  In most
-      situations, one should instead use <a href="#webauthrequireinitialfactor"><code>WebAuthRequireInitialFactor</code></a>
-      to control the initial authentication factors and allow single
-      sign-on to work normally.  See <a href="#webauthrequireloa"><code>WebAuthRequireLOA</code></a> for a
-      different approach to these sorts of restrictions.
-    </p>
+      <p>
+        Normally, WebAuth will accept any authentication method and allow
+        access to the protected resource.  This directive is used to
+        require that the user's session authentication be done with a
+        particular factor.  The value is a space-separated list of
+        factors, all of which are required.  If any of those factors were
+        not used for the session authentication, the user will be sent
+        back to the WebLogin server to reauthenticate.
+      </p>
+      <p>
+        The session authentication is the authentication used to access
+        this particular resource (or, more specifically, to obtain an
+        application authentication cookie scoped to include this
+        resource).  This will match the initial authentication if the user
+        did not use any single sign-on method, if <a href="#webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>
+        is set), or if the user has authenticated very recently, but may
+        be different if single sign-on is in use.  In most situations, one
+        should instead use <a href="#webauthrequireinitialfactor"><code class="directive">WebAuthRequireInitialFactor</code></a>
+        to control the initial authentication factors and allow single
+        sign-on to work normally.  See <a href="#webauthrequireloa"><code class="directive">WebAuthRequireLOA</code></a>
+        for a different approach to these sorts of restrictions.
+      </p>
 
-    <div class="example"><h3>Example</h3><p><code>
-      
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthRequireSessionFactor m
-    </code></p></div>
-  
+      </code></p></div>
+    
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthRequireSSL" id="WebAuthRequireSSL">WebAuthRequireSSL</a> <a name="webauthrequiressl" id="webauthrequiressl">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether SSL is required to access a WebAuth-protected resource
+    </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireSSL on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthRequireSSL on</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+      <p>
+        Normally, all WebAuth-protected resources must be accessed via
+        SSL.  Attempts to access a WebAuth-protected resources without SSL
+        will either be rejected with an authorization denied error (the
+        default) or will be redirected to the equivalent SSL URL (if
+        <a href="#webauthsslredirect"><code class="directive">WebAuthSSLRedirect</code></a>
+        is set to <code>on</code>).
+      </p>
+      <p>
+        If this directive is set to <code>on</code>, access to a
+        WebAuth-protected resource is permitted without the protection of
+        SSL.
+      </p>
+
+      <div class="note">
+        <h3>Warning</h3>
+        <p>
+          Turning off this directive can create a significant security
+          vulnerability.  Without required use of SSL, there is no
+          protection for the WebAuth app token.  Anyone in the network
+          path from the client to the server can trivially steal the token
+          and then authenticate to that server as that user.  Under normal
+          circumstances, this directive should never be turned off.
+        </p>
+        <p>
+          There are, however, two circumstances in which turning off this
+          directive might make sense.
+        </p>
+        <p>
+          One is if the WebAuth-protected resource is behind a separate
+          SSL accelerator and connected to it via a trusted network link.
+          In this case, by the time Apache sees the request, it appears to
+          not be using SSL, but the request has SSL protection on all
+          untrusted network connections.  In this case, it may be
+          necessary to turn off this directive and to turn on <a href="#webauthsslreturn"><code class="directive">WebAuthSSLReturn</code></a>
+          so that the client is returned to the correct URL after
+          authentication.
+        </p>
+        <p>
+          The other case where turning this directive off may make sense
+          is if WebAuth is being used to protect a proxy for low-value,
+          low-security content where theft of the authentication
+          credentials for that site is not a concern.  This may be the
+          case if, for example, WebAuth is being used to protect a
+          subscription service that's not of sufficiently high value that
+          theft of authentication credentials is an expected risk.  Even
+          in this case, requiring SSL is strongly preferred, but some
+          PAC-based proxy configurations may not permit forcing SSL to the
+          proxy server.
+        </p>
+      </div>
+
+      <div class="example"><h3>Example</h3><pre>
+# This server is behind an SSL accelerator, so Apache only sees
+# non-SSL traffic.  Permit non-SSL WebAuth access, but ensure the
+# return URL for authentication tells the client to use SSL.
+WebAuthRequireSSL off
+&lt;Location /&gt;
+  WebAuthSSLReturn on
+&lt;/Location&gt;
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthReturnURL" id="WebAuthReturnURL">WebAuthReturnURL</a> <a name="webauthreturnurl" id="webauthreturnurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>URL to return to after authenticating</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(url user originally requested)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls which URL the user is returned to after authenticating
-with the WebKDC. By default, they will return the URL they originally
-requested.
-</p>
+      <p>
+        This directive controls which URL the user is returned to after
+        authenticating with the WebKDC.  By default, they will return the
+        URL they originally requested.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-# if unauthenticated when accessing a URL, authenticate<br />
-# and return to front-page<br />
+      <div class="example"><h3>Example</h3><pre>
+# if unauthenticated when accessing a URL, authenticate
+# and return to front-page
 WebAuthReturnURL /myapp/
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthServiceTokenCache" id="WebAuthServiceTokenCache">WebAuthServiceTokenCache</a> <a name="webauthservicetokencache" id="webauthservicetokencache">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the service-token cache file.
-</td></tr>
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthServiceTokenCache <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of the service-token cache file. This file is used to
-maintain a cached copy of the service-token that gets shared between
-all the web server's child processes. It will get generated
-and maintained automatically.
-</p>
+      <p>
+        This is the name of the service-token cache file.  This file is
+        used to maintain a cached copy of the service-token that gets
+        shared between all the web server's child processes.  It will get
+        generated and maintained automatically.
+      </p>
+      <p>
+        If the path is not absolute, then it will be treated as being
+        relative to <code>ServerRoot</code>.
+      </p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
-
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthServiceTokenCache conf/webauth/service_token_cache
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLRedirect" id="WebAuthSSLRedirect">WebAuthSSLRedirect</a> <a name="webauthsslredirect" id="webauthsslredirect">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Redirect to https when accessing a WebAuth-protected page via http
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Redirect to https when accessing a WebAuth-protected page via http
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-If a user attempts to access a WebAuth-protected page via <code>http</code>
-instead of <code>https</code> and this directive is turned off, then access
-will be denied. If this directive is tuned on, then the user will
-be redirected to the same URL using <code>https</code> instead of
-<code>http</code>. Once accessing pages using <code>https</code>, they will
-remain accessing pages via <code>https</code> unless the application
-redirects the user back to <code>http</code>.
-</p>
+      <p>
+        If a user attempts to access a WebAuth-protected page via
+        <code>http</code> instead of <code>https</code> and this directive
+        is turned off, then access will be denied.  If this directive is
+        tuned on, then the user will be redirected to the same URL using
+        <code>https</code> instead of <code>http</code>.  Once accessing
+        pages using <code>https</code>, they will remain accessing pages
+        via <code>https</code> unless the application redirects the user
+        back to <code>http</code>.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>If the server is not configured to run SSL on the default port, then
-    the <a href="#webauthsslredirectport">WebAuthSSLRedirectPort</a> directive
-    must be used to specify which port to redirect the user to.
-    </p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          If the server is not configured to run SSL on the default port,
+          then the
+          <a href="#webauthsslredirectport"><code class="directive">WebAuthSSLRedirectPort</code></a>
+          directive must be used to specify which port to redirect the
+          user to.
+        </p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
-WebAuthSSLRedirect on<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthSSLRedirect on
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLRedirectPort" id="WebAuthSSLRedirectPort">WebAuthSSLRedirectPort</a> <a name="webauthsslredirectport" id="webauthsslredirectport">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>port to use when redirecting the user to https
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>port to use when redirecting the user to https </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirectPort <em>port</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirectPort 443</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is used in conjunction with the
-<a href="#webauthsslredirect">WebAuthSSLRedirect</a> directive and controls
-which port the user is redirected to when redirecting them to the
-<code>https</code> version of the URL. This is useful during development if
-you run the Apache server on ports 8080 and 8443, for example.
-</p>
+      <p>
+        This is used in conjunction with the
+        <a href="#webauthsslredirect"><code class="directive">WebAuthSSLRedirect</code></a>
+        directive and controls which port the user is redirected to when
+        redirecting them to the <code>https</code> version of the URL.
+        This is useful during development if you run the Apache server on
+        ports 8080 and 8443, for example.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-WebAuthSSLRedirect on<br />
-WebAuthSSLRedirectPort 8443<br />
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+WebAuthSSLRedirect on
+WebAuthSSLRedirectPort 8443
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSSLReturn" id="WebAuthSSLReturn">WebAuthSSLReturn</a> <a name="webauthsslreturn" id="webauthsslreturn">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Sets the return URL to be https
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Sets the return URL to be https</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLReturn on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLReturn off</code></td></tr>
-<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-If a user connects to a webauth-protected page via http, and needs to be
-authenticated, then this directive will cause the return URL to be converted
-to https.
-</p>
+      <p>
+        If a user connects to a WebAuth-protected page via http, and needs
+        to be authenticated, then this directive will cause the return URL
+        to be converted to https.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /myapp/&gt;<br />
-  AuthType WebAuth<br />
-  Require valid-user<br />
-  WebAuthSSLReturn on<br />
-  &lt;/Location&gt;
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+&lt;Location /myapp/&gt;
+  AuthType WebAuth
+  Require valid-user
+  WebAuthSSLReturn on
+&lt;/Location&gt;
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthStripURL" id="WebAuthStripURL">WebAuthStripURL</a> <a name="webauthstripurl" id="webauthstripurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to strip WebAuth information from the internal
-URL
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether or not to strip WebAuth information from the internal URL
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthStripURL on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
+      <p>
+        This directive controls whether the WebAuth module strips WebAuth
+        information from the URL before processing it.  If set to on (the
+        default), the WEBAUTHR and WEBAUTHS strings are stripped from
+        Apache's internal knowledge of the URL before &lt;Directory&gt;
+        and &lt;File&gt; blocks are processed and other modules, CGI
+        scripts, and similar applications will not see the WebAuth data.
+      </p>
+      <p>
+        Normally, you should always leave this directive on.  The only
+        reason to turn it off is if you have an application that wants to
+        do its own WebAuth handling, running on a server that also has
+        mod_webauth enabled.  If you do turn this directive, you should
+        also enable
+        <a href="#webauthextraredirect"><code class="directive">WebAuthExtraRedirect</code></a>
+        or your web applications will see unexpected data in their URLs
+        that they won't know what to do with.
+      </p>
+      <p>
+        This unfortunately can only be set usefully at the server or
+        virtual host level due to the way that Apache processes requests.
+      </p>
 
-<p>This directive controls whether the WebAuth module strips WebAuth
-information from the URL before processing it.  If set to on (the
-default), the WEBAUTHR and WEBAUTHS strings are stripped from Apache's
-internal knowledge of the URL before &lt;Directory&gt; and &lt;File&gt;
-blocks are processed and other modules, CGI scripts, and similar
-applications will not see the WebAuth data.</p>
-
-<p>Normally, you should always leave this directive on.  The only reason
-to turn it off is if you have an application that wants to do its own
-WebAuth handling, running on a server that also has mod_webauth enabled.
-If you do turn this directive, you should also enable
-<a href="#webauthextraredirect"><code>WebAuthExtraRedirect</code></a> or
-your web applications will see unexpected data in their URLs that they
-won't know what to do with.</p>
-
-<p>This unfortunately can only be set usefully at the server or virtual
-host level due to the way that Apache processes requests.</p>
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthStripURL off
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthSubjectAuthType" id="WebAuthSubjectAuthType">WebAuthSubjectAuthType</a> <a name="webauthsubjectauthtype" id="webauthsubjectauthtype">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Type of subject authenticator the WebKDC will use in the returned
-id-token</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Type of subject authenticator the WebKDC will use in the returned
+      id-token
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSubjectAuthType <em>type</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSubjectAuthType webkdc</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-When mod_webauth needs to make a request for an id-token, it needs to
-specify what type of subject authenticator that it expects returned. This
-directive configures which type of subject authenticator is requested
-by <em>type</em>:</p>
-<ul>
-<li><code>krb5</code>
-    <p>
-    When this type of subject authenticator is used, the WebKDC will use
-    the user's Kerberos credentials to make a <code>krb5_mk_req</code>
-    call, using the requesting web server's Kerberos principal. When
-    mod_webauth gets back the id-token, it will then use it's keytab to
-    verify the subject authenticator using <code>krb5_rd_req</code>.</p>
-    <p>This basically means that even if the WebKDC is compromised, a
-    user's identity cannot be forged, unless that user happens to be logged
-    in and using the WebKDC.</p>
-    <p>The downside to using this option is that returned id-token will
-    be about 500 bytes longer then when using a type of <code>webkdc</code>.</p>
-    <p>
-    Specifying this also requires that
-    <a href="#webauthkeytab">WebAuthKeytab</a> be set.
-    (FIXME: it is already always required for obtaining a service-token, though
-     it will probably become optional at some point).</p>
-</li>
-<li><code>webkdc</code>
-    <p>
-    This is the default.</p>
-    <p>
-    When this type of subject authenticator is used, the WebKDC will
-    place the already verified username in the returned id-token (encrypted,
-    of course). When mod_webauth gets back the id-token, it will trust that
-    the WebKDC as sufficiently authenticated the user, and use the returned
-    username.</p>
- </li>
-</ul>
-<div class="example"><h3>Example</h3><p><code>
-WebAuthSubjectAuthType krb5
-</code></p></div>
+      <p>
+        When mod_webauth needs to make a request for an id-token, it needs
+        to specify what type of subject authenticator that it expects
+        returned.  This directive configures which type of subject
+        authenticator is requested by <em>type</em>:
+      </p>
+      <dl>
+        <dt><code>webkdc</code></dt>
+        <dd>
+          <p>
+            This is the default.
+          </p>
+          <p>
+            When this type of subject authenticator is used, the WebKDC
+            will place the already verified username in the returned
+            id-token (encrypted, of course).  When mod_webauth gets back
+            the id-token, it will trust that the WebKDC as sufficiently
+            authenticated the user, and use the returned username.
+          </p>
+        </dd>
+        <dt><code>krb5</code></dt>
+        <dd>
+          <p>
+            When this type of subject authenticator is used, the WebKDC
+            will use the user's Kerberos credentials to make a
+            <code>krb5_mk_req</code> call, using the requesting web
+            server's Kerberos principal.  When mod_webauth gets back the
+            id-token, it will then use it's keytab to verify the subject
+            authenticator using <code>krb5_rd_req</code>.
+          </p>
+          <p>
+            This means that, even if the WebKDC is compromised, a user's
+            identity cannot be forged unless that user happens to be
+            logged in and using the WebKDC.
+          </p>
+          <p>
+            Setting this subject auth type will make all id tokens about
+            500 bytes longer then when using a type of
+            <code>webkdc</code>.  This may cause problems with the HTTP
+            header limit if the site uses other large cookies, or uses
+            Active Directory as the Kerberos KDC (which may make Kerberos
+            tickets significantly longer).
+          </p>
+          <p>
+            This setting will also cause mod_webauth to ignore all
+            authorization identities (since they cannot be independently
+            verified), meaning that <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>
+            directives will be ignored.
+          </p>
+          <p>
+            Also be aware that using this option means that the WebAuth
+            server will not get the benefit of any identity
+            canonicalization or mapping that is done by the WebLogin
+            server.  Instead, it will authenticate the user as the
+            principal present in the Kerberos authenticator, converted to
+            a local name through the normal Kerberos local name mapping
+            mechanism.  This may be a feature or a drawback depending on
+            the situation.
+          </p>
+        </dd>
+      </dl>
 
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthSubjectAuthType krb5
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthTokenMaxTTL" id="WebAuthTokenMaxTTL">WebAuthTokenMaxTTL</a> <a name="webauthtokenmaxttl" id="webauthtokenmaxttl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>How old a token that was should be recently created is valid for.
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      How old a token that was should be recently created is valid for.
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive sets how old tokens that must be considered recent can be
-before they are considered stale. It is used to help prevent tokens from
-being replayed, and to ignore those token if they occur in cookies, URLs,
-etc. This requires clocks between the web server and the WebKDC to be
-synchronized. </p>
+      <p>
+        This directive sets how old tokens that must be considered recent
+        can be before they are considered stale.  It is used to help
+        prevent tokens from being replayed, and to ignore those token if
+        they occur in cookies, URLs, etc.  This requires clocks between
+        the web server and the WebKDC to be synchronized.
+      </p>
+      <p>
+        The units for the TTL are specified by appending a single letter,
+        which can either be s, m, h, d, or w, which correspond to seconds,
+        minutes, hours, days, and weeks respectively.
+      </p>
 
-<p>The units for the TTL are specified by appending a single letter,
-which can either be s, m, h, d, or w, which correspond to seconds, minutes,
-hours, days, and weeks respectively.</p>
-
-<div class="example"><h3>Example</h3><p><code>
-# ten minute TTL<br />
+      <div class="example"><h3>Example</h3><pre>
+# ten minute TTL
 WebAuthTokenMaxTTL 10m
-</code></p></div>
+</pre></div>
+    
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthTrustAuthzIdentity" id="WebAuthTrustAuthzIdentity">WebAuthTrustAuthzIdentity</a> <a name="webauthtrustauthzidentity" id="webauthtrustauthzidentity">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether to use the authorization identity as the authenticated user
+    </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTrustAuthzIdentity on|off</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTrustAuthzIdentity off</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+      <p>
+        By default, WebAuth ignores any authorization identity sent by the
+        WebKDC and uses the user's authenticated identity as the Apache
+        identity (for authorization checks and logging) and for the
+        REMOTE_USER environment variable.  To allow the user (with the
+        WebKDC's permission and vetting) to assert a different
+        authorization identity than their authenticated identity, set this
+        directive to <code>on</code>.  This can be set or changed at any
+        scope, including .htaccess files if AuthConfig overrides are
+        allowed.
+      </p>
+      <p>
+        Even if this directive is left off (the default), the
+        authorization identity (if present) is available in the
+        WEBAUTH_AUTHZ_USER environment variable.  However, if this
+        directive is not turned on, the authorization identity won't be
+        used for any purpose other than populating that environment
+        variable.
+      </p>
+      <p>
+        If this directive is enabled, the authorization identity will be
+        passed to Apache as the user's identity, just as if they'd
+        authenticated as that user.  That will affect any further
+        authorization checks, group membership checks, or other modules
+        that retrieve information based on the authenticated identity,
+        such as LDAP modules.
+      </p>
+      <p>
+        Even if this directive is enabled, the WEBAUTH_USER environment
+        variable will always be set to the authenticated identity,
+        ignoring any authorization identity.
+      </p>
 
+      <div class="note">
+        <h3>Warning</h3>
+        <p>
+          The interaction between this directive and either <a href="#webauthsubjectauthtype"><code class="directive">WebAuthSubjectAuthType</code></a>
+          or <a href="webauthcred"><code class="directive">WebAuthCred</code></a>
+          may be unexpected.
+        </p>
+        <p>
+          Setting <code class="directive">WebAuthSubjectAuthType</code> to
+          <code>krb5</code> indicates that mod_webauth should not solely
+          trust the WebKDC's assertion of identity and instead
+          independently verify the authentication credentials of the user.
+          However, there is no way to independently verify the
+          authorization identity.  Therefore, setting
+          <code class="directive">WebAuthSubjectAuthType</code> to
+          <code>krb5</code> tells mod_webauth to ignore the authorization
+          identity.  The <code>webkdc</code> subject auth type (the
+          default) must be used to use this feature.
+        </p>
+        <p>
+          <code class="directive">WebAuthCred</code> can be used in combination
+          with this directive, but all obtained credentials will be for
+          the authentication identity, not for the authorization identity.
+          There is currently no way to obtain credentials for the
+          authorization identity.
+        </p>
+      </div>
+
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebAuthTrustAuthzIdentity on
+      </code></p></div>
+
+      <div class="note">
+        <h3>Note on Logging</h3>
+        <p>
+          By default, the Apache access log includes, in the third field,
+          the identity of the user accessing a page that requires
+          authentication.  This is the authorization identity: the
+          identity stored in the REMOTE_USER environment variable and used
+          for authorization checks.
+        </p>
+        <p>
+          When the <code class="directive">WebAuthTrustAuthzIdentity</code>
+          directive is enabled, it may be useful to also log the
+          authentication identity.  The WebAuth module will log to the
+          error log the authentication and authorization identities after
+          the initial authentication to that server, but it can be hard to
+          correlate that with access log entries.
+        </p>
+        <p>
+          There is a field in the access log that can be used for this
+          purpose, although it requires a change to the default Apache log
+          format.  The second field in a standard access log entry is
+          normally the remote connection identity as determined by the
+          ident protocol.  However, this protocol is obsolete and
+          insecure, and this check is disabled by default, so in a typical
+          Apache installation, this field is always empty
+          (<code>-</code>).  Existing log parsers understand this field,
+          so it can be reused to store the authentication identity so that
+          both identities can be logged.
+        </p>
+        <p>
+          To do this, change the second field of the Apache access log
+          format from <code>%l</code> to <code>%{WEBAUTH_USER}e</code>.
+          This will log the WebAuth authentication identity, if any, in
+          the second field, and leave the second field as <code>-</code>
+          if no authentication identity is established.
+        </p>
+      </div>
+
+      <div class="example"><h3>Logging Example</h3><pre>
+# Replace ident field with WebAuth authentication identity.
+LogFormat \
+ "%h %{WEBAUTH_USER}e %u %t \"%r\" %&gt;s %O \"%{Referer}i\" \"%{User-Agent}i\"" \
+ webauth_combined
+CustomLog /var/log/apache2/access.log webauth_combined
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthUseCreds" id="WebAuthUseCreds">WebAuthUseCreds</a> <a name="webauthusecreds" id="webauthusecreds">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not save credentials to the cache
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not save credentials to the cache</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthUseCreds on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthUseCreds off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls whether or not any acquired credentials will
-actually be saved to the credential cache directory and made available
-as part of the current request. It should be used in conjunction with
-the <a href="#webauthcred">WebAuthCred</a> directive.
-</p>
+      <p>
+        This directive controls whether or not any acquired credentials
+        will actually be saved to the credential cache directory and made
+        available as part of the current request. It should be used in
+        conjunction with the
+        <a href="#webauthcred"><code class="directive">WebAuthCred</code></a>
+        directive.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-  &lt;Location /myapp/command&gt;<br />
-  WebAuthUseCreds on<br />
-  &lt;/Location&gt;
-</code></p></div>
-
+      <div class="example"><h3>Example</h3><pre>
+&lt;Location /myapp/command&gt;
+  WebAuthUseCreds on
+&lt;/Location&gt;
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthVarPrefix" id="WebAuthVarPrefix">WebAuthVarPrefix</a> <a name="webauthvarprefix" id="webauthvarprefix">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional webauth-related environment variables to set
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Additional WebAuth-related environment variables to set
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthVarPrefix <em>string</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthVarPrefix ""</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-The webauth module sets various environment variables that are made
-available at the time of document or application serving. They are
-all prefixed by "WEBAUTH" (for instance WEBAUTH_USER), but some CGI apps
-(specifically the Oracle WRB) have expectations about and/or restrictions
-on the names of environment variables they can handle. Set this to a string
- you want prepended to the environment variables this
-module defines, and they will be set in addition to the standard "WEBAUTH"
-ones.</p>
+      <p>
+        The WebAuth module sets various environment variables that are
+        made available at the time of document or application serving.
+        They are all prefixed by "WEBAUTH" (for instance WEBAUTH_USER),
+        but some CGI apps (specifically the Oracle WRB) have expectations
+        about and/or restrictions on the names of environment variables
+        they can handle.  Set this to a string you want prepended to the
+        environment variables this module defines, and they will be set in
+        addition to the standard "WEBAUTH" ones.
+      </p>
 
-<div class="example"><h3>Example</h3><p><code>
-&lt;Location /myapp/&gt;<br />
-# this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER <br />
-# environment variables to get set.<br />
-WebAuthVarPrefix HTTP_<br />
+      <div class="example"><h3>Example</h3><pre>
+&lt;Location /myapp/&gt;
+  # this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER
+  # environment variables to get set.
+  WebAuthVarPrefix HTTP_
 &lt;/Location&gt;
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcPrincipal" id="WebAuthWebKdcPrincipal">WebAuthWebKdcPrincipal</a> <a name="webauthwebkdcprincipal" id="webauthwebkdcprincipal">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The Kerberos principal name of the WebKDC
-</td></tr>
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of the Kerberos principal to use when communicating with
-the WebKDC. It used to request a service-token from the WebKDC. </p>
+      <p>
+        This is the name of the Kerberos principal to use when
+        communicating with the WebKDC.  It used to request a service-token
+        from the WebKDC.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
-# if realm isn't specified, the default realm will be used<br />
+      <div class="example"><h3>Example</h3><pre>
+# if realm isn't specified, the default realm will be used
 WebAuthWebKdcPrincipal service/webkdc@stanford.edu
-</code></p></div>
-
+</pre></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertCheck" id="WebAuthWebKdcSSLCertCheck">WebAuthWebKdcSSLCertCheck</a> <a name="webauthwebkdcsslcertcheck" id="webauthwebkdcsslcertcheck">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Whether or not to perform SSL certificate checking on the WebKDC's
-certificate
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Whether or not to perform SSL certificate checking on the WebKDC's
+      certificate
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertCheck on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This directive controls whether or not SSL certificate checking is performed
-on the certificate used by the WebKDC when mod_webauth communicates directly
-with the WebKDC.
-</p>
+      <p>
+        This directive controls whether or not SSL certificate checking is
+        performed on the certificate used by the WebKDC when mod_webauth
+        communicates directly with the WebKDC.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>Setting this directive to <code>off</code> opens a security hole
-and should only be used in development when the
-<a href="#webauthwebkdcsslcertfile"><code>WebAuthWebKdcSSLCertFile</code></a>
-directive cannot be used.
-</p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          Setting this directive to <code>off</code> opens a security hole
+          and should only be used in development when the
+          <a href="#webauthwebkdcsslcertfile"><code class="directive">WebAuthWebKdcSSLCertFile</code></a>
+          directive cannot be used.
+        </p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthWebKdcSSLCertCheck off
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcSSLCertFile" id="WebAuthWebKdcSSLCertFile">WebAuthWebKdcSSLCertFile</a> <a name="webauthwebkdcsslcertfile" id="webauthwebkdcsslcertfile">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the WebKDC's certificate file.
-</td></tr>
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertFile <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the name of a file holding one or more certificates to verify the
-WebKDC's SSL Certificate with. This directive is only needed if you
-are using a self-signed certificate with your WebKDC. If you are using a
-self-signed certificate, you should copy that certificate (the file
-mentioned in the WebKDC's Apache SSLCertificateFile directive) to a local
-file, and point to that file with this directive.
-</p>
+      <p>
+        This is the name of a file holding one or more certificates to
+        verify the WebKDC's SSL Certificate with.  This directive is only
+        needed if you are using a self-signed certificate with your
+        WebKDC, or a certificate signed by a certificate authority that
+        isn't recognized.  If you are using a self-signed certificate, you
+        should copy that certificate (the file mentioned in the WebKDC's
+        Apache SSLCertificateFile directive) to a local file, and point to
+        that file with this directive.
+      </p>
+      <p>
+        If the path is not absolute, then it will be treated as being
+        relative to <code>ServerRoot</code>.
+      </p>
 
-<p>If the path
-is not absolute, then it will be treated as being relative to <code>ServerRoot</code>.</p>
+      <div class="note">
+        <h3>Note</h3>
+        <p>
+          This directive is only needed when the <strong>WebKDC</strong>
+          is using a self-signed certificate . It is not needed if your
+          WebAuth server is using a self-signed certificate.
+        </p>
+      </div>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive is only needed when the <strong>WebKDC</strong> is using a
-self-signed certificate. It is not needed if your WebAuth server is using
-a self-signed certificate</p>
-</div>
-
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthWebKdcURL" id="WebAuthWebKdcURL">WebAuthWebKdcURL</a> <a name="webauthwebkdcurl" id="webauthwebkdcurl">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>The URL used to contact the WebKDC when posting XML.
-</td></tr>
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      The URL used to contact the WebKDC when posting XML
+    </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
 <tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
-<p>
-This is the URL used to post XML requests to the WebKDC, and
-should use always SSL. </p>
+      <p>
+        This is the URL used to post XML requests to the WebKDC, and
+        should use always SSL.
+      </p>
 
-<div class="note"><h3>Note</h3>
-    <p>This directive must be set.</p>
-</div>
+      <div class="note">
+        <h3>Note</h3>
+        <p>This directive must be set.</p>
+      </div>
 
-<div class="example"><h3>Example</h3><p><code>
+      <div class="example"><h3>Example</h3><p><code>
+        
 WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
-</code></p></div>
-
+      </code></p></div>
+    
 </div>
 </div>
 <div class="bottomlang">
@@ -1915,7 +2471,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 </div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div><div class="section"><h2><a id="comments_section" name="comments_section">Comments</a></h2><div class="warning"><strong>Notice:</strong><br />This is not a Q&amp;A section. Comments placed here should be pointed towards suggestions on improving the documentation or server, and may be removed again by our moderators if they are either implemented or considered invalid/off-topic. Questions on how to manage the Apache HTTP Server should be directed at either our IRC channel, #httpd, on Freenode, or sent to our <a href="http://httpd.apache.org/lists.html">mailing lists</a>.</div>
 <script type="text/javascript"><!--//--><![CDATA[//><!--
 var comments_shortname = 'httpd';
-var comments_identifier = 'http://httpd.apache.org/docs/2.2/mod/mod_webauth.html';
+var comments_identifier = 'http://httpd.apache.org/docs/2.4/mod/mod_webauth.html';
 (function(w, d) {
     if (w.location.hostname.toLowerCase() == "httpd.apache.org") {
         d.write('<div id="comments_thread"><\/div>');

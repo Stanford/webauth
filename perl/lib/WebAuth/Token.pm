@@ -34,12 +34,12 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
-use WebAuth ();
+use WebAuth 3.06;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # Constructor.  Requires a WebAuth context and optionally can take an encoded
 # token and keyring to create a new object via decoding.
@@ -48,7 +48,7 @@ our $VERSION = '1.00';
 # which will return one of our subclasses.  Constructing an empty object is
 # only intended for use by subclasses, since an empty generic WebAuth::Token
 # has no meaning.
-sub new ($$;$$) {
+sub new {
     my ($type, $ctx, $token, $keyring) = @_;
     if ($type eq 'WebAuth::Token' && !defined ($token)) {
         croak ('WebAuth::Token cannot be used directly');
@@ -69,7 +69,7 @@ sub new ($$;$$) {
 # Shared code for all accessor methods.  Takes the object, the attribute name,
 # and the value.  Sets the value if one was given, and returns the current
 # value of that attribute.
-sub _attr ($$;$) {
+sub _attr {
     my ($self, $attr, $value) = @_;
     $self->{$attr} = $value if defined ($value);
     return $self->{$attr};

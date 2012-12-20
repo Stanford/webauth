@@ -99,6 +99,7 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
     int status;
     char *temp_cred_file;
     apr_file_t *fp;
+    apr_int32_t flags;
     apr_status_t astatus;
 
     astatus = apr_filepath_merge(&temp_cred_file,
@@ -107,9 +108,9 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
                                  0,
                                  rc->r->pool);
 
-    astatus = apr_file_mktemp(&fp, temp_cred_file,
-                              APR_CREATE|APR_READ|APR_WRITE|APR_EXCL,
-                              rc->r->pool);
+    flags = (APR_FOPEN_CREATE | APR_FOPEN_READ | APR_FOPEN_WRITE
+             | APR_FOPEN_EXCL);
+    astatus = apr_file_mktemp(&fp, temp_cred_file, flags, rc->r->pool);
     if (astatus != APR_SUCCESS) {
         mwa_log_apr_error(rc->r->server, astatus, mwa_func,
                           "apr_file_mktemp", temp_cred_file, NULL);

@@ -31,12 +31,12 @@ webauth_webkdc_config(struct webauth_context *ctx,
 
     if (config->local_realms == NULL) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "local realms must be present");
+        wai_error_set(ctx, status, "local realms must be present");
         return status;
     }
     if (config->permitted_realms == NULL) {
         status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "permitted realms must be present");
+        wai_error_set(ctx, status, "permitted realms must be present");
         return status;
     }
     ctx->webkdc = config;

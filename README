@@ -1,4 +1,4 @@
-                          WebAuth release 4.3.3
+                          WebAuth release 4.4.0
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
@@ -78,8 +78,8 @@ REQUIREMENTS
   for Apache modules.  Heimdal 0.6 may work, but has not been well-tested.
   Heimdal 0.7 and later have been tested more extensively.
 
-  The WebAuth Perl bindings have been tested with Perl 5.6.1 and later,
-  but are no longer tested with versions earlier than 5.10.
+  The WebAuth Perl bindings should work with Perl 5.8 and later, but are
+  no longer tested with versions earlier than 5.10.
 
   For optional support for a user information service, which allows
   WebAuth to do multifactor authentication, support login history, provide
@@ -92,9 +92,9 @@ REQUIREMENTS
   For all dependency libraries, be aware that primary testing is done on
   Debian testing and Debian stable with the versions of the libraries
   currently available there at the time of the release.  Using
-  substantially older libraries may require some portability fixes since
-  those builds are not frequently checked, but such fixes (and bug
-  reports) are definitely welcome.
+  substantially older libraries, or operating systems other than Linux,
+  may require some portability fixes since those builds are not frequently
+  checked, but such fixes (and bug reports) are definitely welcome.
 
   For the end user, WebAuth requires that the user's browser be able to
   handle cookies of moderate length (up to 1KB) and URLs of a similar
@@ -105,16 +105,16 @@ REQUIREMENTS
 
   WebAuth is written in C and requires a C compiler and a standard make
   program to build.  It does not (at least intentionally) use any special
-  make features.  WebAuth also requires Perl 5.6.1 or later and a variety
-  of additional Perl modules for the WebLogin server.  Perl is not
-  required for the basic WebAuth module.
+  make features.  WebAuth also requires Perl 5.8 or later and a variety of
+  additional Perl modules for the WebLogin server.  Perl is not required
+  for the basic WebAuth module.
 
-  WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).  It
-  has been lightly tested on Solaris and Mac OS X, and earlier releases
-  were tested on AIX 4.3.  Other UNIX and UNIX-like platforms that support
-  Apache should also work, but have not been tested.  Some amount of
-  porting may be required.  WebAuth does use libtool to try to build
-  shared libraries portably.  Windows is not supported.
+  WebAuth is primarily tested with GCC on Linux (glibc 2.3 and later).
+  Earlier releases have been lightly tested on Solaris, Mac OS X, and AIX
+  4.3.  Other UNIX and UNIX-like platforms that support Apache should also
+  work, but have not been tested.  Some amount of porting may be required.
+  WebAuth does use libtool to try to build shared libraries portably.
+  Windows is not supported.
 
   WebLogin additionally requires the following Perl modules.  All of these
   are available from CPAN:
@@ -125,7 +125,9 @@ REQUIREMENTS
       CGI::Application::Plugin::Redirect
       CGI::Application::Plugin::TT
       libwww (LWP)
-      IO::Socket::SSL -or- Crypt::SSLeay (for LWP https support)
+      IO::Socket::SSL
+        -or- Crypt::SSLeay (for LWP https support)
+      MIME::Base64 (part of Perl itself since 5.7.3)
       Template (Template Toolkit)
       URI
       XML::Parser
@@ -134,46 +136,79 @@ REQUIREMENTS
   mod_fcgi or mod_fastcgi, is also recommended to improve performance of
   the WebLogin interface, but this is not required.
 
-  For optional WebLogin support for warning users of expired passwords,
-  the Date::Parse, Time::Duration, and Net::Remctl Perl modules are
-  required and the local Kerberos realm must provide the remctl interface
-  from the kadmin-remctl package for the WebLogin script to query.
-  Date::Parse and Time::Duration are available from CPAN (Date::Parse in
-  the TimeDate distribution).  You can obtain Net::Remctl and
-  kadmin-remctl from:
+  To support replay detection and rate limiting in WebLogin, the following
+  modules are also required:
+
+      Cache::Memcached
+      Digest::SHA (part of Perl itself since 5.9.3)
+
+  The optional WebLogin support for warning users of expired passwords
+  also requires the Perl modules:
+
+      Date::Parse (TimeDate)
+      Net::Remctl
+      Time::Duration
+
+  The local Kerberos realm must also provide the remctl interface from the
+  kadmin-remctl package for the WebLogin script to query.  Other than
+  Net::Remctl, these are available from CPAN.  You can obtain Net::Remctl
+  and kadmin-remctl from:
 
       http://www.eyrie.org/~eagle/software/remctl/
       http://www.eyrie.org/~eagle/software/kadmin-remctl/
 
   respectively.
 
-  To bootstrap from a Git checkout, or if you change the Automake files
-  and need to regenerate Makefile.in, you will need Automake 1.11 or
-  later.  For bootstrap or if you change configure.ac or any of the m4
-  files it includes and need to regenerate configure or config.h.in, you
-  will need Autoconf 2.64 or later.  Perl and xml2rfc are also required to
-  generate the manual pages and protocol documentation from a fresh Git
-  checkout.
+  The test suite requires Perl and Test::More (part of Perl since 5.6.2).
+  It also makes use of additional Perl modules for some tests.  These
+  tests will be skipped automatically if the modules aren't available.  To
+  run the full set of default tests, you will need the Perl modules:
+
+      Test::MinimumVersion
+      Test::Pod
+      Test::Spelling
+      Test::Strict
+
+  and their dependencies as well as all of the prerequisites listed above.
+  These modules are all available from CPAN.
+
+  Bootstrapping from a Git checkout, or making changes to some of the
+  generated files, will require the following additional packages:
+
+      Autoconf 2.64 or later
+      Automake 1.11 or later
+      Perl 5.10 or later
+      xml2rfc
+
+  Some parts of the test suite are suppressed by default because those
+  tests are normally only useful for the maintainer.  This includes tests
+  of POD spelling and Perl coding style.  To enable those tests, set the
+  environment variable RRA_MAINTAINER_TESTS to a true value.  For these
+  tests, the additional Perl modules:
+
+      Test::Perl::Critic
+      Test::Spelling
+
+  and their dependencies as well as a spell-checking program (several are
+  supported by Test::Spelling) are required.  These modules are all
+  available from CPAN.
 
 SUPPORT
 
   New WebAuth releases are announced via the low-volume webauth-announce
-  mailing list.  To subscribe, send mail to majordomo@lists.stanford.edu
-  with:
+  mailing list.  To subscribe or see the list archives, go to:
 
-      subscribe webauth-announce
-
-  in the body of the message.
+      https://mailman.stanford.edu/mailman/listinfo/webauth-announce
 
   There is also a separate mailing list for general discussion and
   requests for help, which is also read by members of the WebAuth project
-  team.  To subscribe, send mail to majordomo@lists.stanford.edu with:
+  team.  To subscribe or see the list archives, go to:
 
-      subscribe webauth-info
+      https://mailman.stanford.edu/mailman/listinfo/webauth-info
 
-  in the body of the message.  Stanford users may instead read and post to
-  the newsgroup su.computers.webauth, which is bidirectionally gatewayed
-  to webauth-info.  The newsgroup additionally gets all messages to
+  Stanford users may instead read and post to the newsgroup
+  su.computers.webauth, which is bidirectionally gatewayed to
+  webauth-info.  The newsgroup additionally gets all messages to
   webauth-announce as well.
 
   For Stanford affiliates, the WebAuth modules are a supported product of
@@ -229,8 +264,11 @@ CREDITS
   oversaw the project.
 
   The WebAuth package is currently maintained by Russ Allbery.  Jon
-  Robertson does most of the maintenance work on the WebLogin code,
-  including implementing password change and multifactor support.
+  Robertson does much of the maintenance work on the WebLogin code and
+  implemented password change and multifactor support.
+
+  RPMs are built by Darren Patterson based on earlier work by Joe Little.
+  Many of the Solaris packages were built by Quanah Gibson-Mount.
 
   Thanks to pod for improvements, particularly to the WebKDC, to make it
   easier to package for a Linux distribution, for the initial Debian
