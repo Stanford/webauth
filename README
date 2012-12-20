@@ -166,8 +166,6 @@ REQUIREMENTS
 
       Test::MinimumVersion
       Test::Pod
-      Test::Spelling
-      Test::Strict
 
   and their dependencies as well as all of the prerequisites listed above.
   These modules are all available from CPAN.
@@ -188,6 +186,7 @@ REQUIREMENTS
 
       Test::Perl::Critic
       Test::Spelling
+      Test::Strict
 
   and their dependencies as well as a spell-checking program (several are
   supported by Test::Spelling) are required.  These modules are all
