@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.4.0 (unreleased)
+WebAuth 4.4.0 (2012-12-19)
 
     The WebKDC and WebLogin server now support allowing a user to assert
     an authorization identity other than their own identity.  This can be
