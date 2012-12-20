@@ -48,6 +48,13 @@ if (!$ENV{SOURCE}) {
     BAIL_OUT('SOURCE not defined (run under runtests)');
 }
 
+# Skip tests unless we're running the test suite in maintainer mode.  Random
+# scripts in the source directory may require optional Perl modules be
+# installed or have other dependencies that can't be satisfied by every user.
+if (!$ENV{RRA_MAINTAINER_TESTS}) {
+    plan skip_all => 'Perl syntax tests only run for maintainer';
+}
+
 # Skip tests if Test::Strict is not installed.
 if (!eval { require Test::Strict }) {
     plan skip_all => 'Test::Strict required to test Perl scripts';
