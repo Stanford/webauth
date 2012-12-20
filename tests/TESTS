@@ -25,6 +25,7 @@ portable/mkstemp
 portable/setenv
 portable/strlcat
 portable/strlcpy
+portable/strndup
 tools/wa_keyring
 util/messages
 util/xmalloc

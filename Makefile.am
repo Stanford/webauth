@@ -285,7 +285,7 @@ check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/factors-t \
 	tests/portable/asprintf-t tests/portable/mkstemp-t		   \
 	tests/portable/setenv-t tests/portable/snprintf-t		   \
 	tests/portable/strlcat-t tests/portable/strlcpy-t		   \
-	tests/util/messages-t tests/util/xmalloc
+	tests/portable/strndup-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -369,6 +369,9 @@ tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.la
+tests_portable_strndup_t_SOURCES = tests/portable/strndup-t.c \
+	tests/portable/strndup.c
+tests_portable_strndup_t_LDADD = tests/tap/libtap.a portable/libportable.la
 tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
