@@ -16,9 +16,9 @@ Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.1), dh-autoreconf,
  libldap2-dev, libremctl-dev (>= 3.1), libssl-dev, libtemplate-perl,
  libtest-minimumversion-perl, libtest-pod-perl, libtest-strict-perl,
  libtimedate-perl, liburi-perl, libwww-perl, libxml-parser-perl, perl
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 Homepage: http://webauth.stanford.edu/
-Vcs-Git: git://git.eyrie.org/kerberos/webauth.git
+Vcs-Git: git://git.eyrie.org/kerberos/webauth.git -b debian
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
 
 Package: libapache2-mod-webauth
