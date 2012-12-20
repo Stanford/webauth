@@ -14,6 +14,7 @@ Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.1), dh-autoreconf,
  libcgi-application-extra-plugin-bundle-perl,
  libcgi-fast-perl, libcurl4-openssl-dev, libipc-run-perl, libkrb5-dev,
  libldap2-dev, libremctl-dev (>= 3.1), libssl-dev, libtemplate-perl,
+ libtest-minimumversion-perl, libtest-pod-perl, libtest-strict-perl,
  libtimedate-perl, liburi-perl, libwww-perl, libxml-parser-perl, perl
 Standards-Version: 3.9.3
 Homepage: http://webauth.stanford.edu/
@@ -142,7 +143,8 @@ Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.3.0),
  libcgi-application-extra-plugin-bundle-perl,
  libcgi-fast-perl, libio-socket-ssl-perl, libtemplate-perl, liburi-perl,
  libwww-perl, libxml-parser-perl
-Suggests: libnet-remctl-perl, libtime-duration-perl, libtimedate-perl
+Suggests: libcache-memcached-perl, libnet-remctl-perl,
+ libtime-duration-perl, libtimedate-perl
 Breaks: webauth-weblogin (<< 4.3.0)
 Description: Perl libraries for WebAuth central login server
  WebAuth is a cookie-based web authentication system built on top of
