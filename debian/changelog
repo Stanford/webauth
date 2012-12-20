@@ -1,3 +1,41 @@
+webauth (4.4.0-1) experimental; urgency=low
+
+  * New upstream release.
+    - New authorization identity support in all components of WebAuth.
+    - New WebKdcLoginTimeLimit directive for mod_webkdc to control the
+      time limit for multistage login and when a recent login no longer
+      counts towards session factors.
+    - WebAuthForceLogin no longer forces re-authentication if the last
+      authentication was within WebKdcLoginTimeLimit.
+    - WebLogin now optionally supports replay detection and rate limiting
+      of failed login attempts.  This support requires a memcached server
+      to store the relevant data.
+    - The WebLogin error template now takes two new parameters for errors
+      related to replays and rate limiting.
+    - Set single sign-on cookies in WebLogin if appropriate even when
+      displaying an error.  This fixes looping issues with site
+      restrictions done via the user innformation service.
+    - The WebLogin configuration options @REMUSER_LOCAL_REALMS and
+      @REMUSER_PERMITTED_REALMS replace @REMUSER_REALMS.  The latter is
+      supported for backward compatibility.
+    - Multiple fixes for encoding of Kerberos credentials.
+    - Fix mapping of WebKDC error codes to names in WebLogin.
+    - Document the WebAuthRequireSSL directive.
+    - webauth_token_{encrypt,decrypt} are now part of the public API.
+    - webauth_base64_*, webauth_hex_*, webauth_attr_*, and webauth_attrs_*
+      functions are no longer part of the public API.
+    - The webauth.h header has been removed.  Use the more specific
+      webauth/*.h headers.
+    - New public webauth_keyring_encode and webauth_keyring_decode
+      functions and corresponding Perl API to handle keyring serialization
+      without requiring that it be done to a file.
+    - The WA_TK_*, WA_TT_*, and WA_SA_* preprocessor constants are no
+      longer provided.  They weren't useful.
+    - The WA_ERR_KEYRING_* error codes have changed to WA_ERR_FILE_* and
+      new error code WA_ERR_FILE_NOT_FOUND has been added.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 19 Dec 2012 18:18:57 -0800
+
 webauth (4.3.3-1) experimental; urgency=low
 
   * New upstream release.
