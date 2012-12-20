@@ -40,14 +40,14 @@ use Test::More;
 # treated as a Perl module distribution and has its own standalone test suite.
 my %IGNORE = map { $_ => 1 } qw(.git perl);
 
-# Bail if SOURCE is not set.
-if (!$ENV{SOURCE}) {
-    BAIL_OUT('SOURCE not defined (run under runtests)');
-}
-
 # Skip tests unless we're running the test suite in maintainer mode.
 if (!$ENV{RRA_MAINTAINER_TESTS}) {
     plan skip_all => 'Coding style tests only run for maintainer';
+}
+
+# Bail if SOURCE is not set.
+if (!$ENV{SOURCE}) {
+    BAIL_OUT('SOURCE not defined (run under runtests)');
 }
 
 # Skip tests if Test::Spelling is not installed.
