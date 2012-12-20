@@ -18,7 +18,7 @@ use Test::More;
 
 # Skip tests unless we're running the test suite in maintainer mode.
 if (!$ENV{RRA_MAINTAINER_TESTS}) {
-    plan skip_all => 'Coding style tests only run for maintainer';
+    plan skip_all => 'Spelling tests only run for maintainer';
 }
 
 # Skip tests if Test::Spelling is not installed.
