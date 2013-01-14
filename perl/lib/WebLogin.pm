@@ -3,8 +3,8 @@
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
 # Rewritten for CGI::Application by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-#     The Board of Trustees of the Leland Stanford Junior University
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
+#     2013 The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -879,9 +879,9 @@ sub print_remuser_redirect {
     }
 }
 
-# Generate a proxy token using forwarded credentials and pass it into the
-# WebKDC with the other proxy tokens.
-sub add_proxy_token {
+# Generate a proxy token using forwarded Kerberos credentials and pass it into
+# the WebKDC with the other proxy tokens.
+sub add_kerberos_proxy_token {
     my ($self) = @_;
 
     print STDERR "adding a proxy token for $ENV{REMOTE_USER}\n"
@@ -913,6 +913,60 @@ sub add_proxy_token {
     $self->{request}->proxy_cookie ('krb5', $token, 'k');
 }
 
+# Add a generic token to the set of tokens that we'll pass to the WebKDC.
+# This function takes a reference to a hash of parameters as follows:
+#
+# proxy_type      - Proxy type of resulting token (default: remuser)
+# proxy_subject   - Proxy subject of resulting token (default: WEBKDC:remuser)
+# subject         - Authenticated identity of user
+# expiration      - Expiration time (default: time + REMUSER_EXPIRES)
+# initial_factors - Initial authentication factors (default: u)
+# session_factors - Session authentication factors (default: u)
+# loa             - Level of assurance (default: 0)
+#
+# The resulting token will be stored in the set of cookies in the WebKDC
+# request.
+#
+# Returns: undef
+sub add_generic_proxy_token {
+    my ($self, $args_ref) = @_;
+    my %args = %{$args_ref};
+    my $wa   = $self->{webauth};
+
+    # Set token defaults.
+    $args{proxy_type}      ||= 'remuser';
+    $args{proxy_subject}   ||= 'WEBKDC:remuser';
+    $args{expiration}      ||= time + $WebKDC::Config::REMUSER_EXPIRES;
+    $args{initial_factors} ||= 'u';
+    $args{session_factors} ||= 'u';
+
+    # Load the keyring we'll use for token encoding.
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
+    unless ($keyring) {
+        warn "weblogin: unable to initialize a keyring from"
+            . " $WebKDC::Config::KEYRING_PATH\n";
+        return;
+    }
+
+    # Create a proxy token.
+    my $token = WebAuth::Token::WebKDCProxy->new ($wa);
+    $token->subject ($args{subject});
+    $token->proxy_type ($args{proxy_type});
+    $token->proxy_subject ($args{proxy_subject});
+    $token->data ($args{subject});
+    $token->expiration ($args{expiration});
+    $token->initial_factors ($args{initial_factors});
+    if (defined ($args{loa}) && $args{loa} > 0) {
+        $token->loa ($args{loa});
+    }
+
+    # Add the token to the WebKDC request.
+    my $token_string = $token->encode ($keyring);
+    my $factors      = $args{session_factors};
+    $self->{request}->proxy_cookie ('remuser', $token_string, $factors);
+    return;
+}
+
 # Generate a proxy token containing the REMOTE_USER identity and pass it into
 # the WebKDC along with the other proxy tokens.  Takes the request to the
 # WebKDC that we're putting together.  If the REMOTE_USER isn't valid for some
@@ -923,12 +977,6 @@ sub add_remuser_token {
 
     print STDERR "adding a REMOTE_USER token for $ENV{REMOTE_USER}\n"
         if $self->param ('debug');
-    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
-    unless ($keyring) {
-        warn "weblogin: unable to initialize a keyring from"
-            . " $WebKDC::Config::KEYRING_PATH\n";
-        return;
-    }
 
     # Make sure that any realm in REMOTE_USER is permitted.
     my $identity = $ENV{REMOTE_USER};
@@ -953,33 +1001,22 @@ sub add_remuser_token {
         $identity = $user;
     }
 
-    # Create a proxy token.
-    my $token = WebAuth::Token::WebKDCProxy->new ($wa);
-    $token->subject ($identity);
-    $token->proxy_type ('remuser');
-    $token->proxy_subject ('WEBKDC:remuser');
-    $token->data ($identity);
-    $token->creation (time);
-    $token->expiration (time + $WebKDC::Config::REMUSER_EXPIRES);
-
     # If there's a callback defined for determining the initial and session
-    # factors and level of assurance, make that callback and store the results
-    # in the generated token.  Otherwise, set the initial factors to unknown
-    # and omit the level of assurance.
-    my $session_factor;
+    # factors and level of assurance, make that callback.
+    my ($ini, $sess, $loa);
     if (defined (&WebKDC::Config::remuser_factors)) {
-        my ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($identity);
-        $token->initial_factors ($ini);
-        $token->loa ($loa) if (defined ($loa) && $loa > 0);
-        $session_factor = $sess;
-    } else {
-        $token->initial_factors ('u');
-        $session_factor = 'u';
+        ($ini, $sess, $loa) = WebKDC::Config::remuser_factors ($identity);
     }
 
     # Add the token to the WebKDC request.
-    my $token_string = $token->encode ($keyring);
-    $self->{request}->proxy_cookie ('remuser', $token_string, $session_factor);
+    $self->add_generic_proxy_token(
+        {
+            subject         => $identity,
+            initial_factors => $ini,
+            session_factors => $sess,
+            loa             => $loa,
+        }
+    );
 }
 
 ##############################################################################
@@ -1383,8 +1420,8 @@ sub register_auth_fail {
 # information.  Takes a hash of cookies.
 sub setup_kdc_request {
     my ($self, %cart) = @_;
-    my ($status);
-    my $q = $self->query;
+    my $status = WK_SUCCESS;
+    my $q      = $self->query;
 
     # Set up the parameters to the WebKDC request.
     $self->{request}->service_token ($self->fix_token ($q->param ('ST')))
@@ -1455,17 +1492,38 @@ sub setup_kdc_request {
     # The WebKDC doesn't use this yet, but we might like to in the future.
     $self->{request}->remote_user ($ENV{REMOTE_USER});
 
-    # If WebKDC::Config::REMUSER_ENABLED is set to a true value, see if we
-    # have a ticket cache.  If so, obtain a proxy token in advance.
-    # Otherwise, cobble up a proxy token using the value of REMOTE_USER and
-    # add it to the request.  This allows the WebKDC to trust Apache
-    # authentication mechanisms like SPNEGO or client-side certificates if so
-    # configured.
-    if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
-        if ($ENV{KRB5CCNAME} && $WebKDC::Config::WEBKDC_PRINCIPAL) {
-            $self->add_proxy_token;
-        } else {
-            $self->add_remuser_token;
+    # If there is an authenticate callback defined, call it.  On failure, it
+    # will return an empty list; on success, it will return a list of four
+    # values: the authenticated identity, the initial factors, the session
+    # factors, and the LoA.
+    my $remuser_done;
+    if (defined &WebKDC::Config::authenticate) {
+        my ($id, $initial, $session, $loa) = WebKDC::Config::authenticate ();
+        if (defined $loa) {
+            my $args = {
+                subject         => $id,
+                initial_factors => $initial,
+                session_factors => $session,
+                loa             => $loa,
+            };
+            $self->add_generic_proxy_token ($args);
+            $remuser_done = 1;
+        }
+    }
+
+    # Provided that authenticate hasn't already done work, if
+    # WebKDC::Config::REMUSER_ENABLED is set to a true value, see if we have a
+    # ticket cache.  If so, obtain a proxy token in advance.  Otherwise,
+    # cobble up a proxy token using the value of REMOTE_USER and add it to the
+    # request.  This allows the WebKDC to trust Apache authentication
+    # mechanisms like SPNEGO or client-side certificates if so configured.
+    if (!$remuser_done) {
+        if ($ENV{REMOTE_USER} && $WebKDC::Config::REMUSER_ENABLED) {
+            if ($ENV{KRB5CCNAME} && $WebKDC::Config::WEBKDC_PRINCIPAL) {
+                $self->add_kerberos_proxy_token;
+            } else {
+                $self->add_remuser_token;
+            }
         }
     }
     return $status;
@@ -1695,7 +1753,7 @@ sub index : StartRunmode {
     return $page if ($page = $self->error_password_no_post);
 
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
-    # REMOTE_USER parameters.
+    # IP and trace information.
     my %cart = CGI::Cookie->fetch;
     $status = $self->setup_kdc_request (%cart);
 

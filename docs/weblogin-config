@@ -616,6 +616,34 @@ Configuration
   define Perl functions.  If these functions are defined, they're called
   by the WebLogin scripts where appropriate.
 
+  authenticate
+
+      If defined, this function is called for every user visit to WebLogin
+      (so it shouldn't do anything particularly expensive).  It has
+      available the environment of the WebLogin process and can, from
+      that, make decisions about whether the user has already
+      authenticated.  Consider this the generalization of REMOTE_USER
+      support, but allowing the local callback to examine other
+      environment variables, such as ones indicating that a client-side
+      certificate was used.
+
+      If the user is not authenticated, this function should return the
+      empty list.
+
+      If the user is already authenticated, this function should return a
+      list of four values.  The first should be the authenticated identity
+      of the user, the second the initial authentication factors, the
+      third the session authentication factors, and the fourth the level
+      of assurance.  All four values must be present; use "u" for the
+      authentication factors and 0 for level of assurance to convey no
+      information about those values.
+
+      If this function returns authentication information, normal
+      REMOTE_USER processing will not be done, even if it is enabled.  So
+      this can be used to override normal processing, but still fall back
+      on normal REMOTE_USER processing if the separation authentication
+      callback doesn't work for some reason.
+
   map_username
 
       If defined, this function is called with the user-provided username
@@ -663,7 +691,7 @@ Configuration
 
 License
 
-  Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012
+  Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
     The Board of Trustees of the Leland Stanford Junior University
 
   Copying and distribution of this file, with or without modification, are

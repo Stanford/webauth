@@ -3,7 +3,7 @@
 # Tests for weblogin page handling after login responses.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012
+# Copyright 2010, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -11,18 +11,20 @@
 use strict;
 use warnings;
 
+# Ensure we don't pick up the system webkdc.conf.
+BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
+
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
     create_keyring);
-
-use WebAuth qw(3.00 :const);
-use WebKDC ();
-use WebKDC::Config;
 
 use CGI;
 use CGI::Cookie;
 use File::Path qw (rmtree);
 use Test::More;
+use WebAuth qw(3.00 :const);
+use WebKDC ();
+use WebKDC::Config;
 
 mkdir ('./t/tmp');
 
@@ -35,6 +37,18 @@ sub make_request_token_request {
     return ($TEST_STATUS, $TEST_ERROR);
 }
 use warnings 'redefine';
+package main;
+
+# Add some configuration subs for testing purposes.
+our $USE_AUTHENTICATE;
+package WebKDC::Config;
+sub authenticate {
+    return unless $main::USE_AUTHENTICATE;
+    return ('authtest', 'p', 'k', 2);
+}
+sub remuser_factors ($) {
+    return ('o1', 'c', 1);
+}
 package main;
 
 # Whether we've found a valid kerberos config.
@@ -64,7 +78,7 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
     plan skip_all => 'Kerberos tests not configured';
 } else {
-    plan tests => 336;
+    plan tests => 358;
 }
 
 # Set our method to not have password tests complain.
@@ -780,6 +794,58 @@ is ($output[5], 'err_confirm ', ' and err_confirm was not set');
 is ($output[6], 'script_name ', ' and script_name was not set');
 is ($output[7], 'err_html <strong>go away</strong>',
     ' and err_html was set to the correct value');
+
+# Test REMOTE_USER cookie creation and the remuser_factors callback.
+package WebKDC::Config;
+package main;
+$weblogin->{request}->proxy_cookies ({});
+$ENV{REMOTE_USER} = 'remauth@EXAMPLE.ORG';
+$WebKDC::Config::REMUSER_ENABLED          = 1;
+@WebKDC::Config::REMUSER_LOCAL_REALMS     = qw(EXAMPLE.ORG);
+@WebKDC::Config::REMUSER_PERMITTED_REALMS = qw(EXAMPLE.ORG);
+$status = $weblogin->setup_kdc_request;
+is ($status, 0, 'setup_kdc_request with authenticate sub works');
+my %cookies = %{ $weblogin->{request}->proxy_cookies };
+is (scalar (keys %cookies), 1, '...and there is one cookie set');
+my @types = keys %cookies;
+is ($types[0], 'remuser', '...which is a remuser cookie');
+# FIXME: We can't test the session factor since there's no way to get at it.
+my $token_string = $cookies{remuser};
+my $token = WebAuth::Token->new ($wa, $token_string, $keyring);
+isa_ok ($token, 'WebAuth::Token::WebKDCProxy', 'token');
+is ($token->subject, 'remauth', '...with correct subject');
+is ($token->proxy_type, 'remuser', '...and proxy type');
+is ($token->proxy_subject, 'WEBKDC:remuser', '...and proxy subject');
+is ($token->data, 'remauth', '...and data');
+is ($token->initial_factors, 'o1', '...and initial factors');
+is ($token->loa, 1, '...and LoA');
+ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
+    '...and expiration is in the right range');
+
+# Test the user-defined authenticate callback.  We'll set a callback that will
+# generate a token with some particular parameters, call setup_kdc_request,
+# and then extract the proxy token from the request and verify it contains the
+# correct data.
+$USE_AUTHENTICATE = 1;
+$weblogin->{request}->proxy_cookies ({});
+$status = $weblogin->setup_kdc_request;
+is ($status, 0, 'setup_kdc_request with authenticate sub works');
+%cookies = %{ $weblogin->{request}->proxy_cookies };
+is (scalar (keys %cookies), 1, '...and there is one cookie set');
+@types = keys %cookies;
+is ($types[0], 'remuser', '...which is a remuser cookie');
+# FIXME: We can't test the session factor since there's no way to get at it.
+$token_string = $cookies{remuser};
+$token = WebAuth::Token->new ($wa, $token_string, $keyring);
+isa_ok ($token, 'WebAuth::Token::WebKDCProxy', 'token');
+is ($token->subject, 'authtest', '...with correct subject');
+is ($token->proxy_type, 'remuser', '...and proxy type');
+is ($token->proxy_subject, 'WEBKDC:remuser', '...and proxy subject');
+is ($token->data, 'authtest', '...and data');
+is ($token->initial_factors, 'p', '...and initial factors');
+is ($token->loa, 2, '...and LoA');
+ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
+    '...and expiration is in the right range');
 
 remctld_stop;
 unlink ('krb5cc_test', 'test-acl', 't/data/test.keyring');
