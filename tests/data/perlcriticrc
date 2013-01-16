@@ -4,11 +4,13 @@
 # for packages that run perlcritic tests automatically during the build for
 # reproducible test results.
 #
+# This file has been updated to match perlcritic 1.118.
+#
 # The canonical version of this file is maintained in the rra-c-util package,
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2011, 2012
+# Copyright 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,12 +37,16 @@ verbose  = %f:%l:%c: [%p] %m (%e, Severity: %s)\n
 # This is handled with a separate test case that uses Test::Spelling.
 [-Documentation::PodSpelling]
 
+# Pod::Man and Pod::Text fixed this bug years ago.  I know, I maintain them.
+[-Documentation::RequirePodLinksIncludeText]
+
 # The POD sections Perl::Critic wants are incompatible with the POD template
 # from perlpodstyle, which is what I use for my POD documentation.
 [-Documentation::RequirePodSections]
 
-# The 1990s called and would like their VCS back.
-[-Miscellanea::RequireRcsKeywords]
+# The default of 9 is too small and forces weird code contortions.
+[InputOutput::RequireBriefOpen]
+lines = 15
 
 # This is correct 80% of the time, but it isn't correct for a lot of scripts
 # inside packages, where maintaining $VERSION isn't worth the effort.
@@ -54,12 +60,19 @@ verbose  = %f:%l:%c: [%p] %m (%e, Severity: %s)\n
 # are counted, but they don't seem to be by number of characters in the
 # variable reference.)
 [RegularExpressions::ProhibitComplexRegexes]
-max_characters = 65
+max_characters = 80
 
 # Nice idea, but it *utterly* confuses cperl-mode when used with braces, so
 # it's more trouble than it's worth.
 [-RegularExpressions::ProhibitEscapedMetacharacters]
 
+# I generally don't want to require Readonly as a prerequisite for all my Perl
+# modules.
+[-ValuesAndExpressions::ProhibitConstantPragma]
+
+# -1 is used for the last element in arrays and is a special return value for
+# index.
+#
 # 100 is used for calculating percentages.  Making it a constant is just
 # confusing.
 #
@@ -68,7 +81,16 @@ max_characters = 65
 # decimal.
 [ValuesAndExpressions::ProhibitMagicNumbers]
 allowed_types  = Octal
-allowed_values = 0 1 2 100 511
+allowed_values = -1 0 1 2 100 511
+
+# Increase this to six digits so that I'm not told to add underscores to
+# port numbers (which is just silly).
+[ValuesAndExpressions::RequireNumberSeparators]
+min_value = 100000
+
+# Text::Wrap has a broken interface that requires use of package variables.
+[Variables::ProhibitPackageVars]
+add_packages = Text::Wrap
 
 # use English was one of the worst ideas in the history of Perl.  It makes the
 # code slightly more readable for amateurs at the cost of confusing
