@@ -3,7 +3,7 @@
 # Test the password change functions in WebLogin module.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Copyright 2010, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -47,6 +47,7 @@ my $newpassword = 'dujPifecvij3';
 # Set up a query with some test data.
 my $query = new CGI;
 my $weblogin = new WebLogin;
+$weblogin->cgiapp_prerun;
 $weblogin->param ('logging', 0);
 
 # Create the keyring to use.

@@ -105,6 +105,7 @@ sub init_weblogin {
 
     my $weblogin = WebLogin->new (QUERY  => $query,
                                   PARAMS => { pages => $pages });
+    $weblogin->cgiapp_prerun;
     $weblogin->param ('debug', 0);
     $weblogin->param ('logging', 0);
     $weblogin->param ('script_name', '/login');

@@ -51,14 +51,6 @@ use WebKDC::WebKDCException 1.05;
 use URI ();
 use URI::QueryParam ();
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-our $VERSION;
-BEGIN {
-    $VERSION = '1.01';
-}
-
 # These are required only if we are going to check for expiring passwords.
 if ($WebKDC::Config::EXPIRING_PW_SERVER) {
     require Date::Parse;
@@ -71,6 +63,24 @@ if (@WebKDC::Config::MEMCACHED_SERVERS) {
     require Cache::Memcached;
     require Digest::SHA;
 }
+
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
+BEGIN {
+    $VERSION = '1.02';
+}
+
+# The CGI::Application parameters that must be cleared for each query.
+our @PER_QUERY_PARAMS = qw(
+    CPT is_error forced_login pretty_uri remuser_failed remuser_url
+    script_name wpt_cookie
+);
+
+##############################################################################
+# Configuration defaults
+##############################################################################
 
 # Set to true in order to enable debugging output.  This will be very chatty
 # in the logs and may log security-sensitive tokens and other information.
@@ -111,11 +121,6 @@ if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
 sub setup {
     my ($self) = @_;
 
-    # Initial context.  This is used only in setup and in test cases that call
-    # underlying functions directly.  We will replace this context with a
-    # fresh one in cgiapp_prerun after receiving each query.
-    $self->{webauth} = WebAuth->new;
-
     # Configure the template.
     $self->tt_config(
                      TEMPLATE_OPTIONS => {
@@ -126,16 +131,6 @@ sub setup {
                          INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
                      },
                     );
-
-    # Set up the main request and response.  Add these directly to the object
-    # rather than to param -- it's much too useful to be able to access the
-    # objects' own methods directly.
-    $self->{request} = new WebKDC::WebRequest;
-    $self->{response} = new WebKDC::WebResponse;
-
-    # If we got our parameters via REDIRECT_QUERY_STRING, we're an error
-    # handler and don't want to redirect later.
-    $self->param ('is_error', defined $ENV{REDIRECT_QUERY_STRING});
 
     # Testing and logging - optional.  These can be set from the calling
     # script via:
@@ -159,13 +154,6 @@ sub setup {
         $self->param ('test_cookie', $TEST_COOKIE);
     }
 
-    # Store the CPT if one was already generated, so that we have one place
-    # to check.
-    $self->param ('CPT', $self->query->param ('CPT'));
-
-    # Put this into place for later.
-    $self->param ('wpt_cookie', '');
-
     # If rate limiting or replay caching is enabled, connect to the memcached
     # server.
     if (@WebKDC::Config::MEMCACHED_SERVERS) {
@@ -173,25 +161,74 @@ sub setup {
             servers => [ @WebKDC::Config::MEMCACHED_SERVERS ]
         });
     }
+}
 
-    # Work around a bug in CGI.  Then copy the script name so that it can
-    # be easily updated when we switch between password and login scripts.
+# Hook called before processing of each query.
+sub cgiapp_prerun {
+    my ($self) = @_;
+
+    # Clear any per-query state that was stored as parameters.
+    for my $param (@PER_QUERY_PARAMS) {
+        $self->param ($param, undef);
+    }
+
+    # Clear all template parameters.
+    $self->param ('template_params', {});
+    $self->tt_clear_params;
+
+    # The WebAuth object is per-query to do APR garbage collection.
+    $self->{webauth} = WebAuth->new;
+
+    # Set up the main request and response.
+    $self->{request} = WebKDC::WebRequest->new;
+    $self->{response} = WebKDC::WebResponse->new;
+
+    # If we got our parameters via REDIRECT_QUERY_STRING, we're an error
+    # handler and don't want to redirect later.
+    $self->param ('is_error', defined $ENV{REDIRECT_QUERY_STRING});
+
+    # Store the CPT if one was already generated, so that we have one place to
+    # check.
+    $self->param ('CPT', $self->query->param ('CPT'));
+
+    # Work around a bug in CGI that doesn't always set the script name.
     $self->query->{'.script_name'} = $ENV{SCRIPT_NAME};
+
+    # Stash the script name as a parameter so that it can be easily updated
+    # when we switch between password and login scripts.
     $self->param ('script_name', $self->query->script_name);
     print STDERR "Script name is ", $self->query->script_name, "\n"
         if $self->param ('debug');
 }
 
-# Hook called before processing of each query.  Make sure rm works if you're
-# using GET or POST (see <http://www.perlmonks.org/?node_id=748939>) and limit
-# the lifetime of the WebAuth context to a single run mode.
-sub cgiapp_prerun {
-    my ($self) = @_;
-    if (!defined $self->query->param ('rm')) {
-        $self->prerun_mode ($self->query->url_param ('rm'));
-    }
-    $self->{webauth} = WebAuth->new;
+##############################################################################
+# Utility functions
+##############################################################################
+
+# Escape special characters in the principal name to match the escaping done
+# by krb5_unparse_name.  This hopefully will make the principal suitable for
+# passing to krb5_parse_name and getting the same results as the original
+# unescaped principal.
+sub krb5_escape {
+    my ($self, $principal) = @_;
+    $principal =~ s/\\/\\\\/g;
+    $principal =~ s/\@/\\@/g;
+    $principal =~ s/\t/\\t/g;
+    $principal =~ s/\x08/\\b/g;
+    $principal =~ s/\x00/\\0/g;
+    return $principal;
 }
+
+# Encode a token for URL usage.
+sub fix_token {
+    my ($self, $token) = @_;
+    $token =~ tr/ /+/;
+    return $token;
+}
+
+##############################################################################
+# Output related functions
+##############################################################################
 
 # Wrapper to help store current template settings.  We need to set template
 # parameters all over and collect them together in the end.  tt_params does
@@ -228,36 +265,6 @@ sub get_pagename {
         if $self->param ('logging');
     return '';
 }
-
-
-##############################################################################
-# Utility functions
-##############################################################################
-
-# Escape special characters in the principal name to match the escaping done
-# by krb5_unparse_name.  This hopefully will make the principal suitable for
-# passing to krb5_parse_name and getting the same results as the original
-# unescaped principal.
-sub krb5_escape {
-    my ($self, $principal) = @_;
-    $principal =~ s/\\/\\\\/g;
-    $principal =~ s/\@/\\@/g;
-    $principal =~ s/\t/\\t/g;
-    $principal =~ s/\x08/\\b/g;
-    $principal =~ s/\x00/\\0/g;
-    return $principal;
-}
-
-# Encode a token for URL usage.
-sub fix_token {
-    my ($self, $token) = @_;
-    $token =~ tr/ /+/;
-    return $token;
-}
-
-##############################################################################
-# Output related functions
-##############################################################################
 
 # Print the headers for a page.  Takes the user's query and any additional
 # cookies to set as parameters, and always adds the test cookie.  Skip any
@@ -941,6 +948,8 @@ sub add_generic_proxy_token {
     $args{session_factors} ||= 'u';
 
     # Load the keyring we'll use for token encoding.
+    use Carp;
+    confess("null $wa") unless defined $wa;
     my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
     unless ($keyring) {
         warn "weblogin: unable to initialize a keyring from"

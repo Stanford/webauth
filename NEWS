@@ -10,6 +10,11 @@ WebAuth 4.4.1 (unreleased)
     environment; for example, it could map information about a successful
     client-side certificate authentication to an authentication identity.
 
+    When run under FastCGI, the WebLogin scripts now use a persistent
+    CGI::Application object instead of recreating it for each query.  This
+    avoids reinitializing the Template Toolkit and reopening memcached
+    connections for each query.
+
 WebAuth 4.4.0 (2012-12-19)
 
     The WebKDC and WebLogin server now support allowing a user to assert

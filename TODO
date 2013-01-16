@@ -272,10 +272,9 @@ WebLogin:
  * WEBAUTH-119: Document how to set up multiple WebLogin servers with
    different themes.
 
- * WEBAUTH-127: Currently, a new CGI::Application object is created for
-   each loop through the FastCGI scripts.  Separate out initialization
-   properly so that only the required work is done for each iteration
-   through the loop and most initialization is done only once.
+ * WEBAUTH-128: Rework the WebLogin implementation strategy to either stop
+   using CGI::Application parameters for per-query data or to collect them
+   in a single parameter that can be more easily cleared.
 
 Perl Modules:
 
