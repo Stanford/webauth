@@ -87,22 +87,22 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> Using WebAuth Authentication</li>
-<li><img alt="" src="../images/down.gif" /> <a name="sectionenv">Environment Variables</a></li>
-<li><img alt="" src="../images/down.gif" /> <a name="factors">Authentication Factors</a></li>
-<li><img alt="" src="../images/down.gif" /> Using WebAuth with Proxy Servers</li>
-<li><img alt="" src="../images/down.gif" /> Perl Integration</li>
-<li><img alt="" src="../images/down.gif" /> PHP 4.x and 5.x Integration</li>
-<li><img alt="" src="../images/down.gif" /> Java/Tomcat/mod_jk Integration</li>
-<li><img alt="" src="../images/down.gif" /> Requesting Credentials</li>
-<li><img alt="" src="../images/down.gif" /> Debugging mod_webauth</li>
-<li><img alt="" src="../images/down.gif" /> Setting up load-balanced WebAuth servers</li>
-<li><img alt="" src="../images/down.gif" /> Manual License</li>
-</ul><ul class="seealso"><li><a href="#comments_section">Comments</a></li></ul></div>
+<li><img alt="" src="../images/down.gif" /> <a href="#s1">Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s2">Using WebAuth Authentication</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s3">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s4">Authentication Factors</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s5">Using WebAuth with Proxy Servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s6">Perl Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s7">PHP 4.x and 5.x Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s8">Java/Tomcat/mod_jk Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s9">Requesting Credentials</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s10">Debugging mod_webauth</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s11">Setting up load-balanced WebAuth servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s12">Manual License</a></li>
+</ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Minimal Config File</h2>
+<h2><a name="s1">Minimal Config File</a></h2>
     
 
     <p>
@@ -129,7 +129,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Using WebAuth Authentication</h2>
+<h2><a name="s2">Using WebAuth Authentication</a></h2>
     
 
     <p>
@@ -156,7 +156,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="sectionenv">Environment Variables</a></h2>
+<h2><a name="s3"><a name="sectionenv">Environment Variables</a></a></h2>
     
 
     <p>
@@ -297,7 +297,7 @@ WEBAUTH_USER=schemers
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="factors">Authentication Factors</a></h2>
+<h2><a name="s4"><a name="factors">Authentication Factors</a></a></h2>
     
 
     <p>
@@ -376,7 +376,7 @@ WEBAUTH_USER=schemers
     </table>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Using WebAuth with Proxy Servers</h2>
+<h2><a name="s5">Using WebAuth with Proxy Servers</a></h2>
     
 
     <p>
@@ -453,7 +453,7 @@ WEBAUTH_USER=schemers
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Perl Integration</h2>
+<h2><a name="s6">Perl Integration</a></h2>
     
 
     <p>
@@ -489,7 +489,7 @@ print "The authenticated user is $REMOTE_USER\n";
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>PHP 4.x and 5.x Integration</h2>
+<h2><a name="s7">PHP 4.x and 5.x Integration</a></h2>
     
 
     <p>
@@ -536,7 +536,7 @@ print "The authenticated user is $WEBAUTH_USER\n";
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Java/Tomcat/mod_jk Integration</h2>
+<h2><a name="s8">Java/Tomcat/mod_jk Integration</a></h2>
     
 
     <p>
@@ -655,7 +655,7 @@ WEBAUTH_USER is set to:
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Requesting Credentials</h2>
+<h2><a name="s9">Requesting Credentials</a></h2>
     
 
     <p>
@@ -733,7 +733,7 @@ WEBAUTH_USER is set to:
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Debugging mod_webauth</h2>
+<h2><a name="s10">Debugging mod_webauth</a></h2>
     
 
     <p>
@@ -764,7 +764,7 @@ WebAuthDebug on
 </pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Setting up load-balanced WebAuth servers</h2>
+<h2><a name="s11">Setting up load-balanced WebAuth servers</a></h2>
     
 
     <p>
@@ -885,7 +885,7 @@ done
 </pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Manual License</h2>
+<h2><a name="s12">Manual License</a></h2>
     
 
     <p>
@@ -2468,25 +2468,8 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 </div>
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
-</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div><div class="section"><h2><a id="comments_section" name="comments_section">Comments</a></h2><div class="warning"><strong>Notice:</strong><br />This is not a Q&amp;A section. Comments placed here should be pointed towards suggestions on improving the documentation or server, and may be removed again by our moderators if they are either implemented or considered invalid/off-topic. Questions on how to manage the Apache HTTP Server should be directed at either our IRC channel, #httpd, on Freenode, or sent to our <a href="http://httpd.apache.org/lists.html">mailing lists</a>.</div>
-<script type="text/javascript"><!--//--><![CDATA[//><!--
-var comments_shortname = 'httpd';
-var comments_identifier = 'http://httpd.apache.org/docs/2.4/mod/mod_webauth.html';
-(function(w, d) {
-    if (w.location.hostname.toLowerCase() == "httpd.apache.org") {
-        d.write('<div id="comments_thread"><\/div>');
-        var s = d.createElement('script');
-        s.type = 'text/javascript';
-        s.async = true;
-        s.src = 'https://comments.apache.org/show_comments.lua?site=' + comments_shortname + '&page=' + comments_identifier;
-        (d.getElementsByTagName('head')[0] || d.getElementsByTagName('body')[0]).appendChild(s);
-    }
-    else { 
-        d.write('<div id="comments_thread">Comments are disabled for this page at the moment.<\/div>');
-    }
-})(window, document);
-//--><!]]></script></div><div id="footer">
-<p class="apache">Copyright 2012 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div>
+<div id="footer">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div><script type="text/javascript"><!--//--><![CDATA[//><!--
 if (typeof(prettyPrint) !== 'undefined') {
     prettyPrint();
