@@ -1,7 +1,7 @@
 # Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010, 2011, 2012
+# Copyright 2009, 2010, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -9,7 +9,7 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/WebAuth.xs perl/lib/WebAuth.pm			    \
+PERL_FILES = perl/MANIFEST perl/WebAuth.xs perl/lib/WebAuth.pm		    \
 	perl/lib/WebAuth/Exception.pm perl/lib/WebAuth/Key.pm		    \
 	perl/lib/WebAuth/Keyring.pm perl/lib/WebAuth/KeyringEntry.pod	    \
 	perl/lib/WebAuth/Krb5.pm perl/lib/WebAuth/Token.pm		    \
@@ -194,18 +194,16 @@ endif
 BINDINGS =
 BINDINGS_INSTALL =
 if BUILD_PERL
-    BINDINGS += perl/WebAuth.o
+    BINDINGS += perl/lib/WebAuth.o
     BINDINGS_INSTALL += install-data-local-perl
 endif
 
 # Suppress some warnings for Perl code because the auto-generated code
-# doesn't pass them.
-#
-# FIXME: -Wno-unused-but-set-variable is temporary until the context
-# conversion is complete.
+# doesn't pass them.  -Wno-strict-prototypes and -Wno-missing-prototypes are
+# required for the ExtUtils::CBuilder probe.
 if GCC
-    PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls \
-	-Wno-unused-variable -Wno-unused-but-set-variable
+    PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls		    \
+	-Wno-unused-variable -Wno-strict-prototypes -Wno-missing-prototypes
 else
     PERL_WARNINGS =
 endif
@@ -214,8 +212,9 @@ endif
 # complexity is here to handle building outside of the source directory, in
 # which case we need to copy various files from the source directory and make
 # sure they're up to date since Perl can't handle VPATH builds.
-perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs	  \
-		$(srcdir)/perl/typemap lib/libwebauth.la perl/Makefile.PL
+perl/lib/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm			\
+		$(srcdir)/perl/lib/WebAuth.xs $(srcdir)/perl/typemap	\
+		lib/libwebauth.la perl/Build.PL
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
 	    for d in lib lib/WebAuth lib/WebAuth/Token lib/WebKDC ; do	\
 		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
@@ -224,11 +223,11 @@ perl/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm $(srcdir)/perl/WebAuth.xs	  \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
-	cd perl && perl Makefile.PL
-	cd perl && $(MAKE) OPTIMIZE="$(CFLAGS) $(PERL_WARNINGS)"
+	cd perl && perl Build.PL --config optimize='$(CFLAGS) $(PERL_WARNINGS)'
+	cd perl && ./Build
 
-install-data-local-perl: perl/WebAuth.o
-	cd perl && $(MAKE) install DESTDIR=$(DESTDIR)
+install-data-local-perl: perl/lib/WebAuth.o
+	cd perl && ./Build install --destdir '$(DESTDIR)'
 
 # Run the hooks for bindings and Apache modules.
 all-local: $(BINDINGS) $(MODULES)
@@ -236,26 +235,27 @@ install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = lib/libwebauth.pc
 DISTCLEANFILES = include/webauth/defines.h perl/Makefile
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
-	configure docs/protocol.html docs/protocol.txt m4/libtool.m4 \
-	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	\
+	configure docs/protocol.html docs/protocol.txt m4/libtool.m4	\
+	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4	\
 	tools/wa_keyring.1
 
 # Also run make clean in the perl directory if needed and clean up the module
 # directories.
 clean-local:
-	set -e; if [ -f "perl/Makefile" ] ; then \
-	    cd perl && $(MAKE) clean ; \
-	    cd perl && [ ! -f Makefile.old ] || mv Makefile.old Makefile ; \
+	set -e; if [ -f "perl/Build" ] ; then	\
+	    cd perl && ./Build realclean ;	\
 	fi
 
 # Remove the Perl files we copied over if srcdir != builddir.
 distclean-local:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    for f in $(PERL_FILES) ; do \
-		rm -f "$(builddir)/$$f" ; \
-	    done ; \
-	    rmdir perl/WebKDC 2>/dev/null || true ; \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
+	    for f in $(PERL_FILES) ; do				\
+		rm -f "$(builddir)/$$f" ;			\
+	    done ;						\
+	    rmdir perl/lib/WebAuth/Token || true ;		\
+	    rmdir perl/lib/WebAuth || true ;			\
+	    rmdir perl/lib/WebKDC || true ;			\
 	fi
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
@@ -381,10 +381,10 @@ tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
 	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
-	@set -e; if [ -f perl/Makefile ] ; then \
-	    echo '' ; \
-	    cd perl && LD_LIBRARY_PATH=$(abs_top_builddir)/lib/.libs \
-		$(MAKE) test ; \
+	@set -e; if [ -f perl/Build ] ; then				\
+	    echo '' ;							\
+	    cd perl && LD_LIBRARY_PATH='$(abs_top_builddir)/lib/.libs'	\
+		./Build test ;						\
 	fi
 
 # Used by maintainers to run the main test suite under valgrind.  Suppress

@@ -1,4 +1,6 @@
+Build.PL
 lib/WebAuth.pm
+lib/WebAuth.xs
 lib/WebAuth/Exception.pm
 lib/WebAuth/Key.pm
 lib/WebAuth/Keyring.pm
@@ -16,18 +18,14 @@ lib/WebAuth/Token/WebKDCProxy.pm
 lib/WebAuth/Token/WebKDCService.pm
 lib/WebKDC.pm
 lib/WebKDC/Config.pm
-lib/WebKDC/Token.pm
 lib/WebKDC/WebKDCException.pm
 lib/WebKDC/WebRequest.pm
 lib/WebKDC/WebResponse.pm
 lib/WebKDC/XmlDoc.pm
 lib/WebKDC/XmlElement.pm
 lib/WebLogin.pm
-Makefile.PL
-Makefile.PL.in
-MANIFEST
-MYMETA.yml
-README
+MANIFEST			This list of files
+MANIFEST.SKIP
 t/changepw.t
 t/config.t
 t/data/kadmin-fake
@@ -44,7 +42,6 @@ t/exception.t
 t/keyring.t
 t/krb5.t
 t/lib/RRA/TAP/Automake.pm
-t/lib/RRA/TAP/Automake.pm.in
 t/lib/Util.pm
 t/minimum-version.t
 t/misc.t
@@ -63,4 +60,3 @@ t/webkdc.t
 t/weblogin.t
 t/xml.t
 typemap
-WebAuth.xs
