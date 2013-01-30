@@ -179,6 +179,12 @@ Configuration
   old version is supported for backward compatibility; this is noted in
   parens after the variable name.
 
+  The path of the configuration file can be overridden by setting the
+  WEBKDC_CONFIG environment variable to point to some other path.  This
+  can be done inside Apache with mod_env.
+
+  Supported configuration variables are:
+
   $BYPASS_CONFIRM
 
       By default, a confirmation page is always shown to the user and they
@@ -605,7 +611,7 @@ Configuration
 
       Default: not set.
 
-  Obsolete configuratino options:
+  Obsolete configuration options:
 
   $REALM
 
