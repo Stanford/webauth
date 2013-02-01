@@ -9,7 +9,7 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/MANIFEST perl/WebAuth.xs perl/lib/WebAuth.pm		    \
+PERL_FILES = perl/MANIFEST perl/lib/WebAuth.pm perl/lib/WebAuth.xs	    \
 	perl/lib/WebAuth/Exception.pm perl/lib/WebAuth/Key.pm		    \
 	perl/lib/WebAuth/Keyring.pm perl/lib/WebAuth/KeyringEntry.pod	    \
 	perl/lib/WebAuth/Krb5.pm perl/lib/WebAuth/Token.pm		    \
