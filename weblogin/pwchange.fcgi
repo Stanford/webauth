@@ -10,7 +10,7 @@
 # ability to fall back on regular operation if FastCGI isn't available.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2011, 2012
+# Copyright 2010, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -44,24 +44,25 @@ our %PAGES = (
     error       => 'error.tmpl',
 );
 
+# Create the persistent WebLogin object.
+my $weblogin = WebLogin->new(PARAMS => { pages => \%PAGES });
+
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
-# processing loop until the FastCGI socket closes.
+# processing loop until the FastCGI socket closes, we get a signal to exit,
+# or the script modification time changes.
 while (my $q = CGI::Fast->new()) {
     local $SIG{TERM} = sub { $EXITING = 1 };
+
+    # Set the default run mode for the pwchange script.
     if (!defined $q->param('rm')) {
         $q->param('rm', 'pwchange');
     }
-    my $weblogin = WebLogin->new(
-        PARAMS => { pages => \%PAGES },
-        QUERY  => $q
-    );
-    $weblogin->run();
-}
 
-# Done on each pass through the FastCGI loop.  Restart the script if we've
-# been signaled or the script modification time has changed.
-continue {
+    # Invoke the WebLogin application.
+    $weblogin->query($q);
+    $weblogin->run();
+} continue {
     if ($EXITING || -M $ENV{SCRIPT_FILENAME} < 0) {
         exit;
     }

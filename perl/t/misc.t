@@ -3,7 +3,7 @@
 # Miscellaneous tests for WebLogin code.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012
+# Copyright 2010, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -37,18 +37,17 @@ my %PAGES = (confirm  => 'confirm.tmpl',
 $ENV{REQUEST_METHOD} = 'GET';
 my $query = CGI->new ({});
 
-# Fake a weblogin object.
-my $weblogin = {};
-bless $weblogin, 'WebLogin';
+# Set up the testing WebLogin object.
+my $weblogin = WebLogin->new;
 $weblogin->query ($query);
-my $resp = new WebKDC::WebResponse;
-my $req = new WebKDC::WebRequest;
+my $resp = WebKDC::WebResponse->new;
+my $req = WebKDC::WebRequest->new;
 $req->request_token ('TestReqToken');
 $req->service_token ('TestServiceToken');
 $weblogin->{response} = $resp;
 $weblogin->{request} = $req;
-$weblogin->param ('test_cookie', $WebLogin::TEST_COOKIE);
 $weblogin->param ('pages', \%PAGES);
+$weblogin->param ('logging', 0);
 
 # Load some default template options.
 $weblogin->tt_config(
@@ -295,6 +294,7 @@ SKIP: {
     # add_remuser_token
     $query = CGI->new ({});
     $weblogin = WebLogin->new (QUERY => $query);
+    $weblogin->cgiapp_prerun;
     $weblogin->add_remuser_token;
     my $token = $weblogin->{request}->proxy_cookie ('remuser');
     ok ($token, 'add_remuser_token works');

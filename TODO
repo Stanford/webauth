@@ -260,9 +260,6 @@ WebLogin:
    is coming from a public cluster.  If checked, don't set a single
    sign-on cookie.
 
- * WEBAUTH-113: Add a new WebLogin hook to map environment variables (from
-   client X.509 authentication, for example) to user identities.
-
  * WEBAUTH-118: In support of localization and site customization,
    WebLogin should not be generating any error strings in the Perl code
    where possible.  Instead, it should set parameters that are used on the
@@ -271,11 +268,6 @@ WebLogin:
 
  * WEBAUTH-119: Document how to set up multiple WebLogin servers with
    different themes.
-
- * WEBAUTH-127: Currently, a new CGI::Application object is created for
-   each loop through the FastCGI scripts.  Separate out initialization
-   properly so that only the required work is done for each iteration
-   through the loop and most initialization is done only once.
 
 Perl Modules:
 

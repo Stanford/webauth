@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+#
+# Build script for WebAuth distribution.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2003, 2004, 2005, 2006, 2009, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use 5.008;
+use strict;
+use warnings;
+
+use Config;
+use Module::Build;
+
+# Determine compiler and linker flags from Autoconf.  The actual Build.PL
+# script will be built from a template with these values substituted in.
+my (@CFLAGS, @LDFLAGS, @LIBS);
+{
+    ## no critic (TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'qw';
+    @CFLAGS  = qw(-I@top_builddir@ -I@top_srcdir@/include @APR_CPPFLAGS@);
+    @LDFLAGS = qw(-L@abs_top_builddir@/lib/.libs @LDFLAGS@);
+    @LIBS    = qw(-lwebauth @DEPEND_LIBS@ @LIBS@);
+}
+
+# Override the lddlflags set by Perl to prepend, rather than append, our
+# LDFLAGS values.  Otherwise, depending on how Perl was built, it may pick up
+# the wrong WebAuth libraries first.  In particular, it often prefers the
+# system libwebauth instead of the one in the build tree.
+my $LDDLFLAGS = join q{ }, @LDFLAGS, $Config{lddlflags};
+
+# Basic package configuration.
+my $build = Module::Build->new(
+    module_name          => 'WebAuth',
+    dist_author          => 'Russ Allbery <rra@stanford.edu>',
+    license              => 'mit',
+    recursive_test_files => 1,
+    add_to_cleanup       => [qw(webauth_keyring webauth_keyring2)],
+
+    # XS configuration.  We prefer the in-tree libwebauth library.
+    config               => { lddlflags => $LDDLFLAGS },
+    extra_compiler_flags => [@CFLAGS],
+    extra_linker_flags   => [@LIBS],
+
+    # Other package relationships.
+    configure_requires => { 'Module::Build' => 0.28 },
+    requires           => {
+        'CGI::Application'                      => 0,
+        'CGI::Application::Plugin::AutoRunmode' => 0,
+        'CGI::Application::Plugin::Forward'     => 0,
+        'CGI::Application::Plugin::Redirect'    => 0,
+        'CGI::Application::Plugin::TT'          => 0,
+        'IO::Socket::SSL'                       => 0,
+        'LWP::UserAgent'                        => 0,
+        'Template'                              => 0,
+        'URI'                                   => 0,
+        'XML::Parser'                           => 0,
+        perl                                    => '5.008',
+    },
+    recommends => {
+        'Cache::Memcached' => 0,
+        'Date::Parse'      => 0,
+        'Digest::SHA'      => 0,
+        'Net::Remctl'      => 0,
+        'Time::Duration'   => 0,
+    },
+);
+
+# Generate the build script.
+$build->create_build_script;
