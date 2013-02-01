@@ -868,8 +868,8 @@ done
     <title>Manual License</title>
 
     <p>
-      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The
-      Board of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2013
+      The Board of Trustees of the Leland Stanford Junior University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -2091,7 +2091,20 @@ WebAuthSSLRedirectPort 8443
       <p>
         If a user connects to a WebAuth-protected page via http, and needs
         to be authenticated, then this directive will cause the return URL
-        to be converted to https.
+        to be converted to https.  For this directive to have any meaning,
+        usually <a
+        href="#webauthrequiressl"><directive>WebAuthRequireSSL</directive></a>
+        must also be off; otherwise, the access will either be denied or
+        redirected to https anyway before this directive can have any
+        effect.
+      </p>
+      <p>
+        This directive should be set, in conjunction with
+        <directive>WebAuthRequireSSL</directive>, when the page is
+        actually protected by SSL from the perspective of the browser but
+        not from the perspective of Apache.  This is common when the Apache
+        server is behind a load balancer that decrypts SSL, or is otherwise
+        behind an SSL offload proxy.
       </p>
 
       <example>
@@ -2100,6 +2113,7 @@ WebAuthSSLRedirectPort 8443
 &lt;Location /myapp/&gt;
   AuthType WebAuth
   Require valid-user
+  WebAuthRequireSSL off
   WebAuthSSLReturn on
 &lt;/Location&gt;
 </pre>
