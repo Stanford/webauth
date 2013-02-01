@@ -269,6 +269,10 @@ WebLogin:
  * WEBAUTH-119: Document how to set up multiple WebLogin servers with
    different themes.
 
+ * WEBAUTH-128: Rework the WebLogin implementation strategy to either stop
+   using CGI::Application parameters for per-query data or to collect them
+   in a single parameter that can be more easily cleared.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
