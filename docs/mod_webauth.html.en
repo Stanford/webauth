@@ -321,6 +321,15 @@ WEBAUTH_USER=schemers
         <td>Session authentication via cookie</td>
       </tr>
       <tr>
+        <td><code>d</code></td><td>device</td><td>No</td>
+        <td>
+          Device or browser originating the authentication is known to the
+          local security infrastructure, has previously been part of a
+          successful strong authentication, or otherwise is a relatively
+          trusted device as defined by local site policy.
+        </td>
+      </tr>
+      <tr>
         <td><code>k</code></td><td>Kerberos</td><td>No</td>
         <td>Session authentication via Kerberos authentication</td>
       </tr>
