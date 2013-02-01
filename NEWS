@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.4.1 (unreleased)
+WebAuth 4.4.1 (2013-01-31)
 
     Add a new authenticate callback to the WebLogin configuration.  If
     this function is present in webkdc.conf, it will be called for every
