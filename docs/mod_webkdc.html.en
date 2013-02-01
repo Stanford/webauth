@@ -73,15 +73,15 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> Setting up the WebKDC</li>
-<li><img alt="" src="../images/down.gif" /> Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> WebKDC Logging</li>
-<li><img alt="" src="../images/down.gif" /> Setting up Multiple WebKDCs</li>
-<li><img alt="" src="../images/down.gif" /> Manual License</li>
-</ul><ul class="seealso"><li><a href="#comments_section">Comments</a></li></ul></div>
+<li><img alt="" src="../images/down.gif" /> <a href="#s1">Setting up the WebKDC</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s2">Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s3">WebKDC Logging</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s4">Setting up Multiple WebKDCs</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s5">Manual License</a></li>
+</ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Setting up the WebKDC</h2>
+<h2><a name="s1">Setting up the WebKDC</a></h2>
     
     <p>
       The minimal configuration for the WebKDC requires two things: a
@@ -118,7 +118,7 @@
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Minimal Config File</h2>
+<h2><a name="s2">Minimal Config File</a></h2>
     
 
     <p>
@@ -142,7 +142,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 </pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>WebKDC Logging</h2>
+<h2><a name="s3">WebKDC Logging</a></h2>
     
 
     <p>
@@ -403,7 +403,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
     </dl>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Setting up Multiple WebKDCs</h2>
+<h2><a name="s4">Setting up Multiple WebKDCs</a></h2>
     
 
     <p>
@@ -554,7 +554,7 @@ done
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Manual License</h2>
+<h2><a name="s5">Manual License</a></h2>
     
 
     <p>
@@ -1393,25 +1393,8 @@ WebKdcUserInfoURL remctl://userdb.example.com/user
 </div>
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
-</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div><div class="section"><h2><a id="comments_section" name="comments_section">Comments</a></h2><div class="warning"><strong>Notice:</strong><br />This is not a Q&amp;A section. Comments placed here should be pointed towards suggestions on improving the documentation or server, and may be removed again by our moderators if they are either implemented or considered invalid/off-topic. Questions on how to manage the Apache HTTP Server should be directed at either our IRC channel, #httpd, on Freenode, or sent to our <a href="http://httpd.apache.org/lists.html">mailing lists</a>.</div>
-<script type="text/javascript"><!--//--><![CDATA[//><!--
-var comments_shortname = 'httpd';
-var comments_identifier = 'http://httpd.apache.org/docs/2.4/mod/mod_webkdc.html';
-(function(w, d) {
-    if (w.location.hostname.toLowerCase() == "httpd.apache.org") {
-        d.write('<div id="comments_thread"><\/div>');
-        var s = d.createElement('script');
-        s.type = 'text/javascript';
-        s.async = true;
-        s.src = 'https://comments.apache.org/show_comments.lua?site=' + comments_shortname + '&page=' + comments_identifier;
-        (d.getElementsByTagName('head')[0] || d.getElementsByTagName('body')[0]).appendChild(s);
-    }
-    else { 
-        d.write('<div id="comments_thread">Comments are disabled for this page at the moment.<\/div>');
-    }
-})(window, document);
-//--><!]]></script></div><div id="footer">
-<p class="apache">Copyright 2012 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div>
+<div id="footer">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div><script type="text/javascript"><!--//--><![CDATA[//><!--
 if (typeof(prettyPrint) !== 'undefined') {
     prettyPrint();

@@ -1,5 +1,27 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.1 (2013-01-31)
+
+    Add a new authenticate callback to the WebLogin configuration.  If
+    this function is present in webkdc.conf, it will be called for every
+    user visit to WebLogin and may return the user's authentication
+    information or an empty list to defer to normal handling.  This can be
+    used to extract authentication information from the full WebLogin
+    environment; for example, it could map information about a successful
+    client-side certificate authentication to an authentication identity.
+
+    When run under FastCGI, the WebLogin scripts now use a persistent
+    CGI::Application object instead of recreating it for each query.  This
+    avoids reinitializing the Template Toolkit and reopening memcached
+    connections for each query.
+
+    WebLogin and the WebAuth Perl bindings are now built with
+    Module::Build instead of ExtUtils::MakeMaker.  This should be
+    transparent to anyone not working with the source code, but
+    Module::Build and ExtUtils::CBuilder are now required to build the
+    WebLogin code.  They are included in Perl 5.10 or later and can be
+    installed separately for older versions of Perl.
+
 WebAuth 4.4.0 (2012-12-19)
 
     The WebKDC and WebLogin server now support allowing a user to assert

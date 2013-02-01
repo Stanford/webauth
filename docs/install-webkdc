@@ -249,6 +249,35 @@ separate install-spengo documentation.
 If you want to enable multifactor authentication, see the separate
 install-multifactor documentation.
 
+The WebLogin component of the WebKDC, which handles the login user
+interface, is configured with /etc/webkdc/webkdc.conf by default.
+However, the path of this configuration file can be overridden by setting
+the WEBKDC_CONFIG environment variable to point to some other path.  Since
+one of the configuration settings is the path to the templates, this can
+be used to provide multiple different WebLogin interfaces at different
+URLs using the same code.
+
+One convenient way to do that inside Apache is to use mod_env and the
+SetEnv directive.  So, for example, after using the above instructions to
+set up a /login URL that uses your default local templates, you could add
+an Apache configuration like:
+
+    ScriptAlias /login-special "/usr/local/share/weblogin/login.fcgi"
+    <Location "/login-special">
+        SetEnv WEBKDC_CONFIG /etc/webkdc/special.conf
+    </Location>
+
+Then, users who go to the /login-special URL instead of /login will launch
+a WebLogin instance that uses /etc/webkdc/special.conf as the
+configuration instead.  That configuration could then point to different
+templates, different settings, etc.
+
+Be aware that this won't work if you use FastCGI, since the FastCGI
+process will load a single configuration and use it to process all
+requests.  If you want to do this in combination with FastCGI, you will
+need to arrange for multiple FastCGI applications to be spawned with
+different environments.
+
 -----
 
 Copyright 2003, 2004, 2006, 2009, 2010, 2011, 2012

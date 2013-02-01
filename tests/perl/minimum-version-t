@@ -10,7 +10,7 @@
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,10 +43,10 @@ use Test::More;
 # requirement.
 my %REQUIREMENTS = (
     '5.008' => [
-        qw(tests/mod_webauth tools weblogin/login.fcgi
+        qw(tests/mod_webauth tools/weblogin-passcheck weblogin/login.fcgi
           weblogin/logout.fcgi weblogin/pwchange.fcgi)
     ],
-    '5.010' => [qw(lib tests/data)],
+    '5.010' => [qw(lib tests/data tools/clean-apache-manual)],
 );
 
 # Skip tests if Test::MinimumVersion is not installed.

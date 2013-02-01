@@ -1,13 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
 dnl    The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.4.0], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.4.1], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -153,7 +153,7 @@ AC_SUBST([DEPEND_LIBS])
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
 AS_IF([test x"$build_perl" = xtrue],
-    [AC_CONFIG_FILES([perl/Makefile.PL perl/t/lib/RRA/TAP/Automake.pm])])
+    [AC_CONFIG_FILES([perl/Build.PL perl/t/lib/RRA/TAP/Automake.pm])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=include/webauth/defines.h])
