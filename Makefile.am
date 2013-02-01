@@ -240,9 +240,10 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	\
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4	\
 	tools/wa_keyring.1
 
-# Also run make clean in the perl directory if needed and clean up the module
-# directories.
+# Clean up the results of running the test suite under gcov.  Also run make
+# clean in the perl directory if needed.
 clean-local:
+	rm -f */*.gcda */*.gcno */*/*.gcda */*/*.gcno
 	set -e; if [ -f "perl/Build" ] ; then	\
 	    cd perl && ./Build realclean ;	\
 	fi
