@@ -62,10 +62,10 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
 	tests/perl/minimum-version-t tests/perl/strict-t		    \
 	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
-	tools/wa_keyring.pod tools/weblogin-passcheck			    \
-	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
-	weblogin/images/help.xcf weblogin/images/login.xcf		    \
-	weblogin/images/logout.xcf $(PERL_FILES)
+	tools/clean-apache-manual tools/wa_keyring.pod			    \
+	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
+	weblogin/images/error.xcf weblogin/images/help.xcf		    \
+	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
