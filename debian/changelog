@@ -1,3 +1,11 @@
+webauth (4.4.1-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - New authenticate callback supported in WebLogin configuration.
+    - WebLogin should now run more efficiently under FastCGI.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 31 Jan 2013 18:47:30 -0800
+
 webauth (4.4.0-1) experimental; urgency=low
 
   * New upstream release.
