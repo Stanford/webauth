@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.2 (unreleased)
+
+    Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
+    to determine if an authentication is interactive.
+
 WebAuth 4.4.1 (2013-01-31)
 
     Add a new authenticate callback to the WebLogin configuration.  If
