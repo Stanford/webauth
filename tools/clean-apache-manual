@@ -54,10 +54,10 @@ Readonly my $REGEX_COMMENTS_LINK => qr{
 }xms;
 
 # Regular expression matching the Apache License notice.  Use s{}{} to remove
-# that notice entirely.
+# that notice entirely.  Hide the magic copyright word from build-license.
 Readonly my $REGEX_APACHE_LICENSE => qr{
     <p \s+ class="apache">
-    Copyright \s+ \d+ \s+ The \s+ Apache \s+ Software \s+ Foundation
+    Copyrigh[t] \s+ \d+ \s+ The \s+ Apache \s+ Software \s+ Foundation
     .*
     Version \s+ 2[.]0
     </a> \s* [.]? \s* </p>
