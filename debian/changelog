@@ -1,3 +1,12 @@
+webauth (4.4.2-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Fix an occasional WebKDC crash when determining if an authentication
+      is interactive.  Should fix FTBFS on powerpc.
+    - Add additional Autoconf checks to hopefully build on Hurd.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 05 Feb 2013 13:04:28 -0800
+
 webauth (4.4.1-1) experimental; urgency=low
 
   * New upstream release.
