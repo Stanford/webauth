@@ -10,7 +10,7 @@
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,8 +62,26 @@ if (!eval { require Test::Perl::Critic }) {
 my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
 my @rootdirs = File::Spec->splitdir($rootdirs);
 pop @rootdirs;
+if ($rootdirs[-1] eq File::Spec->updir) {
+    pop @rootdirs;
+    pop @rootdirs;
+}
 my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
 chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+
+# If BUILD is a subdirectory of SOURCE, ignore it as well.
+my ($buildvol, $builddirs) = File::Spec->splitpath($ENV{BUILD}, 1);
+my @builddirs = File::Spec->splitdir($builddirs);
+pop @builddirs;
+if ($buildvol eq $rootvol && @builddirs == @rootdirs + 1) {
+    while (@rootdirs && $builddirs[0] eq $rootdirs[0]) {
+        shift @builddirs;
+        shift @rootdirs;
+    }
+    if (@builddirs == 1) {
+        $IGNORE{ $builddirs[0] } = 1;
+    }
+}
 
 # Force the embedded Perl::Tidy check to use the correct configuration.
 local $ENV{PERLTIDY} = $ENV{SOURCE} . '/data/perltidyrc';

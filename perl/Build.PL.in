@@ -21,7 +21,8 @@ my (@CFLAGS, @LDFLAGS, @LIBS);
 {
     ## no critic (TestingAndDebugging::ProhibitNoWarnings)
     no warnings 'qw';
-    @CFLAGS  = qw(-I@top_builddir@ -I@top_srcdir@/include @APR_CPPFLAGS@);
+    @CFLAGS  = qw(-I@top_builddir@ -I@top_srcdir@ -I@top_srcdir@/include
+      @APR_CPPFLAGS@);
     @LDFLAGS = qw(-L@abs_top_builddir@/lib/.libs @LDFLAGS@);
     @LIBS    = qw(-lwebauth @DEPEND_LIBS@ @LIBS@);
 }

@@ -2,7 +2,7 @@
  * Internal data types, definitions, and prototypes for the WebAuth library.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -20,11 +20,12 @@
 
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
-#define WA_FA_PASSWORD             "p"
+#define WA_FA_DEVICE               "d"
 #define WA_FA_KERBEROS             "k"
 #define WA_FA_MULTIFACTOR          "m"
 #define WA_FA_OTP                  "o"
 #define WA_FA_OTP_TYPE             "o%d"
+#define WA_FA_PASSWORD             "p"
 #define WA_FA_RANDOM_MULTIFACTOR   "rm"
 #define WA_FA_UNKNOWN              "u"
 #define WA_FA_X509                 "x"
