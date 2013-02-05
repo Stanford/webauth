@@ -58,6 +58,15 @@ Definitions
       whatever methods the user used to obtain their initial Kerberos
       ticket-granting ticket on their local system.
 
+  persistent factor
+      This is a factor stored in a separate cookie in the user's browser
+      that persists for longer than the expiration time of their single
+      sign-on credentials.  It is used, for example, to set a cookie in a
+      browser that has been vetted by some means (such as a previous
+      multifactor authentication) that will add an additional
+      authentication factor to subsequent authentications from that
+      browser.
+
   level of assurance
       This is a site-defined numeric value that is intended to encapsulate
       in one number a combination of the identity proofing of the user (how
@@ -202,6 +211,12 @@ User Information Service
       A flag that will be 0 if random multifactor was not requested and 1
       if it was requested.
 
+  factors
+      A comma-separated list of factor codes that the user has already
+      established with the WebLogin server at the time of the call.  This
+      parameter was added in WebAuth 4.5.0; older versions of the WebKDC
+      will not send it.
+
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal error and the user's authentication will be aborted.  The
   error can be reported on standard error.  If it exits with a zero
@@ -331,6 +346,9 @@ OTP Validation
           <factor>o</factor>
           <factor>o3</factor>
         </factors>
+        <persistent-factors>
+          <factor>d</factor>
+        <persistent-factors>
         <loa>{loa-value}</loa>
       </authdata>
 
@@ -344,6 +362,14 @@ OTP Validation
   represents.  Normally, this will include "o" (some OTP) along with a
   specific numbered OTP factor if there are multiple types of OTP
   available.
+
+  If this authentication should result in setting a persistent factor
+  cookie in the authenticating browser, the factors that should go into
+  that persistent factor cookie should be listed in the
+  <persistent-factors> element.  Otherwise, that element should be
+  omitted.  (These will be set as persistent initial authentication
+  factors; setting persistent session authentication factors is not
+  currently supported.)
 
   If level of assurance is being used, the optional <loa> attribute should
   return the level of assurance this authentication indicates.  This
@@ -407,7 +433,7 @@ OTP and SMS
 
 License
 
-  Copyright 2011, 2012
+  Copyright 2011, 2012, 2013
     The Board of Trustees of the Leland Stanford Junior University
 
   Copying and distribution of this file, with or without modification, are

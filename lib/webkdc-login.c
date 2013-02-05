@@ -7,7 +7,7 @@
  * username and authentication credential, or both.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -530,7 +530,7 @@ static bool
 is_interactive_login(struct webauth_context *ctx,
                      struct webauth_token_webkdc_proxy *wkproxy)
 {
-    struct webauth_factors *factors;
+    struct webauth_factors *factors = NULL;
     int status;
     const char *factor;
     ssize_t i;

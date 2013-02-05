@@ -9,14 +9,14 @@
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/MANIFEST perl/lib/WebAuth.pm perl/lib/WebAuth.xs	    \
-	perl/lib/WebAuth/Exception.pm perl/lib/WebAuth/Key.pm		    \
-	perl/lib/WebAuth/Keyring.pm perl/lib/WebAuth/KeyringEntry.pod	    \
-	perl/lib/WebAuth/Krb5.pm perl/lib/WebAuth/Token.pm		    \
-	perl/lib/WebAuth/Token/App.pm perl/lib/WebAuth/Token/Cred.pm	    \
-	perl/lib/WebAuth/Token/Error.pm perl/lib/WebAuth/Token/Id.pm	    \
-	perl/lib/WebAuth/Token/Login.pm perl/lib/WebAuth/Token/Proxy.pm	    \
-	perl/lib/WebAuth/Token/Request.pm				    \
+PERL_FILES = perl/MANIFEST perl/MANIFEST.SKIP perl/lib/WebAuth.pm	    \
+	perl/lib/WebAuth.xs perl/lib/WebAuth/Exception.pm		    \
+	perl/lib/WebAuth/Key.pm perl/lib/WebAuth/Keyring.pm		    \
+	perl/lib/WebAuth/KeyringEntry.pod perl/lib/WebAuth/Krb5.pm	    \
+	perl/lib/WebAuth/Token.pm perl/lib/WebAuth/Token/App.pm		    \
+	perl/lib/WebAuth/Token/Cred.pm perl/lib/WebAuth/Token/Error.pm	    \
+	perl/lib/WebAuth/Token/Id.pm perl/lib/WebAuth/Token/Login.pm	    \
+	perl/lib/WebAuth/Token/Proxy.pm perl/lib/WebAuth/Token/Request.pm   \
 	perl/lib/WebAuth/Token/WebKDCProxy.pm				    \
 	perl/lib/WebAuth/Token/WebKDCService.pm perl/lib/WebKDC.pm	    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/WebKDCException.pm	    \
@@ -34,6 +34,11 @@ PERL_FILES = perl/MANIFEST perl/lib/WebAuth.pm perl/lib/WebAuth.xs	    \
 	perl/t/token-decode.t perl/t/token-encode.t perl/t/web-request.t    \
 	perl/t/web-response.t perl/t/webauth.t perl/t/webkdc.t		    \
 	perl/t/weblogin.t perl/t/xml.t perl/typemap
+
+# Directories that have to be created in builddir != srcdir builds before
+# copying PERL_FILES over.
+PERL_DIRECTORIES = perl/lib perl/lib/WebAuth perl/lib/WebAuth/Token \
+	perl/lib/WebKDC perl/t/data perl/t/data/templates perl/t/lib
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
@@ -216,8 +221,8 @@ perl/lib/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm			\
 		$(srcdir)/perl/lib/WebAuth.xs $(srcdir)/perl/typemap	\
 		lib/libwebauth.la perl/Build.PL
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
-	    for d in lib lib/WebAuth lib/WebAuth/Token lib/WebKDC ; do	\
-		[ ! -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
+	    for d in $(PERL_DIRECTORIES) ; do				\
+		[ -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
 	    done ;							\
 	    for f in $(PERL_FILES) ; do					\
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
@@ -240,9 +245,10 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	\
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4	\
 	tools/wa_keyring.1
 
-# Also run make clean in the perl directory if needed and clean up the module
-# directories.
+# Clean up the results of running the test suite under gcov.  Also run make
+# clean in the perl directory if needed.
 clean-local:
+	rm -f */*.gcda */*.gcno */*/*.gcda */*/*.gcno
 	set -e; if [ -f "perl/Build" ] ; then	\
 	    cd perl && ./Build realclean ;	\
 	fi
@@ -253,9 +259,6 @@ distclean-local:
 	    for f in $(PERL_FILES) ; do				\
 		rm -f "$(builddir)/$$f" ;			\
 	    done ;						\
-	    rmdir perl/lib/WebAuth/Token || true ;		\
-	    rmdir perl/lib/WebAuth || true ;			\
-	    rmdir perl/lib/WebKDC || true ;			\
 	fi
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
