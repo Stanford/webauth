@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='January' year='2013' />
+    <date month='February' year='2013' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1141,6 +1141,9 @@
 
       <!-- present if the user just authenticated -->
       <loginToken>...</loginToken>
+
+      <!-- a webkdc-factor token presented by the user -->
+      <factorToken>...</factorToken>
     </subjectCredential>
 
     <!-- request token from WAS -->
@@ -1195,6 +1198,11 @@
     <proxyTokens>
       <proxyToken type="krb5|...">{base64-proxy-token}</proxyToken>
     </proxyTokens>
+
+    <!-- currently, only one factor token is permitted -->
+    <factorTokens>
+      <factorToken>{base64-webkdc-factor-token}</factorToken>
+    </factorTokens>
 
     <!-- the url to return to the user to -->
     <returnUrl>...</returnUrl>
@@ -1930,6 +1938,62 @@
           subject or that the ps subject starts with "WEBKDC:".</t>
         </section>
 
+        <section anchor='tokenwebkdcfactor' title='webkdc-factor Token
+          Encoding'>
+          <t>A webkdc-factor token holds additional authentication factors
+          that are combined with the factors established with webkdc-proxy
+          tokens and login tokens.  A webkdc-factor token by itself is not
+          sufficient to authenticate a user, but when combined with other
+          tokens can contribute its factors to the authentication factors
+          in resulting webkdc-proxy, id, and proxy tokens.</t>
+
+          <t>The primary purpose of webkdc-factor tokens is to store
+          additional factors that have a different lifetime than the
+          user's authentication credentials.  For example, one might store
+          a webkdc-factor token as a long-lived cookie on a particular
+          browser that has been vetted in some way and treat subsequent
+          authentications where the browser can present that token as
+          having an additional authentication factor compared to
+          authentications from other browsers.</t>
+
+          <t>webkdc-factor tokens are presented by WebLogin (which would
+          normally get them from browser cookies) to the WebKDC as part of
+          the &lt;requestTokenRequest> message, and returned to WebLogin
+          (to store as browser cookies) as part of the
+          &lt;requestTokenResponse> message.</t>
+
+          <figure>
+            <preamble>Token format:</preamble>
+            <artwork>
+  t=webkdc-factor
+  s={username}
+  [ia={factor-list}]
+  [san={factor-list}]
+  ct={creation-date}
+  et={expiration-date}
+            </artwork>
+          </figure>
+
+          <t>All attributes are AES-encrypted in the WebKDC's private key.
+          Either <code>ia</code> or <code>san</code> must be present in
+          the token.</t>
+
+          <t>webkdc-factor tokens are only valid when presented in
+          conjunction with at least one valid webkdc-proxy or login token
+          for the same subject.</t>
+
+          <t>Inside the WebKDC, multiple webkdc-factor tokens from
+          different sources may be merged into a single token.  If this is
+          done, the resulting token's creation and expiration dates should
+          be set to the oldest creation and expiration dates of all the
+          constituent tokens.  In particular, the creation date of the
+          resulting token should not be set to the time at which the
+          tokens were merged.  This permits discarding all webkdc-factor
+          tokens older than a particular date, which may be a useful
+          operation if a particular user experienced a security
+          compromise.</t>
+        </section>
+
         <section anchor='tokenrequest' title='request Token Encoding'>
           <t>A request token is sent to the WebKDC server by a WAS along
           with the WAS's webkdc-service token.  It is used to request
@@ -2321,6 +2385,12 @@
       <t>webkdc-proxy token cookies will be named webauth_wpt_{type} where
       {type} is the type of the webkdc-proxy token (usually krb5).</t>
 
+      <t>webkdc-factor token cookies will be named webkdc_wft.  This means
+      that only a single factor token cookie can be set within a
+      particular browser.  If there are multiple sources of factors that
+      should be stored in webkdc-factor tokens, they must be merged into a
+      single token by the WebKDC.</t>
+
       <t>proxy token cookies will be named webauth_pt_{type} where {type}
       is the type of the proxy token (usually krb5).</t>
 
@@ -2445,8 +2515,11 @@
           indicating a rejected authentication due to too many failed
           authentication attempts for this user.</t>
 
-          <t hangText='3.3.2 (2013-01-31, rra)'>
-          <vspace blankLines='0'/>Add the d factor.</t>
+          <t hangText='3.4.0 (2013-02-04, rra)'>
+          <vspace blankLines='0'/>Add the webkdc-factor token type, the
+          &lt;factorToken> element to the &lt;requestTokenRequest> API,
+          &lt;factorTokens> element to the &lt;requestTokenResponse> API,
+          and the d factor.</t>
         </list>
       </t>
     </section>
