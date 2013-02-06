@@ -21,7 +21,6 @@
 # 6. Both a TGT and a service ticket for some other principal.
 
 use 5.010;
-
 use autodie;
 use strict;
 use warnings;
@@ -58,12 +57,12 @@ if (defined $principal) {
 }
 
 # Print out the encoded credential.
-if (defined $output) {
-    open my $out_fh, '>', $output;
+if (defined($output)) {
+    open(my $out_fh, '>', $output);
     print {$out_fh} $cred or die "Cannot write to $output: $!\n";
-    close $out_fh;
+    close($out_fh);
 } else {
-    print $cred;
+    print {*STDOUT} $cred or die "Cannot write to STDOUT: $!\n";
 }
 
 __END__
@@ -138,7 +137,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2012 The Board of Trustees of the Leland Stanford Junior
+Copyright 2012, 2013 The Board of Trustees of the Leland Stanford Junior
 University
 
 Permission is hereby granted, free of charge, to any person obtaining a

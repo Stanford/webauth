@@ -18,9 +18,6 @@ use Date::Parse qw(str2time);
 use Getopt::Long qw(GetOptions);
 use POSIX qw(strftime);
 
-# We intentionally don't require Readonly to be more portable.
-## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-
 # Grouping threshold for incidents.  Above this count of authentications, the
 # number of affected users will be grouped together.
 my $COUNT_THRESHOLD = 5;
@@ -65,10 +62,14 @@ my $QUERY_REGEX = qr{
 ##############################################################################
 
 # Decode a single CGI parameter.  Helper function for decode_params.
-sub _decode_param {
+#
+# $param - Encoded CGI parameter
+#
+# Returns: key and value as a list
+sub decode_param {
     my ($param) = @_;
-    my ($key, $value) = split m{=}xms, $param, 2;
-    $value =~ s{ % (..) }{ chr hex $1 }xmsge;
+    my ($key, $value) = split(m{=}xms, $param, 2);
+    $value =~ s{ % (..) }{ chr(hex($1)) }xmsge;
     return ($key, $value);
 }
 
@@ -79,8 +80,8 @@ sub _decode_param {
 # Returns a reference to a hash of parameter keys and values.
 sub decode_params {
     my ($params) = @_;
-    my @params = split m{ [;&] }xms, $params;
-    my %params = map { _decode_param($_) } @params;
+    my @params = split(m{ [;&] }xms, $params);
+    my %params = map { decode_param($_) } @params;
     return \%params;
 }
 
@@ -124,7 +125,7 @@ sub store_count {
     my ($count, $counts_ref) = @_;
     my $key = $count;
     if ($count > $COUNT_THRESHOLD) {
-        $key = '>' . $COUNT_THRESHOLD;
+        $key = q{>} . $COUNT_THRESHOLD;
     }
     $counts_ref->{$key}++;
     return;
@@ -222,20 +223,20 @@ GetOptions(
 if ($help) {
     print "Feeding myself to perldoc, please wait....\n"
       or die "Cannot write to STDOUT: $!\n";
-    exec 'perldoc', '-t', $0;
+    exec('perldoc', '-t', $0);
 }
 
 # Parse the password file to get a list of valid users.
 my %valid_users;
 if ($users_file) {
-    open my $users_fh, '<', $users_file
+    open(my $users_fh, '<', $users_file)
       or die "Cannot open $users_file: $!\n";
     local $_ = q{};
     while (<$users_fh>) {
         my ($user) = split m{:}xms;
         $valid_users{$user} = 1;
     }
-    close $users_fh or die "Cannot close $users_file: $!\n";
+    close($users_fh) or die "Cannot close $users_file: $!\n";
 }
 
 # Initialize Kerberos if a realm was specified.
@@ -380,8 +381,8 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2009, 2012 The Board of Trustees of the Leland Stanford Junior
-University
+Copyright 2009, 2012, 2013 The Board of Trustees of the Leland Stanford
+Junior University
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),

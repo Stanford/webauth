@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# clean-apache-manual -- Post-process external Apache module documentation
+# Post-process external Apache module documentation.
 #
 # The XML format for documenting Apache modules, and the corresponding build
 # system to generate formatted HTML, is quite useful even outside of Apache
@@ -19,8 +19,8 @@ use autodie;
 use strict;
 use warnings;
 
+use File::Temp;
 use Readonly;
-use File::Temp ();
 
 ##############################################################################
 # Global variables
@@ -159,17 +159,17 @@ my $tmp = File::Temp->new(
     TEMPLATE => $ARGV[0] . '.XXXXXX',
     UNLINK   => 0,
 );
-my $mode = (stat $ARGV[0])[2];
-chmod $mode, $tmp;
+my $mode = (stat($ARGV[0]))[2];
+chmod($mode, $tmp);
 
 # Process the input file.
-open my $source, '<', $ARGV[0];
+open(my $source, '<', $ARGV[0]);
 process_file($source, $tmp);
-close $source;
-close $tmp;
+close($source);
+close($tmp);
 
 # Rename the temporary file over the original.
-rename $tmp->filename, $ARGV[0];
+rename($tmp->filename, $ARGV[0]);
 exit 0;
 
 __END__
