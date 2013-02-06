@@ -30,9 +30,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-  
+
 severity = 1
 verbose  = %f:%l:%c: [%p] %m (%e, Severity: %s)\n
+
+# I prefer this policy (a lot, actually), but other people in my group at
+# Stanford really didn't like it, so this is my compromise to agree with a
+# group coding style.
+[-CodeLayout::ProhibitParensWithBuiltins]
 
 # This is handled with a separate test case that uses Test::Spelling.
 [-Documentation::PodSpelling]
@@ -59,26 +64,14 @@ lines = 25
 # off.
 [-RegularExpressions::ProhibitComplexRegexes]
 
-# Nice idea, but it *utterly* confuses cperl-mode when used with braces, so
-# it's more trouble than it's worth.
-[-RegularExpressions::ProhibitEscapedMetacharacters]
-
 # I generally don't want to require Readonly as a prerequisite for all my Perl
 # modules.
 [-ValuesAndExpressions::ProhibitConstantPragma]
 
-# -1 is used for the last element in arrays and is a special return value for
-# index.
-#
-# 100 is used for calculating percentages.  Making it a constant is just
-# confusing.
-#
-# Literal 0777 means to use the umask for permissions when creating files.
-# Using a constant for this just makes it more obscure.  0777 is 511 in
-# decimal.
-[ValuesAndExpressions::ProhibitMagicNumbers]
-allowed_types  = Octal
-allowed_values = -1 0 1 2 100 511
+# A good idea, but there are too many places where this would be more
+# confusing than helpful.  Pull out numbers if one might change them
+# independent of the algorithm, but don't do so for mathematical formulae.
+[-ValuesAndExpressions::ProhibitMagicNumbers]
 
 # Increase this to six digits so that I'm not told to add underscores to
 # port numbers (which is just silly).
