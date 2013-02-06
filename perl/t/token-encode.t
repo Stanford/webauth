@@ -10,7 +10,7 @@
 # pre-constructed tokens, so this will hopefully be sufficient.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -69,6 +69,15 @@ sub encode_decode {
     is ($@, '', '... with no exceptions');
 }
 
+# Encode a time in the token encoding format.  This is mostly a wrapper around
+# pack, but we may have to double semicolons.
+sub encode_time {
+    my ($time) = @_;
+    my $result = pack ('N', $time);
+    $result =~ s/;/;;/g;
+    return $result;
+}
+
 # General setup.
 my $wa = WebAuth->new;
 my $now = time;
@@ -99,6 +108,6 @@ $app->expiration ($now + 60);
 my $encoded = $app->encode ($keyring);
 my $data = eval { $wa->token_decrypt (decode_base64($encoded), $keyring) };
 is ($@, '', 'App token decodes without errors');
-my $expected = 't=app;s=test;ct=' . pack ('N', $now) . ';et='
-    . pack ('N', $now + 60) . ';';
+my $expected = 't=app;s=test;ct=' . encode_time ($now) . ';et='
+    . encode_time ($now + 60) . ';';
 is ($data, $expected, 'Encoded form is correct');
