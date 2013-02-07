@@ -1,5 +1,15 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.3 (unreleased)
+
+    Remove an arbitrary limit in mod_webauthldap on the number of values
+    from a multivalued LDAP attribute that are put in the environment.
+    Previous versions would only add the first 127 values, but there are
+    some cases where one may want to see more values than that.  This
+    opens the possibility of overflowing the allowed size of the
+    environment, but the maximum environment size is quite large on most
+    modern operating systems.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
