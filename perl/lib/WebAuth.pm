@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009, 2011, 2012
+# Copyright 2003, 2005, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,7 +40,7 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.06';
+    $VERSION = '3.07';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);

@@ -9,7 +9,7 @@
  * decode function to convert between those two representations.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,6 +104,7 @@ enum webauth_token_type {
     WA_TOKEN_LOGIN,
     WA_TOKEN_PROXY,
     WA_TOKEN_REQUEST,
+    WA_TOKEN_WEBKDC_FACTOR,
     WA_TOKEN_WEBKDC_PROXY,
     WA_TOKEN_WEBKDC_SERVICE,
     WA_TOKEN_ANY = 255
@@ -234,6 +235,22 @@ struct webauth_token_request {
 };
 
 /*
+ * WebKDC facter token, which adds additional factors that will be combined
+ * with valid login or webkdc-proxy tokens but which cannot, by themselves,
+ * authenticate the user.  This token is stored as a separate cookie in the
+ * user's browser, possibly with a longer lifespan than the single sign-on
+ * credentials, and may also be returned by the user information service for
+ * certain types of authentications.
+ */
+struct webauth_token_webkdc_factor {
+    const char *subject;                /* encode: s */
+    const char *initial_factors;        /* encode: ia, optional */
+    const char *session_factors;        /* encode: san, optional */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
+};
+
+/*
  * WebKDC proxy token, which stores user credentials or authentication
  * information for later use by the WebKDC.  This is the token that's stored
  * as a single sign-on cookie in the user's browser, allowing the user to
@@ -293,6 +310,7 @@ struct webauth_token {
         struct webauth_token_login login;
         struct webauth_token_proxy proxy;
         struct webauth_token_request request;
+        struct webauth_token_webkdc_factor webkdc_factor;
         struct webauth_token_webkdc_proxy webkdc_proxy;
         struct webauth_token_webkdc_service webkdc_service;
     } token;

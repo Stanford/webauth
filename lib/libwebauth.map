@@ -60,14 +60,18 @@ WEBAUTH_4_4 {
     global:
         webauth_keyring_decode;
         webauth_keyring_encode;
-        webauth_token_decode;
-        webauth_token_decode_raw;
         webauth_token_decrypt;
-        webauth_token_encode;
-        webauth_token_encode_raw;
         webauth_token_encrypt;
         webauth_was_token_cache_read;
         webauth_was_token_cache_write;
         webauth_webkdc_config;
         webauth_webkdc_login;
 } WEBAUTH_4_3;
+
+WEBAUTH_4_5 {
+    global:
+        webauth_token_decode;
+        webauth_token_decode_raw;
+        webauth_token_encode;
+        webauth_token_encode_raw;
+} WEBAUTH_4_4;

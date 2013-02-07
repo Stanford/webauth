@@ -17,8 +17,9 @@
  * braces to reduce Emacs's c-mode confusion when trying to understand XS
  * constructs.
  *
- * Written by Roland Schemers
- * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012
+ * Originally written by Roland Schemers
+ * Substantially rewritten by Russ Allbery <rra@stanford.edu>
+ * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -191,6 +192,16 @@ struct token_mapping token_mapping_request[] = {
     M(webauth_token_request, loa,             ULONG),
     M(webauth_token_request, command,         STRING),
     M(webauth_token_request, creation,        TIME),
+    { NULL, 0, 0 }
+};
+
+/* WebKDC factor tokens. */
+struct token_mapping token_mapping_webkdc_factor[] = {
+    M(webauth_token_webkdc_factor, subject,         STRING),
+    M(webauth_token_webkdc_factor, initial_factors, STRING),
+    M(webauth_token_webkdc_factor, session_factors, STRING),
+    M(webauth_token_webkdc_factor, creation,        TIME),
+    M(webauth_token_webkdc_factor, expiration,      TIME),
     { NULL, 0, 0 }
 };
 
@@ -630,6 +641,11 @@ token_decode(self, input, ring)
     case WA_TOKEN_REQUEST:
         sv_bless(object, gv_stashpv("WebAuth::Token::Request", GV_ADD));
         map_token_to_hash(token_mapping_request, &token->token.request, hash);
+        break;
+    case WA_TOKEN_WEBKDC_FACTOR:
+        sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCFactor", GV_ADD));
+        map_token_to_hash(token_mapping_webkdc_factor,
+                          &token->token.webkdc_factor, hash);
         break;
     case WA_TOKEN_WEBKDC_PROXY:
         sv_bless(object, gv_stashpv("WebAuth::Token::WebKDCProxy", GV_ADD));
@@ -1201,6 +1217,10 @@ encode(self, ring)
     } else if (sv_derived_from(self, "WebAuth::Token::Request")) {
         token.type = WA_TOKEN_REQUEST;
         map_hash_to_token(token_mapping_request, hash, &token.token.request);
+    } else if (sv_derived_from(self, "WebAuth::Token::WebKDCFactor")) {
+        token.type = WA_TOKEN_WEBKDC_FACTOR;
+        map_hash_to_token(token_mapping_webkdc_factor, hash,
+                          &token.token.webkdc_factor);
     } else if (sv_derived_from(self, "WebAuth::Token::WebKDCProxy")) {
         token.type = WA_TOKEN_WEBKDC_PROXY;
         map_hash_to_token(token_mapping_webkdc_proxy, hash,

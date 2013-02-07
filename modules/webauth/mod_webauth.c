@@ -2,7 +2,7 @@
  * Core WebAuth Apache module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -1246,6 +1246,7 @@ parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
     case WA_TOKEN_CRED:
     case WA_TOKEN_LOGIN:
     case WA_TOKEN_REQUEST:
+    case WA_TOKEN_WEBKDC_FACTOR:
     case WA_TOKEN_WEBKDC_PROXY:
     case WA_TOKEN_WEBKDC_SERVICE:
     case WA_TOKEN_ANY:

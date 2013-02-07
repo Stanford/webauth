@@ -2,7 +2,7 @@
  * Test token decoding.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -166,6 +166,7 @@ main(void)
     struct webauth_token_login *login;
     struct webauth_token_proxy *proxy;
     struct webauth_token_request *req;
+    struct webauth_token_webkdc_factor *wkfactor;
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
@@ -557,6 +558,46 @@ main(void)
                 "unknown requested token type foo in request token");
     check_error(ctx, WA_TOKEN_REQUEST, "wkproxy-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type webkdc-proxy, expected req");
+
+    /* Test decoding of several webkdc-factor tokens. */
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-both",
+                          ring, 5);
+    if (result != NULL) {
+        wkfactor = &result->token.webkdc_factor;
+        is_string("testuser", wkfactor->subject, "...subject");
+        is_string("d", wkfactor->initial_factors, "...initial factors");
+        is_string("x1,k", wkfactor->session_factors, "...session factors");
+        is_int(1308777900, wkfactor->creation, "...creation");
+        is_int(2147483600, wkfactor->expiration, "...expiration");
+    }
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-initial",
+                          ring, 5);
+    if (result != NULL) {
+        wkfactor = &result->token.webkdc_factor;
+        is_string("testuser", wkfactor->subject, "...subject");
+        is_string("d", wkfactor->initial_factors, "...initial factors");
+        is_string(NULL, wkfactor->session_factors, "...session factors");
+        is_int(1308777901, wkfactor->creation, "...creation");
+        is_int(2147483600, wkfactor->expiration, "...expiration");
+    }
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-session",
+                          ring, 5);
+    if (result != NULL) {
+        wkfactor = &result->token.webkdc_factor;
+        is_string("testuser", wkfactor->subject, "...subject");
+        is_string(NULL, wkfactor->initial_factors, "...initial factors");
+        is_string("d", wkfactor->session_factors, "...session factors");
+        is_int(1308777900, wkfactor->creation, "...creation");
+        is_int(2147483601, wkfactor->expiration, "...expiration");
+    }
+
+    /* Test decoding error cases for webkdc-proxy tokens. */
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-missing", ring,
+                WA_ERR_CORRUPT, "decoding subject");
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-none", ring,
+                WA_ERR_CORRUPT, "no factors present in webkdc_factor token");
 
     /* Test decoding of several webkdc-proxy tokens. */
     result = check_decode(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-ok", ring, 9);

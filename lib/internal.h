@@ -127,6 +127,7 @@ extern const struct wai_encoding wai_token_id_encoding[];
 extern const struct wai_encoding wai_token_login_encoding[];
 extern const struct wai_encoding wai_token_proxy_encoding[];
 extern const struct wai_encoding wai_token_request_encoding[];
+extern const struct wai_encoding wai_token_webkdc_factor_encoding[];
 extern const struct wai_encoding wai_token_webkdc_proxy_encoding[];
 extern const struct wai_encoding wai_token_webkdc_service_encoding[];
 extern const struct wai_encoding wai_was_token_cache_encoding[];

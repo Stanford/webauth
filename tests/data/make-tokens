@@ -23,7 +23,7 @@ use Getopt::Long qw(GetOptions);
 use File::Spec;
 use MIME::Base64 qw(decode_base64 encode_base64);
 use Readonly;
-use WebAuth 3.06;
+use WebAuth 3.07;
 use WebAuth::Keyring;
 use WebAuth::Token::App;
 use WebAuth::Token::Cred;
@@ -32,6 +32,7 @@ use WebAuth::Token::Id;
 use WebAuth::Token::Login;
 use WebAuth::Token::Proxy;
 use WebAuth::Token::Request;
+use WebAuth::Token::WebKDCFactor;
 use WebAuth::Token::WebKDCProxy;
 use WebAuth::Token::WebKDCService;
 

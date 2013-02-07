@@ -3,7 +3,7 @@
 # Test token decoding via the Perl API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -15,10 +15,10 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
-use Test::More tests => 210;
+use Test::More tests => 233;
 
 use MIME::Base64 qw(encode_base64);
-use WebAuth ();
+use WebAuth 3.07;
 BEGIN {
     use_ok ('WebAuth::Token');
     use_ok ('WebAuth::Token::App');
@@ -28,6 +28,7 @@ BEGIN {
     use_ok ('WebAuth::Token::Login');
     use_ok ('WebAuth::Token::Proxy');
     use_ok ('WebAuth::Token::Request');
+    use_ok ('WebAuth::Token::WebKDCFactor');
     use_ok ('WebAuth::Token::WebKDCProxy');
     use_ok ('WebAuth::Token::WebKDCService');
 }

@@ -9,7 +9,7 @@
  * against pre-constructed tokens, so this will hopefully be sufficient.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -344,6 +344,39 @@ check_request_token(struct webauth_context *ctx,
 
 
 /*
+ * Check a webkdc-factor token by encoding the struct and then decoding it,
+ * ensuring that all attributes in the decoded struct match the encoded one.
+ */
+static void
+check_webkdc_factor_token(struct webauth_context *ctx,
+                          struct webauth_token_webkdc_factor *wkfactor,
+                          const struct webauth_keyring *ring, const char *name)
+{
+    struct webauth_token data, *result;
+    struct webauth_token_webkdc_factor *wkfactor2;
+
+    data.type = WA_TOKEN_WEBKDC_FACTOR;
+    data.token.webkdc_factor = *wkfactor;
+    result = encode_decode(ctx, &data, ring, name, 10);
+    if (result == NULL)
+        return;
+    wkfactor2 = &result->token.webkdc_factor;
+    ok(wkfactor2 != NULL, "...and sets the struct pointer");
+    is_string(wkfactor->subject, wkfactor2->subject, "...subject");
+    is_string(wkfactor->initial_factors, wkfactor2->initial_factors,
+              "...initial factors");
+    is_string(wkfactor->session_factors, wkfactor2->session_factors,
+              "...session factors");
+    if (wkfactor->creation > 0)
+        is_int(wkfactor->creation, wkfactor2->creation, "...creation");
+    else
+        ok((wkfactor2->creation >= time(NULL) - 1)
+           && (wkfactor2->creation <= time(NULL) + 1), "...creation");
+    is_int(wkfactor->expiration, wkfactor2->expiration, "...expiration");
+}
+
+
+/*
  * Check a webkdc-proxy token by encoding the struct and then decoding it,
  * ensuring that all attributes in the decoded struct match the encoded one.
  */
@@ -454,6 +487,7 @@ CHECK_FUNCTION(id,             ID)
 CHECK_FUNCTION(login,          LOGIN)
 CHECK_FUNCTION(proxy,          PROXY)
 CHECK_FUNCTION(request,        REQUEST)
+CHECK_FUNCTION(webkdc_factor,  WEBKDC_FACTOR)
 CHECK_FUNCTION(webkdc_proxy,   WEBKDC_PROXY)
 CHECK_FUNCTION(webkdc_service, WEBKDC_SERVICE)
 
@@ -474,13 +508,14 @@ main(void)
     struct webauth_token_login login;
     struct webauth_token_proxy proxy;
     struct webauth_token_request req;
+    struct webauth_token_webkdc_factor wkfactor;
     struct webauth_token_webkdc_proxy wkproxy;
     struct webauth_token_webkdc_service service;
     struct webauth_token in;
     struct webauth_token *out;
     const char *result;
 
-    plan(435);
+    plan(474);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -781,6 +816,33 @@ main(void)
     req.command = "getTokensRequest";
     check_request_error(ctx, &req, ring, "with command and type",
                         "type not valid with command in request token");
+
+    /* Flesh out a webkdc-factor token, and then encode and decode it. */
+    wkfactor.subject = "testuser";
+    wkfactor.initial_factors = "d";
+    wkfactor.session_factors = "d";
+    wkfactor.creation = now;
+    wkfactor.expiration = now + 60;
+    check_webkdc_factor_token(ctx, &wkfactor, ring, "both");
+    wkfactor.session_factors = NULL;
+    wkfactor.creation = 0;
+    check_webkdc_factor_token(ctx, &wkfactor, ring, "initial");
+    wkfactor.initial_factors = NULL;
+    wkfactor.session_factors = "d";
+    check_webkdc_factor_token(ctx, &wkfactor, ring, "session");
+
+    /* Test for error cases for missing data. */
+    wkfactor.subject = NULL;
+    check_webkdc_factor_error(ctx, &wkfactor, ring, "without subject",
+                              "missing subject in webkdc_factor token");
+    wkfactor.subject = "testuser";
+    wkfactor.session_factors = NULL;
+    check_webkdc_factor_error(ctx, &wkfactor, ring, "without factors",
+                              "no factors present in webkdc_factor token");
+    wkfactor.initial_factors = "d";
+    wkfactor.expiration = 0;
+    check_webkdc_factor_error(ctx, &wkfactor, ring, "without expiration",
+                              "missing expiration in webkdc_factor token");
 
     /* Flesh out a webkdc-proxy token, and then encode and decode it. */
     wkproxy.subject = "testuser";

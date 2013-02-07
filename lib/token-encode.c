@@ -5,7 +5,7 @@
  * tokens representing the same information.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -39,6 +39,7 @@ static const char * const token_name[] = {
     /* WA_TOKEN_LOGIN          = */ "login",
     /* WA_TOKEN_PROXY          = */ "proxy",
     /* WA_TOKEN_REQUEST        = */ "req",
+    /* WA_TOKEN_WEBKDC_FACTOR  = */ "webkdc-factor",
     /* WA_TOKEN_WEBKDC_PROXY   = */ "webkdc-proxy",
     /* WA_TOKEN_WEBKDC_SERVICE = */ "webkdc-service"
 };
@@ -198,6 +199,10 @@ wai_token_encoding(struct webauth_context *ctx,
     case WA_TOKEN_REQUEST:
         *rules = wai_token_request_encoding;
         *data = &token->token.request;
+        break;
+    case WA_TOKEN_WEBKDC_FACTOR:
+        *rules = wai_token_webkdc_factor_encoding;
+        *data = &token->token.webkdc_factor;
         break;
     case WA_TOKEN_WEBKDC_PROXY:
         *rules = wai_token_webkdc_proxy_encoding;
@@ -457,6 +462,26 @@ check_request(struct webauth_context *ctx,
 
 
 /*
+ * Check a webkdc-factor token for valid data.
+ */
+static int
+check_webkdc_factor(struct webauth_context *ctx,
+                    const struct webauth_token_webkdc_factor *webkdc_factor,
+                    enum encode_mode mode)
+{
+    CHECK_STR(webkdc_factor, subject);
+    CHECK_EXP(webkdc_factor, expiration, mode);
+    if (webkdc_factor->initial_factors == NULL
+        && webkdc_factor->session_factors == NULL) {
+        wai_error_set(ctx, WA_ERR_CORRUPT,
+                      "no factors present in webkdc_factor token");
+        return WA_ERR_CORRUPT;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Check a webkdc-proxy token for valid data.
  */
 static int
@@ -519,6 +544,8 @@ check_token(struct webauth_context *ctx, const struct webauth_token *token,
         return check_proxy(ctx, &token->token.proxy, mode);
     case WA_TOKEN_REQUEST:
         return check_request(ctx, &token->token.request, mode);
+    case WA_TOKEN_WEBKDC_FACTOR:
+        return check_webkdc_factor(ctx, &token->token.webkdc_factor, mode);
     case WA_TOKEN_WEBKDC_PROXY:
         return check_webkdc_proxy(ctx, &token->token.webkdc_proxy, mode);
     case WA_TOKEN_WEBKDC_SERVICE:
