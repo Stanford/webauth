@@ -5,7 +5,7 @@
  * about a user from the user information service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -122,8 +122,9 @@ convert_number(struct webauth_context *ctx, const char *string,
 
 
 /*
- * Parse the factors section of a userinfo XML document.  Stores the results
- * in the provided webauth_user_info struct.  Returns a status code.
+ * Parse the factors or persistent-factors sections of a userinfo XML
+ * document.  Stores the results in the provided factors APR array.  Returns a
+ * status code.
  */
 static int UNUSED
 parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
@@ -266,6 +267,8 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
                 validate->success = (strcmp(content, "yes") == 0);
         } else if (strcmp(child->name, "factors") == 0)
             status = parse_factors(ctx, child, &validate->factors);
+        else if (strcmp(child->name, "persistent-factors") == 0)
+            status = parse_factors(ctx, child, &validate->persistent);
         else if (strcmp(child->name, "loa") == 0) {
             status = wai_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)

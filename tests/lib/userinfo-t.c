@@ -2,7 +2,7 @@
  * Test user information service retrieval.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -36,7 +36,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
-        ok_block(6, 0, "Validate failed");
+        ok_block(9, 0, "Validate failed");
     else {
         is_int(success, validate->success, "...validation correct");
         ok(validate->factors != NULL, "...factors is not NULL");
@@ -47,6 +47,16 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
             is_string("o", APR_ARRAY_IDX(validate->factors, 0, char *),
                       "...first is correct");
             is_string("o3", APR_ARRAY_IDX(validate->factors, 1, char *),
+                      "...second is correct");
+        }
+        if (validate->persistent == NULL)
+            ok_block(3, 0, "...persistent factors is not NULL");
+        else {
+            is_int(2, validate->persistent->nelts,
+                   "...two persistent factors");
+            is_string("d", APR_ARRAY_IDX(validate->persistent, 0, char *),
+                      "...first is correct");
+            is_string("x1", APR_ARRAY_IDX(validate->persistent, 1, char *),
                       "...second is correct");
         }
         is_int(3, validate->loa, "...LoA is correct");
@@ -78,7 +88,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(100);
+    plan(106);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");

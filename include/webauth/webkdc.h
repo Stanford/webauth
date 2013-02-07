@@ -6,7 +6,7 @@
  * in the shared library for ease of testing and custom development.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -187,6 +187,7 @@ struct webauth_user_info {
 struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+    WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factor codes. */
     unsigned long loa;                  /* Level of assurance. */
 };
 
