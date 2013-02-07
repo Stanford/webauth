@@ -279,11 +279,11 @@ CONFIGURATION
         m       Two separate authentication methods used (password and code)
         rm      User could have been prompted for multifactor but wasn't
 
-     Usually these are the factors that you'll want to require using the
-     WebAuth directives rather than the more specific authentication
-     factors.
+    Usually these are the factors that you'll want to require using the
+    WebAuth directives rather than the more specific authentication
+    factors.
 
-   WebAuthRequireInitialFactor
+   WebAuthRequireInitialFactor Directive
 
     When multifactor is configured with this directive, the user's
     authentication is good for the lifetime of their session, once they
@@ -323,7 +323,7 @@ CONFIGURATION
     using multifactor.  This is similar to WebAuthForceLogin, except more
     flexible.
 
-   WebAuthRequireLOA
+   WebAuthRequireLOA Directive
 
     Level of Assurance represents the confidence that WebAuth has in the
     identity of the user currently authenticating to it and can be used
