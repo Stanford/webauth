@@ -18,7 +18,6 @@ WEBAUTH_3 {
 WEBAUTH_4_1 {
     global:
         webauth_user_config;
-        webauth_user_info;
 } WEBAUTH_3;
 
 WEBAUTH_4_2 {
@@ -73,5 +72,6 @@ WEBAUTH_4_5 {
         webauth_token_decode_raw;
         webauth_token_encode;
         webauth_token_encode_raw;
+        webauth_user_info;
         webauth_user_validate;
 } WEBAUTH_4_4;
