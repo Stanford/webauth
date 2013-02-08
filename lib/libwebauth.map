@@ -63,7 +63,6 @@ WEBAUTH_4_4 {
         webauth_was_token_cache_read;
         webauth_was_token_cache_write;
         webauth_webkdc_config;
-        webauth_webkdc_login;
 } WEBAUTH_4_3;
 
 WEBAUTH_4_5 {
@@ -74,4 +73,5 @@ WEBAUTH_4_5 {
         webauth_token_encode_raw;
         webauth_user_info;
         webauth_user_validate;
+        webauth_webkdc_login;
 } WEBAUTH_4_4;

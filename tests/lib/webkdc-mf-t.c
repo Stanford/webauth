@@ -35,6 +35,7 @@ main(void)
     struct kerberos_config *krbconf;
     int status;
     char *keyring;
+    const char *factor_token;
     time_t now;
     struct webauth_context *ctx;
     struct webauth_webkdc_config config;
@@ -43,6 +44,7 @@ main(void)
     struct webauth_webkdc_login_response *response;
     struct webauth_token *token, login, wkproxy, wkproxy2;
     struct webauth_token_request req;
+    struct webauth_token_webkdc_factor *ft;
     struct webauth_token_webkdc_proxy *pt;
     struct webauth_token_webkdc_service service;
     struct webauth_webkdc_proxy_data *pd;
@@ -79,7 +81,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(202);
+    plan(213);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -169,6 +171,7 @@ main(void)
         is_int(1, token->token.id.loa, "...result LoA is right");
     }
     is_int(0, response->password_expires, "...no password expiration");
+    ok(response->factor_tokens == NULL, "...no factor tokens");
 
     /*
      * Attempt to access a restricted URL and try again.  This should fail
@@ -354,6 +357,7 @@ main(void)
         is_int(1, token->token.id.loa, "...result LoA is right");
     }
     is_int(0, response->password_expires, "...no password expiration");
+    ok(response->factor_tokens == NULL, "...no factor tokens");
 
     /*
      * Try with a user who has multifactor configuration and forced
@@ -463,6 +467,7 @@ main(void)
     is_string("o,o3,p,m", response->initial_factors, "...initial factors");
     is_string("c", response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
+    ok(response->factor_tokens == NULL, "...no factor tokens");
 
     /* Attempt an OTP authentication with an incorrect OTP code. */
     login.token.login.username = "full";
@@ -517,6 +522,24 @@ main(void)
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the shorter expiration");
+    }
+    ok(response->factor_tokens != NULL, "...and we have factor tokens");
+    if (response->factor_tokens == NULL)
+        ok_block(7, 0, "...no factor tokens");
+    else {
+        is_int(1, response->factor_tokens->nelts, "...one factor token");
+        factor_token = APR_ARRAY_IDX(response->factor_tokens, 0, const char *);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
+                                      factor_token, ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        ft = &token->token.webkdc_factor;
+        is_string("full", ft->subject, "...with correct subject");
+        is_string("d,x1", ft->initial_factors,
+                  "...and correct initial factors");
+        is_string(NULL, ft->session_factors, "...and no session factors");
+        ok(time(NULL) + 60 * 60 * 24 * 30 - ft->expiration < 2,
+           "...and expiration is within bounds");
+        ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
     }
 
     /*

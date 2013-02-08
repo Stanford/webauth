@@ -98,6 +98,7 @@ struct webauth_webkdc_login_response {
     WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
     WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
     WA_APR_ARRAY_HEADER_T *proxies; /* Array of webkdc_proxy_data structs. */
+    WA_APR_ARRAY_HEADER_T *factor_tokens;      /* Array of char * tokens. */
     const char *return_url;
     const char *requester;
     const char *subject;

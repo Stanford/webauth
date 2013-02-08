@@ -134,18 +134,21 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
 /*
  * Attempt an OTP authentication, which is a user authentication validatation
  * via the user information service.  On success, generate a new webkdc-proxy
- * token based on that information and store it in the token argument.  On
- * login failure, store the error code and message in the response.  On a more
- * fundamental failure, return an error code.
+ * token based on that information and store it in the token argument.  If the
+ * validate call returned persistent factors, also create a webkdc-factor
+ * token and store that in the wkfactor argument.  On login failure, store the
+ * error code and message in the response.  On a more fundamental failure,
+ * return an error code.
  */
 static int
 do_otp(struct webauth_context *ctx,
        struct webauth_webkdc_login_response *response,
        struct webauth_token_login *login, const char *ip,
-       struct webauth_token **wkproxy)
+       struct webauth_token **wkproxy, struct webauth_token **wkfactor)
 {
     int status;
     struct webauth_user_validate *validate;
+    struct webauth_token_webkdc_factor *ft;
     struct webauth_token_webkdc_proxy *pt;
 
     /* Do the remote validation call. */
@@ -185,6 +188,22 @@ do_otp(struct webauth_context *ctx,
         pt->expiration = time(NULL) + 60 * 60 * 10;
     else
         pt->expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+
+    /*
+     * If there are any persistent-factor tokens, create a webkdc-factor
+     * token and add it to the response.
+     *
+     * FIXME: Arbitrary magic 30 day expiration time.
+     */
+    if (validate->persistent != NULL && validate->persistent->nelts > 0) {
+        *wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+        (*wkfactor)->type = WA_TOKEN_WEBKDC_FACTOR;
+        ft = &(*wkfactor)->token.webkdc_factor;
+        ft->subject = login->username;
+        ft->initial_factors = apr_array_pstrcat(ctx->pool,
+                                                validate->persistent, ',');
+        ft->expiration = time(NULL) + 60 * 60 * 24 * 30;
+    }
     return WA_ERR_NONE;
 }
 
@@ -958,6 +977,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     apr_array_header_t *creds = NULL;
     struct webauth_token *cred, *newproxy;
     struct webauth_token **token;
+    struct webauth_token *wkfactor = NULL;
     struct webauth_token cancel;
     struct webauth_token_request *req;
     struct webauth_token_webkdc_proxy *wkproxy = NULL;
@@ -1038,7 +1058,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         token = apr_array_push(creds);
         if (cred->token.login.otp != NULL)
             status = do_otp(ctx, *response, &cred->token.login,
-                            request->remote_ip, token);
+                            request->remote_ip, token, &wkfactor);
         else
             status = do_login(ctx, *response, &cred->token.login, token);
         if (status != WA_ERR_NONE)
@@ -1272,6 +1292,21 @@ webauth_webkdc_login(struct webauth_context *ctx,
         status = WA_ERR_CORRUPT;
         wai_error_set(ctx, status, "unsupported requested token type %s",
                       req->type);
+    }
+
+    /*
+     * Set the factor tokens in the response if we have a webkdc-factor token
+     * to return.
+     */
+    if (wkfactor != NULL) {
+        const char **encoded;
+
+        (*response)->factor_tokens
+            = apr_array_make(ctx->pool, 1, sizeof(const char *));
+        encoded = apr_array_push((*response)->factor_tokens);
+        status = webauth_token_encode(ctx, wkfactor, ring, encoded);
+        if (status != WA_ERR_NONE)
+            return status;
     }
     return status;
 }
