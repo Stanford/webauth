@@ -211,6 +211,15 @@ User Information Service
       A flag that will be 0 if random multifactor was not requested and 1
       if it was requested.
 
+  url
+      The URL to which the user would go after successful authentication.
+      This is the return URL parameter from the WebAuth request token, so
+      it may not match the URL to which the user went to trigger the
+      authentication attempt.  This parameter will be ommitted if the
+      WebKDC has no URL information (usually not the case).  If there is
+      no URL information but factors (the next parameter) are present, it
+      will be the empty string.
+
   factors
       A comma-separated list of factor codes that the user has already
       established with the WebLogin server at the time of the call.  This
