@@ -2,7 +2,7 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -1814,6 +1814,19 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                       data->token, "</proxyToken>", NULL);
         }
         ap_rvputs(rc->r, "</proxyTokens>", NULL);
+    }
+
+    if (response->factor_tokens != NULL) {
+        const char *factor_token;
+
+        ap_rvputs(rc->r, "<factorTokens>", NULL);
+        for (i = 0; i < response->factor_tokens->nelts; i++) {
+            factor_token = APR_ARRAY_IDX(response->factor_tokens, i,
+                                         const char *);
+            ap_rvputs(rc->r, "<factorToken>", factor_token, "</factorToken>",
+                      NULL);
+        }
+        ap_rvputs(rc->r, "</factorTokens>", NULL);
     }
 
     /* put out return-url */
