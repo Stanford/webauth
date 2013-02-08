@@ -327,7 +327,6 @@ main(void)
      * succeed and give us an id token.
      */
     wkproxy.token.webkdc_proxy.initial_factors = "p,d";
-    wkproxy.token.webkdc_proxy.loa = 3;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("error status: %s", webauth_error_message(ctx, status));

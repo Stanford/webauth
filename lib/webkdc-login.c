@@ -432,7 +432,15 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     if (!created && best->creation >= now - ctx->webkdc->login_time_limit)
         best->session_factors = best->initial_factors;
 
-    *result = genbest;
+    /*
+     * Always create a new token, since we may modify it later (to cap the LoA
+     * based on user information service results, for example).
+     */
+    if (created)
+        *result = genbest;
+    else
+        *result = apr_pmemdup(ctx->pool, genbest,
+                              sizeof(struct webauth_token));
     return WA_ERR_NONE;
 }
 
