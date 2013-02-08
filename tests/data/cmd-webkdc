@@ -1,12 +1,13 @@
 #!/bin/sh
 #
-# Fake remctl backend for WebKDC user information queries.  Just returns a
-# stock XML file from the data/xml directory based on the command given.
-# Assumes that $SOURCE is set in the environment to the root of the tests
-# directory in the source.
+# Fake remctl backend for WebKDC user information queries.  Usually just
+# returns a stock XML file from the data/xml directory based on the command
+# given, but also embeds various logic to manipulate that file based on
+# parameters passed by the test suite.  Assumes that $SOURCE is set in the
+# environment to the root of the tests directory in the source.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2011, 2012
+# Copyright 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -53,12 +54,31 @@ fi
 # See if the file exists, and if so, return it.
 if [ -f "data/xml/$dir/$2.xml" ] ; then
     if [ "$1" = "webkdc-userinfo" ] ; then
+        # Return multifactor-required for user random for random multifactor.
         if [ "$5" = "1" ] && [ "$2" = "random" ] ; then
             cat "data/xml/$dir/$2.xml" \
                 | sed 's%<max%<multifactor-required /><max%'
             exit $?
+
+        # Return the restricted data if the URL is a restricted URL.
         elif [ "$6" = "https://example.com/restrict/" ] ; then
             exec cat "data/xml/$dir/restrict.xml"
+
+        # Return multifactor required for user factor if there's no device
+        # factor.
+        elif [ "$2" = "factor" ] ; then
+            case "$7" in
+                *d*)
+                    exec cat "data/xml/$dir/$2.xml"
+                    ;;
+                *)
+                    cat "data/xml/$dir/$2.xml" \
+                        | sed 's%<max%<multifactor-required /><max%'
+                    exit $?
+                    ;;
+            esac
+
+        # Otherwise, just return the file verbatim.
         else
             exec cat "data/xml/$dir/$2.xml"
         fi

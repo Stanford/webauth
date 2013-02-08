@@ -88,7 +88,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(106);
+    plan(130);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -97,7 +97,7 @@ main(void)
      * Set up the user information service configuration, testing error cases.
      */
     memset(&config, 0, sizeof(config));
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
     is_int(WA_ERR_INVALID, status, "Info without configuration");
     is_string("invalid argument to function (user information service not"
               " configured)", webauth_error_message(ctx, status),
@@ -125,7 +125,7 @@ main(void)
     config.principal = krbconf->principal;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with only host and protocol");
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, &info);
+    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
     is_int(WA_ERR_INVALID, status, "remctl info call without command");
     is_string("invalid argument to function (no remctl command specified)",
               webauth_error_message(ctx, status), "...with correct error");
@@ -135,7 +135,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Complete config");
 
     /* Do a query for a full user. */
-    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, &info);
+    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, NULL, &info);
     is_int(WA_ERR_NONE, status, "Metadata for full succeeded");
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
@@ -180,7 +180,7 @@ main(void)
     }
 
     /* Do a query for a minimal user. */
-    status = webauth_user_info(ctx, "mini", NULL, 0, url, &info);
+    status = webauth_user_info(ctx, "mini", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
@@ -195,7 +195,7 @@ main(void)
     }
 
     /* The same query, but with random multifactor. */
-    status = webauth_user_info(ctx, "mini", NULL, 1, url, &info);
+    status = webauth_user_info(ctx, "mini", NULL, 1, url, NULL, &info);
     is_int(WA_ERR_NONE, status, "Metadata for mini w/random succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
@@ -206,6 +206,60 @@ main(void)
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* Query information for factor, without any authentication factors. */
+    status = webauth_user_info(ctx, "factor", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
+    ok(info != NULL, "...factor is not NULL");
+    if (info == NULL)
+        ok_block(10, 0, "Metadata failed");
+    else {
+        is_int(1, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(1, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        if (info->factors == NULL)
+            ok_block(5, 0, "...factors is not NULL");
+        else {
+            is_int(4, info->factors->nelts, "...four factors");
+            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
+                      "...first is correct");
+            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
+                      "...second is correct");
+            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
+                      "...third is correct");
+            is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
+                      "...fourth is correct");
+        }
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* Query information for factor with a device factor. */
+    status = webauth_user_info(ctx, "factor", NULL, 0, url, "d", &info);
+    is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
+    ok(info != NULL, "...factor is not NULL");
+    if (info == NULL)
+        ok_block(10, 0, "Metadata failed");
+    else {
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(1, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        if (info->factors == NULL)
+            ok_block(5, 0, "...factors is not NULL");
+        else {
+            is_int(4, info->factors->nelts, "...four factors");
+            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
+                      "...first is correct");
+            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
+                      "...second is correct");
+            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
+                      "...third is correct");
+            is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
+                      "...fourth is correct");
+        }
         ok(info->logins == NULL, "...logins is NULL");
     }
 
@@ -225,7 +279,7 @@ main(void)
     config.timeout = 1;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout");
-    status = webauth_user_info(ctx, "delay", NULL, 0, url, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Metadata for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
@@ -242,7 +296,7 @@ main(void)
     config.ignore_failure = true;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
-    status = webauth_user_info(ctx, "delay", NULL, 0, url, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(status, WA_ERR_NONE, "Metadata for delay now succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -257,7 +311,7 @@ main(void)
 
     /* Try the query again with ignore_failure and random multifactor. */
     is_int(WA_ERR_NONE, status, "Config with timeout, ignore, random");
-    status = webauth_user_info(ctx, "delay", NULL, 1, url, &info);
+    status = webauth_user_info(ctx, "delay", NULL, 1, url, NULL, &info);
     is_int(status, WA_ERR_NONE, "Metadata for delay w/random succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -282,7 +336,8 @@ main(void)
     config.timeout = 0;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config back to normal");
-    status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, &info);
+    status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL,
+                               &info);
     is_int(status, WA_ERR_NONE, "Metadata for restricted URL succeeds");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");

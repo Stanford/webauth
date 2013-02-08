@@ -5,7 +5,7 @@
  * service.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -79,7 +79,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(178);
+    plan(202);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -287,12 +287,84 @@ main(void)
               "...which is the password factor");
 
     /*
+     * Try with the factor user, which should require multifactor since we
+     * haven't included a d factor in our initial authentication factors.
+     */
+    wkproxy.token.webkdc_proxy.subject = "factor";
+    wkproxy.token.webkdc_proxy.data = "factor";
+    wkproxy.token.webkdc_proxy.data_len = strlen("factor");
+    req.initial_factors = NULL;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Auth as factor user returns success");
+    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
+           "...with the right error");
+    is_string("multifactor login required", response->login_message,
+              "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+    is_int(1, response->factors_wanted->nelts,
+           "...and one factor is wanted");
+    is_string("m", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
+              "...which is the multifactor factor");
+    is_int(4, response->factors_configured->nelts,
+           "...and four factors are configured");
+    is_string("p",
+              APR_ARRAY_IDX(response->factors_configured, 0, const char *),
+              "...which is the password factor");
+    is_string("m",
+              APR_ARRAY_IDX(response->factors_configured, 1, const char *),
+              "...the generic multifactor factor");
+    is_string("o",
+              APR_ARRAY_IDX(response->factors_configured, 2, const char *),
+              "...the OTP factor");
+    is_string("o2",
+              APR_ARRAY_IDX(response->factors_configured, 3, const char *),
+              "...and the OTP-2 factor");
+
+    /*
+     * Add a d factor to our webkdc-proxy token and try again.  This should
+     * succeed and give us an id token.
+     */
+    wkproxy.token.webkdc_proxy.initial_factors = "p,d";
+    wkproxy.token.webkdc_proxy.loa = 3;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Auth as factor with device factor succeeds");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    is_string(NULL, response->user_message, "...and no user message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(5, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("factor", token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("p,d", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_string("p,d", token->token.proxy.session_factors,
+                  "...result session factors is right");
+        is_int(1, token->token.id.loa, "...result LoA is right");
+    }
+    is_int(0, response->password_expires, "...no password expiration");
+
+    /*
      * Try with a user who has multifactor configuration and forced
      * multifactor.
      */
     wkproxy.token.webkdc_proxy.subject = "full";
     wkproxy.token.webkdc_proxy.data = "full";
     wkproxy.token.webkdc_proxy.data_len = strlen("full");
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    req.initial_factors = "o";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor with config returns success");
     is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,

@@ -221,10 +221,10 @@ User Information Service
       will be the empty string.
 
   factors
-      A comma-separated list of factor codes that the user has already
-      established with the WebLogin server at the time of the call.  This
-      parameter was added in WebAuth 4.5.0; older versions of the WebKDC
-      will not send it.
+      A comma-separated list of initial authentication factor codes that
+      the user has already established with the WebLogin server at the
+      time of the call.  This parameter was added in WebAuth 4.5.0; older
+      versions of the WebKDC will not send it.
 
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal error and the user's authentication will be aborted.  The

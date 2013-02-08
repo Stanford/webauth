@@ -206,12 +206,14 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
  * string) is also provided.  If NULL, it defaults to 127.0.0.1.  The
- * timestamp of the query is assumed to be the current time.  The flag
- * indicates whether a site requested random multifactor and asks the user
- * information service to calculate whether multifactor is forced based on
- * that random multifactor chance.  Finally, the return URL should be
- * provided, which may be used to make decisions in the user information
- * service.
+ * timestamp of the query is assumed to be the current time.  The random_mf
+ * flag indicates whether a site requested random multifactor and asks the
+ * user information service to calculate whether multifactor is forced based
+ * on that random multifactor chance.  The return URL should be provided,
+ * which may be used to make decisions in the user information service.
+ * Finally, the factors is a comma-separated list of authentication factors
+ * that the user has already established in some way, which may be NULL if no
+ * factors have yet been established.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -222,8 +224,8 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
  * error code and sets the info parameter to NULL.
  */
 int webauth_user_info(struct webauth_context *, const char *user,
-                      const char *ip, int, const char *url,
-                      struct webauth_user_info **)
+                      const char *ip, int random_mf, const char *url,
+                      const char *factors, struct webauth_user_info **)
     __attribute__((__nonnull__(1, 2, 5)));
 
 /*
