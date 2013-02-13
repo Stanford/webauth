@@ -415,6 +415,33 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
 }
 
 
+static enum mwk_status
+parse_webkdc_factor_token(MWK_REQ_CTXT *rc, const char *token,
+                          struct webauth_token **data)
+{
+    static const char *mwk_func = "parse_webkdc_factor_token";
+    int status;
+
+    if (rc->sconf->ring == NULL)
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
+                                 mwk_func, true);
+    status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_FACTOR, token,
+                                  rc->sconf->ring, data);
+
+    /*
+     * Log any error, but do not report a general error if we can't parse a
+     * persistent factor token.  These provide supplemental information, but
+     * we shouldn't fail the authentication if they're invalid.
+     */
+    if (status != WA_ERR_NONE) {
+        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
+                              "webauth_token_decode", NULL);
+        return MWK_ERROR;
+    }
+    return MWK_OK;
+}
+
+
 /*
  */
 static enum mwk_status
@@ -1516,6 +1543,10 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
      * FIXME: We're calling functions that get generic tokens and collapse
      * them into the appropriate type, and then allocating a generic token and
      * copying it back.  This is silly.  Restructure all this code.
+     *
+     * FIXME: Some errors with webkdc-proxy tokens should be fatal and some
+     * shouldn't be.  Right now, we ignore all errors other than reporting
+     * them (but still set the error message).
      */
     for (child = e->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "proxyToken") == 0) {
@@ -1541,6 +1572,13 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             token->type = WA_TOKEN_LOGIN;
             if (!parse_login_token(rc, data, &token->token.login))
                 return MWK_ERROR;
+            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+        } else if (strcmp(child->name, "factorToken") == 0) {
+            data = get_elem_text(rc, child, mwk_func);
+            if (data == NULL)
+                return MWK_ERROR;
+            if (!parse_webkdc_factor_token(rc, data, &token))
+                continue;
             APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);

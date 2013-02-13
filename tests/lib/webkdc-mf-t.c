@@ -440,7 +440,7 @@ main(void)
                   "...result auth type is right");
         is_string("o,o3,p,m", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("c", token->token.proxy.session_factors,
+        is_string("o,o3,c", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 30 * 60, token->token.id.expiration,
@@ -465,7 +465,7 @@ main(void)
         is_int(now - 10 * 60, pt->creation, "...and oldest creation");
     }
     is_string("o,o3,p,m", response->initial_factors, "...initial factors");
-    is_string("c", response->session_factors, "...session factors");
+    is_string("o,o3,c", response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
     ok(response->factor_tokens == NULL, "...no factor tokens");
 
@@ -515,7 +515,7 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("o,o3,p,m", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m,d,x1", token->token.proxy.initial_factors,
                   "...result initial factors is right");
         is_string("o,o3,p,m", token->token.proxy.session_factors,
                   "...result session factors is right");
