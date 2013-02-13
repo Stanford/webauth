@@ -289,17 +289,33 @@ sub print_headers {
         while (($name, $value) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
             my $cookie;
-            if ($name =~ /^webauth_wpt/ && $value eq '') {
+
+            # Expire the cookies with no values.
+            if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
+                && $value eq '') {
+
                 $cookie = $q->cookie (-name    => $name,
                                       -value   => $EXPIRED_COOKIE,
                                       -secure  => $secure,
                                       -expires => '-1d');
+
+            # Pass along the remuse cookie and mark it as seen.
             } elsif ($name eq $remuser_name) {
                 $cookie = $q->cookie (-name    => $name,
                                       -value   => $value,
                                       -secure  => $secure,
                                       -expires => $remuser_lifetime);
                 $saw_remuser = 1;
+
+            # Pass along a factor token with set lifetime.
+            } elsif ($name eq 'webauth_wft') {
+                my $lifetime = $WebKDC::Config:FACTOR_LIFETIME;
+                $cookie = $q->cookie (-name    => $name,
+                                      -value   => $value,
+                                      -secure  => $secure,
+                                      -expires => $lifetime);
+
+            # Pass along all other cookies.
             } else {
                 $cookie = $q->cookie (-name     => $name,
                                       -value    => $value,
@@ -1478,16 +1494,20 @@ sub setup_kdc_request {
     # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)
     # and stuff them into the WebKDC request.
     my $wpt_cookie;
-    for (keys %cart) {
-        next unless /^webauth_wpt/;
-        next if not defined $q->cookie ($_);
-        next if $q->cookie ($_) eq $EXPIRED_COOKIE;
-        my $type = $_;
-        $type =~ s/^(webauth_wpt_)//;
-        $self->{request}->proxy_cookie ($type, $q->cookie ($_), 'c');
-        print STDERR "found a cookie of type $type\n"
-            if $self->param ('debug');
-        $wpt_cookie = 1;
+    for my $type (keys %cart) {
+        next if not defined $q->cookie ($type);
+        next if $q->cookie ($type) eq $EXPIRED_COOKIE;
+
+        if ($type =~ /^webauth_wpt/) {
+            my ($short_type) = ($type =~ /^webauth_wpt_(.+)/);
+            $self->{request}->proxy_cookie ($short_type, $q->cookie ($type),
+                                            'c');
+            print STDERR "found a cookie of type $type\n"
+                if $self->param ('debug');
+            $wpt_cookie = 1;
+        } elsif ($type eq 'webauth_wft') {
+            $self->{request}->factor_token ($q->cookie ($type));
+        }
     }
     $self->param ('wpt_cookie', $wpt_cookie);
 

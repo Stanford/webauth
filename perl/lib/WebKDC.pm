@@ -203,6 +203,7 @@ sub request_token_request {
     my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
     my $request_token = $wreq->request_token;
     my $service_token = $wreq->service_token;
+    my $factor_token = $wreq->factor_token;
     my $proxy_cookies = $wreq->proxy_cookies_rich;
 
     my $webkdc_doc = WebKDC::XmlDoc->new;
@@ -238,6 +239,9 @@ sub request_token_request {
                                 {'type' => $type, 'source' => $source},
                                 $token)->end;
         }
+    }
+    if (defined $factor_token) {
+        $webkdc_doc->start ('factorToken', undef, $factor_token)->end;
     }
     $webkdc_doc->end('subjectCredential');
 
@@ -312,11 +316,12 @@ sub request_token_request {
         my $app_state = get_child_value ($root, 'appState', 1);
         my $login_canceled_token
             = get_child_value ($root, 'loginCanceledToken', 1);
-        my $proxy_tokens = $root->find_child ('proxyTokens');
         my $error_code = get_child_value ($root, 'loginErrorCode', 1);
         my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
         my $user_message = get_child_value ($root, 'userMessage', 1);
 
+        # Expand each of the proxy tokens, which contain a type and value.
+        my $proxy_tokens = $root->find_child ('proxyTokens');
         if (defined $proxy_tokens) {
             for my $token (@{ $proxy_tokens->children }) {
                 my $type = $token->attr ('type');
@@ -326,6 +331,17 @@ sub request_token_request {
             }
         }
 
+        # Expand the single potential factor token, adding it to the other
+        # cookies.
+        my $factor_tokens = $root->find_child ('factorTokens');
+        if (defined $factor_tokens) {
+            my ($token) = @{ $factor_tokens->children };
+            my $cvalue  = $token->content || '';
+            $wresp->proxy_cookie ('webauth_wft', $cvalue);
+        }
+
+        # Expand any multifactor factors required by the WAS or available
+        # for the user that would satisfy a requirement.
         my $multifactor = $root->find_child ('multifactorRequired');
         if (defined $multifactor) {
             for my $mf_setting (@{$multifactor->children}) {
@@ -349,6 +365,7 @@ sub request_token_request {
             $wresp->permitted_authz (@authz);
         }
 
+        # Expand the entries of a possible suspicious login history.
         my $login_history = $root->find_child ('loginHistory');
         if (defined $login_history) {
             for my $login (@{ $login_history->children }) {

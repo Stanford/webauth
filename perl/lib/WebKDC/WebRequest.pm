@@ -63,6 +63,7 @@ sub remote_ip_port { my $r = shift; $r->_attr ('remote_ip_port', @_) }
 sub remote_user    { my $r = shift; $r->_attr ('remote_user',    @_) }
 sub request_token  { my $r = shift; $r->_attr ('request_token',  @_) }
 sub service_token  { my $r = shift; $r->_attr ('service_token',  @_) }
+sub factor_token   { my $r = shift; $r->_attr ('factor_token',   @_) }
 sub user           { my $r = shift; $r->_attr ('user',           @_) }
 
 # Set or retrieve a proxy cookie of a particular type.  If given two
@@ -216,6 +217,12 @@ WebKDC::WebRequest.
 Retrieve or set the service token provided by the WebAuth application
 server, which contains the key used to decrypt the request token.  This
 must be set to create a valid WebKDC::WebRequest.
+
+=item factor_token ([TOKEN])
+
+Retrieve or set the factor token, which contains a token given to the
+user's device in an earlier login to denote a successful multifactor
+login with that device.
 
 =item user ([USER])
 

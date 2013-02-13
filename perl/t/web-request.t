@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 41;
+use Test::More tests => 44;
 
 BEGIN {
     use_ok ('WebKDC::WebRequest');
@@ -20,7 +20,7 @@ BEGIN {
 my $req = WebKDC::WebRequest->new;
 for my $method (qw(authz_subject local_ip_addr local_ip_port remote_ip_addr
                    remote_ip_port otp pass remote_user request_token
-                   service_token user)) {
+                   service_token factor_token user)) {
     is ($req->$method, undef, "$method starts undef");
     is ($req->$method ('foo'), 'foo', '... and can be set to foo');
     is ($req->$method, 'foo', '... and is now set to foo');
