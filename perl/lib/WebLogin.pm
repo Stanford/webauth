@@ -309,7 +309,7 @@ sub print_headers {
 
             # Pass along a factor token with set lifetime.
             } elsif ($name eq 'webauth_wft') {
-                my $lifetime = $WebKDC::Config:FACTOR_LIFETIME;
+                my $lifetime = $WebKDC::Config::FACTOR_LIFETIME;
                 $cookie = $q->cookie (-name    => $name,
                                       -value   => $value,
                                       -secure  => $secure,
