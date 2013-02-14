@@ -1499,7 +1499,8 @@ sub setup_kdc_request {
         next if $q->cookie ($type) eq $EXPIRED_COOKIE;
 
         if ($type =~ /^webauth_wpt/) {
-            my ($short_type) = ($type =~ /^webauth_wpt_(.+)/);
+            my $short_type = $type;
+            $short_type=~ s/^webauth_wpt_//;
             $self->{request}->proxy_cookie ($short_type, $q->cookie ($type),
                                             'c');
             print STDERR "found a cookie of type $type\n"
