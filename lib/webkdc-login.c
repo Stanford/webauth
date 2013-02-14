@@ -150,6 +150,7 @@ do_otp(struct webauth_context *ctx,
     struct webauth_user_validate *validate;
     struct webauth_token_webkdc_factor *ft;
     struct webauth_token_webkdc_proxy *pt;
+    time_t max_expiration;
 
     /* Do the remote validation call. */
     if (ctx->user == NULL) {
@@ -169,10 +170,15 @@ do_otp(struct webauth_context *ctx,
     }
 
     /*
-     * Create the resulting webkdc-proxy token.
+     * Adjust for old versions of the user information service that don't
+     * return an expiration time for factors.
      *
      * FIXME: Arbitrary magic 10 hour expiration time.
      */
+    if (validate->factors_expiration == 0)
+        validate->factors_expiration = time(NULL) + 60 * 60 * 10;
+
+    /* Create the resulting webkdc-proxy token. */
     *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
     (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
     pt = &(*wkproxy)->token.webkdc_proxy;
@@ -184,16 +190,16 @@ do_otp(struct webauth_context *ctx,
     pt->initial_factors = apr_array_pstrcat(ctx->pool, validate->factors, ',');
     pt->session_factors = pt->initial_factors;
     pt->loa = validate->loa;
-    if (ctx->webkdc->proxy_lifetime == 0)
-        pt->expiration = time(NULL) + 60 * 60 * 10;
-    else
-        pt->expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+    pt->expiration = validate->factors_expiration;
+    if (ctx->webkdc->proxy_lifetime > 0) {
+        max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+        if (pt->expiration > max_expiration)
+            pt->expiration = max_expiration;
+    }
 
     /*
      * If there are any persistent-factor tokens, create a webkdc-factor
      * token and add it to the response.
-     *
-     * FIXME: Arbitrary magic 30 day expiration time.
      */
     if (validate->persistent != NULL && validate->persistent->nelts > 0) {
         *wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
@@ -202,7 +208,7 @@ do_otp(struct webauth_context *ctx,
         ft->subject = login->username;
         ft->initial_factors = apr_array_pstrcat(ctx->pool,
                                                 validate->persistent, ',');
-        ft->expiration = time(NULL) + 60 * 60 * 24 * 30;
+        ft->expiration = validate->persistent_expiration;
     }
     return WA_ERR_NONE;
 }

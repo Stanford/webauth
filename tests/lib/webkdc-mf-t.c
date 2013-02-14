@@ -537,8 +537,7 @@ main(void)
         is_string("d,x1", ft->initial_factors,
                   "...and correct initial factors");
         is_string(NULL, ft->session_factors, "...and no session factors");
-        ok(time(NULL) + 60 * 60 * 24 * 30 - ft->expiration < 2,
-           "...and expiration is within bounds");
+        is_int(1893484802, ft->expiration, "...and expiration is correct");
         ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
     }
 
