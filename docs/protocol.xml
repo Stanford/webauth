@@ -1991,6 +1991,19 @@
           tokens older than a particular date, which may be a useful
           operation if a particular user experienced a security
           compromise.</t>
+
+          <t>webkdc-factor tokens will contribute their factors to any
+          successful authentication until they have expired, even if the
+          credentials that result from that authentication will persist
+          beyond the expiration time of the webkdc-factor token.  For
+          example, one can use a webkdc-factor token that expires in one
+          minute as part of an authentication that results in a
+          webkdc-proxy token that expires in ten hours, and the
+          webkdc-factor token still contributes its factors.  The
+          expiration time should therefore be thought of as the time at
+          which the webkdc-factor token stops contributing factors to new
+          authentications, not the time at which those authentication
+          factors fully expire.</t>
         </section>
 
         <section anchor='tokenrequest' title='request Token Encoding'>
@@ -2519,6 +2532,12 @@
           &lt;factorToken> element to the &lt;requestTokenRequest> API,
           &lt;factorTokens> element to the &lt;requestTokenResponse> API,
           and the d factor.</t>
+
+          <t hangText='3.4.1 (2013-02-13, rra)'>
+          <vspace blankLines='0'/>Clarify that the webkdc-factor
+          expiration time reflects when it stops contributing factors to
+          new authentications, not when those factors go away
+          entirely.</t>
         </list>
       </t>
     </section>

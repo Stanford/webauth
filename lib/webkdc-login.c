@@ -480,15 +480,14 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
 
     /*
      * Iterate through the webkdc-factor tokens, find ones that match the
-     * webkdc-proxy subject and will last at least as long as the new
-     * webkdc-proxy token will last, and add in their factors.
+     * webkdc-proxy subject and are not expired, and add in their factors.
      */
     for (i = 0; factor_tokens != NULL && i < factor_tokens->nelts; i++) {
         token = APR_ARRAY_IDX(factor_tokens, i, struct webauth_token *);
         wkfactor = &token->token.webkdc_factor;
         if (strcmp(wkfactor->subject, best->subject) != 0)
             continue;
-        if (wkfactor->expiration < best->expiration)
+        if (wkfactor->expiration <= now)
             continue;
         status = webauth_factors_parse(ctx, wkfactor->initial_factors,
                                        &factors);
