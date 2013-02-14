@@ -36,7 +36,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
-        ok_block(9, 0, "Validate failed");
+        ok_block(11, 0, "Validate failed");
     else {
         is_int(success, validate->success, "...validation correct");
         ok(validate->factors != NULL, "...factors is not NULL");
@@ -49,6 +49,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
             is_string("o3", APR_ARRAY_IDX(validate->factors, 1, char *),
                       "...second is correct");
         }
+        is_int(1893484800, validate->factors_expiration,
+               "...factors expiration");
         if (validate->persistent == NULL)
             ok_block(3, 0, "...persistent factors is not NULL");
         else {
@@ -59,6 +61,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
             is_string("x1", APR_ARRAY_IDX(validate->persistent, 1, char *),
                       "...second is correct");
         }
+        is_int(1893484802, validate->persistent_expiration,
+               "...persistent expiration");
         is_int(3, validate->loa, "...LoA is correct");
     }
 }
@@ -88,7 +92,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(130);
+    plan(134);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");

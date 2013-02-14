@@ -352,10 +352,12 @@ OTP Validation
       <authdata user="{username}">
         <success>yes|no</success>
         <factors>
+          <expiration>{expiration}</expiration>
           <factor>o</factor>
           <factor>o3</factor>
         </factors>
         <persistent-factors>
+          <expiration>{expiration}</expiration>
           <factor>d</factor>
         <persistent-factors>
         <loa>{loa-value}</loa>
@@ -370,7 +372,10 @@ OTP Validation
   all of the authentication factors that this successful authentication
   represents.  Normally, this will include "o" (some OTP) along with a
   specific numbered OTP factor if there are multiple types of OTP
-  available.
+  available.  {expiration} indicates when (in seconds since UNIX epoch)
+  this authentication should expire.  If you have no site-specific reason
+  to choose otherwise, ten hours from the current time is a reasonable
+  default.
 
   If this authentication should result in setting a persistent factor
   cookie in the authenticating browser, the factors that should go into
@@ -378,7 +383,9 @@ OTP Validation
   <persistent-factors> element.  Otherwise, that element should be
   omitted.  (These will be set as persistent initial authentication
   factors; setting persistent session authentication factors is not
-  currently supported.)
+  currently supported.)  Here similarly the {expiration} value indicates
+  the time (in seconds since UNIX epoch) when the persistent factors
+  should expire.
 
   If level of assurance is being used, the optional <loa> attribute should
   return the level of assurance this authentication indicates.  This

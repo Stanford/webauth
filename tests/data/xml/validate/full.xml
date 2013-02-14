@@ -1,10 +1,12 @@
 <authdata user="full">
   <success>yes</success>
   <factors>
+    <expiration>1893484800</expiration>
     <factor>o</factor>
     <factor>o3</factor>
   </factors>
   <persistent-factors>
+    <expiration>1893484802</expiration>
     <factor>d</factor>
     <factor>x1</factor>
   </persistent-factors>

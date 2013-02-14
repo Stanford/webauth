@@ -188,7 +188,9 @@ struct webauth_user_info {
 struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+    time_t factors_expiration;          /* Expiration time of factors. */
     WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factor codes. */
+    time_t persistent_expiration;       /* Expiration time of persistent. */
     unsigned long loa;                  /* Level of assurance. */
 };
 
