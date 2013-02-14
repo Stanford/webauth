@@ -1371,12 +1371,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * to return.
      */
     if (wkfactor != NULL) {
-        const char **encoded;
+        struct webauth_webkdc_factor_data *factor;
+        const size_t data_size = sizeof(struct webauth_webkdc_factor_data);
 
-        (*response)->factor_tokens
-            = apr_array_make(ctx->pool, 1, sizeof(const char *));
-        encoded = apr_array_push((*response)->factor_tokens);
-        status = webauth_token_encode(ctx, wkfactor, ring, encoded);
+        (*response)->factor_tokens = apr_array_make(ctx->pool, 1, data_size);
+        factor = apr_array_push((*response)->factor_tokens);
+        factor->expiration = wkfactor->token.webkdc_factor.expiration;
+        status = webauth_token_encode(ctx, wkfactor, ring, &factor->token);
         if (status != WA_ERR_NONE)
             return status;
     }

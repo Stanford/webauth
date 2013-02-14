@@ -1193,15 +1193,16 @@
            or site policy, omitting "m" -->
     </multifactorRequired>
 
-    <!-- any updated/new proxy tokens created, only passed back
-         if <loginToken> was present in <subjectCredential> -->
+    <!-- any updated/new proxy tokens created -->
     <proxyTokens>
       <proxyToken type="krb5|...">{base64-proxy-token}</proxyToken>
     </proxyTokens>
 
     <!-- currently, only one factor token is permitted -->
     <factorTokens>
-      <factorToken>{base64-webkdc-factor-token}</factorToken>
+      <factorToken expires="{expiration-time}">
+        {base64-factor-token}
+      </factorToken>
     </factorTokens>
 
     <!-- the url to return to the user to -->
@@ -2534,10 +2535,12 @@
           and the d factor.</t>
 
           <t hangText='3.4.1 (2013-02-13, rra)'>
-          <vspace blankLines='0'/>Clarify that the webkdc-factor
-          expiration time reflects when it stops contributing factors to
-          new authentications, not when those factors go away
-          entirely.</t>
+          <vspace blankLines='0'/>Include the expiration time of a factor
+          token in the &lt;requesttokenResponse&gt; response as an
+          attribute on the &lt;factorToken&gt; element.  Clarify that the
+          webkdc-factor expiration time reflects when it stops
+          contributing factors to new authentications, not when those
+          factors go away entirely.</t>
         </list>
       </t>
     </section>

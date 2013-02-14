@@ -1855,14 +1855,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     if (response->factor_tokens != NULL) {
-        const char *factor_token;
+        struct webauth_webkdc_factor_data *data;
 
         ap_rvputs(rc->r, "<factorTokens>", NULL);
         for (i = 0; i < response->factor_tokens->nelts; i++) {
-            factor_token = APR_ARRAY_IDX(response->factor_tokens, i,
-                                         const char *);
-            ap_rvputs(rc->r, "<factorToken>", factor_token, "</factorToken>",
-                      NULL);
+            data = &APR_ARRAY_IDX(response->factor_tokens, i,
+                                  struct webauth_webkdc_factor_data);
+            ap_rprintf(rc->r, "<factorToken expires='%lu'>%s</factorToken>",
+                       (unsigned long) data->expiration, data->token);
         }
         ap_rvputs(rc->r, "</factorTokens>", NULL);
     }

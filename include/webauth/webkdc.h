@@ -54,6 +54,16 @@ struct webauth_webkdc_config {
 };
 
 /*
+ * Holds an encoded webkdc-factor token along with some additional metadata
+ * about it that may be needed by consumers who can't decode the token (or
+ * don't want to).
+ */
+struct webauth_webkdc_factor_data {
+    time_t expiration;
+    const char *token;
+};
+
+/*
  * Holds an encoded webkdc-proxy token along with some additional metadata
  * about it that may be needed by consumers who can't decode the token (or
  * don't want to).
@@ -97,8 +107,8 @@ struct webauth_webkdc_login_response {
     const char *user_message;
     WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
     WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
-    WA_APR_ARRAY_HEADER_T *proxies; /* Array of webkdc_proxy_data structs. */
-    WA_APR_ARRAY_HEADER_T *factor_tokens;      /* Array of char * tokens. */
+    WA_APR_ARRAY_HEADER_T *proxies;         /* Array of webkdc_proxy_data. */
+    WA_APR_ARRAY_HEADER_T *factor_tokens;  /* Array of webkdc_factor_data. */
     const char *return_url;
     const char *requester;
     const char *subject;
