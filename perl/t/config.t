@@ -9,12 +9,11 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 8;
 
 # Silence warnings since we're not using use.
 package WebKDC::Config;
 our $BYPASS_CONFIRM;
-our $EXPIRING_PW_SERVER;
 our $KEYRING_PATH;
 our $REMUSER_ENABLED;
 our $REMUSER_EXPIRES;
@@ -45,5 +44,3 @@ is ($WebKDC::Config::REMUSER_REDIRECT, '/login-spnego',
     'REMUSER_REDIRECT correctly set');
 is ($WebKDC::Config::BYPASS_CONFIRM, undef,
     'BYPASS_CONFIRM not set');
-is ($WebKDC::Config::EXPIRING_PW_SERVER, 'localhost',
-    'EXPIRING_PW_SERVER correctly set');

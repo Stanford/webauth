@@ -15,8 +15,7 @@ use warnings;
 BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use Util qw (contents get_userinfo getcreds remctld_spawn remctld_stop
-    create_keyring);
+use Util qw (contents get_userinfo getcreds create_keyring);
 
 use CGI;
 use CGI::Cookie;
@@ -25,6 +24,7 @@ use Test::More;
 use WebAuth qw(3.00 :const);
 use WebKDC ();
 use WebKDC::Config;
+use WebLogin;
 
 mkdir ('./t/tmp');
 
@@ -53,25 +53,6 @@ package main;
 
 # Whether we've found a valid kerberos config.
 my $kerberos_config = 0;
-
-# We need remctld and Net::Remctl.
-my $no_remctl = 0;
-my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-$no_remctl = 1 unless $remctld;
-eval { require Net::Remctl };
-$no_remctl = 1 if $@;
-
-# Also, other modules that we need for the remctl tests.
-eval { require Date::Parse };
-$no_remctl = 1 if $@;
-eval { require Time::Duration };
-$no_remctl = 1 if $@;
-
-# Now try loading WebLogin, with the expiring password remctl server set if
-# the remctl checks succeeded.
-$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost' unless $no_remctl;
-require WebLogin;
 
 # Check for a valid kerberos config.
 if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
@@ -116,6 +97,21 @@ sub init_weblogin {
     $weblogin->{response}->requester_subject ('webauth/test3.testrealm.org@testrealm.org');
     $weblogin->{response}->response_token ('TestResponse');
     $weblogin->{response}->response_token_type ('id');
+
+    # Set the password expiration time depending on the user.
+    if ($username eq 'testuser1') {
+        # Expires in-range for a warning.
+        $weblogin->{response}->password_expiration (time + 60 * 60 * 24);
+    } elsif ($username eq 'testuser2') {
+        # Expires out of range for a warning.
+        $weblogin->{response}->password_expiration (time +
+                                                    60 * 60 * 24 * 356);
+    } elsif ($username eq 'testuser3') {
+        # Do nothing here, we want non-existing pw expiration.
+    } else {
+        # Expires in-range for a warning..
+        $weblogin->{response}->password_expiration (time + 60 * 60 * 24);
+    }
 
     return $weblogin;
 }
@@ -172,33 +168,15 @@ $ENV{REMOTE_PORT} = '443';
 $ENV{REMOTE_USER} = $user;
 $ENV{SCRIPT_NAME} = '/login';
 
-# Set a few things for remctl.
-$WebKDC::Config::EXPIRING_PW_SERVER = 'localhost';
-$WebKDC::Config::EXPIRING_PW_PORT   = 14373;
-my $principal = contents ('t/data/test.principal');
-unlink ('krb5cc_test', 'test-acl');
-open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
-print ACL "$principal\n";
-close ACL;
-
-# Now spawn our remctld server and get a ticket cache.
-remctld_spawn ($remctld, $principal, 't/data/test.keytab',
-               't/data/kadmin.conf');
-my $oldcache = $ENV{KRB5CCNAME};
-$ENV{KRB5CCNAME} = 'krb5cc_test';
-getcreds ('t/data/test.keytab', $principal);
-$ENV{KRB5CCNAME} = $oldcache;
-$WebKDC::Config::EXPIRING_PW_TGT = 'krb5cc_test';
-$WebKDC::Config::EXPIRING_PW_PRINC = $principal;
-
 # Create a keyring to test with.
 my $wa = WebAuth->new;
-unlink ('t/data/test.keyring');
+unlink ('t/data/test.keyring', 'krb5cc_test');
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
 my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 
 # Create the ST for testing.
+my $principal = contents ('t/data/test.principal');
 my $random = 'b' x WebAuth::WA_AES_128;
 my $st = WebAuth::Token::WebKDCService->new ($wa);
 $st->subject ("krb5:$principal");
@@ -263,15 +241,12 @@ is ($output[5], 'show_remuser ', ' and show_remuser was not set');
 is ($output[6], 'remuser ', ' and remuser was not set');
 is ($output[7], 'script_name ', ' and script name was not set');
 
-SKIP: {
-    skip 'no remctl setup', 5 if $no_remctl;
-    is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-    ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
-    ok ($output[10] =~ /^expire_time_left \d+/,
-        ' and expire_time_left was set');
-    is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
-    ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
-}
+is ($output[8], 'warn_expire 1', ' and warn_expire was set');
+ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
+ok ($output[10] =~ /^expire_time_left \d+/,
+    ' and expire_time_left was set');
+is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
+ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -317,16 +292,12 @@ is ($output[4], 'cancel_url ', ' and cancel_url was set');
 is ($output[5], 'show_remuser 1', ' and show_remuser was set');
 is ($output[6], 'remuser ', ' and remuser was set');
 is ($output[7], 'script_name /login', ' and script name was set');
-
-SKIP: {
-    skip 'no remctl setup', 6 if $no_remctl;
-    is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-    ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
-    ok ($output[10] =~ /^expire_time_left \d+/,
-        ' and expire_time_left was set');
-    is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
-    ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
-}
+is ($output[8], 'warn_expire 1', ' and warn_expire was set');
+ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
+ok ($output[10] =~ /^expire_time_left \d+/,
+    ' and expire_time_left was set');
+is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
+ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
 
 # Bad return URL (set it to be http rather than https).
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -848,6 +819,5 @@ is ($token->loa, 2, '...and LoA');
 ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
     '...and expiration is in the right range');
 
-remctld_stop;
-unlink ('krb5cc_test', 'test-acl', 't/data/test.keyring');
+unlink ('krb5cc_test', 't/data/test.keyring');
 rmtree ('./t/tmp');

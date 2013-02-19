@@ -28,8 +28,6 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 t/changepw.t
 t/config.t
-t/data/kadmin-fake
-t/data/kadmin.conf
 t/data/README
 t/data/templates/confirm.tmpl
 t/data/templates/error.tmpl
@@ -46,7 +44,6 @@ t/lib/Util.pm
 t/minimum-version.t
 t/misc.t
 t/page-pwchange.t
-t/pending-expire.t
 t/pod-spelling.t
 t/pod.t
 t/strict.t

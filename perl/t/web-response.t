@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 47;
+use Test::More tests => 50;
 
 BEGIN {
     use_ok ('WebKDC::WebResponse');
@@ -20,7 +20,7 @@ BEGIN {
 my $resp = WebKDC::WebResponse->new;
 for my $method (qw(app_state authz_subject login_canceled_token
                    requester_subject response_token response_token_type
-                   return_url subject)) {
+                   return_url subject password_expiration)) {
     is ($resp->$method, undef, "$method starts undef");
     is ($resp->$method ('foo'), 'foo', '... and can be set to foo');
     is ($resp->$method, 'foo', '... and is now set to foo');

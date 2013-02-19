@@ -44,19 +44,13 @@ use CGI::Cookie ();
 use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
 use Template ();
+use Time::Duration;
+use URI ();
+use URI::QueryParam ();
 use WebAuth 3.06 qw(:const);
 use WebKDC 2.05;
 use WebKDC::Config 1.00;
 use WebKDC::WebKDCException 1.05;
-use URI ();
-use URI::QueryParam ();
-
-# These are required only if we are going to check for expiring passwords.
-if ($WebKDC::Config::EXPIRING_PW_SERVER) {
-    require Date::Parse;
-    require Time::Duration;
-    require Net::Remctl;
-}
 
 # Required only if we're going to do replay caching or rate limiting.
 if (@WebKDC::Config::MEMCACHED_SERVERS) {
@@ -623,7 +617,7 @@ sub print_confirm_page {
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
-    # Find out if the user is within the window to have a password expiration
+    # Find out if the user is within the window to have a password
     # warning.  Skip if using remote_user or the user already has a
     # single-sign-on cookie.
     my $expire_warning = 0;
@@ -631,7 +625,7 @@ sub print_confirm_page {
         && !$self->param ('wpt_cookie')
         && $WebKDC::Config::EXPIRING_PW_URL) {
 
-        my $expiring = $self->time_to_pwexpire;
+        my $expiring = $resp->password_expiration;
         if (defined $expiring
             && (($expiring - time) < $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
@@ -1189,49 +1183,6 @@ sub change_user_password {
     } else {
         return (WebKDC::WK_SUCCESS, undef);
     }
-}
-
-# Given the password expiration time for a user, parse it and compare to
-# our current time.  Returns the seconds remaining until the password
-# expires, or undef if there is no expiration.
-sub time_to_pwexpire {
-    my ($self) = @_;
-    my $q = $self->query;
-
-    # Return if we've not set an expired password command.
-    return undef unless $WebKDC::Config::EXPIRING_PW_SERVER;
-
-    # FIXME: The kadmin remctl interface isn't going to swallow
-    # fully-qualified principal names.  This means that this won't work in
-    # a multi-realm situation, currently.  If/when that changes, we should
-    # add the default realm to the principal if none is currently there.
-
-    # Get the current password expire time from the server.  Save the current
-    # tgt, use the one for password expiration, then restore the old.
-    my $username = $q->param ('username');
-    local $ENV{KRB5CCNAME} = $WebKDC::Config::EXPIRING_PW_TGT;
-    my $result = Net::Remctl::remctl ($WebKDC::Config::EXPIRING_PW_SERVER,
-                                      $WebKDC::Config::EXPIRING_PW_PORT,
-                                      $WebKDC::Config::EXPIRING_PW_PRINC,
-                                      'kadmin', 'check_expire',
-                                      $username, 'pwexpire');
-    return undef if $result->error;
-
-    # Empty string should mean there is no password expiration date.  An
-    # expiration time that doesn't match the format we expect has us put a
-    # warning into the log but not stop page processing.
-    my $expiration = $result->stdout;
-    if ($expiration) {
-        chomp $expiration;
-    }
-    return undef unless $expiration;
-    if ($expiration !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/) {
-        print STDERR "invalid password expire time for $username: "
-            ."$expiration\n" if $self->param ('logging');
-        return undef;
-    }
-
-    return Date::Parse::str2time ($expiration);
 }
 
 ##############################################################################

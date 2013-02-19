@@ -225,26 +225,6 @@ Configuration
 
       Default: not set.
 
-  $EXPIRING_PW_PORT
-
-      The remctl port of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, in which case WebLogin will use the default remctl
-      port.
-
-      Default: not set.
-
-  $EXPIRING_PW_PRINC
-
-      The principal of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, in which case the host principal for the server set
-      in $EXPIRING_PW_SERVER will be used.  However, if your remctl server
-      is using a different Kerberos principal than the default, you may
-      need to set this.
-
-      Default: not set.
-
   $EXPIRING_PW_RESEND_PASSWORD
 
       Whether or not to require the user to retype their password after
@@ -257,22 +237,6 @@ Configuration
       password.
 
       Default: true (require the users to resend password).
-
-  $EXPIRING_PW_SERVER
-
-      A server that implements the kadmin-remctl interface for querying
-      the time a principal has until password expiration (via the
-      check_expire command).
-
-      Default: not set.
-
-  $EXPIRING_PW_TGT
-
-      The TGT file used to query against the kadmin-remctl interface used
-      in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
-      outside of WebLogin.
-
-      Default: not set.
 
   $EXPIRING_PW_URL
 

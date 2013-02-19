@@ -59,6 +59,7 @@ sub return_url           { my $r = shift; $r->_attr ('return_url',        @_) }
 sub subject              { my $r = shift; $r->_attr ('subject',           @_) }
 sub authz_subject        { my $r = shift; $r->_attr ('authz_subject',     @_) }
 sub requester_subject    { my $r = shift; $r->_attr ('requester_subject', @_) }
+sub password_expiration  { my $r = shift; $r->_attr ('pwd_expiration',    @_) }
 sub response_token       { my $r = shift; $r->_attr ('response_token',    @_) }
 sub response_token_type {
     my $r = shift;
@@ -244,6 +245,11 @@ proxy token, depending on what the WebAuth application server requested.
 =item subject ([SUBJECT])
 
 Returns or sets the authenticated user identity.
+
+=item password_expiration ([EXPIRATION])
+
+Returns or sets the password expiration time for the authenticating user,
+in seconds since UNIX epoch.
 
 =back
 

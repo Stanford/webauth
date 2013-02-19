@@ -319,6 +319,7 @@ sub request_token_request {
         my $error_code = get_child_value ($root, 'loginErrorCode', 1);
         my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
         my $user_message = get_child_value ($root, 'userMessage', 1);
+        my $pass_expires = get_child_value ($root, 'passwordExpires', 1);
 
         # Expand each of the proxy tokens, which contain a type and value.
         my $proxy_tokens = $root->find_child ('proxyTokens');
@@ -386,6 +387,8 @@ sub request_token_request {
             if defined $login_canceled_token;
         $wresp->subject ($subject) if defined $subject;
         $wresp->authz_subject ($authz_subject) if defined $authz_subject;
+        $wresp->password_expiration ($pass_expires)
+            if defined $pass_expires;
 
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}
