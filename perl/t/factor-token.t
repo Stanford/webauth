@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 11;
 
 # Ensure we don't pick up the system webkdc.conf.
 BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
@@ -126,3 +126,19 @@ is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
 my $expires = str2time ($cookie->expires);
 is ($expires, time - 60 * 60 * 24, '...with the correct expiration time');
 
+# Check clearing the webauth cookie by setting the public computer checkbox.
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+$weblogin->query->param (public_computer => 1);
+$weblogin->{response}->factor_expiration ($expires_epoch);
+%cart = (webauth_wft => 'test');
+$weblogin->print_headers (\%cart, '', '');
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq 'webauth_wft') {
+        $cookie = $c;
+    }
+}
+is ($cookie->name, 'webauth_wft', 'Factor cookie on public computer was set');
+$expires = str2time ($cookie->expires);
+is ($expires, time - 60 * 60 * 24, '...and set to expire now');

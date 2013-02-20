@@ -220,6 +220,19 @@ sub fix_token {
     return $token;
 }
 
+# Create and return a cookie that will expire an existing cookie.  Used in
+# more than one place, so pulled out for logic.
+sub expire_cookie {
+    my ($self, $name, $secure) = @_;
+
+    my $query = $self->query;
+    my $cookie = $query->cookie (-name    => $name,
+                                 -value   => $EXPIRED_COOKIE,
+                                 -secure  => $secure,
+                                 -expires => '-1d');
+    return $cookie;
+}
+
 ##############################################################################
 # Output related functions
 ##############################################################################
@@ -288,10 +301,11 @@ sub print_headers {
             if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
                 && $value eq '') {
 
-                $cookie = $q->cookie (-name    => $name,
-                                      -value   => $EXPIRED_COOKIE,
-                                      -secure  => $secure,
-                                      -expires => '-1d');
+                $cookie = $self->expire_cookie ($name, $secure);
+
+            # Also expire the factor token on any public computer.
+            } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
+                $cookie = $self->expire_cookie ($name, $secure);
 
             # Pass along the remuse cookie and mark it as seen.
             } elsif ($name eq $remuser_name) {
@@ -689,6 +703,7 @@ sub print_confirm_page {
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
     $params->{history} = $history;
+    $params->{public_computer} = $q->param ('public_computer');
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
 
@@ -763,6 +778,7 @@ sub redisplay_confirm_page {
     $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $params->{remuser} = $remuser;
+    $params->{public_computer} = $q->param ('public_computer');
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
 
@@ -851,6 +867,7 @@ sub print_multifactor_page {
 
     $params->{script_name} = $self->param ('script_name');
     $params->{username} = $q->param ('username');
+    $params->{public_computer} = $q->param ('public_computer');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
 

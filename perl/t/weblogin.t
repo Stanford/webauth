@@ -59,7 +59,7 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
     plan skip_all => 'Kerberos tests not configured';
 } else {
-    plan tests => 358;
+    plan tests => 376;
 }
 
 # Set our method to not have password tests complain.
@@ -247,6 +247,7 @@ ok ($output[10] =~ /^expire_time_left \d+/,
     ' and expire_time_left was set');
 is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
 ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[13], 'public_computer ', ' and public_computer was not set');
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -270,6 +271,7 @@ is ($output[9], 'expire_date ', ' and expire_date was not set');
 is ($output[10], 'expire_time_left ', ' and expire_time_left was not set');
 is ($output[11], 'pwchange_url ', ' and pwchange_url was not set');
 is ($output[12], 'CPT ', ' and CPT was not set');
+is ($output[13], 'public_computer ', ' and public_computer was not set');
 
 # FIXME: Testing remuser requires us to fake a cookie, which we'll do in
 #        a later revision.
@@ -298,6 +300,7 @@ ok ($output[10] =~ /^expire_time_left \d+/,
     ' and expire_time_left was set');
 is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
 ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[13], 'public_computer ', ' and public_computer was not set');
 
 # Bad return URL (set it to be http rather than https).
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -745,6 +748,32 @@ is ($output[5], 'err_confirm ', ' and err_confirm was not set');
 is ($output[6], 'script_name ', ' and script_name was not set');
 is ($output[7], 'err_html ', ' and err_html was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
+
+# Public computer setting passed along to confirmation page.
+$weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
+                           \%PAGES);
+($status, $error) = (WebKDC::WK_SUCCESS, '');
+$weblogin->query->param (public_computer => 1);
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'success page was printed for login from public computer');
+is ($output[0], "username testuser3", '...and username was set');
+is ($output[1],
+    'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
+    '...and return_url was set');
+is ($output[2], 'pretty_return_url https://test.example.org',
+    '...and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '...and login_cancel was not set');
+is ($output[4], 'cancel_url ', '...and cancel_url was not set');
+is ($output[5], 'show_remuser ', '...and show_remuser was not set');
+is ($output[6], 'remuser ', '...and remuser was not set');
+is ($output[7], 'script_name ', '...and script name was not set');
+is ($output[8], 'warn_expire ', '...and warn_expire was not set');
+is ($output[9], 'expire_date ', '...and expire_date was not set');
+is ($output[10], 'expire_time_left ', '...and expire_time_left was not set');
+is ($output[11], 'pwchange_url ', '...and pwchange_url was not set');
+is ($output[12], 'CPT ', '...and CPT was not set');
+is ($output[13], 'public_computer 1', '...and public_computer was set');
+# Check print_confirm_page (public_computer = 1)
 
 # Authentication rejected by the user information service.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
