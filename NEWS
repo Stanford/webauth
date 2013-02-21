@@ -18,6 +18,9 @@ WebAuth 4.4.3 (unreleased)
     environment, but the maximum environment size is quite large on most
     modern operating systems.
 
+    Fix syntax error in the replay condition in the default WebLogin error
+    template.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
