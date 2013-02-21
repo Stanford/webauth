@@ -303,11 +303,17 @@ sub print_headers {
 
             # Pass along a factor token with set lifetime.
             } elsif ($name eq 'webauth_wft') {
-                my $lifetime = $WebKDC::Config::FACTOR_LIFETIME;
                 $cookie = $q->cookie (-name    => $name,
                                       -value   => $value,
-                                      -secure  => $secure,
-                                      -expires => $lifetime);
+                                      -secure  => $secure);
+
+                # Set expiration if one is given.
+                if ($self->{response}->factor_expiration) {
+                    my @expires
+                        = gmtime ($self->{response}->factor_expiration);
+                    my $lifetime = strftime ("%a, %d-%b-%Y %T GMT", @expires);
+                    $cookie->expires ($lifetime);
+                }
 
             # Pass along all other cookies.
             } else {

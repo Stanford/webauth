@@ -337,8 +337,10 @@ sub request_token_request {
         my $factor_tokens = $root->find_child ('factorTokens');
         if (defined $factor_tokens) {
             my ($token) = @{ $factor_tokens->children };
+            my $expires = $token->attr ('expires');
             my $cvalue  = $token->content || '';
             $wresp->proxy_cookie ('webauth_wft', $cvalue);
+            $wresp->factor_expiration ($expires);
         }
 
         # Expand any multifactor factors required by the WAS or available
