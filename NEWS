@@ -2,6 +2,14 @@
 
 WebAuth 4.4.3 (unreleased)
 
+    If the user asserts an authorization identity equal to their
+    authentication identity, discard the authorization identity in the
+    WebKDC login process and continue as if they did not choose an
+    authorization identity.  This fixes a previously fatal error when the
+    user selects their default identity in WebLogin (if, for example, they
+    are trying to undo a previous choice of authorization identity).
+    Thanks to Benjamin Coddington for the report.
+
     Remove an arbitrary limit in mod_webauthldap on the number of values
     from a multivalued LDAP attribute that are put in the environment.
     Previous versions would only add the first 127 values, but there are
