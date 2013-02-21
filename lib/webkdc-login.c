@@ -960,7 +960,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     const void *key_data;
     struct webauth_key *key;
     struct webauth_keyring *session;
-    const char *allowed;
+    const char *allowed, *authz_subject;
 
     /* Basic sanity checking. */
     if (request->service == NULL || request->creds == NULL
@@ -1229,17 +1229,23 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
     /*
      * If the user attempts to assert an alternate identity, see if that's
-     * allowed.  If so, copy that into the response.
+     * allowed.  If so, copy that into the response.  If the requested
+     * authorization subject matches the actual subject, just ignore the
+     * field.
      */
-    if (request->authz_subject != NULL && (*response)->permitted_authz != NULL)
+    authz_subject = request->authz_subject;
+    if (authz_subject != NULL)
+        if (strcmp(authz_subject, (*response)->subject) == 0)
+            authz_subject = NULL;
+    if (authz_subject != NULL && (*response)->permitted_authz != NULL)
         for (i = 0; i < (*response)->permitted_authz->nelts; i++) {
             allowed = APR_ARRAY_IDX((*response)->permitted_authz, i, char *);
-            if (strcmp(allowed, request->authz_subject) == 0) {
+            if (strcmp(allowed, authz_subject) == 0) {
                 (*response)->authz_subject = apr_pstrdup(ctx->pool, allowed);
                 break;
             }
         }
-    if (request->authz_subject != NULL && (*response)->authz_subject == NULL) {
+    if (authz_subject != NULL && (*response)->authz_subject == NULL) {
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to assert that identity";
         return WA_ERR_NONE;
