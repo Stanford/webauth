@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 53;
+use Test::More tests => 50;
 
 BEGIN {
     use_ok ('WebKDC::WebResponse');
@@ -20,20 +20,21 @@ BEGIN {
 my $resp = WebKDC::WebResponse->new;
 for my $method (qw(app_state authz_subject login_canceled_token
                    requester_subject response_token response_token_type
-                   return_url subject password_expiration
-                   factor_expiration)) {
+                   return_url subject password_expiration)) {
     is ($resp->$method, undef, "$method starts undef");
     is ($resp->$method ('foo'), 'foo', '... and can be set to foo');
     is ($resp->$method, 'foo', '... and is now set to foo');
 }
 
 # The proxy cookie setting interface is more complex.
-is ($resp->proxy_cookie ('krb5'), undef, 'Proxy cookie for krb5 is undef');
-is ($resp->proxy_cookie ('krb5', 'foo'), 'foo', '... and can be set');
-is ($resp->proxy_cookie ('krb5'), 'foo', '... and has the right value');
-is ($resp->proxy_cookie ('remuser'), undef, '... and remuser is still undef');
-is_deeply ($resp->proxy_cookies, { krb5 => 'foo'},
-           'proxy_cookies returns the correct hash');
+is ($resp->cookie ('krb5'), undef, 'Proxy cookie for krb5 is undef');
+is ($resp->cookie ('krb5', 'foo'), 'foo', '... and can be set');
+is ($resp->cookie ('krb5'), 'foo', '... and has the right value');
+is ($resp->cookie ('remuser'), undef, '... and remuser is still undef');
+my %test_cookie = (krb5 => { value      => 'foo',
+                             expiration => 0});
+is_deeply ($resp->cookies, \%test_cookie,
+           'cookies returns the correct hash');
 
 # Test the factor and login settings, which return arrays and which only
 # append values, never remove them.

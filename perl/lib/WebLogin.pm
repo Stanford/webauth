@@ -292,9 +292,11 @@ sub print_headers {
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
     my $saw_remuser;
     if ($cookies) {
-        my ($name, $value);
-        while (($name, $value) = each %$cookies) {
+        my ($name, $attrs);
+        while (($name, $attrs) = each %$cookies) {
             next if $name eq 'webauth_wpt_remuser';
+            my $value      = $attrs->{value};
+            my $expiration = $attrs->{expiration};
             my $cookie;
 
             # Expire the cookies with no values.
@@ -322,9 +324,8 @@ sub print_headers {
                                       -secure  => $secure);
 
                 # Set expiration if one is given.
-                if ($self->{response}->factor_expiration) {
-                    my @expires
-                        = gmtime ($self->{response}->factor_expiration);
+                if ($expiration) {
+                    my @expires = gmtime ($expiration);
                     my $lifetime = strftime ("%a, %d-%b-%Y %T GMT", @expires);
                     $cookie->expires ($lifetime);
                 }
@@ -546,7 +547,7 @@ sub print_login_page {
         $params->{error} = 1;
     }
 
-    $self->print_headers ($self->{response}->proxy_cookies);
+    $self->print_headers ($self->{response}->cookies);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -576,7 +577,7 @@ sub print_error_page {
         $params->{cancel_url} = $cancel_url;
     }
 
-    $self->print_headers ($resp->proxy_cookies);
+    $self->print_headers ($resp->cookies);
     $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
@@ -691,7 +692,7 @@ sub print_confirm_page {
     }
     if ($token_type eq 'id') {
         if ($bypass and not $post) {
-            return $self->print_headers ($resp->proxy_cookies, $return_url);
+            return $self->print_headers ($resp->cookies, $return_url);
         }
     }
 
@@ -736,9 +737,9 @@ sub print_confirm_page {
     # we're suppressing the confirm page and the browser used HTTP/1.1, use
     # the HTTP 303 redirect code as well.
     if ($bypass && $ENV{SERVER_PROTOCOL} eq 'HTTP/1.1') {
-        $self->print_headers ($resp->proxy_cookies, $return_url, 1);
+        $self->print_headers ($resp->cookies, $return_url, 1);
     } else {
-        $self->print_headers ($resp->proxy_cookies);
+        $self->print_headers ($resp->cookies);
     }
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
@@ -789,9 +790,14 @@ sub redisplay_confirm_page {
         $params->{cancel_url} = $cancel_url;
     }
 
+    # Create a hash for the REMOTE_USER cookie.
+    my $cookie_name = $self->param ('remuser_cookie');
+    my $cookie_val  = $remuser ? 1 : 0;
+    my %cookie = ($cookie_name => { value      => $cookie_val,
+                                    expiration => 0});
+
     # Print out the page, including the new REMOTE_USER cookie.
-    $self->print_headers ({ $self->param ('remuser_cookie') =>
-            ($remuser ? 1 : 0) });
+    $self->print_headers (\%cookie);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -885,7 +891,7 @@ sub print_multifactor_page {
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
 
-    $self->print_headers ($self->{response}->proxy_cookies);
+    $self->print_headers ($self->{response}->cookies);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;

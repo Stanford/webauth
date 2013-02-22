@@ -298,7 +298,7 @@ sub request_token_request {
             my $proxy_cookies = $wreq->proxy_cookies;
             if (defined $proxy_cookies) {
                 while (my ($name, $token) = each %{$proxy_cookies}) {
-                    $wresp->proxy_cookie ($name, '');
+                    $wresp->cookie ($name, '');
                 }
             }
         }
@@ -328,7 +328,7 @@ sub request_token_request {
                 my $type = $token->attr ('type');
                 my $cname = "webauth_wpt_$type";
                 my $cvalue  = $token->content || '';
-                $wresp->proxy_cookie ($cname, $cvalue);
+                $wresp->cookie ($cname, $cvalue);
             }
         }
 
@@ -339,8 +339,7 @@ sub request_token_request {
             my ($token) = @{ $factor_tokens->children };
             my $expires = $token->attr ('expires');
             my $cvalue  = $token->content || '';
-            $wresp->proxy_cookie ('webauth_wft', $cvalue);
-            $wresp->factor_expiration ($expires);
+            $wresp->cookie ('webauth_wft', $cvalue, $expires);
         }
 
         # Expand any multifactor factors required by the WAS or available

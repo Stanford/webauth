@@ -98,9 +98,8 @@ is ($weblogin->{request}->factor_token, undef, '...and factor_token not set');
 # into the CGI::Application object a little.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->{response}->factor_expiration ($expires_epoch);
-%cart = (webauth_wft => 'test');
-$weblogin->print_headers (\%cart, '', '');
+$weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
+$weblogin->print_headers ($weblogin->{response}->cookies, '', '');
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
     if ($c->name eq 'webauth_wft') {
@@ -113,9 +112,8 @@ is ($cookie->expires, $expires_text, '...with the correct expiration time');
 # Check clearing the webauth cookie by giving it an empty value.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->{response}->factor_expiration ($expires_epoch);
-%cart = (webauth_wft => '');
-$weblogin->print_headers (\%cart, '', '');
+$weblogin->{response}->cookie ('webauth_wft', '', $expires_epoch);
+$weblogin->print_headers ($weblogin->{response}->cookies, '', '');
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
     if ($c->name eq 'webauth_wft') {
@@ -130,9 +128,8 @@ is ($expires, time - 60 * 60 * 24, '...with the correct expiration time');
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
 $weblogin->query->param (public_computer => 1);
-$weblogin->{response}->factor_expiration ($expires_epoch);
-%cart = (webauth_wft => 'test');
-$weblogin->print_headers (\%cart, '', '');
+$weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
+$weblogin->print_headers ($weblogin->{response}->cookies, '', '');
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
     if ($c->name eq 'webauth_wft') {
