@@ -41,7 +41,7 @@ main(void)
     struct webauth_user_config user_config;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
-    struct webauth_token *token, login, wkproxy, wkproxy2;
+    struct webauth_token *token, login, wkproxy, wkproxy2, wkfactor;
     struct webauth_token_request req;
     struct webauth_token_webkdc_factor *ft;
     struct webauth_token_webkdc_proxy *pt;
@@ -81,7 +81,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(214);
+    plan(235);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -494,9 +494,9 @@ main(void)
     req.initial_factors = "m";
     login.token.login.otp = "123456";
     wkproxy.token.webkdc_proxy.creation = now;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status,
            "Multifactor with proxy token and OTP login returns success");
@@ -543,13 +543,72 @@ main(void)
         ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
     }
 
+    /* Do the same authentication but add an input webkdc-factor token. */
+    memset(&wkfactor, 0, sizeof(wkfactor));
+    wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
+    wkfactor.token.webkdc_factor.subject = "full";
+    wkfactor.token.webkdc_factor.session_factors = "x3";
+    wkfactor.token.webkdc_factor.creation = now - 10 * 60;
+    wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Multifactor with proxy, factor, and OTP returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(6, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("full", token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("o,o3,p,m,d,x1", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_string("o,o3,p,m,x3", token->token.proxy.session_factors,
+                  "...result session factors is right");
+        is_int(3, token->token.id.loa, "...result LoA is right");
+        is_int(now + 60 * 60, token->token.id.expiration,
+               "...and expiration matches the shorter expiration");
+    }
+    ok(response->factor_tokens != NULL, "...and we have factor tokens");
+    if (response->factor_tokens == NULL)
+        ok_block(8, 0, "...no factor tokens");
+    else {
+        is_int(1, response->factor_tokens->nelts, "...one factor token");
+        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
+                            struct webauth_webkdc_factor_data);
+        is_int(now + 60 * 60, fd->expiration, "...with expiration");
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
+                                      fd->token, ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        ft = &token->token.webkdc_factor;
+        is_string("full", ft->subject, "...with correct subject");
+        is_string("d,x1", ft->initial_factors,
+                  "...and correct initial factors");
+        is_string("x3", ft->session_factors, "...and correct session factors");
+        is_int(now + 60 * 60, ft->expiration, "...and expiration is correct");
+        is_int(now - 10 * 60, ft->creation, "...and creation is correct");
+    }
+
     /*
-     * Request multifactor session factors as well.  This won't work because
-     * the password webkdc-proxy token is too old and hence can't contribute
-     * to the session factors, even though we're logging in.
+     * Go back to just the webkdc-proxy and OTP login tokens and request
+     * multifactor session factors as well.  This won't work because the
+     * password webkdc-proxy token is too old and hence can't contribute to
+     * the session factors, even though we're logging in.
      */
     req.session_factors = "m";
     wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
+    request.creds = apr_array_make(pool, 3, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor OTP session returns success");
     is_int(WA_PEC_LOGIN_FORCED, response->login_error,
