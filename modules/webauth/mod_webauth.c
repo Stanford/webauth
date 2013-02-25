@@ -304,7 +304,8 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
             *val++ = '\0';
             /* don't nuke any webkdc cookies, which noramlly wouldn't
                show up, but due during development */
-            if (strncmp(cookie, "webauth_wpt", 11) != 0) {
+            if (strncmp(cookie, "webauth_wpt", 11) != 0
+                && strncmp(cookie, "webauth_wft", 11) != 0) {
                 nuke_cookie(rc, cookie, 1);
             }
         }
