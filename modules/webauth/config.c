@@ -6,7 +6,7 @@
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Based on original code by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -704,6 +704,7 @@ cfg_flag(cmd_parms *cmd, void *mconf, int flag)
             dconf->trust_authz_identity = flag;
             dconf->trust_authz_identity_set = true;
         }
+        break;
 
     /* Directory scope only. */
     case E_DoLogout:
