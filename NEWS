@@ -2,6 +2,9 @@
 
 WebAuth 4.4.3 (unreleased)
 
+    Fix a coding error in the WebAuthTrustAuthzIdentity directive parsing
+    that also enabled WebAuthDoLogout for the same scope.
+
     If the user asserts an authorization identity equal to their
     authentication identity, discard the authorization identity in the
     WebKDC login process and continue as if they did not choose an
