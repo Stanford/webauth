@@ -10,21 +10,24 @@
 
 package Test::RRA::Config;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 
-use base qw(Exporter);
+# For Perl 5.006 compatibility.
+## no critic (ClassHierarchies::ProhibitExplicitISA)
 
+use Exporter;
 use Test::More;
 
 # Declare variables that should be set in BEGIN for robustness.
-our (@EXPORT_OK, $VERSION);
+our (@EXPORT_OK, @ISA, $VERSION);
 
 # Set $VERSION and everything export-related in a BEGIN block for robustness
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
+    @ISA       = qw(Exporter);
     @EXPORT_OK = qw(
       @CRITIC_IGNORE $LIBRARY_PATH $MINIMUM_VERSION %MINIMUM_VERSION
     );
