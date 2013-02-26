@@ -200,7 +200,7 @@ sub perl_dirs {
         my $is_skipped = sub {
             my ($dir) = @_;
             return 1 if $skip_tests{$dir};
-            $dir = File::Spec->catfile('tests', $dir, q{});
+            $dir = File::Spec->catdir('tests', $dir);
             return -d $dir ? 0 : 1;
         };
 
@@ -210,7 +210,7 @@ sub perl_dirs {
         @test_dirs = File::Spec->no_upwards(@test_dirs);
 
         # Add the tests directory to the start of the directory name.
-        push(@dirs, map { File::Spec->catfile('tests', $_, q{}) } @test_dirs);
+        push(@dirs, map { File::Spec->catdir('tests', $_) } @test_dirs);
     }
     return @dirs;
 }
