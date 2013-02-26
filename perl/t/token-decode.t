@@ -45,6 +45,15 @@ sub read_token {
     return contents ($path);
 }
 
+# Encode a time in the token encoding format.  This is mostly a wrapper around
+# pack, but we may have to double semicolons.
+sub encode_time {
+    my ($time) = @_;
+    my $result = pack ('N', $time);
+    $result =~ s/;/;;/g;
+    return $result;
+}
+
 # General setup.
 my $wa = WebAuth->new;
 my $path = test_file_path ("data/keyring")
@@ -77,8 +86,8 @@ is (ref ($object->{ctx}), 'WebAuth', '... which is the correct type');
 # Build a token manually and test that it decodes properly, and test
 # token_encrypt in the process.
 my $now = time;
-my $creation = pack ('N', $now);
-my $expiration = pack ('N', $now + 60);
+my $creation = encode_time ($now);
+my $expiration = encode_time ($now + 60);
 my $attrs = "t=app;s=test;ct=$creation;et=$expiration;";
 my $token = encode_base64($wa->token_encrypt ($attrs, $keyring), '');
 ok ($token, 'Encrypting a token works');
