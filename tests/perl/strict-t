@@ -40,76 +40,23 @@ use 5.006;
 use strict;
 use warnings;
 
-use File::Spec;
+use lib "$ENV{SOURCE}/tap/perl";
+
 use Test::More;
+use Test::RRA qw(use_prereq);
+use Test::RRA::Automake qw(automake_setup perl_dirs);
+use Test::RRA::Config qw(@CRITIC_IGNORE);
 
-# Prefer the modules built as part of our source package.  Otherwise, we may
-# not find Perl modules while testing, or find the wrong versions.
-use lib "$ENV{BUILD}/../perl/blib/arch";
-use lib "$ENV{BUILD}/../perl/blib/lib";
+# Load prerequisite modules.
+use_prereq('Test::Strict');
 
-# Allow the WebAuth module to find the libraries built in the source tree.
-if ($ENV{LD_LIBRARY_PATH}) {
-    $ENV{LD_LIBRARY_PATH} .= ":$ENV{BUILD}/../lib/.libs";
-} else {
-    $ENV{LD_LIBRARY_PATH} = "$ENV{BUILD}/../lib/.libs";
-}
+# Set up Automake testing.  This must be done after loading Test::Strict,
+# since it wants to use FindBin to locate this script.
+automake_setup();
 
-# Top-level directories to ignore.  We ignore the perl directory if it exists
-# since, in my packages, it is treated as a Perl module distribution and has
-# its own standalone test suite.
-my %IGNORE = map { $_ => 1 } qw(.git perl);
-
-# Bail if SOURCE is not set.
-if (!$ENV{SOURCE}) {
-    BAIL_OUT('SOURCE not defined (run under runtests)');
-}
-
-# Skip tests unless we're running the test suite in maintainer mode.  Random
-# scripts in the source directory may require optional Perl modules be
-# installed or have other dependencies that can't be satisfied by every user.
-if (!$ENV{RRA_MAINTAINER_TESTS}) {
-    plan skip_all => 'Perl syntax tests only run for maintainer';
-}
-
-# Skip tests if Test::Strict is not installed.
-if (!eval { require Test::Strict }) {
-    plan skip_all => 'Test::Strict required to test Perl scripts';
-    $Test::Strict::TEST_WARNINGS = 0;    # suppress warning
-}
-Test::Strict->import;
-
-# SOURCE will be the test directory.  Change to the parent directory.
-my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
-my @rootdirs = File::Spec->splitdir($rootdirs);
-pop @rootdirs;
-if ($rootdirs[-1] eq File::Spec->updir) {
-    pop @rootdirs;
-    pop @rootdirs;
-}
-my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
-chdir $root or BAIL_OUT("cannot chdir to $root: $!");
-
-# If BUILD is a subdirectory of SOURCE, ignore it as well.
-my ($buildvol, $builddirs) = File::Spec->splitpath($ENV{BUILD}, 1);
-my @builddirs = File::Spec->splitdir($builddirs);
-pop @builddirs;
-if ($buildvol eq $rootvol && @builddirs == @rootdirs + 1) {
-    while (@rootdirs && $builddirs[0] eq $rootdirs[0]) {
-        shift @builddirs;
-        shift @rootdirs;
-    }
-    if (@builddirs == 1) {
-        $IGNORE{ $builddirs[0] } = 1;
-    }
-}
-
-# Build the list of directories to test.
-opendir my $rootdir, q{.} or BAIL_OUT("cannot open .: $!");
-my @dirs = grep { -d $_ && !$IGNORE{$_} } readdir $rootdir;
-closedir $rootdir;
-@dirs = File::Spec->no_upwards(@dirs);
-
-# Finally, run the actual tests.  We also want to check use warnings.
+# Run the actual tests.  We also want to check warnings.
 $Test::Strict::TEST_WARNINGS = 1;
-all_perl_files_ok(@dirs);
+all_perl_files_ok(perl_dirs());
+
+# Suppress "used only once" warnings.
+END { $Test::Strict::TEST_WARNINGS = 0 }
