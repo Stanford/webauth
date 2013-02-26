@@ -6,6 +6,14 @@
 #
 # See LICENSE for licensing terms.
 
+# These variables exist only for the use of the Debian packaging and similar
+# situations and aren't normally set.  We want to honor them if they're set
+# in the environment, as well as via make arguments.
+#
+# WEBAUTH_PERL_FLAGS are additional flags to pass to Makefile.PL when
+# building the Makefile.
+WEBAUTH_PERL_FLAGS ?=
+
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
@@ -228,7 +236,9 @@ perl/lib/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm			\
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
-	cd perl && perl Build.PL --config optimize='$(CFLAGS) $(PERL_WARNINGS)'
+	cd perl && perl Build.PL					\
+	    --config optimize='$(CPPFLAGS) $(CFLAGS) $(PERL_WARNINGS)'	\
+	    $(WEBAUTH_PERL_FLAGS)
 	cd perl && ./Build
 
 install-data-local-perl: perl/lib/WebAuth.o
