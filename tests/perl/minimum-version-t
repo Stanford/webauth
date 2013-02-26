@@ -35,36 +35,32 @@ use 5.006;
 use strict;
 use warnings;
 
-use File::Spec;
+use lib "$ENV{SOURCE}/tap/perl";
+
 use Test::More;
+use Test::RRA qw(use_prereq);
+use Test::RRA::Automake qw(automake_setup perl_dirs);
+use Test::RRA::Config qw($MINIMUM_VERSION %MINIMUM_VERSION);
 
-# A map of versions to directories or files.  All of the target files and any
-# Perl scripts in those directories will be checked against the version
-# requirement.
-my %REQUIREMENTS = (
-    '5.008' => [
-        qw(tests/mod_webauth tools/weblogin-passcheck weblogin/login.fcgi
-          weblogin/logout.fcgi weblogin/pwchange.fcgi)
-    ],
-    '5.010' => [qw(lib tests/data tools/clean-apache-manual)],
-);
+# Load prerequisite modules.
+use_prereq('Test::MinimumVersion');
 
-# Skip tests if Test::MinimumVersion is not installed.
-if (!eval { require Test::MinimumVersion }) {
-    plan skip_all => 'Test::MinimumVersion required to test version limits';
+# Set up Automake testing.
+automake_setup();
+
+# For each exception case in %MINIMUM_VERSION, check the files that should
+# have that minium version.  Sort for reproducible test order.  Also
+# accumulate the list of directories we've already tested.
+my @tested;
+for my $version (sort keys %MINIMUM_VERSION) {
+    my $paths_ref = $MINIMUM_VERSION{$version};
+    all_minimum_version_ok($version, { paths => $paths_ref, no_plan => 1 });
+    push(@tested, @{$paths_ref});
 }
-Test::MinimumVersion->import;
 
-# SOURCE will be the test directory.  Change to the parent directory.
-my ($rootvol, $rootdirs) = File::Spec->splitpath($ENV{SOURCE}, 1);
-my @rootdirs = File::Spec->splitdir($rootdirs);
-pop @rootdirs;
-my $root = File::Spec->catpath($rootvol, File::Spec->catdir(@rootdirs), q{});
-chdir $root or BAIL_OUT("cannot chdir to $root: $!");
+# Now, check anything that's left against the default minimum version.
+my @paths = perl_dirs({ skip => [@tested] });
+all_minimum_version_ok($MINIMUM_VERSION, { paths => \@paths, no_plan => 1 });
 
-# For each root directory in %REQUIREMENTS, check files in that directory.
-for my $minimum (sort keys %REQUIREMENTS) {
-    my $paths_ref = $REQUIREMENTS{$minimum};
-    all_minimum_version_ok($minimum, { paths => $paths_ref, no_plan => 1 });
-}
+# Tell the TAP harness that we're done.
 done_testing();
