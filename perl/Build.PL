@@ -12,26 +12,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Config;
 use Module::Build;
-
-# Determine compiler and linker flags from Autoconf.  The actual Build.PL
-# script will be built from a template with these values substituted in.
-my (@CFLAGS, @LDFLAGS, @LIBS);
-{
-    ## no critic (TestingAndDebugging::ProhibitNoWarnings)
-    no warnings 'qw';
-    @CFLAGS  = qw(-I@top_builddir@ -I@top_srcdir@ -I@top_srcdir@/include
-      @APR_CPPFLAGS@);
-    @LDFLAGS = qw(-L@abs_top_builddir@/lib/.libs @LDFLAGS@);
-    @LIBS    = qw(-lwebauth @DEPEND_LIBS@ @LIBS@);
-}
-
-# Override the lddlflags set by Perl to prepend, rather than append, our
-# LDFLAGS values.  Otherwise, depending on how Perl was built, it may pick up
-# the wrong WebAuth libraries first.  In particular, it often prefers the
-# system libwebauth instead of the one in the build tree.
-my $LDDLFLAGS = join q{ }, @LDFLAGS, $Config{lddlflags};
 
 # Basic package configuration.
 my $build = Module::Build->new(
@@ -41,10 +22,9 @@ my $build = Module::Build->new(
     recursive_test_files => 1,
     add_to_cleanup       => [qw(webauth_keyring webauth_keyring2)],
 
-    # XS configuration.  We prefer the in-tree libwebauth library.
-    config               => { lddlflags => $LDDLFLAGS },
-    extra_compiler_flags => [@CFLAGS],
-    extra_linker_flags   => [@LIBS],
+    # XS configuration.  For in-tree builds, we override this to add the full
+    # list of dependency libraries, which will work on more systems.
+    extra_linker_flags => [qw(-lwebauth)],
 
     # Other package relationships.
     configure_requires => { 'Module::Build' => 0.28 },

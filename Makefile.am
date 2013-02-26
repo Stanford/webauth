@@ -17,14 +17,15 @@ WEBAUTH_PERL_FLAGS ?=
 # These files are needed for the Perl module builds.  They're listed here to
 # be added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/MANIFEST perl/MANIFEST.SKIP perl/lib/WebAuth.pm	    \
-	perl/lib/WebAuth.xs perl/lib/WebAuth/Exception.pm		    \
-	perl/lib/WebAuth/Key.pm perl/lib/WebAuth/Keyring.pm		    \
-	perl/lib/WebAuth/KeyringEntry.pod perl/lib/WebAuth/Krb5.pm	    \
-	perl/lib/WebAuth/Token.pm perl/lib/WebAuth/Token/App.pm		    \
-	perl/lib/WebAuth/Token/Cred.pm perl/lib/WebAuth/Token/Error.pm	    \
-	perl/lib/WebAuth/Token/Id.pm perl/lib/WebAuth/Token/Login.pm	    \
-	perl/lib/WebAuth/Token/Proxy.pm perl/lib/WebAuth/Token/Request.pm   \
+PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
+	perl/lib/WebAuth.pm perl/lib/WebAuth.xs				    \
+	perl/lib/WebAuth/Exception.pm perl/lib/WebAuth/Key.pm		    \
+	perl/lib/WebAuth/Keyring.pm perl/lib/WebAuth/KeyringEntry.pod	    \
+	perl/lib/WebAuth/Krb5.pm perl/lib/WebAuth/Token.pm		    \
+	perl/lib/WebAuth/Token/App.pm perl/lib/WebAuth/Token/Cred.pm	    \
+	perl/lib/WebAuth/Token/Error.pm perl/lib/WebAuth/Token/Id.pm	    \
+	perl/lib/WebAuth/Token/Login.pm perl/lib/WebAuth/Token/Proxy.pm	    \
+	perl/lib/WebAuth/Token/Request.pm				    \
 	perl/lib/WebAuth/Token/WebKDCProxy.pm				    \
 	perl/lib/WebAuth/Token/WebKDCService.pm perl/lib/WebKDC.pm	    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/WebKDCException.pm	    \
@@ -221,13 +222,18 @@ else
     PERL_WARNINGS =
 endif
 
+# CFLAGS and LDFLAGS to pass to the Perl build.
+PERL_CFLAGS = -I$(abs_top_builddir) -I$(abs_top_srcdir) \
+	-I$(abs_top_srcdir)/include $(CPPFLAGS) $(APR_CPPFLAGS)
+PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS)
+
 # The following section sets up the Perl module build properly.  Most of the
 # complexity is here to handle building outside of the source directory, in
 # which case we need to copy various files from the source directory and make
 # sure they're up to date since Perl can't handle VPATH builds.
-perl/lib/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm			\
-		$(srcdir)/perl/lib/WebAuth.xs $(srcdir)/perl/typemap	\
-		lib/libwebauth.la perl/Build.PL
+perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
+		$(srcdir)/perl/lib/WebAuth.xs $(srcdir)/perl/typemap	  \
+		lib/libwebauth.la
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
 	    for d in $(PERL_DIRECTORIES) ; do				\
 		[ -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
@@ -236,8 +242,12 @@ perl/lib/WebAuth.o: $(srcdir)/perl/lib/WebAuth.pm			\
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
+	rm perl/lib/WebAuth.o
 	cd perl && perl Build.PL					\
-	    --config optimize='$(CPPFLAGS) $(CFLAGS) $(PERL_WARNINGS)'	\
+	    --config lddlflags='$(PERL_LDFLAGS_FULL)'			\
+	    --config optimize='$(CFLAGS) $(PERL_WARNINGS)'		\
+	    --extra-compiler-flags '$(PERL_CFLAGS)'			\
+	    --extra-linker-flags '-lwebauth $(DEPEND_LIBS) $(LIBS)'	\
 	    $(WEBAUTH_PERL_FLAGS)
 	cd perl && ./Build
 
@@ -249,7 +259,7 @@ all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
 CLEANFILES = lib/libwebauth.pc
-DISTCLEANFILES = include/webauth/defines.h perl/Makefile
+DISTCLEANFILES = include/webauth/defines.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	\
 	configure docs/protocol.html docs/protocol.txt m4/libtool.m4	\
 	m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4	\

@@ -60,13 +60,17 @@ AC_ARG_ENABLE([mod_webauthldap],
 AM_CONDITIONAL([BUILD_WEBAUTHLDAP], [test x"$build_webauthldap" = xtrue])
 
 dnl Allow the user to indicate that the Perl modules should not be built.
+PERL_LDFLAGS=
 AC_ARG_ENABLE([perl],
     [AC_HELP_STRING([--enable-perl], [Build Perl bindings])],
     [AS_IF([test x"$enableval" = xyes], [build_perl=true],
         [build_perl=false])],
     [build_perl="$build_webkdc"])
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
-AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
+AS_IF([test x"$build_perl" = xtrue],
+    [AC_PATH_PROG([PERL], [perl])
+     PERL_LDFLAGS=`$PERL -MConfig -e 'print $Config{lddlflags}'`])
+AC_SUBST([PERL_LDFLAGS])
 
 dnl Used for the test suite.
 AC_ARG_VAR([PATH_REMCTLD], [Path to remctld for the test suite])
@@ -154,7 +158,7 @@ AC_SUBST([DEPEND_LIBS])
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
 AS_IF([test x"$build_perl" = xtrue],
-    [AC_CONFIG_FILES([perl/Build.PL perl/t/lib/RRA/TAP/Automake.pm])])
+    [AC_CONFIG_FILES([perl/t/lib/RRA/TAP/Automake.pm])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=include/webauth/defines.h])
