@@ -12,7 +12,6 @@ use strict;
 use warnings;
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use RRA::TAP::Automake qw(test_file_path);
 use Util qw(contents);
 
 use Test::More tests => 233;
@@ -41,9 +40,7 @@ our %TOKENS_BAD;
 # Read a token from a test file and return it without the trailing newline.
 sub read_token {
     my ($token) = @_;
-    my $path = test_file_path ("data/tokens/$token")
-        or BAIL_OUT ("cannot find data/tokens/$token");
-    return contents ($path);
+    return contents ("t/data/tokens/$token");
 }
 
 # Encode a time in the token encoding format.  This is mostly a wrapper around
@@ -57,11 +54,11 @@ sub encode_time {
 
 # General setup.
 my $wa = WebAuth->new;
-my $path = test_file_path ("data/keyring")
-    or BAIL_OUT ('cannot find data/keyring');
-my $keyring = $wa->keyring_read ($path);
-$path = test_file_path ("data/tokens.conf");
-require $path or BAIL_OUT ("cannot load data/tokens.conf");
+if (!-f 't/data/keyring') {
+    BAIL_OUT ('cannot find data/keyring');
+}
+my $keyring = $wa->keyring_read ('t/data/keyring');
+require 't/data/tokens.conf' or BAIL_OUT ("cannot load t/data/tokens.conf");
 
 # Loop through the good tokens, load the named token, and check its attributes
 # against the expected attributes from the configuration file.

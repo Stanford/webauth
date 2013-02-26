@@ -157,8 +157,6 @@ AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
-AS_IF([test x"$build_perl" = xtrue],
-    [AC_CONFIG_FILES([perl/t/lib/RRA/TAP/Automake.pm])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=include/webauth/defines.h])

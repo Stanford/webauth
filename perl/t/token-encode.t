@@ -19,7 +19,6 @@ use strict;
 use warnings;
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use RRA::TAP::Automake qw(test_file_path);
 use Util qw(create_keyring);
 
 use Test::More tests => 279;
@@ -84,8 +83,7 @@ my $wa = WebAuth->new;
 my $now = time;
 my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
 my $keyring = $wa->keyring_new ($key);
-my $path = test_file_path ("data/tokens.conf");
-require $path or BAIL_OUT ("cannot load data/tokens.conf");
+require 't/data/tokens.conf' or BAIL_OUT ("cannot load t/data/tokens.conf");
 
 # Loop through the good tokens, construct a matching token using the Perl
 # class, encode it, decode it, and check that the results match.

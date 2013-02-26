@@ -207,10 +207,12 @@ if BUILD_WEBKDC
 endif
 
 # Build and install the Perl bindings if desired.
-BINDINGS =
+BINDINGS         =
+BINDINGS_CHECK   =
 BINDINGS_INSTALL =
 if BUILD_PERL
-    BINDINGS += perl/lib/WebAuth.o
+    BINDINGS         += perl/lib/WebAuth.o
+    BINDINGS_CHECK   += perl/t/data/keyring perl/t/data/tokens.conf
     BINDINGS_INSTALL += install-data-local-perl
 endif
 
@@ -235,7 +237,7 @@ PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS)
 # sure they're up to date since Perl can't handle VPATH builds.
 perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
 		$(srcdir)/perl/lib/WebAuth.xs $(srcdir)/perl/typemap	  \
-		lib/libwebauth.la
+		lib/libwebauth.la $(BINDINGS_CHECK)
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
 	    for d in $(PERL_DIRECTORIES) ; do				\
 		[ -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
@@ -244,7 +246,7 @@ perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
-	rm perl/lib/WebAuth.o
+	rm -f perl/lib/WebAuth.o
 	cd perl && perl Build.PL					\
 	    --config lddlflags='$(PERL_LDFLAGS_FULL)'			\
 	    --config optimize='$(CFLAGS) $(PERL_WARNINGS)'		\
@@ -260,7 +262,7 @@ install-data-local-perl: perl/lib/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
-CLEANFILES = lib/libwebauth.pc
+CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf
 DISTCLEANFILES = include/webauth/defines.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	 \
 	configure docs/protocol.html docs/protocol.txt lib/rules-cache.c \
@@ -274,6 +276,7 @@ clean-local:
 	rm -f */*.gcda */*.gcno */*/*.gcda */*/*.gcno
 	set -e; if [ -f "perl/Build" ] ; then	\
 	    cd perl && ./Build realclean ;	\
+	    rm -rf perl/t/data/tokens ;		\
 	fi
 
 # Remove the Perl files we copied over if srcdir != builddir.
@@ -405,7 +408,17 @@ tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 	portable/libportable.la
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
 
-check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS
+# The Perl test suite also requires a copy of the tokens.conf file, the test
+# keyring, and all the pre-generated tokens.  Handle copying those over via
+# Makefile rules and remove them on make clean.
+perl/t/data/keyring: $(srcdir)/tests/data/keyring
+	cp $(srcdir)/tests/data/keyring perl/t/data/keyring
+perl/t/data/tokens.conf: $(srcdir)/tests/data/tokens.conf
+	cp $(srcdir)/tests/data/tokens.conf perl/t/data/tokens.conf
+	[ -d perl/t/data/tokens ] || mkdir perl/t/data/tokens
+	cp tests/data/tokens/* perl/t/data/tokens/
+
+check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)
 	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
 	@set -e; if [ -f perl/Build ] ; then				\
 	    echo '' ;							\

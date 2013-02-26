@@ -29,12 +29,14 @@
 /perl/_build/
 /perl/lib/WebAuth.c
 /perl/blib/
+/perl/t/data/keyring
 /perl/t/data/test.keytab
 /perl/t/data/test.password
 /perl/t/data/test.principal
 /perl/t/data/test.principal-webauth
 /perl/t/data/test.realm
-/perl/t/lib/RRA/TAP/Automake.pm
+/perl/t/data/tokens.conf
+/perl/t/data/tokens/
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1
