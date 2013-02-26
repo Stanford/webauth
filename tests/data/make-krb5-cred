@@ -40,7 +40,7 @@ GetOptions(
 ) or exit 1;
 
 # Create the WebAuth Kerberos context and initialize from the cache.
-my $wa = WebAuth->new();
+my $wa   = WebAuth->new();
 my $krb5 = $wa->krb5_new();
 if (defined $cache) {
     $krb5->init_via_cache($cache);
