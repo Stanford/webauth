@@ -115,7 +115,7 @@ sub use_prereq {
 
     # If the use failed for any reason, skip the test.
     if (!$result || $error) {
-        plan skip_all => "$module required for test: $error";
+        plan skip_all => "$module required for test";
     }
 
     # If the module set $SIG{__DIE__}, we cleared that via local.  Restore it.
