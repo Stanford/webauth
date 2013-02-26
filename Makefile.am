@@ -70,13 +70,15 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
 	tests/data/cmd-webkdc tests/data/creds tests/data/id.acl	    \
 	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
-	tests/data/perlcriticrc tests/data/perltidyrc			    \
+	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
 	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
 	tests/perl/minimum-version-t tests/perl/strict-t		    \
-	tests/tap/libtap.sh tests/tools/wa_keyring-t tests/util/xmalloc-t   \
-	tools/clean-apache-manual tools/wa_keyring.pod			    \
+	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
+	tests/tap/perl/Test/RRA/Automake.pm				    \
+	tests/tap/perl/Test/RRA/Config.pm tests/tools/wa_keyring-t	    \
+	tests/util/xmalloc-t tools/clean-apache-manual tools/wa_keyring.pod \
 	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
 	weblogin/images/error.xcf weblogin/images/help.xcf		    \
 	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
