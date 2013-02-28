@@ -333,11 +333,11 @@ int webauth_factors_parse(struct webauth_context *, const char *,
 /*
  * Given a webauth_factors struct, return its value as a comma-separated
  * string suitable for inclusion in a token.  The new string is
- * pool-allocated.
+ * pool-allocated.  If the webauth_factors struct is NULL, returns NULL.
  */
 char *webauth_factors_string(struct webauth_context *,
                              struct webauth_factors *)
-    __attribute__((__nonnull__));
+    __attribute__((__nonnull__(1)));
 
 /*
  * Given two sets of factors (struct webauth_factors), return true if the
