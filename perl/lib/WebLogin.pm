@@ -279,8 +279,13 @@ sub get_pagename {
 # the user every time.  Takes an optional redirection URL and an optional
 # parameter saying that this is a post redirect.
 sub print_headers {
-    my ($self, $cookies, $redir_url, $post) = @_;
-    my $q = $self->query;
+    my ($self, $args) = @_;
+    my $cookies      = $args->{cookies};
+    my $return_url   = $args->{return_url};
+    my $use_303      = $args->{use_303};
+    my $confirm_page = $args->{confirm_page};
+
+    my $q    = $self->query;
     my $ca;
 
     # REMUSER_COOKIE is handled as a special case, since it stores user
@@ -307,6 +312,18 @@ sub print_headers {
 
             # Also expire the factor token on any public computer.
             } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
+                $cookie = $self->expire_cookie ($name, $secure);
+
+            # Expire the SSO cookies on any final redirect to WAS, on a
+            # public computer.
+            } elsif ($name =~ /^webauth_wpt_/ && $return_url
+                     && $q->param ('public_computer')) {
+                $cookie = $self->expire_cookie ($name, $secure);
+
+            # Expire the SSO cookies on the confirm page, if there are no
+            # authorization identities set and on a public computer.
+            } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
+                     && $q->param ('public_computer')) {
                 $cookie = $self->expire_cookie ($name, $secure);
 
             # Pass along the remuse cookie and mark it as seen.
@@ -364,9 +381,9 @@ sub print_headers {
 
     # Now, print out the page header with the appropriate cookies.
     my @params;
-    if ($redir_url) {
-        push (@params, -location => $redir_url,
-              -status => $post ? '303 See Also' : '302 Moved');
+    if ($return_url) {
+        push (@params, -location => $return_url,
+              -status => $use_303 ? '303 See Also' : '302 Moved');
     }
     push (@params, -cookie => $ca) if $ca;
     $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
@@ -547,7 +564,8 @@ sub print_login_page {
         $params->{error} = 1;
     }
 
-    $self->print_headers ($self->{response}->cookies);
+    my %args = (cookies => $self->{response}->cookies);
+    $self->print_headers (\%args);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -585,6 +603,7 @@ sub print_error_page {
     }
 
     # Print out the error page.
+    my %args = (cookies => $resp->cookies);
     $self->print_headers ($resp->cookies);
     $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
@@ -700,7 +719,10 @@ sub print_confirm_page {
     }
     if ($token_type eq 'id') {
         if ($bypass and not $post) {
-            return $self->print_headers ($resp->cookies, $return_url);
+            my %args = (cookies      => $resp->cookies,
+                        return_url   => $return_url,
+                        confirm_page => 1);
+            return $self->print_headers (\%args);
         }
     }
 
@@ -745,9 +767,15 @@ sub print_confirm_page {
     # we're suppressing the confirm page and the browser used HTTP/1.1, use
     # the HTTP 303 redirect code as well.
     if ($bypass && $ENV{SERVER_PROTOCOL} eq 'HTTP/1.1') {
-        $self->print_headers ($resp->cookies, $return_url, 1);
+        my %args = (cookies      => $resp->cookies,
+                    return_url   => $return_url,
+                    use_303      => 1,
+                    confirm_page => 1);
+        $self->print_headers (\%args);
     } else {
-        $self->print_headers ($resp->cookies);
+        my %args = (cookies      => $resp->cookies,
+                    confirm_page => 1);
+        $self->print_headers (\%args);
     }
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
@@ -805,7 +833,8 @@ sub redisplay_confirm_page {
                                     expiration => 0});
 
     # Print out the page, including the new REMOTE_USER cookie.
-    $self->print_headers (\%cookie);
+    my %args = (cookies => \%cookie);
+    $self->print_headers (\%args);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -899,7 +928,8 @@ sub print_multifactor_page {
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
 
-    $self->print_headers ($self->{response}->cookies);
+    my %args = (cookies => $self->{response}->cookies);
+    $self->print_headers (\%args);
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -1258,14 +1288,15 @@ sub error_if_no_cookies {
     } elsif ($self->query->request_method ne 'POST') {
         $self->query->delete ('username', 'password', 'submit');
         $self->query->param (test_cookie => 1);
-        my $redir_url = $self->query->url (-query => 1);
-        print STDERR "no cookie set, redirecting to $redir_url\n"
+        my $return_url = $self->query->url (-query => 1);
+        print STDERR "no cookie set, redirecting to $return_url\n"
             if $self->param ('debug');
         # FIXME: How do we handle this?  print_headers will set the headers,
         #        but then we have no actual output that should be returned.
         #        Should probably return '' and make the caller differentiate
         #        between getting that and getting undef.
-        return $self->print_headers ('', $redir_url);
+        my %args = (return_url => $return_url);
+        return $self->print_headers (\%args);
     }
 
     return undef;
@@ -1605,7 +1636,7 @@ sub handle_login_error {
     # to use username/password no matter what, REMOTE_USER redirects are not
     # supported, or the user has already tried username/password.  Display the
     # login screen without the REMOTE_USER choice.
-        # 1D -- Displaying traditional login screen.
+    # 1D -- Displaying traditional login screen.
     } elsif ($status == WK_ERR_USER_AND_PASS_REQUIRED
              || $status == WK_ERR_LOGIN_FORCED
              || $status == WK_ERR_LOGIN_FAILED

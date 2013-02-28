@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Tests for factor token handling
+# Tests for cookie setting
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2013
@@ -11,13 +11,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 10;
 
 # Ensure we don't pick up the system webkdc.conf.
 BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use Util qw (contents get_userinfo getcreds create_keyring);
 
 use CGI;
 use CGI::Cookie;
@@ -71,74 +70,104 @@ sub init_weblogin {
 my $expires_epoch = 1577865600;
 my $expires_text  = 'Wed, 01-Jan-2020 08:00:00 GMT';
 
+my $cookie_name = 'webauth_wpt_test';
+
 #############################################################################
 # Tests
 #############################################################################
 
 my ($status, $error);
 
-# Set up the KDC request with a factor cookie and verify it was found.
+# Check to see if we set a cookie when we should.  Requires digging into the
+# CGI::Application object a little.
 my $weblogin = init_weblogin;
-my $cookie = CGI::Cookie->new (-name => 'webauth_wft', -value => 'test');
-$ENV{HTTP_COOKIE} = "$cookie";
-my %cart = CGI::Cookie->fetch;
-$status = $weblogin->setup_kdc_request (%cart);
-ok (!$status, 'setup_kdc_request with factor cookie works');
-ok ($weblogin->{request}->factor_token, '...and factor_token set');
-is ($weblogin->{request}->factor_token, 'test', '...to the right value');
-
-# Check again with no factor cookie.
-$weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$ENV{HTTP_COOKIE} = "";
-ok (!$status, 'setup_kdc_request without factor cookie works');
-is ($weblogin->{request}->factor_token, undef, '...and factor_token not set');
-
-# Check to see if we set a factor cookie when we should.  Requires digging
-# into the CGI::Application object a little.
-$weblogin = init_weblogin;
-$status = $weblogin->setup_kdc_request;
-$weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
+$weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
 my %args = (cookies => $weblogin->{response}->cookies);
 $weblogin->print_headers (\%args);
-$cookie = undef;
+my $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
-    if ($c->name eq 'webauth_wft') {
+    if ($c->name eq $cookie_name) {
         $cookie = $c;
     }
 }
-is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
-is ($cookie->expires, $expires_text, '...with the correct expiration time');
+is ($cookie->name, $cookie_name, 'SSO cookie was set');
+is ($cookie->expires, undef, '...with the default lifetime');
 
-# Check clearing the webauth cookie by giving it an empty value.
+# Check clearing an SSO cookie by giving it an empty value.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->{response}->cookie ('webauth_wft', '', $expires_epoch);
+$weblogin->{response}->cookie ($cookie_name, '', $expires_epoch);
 %args = (cookies => $weblogin->{response}->cookies);
 $weblogin->print_headers (\%args);
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
-    if ($c->name eq 'webauth_wft') {
+    if ($c->name eq $cookie_name) {
         $cookie = $c;
     }
 }
-is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
+is ($cookie->name, $cookie_name, 'SSO cookie with no content was set');
 my $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...with the correct expiration time');
+is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
 
-# Check clearing the webauth cookie by setting the public computer checkbox.
+# Check clearing an SSO cookie by setting the public computer checkbox
+# and nothing else.  That shouldn't clear it, as it should only be cleared
+# when the login proces is over.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
 $weblogin->query->param (public_computer => 1);
-$weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
+$weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
 %args = (cookies => $weblogin->{response}->cookies);
 $weblogin->print_headers (\%args);
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
-    if ($c->name eq 'webauth_wft') {
+    if ($c->name eq $cookie_name) {
         $cookie = $c;
     }
 }
-is ($cookie->name, 'webauth_wft', 'Factor cookie on public computer was set');
+is ($cookie->name, $cookie_name,
+    'SSO cookie on public computer during normal login process was set');
 $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire now');
+is ($expires, undef, '...with the default lifetime');
+
+# Check clearing an SSO cookie by setting the public computer checkbox
+# and a redirect URL.  This simulates a redirect without showing the confirm
+# page.
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+$weblogin->query->param (public_computer => 1);
+$weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
+%args = (cookies => $weblogin->{response}->cookies,
+         return_url => 'http://www.test.com');
+$weblogin->print_headers (\%args);
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq $cookie_name) {
+        $cookie = $c;
+    }
+}
+is ($cookie->name, $cookie_name,
+    'SSO cookie on public computer redirecting without confirm was set');
+$expires = str2time ($cookie->expires);
+is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+
+# Check clearing an SSO cookie by setting the public computer checkbox,
+# and the flag for having come from the confirm page.  This should clear the
+# cookie.
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+$weblogin->query->param (public_computer => 1);
+$weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
+%args = (cookies      => $weblogin->{response}->cookies,
+         confirm_page => 1);
+$weblogin->print_headers (\%args);
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq $cookie_name) {
+        $cookie = $c;
+    }
+}
+is ($cookie->name, $cookie_name,
+    'SSO cookie on public computer on confirm page');
+$expires = str2time ($cookie->expires);
+is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
