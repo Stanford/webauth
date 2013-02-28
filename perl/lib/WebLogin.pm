@@ -577,6 +577,14 @@ sub print_error_page {
         $params->{cancel_url} = $cancel_url;
     }
 
+    # If the user has been locked out due to hitting the rate limit, force
+    # expiration of any persistent factor cookies and proxy cookies by marking
+    # this as a public computer.
+    if ($params->{err_lockout}) {
+        $q->param ('public_computer', 1);
+    }
+
+    # Print out the error page.
     $self->print_headers ($resp->cookies);
     $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
