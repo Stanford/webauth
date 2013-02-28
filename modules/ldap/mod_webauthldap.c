@@ -166,7 +166,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
     krb5_ccache cc;
-    krb5_principal princ;
+    krb5_principal princ = NULL;
     krb5_error_code code;
     char *kt, *cc_path;
 
@@ -199,7 +199,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     if (code != 0) {
         krb5_kt_close(ctx, keytab);
-        krb5_free_principal(ctx, princ);
+        if (princ != NULL)
+            krb5_free_principal(ctx, princ);
         return code;
     }
 
