@@ -152,6 +152,8 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
                 status = convert_number(ctx, content, &value);
                 *expiration = value;
             }
+            if (status != WA_ERR_NONE)
+                return status;
         }
     }
 
