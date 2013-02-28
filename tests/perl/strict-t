@@ -8,9 +8,6 @@
 # This test is disabled unless RRA_MAINTAINER_TESTS is set, since some scripts
 # may require dependencies that aren't necessarily present.
 #
-# This test currently does not arrange to add any in-tree Perl modules to the
-# library search path.
-#
 # The canonical version of this file is maintained in the rra-c-util package,
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
@@ -45,7 +42,6 @@ use lib "$ENV{SOURCE}/tap/perl";
 use Test::More;
 use Test::RRA qw(use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs);
-use Test::RRA::Config qw(@CRITIC_IGNORE);
 
 # Load prerequisite modules.
 use_prereq('Test::Strict');
