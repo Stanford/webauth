@@ -798,7 +798,7 @@ check_multifactor(struct webauth_context *ctx,
      * care about the available factors in that case.
      */
     if (req->loa > wkproxy->loa) {
-        if (req->loa > info->max_loa) {
+        if (info != NULL && req->loa > info->max_loa) {
             response->login_error = WA_PEC_LOA_UNAVAILABLE;
             response->login_message = "insufficient level of assurance";
             return WA_ERR_NONE;
