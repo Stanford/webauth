@@ -19,7 +19,7 @@
  * both.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -215,7 +215,6 @@ open_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc,
         if (code != 0)
             goto fail;
         krb5_kt_end_seq_get(kc->ctx, id, &cursor);
-        cursor_valid = false;
     }
     *keytab = id;
     return WA_ERR_NONE;
