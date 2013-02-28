@@ -2,7 +2,7 @@
  * Test suite for factor code manipulation.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -39,7 +39,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_factors *one, *two;
 
-    plan(87);
+    plan(88);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -178,6 +178,10 @@ main(void)
     /* Check parsing a NULL factor string. */
     one = NULL;
     parse_factors(ctx, NULL, &one);
+
+    /* Check converting a NULL factors struct to a string. */
+    is_string(NULL, webauth_factors_string(ctx, NULL),
+              "webauth_factors_string of NULL struct");
 
     /* Clean up. */
     webauth_context_free(ctx);
