@@ -39,7 +39,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_factors *one, *two;
 
-    plan(88);
+    plan(98);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -145,11 +145,36 @@ main(void)
     one = NULL;
     parse_factors(ctx, "p", &one);
     parse_factors(ctx, "x", &one);
-    is_int(1, one->multifactor, "...and is multifactor");
+    is_int(1, one->multifactor, "p and x merged is multifactor");
     is_int(3, one->factors->nelts, "...and saw three factors");
     is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
               "...first is correct");
     is_string("x", APR_ARRAY_IDX(one->factors, 1, const char *),
+              "...second is correct");
+    is_string("m", APR_ARRAY_IDX(one->factors, 2, const char *),
+              "...third is synthesized multifactor");
+
+    /* Check that the human factor counts as multifactor. */
+    one = NULL;
+    parse_factors(ctx, "h,p", &one);
+    is_int(1, one->multifactor, "h and p is multifactor");
+    is_int(3, one->factors->nelts, "...and saw three factors");
+    is_string("h", APR_ARRAY_IDX(one->factors, 0, const char *),
+              "...first is correct");
+    is_string("p", APR_ARRAY_IDX(one->factors, 1, const char *),
+              "...second is correct");
+    is_string("m", APR_ARRAY_IDX(one->factors, 2, const char *),
+              "...third is synthesized multifactor");
+
+    /* Likewise with merging. */
+    one = NULL;
+    parse_factors(ctx, "p", &one);
+    parse_factors(ctx, "h", &one);
+    is_int(1, one->multifactor, "h and p merged is multifactor");
+    is_int(3, one->factors->nelts, "...and saw three factors");
+    is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
+              "...first is correct");
+    is_string("h", APR_ARRAY_IDX(one->factors, 1, const char *),
               "...second is correct");
     is_string("m", APR_ARRAY_IDX(one->factors, 2, const char *),
               "...third is synthesized multifactor");

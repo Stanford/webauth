@@ -1798,6 +1798,20 @@
             strong authentication, or otherwise is a relatively trusted
             device as defined by local site policy.</t>
 
+            <t hangText='h (human)'>
+            <vspace blankLines='0'/>The identity of the user has been
+            additionally verified by a human.  This factor is normally not
+            requested directly by a WebAuth Application Server, but rather
+            is added via some site-specific mechanism by local support
+            staff in order to synthesize a multifactor authentication.
+            For example, a user may have lost their hardware token but
+            need to access a site that requires multifactor.  A WebKDC
+            could support some mechanism to add this authentication factor
+            and a multifactor factor to the user's next login after the
+            user verifies their identity with local support staff via some
+            off-line process and then goes through the login proces
+            immediately.</t>
+
             <t hangText='k (Kerberos)'>
             <vspace blankLines='0'/>Only used for session authentication
             factors, this indicates that the user authenticated this
@@ -1861,6 +1875,16 @@
             card.</t>
           </list>
         </t>
+
+        <t>An authentication factor of m will always satisfy a requirement
+        for an authentication factor of rm.</t>
+
+        <t>Implementations may automatically add the m (multifactor)
+        factor to the factors for an authentication if factors from more
+        than one different authentication method are present (two or more
+        from the set of h, o, p, and x, for example).  If an
+        implementation does this, the c, k, rm, and u factors must not be
+        considered when deciding whether to add an m factor.</t>
 
         <t>Sites may define and use their own factor codes, but they risk
         conflict with future standardized codes unless they coordinate
@@ -2534,13 +2558,13 @@
           &lt;factorTokens> element to the &lt;requestTokenResponse> API,
           and the d factor.</t>
 
-          <t hangText='3.4.1 (2013-02-13, rra)'>
+          <t hangText='3.4.1 (2013-02-28, rra)'>
           <vspace blankLines='0'/>Include the expiration time of a factor
           token in the &lt;requesttokenResponse&gt; response as an
           attribute on the &lt;factorToken&gt; element.  Clarify that the
           webkdc-factor expiration time reflects when it stops
           contributing factors to new authentications, not when those
-          factors go away entirely.</t>
+          factors go away entirely.  Add the h factor.</t>
         </list>
       </t>
     </section>

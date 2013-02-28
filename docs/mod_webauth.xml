@@ -264,6 +264,17 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
+        <td><code>h</code></td><td>human</td><td>No</td>
+        <td>
+          Off-line human verification of the user's identity.  This factor
+          should not be required directly; rather, it is used by (for
+          example) local support staff to add a factor, and hence add the
+          multifactor factor, for a user who doesn't have access to their
+          normal authentication method but has established their identity
+          via some off-line process.
+        </td>
+      </tr>
+      <tr>
         <td><code>k</code></td><td>Kerberos</td><td>No</td>
         <td>Session authentication via Kerberos authentication</td>
       </tr>

@@ -6,7 +6,7 @@
  * one is a subset of another.  Those utility functions are collected here.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -38,6 +38,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
     const char *current, *factor;
     int i;
     bool found;
+    bool human = false;
     bool password = false;
     bool otp = false;
     bool x509 = false;
@@ -50,6 +51,8 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
         factors = *result;
         for (i = 0; i < factors->factors->nelts; i++) {
             factor = APR_ARRAY_IDX(factors->factors, i, const char *);
+            if (strncmp(factor, "h", 1) == 0)
+                password = true;
             if (strncmp(factor, "p", 1) == 0)
                 password = true;
             if (strncmp(factor, "o", 1) == 0)
@@ -98,6 +101,8 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
         }
         if (!found) {
             APR_ARRAY_PUSH(factors->factors, const char *) = factor;
+            if (strncmp(factor, "h", 1) == 0)
+                password = true;
             if (strncmp(factor, "p", 1) == 0)
                 password = true;
             if (strncmp(factor, "o", 1) == 0)
@@ -106,7 +111,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
                 x509 = true;
         }
     }
-    if (!factors->multifactor && (password + otp + x509) >= 2) {
+    if (!factors->multifactor && (human + password + otp + x509) >= 2) {
         APR_ARRAY_PUSH(factors->factors, const char *) = "m";
         factors->multifactor = true;
     }

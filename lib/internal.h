@@ -21,6 +21,7 @@
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
 #define WA_FA_DEVICE               "d"
+#define WA_FA_HUMAN                "h"
 #define WA_FA_KERBEROS             "k"
 #define WA_FA_MULTIFACTOR          "m"
 #define WA_FA_OTP                  "o"
