@@ -424,9 +424,11 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
     } while (i-- > 0);
 
     /* Set the result webkdc-proxy factors to our assembled ones. */
-    wft = &best->token.webkdc_factor;
-    wft->initial_factors = webauth_factors_string(ctx, ifactors);
-    wft->session_factors = webauth_factors_string(ctx, sfactors);
+    if (best != NULL) {
+        wft = &best->token.webkdc_factor;
+        wft->initial_factors = webauth_factors_string(ctx, ifactors);
+        wft->session_factors = webauth_factors_string(ctx, sfactors);
+    }
 
     /* All done.  Return best. */
     *result = best;
