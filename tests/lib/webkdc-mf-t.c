@@ -153,10 +153,15 @@ main(void)
     is_string(NULL, response->user_message, "...and no user message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(5, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -339,10 +344,15 @@ main(void)
     is_string(NULL, response->user_message, "...and no user message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(5, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -427,10 +437,15 @@ main(void)
         ok(0, "...which is an id token");
     else
         is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(6, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -504,10 +519,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(6, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -558,10 +578,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(6, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -609,7 +634,6 @@ main(void)
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Multifactor OTP session returns success");
     is_int(WA_PEC_LOGIN_FORCED, response->login_error,
            "...with the right error");
@@ -627,10 +651,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok(0, "...no result token: %s", webauth_error_message(ctx, status));
     else
         is_string("o,o3,p,m", token->token.id.session_factors,
@@ -679,10 +708,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -710,10 +744,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -773,10 +812,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -811,10 +855,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
@@ -858,10 +907,15 @@ main(void)
     is_string(NULL, response->login_message, "...and no error message");
     ok(response->result != NULL, "...there is a result token");
     is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {

@@ -2,7 +2,7 @@
  * Test suite for keyring handling.
  *
  * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
- * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012
+ * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -47,6 +47,8 @@ main(void)
     is_int(WA_ERR_NONE, s, "Key created successfully");
     ring = webauth_keyring_from_key(ctx, key);
     ok(ring->entries != NULL, "Keyring created successfully");
+    if (ring->entries == NULL)
+        bail("Cannot continue after keyring creation failure");
     is_int(1, ring->entries->nelts, "... with one entry");
     entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
     is_int(0, entry->creation, "Key has 0 creation time");
@@ -63,8 +65,12 @@ main(void)
     s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_256, NULL, &key);
     is_int(WA_ERR_NONE, s, "Creating a key succeeds");
     now = time(NULL);
+    if (ring == NULL)
+        bail("Cannot continue after keyring creation failure");
     webauth_keyring_add(ctx, ring, now, now, key);
-    ok(ring->entries != NULL, "Keyring created successfully");
+    ok(ring->entries != NULL, "Key added successfully");
+    if (ring->entries == NULL)
+        bail("Cannot continue after keyring creation failure");
     is_int(1, ring->entries->nelts, "... with one entry");
     entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
     is_int(now, entry->creation, "Key has correct creation time");
