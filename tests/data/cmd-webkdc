@@ -15,6 +15,7 @@
 set -e
 
 cd "$SOURCE"
+. "${SOURCE}/tap/libtap.sh"
 
 # Verify that the front-end passed the correct data and determine the XML
 # directory to use for responses.
@@ -90,7 +91,19 @@ if [ -f "data/xml/$dir/$2.xml" ] ; then
             exec cat "data/xml/$dir/$2.xml"
         fi
     fi
+
+# Otherwise, see if the user matches our Kerberos configuration.  If so, send
+# the additional.xml data with the user replaced by the Kerberos user.
 else
+    passfile=`test_file_path config/password`
+    if [ -n "$passfile" ] ; then
+        krbuser=`head -1 "$passfile"`
+        if [ "$2" = "$krbuser" ] ; then
+            cat "data/xml/$dir/additional.xml" \
+                | sed "s/\"additional\"/\"$krbuser\"/"
+            exit $?
+        fi
+    fi
     echo "unknown user $2" >&2
     exit 1
 fi

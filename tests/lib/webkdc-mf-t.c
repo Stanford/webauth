@@ -65,6 +65,7 @@ main(void)
     krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
+    APR_ARRAY_PUSH(config.local_realms, const char *) = "none";
     config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
     config.keytab_path = krbconf->keytab;
     config.principal = krbconf->principal;
@@ -81,7 +82,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(235);
+    plan(253);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -691,15 +692,100 @@ main(void)
            "...and four factors are configured");
 
     /*
-     * Request random multifactor for a user who will get lucky and not need
-     * to authenticate with multifactor.
+     * Request multifactor, provide a webkdc-proxy token indicating a password
+     * authentication, and authenticate as the user who gets additional
+     * factors.  The additional factors should not be added because we didn't
+     * just authenticate.
      */
     req.type = "id";
     req.auth = "webkdc";
     req.proxy_type = NULL;
+    req.initial_factors = "m";
+    req.loa = 0;
+    wkproxy.token.webkdc_proxy.subject = krbconf->userprinc;
+    wkproxy.token.webkdc_proxy.initial_factors = "p";
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Proxy auth w/additional returns success");
+    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
+           "...with the right error");
+    is_string("multifactor login required", response->login_message,
+              "...and the right message");
+    ok(response->result == NULL, "...and there is no result token");
+    if (response->factors_wanted == NULL)
+        ok_block(2, false, "...and no wanted factors");
+    else {
+        is_int(1, response->factors_wanted->nelts,
+               "...and one factor is wanted");
+        is_string("m",
+                  APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
+                  "...which is the multfactor factor");
+    }
+    if (response->factors_configured == NULL)
+        ok_block(4, false, "...and no configured factors");
+    else {
+        is_int(3, response->factors_configured->nelts,
+               "...and three factors are configured");
+        is_string("h",
+                  APR_ARRAY_IDX(response->factors_configured, 0, const char *),
+                  "...which are the password factor");
+        is_string("m",
+                  APR_ARRAY_IDX(response->factors_configured, 1, const char *),
+                  "...the generic multifactor factor");
+        is_string("p",
+                  APR_ARRAY_IDX(response->factors_configured, 2, const char *),
+                  "...and the password factor");
+    }
+
+    /*
+     * Now, switch to providing a login token instead.  This will allow us to
+     * merge the additional factors.
+     */
+    login.token.login.username = krbconf->userprinc;
+    login.token.login.password = krbconf->password;
+    login.token.login.otp = NULL;
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("%s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Password auth w/additional returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
+        ok_block(2, false, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("p,h,m", token->token.id.initial_factors,
+                  "...result initial factors are right");
+        is_string("p,h,m", token->token.id.session_factors,
+                  "...result session factors are right");
+    }
+
+    /*
+     * Request random multifactor for a user who will get lucky and not need
+     * to authenticate with multifactor.
+     */
     req.initial_factors = "rm";
     req.session_factors = NULL;
     req.loa = 0;
+    wkproxy.token.webkdc_proxy.subject = "normal";
+    wkproxy.token.webkdc_proxy.loa = 1;
+    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));

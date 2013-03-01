@@ -92,7 +92,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(134);
+    plan(152);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -144,7 +144,7 @@ main(void)
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
         is_string("", webauth_error_message(ctx, status), "...no error");
-        ok_block(17, 0, "...info is not NULL");
+        ok_block(18, 0, "...info is not NULL");
     } else {
         is_int(1, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
@@ -164,6 +164,7 @@ main(void)
             is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
                       "...fourth is correct");
         }
+        ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins != NULL, "...logins is not NULL");
         if (info->logins == NULL)
             ok_block(7, 0, "...logins is not NULL");
@@ -188,13 +189,14 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
-        ok_block(6, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     else {
         is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
@@ -203,13 +205,14 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for mini w/random succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
-        ok_block(6, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     else {
         is_int(0, info->multifactor_required, "...multifactor required");
         is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
@@ -218,7 +221,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(10, 0, "Metadata failed");
+        ok_block(11, 0, "Metadata failed");
     else {
         is_int(1, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
@@ -237,15 +240,16 @@ main(void)
             is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
                       "...fourth is correct");
         }
+        ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
-    /* Query information for factor with a device factor. */
+    /* Query information for a user with a device factor. */
     status = webauth_user_info(ctx, "factor", NULL, 0, url, "d", &info);
-    is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
+    is_int(WA_ERR_NONE, status, "Metadata for factor with d succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(10, 0, "Metadata failed");
+        ok_block(11, 0, "Metadata failed");
     else {
         is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
@@ -263,6 +267,39 @@ main(void)
                       "...third is correct");
             is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
                       "...fourth is correct");
+        }
+        ok(info->additional == NULL, "...additional is NULL");
+        ok(info->logins == NULL, "...logins is NULL");
+    }
+
+    /* Query information for a user with additional factors. */
+    status = webauth_user_info(ctx, "additional", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, status, "Metadata for additional succeeded");
+    ok(info != NULL, "...factor is not NULL");
+    if (info == NULL)
+        ok_block(12, 0, "Metadata failed");
+    else {
+        is_int(0, info->multifactor_required, "...multifactor required");
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(0, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        if (info->factors == NULL)
+            ok_block(4, 0, "...factors is not NULL");
+        else {
+            is_int(3, info->factors->nelts, "...three factors");
+            is_string("h", APR_ARRAY_IDX(info->factors, 0, char *),
+                      "...first is correct");
+            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
+                      "...second is correct");
+            is_string("p", APR_ARRAY_IDX(info->factors, 2, char *),
+                      "...third is correct");
+        }
+        if (info->additional == NULL)
+            ok_block(2, 0, "...additional is not NULL");
+        else {
+            is_int(1, info->additional->nelts, "...one additional factor");
+            is_string("h", APR_ARRAY_IDX(info->additional, 0, char *),
+                      "...first is correct");
         }
         ok(info->logins == NULL, "...logins is NULL");
     }

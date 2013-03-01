@@ -230,6 +230,8 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
             status = wai_xml_content(ctx, child, &info->error);
         else if (strcmp(child->name, "factors") == 0)
             status = parse_factors(ctx, child, &info->factors, NULL);
+        else if (strcmp(child->name, "additional-factors") == 0)
+            status = parse_factors(ctx, child, &info->additional, NULL);
         else if (strcmp(child->name, "multifactor-required") == 0)
             info->multifactor_required = true;
         else if (strcmp(child->name, "login-history") == 0)

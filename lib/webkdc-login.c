@@ -692,15 +692,36 @@ get_user_info(struct webauth_context *ctx,
      * already satisfied by existing factors.
      */
     if ((*info)->random_multifactor) {
-        if (!iwkfactors->multifactor && !iwkfactors->random)
-            wkproxy->initial_factors
-                = apr_pstrcat(ctx->pool, wkproxy->initial_factors, ",",
-                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
-        if (!swkfactors->multifactor && !swkfactors->random)
-            wkproxy->session_factors
-                = apr_pstrcat(ctx->pool, wkproxy->session_factors, ",",
-                              WA_FA_RANDOM_MULTIFACTOR, (char *) 0);
+        if (!iwkfactors->multifactor && !iwkfactors->random) {
+            status = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR,
+                                           &iwkfactors);
+            if (status != WA_ERR_NONE)
+                return status;
+        }
+        if (!swkfactors->multifactor && !swkfactors->random) {
+            status = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR,
+                                           &swkfactors);
+            if (status != WA_ERR_NONE)
+                return status;
+        }
     }
+
+    /* Add additional factors if we have any and we did a login. */
+    if (did_login && (*info)->additional != NULL) {
+        char *additional;
+
+        additional = apr_array_pstrcat(ctx->pool, (*info)->additional, ',');
+        status = webauth_factors_parse(ctx, additional, &iwkfactors);
+        if (status != WA_ERR_NONE)
+            return status;
+        status = webauth_factors_parse(ctx, additional, &swkfactors);
+        if (status != WA_ERR_NONE)
+            return status;
+    }
+
+    /* Update our factors in case we changed something. */
+    wkproxy->initial_factors = webauth_factors_string(ctx, iwkfactors);
+    wkproxy->session_factors = webauth_factors_string(ctx, swkfactors);
     return WA_ERR_NONE;
 }
 
@@ -1391,9 +1412,10 @@ webauth_webkdc_login(struct webauth_context *ctx,
         }
 
     /*
-     * If the user information service says that multifactor is required,
-     * reject the login with either multifactor required or with multifactor
-     * unavailable, depending on whether the user has multifactor configured.
+     * If the user information service or the request says that multifactor or
+     * some other factor we don't have is required, reject the login with
+     * either multifactor required or with multifactor unavailable, depending
+     * on whether the user has multifactor configured.
      */
     status = check_multifactor(ctx, request, *response, wkproxy, info);
     if (status != WA_ERR_NONE)

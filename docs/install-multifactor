@@ -241,6 +241,11 @@ User Information Service
           <factor>o3</factor>
         </factors>
 
+        <!-- List of additional factors to add to successful logins. -->
+        <additional-factors>
+          <factor>h</factor>
+        </additional-factors>
+
         <!-- Present if multifactor authentication is required regardless
              of whether it was requested by the destination site. -->
         <multifactor-required />
@@ -274,6 +279,16 @@ User Information Service
   include "p" (password).  If the user is capable of multifactor, be sure
   to include "m" (multifactor) in the list of factors.  Do not include
   "rm" (random multifactor); this is handled specially.
+
+  If <additional-factors> is present, those factors will be added to any
+  successful authentication.  This is primarily intended as a mechanism to
+  add the "h" (human-verified) factor temporarily for a user after local
+  support staff have confirmed their identity as a way of giving that user
+  a multifactor factor when they've lost their multifactor authentication
+  method.  However, it can be used for any scenario where the user
+  information service knows, via some external means, that a successful
+  authentication (either password or OTP) for that user should add some
+  additional factors besides the normal ones.
 
   If the <multifactor-required /> tag is present, the user will be
   required to do multifactor authentication even if the destination
