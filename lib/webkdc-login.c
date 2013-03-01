@@ -416,9 +416,6 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
             return s;
         if (wft->expiration < best->token.webkdc_factor.expiration)
             best->token.webkdc_factor.expiration = wft->expiration;
-        fprintf(stderr, "merging creation %lu and %lu\n",
-                (unsigned long) wft->creation,
-                (unsigned long) best->token.webkdc_factor.creation);
         if (wft->creation < best->token.webkdc_factor.creation)
             best->token.webkdc_factor.creation = wft->creation;
     } while (i-- > 0);
