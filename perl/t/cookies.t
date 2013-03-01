@@ -127,8 +127,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name,
     'SSO cookie on public computer during normal login process was set');
-$expires = str2time ($cookie->expires);
-is ($expires, undef, '...with the default lifetime');
+is ($cookie->expires, undef, '...with the default lifetime');
 
 # Check clearing an SSO cookie by setting the public computer checkbox
 # and a redirect URL.  This simulates a redirect without showing the confirm
