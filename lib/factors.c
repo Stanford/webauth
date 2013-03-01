@@ -52,7 +52,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
         for (i = 0; i < factors->factors->nelts; i++) {
             factor = APR_ARRAY_IDX(factors->factors, i, const char *);
             if (strncmp(factor, "h", 1) == 0)
-                password = true;
+                human = true;
             if (strncmp(factor, "p", 1) == 0)
                 password = true;
             if (strncmp(factor, "o", 1) == 0)
@@ -102,7 +102,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input,
         if (!found) {
             APR_ARRAY_PUSH(factors->factors, const char *) = factor;
             if (strncmp(factor, "h", 1) == 0)
-                password = true;
+                human = true;
             if (strncmp(factor, "p", 1) == 0)
                 password = true;
             if (strncmp(factor, "o", 1) == 0)
