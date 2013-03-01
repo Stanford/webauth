@@ -32,6 +32,10 @@ WebAuth 4.4.3 (unreleased)
     cookie has expired instead of a generic parse error and downgrade it
     to the info level from error.
 
+    Stop logging the raw binary app token in mod_webauth when it cannot be
+    decoded.  This was old debugging code left over from fixing a problem
+    in a much earlier version of WebAuth.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
