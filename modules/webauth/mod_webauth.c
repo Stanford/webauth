@@ -956,7 +956,7 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
     const char *cname = app_cookie_name();
 
     cval = find_cookie(rc, cname);
-    if (cval == NULL)
+    if (cval == NULL || cval[0] == '\0')
         return 0;
 
     if (!parse_app_token(cval, rc)) {

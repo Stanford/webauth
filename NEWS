@@ -24,6 +24,10 @@ WebAuth 4.4.3 (unreleased)
     Fix syntax error in the replay condition in the default WebLogin error
     template.
 
+    Ignore empty app cookies rather than logging an error saying they
+    cannot be parsed.  These are created internally by mod_webauth to
+    remove expired cookies and may be seen by subqueries.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
