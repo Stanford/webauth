@@ -28,6 +28,10 @@ WebAuth 4.4.3 (unreleased)
     cannot be parsed.  These are created internally by mod_webauth to
     remove expired cookies and may be seen by subqueries.
 
+    Log a more informative message in mod_webauth when the user's app
+    cookie has expired instead of a generic parse error and downgrade it
+    to the info level from error.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
