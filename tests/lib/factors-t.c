@@ -39,7 +39,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_factors *one, *two;
 
-    plan(98);
+    plan(108);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -180,6 +180,9 @@ main(void)
               "...third is synthesized multifactor");
 
     /* Check simple subset detection. */
+    one = NULL;
+    parse_factors(ctx, "p", &one);
+    parse_factors(ctx, "x", &one);
     two = NULL;
     parse_factors(ctx, "p", &two);
     is_int(1, webauth_factors_subset(ctx, two, one),
