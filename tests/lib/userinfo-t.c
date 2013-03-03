@@ -92,7 +92,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(152);
+    plan(153);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -182,6 +182,8 @@ main(void)
                       "...second hostname is correct");
             is_int(0, login->timestamp, "...second timestamp is correct");
         }
+        is_string("Welcome, <strong>full</strong>.  &lt;_&lt;;",
+                  info->user_message, "...user message");
     }
 
     /* Do a query for a minimal user. */

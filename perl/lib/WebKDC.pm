@@ -34,7 +34,7 @@ use WebAuth qw(3.00 :const);
 use WebAuth::Keyring ();
 use WebKDC::Config;
 use WebKDC::WebRequest 1.02;
-use WebKDC::WebResponse 1.02;
+use WebKDC::WebResponse 1.03;
 use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.05';
+    $VERSION = '2.06';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -390,6 +390,7 @@ sub request_token_request {
         $wresp->authz_subject ($authz_subject) if defined $authz_subject;
         $wresp->password_expiration ($pass_expires)
             if defined $pass_expires;
+        $wresp->user_message ($user_message) if defined $user_message;
 
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}

@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '1.03';
 }
 
 # Create a new, empty request.
@@ -61,6 +61,7 @@ sub authz_subject        { my $r = shift; $r->_attr ('authz_subject',     @_) }
 sub requester_subject    { my $r = shift; $r->_attr ('requester_subject', @_) }
 sub password_expiration  { my $r = shift; $r->_attr ('pwd_expiration',    @_) }
 sub response_token       { my $r = shift; $r->_attr ('response_token',    @_) }
+sub user_message         { my $r = shift; $r->_attr ('user_message',      @_) }
 sub response_token_type {
     my $r = shift;
     $r->_attr ('response_token_type', @_);

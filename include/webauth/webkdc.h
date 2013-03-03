@@ -188,6 +188,7 @@ struct webauth_user_info {
     time_t password_expires;            /* Password expiration time or 0. */
     WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
     const char *error;                  /* Error returned from userinfo. */
+    const char *user_message;           /* Message to pass along to a user. */
 };
 
 /*

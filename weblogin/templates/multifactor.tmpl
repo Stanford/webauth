@@ -36,6 +36,7 @@ works of this work.
 
   <body onload="document.login.otp.focus();">
     <h1 align="center">WebAuth Multifactor</h1>
+    [% IF user_message %]<h4>[% user_message %]</h4>[% END %]
     [% IF error %]
       <div class="error" align="center">
         <p><strong>

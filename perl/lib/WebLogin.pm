@@ -48,7 +48,7 @@ use Time::Duration;
 use URI ();
 use URI::QueryParam ();
 use WebAuth 3.06 qw(:const);
-use WebKDC 2.05;
+use WebKDC 2.06;
 use WebKDC::Config 1.00;
 use WebKDC::WebKDCException 1.05;
 
@@ -68,7 +68,7 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '1.03';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -910,6 +910,7 @@ sub print_multifactor_page {
     $params->{script_name} = $self->param ('script_name');
     $params->{username} = $q->param ('username');
     $params->{public_computer} = $q->param ('public_computer');
+    $params->{user_message} = $self->{response}->user_message;
     $params->{RT} = $RT;
     $params->{ST} = $ST;
 

@@ -246,7 +246,8 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
                 status = convert_number(ctx, content, &value);
                 info->password_expires = value;
             }
-        }
+        } else if (strcmp(child->name, "user-message") == 0)
+            status = wai_xml_content(ctx, child, &info->user_message);
         if (status != WA_ERR_NONE)
             return status;
     }

@@ -685,6 +685,7 @@ get_user_info(struct webauth_context *ctx,
     if (did_login)
         (*response)->logins = (*info)->logins;
     (*response)->password_expires = (*info)->password_expires;
+    (*response)->user_message = (*info)->user_message;
 
     /* Cap the user's LoA at the maximum allowed by the service. */
     if (wkproxy->loa > (*info)->max_loa)
