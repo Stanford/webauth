@@ -1815,6 +1815,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         && response->login_error != WA_PEC_MULTIFACTOR_REQUIRED
         && response->login_error != WA_PEC_MULTIFACTOR_UNAVAILABLE
         && response->login_error != WA_PEC_LOA_UNAVAILABLE
+        && response->login_error != WA_PEC_LOGIN_REJECTED
         && response->login_error != WA_PEC_AUTH_REJECTED)
         return set_errorResponse(rc, response->login_error,
                                  response->login_message, mwk_func, true);

@@ -64,6 +64,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
         is_int(1893484802, validate->persistent_expiration,
                "...persistent expiration");
         is_int(3, validate->loa, "...LoA is correct");
+        is_string("<strong>OTP3</strong> down for maint.  &lt;_&lt;;",
+                  validate->user_message, "...user message");
     }
 }
 
@@ -92,7 +94,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(153);
+    plan(155);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");

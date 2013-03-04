@@ -292,7 +292,8 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
             status = wai_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)
                 status = convert_number(ctx, content, &validate->loa);
-        }
+        } else if (strcmp(child->name, "user-message") == 0)
+            status = wai_xml_content(ctx, child, &validate->user_message);
         if (status != WA_ERR_NONE)
             return status;
     }

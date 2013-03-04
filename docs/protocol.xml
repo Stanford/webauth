@@ -1176,9 +1176,11 @@
     <loginErrorCode>{numeric}<loginErrorCode>
     <loginErrorMessage>{message}<loginErrorMessage>
 
-    <!-- userMessage will be set if loginErrorCode is 24 and is an
-         HTML message intended for the end user.  It will normally
-         be in a CDATA block to protect markup. -->
+    <!-- userMessage will be set if the User Information Service or
+         OTP Validation service sets a user-message in a response,
+         or if loginErrorCode is 24.  It is an HTML message intended
+         for the end user.  It will normally be in a CDATA block to
+         protect markup. -->
     <userMessage>{message}</userMessage>
 
     <!-- set in combination with a loginErrorCode of 19 if

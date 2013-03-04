@@ -204,6 +204,7 @@ struct webauth_user_validate {
     WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factor codes. */
     time_t persistent_expiration;       /* Expiration time of persistent. */
     unsigned long loa;                  /* Level of assurance. */
+    const char *user_message;           /* Message to pass along to a user. */
 };
 
 BEGIN_DECLS

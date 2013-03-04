@@ -386,6 +386,7 @@ OTP Validation
           <factor>d</factor>
         <persistent-factors>
         <loa>{loa-value}</loa>
+        <user-message>{message-for-user}</user-message>
       </authdata>
 
   {username} should match the user for which the information is being
@@ -417,6 +418,11 @@ OTP Validation
   should assume that the user also authenticated with a password, since
   the WebLogin server will only do OTP authentication after successful
   password authentication.
+
+  The optional <user-message> element may contain a message to provide
+  the user with any additional information about specific actions they
+  should take as a result of this OTP validation attempt, or an
+  an informational message about the state of this validation.
 
 WebLogin Templates
 
