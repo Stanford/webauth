@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 12;
 
 # Ensure we don't pick up the system webkdc.conf.
 BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
@@ -168,5 +168,25 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name,
     'SSO cookie on public computer on confirm page');
+$expires = str2time ($cookie->expires);
+is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+
+# Check whether a cookie that's set in the browser's cookie jar will be
+# correctly cleared even if the response doesn't contain any cookies.
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+$weblogin->query->param (public_computer => 1);
+%args = (confirm_page => 1);
+{
+    local $ENV{HTTP_COOKIE} = "$cookie_name=something";
+    $weblogin->print_headers (\%args);
+}
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq $cookie_name) {
+        $cookie = $c;
+    }
+}
+is ($cookie->name, $cookie_name, 'Expiring browser cookie not sent by WebKDC');
 $expires = str2time ($cookie->expires);
 is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');

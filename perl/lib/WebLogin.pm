@@ -285,13 +285,25 @@ sub get_pagename {
 # parameter saying that this is a post redirect.
 sub print_headers {
     my ($self, $args) = @_;
-    my $cookies      = $args->{cookies};
     my $return_url   = $args->{return_url};
     my $use_303      = $args->{use_303};
     my $confirm_page = $args->{confirm_page};
+    my $q            = $self->query;
 
-    my $q    = $self->query;
-    my $ca;
+    # Merge the cookies the browser sent with the ones we got from the WebKDC
+    # response in a way that the latter overrides the former.  We want to see
+    # the full set for the logic around expiring cookies during a login from a
+    # public system to work properly.
+    my %cookies;
+    my %browser_cookies = CGI::Cookie->fetch;
+    while (my ($name, $cookie) = each %browser_cookies) {
+        $cookies{$name}{value} = $cookie->value;
+    }
+    if ($args->{cookies}) {
+        for my $name (keys %{ $args->{cookies} }) {
+            $cookies{$name} = $args->{cookies}{$name};
+        }
+    }
 
     # REMUSER_COOKIE is handled as a special case, since it stores user
     # preferences and should be retained rather than being only a session
@@ -300,79 +312,61 @@ sub print_headers {
     my $remuser_name = $self->param ('remuser_cookie');
     my $remuser_lifetime = $self->param ('remuser_lifetime');
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
-    my $saw_remuser;
-    if ($cookies) {
-        my ($name, $attrs);
-        while (($name, $attrs) = each %$cookies) {
-            next if $name eq 'webauth_wpt_remuser';
-            my $value      = $attrs->{value};
-            my $expiration = $attrs->{expiration};
-            my $cookie;
+    my @ca;
+    while (my ($name, $attrs) = each %cookies) {
+        next if $name eq 'webauth_wpt_remuser';
+        my $value      = $attrs->{value};
+        my $expiration = $attrs->{expiration};
+        my $cookie;
 
-            # Expire the cookies with no values.
-            if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
-                && $value eq '') {
+        # Expire the cookies with no values.
+        if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
+              && $value eq '') {
+            $cookie = $self->expire_cookie ($name, $secure);
 
-                $cookie = $self->expire_cookie ($name, $secure);
+        # Also expire the factor token on any public computer.
+        } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
+            $cookie = $self->expire_cookie ($name, $secure);
 
-            # Also expire the factor token on any public computer.
-            } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
-                $cookie = $self->expire_cookie ($name, $secure);
+        # Expire the SSO cookies on any final redirect to WAS, on a public
+        # computer.
+        } elsif ($name =~ /^webauth_wpt_/ && $return_url
+                   && $q->param ('public_computer')) {
+            $cookie = $self->expire_cookie ($name, $secure);
 
-            # Expire the SSO cookies on any final redirect to WAS, on a
-            # public computer.
-            } elsif ($name =~ /^webauth_wpt_/ && $return_url
-                     && $q->param ('public_computer')) {
-                $cookie = $self->expire_cookie ($name, $secure);
+        # Expire the SSO cookies on the confirm page on a public computer.
+        } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
+                   && $q->param ('public_computer')) {
+            $cookie = $self->expire_cookie ($name, $secure);
 
-            # Expire the SSO cookies on the confirm page, if there are no
-            # authorization identities set and on a public computer.
-            } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
-                     && $q->param ('public_computer')) {
-                $cookie = $self->expire_cookie ($name, $secure);
+        # Pass along the remuser cookie and update its expiration.
+        } elsif ($name eq $remuser_name) {
+            $cookie = $q->cookie (-name    => $name,
+                                  -value   => $value,
+                                  -secure  => $secure,
+                                  -expires => $remuser_lifetime);
 
-            # Pass along the remuse cookie and mark it as seen.
-            } elsif ($name eq $remuser_name) {
-                $cookie = $q->cookie (-name    => $name,
-                                      -value   => $value,
-                                      -secure  => $secure,
-                                      -expires => $remuser_lifetime);
-                $saw_remuser = 1;
+        # Pass along a factor token with set lifetime.
+        } elsif ($name eq 'webauth_wft') {
+            $cookie = $q->cookie (-name    => $name,
+                                  -value   => $value,
+                                  -secure  => $secure);
 
-            # Pass along a factor token with set lifetime.
-            } elsif ($name eq 'webauth_wft') {
-                $cookie = $q->cookie (-name    => $name,
-                                      -value   => $value,
-                                      -secure  => $secure);
-
-                # Set expiration if one is given.
-                if ($expiration) {
-                    my @expires = gmtime ($expiration);
-                    my $lifetime = strftime ("%a, %d-%b-%Y %T GMT", @expires);
-                    $cookie->expires ($lifetime);
-                }
-
-            # Pass along all other cookies.
-            } else {
-                $cookie = $q->cookie (-name     => $name,
-                                      -value    => $value,
-                                      -secure   => $secure,
-                                      -httponly => 1);
+            # Set expiration if one is given.
+            if ($expiration) {
+                my @expires = gmtime ($expiration);
+                my $lifetime = strftime ("%a, %d-%b-%Y %T GMT", @expires);
+                $cookie->expires ($lifetime);
             }
-            push (@$ca, $cookie);
-        }
-    }
 
-    # If we're not setting the REMUSER_COOKIE cookie explicitly and it was
-    # set in the query, set it in our page.  This refreshes the expiration
-    # time of the cookie so that, provided the user visits WebLogin at least
-    # once a year, the cookie will never expire.
-    if (!$saw_remuser && $q->cookie ($remuser_name)) {
-        my $cookie = $q->cookie (-name    => $self->param ('remuser_cookie'),
-                                 -value   => 1,
-                                 -secure  => $secure,
-                                 -expires => $remuser_lifetime);
-        push (@$ca, $cookie);
+        # Pass along all other WebAuth cookies.
+        } elsif ($name =~ /^webauth_/) {
+            $cookie = $q->cookie (-name     => $name,
+                                  -value    => $value,
+                                  -secure   => $secure,
+                                  -httponly => 1);
+        }
+        push (@ca, $cookie);
     }
 
     # Set the test cookie unless it's already set.
@@ -381,7 +375,7 @@ sub print_headers {
                                  -value    => 'True',
                                  -secure   => $secure,
                                  -httponly => 1);
-        push (@$ca, $cookie);
+        push (@ca, $cookie);
     }
 
     # Now, print out the page header with the appropriate cookies.
@@ -390,7 +384,7 @@ sub print_headers {
         push (@params, -location => $return_url,
               -status => $use_303 ? '303 See Also' : '302 Moved');
     }
-    push (@params, -cookie => $ca) if $ca;
+    push (@params, -cookie => [@ca]) if @ca;
     $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
                          -Cache_Control => 'no-cache, no-store', @params);
 }
