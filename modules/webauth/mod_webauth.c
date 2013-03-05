@@ -932,7 +932,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
         return 0;
     } else if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode_app");
+                              "webauth_token_decode_app", NULL);
         return 0;
     }
     rc->at = &app->token.app;
