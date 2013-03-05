@@ -246,9 +246,11 @@ User Information Service
           <factor>h</factor>
         </additional-factors>
 
-        <!-- Present if multifactor authentication is required regardless
-             of whether it was requested by the destination site. -->
-        <multifactor-required />
+        <!-- Present if specific factors should be required regardless
+             of whether they were requested by the destination site. -->
+        <required-factors>
+          <factor>o3</factor>
+        </required-factors>
 
         <!-- Optional.  If present, contains possibly suspicious recent
              logins that the user should be notified of.  name and
@@ -293,16 +295,17 @@ User Information Service
   authentication (either password or OTP) for that user should add some
   additional factors besides the normal ones.
 
-  If the <multifactor-required /> tag is present, the user will be
-  required to do multifactor authentication even if the destination
-  WebAuth-protected site doesn't require it.  This is how random
-  multifactor should be implemented by the user information service.  If
-  the random multifactor flag is 1 and the user is selected, include this
-  tag.  The user information service should also remember that the user
-  was selected for random multifactor and continue to require it every
-  time the random multifactor flag is true until the user successfully
-  authenticates with multifactor, since otherwise the user may just
-  reload the login page until they get lucky again.
+  If the <require-factors /> tag is present, the WebKDC will add the
+  factors present to those required by the WebAuth-protected site.  This
+  can be used to force multifactor authentication even if the
+  WebAuth-protected site doesn't require it. This is how random multifactor
+  should be implemented by the user information service.  If the random
+  multifactor flag is 1 and the user is selected, include a required
+  factor within this tag.  The user information service should also
+  remember that the user was selected for random multifactor and continue
+  to require it every time the random multifactor flag is true until the
+  user successfully authenticates with multifactor, since otherwise the
+  user may just reload the login page until they get lucky again.
 
   The optional <login-history> section provides information for the
   WebLogin server to show the user about recent logins.

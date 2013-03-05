@@ -232,8 +232,8 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
             status = parse_factors(ctx, child, &info->factors, NULL);
         else if (strcmp(child->name, "additional-factors") == 0)
             status = parse_factors(ctx, child, &info->additional, NULL);
-        else if (strcmp(child->name, "multifactor-required") == 0)
-            info->multifactor_required = true;
+        else if (strcmp(child->name, "required-factors") == 0)
+            status = parse_factors(ctx, child, &info->required, NULL);
         else if (strcmp(child->name, "login-history") == 0)
             status = parse_history(ctx, child, &info->logins);
         else if (strcmp(child->name, "max-loa") == 0) {

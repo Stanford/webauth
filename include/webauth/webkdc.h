@@ -182,7 +182,7 @@ struct webauth_login {
 struct webauth_user_info {
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
     WA_APR_ARRAY_HEADER_T *additional;  /* Array of char * factor codes. */
-    int multifactor_required;           /* Whether multifactor is forced. */
+    WA_APR_ARRAY_HEADER_T *required;    /* Array of char * factor codes. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */

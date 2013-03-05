@@ -815,11 +815,12 @@ check_multifactor(struct webauth_context *ctx,
         return status;
 
     /*
-     * Check if multifactor is forced by user configuration.  If so, add it to
-     * the initial factors that we require.
+     * Check if there are factors required by user configuration.  If so, add
+     * them to the initial factors that we require.
      */
-    if (info != NULL && info->multifactor_required) {
-        status = webauth_factors_parse(ctx, WA_FA_MULTIFACTOR, &wanted);
+    if (info != NULL && info->required != NULL && info->factors->nelts > 0) {
+        factor = apr_array_pstrcat(ctx->pool, info->required, ',');
+        status = webauth_factors_parse(ctx, factor, &wanted);
         if (status != WA_ERR_NONE)
             return status;
     }

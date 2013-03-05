@@ -94,7 +94,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(155);
+    plan(160);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -148,7 +148,6 @@ main(void)
         is_string("", webauth_error_message(ctx, status), "...no error");
         ok_block(18, 0, "...info is not NULL");
     } else {
-        is_int(1, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(3, info->max_loa, "...max LoA");
         is_int(1310675733, info->password_expires, "...password expires");
@@ -164,6 +163,20 @@ main(void)
             is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
                       "...third is correct");
             is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
+                      "...fourth is correct");
+        }
+        ok(info->required != NULL, "...required is not NULL");
+        if (info->required == NULL)
+            ok_block(5, 0, "...required is not NULL");
+        else {
+            is_int(4, info->required->nelts, "...five required");
+            is_string("p", APR_ARRAY_IDX(info->required, 0, char *),
+                      "...first is correct");
+            is_string("m", APR_ARRAY_IDX(info->required, 1, char *),
+                      "...second is correct");
+            is_string("o", APR_ARRAY_IDX(info->required, 2, char *),
+                      "...third is correct");
+            is_string("o3", APR_ARRAY_IDX(info->required, 3, char *),
                       "...fourth is correct");
         }
         ok(info->additional == NULL, "...additional is NULL");
@@ -195,11 +208,11 @@ main(void)
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
@@ -211,11 +224,11 @@ main(void)
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
@@ -227,7 +240,6 @@ main(void)
     if (info == NULL)
         ok_block(11, 0, "Metadata failed");
     else {
-        is_int(1, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -244,6 +256,7 @@ main(void)
             is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
                       "...fourth is correct");
         }
+        ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
@@ -255,7 +268,6 @@ main(void)
     if (info == NULL)
         ok_block(11, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -272,6 +284,7 @@ main(void)
             is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
                       "...fourth is correct");
         }
+        ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
@@ -283,7 +296,6 @@ main(void)
     if (info == NULL)
         ok_block(12, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -298,6 +310,7 @@ main(void)
             is_string("p", APR_ARRAY_IDX(info->factors, 2, char *),
                       "...third is correct");
         }
+        ok(info->required == NULL, "...required is NULL");
         if (info->additional == NULL)
             ok_block(2, 0, "...additional is not NULL");
         else {
@@ -346,11 +359,11 @@ main(void)
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
@@ -361,11 +374,11 @@ main(void)
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
@@ -389,11 +402,11 @@ main(void)
     else {
         is_string("<strong>You are restricted!</strong>  &lt;_&lt;;",
                   info->error, "...error string");
-        is_int(0, info->multifactor_required, "...multifactor required");
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         ok(info->factors == NULL, "...factors is NULL");
+        ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
 
