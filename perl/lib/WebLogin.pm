@@ -58,6 +58,11 @@ if (@WebKDC::Config::MEMCACHED_SERVERS) {
     require Digest::SHA;
 }
 
+# Required if we're going to send remctl commands for multifactor.
+if ($WebKDC::Config::MULTIFACTOR_SERVER) {
+    require Net::Remctl;
+}
+
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
