@@ -45,9 +45,9 @@
 /tests/config/password
 /tests/data/conf-webkdc
 /tests/lib/apr-buffer-t
-/tests/lib/attrs-t
-/tests/lib/hex-t
+/tests/lib/context-t
 /tests/lib/factors-t
+/tests/lib/hex-t
 /tests/lib/interval-t
 /tests/lib/keyring-t
 /tests/lib/keys-t

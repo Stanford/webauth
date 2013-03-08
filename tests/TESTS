@@ -1,6 +1,7 @@
 docs/pod
 docs/pod-spelling
 lib/apr-buffer
+lib/context
 lib/factors
 lib/hex
 lib/interval
