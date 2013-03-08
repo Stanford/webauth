@@ -5,7 +5,7 @@
  * state required by the WebAuth APIs.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -169,6 +169,29 @@ webauth_error_message(struct webauth_context *ctx, int err)
     if (ctx != NULL && ctx->error != NULL && ctx->code == err)
         return ctx->error;
     return error_string(ctx, err);
+}
+
+
+/*
+ * Add context to the existing error message.  This appends a string starting
+ * with "while" followed by the results of formatting the provided printf
+ * string.  If there is no current error, this silently fails (possibly not
+ * ideal, but that can only happen with an internal coding error, the results
+ * are innocuous, and we don't want to clutter code with error checking of
+ * error reporting routines).
+ */
+void
+wai_error_add_context(struct webauth_context *ctx, const char *format, ...)
+{
+    va_list args;
+    char *string;
+
+    if (ctx == NULL || ctx->error == NULL)
+        return;
+    va_start(args, format);
+    string = apr_pvsprintf(ctx->pool, format, args);
+    va_end(args);
+    ctx->error = apr_pstrcat(ctx->pool, ctx->error, " while ", string, NULL);
 }
 
 
