@@ -17,6 +17,7 @@
 #include <apr_errno.h>          /* apr_status_t */
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_xml.h>            /* apr_xml_elem */
+#include <webauth/basic.h>      /* enum webauth_log_level, webauth_log_func */
 
 /* Factor constants. */
 #define WA_FA_COOKIE               "c"
@@ -36,6 +37,16 @@ struct webauth_keyring;
 struct webauth_token;
 
 /*
+ * Data for a logging callback for a WebAuth context.  The function pointer is
+ * called with the WebAuth context, the user-provided opaque data, and the
+ * string of the message to log.
+ */
+struct wai_log_callback {
+    webauth_log_func callback;
+    void *data;
+};
+
+/*
  * The internal context struct, which holds any state information required for
  * general WebAuth library interfaces.
  */
@@ -43,6 +54,12 @@ struct webauth_context {
     apr_pool_t *pool;           /* Pool used for all memory allocations. */
     const char *error;          /* Error message from last failure. */
     int code;                   /* Error code from last failure. */
+
+    /* Logging callbacks. */
+    struct wai_log_callback warn;
+    struct wai_log_callback notice;
+    struct wai_log_callback info;
+    struct wai_log_callback trace;
 
     /* The below are used only for the WebKDC functions. */
 
@@ -335,6 +352,28 @@ int webauth_hex_encode(const char *input, size_t input_len,
 int webauth_hex_decode(char *input, size_t input_len,
                        char *output, size_t *output_length,
                        size_t max_output_len)
+    __attribute__((__nonnull__));
+
+/*
+ * Log a message at various possible log levels.  This is controlled by the
+ * configured callback.  If the callback is NULL, the message will be silently
+ * discarded.
+ */
+void wai_log_info(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_notice(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_trace(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_warn(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+
+/*
+ * The same, but the message is the result of calling webauth_error_message on
+ * the provided error code and the level at which to log it is identified by
+ * an enum.
+ */
+void wai_log_error(struct webauth_context *, enum webauth_log_level, int code)
     __attribute__((__nonnull__));
 
 /*

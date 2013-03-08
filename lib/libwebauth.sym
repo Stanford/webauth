@@ -33,6 +33,7 @@ webauth_krb5_new
 webauth_krb5_prepare_via_cred
 webauth_krb5_read_auth
 webauth_krb5_read_auth_data
+webauth_log_callback
 webauth_parse_interval
 webauth_token_decode
 webauth_token_decode_raw

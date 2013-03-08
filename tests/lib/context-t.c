@@ -1,5 +1,5 @@
 /*
- * Tests for WebAuth context management functions.
+ * Tests for WebAuth error handling functions.
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Copyright 2013
@@ -20,15 +20,68 @@
 #include <tests/tap/string.h>
 #include <webauth/basic.h>
 
+/*
+ * A callback for log function testing.  Takes a char ** and stores the
+ * message in newly-allocated memory at that address.
+ */
+static void
+log_callback(struct webauth_context *ctx UNUSED, void *data,
+             const char *message)
+{
+    char **buffer = data;
+
+    free(*buffer);
+    *buffer = bstrdup(message);
+}
+
+
+/*
+ * Test a wai_log_* function.  Takes the enum constant for that log level and
+ * a pointer to the function.  Set up a log handler for that log level, call
+ * the function and be sure the results are logged appropriately, set an
+ * internal error message and test wai_log_error, and then clear the log
+ * handler, and then ensure that calling the function again doesn't change the
+ * result buffer.
+ */
+static void
+test_wai_log(struct webauth_context *ctx, enum webauth_log_level level,
+             void (*log_func)(struct webauth_context *, const char *, ...))
+{
+    char *output = NULL;
+
+    /* Try logging with a callback. */
+    is_int(WA_ERR_NONE,
+           webauth_log_callback(ctx, level, log_callback, &output),
+           "setting callback for log level %d", level);
+    log_func(ctx, "%d", 42);
+    is_string("42", output, "log output for level %d", level);
+    wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
+    wai_log_error(ctx, level, WA_ERR_BAD_HMAC);
+    is_string("HMAC check failed (test error 42)", output,
+              "wai_log_error output for level %d", level);
+
+    /* Clear the output and try logging with no callback. */
+    free(output);
+    output = NULL;
+    is_int(WA_ERR_NONE, webauth_log_callback(ctx, level, NULL, NULL),
+           "clearing callback for log level %d", level);
+    log_func(ctx, "%d", 42);
+    is_string(NULL, output, "...and wai_log_* is affected");
+    wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
+    wai_log_error(ctx, level, WA_ERR_BAD_HMAC);
+    is_string(NULL, output, "...and wai_log_error is affected");
+}
+
 
 int
 main(void)
 {
     struct webauth_context *ctx;
     char *expected;
+    char *output = NULL;
     char buf[BUFSIZ];
 
-    plan(12);
+    plan(39);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -93,6 +146,47 @@ main(void)
     is_string(expected, webauth_error_message(ctx, WA_ERR_APR),
               "wai_error_add_context");
     free(expected);
+
+    /*
+     * Test all of the warning functions with no callbacks.  This should do
+     * nothing; we're mostly checking that we don't segfault or have memory
+     * reads that show up in valgrind.
+     */
+    wai_log_info(ctx, "%d", 1);
+    wai_log_notice(ctx, "%d", 1);
+    wai_log_trace(ctx, "%d", 1);
+    wai_log_warn(ctx, "%d", 1);
+    wai_log_error(ctx, WA_LOG_INFO, WA_ERR_APR);
+    wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
+    wai_log_error(ctx, WA_LOG_NOTICE, WA_ERR_APR);
+    wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
+    wai_log_error(ctx, WA_LOG_TRACE, WA_ERR_APR);
+    wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
+    wai_log_error(ctx, WA_LOG_WARN, WA_ERR_APR);
+
+    /* Now do some real testing for each log level. */
+    test_wai_log(ctx, WA_LOG_INFO, wai_log_info);
+    test_wai_log(ctx, WA_LOG_NOTICE, wai_log_notice);
+    test_wai_log(ctx, WA_LOG_TRACE, wai_log_trace);
+    test_wai_log(ctx, WA_LOG_WARN, wai_log_warn);
+
+    /* Test setting a callback for an unknown log level. */
+    is_int(WA_ERR_INVALID,
+           webauth_log_callback(ctx, INT_MAX, log_callback, &output),
+           "webauth_log_callback with invalid level");
+
+    /* Test wa_log_error to an unknown level. */
+    is_int(WA_ERR_NONE,
+           webauth_log_callback(ctx, WA_LOG_WARN, log_callback, &output),
+           "setting log callback for WA_LOG_WARN");
+    wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
+    wai_log_error(ctx, INT_MAX, WA_ERR_BAD_HMAC);
+    basprintf(&expected, "internal error: unknown log level %d (message: %s)",
+              INT_MAX, "HMAC check failed (test error 42)");
+    is_string(expected, output,
+              "wa_log_error with unknown level logged to warn");
+    free(expected);
+    free(output);
 
     /* Clean up. */
     apr_terminate();

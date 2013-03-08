@@ -1,12 +1,5 @@
 WEBAUTH_3 {
     global:
-        webauth_context_free;
-        webauth_context_init;
-        webauth_context_init_apr;
-        webauth_error_message;
-        webauth_factors_parse;
-        webauth_factors_string;
-        webauth_factors_subset;
         webauth_parse_interval;
         webauth_token_type_code;
         webauth_token_type_string;
@@ -15,27 +8,27 @@ WEBAUTH_3 {
         *;
 };
 
-WEBAUTH_4_1 {
+WEBAUTH_4_5 {
     global:
-        webauth_user_config;
-} WEBAUTH_3;
-
-WEBAUTH_4_2 {
-    global:
+        webauth_context_free;
+        webauth_context_init;
+        webauth_context_init_apr;
+        webauth_error_message;
+        webauth_factors_parse;
+        webauth_factors_string;
+        webauth_factors_subset;
         webauth_key_copy;
         webauth_key_create;
         webauth_keyring_add;
         webauth_keyring_auto_update;
         webauth_keyring_best_key;
+        webauth_keyring_decode;
+        webauth_keyring_encode;
         webauth_keyring_from_key;
         webauth_keyring_new;
         webauth_keyring_read;
         webauth_keyring_remove;
         webauth_keyring_write;
-} WEBAUTH_4_1;
-
-WEBAUTH_4_3 {
-    global:
         webauth_krb5_change_password;
         webauth_krb5_export_cred;
         webauth_krb5_free;
@@ -52,26 +45,18 @@ WEBAUTH_4_3 {
         webauth_krb5_prepare_via_cred;
         webauth_krb5_read_auth;
         webauth_krb5_read_auth_data;
-} WEBAUTH_4_2;
-
-WEBAUTH_4_4 {
-    global:
-        webauth_keyring_decode;
-        webauth_keyring_encode;
+        webauth_log_callback;
+        webauth_token_decode;
+        webauth_token_decode_raw;
         webauth_token_decrypt;
+        webauth_token_encode;
+        webauth_token_encode_raw;
         webauth_token_encrypt;
+        webauth_user_config;
+        webauth_user_info;
+        webauth_user_validate;
         webauth_was_token_cache_read;
         webauth_was_token_cache_write;
         webauth_webkdc_config;
-} WEBAUTH_4_3;
-
-WEBAUTH_4_5 {
-    global:
-        webauth_token_decode;
-        webauth_token_decode_raw;
-        webauth_token_encode;
-        webauth_token_encode_raw;
-        webauth_user_info;
-        webauth_user_validate;
         webauth_webkdc_login;
-} WEBAUTH_4_4;
+} WEBAUTH_3;

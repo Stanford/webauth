@@ -9,7 +9,7 @@
  * argument to other functions.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,6 +91,21 @@ enum webauth_status {
     /* Update webauth_error_message when adding more codes. */
 };
 
+/*
+ * When setting logging callbacks, this enum identifies the log level for
+ * which to set a callback.  The level is akin to syslog levels.
+ */
+enum webauth_log_level {
+    WA_LOG_TRACE,
+    WA_LOG_INFO,
+    WA_LOG_NOTICE,
+    WA_LOG_WARN,
+};
+
+/* Data type for a logging callback. */
+typedef void (*webauth_log_func)(struct webauth_context *, void *,
+                                 const char *);
+
 BEGIN_DECLS
 
 /*
@@ -140,6 +155,20 @@ void webauth_context_free(struct webauth_context *)
  * pool-allocated and should not be modified or freed.
  */
 const char *webauth_error_message(struct webauth_context *, int code);
+
+/*
+ * Set a logging callback for a particular log level.  The void * data is
+ * passed through to the log function when it is called.  callback may be
+ * NULL, in which case the callback for that log level is cleared.  Returns
+ * a WebAuth error code, but the only error case is an invalid log level.
+ *
+ * If a callback is set and then later removed or overwritten, the data
+ * pointer will be discarded but will not be freed.  The caller is responsible
+ * for freeing the data in that situation.
+ */
+int webauth_log_callback(struct webauth_context *, enum webauth_log_level,
+                          webauth_log_func callback, void *data)
+    __attribute__((__nonnull__(1)));
 
 END_DECLS
 
