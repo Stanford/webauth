@@ -847,6 +847,7 @@ check_multifactor(struct webauth_context *ctx,
      * can't satisfy the factors at all, we'll change the error later.  Be
      * careful not to override errors from the LoA check.
      */
+    webauth_factors_trim(ctx, have, &wanted);
     if (webauth_factors_subset(ctx, wanted, have)) {
         if (webauth_factors_subset(ctx, swanted, shave)) {
             if (response->login_error == 0)

@@ -916,8 +916,8 @@ sub print_multifactor_page {
 
     # Find just the o* factor to pass along to the template for any special
     # processing.
-    if ($self->{response}->factor_configured) {
-        foreach my $factor (@{$self->{response}->factor_configured}) {
+    if ($self->{response}->factor_needed) {
+        foreach my $factor (@{$self->{response}->factor_needed}) {
             next unless $factor =~ /^o\d+$/;
             $params->{factor_type} = $factor;
         }
@@ -2017,11 +2017,12 @@ sub multifactor : Runmode {
             print STDERR "WebKDC::make_request_token_request success\n"
                 if $self->param ('debug');
             return $self->print_confirm_page;
-
+        } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
+            print STDERR "additional multifactor required\n"
         } else {
             # FIXME: Probably want to handle $status more, but not yet
             #        sure what statuses we might get back.
-            print STDERR "multifactor failed with $error\n"
+            print STDERR "multifactor failed with ($status):$error\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
         }
