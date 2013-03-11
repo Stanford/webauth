@@ -348,6 +348,14 @@ int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
     __attribute__((__nonnull__));
 
 /*
+ * Given two sets of factors (struct webauth_factors), remove all factors
+ * from the second that are present in the first and return true.
+ */
+int webauth_factors_trim(struct webauth_context *, struct webauth_factors *,
+                           struct webauth_factors **)
+    __attribute__((__nonnull__));
+
+/*
  * Map a token code to the string name used for the toke type attribute, or
  * vice versa.  webauth_token_type_code returns WA_TOKEN_UNKNOWN when given an
  * unknown token type string.  webauth_token_type_string returns NULL when

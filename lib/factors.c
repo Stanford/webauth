@@ -169,3 +169,39 @@ webauth_factors_subset(struct webauth_context *ctx UNUSED,
     }
     return true;
 }
+
+/*
+ * Given two sets of factors (struct webauth_factors), remove all factors
+ * from the second that are present in the first and return true.
+ */
+int
+webauth_factors_trim(struct webauth_context *ctx,
+                     struct webauth_factors *one,
+                     struct webauth_factors **two)
+{
+    struct webauth_factors *result;
+    bool keep;
+    const char *f1, *f2;
+    int i, j;
+
+    result = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
+    result->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
+
+    for (i = 0; i < (*two)->factors->nelts; i++) {
+        f1 = APR_ARRAY_IDX((*two)->factors, i, const char *);
+        keep = true;
+        for (j = 0; j < one->factors->nelts; j++) {
+            f2 = APR_ARRAY_IDX(one->factors, j, const char *);
+            if (strcmp(f1, f2) == 0) {
+                keep = false;
+                break;
+            }
+        }
+
+        if (keep)
+            APR_ARRAY_PUSH(result->factors, const char *) = f1;
+    }
+
+    *two = result;
+    return true;
+}
