@@ -68,7 +68,7 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.03';
+    $VERSION = '1.04';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -2007,6 +2007,7 @@ sub multifactor : Runmode {
         my $resp = $self->{response};
         $req->user ($q->param ('username'));
         $req->otp ($q->param ('otp'));
+        $req->otp_type ($q->param ('factor_type'));
         my $error;
         if ($status == 0) {
             ($status, $error)

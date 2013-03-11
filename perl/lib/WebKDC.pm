@@ -33,7 +33,7 @@ use LWP::UserAgent;
 use WebAuth qw(3.00 :const);
 use WebAuth::Keyring ();
 use WebKDC::Config;
-use WebKDC::WebRequest 1.02;
+use WebKDC::WebRequest 1.03;
 use WebKDC::WebResponse 1.03;
 use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
@@ -201,6 +201,7 @@ sub proxy_token_request {
 sub request_token_request {
     my ($wreq, $wresp) = @_;
     my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
+    my $otp_type = $wreq->otp_type;
     my $request_token = $wreq->request_token;
     my $service_token = $wreq->service_token;
     my $factor_token = $wreq->factor_token;
@@ -224,6 +225,7 @@ sub request_token_request {
         $login_token->creation (time);
         if (defined $otp) {
             $login_token->otp ($otp);
+            $login_token->otp_type ($otp_type);
         } else {
             $login_token->password ($pass);
         }

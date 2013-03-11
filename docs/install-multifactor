@@ -370,6 +370,9 @@ OTP Validation
   code
       The OTP to validate.
 
+  type
+      The OTP type to validate.
+
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal error and the user's authentication will be aborted.  (This
   should not be used for an invalid OTP; see below.)  The error can be

@@ -32,7 +32,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     struct webauth_user_validate *validate;
     int status;
 
-    status = webauth_user_validate(ctx, "full", "127.0.0.1", code, &validate);
+    status = webauth_user_validate(ctx, "full", "127.0.0.1", code, "o1", &validate);
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
@@ -328,7 +328,7 @@ main(void)
     test_validate(ctx, "123456", true);
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
-    status = webauth_user_validate(ctx, "mini", NULL, "123456", &validate);
+    status = webauth_user_validate(ctx, "mini", NULL, "123456", "o1", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
               webauth_error_message(ctx, status), "...with correct error");
@@ -344,7 +344,7 @@ main(void)
               webauth_error_message(ctx, status), "...with correct error");
 
     /* Attempt a login for a user that should time out. */
-    status = webauth_user_validate(ctx, "delay", NULL, "123456", &validate);
+    status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
@@ -383,7 +383,7 @@ main(void)
     }
 
     /* Attempt a login again, which should still fail. */
-    status = webauth_user_validate(ctx, "delay", NULL, "123456", &validate);
+    status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",

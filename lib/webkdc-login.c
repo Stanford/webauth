@@ -159,7 +159,7 @@ do_otp(struct webauth_context *ctx,
         return WA_ERR_UNIMPLEMENTED;
     }
     status = webauth_user_validate(ctx, login->username, ip, login->otp,
-                                   &validate);
+                                   login->otp_type, &validate);
     if (status != WA_ERR_NONE)
         return status;
 

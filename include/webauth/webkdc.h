@@ -259,7 +259,7 @@ int webauth_user_info(struct webauth_context *, const char *user,
  * means that the call completed, not that the validation was successful.
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
-                          const char *ip, const char *code,
+                          const char *ip, const char *code, const char *type,
                           struct webauth_user_validate **)
     __attribute__((__nonnull__(1, 2, 4, 5)));
 

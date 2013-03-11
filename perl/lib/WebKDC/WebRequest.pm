@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '1.03';
 }
 
 # Create a new, empty request.
@@ -57,6 +57,7 @@ sub authz_subject  { my $r = shift; $r->_attr ('authz_subject',  @_) }
 sub local_ip_addr  { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
 sub local_ip_port  { my $r = shift; $r->_attr ('local_ip_port',  @_) }
 sub otp            { my $r = shift; $r->_attr ('otp',            @_) }
+sub otp_type       { my $r = shift; $r->_attr ('otp_type',       @_) }
 sub pass           { my $r = shift; $r->_attr ('pass',           @_) }
 sub remote_ip_addr { my $r = shift; $r->_attr ('remote_ip_addr', @_) }
 sub remote_ip_port { my $r = shift; $r->_attr ('remote_ip_port', @_) }
@@ -170,6 +171,10 @@ the local interface and port to which that client connected.
 
 Retrieve or set the one-time password sent by the user.  Either this or
 pass should be set, but not both.
+
+=item otp_type ([CODE])
+
+Retrieve or set the one-time password type sent by the user.
 
 =item pass ([PASSWORD])
 

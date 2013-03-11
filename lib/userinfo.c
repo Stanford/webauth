@@ -508,10 +508,11 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
  */
 static int
 remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
-                const char *code, struct webauth_user_validate **validate)
+                const char *code, const char *type,
+                struct webauth_user_validate **validate)
 {
     int status;
-    const char *argv[6];
+    const char *argv[7];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
 
@@ -520,7 +521,8 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
     argv[2] = user;
     argv[3] = ip;
     argv[4] = code;
-    argv[5] = NULL;
+    argv[5] = type;
+    argv[6] = NULL;
     status = remctl_generic(ctx, argv, &doc);
     if (status != WA_ERR_NONE)
         return status;
@@ -625,7 +627,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
  */
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
-                      const char *ip, const char *code,
+                      const char *ip, const char *code, const char *type,
                       struct webauth_user_validate **result)
 {
     int status;
@@ -638,7 +640,7 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_validate(ctx, user, ip, code, result);
+        return remctl_validate(ctx, user, ip, code, type, result);
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
