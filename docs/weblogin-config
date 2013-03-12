@@ -75,6 +75,13 @@ Templates
       login_cancel      If set, application provided a cancel URL
       cancel_url        The cancel URL (return URL plus cancel token)
 
+      public_computer   If set, delete SSO cookies at end of login
+
+      warn_expire       If set, show warning for upcoming password expiration
+      expire_timestamp  Epoch seconds for time password will expire
+      pwchange_url      URL for the password change form
+      device_expiring   Epoch seconds for time device factor will expire
+
       show_remuser      If set, show the REMOTE_USER cookie configuration
       remuser           If set, the REMOTE_USER cookie is set
       script_name       Relative URL to which cookie change should be posted
@@ -358,6 +365,15 @@ Configuration
       outside of WebLogin.
 
       Default: not set.
+
+  $FACTOR_WARNING
+
+      The seconds until we start to warn a user that their long-lived
+      device factor is about to expire.  This will force the
+      confirmation page, and so should be kept small for any sites
+      that have the confirmation page disabled by default.
+
+      Default: 172800 (2 days).
 
   $RATE_LIMIT_INTERVAL
 

@@ -72,7 +72,7 @@ our @REMUSER_PERMITTED_REALMS;
 our @REMUSER_LOCAL_REALMS;
 our $REMUSER_REDIRECT;
 
-our $FACTOR_LIFETIME = 60 * 60 * 356;
+our $FACTOR_WARNING  = 60 * 60 * 24 * 2;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;

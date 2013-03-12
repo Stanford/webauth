@@ -59,7 +59,7 @@ if (! -f 't/data/test.principal' || ! -f 't/data/test.password'
     || ! -f 't/data/test.keytab' || ! -d 't/data/templates') {
     plan skip_all => 'Kerberos tests not configured';
 } else {
-    plan tests => 376;
+    plan tests => 391;
 }
 
 # Set our method to not have password tests complain.
@@ -242,12 +242,11 @@ is ($output[6], 'remuser ', ' and remuser was not set');
 is ($output[7], 'script_name ', ' and script name was not set');
 
 is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
-ok ($output[10] =~ /^expire_time_left \d+/,
-    ' and expire_time_left was set');
-is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
-ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
-is ($output[13], 'public_computer ', ' and public_computer was not set');
+ok ($output[9] =~ /^expire_timestamp \S+/, ' and expire_timestamp was set');
+is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
+ok ($output[11] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[12], 'public_computer ', ' and public_computer was not set');
+is ($output[13], 'device_expiring ', ' and device_expiring was not set');
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -267,11 +266,11 @@ is ($output[5], 'show_remuser ', ' and show_remuser was not set');
 is ($output[6], 'remuser ', ' and remuser was not set');
 is ($output[7], 'script_name ', ' and script name was not set');
 is ($output[8], 'warn_expire ', ' and warn_expire was not set');
-is ($output[9], 'expire_date ', ' and expire_date was not set');
-is ($output[10], 'expire_time_left ', ' and expire_time_left was not set');
-is ($output[11], 'pwchange_url ', ' and pwchange_url was not set');
-is ($output[12], 'CPT ', ' and CPT was not set');
-is ($output[13], 'public_computer ', ' and public_computer was not set');
+is ($output[9], 'expire_timestamp ', ' and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', ' and pwchange_url was not set');
+is ($output[11], 'CPT ', ' and CPT was not set');
+is ($output[12], 'public_computer ', ' and public_computer was not set');
+is ($output[13], 'device_expiring ', ' and device_expiring was not set');
 
 # FIXME: Testing remuser requires us to fake a cookie, which we'll do in
 #        a later revision.
@@ -295,12 +294,11 @@ is ($output[5], 'show_remuser 1', ' and show_remuser was set');
 is ($output[6], 'remuser ', ' and remuser was set');
 is ($output[7], 'script_name /login', ' and script name was set');
 is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-ok ($output[9] =~ /^expire_date \S+/, ' and expire_date was set');
-ok ($output[10] =~ /^expire_time_left \d+/,
-    ' and expire_time_left was set');
-is ($output[11], 'pwchange_url /pwchange', ' and pwchange_url was set');
-ok ($output[12] =~ /^CPT \S+/, ' and CPT was set');
-is ($output[13], 'public_computer ', ' and public_computer was not set');
+ok ($output[9] =~ /^expire_timestamp \S+/, ' and expire_timestamp was set');
+is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
+ok ($output[11] =~ /^CPT \S+/, ' and CPT was set');
+is ($output[12], 'public_computer ', ' and public_computer was not set');
+is ($output[13], 'device_expiring ', ' and device_expiring was not set');
 
 # Bad return URL (set it to be http rather than https).
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -768,12 +766,42 @@ is ($output[5], 'show_remuser ', '...and show_remuser was not set');
 is ($output[6], 'remuser ', '...and remuser was not set');
 is ($output[7], 'script_name ', '...and script name was not set');
 is ($output[8], 'warn_expire ', '...and warn_expire was not set');
-is ($output[9], 'expire_date ', '...and expire_date was not set');
-is ($output[10], 'expire_time_left ', '...and expire_time_left was not set');
-is ($output[11], 'pwchange_url ', '...and pwchange_url was not set');
-is ($output[12], 'CPT ', '...and CPT was not set');
-is ($output[13], 'public_computer 1', '...and public_computer was set');
+is ($output[9], 'expire_timestamp ', '...and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', '...and pwchange_url was not set');
+is ($output[11], 'CPT ', '...and CPT was not set');
+is ($output[12], 'public_computer 1', '...and public_computer was set');
+is ($output[13], 'device_expiring ', '...and device_expiring was not set');
 # Check print_confirm_page (public_computer = 1)
+
+# Device factor expiring setting passed along to confirmation page.
+my $default_factor_warning = $WebKDC::Config::FACTOR_WARNING;
+$WebKDC::Config::FACTOR_WARNING = 60;
+$weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
+                           \%PAGES);
+$weblogin->{response}->cookie('webauth_wft', 1, time + 30);
+($status, $error) = (WebKDC::WK_SUCCESS, '');
+@output = index_wrapper ($weblogin, $status, $error);
+ok (@output, 'success page was printed for login from public computer');
+is ($output[0], "username testuser3", '...and username was set');
+is ($output[1],
+    'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
+    '...and return_url was set');
+is ($output[2], 'pretty_return_url https://test.example.org',
+    '...and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '...and login_cancel was not set');
+is ($output[4], 'cancel_url ', '...and cancel_url was not set');
+is ($output[5], 'show_remuser ', '...and show_remuser was not set');
+is ($output[6], 'remuser ', '...and remuser was not set');
+is ($output[7], 'script_name ', '...and script name was not set');
+is ($output[8], 'warn_expire ', '...and warn_expire was not set');
+is ($output[9], 'expire_timestamp ', '...and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', '...and pwchange_url was not set');
+is ($output[11], 'CPT ', '...and CPT was not set');
+is ($output[12], 'public_computer ', '...and public_computer was not set');
+like ($output[13], qr{^device_expiring \d+$},
+      '...and device_expiring was set');
+$WebKDC::Config::FACTOR_WARNING = $default_factor_warning;
+# Check print_confirm_page (device_expiring = 1)
 
 # Authentication rejected by the user information service.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);

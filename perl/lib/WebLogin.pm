@@ -128,6 +128,7 @@ sub setup {
                              $WebKDC::Config::TEMPLATE_COMPILE_PATH,
                          COMPILE_EXT  => '.ttc',
                          INCLUDE_PATH => $WebKDC::Config::TEMPLATE_PATH,
+                         EVAL_PERL    => 1,
                      },
                     );
 
@@ -676,13 +677,14 @@ sub print_confirm_page {
         if (defined $expiring
             && (($expiring - time) < $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
+            # Set template variable for expiring password.
+            # TODO: Remove expire_date after giving time to update templates.
             $expire_warning = 1;
             my $expire_date = localtime ($expiring);
-            my $countdown = Time::Duration::duration ($expiring - time);
             $params->{warn_expire} = 1;
-            $params->{expire_date} = $expire_date;
-            $params->{expire_time_left} = $countdown;
-            $params->{pwchange_url} = $WebKDC::Config::EXPIRING_PW_URL;
+            $params->{expire_date}      = $expire_date;
+            $params->{expire_timestamp} = $expiring;
+            $params->{pwchange_url}     = $WebKDC::Config::EXPIRING_PW_URL;
 
             # Create and set the kadmin/changepw token (unless we require the
             # user re-enter).
@@ -691,6 +693,21 @@ sub print_confirm_page {
                 $params->{CPT} = $self->param ('CPT');
             } else {
                 $params->{skip_username} = 1;
+            }
+        }
+    }
+
+    # Determine if a device factor cookie is about to expire, and set the
+    # time at which it expires if so.
+    my $factor_warning = 0;
+    my $cookies = $resp->cookies;
+    if ($cookies) {
+        while (my ($name, $attrs) = each %{$cookies}) {
+            next unless $name eq 'webauth_wft';
+            my $expiration = $attrs->{expiration};
+            if ($WebKDC::Config::FACTOR_WARNING + time > $expiration) {
+                $factor_warning = 1;
+                $params->{device_expiring} = $expiration;
             }
         }
     }
@@ -711,6 +728,7 @@ sub print_confirm_page {
     my $history = $resp->login_history;
     my $bypass = $WebKDC::Config::BYPASS_CONFIRM;
     $bypass = 0 if $expire_warning;
+    $bypass = 0 if $factor_warning;
     $bypass = 0 if $history;
     $bypass = 0 if $resp->authz_subject;
     if ($bypass and $bypass eq 'id') {
