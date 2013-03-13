@@ -2,7 +2,7 @@
  * Kerberos-related functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2003, 2006, 2009, 2010, 2011, 2012
+ * Copyright 2003, 2006, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -107,6 +107,12 @@ krb5_prepare_file_creds(MWA_REQ_CTXT *rc, apr_array_header_t *creds)
                                  "temp.krb5.XXXXXX",
                                  0,
                                  rc->r->pool);
+    if (astatus != APR_SUCCESS) {
+        mwa_log_apr_error(rc->r->server, astatus, mwa_func,
+                          "apr_filepath_merge", rc->sconf->cred_cache_dir,
+                          "temp.krb5.XXXXX");
+        return 0;
+    }
 
     flags = (APR_FOPEN_CREATE | APR_FOPEN_READ | APR_FOPEN_WRITE
              | APR_FOPEN_EXCL);

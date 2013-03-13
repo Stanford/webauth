@@ -1,9 +1,12 @@
 #!/usr/bin/perl
 #
 # Generate encoding rules for WebAuth data.
+#
+# This script is used during the WebAuth build process to transform annotated
+# struct definitions in headers into C data structures that specify how to
+# encode those structs as WebAuth tokens.
 
 use 5.010;
-
 use autodie;
 use strict;
 use warnings;
@@ -25,7 +28,7 @@ Readonly my $HEADING => <<'END_HEADER';
  * script.  To make changes, modify either the encode comments or (more
  * rarely) the encoding-rules script and run it again.
  *
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -48,6 +51,9 @@ Readonly my %TYPES => (
     'const void *'  => 'DATA',
 );
 
+# Emacs cperl-mode can't handle using character classes for braces.
+## no critic (RegularExpressions::ProhibitEscapedMetacharacters)
+
 # The start of a struct definition.
 #     $1 == struct name
 Readonly my $STRUCT_REGEX => qr/ \A \s* struct \s+ (\S+) \s* \{ /xms;
@@ -61,33 +67,49 @@ Readonly my $MEMBER_REGEX => qr{
        (.*?)                    # C type (1)
        ([\w_]+)                 # member name (2)
        ; \s+
-       /\*                      # trailing encode comment
+       /[*]                     # trailing encode comment
          [ ] encode: [ ]        #   always starts with encode:
          (.*?)                  #   encoded name and any options (3)
          [ ]
-       \*/                      # end of comment
+       [*]/                     # end of comment
    }xms;
 
 # A struct member that nests another encoded struct.
 #     $1 == nested struct C type (including "struct")
 #     $2 == member name
 Readonly my $NESTED_REGEX =>
-  qr{ \A \s+ (struct \s+ [\w_]+) \s* \*([\w_]+) ; }xms;
+  qr{ \A \s+ (struct \s+ [\w_]+) \s* [*]([\w_]+) ; }xms;
 
 # The end of a struct definition.
 Readonly my $END_REGEX => qr/ \A \s* \} /xms;
+
+## use critic
 
 ##############################################################################
 # Functions
 ##############################################################################
 
-# say and print with error checking.  autodie unfortunately can't help us with
-# these because they can't be prototyped and hence can't be overridden.
+# print with error checking and an explicit file handle.  autodie
+# unfortunately can't help us with these because they can't be prototyped and
+# hence can't be overridden.
+#
+# $fh   - Output file handle
+# @args - Remaining arguments to print
+#
+# Returns: undef
+#  Throws: Text exception on output failure
+sub print_fh {
+    my ($fh, @args) = @_;
+    print {$fh} @args or croak('print failed');
+    return;
+}
 
-## no critic (Subroutines::RequireArgUnpacking)
-sub print_checked { print @_ or croak 'print failed'; return }
-sub say_checked   { say @_   or croak 'say failed';   return }
-## use critic
+# The same for say.
+sub say_fh {
+    my ($fh, @args) = @_;
+    say {$fh} @args or croak('say failed');
+    return;
+}
 
 # Parse the C definition of a struct into encoding rules.  The open file
 # handle should point to the start of the body of the struct.  This function
@@ -97,8 +119,9 @@ sub say_checked   { say @_   or croak 'say failed';   return }
 # $source    - Input file name (for error reporting)
 # $source_fh - File handle for open C header source
 #
-# Returns a reference to an array of encoding rules for that struct.  Throws
-# I/O exceptions on read failure and string exceptions on parsing failure.
+# Returns: a reference to an array of encoding rules for that struct
+#  Throws: I/O exceptions on read failure and string exceptions on parsing
+#          failure
 sub parse_struct {
     my ($source, $source_fh) = @_;
 
@@ -112,7 +135,7 @@ sub parse_struct {
         next RULE if !defined $c_type;
 
         # Parse encoding arguments.  The first is the encoded name.
-        my ($encode_name, @encode_args) = split /,\s*/xms, $encode;
+        my ($encode_name, @encode_args) = split(m{,\s*}xms, $encode);
         my %option = map { $_ => 1 } @encode_args;
 
         # Convert the type from C to the attribute encoder type.
@@ -132,10 +155,10 @@ sub parse_struct {
         my ($nest_type, $nest_member);
         if ($type eq 'REPEAT') {
             $line = <$source_fh>;
-            if (defined $line) {
+            if (defined($line)) {
                 ($nest_type, $nest_member) = $line =~ $NESTED_REGEX;
             }
-            if (!defined($line) || !defined $nest_type) {
+            if (!defined($line) || !defined($nest_type)) {
                 die "$source:$.: missing repeated struct member for $attr\n";
             }
             $attr = $nest_member;
@@ -143,7 +166,7 @@ sub parse_struct {
 
         # Build the repesentation of this rule and add it to the rules.
         my $rule_ref = [$attr, $type, $encode_name, \%option, $nest_type];
-        push @rules, $rule_ref;
+        push(@rules, $rule_ref);
     }
 
     # We fell off the end of the struct.
@@ -152,13 +175,18 @@ sub parse_struct {
 
 # Convert a boolean to the string 'true' or 'false'.  Helper function for
 # print_rule.
-sub _bool_as_string {
+#
+# $bool - Boolean value
+#
+# Returns: 'true' or 'false'
+sub bool_as_string {
     my ($bool) = @_;
     return $bool ? 'true' : 'false';
 }
 
 # Print out an encoding rule for a single attribute to standard output.
 #
+# $fh       - File handle to which to print the rule
 # $struct   - Name of the struct for which we're printing rules
 # $rule_ref - Reference to array representing a rule as follows:
 #   [0] Name of the attribute
@@ -167,82 +195,83 @@ sub _bool_as_string {
 #   [3] Reference to hash of options
 #   [4] C data type of nested structure
 #
-# Returns undef.  Throws I/O exceptions on print failure.
+# Returns: undef
+#  Throws: I/O exceptions on print failure
 sub print_rule {
-    my ($struct, $rule_ref) = @_;
+    my ($fh, $struct, $rule_ref) = @_;
     my ($name, $type, $encode_name, $option_ref, $nest_type) = @{$rule_ref};
 
     # Do some preliminary formatting of the rule data.
     my $desc = $name;
     $desc =~ tr{_}{ };
-    my $creation = _bool_as_string($option_ref->{creation});
-    my $optional = _bool_as_string($option_ref->{optional});
-    my $ascii    = _bool_as_string($option_ref->{ascii});
+    my $creation = bool_as_string($option_ref->{creation});
+    my $optional = bool_as_string($option_ref->{optional});
+    my $ascii    = bool_as_string($option_ref->{ascii});
 
     # Print out the basic information.
     #<<<
-    say_checked  q[    {];
-    say_checked qq[        "$encode_name",];
-    say_checked qq[        "$desc",];
-    say_checked qq[        WA_TYPE_${type},];
+    say_fh($fh, q[    {]);
+    say_fh($fh, qq[        "$encode_name",]);
+    say_fh($fh, qq[        "$desc",]);
+    say_fh($fh, qq[        WA_TYPE_${type},]);
     #>>>
 
     # Print out the flags derived from the options.
     #<<<
-    say_checked sprintf '        %-6s /* optional */', $optional . q{,};
-    say_checked sprintf '        %-6s /* ascii    */', $ascii    . q{,};
-    say_checked sprintf '        %-6s /* creation */', $creation . q{,};
+    say_fh($fh, sprintf('        %-6s /* optional */', $optional . q{,}));
+    say_fh($fh, sprintf('        %-6s /* ascii    */', $ascii    . q{,}));
+    say_fh($fh, sprintf('        %-6s /* creation */', $creation . q{,}));
     #>>>
 
     # Print out the offset.
-    say_checked qq[        offsetof(struct $struct, $name),];
+    say_fh($fh, qq[        offsetof(struct $struct, $name),]);
 
-    # DATA attributes have an additional offset to the length attribute.
+    # Print out the additional metadata for this attribute.
     if ($type eq 'DATA') {
+        # DATA attributes have an additional offset to the length attribute.
         #<<<
-        say_checked qq[        offsetof(struct $struct, ${name}_len),];
-        say_checked  q[        0,];
-        say_checked  q[        NULL];
+        say_fh($fh, qq[        offsetof(struct $struct, ${name}_len),]);
+        say_fh($fh,  q[        0,]);
+        say_fh($fh,  q[        NULL]);
         #>>>
-    }
-
-    # Repeated attributes have a count offset and a nested size and encoding.
-    elsif ($type eq 'REPEAT') {
+    } elsif ($type eq 'REPEAT') {
         my $nest_name = $nest_type;
         $nest_name =~ s{ \A struct \s+ (?: (webauth|wai) _ ) }{wai_}xms;
 
-        say_checked qq[        offsetof(struct $struct, ${name}_count),];
-        say_checked qq[        sizeof($nest_type),];
-        say_checked qq[        ${nest_name}_encoding];
-    }
-
-    # Initialization placeholders for all other types.
-    else {
-        say_checked '        0,';
-        say_checked '        0,';
-        say_checked '        NULL';
+        # Repeated attributes have a count offset and a nested size and
+        # encoding.
+        say_fh($fh, qq[        offsetof(struct $struct, ${name}_count),]);
+        say_fh($fh, qq[        sizeof($nest_type),]);
+        say_fh($fh, qq[        ${nest_name}_encoding]);
+    } else {
+        # Initialization placeholders for all other types.
+        say_fh($fh, '        0,');
+        say_fh($fh, '        0,');
+        say_fh($fh, '        NULL');
     }
 
     # End of the encoding.
-    say_checked '    },';
+    say_fh($fh, '    },');
     return;
 }
 
-# Purpose    : Print the encoding rules for structs found in source header
+# Print the encoding rules for structs found in source header.
 #
+# $fh        - File handle to which to print the rules
 # $source    - Path to source header
 # $rules_ref - Reference to hash of struct name to rule array
 #
-# Returns undef.  Throws I/O exceptions on print failure.
+# Returns: undef
+#  Throws: I/O exceptions on print failure
 sub print_rules {
-    my ($source, $rules_ref) = @_;
+    my ($fh, $source, $rules_ref) = @_;
 
     # Print out the initial heading.
-    print_checked $HEADING;
+    print_fh($fh, $HEADING);
     if ($source ne 'lib/internal.h') {
-        say_checked "#include <$source>";
+        say_fh($fh, "#include <$source>");
     }
-    print_checked "\n";
+    print_fh($fh, "\n");
 
     # For each struct, print out the rules for that struct.
     for my $struct (sort keys %{$rules_ref}) {
@@ -250,16 +279,16 @@ sub print_rules {
 
         # Print variable definition for the encoding rules for this struct.
         $name =~ s{ \A (webauth|wai) _ }{wai_}xms;
-        say_checked "const struct wai_encoding ${name}_encoding[] = {";
+        say_fh($fh, "const struct wai_encoding ${name}_encoding[] = {");
 
         # Print the rules for this struct.
         for my $rule (@{ $rules_ref->{$struct} }) {
-            print_rule($struct, $rule);
+            print_rule($fh, $struct, $rule);
         }
 
         # Print the end of rules marker.
-        say_checked '    WA_ENCODING_END';
-        say_checked '};';
+        say_fh($fh, '    WA_ENCODING_END');
+        say_fh($fh, '};');
     }
     return;
 }
@@ -277,7 +306,7 @@ my %encode_struct = map { $_ => 1 } @ARGV;
 
 # Parse the source file and build our encoding rules.
 my %rules;
-open my $source_fh, '<', $source;
+open(my $source_fh, '<', $source);
 while (defined(my $line = <$source_fh>)) {
     if ($line =~ $STRUCT_REGEX) {
         my $name = $1;
@@ -285,10 +314,10 @@ while (defined(my $line = <$source_fh>)) {
         $rules{$name} = parse_struct($source, $source_fh);
     }
 }
-close $source_fh;
+close($source_fh);
 
 # Generate the encoding rules.
-print_rules($source, \%rules);
+print_rules(\*STDOUT, $source, \%rules);
 
 __END__
 
@@ -401,7 +430,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2012 The Board of Trustees of the Leland Stanford Junior
+Copyright 2012, 2013 The Board of Trustees of the Leland Stanford Junior
 University
 
 Permission is hereby granted, free of charge, to any person obtaining a

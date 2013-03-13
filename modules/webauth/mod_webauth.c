@@ -925,16 +925,21 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     ap_unescape_url(token);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
                                   rc->sconf->ring, &app);
-    if (status != WA_ERR_NONE) {
+    if (status == WA_ERR_TOKEN_EXPIRED) {
+        ap_log_error(APLOG_MARK, APLOG_INFO, 0, rc->r->server,
+                     "mod_webauth: user credentials (from %s cookie) have"
+                     " expired", app_cookie_name());
+        return 0;
+    } else if (status != WA_ERR_NONE) {
         mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode_app", token);
+                              "webauth_token_decode_app", NULL);
         return 0;
     }
     rc->at = &app->token.app;
 
     /*
      * Update last-use-time and check inactivity.  If we can't use the app
-     * token due to in activity, clear it out.
+     * token due to inactivity, clear it out.
      */
     status = app_token_maint(rc);
     if (status == 0)
@@ -955,7 +960,7 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
     const char *cname = app_cookie_name();
 
     cval = find_cookie(rc, cname);
-    if (cval == NULL)
+    if (cval == NULL || cval[0] == '\0')
         return 0;
 
     if (!parse_app_token(cval, rc)) {
