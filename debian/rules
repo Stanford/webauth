@@ -10,7 +10,7 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 # The additional flags to pass to Build.PL, picked up by the upstream
 # build system.
-export WEBAUTH_PERL_FLAGS := --installdirs vendor
+export WEBAUTH_PERL_FLAGS := --installdirs vendor --create_packlist 0
 
 ifndef PERL
     PERL = /usr/bin/perl
