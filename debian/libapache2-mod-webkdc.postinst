@@ -10,13 +10,6 @@ fi
 chgrp www-data /var/lib/webkdc
 chmod 770 /var/lib/webkdc
 
-# Do this manually because of libapache2-mod-webauth.  See comments in
-# debian/rules.
-if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
-    . /usr/share/apache2/apache2-maintscript-helper
-    apache2_invoke enmod webkdc
-fi
-
 #DEBHELPER#
 
 exit 0

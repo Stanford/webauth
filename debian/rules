@@ -45,10 +45,10 @@ override_dh_fixperms:
 
 # libapache2-mod-webauth has modules with directives with no default that
 # must be set, so we can't use dh_apache2's current configuration handling.
-# See #681544.  We can't just skip libapache2-mod-webauth because of
-# #681542.
+# See #681544.
 override_dh_apache2:
-	dh_apache2 -n
+	dh_apache2 -Nlibapache2-mod-webauth
+	dh_apache2 -plibapache2-mod-webauth -n
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz

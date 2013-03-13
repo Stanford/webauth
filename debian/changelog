@@ -17,6 +17,9 @@ webauth (4.4.3-1) UNRELEASED; urgency=low
   * Use the new -q flag to a2query when probing for whether mod_webauth
     or mod_webauthldap are enabled, and depend on the appropriate version
     of apache2.
+  * Let dh_apache2 handle configuration of libapache2-mod-webkdc now that
+    we can tell it to skip libapache2-mod-webauth, and build-depend on the
+    appropriate version of apache2-dev.
 
  -- Russ Allbery <rra@debian.org>  Tue, 12 Mar 2013 17:43:54 -0700
 
