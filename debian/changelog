@@ -1,3 +1,22 @@
+webauth (4.4.3-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Fix WebAuthTrustAuthzIdentity to not enable WebAuthDoLogout.
+    - Correctly handle an authorization identity equal to the
+      authentication identity rather than rejecting it with an error.
+    - Remove an arbitrary mod_webauthldap limit in the number of values
+      of a multivalued attribute will be exposed in the environment.
+    - Fix a syntax error in replay handling in the default WebLogin
+      template.
+    - Ignore empty app cookies in mod_webauth instead of logging an
+      error.  These are created internally by mod_webauth when the app
+      cookie has expired.
+    - Better mod_webauth logging when the user's app cookie has expired.
+    - Stop logging the binary app token in mod_webauth.
+    - Fix some obscure error handling cases caught by clang --analyze.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 12 Mar 2013 17:43:54 -0700
+
 webauth (4.4.2-1) experimental; urgency=low
 
   * New upstream release.
