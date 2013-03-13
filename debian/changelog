@@ -185,7 +185,7 @@ webauth (4.2.0-1) experimental; urgency=low
       libapache2-webkdc to libapache2-mod-webkdc.  Add transitional
       packages to ease the upgrade.
     - Use dh_apache2 to handle module and configuration installation.  Do
-      not use it for maitnainer script actions, since
+      not use it for maintainer script actions, since
       libapache2-mod-webauth modules have required configuration and can't
       be enabled by default.
     - Update the maintainer script actions for the new Apache module
