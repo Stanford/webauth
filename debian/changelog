@@ -14,6 +14,9 @@ webauth (4.4.3-1) UNRELEASED; urgency=low
     - Better mod_webauth logging when the user's app cookie has expired.
     - Stop logging the binary app token in mod_webauth.
     - Fix some obscure error handling cases caught by clang --analyze.
+  * Use the new -q flag to a2query when probing for whether mod_webauth
+    or mod_webauthldap are enabled, and depend on the appropriate version
+    of apache2.
 
  -- Russ Allbery <rra@debian.org>  Tue, 12 Mar 2013 17:43:54 -0700
 

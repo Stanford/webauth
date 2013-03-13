@@ -18,8 +18,7 @@ chmod 770 /var/lib/webauth
 if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
     . /usr/share/apache2/apache2-maintscript-helper
 
-    if a2query -m webauth >/dev/null 2>&1 \
-        || a2query -m webauthldap >/dev/null 2>&1 ; then
+    if a2query -q -m webauth || a2query -q -m webauthldap ; then
         apache2_reload restart
     fi
 fi
