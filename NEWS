@@ -1,5 +1,45 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.4.3 (2013-03-12)
+
+    Fix a coding error in the WebAuthTrustAuthzIdentity directive parsing
+    that also enabled WebAuthDoLogout for the same scope.
+
+    If the user asserts an authorization identity equal to their
+    authentication identity, discard the authorization identity in the
+    WebKDC login process and continue as if they did not choose an
+    authorization identity.  This fixes a previously fatal error when the
+    user selects their default identity in WebLogin (if, for example, they
+    are trying to undo a previous choice of authorization identity).
+    Thanks to Benjamin Coddington for the report.
+
+    Remove an arbitrary limit in mod_webauthldap on the number of values
+    from a multivalued LDAP attribute that are put in the environment.
+    Previous versions would only add the first 127 values, but there are
+    some cases where one may want to see more values than that.  This
+    opens the possibility of overflowing the allowed size of the
+    environment, but the maximum environment size is quite large on most
+    modern operating systems.
+
+    Fix syntax error in the replay condition in the default WebLogin error
+    template.
+
+    Ignore empty app cookies rather than logging an error saying they
+    cannot be parsed.  These are created internally by mod_webauth to
+    remove expired cookies and may be seen by subqueries.
+
+    Log a more informative message in mod_webauth when the user's app
+    cookie has expired instead of a generic parse error and downgrade it
+    to the info level from error.
+
+    Stop logging the raw binary app token in mod_webauth when it cannot be
+    decoded.  This was old debugging code left over from fixing a problem
+    in a much earlier version of WebAuth.
+
+    Fix some incorrect error handling caught by clang --analyze.  None of
+    these were serious, but they could have resulted in strange error
+    messages or a NULL pointer dereference in very rare situations.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting

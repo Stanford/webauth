@@ -1975,8 +1975,7 @@
           </figure>
 
           <t>All attributes are AES-encrypted in the WebKDC's private key.
-          Either <code>ia</code> or <code>san</code> must be present in
-          the token.</t>
+          Either ia or san must be present in the token.</t>
 
           <t>webkdc-factor tokens are only valid when presented in
           conjunction with at least one valid webkdc-proxy or login token

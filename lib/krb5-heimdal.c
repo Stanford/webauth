@@ -6,7 +6,7 @@
  * to make a corresponding change to krb5-mit.c for systems with MIT Kerberos.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2002, 2003, 2006, 2009, 2010, 2012
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -136,6 +136,8 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      */
     memset(&data, 0, sizeof(data));
     status = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
+    if (status != WA_ERR_NONE)
+        return status;
     memset(creds, 0, sizeof(krb5_creds));
     if (data.client_principal != NULL) {
         status = decode_principal(ctx, kc, data.client_principal,

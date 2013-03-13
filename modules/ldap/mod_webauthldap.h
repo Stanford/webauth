@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth LDAP module.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2005, 2006, 2007, 2009, 2010, 2012
+ * Copyright 2003, 2005, 2006, 2007, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -31,7 +31,6 @@ extern module webauthldap_module;
 extern const command_rec webauthldap_cmds[];
 
 /* constants */
-#define MAX_ENV_VALUES 128
 #define LDAP_SIZELIMIT -1
 #define PRIVGROUP_DIRECTIVE "privgroup"
 #define DN_ATTRIBUTE "dn"

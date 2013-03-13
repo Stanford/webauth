@@ -6,7 +6,7 @@
  * tests even if no Kerberos configuration is provided.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -47,7 +47,7 @@ main(void)
     struct webauth_webkdc_proxy_data *pd;
     const char *authz;
 
-    plan(95);
+    plan(110);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -284,6 +284,41 @@ main(void)
     is_string("not authorized to assert that identity",
               response->login_message, "...and the right message");
     ok(response->authz_subject == NULL, "...and authz subject is NULL");
+
+    /* Assert the same identity as the subject. */
+    request.authz_subject = "testuser";
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    if (status != WA_ERR_NONE)
+        diag("error status: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status,
+           "Asserting matching authz subject returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no message");
+    is_string(NULL, response->authz_subject, "...and no authz subject");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                  session, &token);
+    is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    if (status != WA_ERR_NONE)
+        ok_block(8, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("testuser", token->token.id.subject,
+                  "...result subject is right");
+        is_string(NULL, token->token.id.authz_subject,
+                  "...and no result authz subject");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("x,x1", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_string(NULL, token->token.proxy.session_factors,
+                  "...and there are no session factors");
+        is_int(3, token->token.id.loa, "...result LoA is right");
+        ok(token->token.id.creation - now < 3, "...and creation is sane");
+        is_int(now + 60 * 60, token->token.id.expiration,
+               "...and expiration matches the expiration of the proxy token");
+    }
 
     /* Set forced authentication and try again. */
     request.authz_subject = NULL;

@@ -90,7 +90,7 @@ works of this work.
               [% END %]
 
               <!-- Error: request was a replay -->
-              [% If err_replay %]
+              [% IF err_replay %]
                 <p>Error: Authentication was a replay.</p>
                 <p>You cannot repeat your authentication to this site.  If
                    you reached this page via the back button in your

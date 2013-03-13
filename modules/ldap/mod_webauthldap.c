@@ -2,7 +2,7 @@
  * Core WebAuth LDAP Apache module code.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -166,7 +166,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
     krb5_ccache cc;
-    krb5_principal princ;
+    krb5_principal princ = NULL;
     krb5_error_code code;
     char *kt, *cc_path;
 
@@ -199,7 +199,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     if (code != 0) {
         krb5_kt_close(ctx, keytab);
-        krb5_free_principal(ctx, princ);
+        if (princ != NULL)
+            krb5_free_principal(ctx, princ);
         return code;
     }
 
@@ -828,7 +829,8 @@ webauthldap_setenv(MWAL_LDAP_CTXT* lc, const char *key, const char *val)
         }
 
         /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
-        for (i=2; i<MAX_ENV_VALUES; i++) {
+        i = 2;
+        while (1) {
             numbered_key = apr_psprintf(lc->r->pool, "%s%d", key, i);
             if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
                 if (lc->sconf->debug)
@@ -838,6 +840,7 @@ webauthldap_setenv(MWAL_LDAP_CTXT* lc, const char *key, const char *val)
                 apr_table_set(lc->r->subprocess_env, numbered_key, val);
                 break;
             }
+            i++;
         }
     }
 }

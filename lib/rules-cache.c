@@ -6,7 +6,7 @@
  * script.  To make changes, modify either the encode comments or (more
  * rarely) the encoding-rules script and run it again.
  *
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
