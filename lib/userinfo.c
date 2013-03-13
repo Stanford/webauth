@@ -26,6 +26,7 @@
 #include <lib/internal.h>
 #include <webauth/basic.h>
 #include <webauth/krb5.h>
+#include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 #include <util/macros.h>
 
@@ -213,44 +214,61 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
                 struct webauth_user_info **result)
 {
     apr_xml_elem *child;
-    int status = WA_ERR_REMOTE_FAILURE;
+    int s = WA_ERR_REMOTE_FAILURE;
     struct webauth_user_info *info;
     unsigned long value;
     const char *content;
+    bool multifactor_required = false;
 
+    /* We currently don't check that the user parameter is correct. */
     if (strcmp(doc->root->name, "authdata") != 0) {
-        wai_error_set(ctx, status, "root element is %s, not authdata",
+        wai_error_set(ctx, s, "root element is %s, not authdata",
                       doc->root->name);
-        return status;
+        return s;
     }
+
+    /* Parse the XML. */
     info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     for (child = doc->root->first_child; child != NULL; child = child->next) {
-        status = WA_ERR_NONE;
+        s = WA_ERR_NONE;
         if (strcmp(child->name, "error") == 0)
-            status = wai_xml_content(ctx, child, &info->error);
+            s = wai_xml_content(ctx, child, &info->error);
         else if (strcmp(child->name, "factors") == 0)
-            status = parse_factors(ctx, child, &info->factors, NULL);
+            s = parse_factors(ctx, child, &info->factors, NULL);
         else if (strcmp(child->name, "additional-factors") == 0)
-            status = parse_factors(ctx, child, &info->additional, NULL);
+            s = parse_factors(ctx, child, &info->additional, NULL);
+        else if (strcmp(child->name, "multifactor-required") == 0)
+            multifactor_required = true;
         else if (strcmp(child->name, "required-factors") == 0)
-            status = parse_factors(ctx, child, &info->required, NULL);
+            s = parse_factors(ctx, child, &info->required, NULL);
         else if (strcmp(child->name, "login-history") == 0)
-            status = parse_history(ctx, child, &info->logins);
+            s = parse_history(ctx, child, &info->logins);
         else if (strcmp(child->name, "max-loa") == 0) {
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE)
-                status = convert_number(ctx, content, &info->max_loa);
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE)
+                s = convert_number(ctx, content, &info->max_loa);
         } else if (strcmp(child->name, "password-expires") == 0) {
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE) {
-                status = convert_number(ctx, content, &value);
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE) {
+                s = convert_number(ctx, content, &value);
                 info->password_expires = value;
             }
         } else if (strcmp(child->name, "user-message") == 0)
-            status = wai_xml_content(ctx, child, &info->user_message);
-        if (status != WA_ERR_NONE)
-            return status;
+            s = wai_xml_content(ctx, child, &info->user_message);
+        if (s != WA_ERR_NONE)
+            return s;
     }
+
+    /*
+     * For backwards compatibility, if <multifactor-required /> was present
+     * but not <required-factors>, add m as a required factor.
+     */
+    if (info->required == NULL && multifactor_required) {
+        info->required = apr_array_make(ctx->pool, 1, sizeof(const char *));
+        APR_ARRAY_PUSH(info->required, const char *) = WA_FA_MULTIFACTOR;
+    }
+
+    /* Return the results. */
     *result = info;
     return WA_ERR_NONE;
 }
