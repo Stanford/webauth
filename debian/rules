@@ -8,6 +8,10 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 # library dependencies of libwebauth.
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
+# The additional flags to pass to Build.PL, picked up by the upstream
+# build system.
+export WEBAUTH_PERL_FLAGS := --installdirs vendor
+
 ifndef PERL
     PERL = /usr/bin/perl
 endif
@@ -22,12 +26,6 @@ override_dh_auto_configure:
 	dh_auto_configure --parallel -- --libexecdir=/usr/lib \
 	    --enable-webkdc --enable-perl --with-apxs=/usr/bin/apxs \
 	    --enable-reduced-depends
-
-override_dh_auto_build:
-	dh_auto_build --parallel
-	cd perl && $(PERL) Build.PL --installdirs vendor \
-	    --config optimize="$(CFLAGS)"
-	cd perl && ./Build
 
 override_dh_auto_install:
 	dh_auto_install
