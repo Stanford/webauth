@@ -226,7 +226,6 @@ main(void)
     wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
     wkfactor.token.webkdc_factor.subject = "testuser";
     wkfactor.token.webkdc_factor.initial_factors = "d";
-    wkfactor.token.webkdc_factor.session_factors = "x3";
     wkfactor.token.webkdc_factor.creation = now - 10 * 60;
     wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;
@@ -272,16 +271,16 @@ main(void)
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
         is_string("x,x1,d", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("x3", token->token.proxy.session_factors,
-                  "...result session factors is right");
+                  "...result initial factors are right");
+        is_string("d", token->token.proxy.session_factors,
+                  "...result session factors are right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         ok(token->token.id.creation - now < 3, "...and creation is sane");
         is_int(now + 60 * 60, token->token.id.expiration,
                "...and expiration matches the expiration of the proxy token");
     }
     is_string("x,x1,d", response->initial_factors, "...initial factors");
-    is_string("x3", response->session_factors, "...session factors");
+    is_string("d", response->session_factors, "...session factors");
     is_int(3, response->loa, "...level of assurance");
     ok(response->authz_subject == NULL, "...authz subject");
     ok(response->permitted_authz == NULL, "...allowed identities");

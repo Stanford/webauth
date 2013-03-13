@@ -536,9 +536,9 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("o,o3,p,m,d,x1", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m,d,u", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("o,o3,p,m", token->token.proxy.session_factors,
+        is_string("o,o3,p,m,d,u", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
@@ -557,7 +557,7 @@ main(void)
         is_int(WA_ERR_NONE, status, "...which decodes properly");
         ft = &token->token.webkdc_factor;
         is_string("full", ft->subject, "...with correct subject");
-        is_string("d,x1", ft->initial_factors,
+        is_string("d,u", ft->initial_factors,
                   "...and correct initial factors");
         is_string(NULL, ft->session_factors, "...and no session factors");
         is_int(1893484802, ft->expiration, "...and expiration is correct");
@@ -568,7 +568,7 @@ main(void)
     memset(&wkfactor, 0, sizeof(wkfactor));
     wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
     wkfactor.token.webkdc_factor.subject = "full";
-    wkfactor.token.webkdc_factor.session_factors = "x3";
+    wkfactor.token.webkdc_factor.initial_factors = "k";
     wkfactor.token.webkdc_factor.creation = now - 10 * 60;
     wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;
@@ -595,9 +595,9 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("o,o3,p,m,d,x1", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m,k,d,u", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("o,o3,p,m,x3", token->token.proxy.session_factors,
+        is_string("o,o3,p,m,k,d,u", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
@@ -616,9 +616,9 @@ main(void)
         is_int(WA_ERR_NONE, status, "...which decodes properly");
         ft = &token->token.webkdc_factor;
         is_string("full", ft->subject, "...with correct subject");
-        is_string("d,x1", ft->initial_factors,
+        is_string("k,d,u", ft->initial_factors,
                   "...and correct initial factors");
-        is_string("x3", ft->session_factors, "...and correct session factors");
+        is_string(NULL, ft->session_factors, "...and no session factors");
         is_int(now + 60 * 60, ft->expiration, "...and expiration is correct");
         is_int(now - 10 * 60, ft->creation, "...and creation is correct");
     }
@@ -663,7 +663,7 @@ main(void)
     if (token == NULL || status != WA_ERR_NONE)
         ok(0, "...no result token: %s", webauth_error_message(ctx, status));
     else
-        is_string("o,o3,p,m", token->token.id.session_factors,
+        is_string("o,o3,p,m,d,u", token->token.id.session_factors,
                   "...result session factors is right");
 
     /*

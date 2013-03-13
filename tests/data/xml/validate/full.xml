@@ -8,7 +8,7 @@
   <persistent-factors>
     <expiration>1893484802</expiration>
     <factor>d</factor>
-    <factor>x1</factor>
+    <factor>u</factor>
   </persistent-factors>
   <login-history>
     <host ip="127.0.0.2">example.com</host>

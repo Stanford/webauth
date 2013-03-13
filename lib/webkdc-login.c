@@ -581,12 +581,19 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             best->loa = wkproxy->loa;
     } while (i-- > 0);
 
-    /* If the webkdc-factor token matches our subject, add its factors. */
+    /*
+     * If the webkdc-factor token matches our subject, add its factors to both
+     * the initial and session factors.
+     */
     if (wkfactor != NULL) {
         wft = &wkfactor->token.webkdc_factor;
         if (strcmp(wft->subject, best->subject) == 0) {
             status = webauth_factors_parse(ctx, wft->initial_factors,
                                            &factors);
+            if (status != WA_ERR_NONE)
+                return status;
+            status = webauth_factors_parse(ctx, wft->initial_factors,
+                                           &sfactors);
             if (status != WA_ERR_NONE)
                 return status;
             status = webauth_factors_parse(ctx, wft->session_factors,
