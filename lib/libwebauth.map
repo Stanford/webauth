@@ -1,8 +1,6 @@
 WEBAUTH_3 {
     global:
         webauth_parse_interval;
-        webauth_token_type_code;
-        webauth_token_type_string;
 
     local:
         *;
@@ -52,6 +50,8 @@ WEBAUTH_4_5 {
         webauth_token_encode;
         webauth_token_encode_raw;
         webauth_token_encrypt;
+        webauth_token_type_code;
+        webauth_token_type_string;
         webauth_user_config;
         webauth_user_info;
         webauth_user_validate;
