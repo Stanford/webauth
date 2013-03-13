@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.4.3 (unreleased)
+WebAuth 4.4.3 (2013-03-12)
 
     Fix a coding error in the WebAuthTrustAuthzIdentity directive parsing
     that also enabled WebAuthDoLogout for the same scope.
