@@ -36,6 +36,10 @@ WebAuth 4.4.3 (unreleased)
     decoded.  This was old debugging code left over from fixing a problem
     in a much earlier version of WebAuth.
 
+    Fix some incorrect error handling caught by clang --analyze.  None of
+    these were serious, but they could have resulted in strange error
+    messages or a NULL pointer dereference in very rare situations.
+
 WebAuth 4.4.2 (2013-02-05)
 
     Fix an occasional WebKDC crash (introduced in 4.4.0) when attempting
