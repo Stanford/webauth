@@ -73,8 +73,10 @@ if [ -f "data/xml/$dir/$2.xml" ] ; then
                     exec cat "data/xml/$dir/$2.xml"
                     ;;
                 *)
+                    required="<required-factors><factor>m</factor>"
+                    required="${required}</required-factors>"
                     cat "data/xml/$dir/$2.xml" \
-                        | sed 's%<max%<multifactor-required /><max%'
+                        | sed "s%<max%${required}<max%"
                     exit $?
                     ;;
             esac

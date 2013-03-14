@@ -82,7 +82,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(253);
+    plan(257);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -386,10 +386,14 @@ main(void)
     is_string("multifactor login required", response->login_message,
               "...and the right message");
     ok(response->result == NULL, "...and there is no result token");
-    is_int(2, response->factors_wanted->nelts,
-           "...and two factors are wanted");
+    is_int(3, response->factors_wanted->nelts,
+           "...and three factors are wanted");
     is_string("o", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
-              "...which is the OTP factor");
+              "...which are the OTP factor (from request)");
+    is_string("m", APR_ARRAY_IDX(response->factors_wanted, 1, const char *),
+              "...the multifactor factor (from userinfo)");
+    is_string("o3", APR_ARRAY_IDX(response->factors_wanted, 2, const char *),
+              "...and the o3 factor (from userinfo)");
     is_int(4, response->factors_configured->nelts,
            "...and four factors are configured");
     is_string("p",
@@ -497,6 +501,8 @@ main(void)
            "...with correct error");
     is_string("login incorrect", response->login_message,
               "...and the correct error message");
+    is_string("<em>OTP3</em> down.  &lt;_&lt;;", response->user_message,
+              "...and the correct user message");
 
     /*
      * Switch to the correct OTP code and add back a webkdc-proxy token
@@ -563,6 +569,7 @@ main(void)
         is_int(1893484802, ft->expiration, "...and expiration is correct");
         ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
     }
+    is_string(NULL, response->user_message, "...and user message is NULL");
 
     /* Do the same authentication but add an input webkdc-factor token. */
     memset(&wkfactor, 0, sizeof(wkfactor));

@@ -15,5 +15,5 @@
     <host ip="127.0.0.3">www.example.com</host>
   </login-history>
   <loa>3</loa>
-  <user-message><![CDATA[<strong>OTP3</strong> down for maint.  &lt;_&lt;;]]></user-message>
+  <user-message><![CDATA[<em>OTP3</em> down.  &lt;_&lt;;]]></user-message>
 </authdata>
