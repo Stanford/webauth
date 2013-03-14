@@ -842,7 +842,6 @@ check_multifactor(struct webauth_context *ctx,
      * can't satisfy the factors at all, we'll change the error later.  Be
      * careful not to override errors from the LoA check.
      */
-    webauth_factors_trim(ctx, have, &wanted);
     if (webauth_factors_subset(ctx, wanted, have)) {
         if (webauth_factors_subset(ctx, swanted, shave)) {
             if (response->login_error == 0)
@@ -855,6 +854,17 @@ check_multifactor(struct webauth_context *ctx,
         response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
         response->login_message = "multifactor login required";
     }
+
+    /*
+     * Fourth, trim the factors the user already has out of the factors that
+     * are required.  We do this before checking whether the desired factors
+     * are satisfiable since the user may have factors that the user
+     * information service doesn't know they can have.  We also only want to
+     * report to WebLogin the additional factors the user needs but doesn't
+     * have, not the full list that they've partially satisfied.
+     */
+    webauth_factors_trim(ctx, have, &wanted);
+    webauth_factors_trim(ctx, shave, &swanted);
 
     /*
      * Finally, check if the WAS-requested factors can be satisfied by the
