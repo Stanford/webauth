@@ -1,7 +1,7 @@
 # Perl representation of a WebAuth login token.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -110,7 +110,6 @@ principal name.
 Get or set the password for this user.  Either this or the otp() attribute
 will be set.
 
-
 =item otp ([OTP])
 
 Get or set the one-time password code for this user.  Either this or the
@@ -118,7 +117,9 @@ password() attribute will be set.
 
 =item otp_type ([TYPE])
 
-Get or set the one-time password type.
+Get or set the one-time password type.  This should be a WebAuth factor
+code corresponding to the type of one-time password that this login token
+represents.  It may be left unset if the caller doesn't know.
 
 =item creation ([TIMESTAMP])
 
