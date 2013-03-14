@@ -256,6 +256,7 @@ check_login_token(struct webauth_context *ctx,
     is_string(login->username, login2->username, "...username");
     is_string(login->password, login2->password, "...password");
     is_string(login->otp, login2->otp, "...otp");
+    is_string(login->otp_type, login2->otp_type, "...otp type");
     if (login->creation > 0)
         is_int(login->creation, login2->creation, "...creation");
     else
@@ -515,7 +516,7 @@ main(void)
     struct webauth_token *out;
     const char *result;
 
-    plan(474);
+    plan(485);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -697,6 +698,8 @@ main(void)
     login.otp = "123456";
     login.creation = 0;
     check_login_token(ctx, &login, ring, "otp");
+    login.otp_type = "o1";
+    check_login_token(ctx, &login, ring, "otp with type");
 
     /* Test for error cases for missing or inconsistent data. */
     login.username = NULL;
