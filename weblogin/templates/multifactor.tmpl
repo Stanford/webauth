@@ -21,6 +21,7 @@ error                   : some error occurred
 err_multifactor_missing : the form was submitted previously without an OTP
 err_multifactor_invalid : could not validate a submitted OTP
 public_computer         : set if the user has said this is a public computer
+user_message            : raw HTML returned by the user information service
 
 You may customize this file however you wish for your site.
 
@@ -36,22 +37,24 @@ works of this work.
 
   <body onload="document.login.otp.focus();">
     <h1 align="center">WebAuth Multifactor</h1>
-    [% IF user_message %]<h4>[% user_message %]</h4>[% END %]
-    [% IF error %]
+    [% IF error || user_message %]
       <div class="error" align="center">
+        [% IF user_message %][% user_message %][% END %]
         <p><strong>
           [% IF err_multifactor_missing %]
             <!-- Error: no OTP submitted. -->
             Error: Enter a one-time password.
           [% END %]
 
-          [% IF err_multifactor_invalid %]
+          [% IF err_multifactor_invalid && !user_message %]
             <!-- Error: login failed. -->
             Error: You entered an incorrect one-time password.
           [% END %]
 
         </strong></p>
-        <p>Click <a href="/help.html">help</a> for assistance.</p>
+        [% IF error %]
+          <p>Click <a href="/help.html">help</a> for assistance.</p>
+        [% END %]
       </div>
     [% END %]
 
