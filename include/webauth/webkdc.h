@@ -261,7 +261,7 @@ int webauth_user_info(struct webauth_context *, const char *user,
 int webauth_user_validate(struct webauth_context *, const char *user,
                           const char *ip, const char *code, const char *type,
                           struct webauth_user_validate **)
-    __attribute__((__nonnull__(1, 2, 4, 5)));
+    __attribute__((__nonnull__(1, 2, 4, 6)));
 
 /*
  * Configure the WebKDC services.  Takes the context and the configuration
