@@ -429,6 +429,8 @@ main(void)
                 "decoding creation");
     check_error(ctx, WA_TOKEN_LOGIN, "login-neither", ring, WA_ERR_CORRUPT,
                 "either password or otp required in login token");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-otp-type", ring, WA_ERR_CORRUPT,
+                "otp_type not valid with password in login token");
     check_error(ctx, WA_TOKEN_LOGIN, "proxy-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type proxy, expected login");
 

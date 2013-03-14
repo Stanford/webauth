@@ -395,6 +395,8 @@ check_login(struct webauth_context *ctx,
                       "both password and otp set in login token");
         return WA_ERR_CORRUPT;
     }
+    if (login->password != NULL)
+        CHECK_NULL(login, otp_type, "password");
     return WA_ERR_NONE;
 }
 

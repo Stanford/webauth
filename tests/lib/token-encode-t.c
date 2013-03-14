@@ -516,7 +516,7 @@ main(void)
     struct webauth_token *out;
     const char *result;
 
-    plan(485);
+    plan(488);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -707,12 +707,17 @@ main(void)
                       "missing username in login token");
     login.username = "testuser";
     login.otp = NULL;
+    login.otp_type = NULL;
     check_login_error(ctx, &login, ring, "without password or otp",
                       "either password or otp required in login token");
     login.password = "password";
     login.otp = "123456";
     check_login_error(ctx, &login, ring, "both password and otp",
                       "both password and otp set in login token");
+    login.otp = NULL;
+    login.otp_type = "o3";
+    check_login_error(ctx, &login, ring, "otp type without otp",
+                      "otp_type not valid with password in login token");
 
     /* Flesh out a proxy token, and then encode and decode it. */
     proxy.subject = "testuser";
