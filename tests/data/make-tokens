@@ -110,7 +110,7 @@ if (!-d $output) {
 for my $tokens_ref (\%TOKENS_GOOD, \%TOKENS_ERROR) {
   TOKENS:
     for my $file (sort keys %{$tokens_ref}) {
-        next TOKENS if (%generate && !$generate{$file});
+        next TOKENS if (@ARGV && !$generate{$file});
         my $token = build_token($tokens_ref->{$file}, $wa, $ring);
         write_token($token, $output, $file);
         delete $generate{$file};
@@ -123,7 +123,7 @@ for my $tokens_ref (\%TOKENS_GOOD, \%TOKENS_ERROR) {
 # higher-level token library functions.
 BAD:
 for my $file (sort keys %TOKENS_BAD) {
-    next BAD if (%generate and not $generate{$file});
+    next BAD if (@ARGV && !$generate{$file});
     my $token    = q{};
     my $data_ref = $TOKENS_BAD{$file};
     for my $attr (sort keys %{$data_ref}) {
