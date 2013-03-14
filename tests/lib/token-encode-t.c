@@ -690,6 +690,7 @@ main(void)
     login.username = "testuser";
     login.password = "password";
     login.otp = NULL;
+    login.otp_type = NULL;
     login.creation = now;
     check_login_token(ctx, &login, ring, "password");
     login.password = NULL;
