@@ -165,14 +165,9 @@ do_otp(struct webauth_context *ctx,
 
     /* If validation failed, set the login error code and return. */
     if (!validate->success) {
-        if (validate->user_message == NULL) {
-            response->login_error = WA_PEC_LOGIN_FAILED;
-            response->login_message = "login incorrect";
-        } else {
-            response->login_error = WA_PEC_LOGIN_REJECTED;
-            response->login_message = "relaying message from validation service";
-            response->user_message = validate->user_message;
-        }
+        response->login_error = WA_PEC_LOGIN_FAILED;
+        response->login_message = "login incorrect";
+        response->user_message = validate->user_message;
         return WA_ERR_NONE;
     }
 
