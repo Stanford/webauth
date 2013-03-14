@@ -270,6 +270,7 @@ User Information Service
              password in seconds since epoch, used to prompt the user
              to change their password. -->
         <password-expires>{expiration-time}</password-expires>
+
         <!-- Optional.  May contain a message for the user to display on
              the first load of the multifactor authentication page.
         <user-message>{message-for-user}</user-message>
@@ -295,17 +296,21 @@ User Information Service
   authentication (either password or OTP) for that user should add some
   additional factors besides the normal ones.
 
-  If the <require-factors /> tag is present, the WebKDC will add the
-  factors present to those required by the WebAuth-protected site.  This
-  can be used to force multifactor authentication even if the
-  WebAuth-protected site doesn't require it. This is how random multifactor
-  should be implemented by the user information service.  If the random
-  multifactor flag is 1 and the user is selected, include a required
-  factor within this tag.  The user information service should also
+  If <required-factors> is present, the WebKDC will add the factors
+  present to those required by the WebAuth-protected site.  This can be
+  used to force multifactor authentication even if the WebAuth-protected
+  site doesn't require it.  This is how random multifactor should be
+  implemented by the user information service.  If the random multifactor
+  flag is 1 and the user is selected, include a required factor (generally
+  the m factor) within this tag.  The user information service should also
   remember that the user was selected for random multifactor and continue
   to require it every time the random multifactor flag is true until the
   user successfully authenticates with multifactor, since otherwise the
   user may just reload the login page until they get lucky again.
+
+  For backward compatibility, the <multifactor-required /> tag, if present
+  without <required-factors>, is treated as equivalent to a required
+  factor of m.
 
   The optional <login-history> section provides information for the
   WebLogin server to show the user about recent logins.
@@ -371,7 +376,8 @@ OTP Validation
       The OTP to validate.
 
   type
-      The OTP type to validate.
+      The OTP type to validate.  This parameter may be omitted if the
+      WebKDC doesn't know what type of OTP the user is trying to use.
 
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal error and the user's authentication will be aborted.  (This
