@@ -21,7 +21,7 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw(create_keyring);
 
-use Test::More tests => 280;
+use Test::More tests => 288;
 
 use MIME::Base64 qw(decode_base64);
 use WebAuth 3.07 qw(WA_KEY_AES WA_AES_128);

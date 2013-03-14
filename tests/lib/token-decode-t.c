@@ -409,6 +409,16 @@ main(void)
         is_string("testuser", login->username, "...username");
         is_string(NULL, login->password, "...password");
         is_string("489147", login->otp, "...otp");
+        is_string("o1", login->otp_type, "...otp type");
+        is_int(1308777900, login->creation, "...creation");
+    }
+    result = check_decode(ctx, WA_TOKEN_LOGIN, "login-otp-minimal", ring, 4);
+    if (result != NULL) {
+        login = &result->token.login;
+        is_string("testuser", login->username, "...username");
+        is_string(NULL, login->password, "...password");
+        is_string("489147", login->otp, "...otp");
+        is_string(NULL, login->otp_type, "...otp type");
         is_int(1308777900, login->creation, "...creation");
     }
 
