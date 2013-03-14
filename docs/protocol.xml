@@ -952,8 +952,9 @@
 
               <t hangText='13'>The login token was invalid.</t>
 
-              <t hangText='14'>Login failed due to bad password or invalid
-              username.</t>
+              <t hangText='14'>Login failed due to bad password, invalid
+              username, invalid OTP code, or some other authentication
+              failure.</t>
 
               <t hangText='15'>A webkdc-proxy token of a certain type was
               required to fulfill the request but was not present in the
@@ -1269,9 +1270,10 @@
           be set.  The error codes used by &lt;loginErrorCode> are a
           subset of those used by &lt;errorCode>:
             <list style='hanging' hangIndent='4'>
-              <t hangText='14'>Login failed due to bad password or invalid
-              username.  The web front-end should re-prompt for the
-              username and password.</t>
+              <t hangText='14'>Login failed due to bad password, invalid
+              username, invalid OTP code, or similar error.  The web
+              front-end should re-prompt for the username and password or
+              OTP code.</t>
 
               <t hangText='15'>A webkdc-proxy token of a certain type was
               required and was not present in the request.  The web
@@ -2560,13 +2562,14 @@
           &lt;factorTokens> element to the &lt;requestTokenResponse> API,
           and the d factor.</t>
 
-          <t hangText='3.4.1 (2013-02-28, rra)'>
+          <t hangText='3.4.1 (2013-03-13, rra)'>
           <vspace blankLines='0'/>Include the expiration time of a factor
           token in the &lt;requesttokenResponse&gt; response as an
           attribute on the &lt;factorToken&gt; element.  Clarify that the
           webkdc-factor expiration time reflects when it stops
           contributing factors to new authentications, not when those
-          factors go away entirely.  Add the h factor.</t>
+          factors go away entirely.  Add the h factor.  Clarify that error
+          code 14 can be used for a wide variety of login failures.</t>
         </list>
       </t>
     </section>
