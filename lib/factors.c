@@ -171,37 +171,54 @@ webauth_factors_subset(struct webauth_context *ctx UNUSED,
 }
 
 /*
- * Given two sets of factors (struct webauth_factors), remove all factors
- * from the second that are present in the first and return true.
+ * Given two sets of factors (struct webauth_factor), return a new set
+ * containing all factors present in the first that are not present in the
+ * second.
  */
-int
-webauth_factors_trim(struct webauth_context *ctx,
-                     struct webauth_factors *one,
-                     struct webauth_factors **two)
+struct webauth_factors *
+webauth_factors_subtract(struct webauth_context *ctx,
+                         struct webauth_factors *one,
+                         struct webauth_factors *two)
 {
     struct webauth_factors *result;
     bool keep;
     const char *f1, *f2;
     int i, j;
 
-    result = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
-    result->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
+    /* Handle some trivial cases. */
+    if (one == NULL)
+        return NULL;
+    if (two == NULL) {
+        result = apr_pmemdup(ctx->pool, one, sizeof(struct webauth_factors));
+        result->factors = apr_array_copy(ctx->pool, one->factors);
+        return result;
+    }
 
-    for (i = 0; i < (*two)->factors->nelts; i++) {
-        f1 = APR_ARRAY_IDX((*two)->factors, i, const char *);
+    /* Create the new set of factors that we will return. */
+    result = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
+    result->factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
+
+    /*
+     * Walk the list of factors in one and, for each, check whether it's in
+     * two.  This is O(n^2), but factor lists tend to be small.
+     */
+    for (i = 0; i < one->factors->nelts; i++) {
+        f1 = APR_ARRAY_IDX(one->factors, i, const char *);
         keep = true;
-        for (j = 0; j < one->factors->nelts; j++) {
-            f2 = APR_ARRAY_IDX(one->factors, j, const char *);
+        for (j = 0; j < two->factors->nelts; j++) {
+            f2 = APR_ARRAY_IDX(two->factors, j, const char *);
             if (strcmp(f1, f2) == 0) {
                 keep = false;
                 break;
             }
         }
-
-        if (keep)
+        if (keep) {
             APR_ARRAY_PUSH(result->factors, const char *) = f1;
+            if (strcmp(f1, WA_FA_MULTIFACTOR) == 0)
+                result->multifactor = true;
+            if (strcmp(f1, WA_FA_RANDOM_MULTIFACTOR) == 0)
+                result->random = true;
+        }
     }
-
-    *two = result;
-    return true;
+    return result;
 }

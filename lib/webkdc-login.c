@@ -856,15 +856,15 @@ check_multifactor(struct webauth_context *ctx,
     }
 
     /*
-     * Fourth, trim the factors the user already has out of the factors that
+     * Fourth, remove the factors the user already has from the factors that
      * are required.  We do this before checking whether the desired factors
      * are satisfiable since the user may have factors that the user
      * information service doesn't know they can have.  We also only want to
      * report to WebLogin the additional factors the user needs but doesn't
      * have, not the full list that they've partially satisfied.
      */
-    webauth_factors_trim(ctx, have, &wanted);
-    webauth_factors_trim(ctx, shave, &swanted);
+    wanted = webauth_factors_subtract(ctx, wanted, have);
+    swanted = webauth_factors_subtract(ctx, swanted, shave);
 
     /*
      * Finally, check if the WAS-requested factors can be satisfied by the

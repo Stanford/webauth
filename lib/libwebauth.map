@@ -15,7 +15,7 @@ WEBAUTH_4_5 {
         webauth_factors_parse;
         webauth_factors_string;
         webauth_factors_subset;
-        webauth_factors_trim;
+        webauth_factors_subtract;
         webauth_key_copy;
         webauth_key_create;
         webauth_keyring_add;

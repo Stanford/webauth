@@ -349,12 +349,14 @@ int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
     __attribute__((__nonnull__));
 
 /*
- * Given two sets of factors (struct webauth_factors), remove all factors
- * from the second that are present in the first and return true.
+ * Given two sets of factors (struct webauth_factors), return a new set of
+ * factors formed by removing all factors from the first set that are present
+ * in the second set.
  */
-int webauth_factors_trim(struct webauth_context *, struct webauth_factors *,
-                           struct webauth_factors **)
-    __attribute__((__nonnull__));
+struct webauth_factors *webauth_factors_subtract(struct webauth_context *,
+                                                 struct webauth_factors *,
+                                                 struct webauth_factors *)
+    __attribute__((__nonnull__(1)));
 
 /*
  * Map a token code to the string name used for the toke type attribute, or
