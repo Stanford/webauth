@@ -2020,10 +2020,9 @@ sub multifactor : Runmode {
             return $self->print_confirm_page;
         } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
             print STDERR "additional multifactor required\n"
+                if $self->param ('logging');
         } else {
-            # FIXME: Probably want to handle $status more, but not yet
-            #        sure what statuses we might get back.
-            print STDERR "multifactor failed with ($status):$error\n"
+            print STDERR "multifactor failed: $error ($status)\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
         }
