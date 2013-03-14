@@ -1690,6 +1690,11 @@
             <vspace blankLines='0'/>User's one-time password code, in a
             login token.</t>
 
+            <t hangText='ott (string)'>
+            <vspace blankLines='0'/>The type of OTP that the one-time
+            password code (in the otp attribute) is for.  This should be
+            an authentication factor, generally one of the oN factors.</t>
+
             <t hangText='p (string)'>
             <vspace blankLines='0'/>User's password, in a login token.</t>
 
@@ -2252,11 +2257,15 @@
   u={username}
   [p={password}]
   [otp={one-time-password-code}]
+  [ott={one-time-password-factor}]
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private
-          key.  One of p or otp must be provided.</t>
+          <t>All attributes are AES-encrypted in the WebKDC's private key.
+          One of p or otp must be provided.  If otp is provided, ott may
+          also be provided (but is not required).  It should be a factor
+          code (generally one of the oN factors) indicating what type of
+          OTP this code is for.</t>
         </section>
 
         <section anchor='tokenapp' title='app Token Encoding'>
@@ -2568,8 +2577,10 @@
           attribute on the &lt;factorToken&gt; element.  Clarify that the
           webkdc-factor expiration time reflects when it stops
           contributing factors to new authentications, not when those
-          factors go away entirely.  Add the h factor.  Clarify that error
-          code 14 can be used for a wide variety of login failures.</t>
+          factors go away entirely.  Add the ott attribute to the login
+          token, which conveys the type of OTP that the code is for.  Add
+          the h factor.  Clarify that error code 14 can be used for a wide
+          variety of login failures.</t>
         </list>
       </t>
     </section>
