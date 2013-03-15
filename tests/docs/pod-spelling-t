@@ -36,8 +36,11 @@ use warnings;
 use lib "$ENV{SOURCE}/tap/perl";
 
 use Test::More;
-use Test::RRA qw(use_prereq);
+use Test::RRA qw(skip_unless_maintainer use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs);
+
+# Only run this test for the maintainer.
+skip_unless_maintainer('Spelling tests');
 
 # Load prerequisite modules.
 use_prereq('Test::Spelling');
