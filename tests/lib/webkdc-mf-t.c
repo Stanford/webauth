@@ -497,9 +497,9 @@ main(void)
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     is_int(WA_ERR_NONE, status, "Invalid OTP returns success");
-    is_int(WA_PEC_LOGIN_FAILED, response->login_error,
+    is_int(WA_PEC_LOGIN_REJECTED, response->login_error,
            "...with correct error");
-    is_string("login incorrect", response->login_message,
+    is_string("login rejected by validation service", response->login_message,
               "...and the correct error message");
     is_string("<em>OTP3</em> down.  &lt;_&lt;;", response->user_message,
               "...and the correct user message");

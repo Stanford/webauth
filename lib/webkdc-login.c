@@ -163,11 +163,21 @@ do_otp(struct webauth_context *ctx,
     if (status != WA_ERR_NONE)
         return status;
 
-    /* If validation failed, set the login error code and return. */
+    /*
+     * If validation failed, set the login error code and return.  If we have
+     * a user message, use WA_PEC_LOGIN_REJECTED instead so that mod_webkdc
+     * will pass a <requestTokenResponse> back to the WebLogin server,
+     * including that message.
+     */
     if (!validate->success) {
-        response->login_error = WA_PEC_LOGIN_FAILED;
-        response->login_message = "login incorrect";
-        response->user_message = validate->user_message;
+        if (validate->user_message == NULL) {
+            response->login_error = WA_PEC_LOGIN_FAILED;
+            response->login_message = "login incorrect";
+        } else {
+            response->login_error = WA_PEC_LOGIN_REJECTED;
+            response->login_message = "login rejected by validation service";
+            response->user_message = validate->user_message;
+        }
         return WA_ERR_NONE;
     }
 
