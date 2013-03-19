@@ -29,7 +29,8 @@ our (@EXPORT_OK, @ISA, $VERSION);
 BEGIN {
     @ISA       = qw(Exporter);
     @EXPORT_OK = qw(
-      @CRITIC_IGNORE $LIBRARY_PATH $MINIMUM_VERSION %MINIMUM_VERSION
+      $COVERAGE_LEVEL @COVERAGE_SKIP_TESTS @CRITIC_IGNORE $LIBRARY_PATH
+      $MINIMUM_VERSION %MINIMUM_VERSION @POD_COVERAGE_EXCLUDE
     );
 
     # This version should match the corresponding rra-c-util release, but with
@@ -56,10 +57,13 @@ if (!defined($PATH)) {
 }
 
 # Pre-declare all of our variables and set any defaults.
+our $COVERAGE_LEVEL = 100;
+our @COVERAGE_SKIP_TESTS;
 our @CRITIC_IGNORE;
 our $LIBRARY_PATH;
 our $MINIMUM_VERSION = '5.008';
 our %MINIMUM_VERSION;
+our @POD_COVERAGE_EXCLUDE;
 
 # Load the configuration.
 if (!do($PATH)) {
@@ -103,6 +107,21 @@ The following variables are supported:
 
 =over 4
 
+=item $COVERAGE_LEVEL
+
+The coverage level achieved by the test suite for Perl test coverage
+testing using Test::Strict, as a percentage.  The test will fail if test
+coverage less than this percentage is achieved.  If not given, defaults
+to 100.
+
+=item @COVERAGE_SKIP_TESTS
+
+Directories under F<t> whose tests should be skipped when doing coverage
+testing.  This can be tests that won't contribute to coverage or tests
+that don't run properly under Devel::Cover for some reason (such as ones
+that use taint checking).  F<docs> and F<style> will always be skipped
+regardless of this setting.
+
 =item @CRITIC_IGNORE
 
 Additional directories to ignore when doing recursive perlcritic testing.
@@ -128,6 +147,13 @@ minimum versions of Perl to enforce.  The value for each key should be a
 reference to an array of either top-level directory names or directory
 names starting with F<tests/>.  All files in those directories will have
 that minimum Perl version constraint imposed instead of $MINIMUM_VERSION.
+
+=item @POD_COVERAGE_EXCLUDE
+
+Regexes that match method names that should be excluded from POD coverage
+testing.  Normally, all methods have to be documented in the POD for a
+Perl module, but methods matching any of these regexes will be considered
+private and won't require documentation.
 
 =back
 
