@@ -932,15 +932,24 @@ sub print_multifactor_page {
     $params->{RT} = $RT;
     $params->{ST} = $ST;
 
+    # Default the factor type to anything saved from the previous page.
+    $params->{factor_type} = $q->param ('factor_type');
+
     # Find just the o* factor to pass along to the template for any special
-    # processing.
+    # processing.  Start by looking for any o* configured factor.  This will
+    # pick the last of the available o* configured factors.  Then, override
+    # that with the desired factor if it wants something more specific.
+    if ($self->{response}->factor_configured) {
+        for my $factor (@{$self->{response}->factor_configured}) {
+            next unless $factor =~ /^o\d+$/;
+            $params->{factor_type} = $factor;
+        }
+    }
     if ($self->{response}->factor_needed) {
         foreach my $factor (@{$self->{response}->factor_needed}) {
             next unless $factor =~ /^o\d+$/;
             $params->{factor_type} = $factor;
         }
-    } else {
-        $params->{factor_type} = $q->param ('factor_type');
     }
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
