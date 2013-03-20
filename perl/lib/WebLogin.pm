@@ -1516,6 +1516,8 @@ sub setup_kdc_request {
         if $q->param ('password');
     $self->{request}->otp ($q->param ('otp'))
         if $q->param ('otp');
+    $self->{request}->otp_type ($q->param ('factor_type'))
+        if $q->param ('factor_type');
     $self->{request}->authz_subject ($q->param ('authz_subject'))
         if $q->param ('authz_subject');
 
@@ -2046,8 +2048,6 @@ sub multifactor : Runmode {
         my $req = $self->{request};
         my $resp = $self->{response};
         $req->user ($q->param ('username'));
-        $req->otp ($q->param ('otp'));
-        $req->otp_type ($q->param ('factor_type'));
         my $error;
         if ($status == 0) {
             ($status, $error)
