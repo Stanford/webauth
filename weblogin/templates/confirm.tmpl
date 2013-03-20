@@ -57,7 +57,7 @@ works of this work.
                     my $timestamp = $stash->get('expire_timestamp');
                     print Time::Duration::duration($timestamp - time);
                 [% END -%]
-                , at [% date.format(expire_timestamp) %].  Please change your
+                at [% date.format(expire_timestamp) %].  Please change your
                 password before this happens.
                 <form action="[% pwchange_url FILTER html %]"
                       method="post" target="_blank"
