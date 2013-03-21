@@ -245,8 +245,7 @@ struct webauth_token_request {
  */
 struct webauth_token_webkdc_factor {
     const char *subject;                /* encode: s */
-    const char *initial_factors;        /* encode: ia, optional */
-    const char *session_factors;        /* encode: san, optional */
+    const char *factors;                /* encode: ia */
     time_t creation;                    /* encode: ct, creation */
     time_t expiration;                  /* encode: et */
 };

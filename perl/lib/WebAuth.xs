@@ -198,11 +198,10 @@ struct token_mapping token_mapping_request[] = {
 
 /* WebKDC factor tokens. */
 struct token_mapping token_mapping_webkdc_factor[] = {
-    M(webauth_token_webkdc_factor, subject,         STRING),
-    M(webauth_token_webkdc_factor, initial_factors, STRING),
-    M(webauth_token_webkdc_factor, session_factors, STRING),
-    M(webauth_token_webkdc_factor, creation,        TIME),
-    M(webauth_token_webkdc_factor, expiration,      TIME),
+    M(webauth_token_webkdc_factor, subject,    STRING),
+    M(webauth_token_webkdc_factor, factors,    STRING),
+    M(webauth_token_webkdc_factor, creation,   TIME),
+    M(webauth_token_webkdc_factor, expiration, TIME),
     { NULL, 0, 0 }
 };
 

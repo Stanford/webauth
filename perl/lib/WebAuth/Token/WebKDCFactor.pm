@@ -36,11 +36,10 @@ use base qw(WebAuth::Token);
 our $VERSION = '1.00';
 
 # Accessor methods.
-sub subject         { my $t = shift; $t->_attr ('subject',         @_) }
-sub initial_factors { my $t = shift; $t->_attr ('initial_factors', @_) }
-sub session_factors { my $t = shift; $t->_attr ('session_factors', @_) }
-sub creation        { my $t = shift; $t->_attr ('creation',        @_) }
-sub expiration      { my $t = shift; $t->_attr ('expiration',      @_) }
+sub subject    { my $t = shift; $t->_attr ('subject',    @_) }
+sub factors    { my $t = shift; $t->_attr ('factors',    @_) }
+sub creation   { my $t = shift; $t->_attr ('creation',   @_) }
+sub expiration { my $t = shift; $t->_attr ('expiration', @_) }
 
 1;
 
@@ -108,21 +107,12 @@ best_key() method of WebAuth::Keyring on that KEYRING.
 Get or set the subject, which holds the authenticated identity of the user
 holding this token.
 
-=item initial_factors ([FACTORS])
+=item factors ([FACTORS])
 
-Get or set a comma-separated list of initial authentication factors that
-this token should contribute to any further authentications.  For a list
-of possible factors and their meaning, see the WebAuth protocol
-specification.  At least one of initial_factors() or session_factors()
-must be set for this to be a valid token.
-
-=item session_factors ([FACTORS])
-
-Get or set a comma-separated list of session authentication factors that
-this token should contribute to any further authentications.  For a list
-of possible factors and their meaning, see the WebAuth protocol
-specification.  At least one of initial_factors() or session_factors()
-must be set for this to be a valid token.
+Get or set a comma-separated list of authentication factors that this
+token should contribute to any further authentications.  For a list of
+possible factors and their meaning, see the WebAuth protocol
+specification.
 
 =item creation ([TIMESTAMP])
 

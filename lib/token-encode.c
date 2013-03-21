@@ -472,13 +472,8 @@ check_webkdc_factor(struct webauth_context *ctx,
                     enum encode_mode mode)
 {
     CHECK_STR(webkdc_factor, subject);
+    CHECK_STR(webkdc_factor, factors);
     CHECK_EXP(webkdc_factor, expiration, mode);
-    if (webkdc_factor->initial_factors == NULL
-        && webkdc_factor->session_factors == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT,
-                      "no factors present in webkdc_factor token");
-        return WA_ERR_CORRUPT;
-    }
     return WA_ERR_NONE;
 }
 

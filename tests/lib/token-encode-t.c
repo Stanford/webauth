@@ -364,10 +364,7 @@ check_webkdc_factor_token(struct webauth_context *ctx,
     wkfactor2 = &result->token.webkdc_factor;
     ok(wkfactor2 != NULL, "...and sets the struct pointer");
     is_string(wkfactor->subject, wkfactor2->subject, "...subject");
-    is_string(wkfactor->initial_factors, wkfactor2->initial_factors,
-              "...initial factors");
-    is_string(wkfactor->session_factors, wkfactor2->session_factors,
-              "...session factors");
+    is_string(wkfactor->factors, wkfactor2->factors, "...factors");
     if (wkfactor->creation > 0)
         is_int(wkfactor->creation, wkfactor2->creation, "...creation");
     else
@@ -516,7 +513,7 @@ main(void)
     struct webauth_token *out;
     const char *result;
 
-    plan(488);
+    plan(476);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -828,27 +825,22 @@ main(void)
 
     /* Flesh out a webkdc-factor token, and then encode and decode it. */
     wkfactor.subject = "testuser";
-    wkfactor.initial_factors = "d";
-    wkfactor.session_factors = "d";
+    wkfactor.factors = "d";
     wkfactor.creation = now;
     wkfactor.expiration = now + 60;
-    check_webkdc_factor_token(ctx, &wkfactor, ring, "both");
-    wkfactor.session_factors = NULL;
+    check_webkdc_factor_token(ctx, &wkfactor, ring, "basic");
     wkfactor.creation = 0;
-    check_webkdc_factor_token(ctx, &wkfactor, ring, "initial");
-    wkfactor.initial_factors = NULL;
-    wkfactor.session_factors = "d";
-    check_webkdc_factor_token(ctx, &wkfactor, ring, "session");
+    check_webkdc_factor_token(ctx, &wkfactor, ring, "creation");
 
     /* Test for error cases for missing data. */
     wkfactor.subject = NULL;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without subject",
                               "missing subject in webkdc_factor token");
     wkfactor.subject = "testuser";
-    wkfactor.session_factors = NULL;
+    wkfactor.factors = NULL;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without factors",
-                              "no factors present in webkdc_factor token");
-    wkfactor.initial_factors = "d";
+                              "missing factors in webkdc_factor token");
+    wkfactor.factors = "d";
     wkfactor.expiration = 0;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without expiration",
                               "missing expiration in webkdc_factor token");

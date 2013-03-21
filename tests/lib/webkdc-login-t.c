@@ -225,7 +225,7 @@ main(void)
     memset(&wkfactor, 0, sizeof(wkfactor));
     wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
     wkfactor.token.webkdc_factor.subject = "testuser";
-    wkfactor.token.webkdc_factor.initial_factors = "d";
+    wkfactor.token.webkdc_factor.factors = "d";
     wkfactor.token.webkdc_factor.creation = now - 10 * 60;
     wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;

@@ -219,8 +219,7 @@ do_otp(struct webauth_context *ctx,
         (*wkfactor)->type = WA_TOKEN_WEBKDC_FACTOR;
         ft = &(*wkfactor)->token.webkdc_factor;
         ft->subject = login->username;
-        ft->initial_factors = apr_array_pstrcat(ctx->pool,
-                                                validate->persistent, ',');
+        ft->factors = apr_array_pstrcat(ctx->pool, validate->persistent, ',');
         ft->expiration = validate->persistent_expiration;
         ft->creation = time(NULL);
     }
@@ -362,9 +361,8 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
     struct webauth_token *token;
     struct webauth_token *best = NULL;
     struct webauth_token_webkdc_factor *wft;
-    struct webauth_factors *cifactors, *csfactors;
-    struct webauth_factors *ifactors = NULL;
-    struct webauth_factors *sfactors = NULL;
+    struct webauth_factors *cfactors;
+    struct webauth_factors *factors = NULL;
     time_t now;
     int i, s;
 
@@ -392,10 +390,7 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
         /* If this is the first token, make it the best. */
         if (best == NULL) {
             best = apr_pmemdup(ctx->pool, token, sizeof(struct webauth_token));
-            s = webauth_factors_parse(ctx, wft->initial_factors, &ifactors);
-            if (s != WA_ERR_NONE)
-                return s;
-            s = webauth_factors_parse(ctx, wft->session_factors, &sfactors);
+            s = webauth_factors_parse(ctx, wft->factors, &factors);
             if (s != WA_ERR_NONE)
                 return s;
             continue;
@@ -406,23 +401,15 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
             continue;
 
         /* Ignore it if the factors are a subset. */
-        cifactors = NULL;
-        s = webauth_factors_parse(ctx, wft->initial_factors, &cifactors);
+        cfactors = NULL;
+        s = webauth_factors_parse(ctx, wft->factors, &cfactors);
         if (s != WA_ERR_NONE)
             return s;
-        csfactors = NULL;
-        s = webauth_factors_parse(ctx, wft->session_factors, &csfactors);
-        if (s != WA_ERR_NONE)
-            return s;
-        if (webauth_factors_subset(ctx, cifactors, ifactors)
-            && webauth_factors_subset(ctx, csfactors, sfactors))
+        if (webauth_factors_subset(ctx, cfactors, factors))
             continue;
 
         /* We're merging.  Add the factors and update times. */
-        s = webauth_factors_parse(ctx, wft->initial_factors, &ifactors);
-        if (s != WA_ERR_NONE)
-            return s;
-        s = webauth_factors_parse(ctx, wft->session_factors, &sfactors);
+        s = webauth_factors_parse(ctx, wft->factors, &factors);
         if (s != WA_ERR_NONE)
             return s;
         if (wft->expiration < best->token.webkdc_factor.expiration)
@@ -434,8 +421,7 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
     /* Set the result webkdc-proxy factors to our assembled ones. */
     if (best != NULL) {
         wft = &best->token.webkdc_factor;
-        wft->initial_factors = webauth_factors_string(ctx, ifactors);
-        wft->session_factors = webauth_factors_string(ctx, sfactors);
+        wft->factors = webauth_factors_string(ctx, factors);
     }
 
     /* All done.  Return best. */
@@ -599,16 +585,10 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     if (wkfactor != NULL) {
         wft = &wkfactor->token.webkdc_factor;
         if (strcmp(wft->subject, best->subject) == 0) {
-            status = webauth_factors_parse(ctx, wft->initial_factors,
-                                           &factors);
+            status = webauth_factors_parse(ctx, wft->factors, &factors);
             if (status != WA_ERR_NONE)
                 return status;
-            status = webauth_factors_parse(ctx, wft->initial_factors,
-                                           &sfactors);
-            if (status != WA_ERR_NONE)
-                return status;
-            status = webauth_factors_parse(ctx, wft->session_factors,
-                                           &sfactors);
+            status = webauth_factors_parse(ctx, wft->factors, &sfactors);
             if (status != WA_ERR_NONE)
                 return status;
         }

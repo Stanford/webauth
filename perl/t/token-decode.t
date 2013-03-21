@@ -14,7 +14,7 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw(contents);
 
-use Test::More tests => 240;
+use Test::More tests => 229;
 
 use MIME::Base64 qw(encode_base64);
 use WebAuth 3.07;

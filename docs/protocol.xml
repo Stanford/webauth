@@ -2001,19 +2001,19 @@
             <artwork>
   t=webkdc-factor
   s={username}
-  [ia={factor-list}]
-  [san={factor-list}]
+  ia={factor-list}
   ct={creation-date}
   et={expiration-date}
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private key.
-          Either ia or san must be present in the token.</t>
+          <t>All attributes are AES-encrypted in the WebKDC's private
+          key.</t>
 
           <t>webkdc-factor tokens are only valid when presented in
           conjunction with at least one valid webkdc-proxy or login token
-          for the same subject.</t>
+          for the same subject.  Its factors are added to both the initial
+          and session factors of a successful authentication.</t>
 
           <t>Inside the WebKDC, multiple webkdc-factor tokens from
           different sources may be merged into a single token.  If this is

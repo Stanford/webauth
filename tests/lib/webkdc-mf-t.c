@@ -82,7 +82,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(257);
+    plan(255);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -552,7 +552,7 @@ main(void)
     }
     ok(response->factor_tokens != NULL, "...and we have factor tokens");
     if (response->factor_tokens == NULL)
-        ok_block(8, 0, "...no factor tokens");
+        ok_block(7, 0, "...no factor tokens");
     else {
         is_int(1, response->factor_tokens->nelts, "...one factor token");
         fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
@@ -563,9 +563,7 @@ main(void)
         is_int(WA_ERR_NONE, status, "...which decodes properly");
         ft = &token->token.webkdc_factor;
         is_string("full", ft->subject, "...with correct subject");
-        is_string("d,u", ft->initial_factors,
-                  "...and correct initial factors");
-        is_string(NULL, ft->session_factors, "...and no session factors");
+        is_string("d,u", ft->factors, "...and correct factors");
         is_int(1893484802, ft->expiration, "...and expiration is correct");
         ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
     }
@@ -575,7 +573,7 @@ main(void)
     memset(&wkfactor, 0, sizeof(wkfactor));
     wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
     wkfactor.token.webkdc_factor.subject = "full";
-    wkfactor.token.webkdc_factor.initial_factors = "k";
+    wkfactor.token.webkdc_factor.factors = "k";
     wkfactor.token.webkdc_factor.creation = now - 10 * 60;
     wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;
@@ -612,7 +610,7 @@ main(void)
     }
     ok(response->factor_tokens != NULL, "...and we have factor tokens");
     if (response->factor_tokens == NULL)
-        ok_block(8, 0, "...no factor tokens");
+        ok_block(7, 0, "...no factor tokens");
     else {
         is_int(1, response->factor_tokens->nelts, "...one factor token");
         fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
@@ -623,9 +621,7 @@ main(void)
         is_int(WA_ERR_NONE, status, "...which decodes properly");
         ft = &token->token.webkdc_factor;
         is_string("full", ft->subject, "...with correct subject");
-        is_string("k,d,u", ft->initial_factors,
-                  "...and correct initial factors");
-        is_string(NULL, ft->session_factors, "...and no session factors");
+        is_string("k,d,u", ft->factors, "...and correct factors");
         is_int(now + 60 * 60, ft->expiration, "...and expiration is correct");
         is_int(now - 10 * 60, ft->creation, "...and creation is correct");
     }

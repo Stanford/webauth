@@ -572,44 +572,22 @@ main(void)
                 "wrong token type webkdc-proxy, expected req");
 
     /* Test decoding of several webkdc-factor tokens. */
-    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-both",
-                          ring, 5);
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-ok", ring, 5);
     if (result != NULL) {
         wkfactor = &result->token.webkdc_factor;
         is_string("testuser", wkfactor->subject, "...subject");
-        is_string("d", wkfactor->initial_factors, "...initial factors");
-        is_string("x1,k", wkfactor->session_factors, "...session factors");
-        is_int(1308777900, wkfactor->creation, "...creation");
-        is_int(2147483600, wkfactor->expiration, "...expiration");
-    }
-    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-initial",
-                          ring, 5);
-    if (result != NULL) {
-        wkfactor = &result->token.webkdc_factor;
-        is_string("testuser", wkfactor->subject, "...subject");
-        is_string("d", wkfactor->initial_factors, "...initial factors");
-        is_string(NULL, wkfactor->session_factors, "...session factors");
+        is_string("d", wkfactor->factors, "...factors");
         is_int(1308777901, wkfactor->creation, "...creation");
         is_int(2147483600, wkfactor->expiration, "...expiration");
     }
-    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-session",
-                          ring, 5);
-    if (result != NULL) {
-        wkfactor = &result->token.webkdc_factor;
-        is_string("testuser", wkfactor->subject, "...subject");
-        is_string(NULL, wkfactor->initial_factors, "...initial factors");
-        is_string("d", wkfactor->session_factors, "...session factors");
-        is_int(1308777900, wkfactor->creation, "...creation");
-        is_int(2147483601, wkfactor->expiration, "...expiration");
-    }
 
-    /* Test decoding error cases for webkdc-proxy tokens. */
+    /* Test decoding error cases for webkdc-factor tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-expired", ring,
                 WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
     check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-missing", ring,
                 WA_ERR_CORRUPT, "decoding subject");
     check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-none", ring,
-                WA_ERR_CORRUPT, "no factors present in webkdc_factor token");
+                WA_ERR_CORRUPT, "decoding factors");
 
     /* Test decoding of several webkdc-proxy tokens. */
     result = check_decode(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-ok", ring, 9);
