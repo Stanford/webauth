@@ -1801,9 +1801,9 @@ gather_creds(MWA_REQ_CTXT *rc)
 static int
 gather_tokens(MWA_REQ_CTXT *rc)
 {
-    int code, in_url, status;
+    int code, in_url;
     char *initial, *session;
-    struct webauth_factors *have = NULL, *want = NULL;
+    struct webauth_factors *have, *want;
 
     /* check the URL. this will parse the token in WEBAUTHR if there
        was one, and create the appropriate cookies, as well as fill in
@@ -1834,8 +1834,6 @@ gather_tokens(MWA_REQ_CTXT *rc)
      * We have an app token.  Now check whether our factor and LoA
      * requirements are met.  If they're not, return a redirect.
      *
-     * FIXME: This is hideous code.  Needs to be refactored badly.
-     *
      * FIXME: Need better error reporting if there are no initial or session
      * factors in the app token.  We may be dealing with a WebKDC that cannot
      * satisfy our request.  Consider making that a fatal error leading to a
@@ -1858,21 +1856,8 @@ gather_tokens(MWA_REQ_CTXT *rc)
                           " required (want %s)", initial);
             return redirect_request_token(rc);
         }
-        status = webauth_factors_parse(rc->ctx, rc->at->initial_factors,
-                                       &have);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        status = webauth_factors_parse(rc->ctx, initial, &want);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
+        have = webauth_factors_parse(rc->ctx, rc->at->initial_factors);
+        want = webauth_factors_parse(rc->ctx, initial);
         if (!webauth_factors_subset(rc->ctx, want, have)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient initial"
@@ -1890,23 +1875,8 @@ gather_tokens(MWA_REQ_CTXT *rc)
                           " required (want %s)", session);
             return redirect_request_token(rc);
         }
-        have = NULL;
-        status = webauth_factors_parse(rc->ctx, rc->at->session_factors,
-                                       &have);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        want = NULL;
-        status = webauth_factors_parse(rc->ctx, session, &want);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
+        have = webauth_factors_parse(rc->ctx, rc->at->session_factors);
+        want = webauth_factors_parse(rc->ctx, session);
         if (!webauth_factors_subset(rc->ctx, want, have)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient session"

@@ -364,7 +364,7 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
     struct webauth_factors *cfactors;
     struct webauth_factors *factors = NULL;
     time_t now;
-    int i, s;
+    int i;
 
     *result = NULL;
     if (wkfactors->nelts == 0)
@@ -390,9 +390,7 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
         /* If this is the first token, make it the best. */
         if (best == NULL) {
             best = apr_pmemdup(ctx->pool, token, sizeof(struct webauth_token));
-            s = webauth_factors_parse(ctx, wft->factors, &factors);
-            if (s != WA_ERR_NONE)
-                return s;
+            factors = webauth_factors_parse(ctx, wft->factors);
             continue;
         }
 
@@ -401,17 +399,12 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
             continue;
 
         /* Ignore it if the factors are a subset. */
-        cfactors = NULL;
-        s = webauth_factors_parse(ctx, wft->factors, &cfactors);
-        if (s != WA_ERR_NONE)
-            return s;
+        cfactors = webauth_factors_parse(ctx, wft->factors);
         if (webauth_factors_subset(ctx, cfactors, factors))
             continue;
 
         /* We're merging.  Add the factors and update times. */
-        s = webauth_factors_parse(ctx, wft->factors, &factors);
-        if (s != WA_ERR_NONE)
-            return s;
+        factors = webauth_factors_union(ctx, factors, cfactors);
         if (wft->expiration < best->token.webkdc_factor.expiration)
             best->token.webkdc_factor.expiration = wft->expiration;
         if (wft->creation < best->token.webkdc_factor.creation)
@@ -466,11 +459,10 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_proxy *best = NULL;
     struct webauth_token_webkdc_factor *wft;
-    struct webauth_factors *current;
-    struct webauth_factors *factors = NULL;
-    struct webauth_factors *sfactors = NULL;
+    struct webauth_factors *cfactors, *extra;
+    struct webauth_factors *factors = NULL, *sfactors = NULL;
     time_t now;
-    int i, status;
+    int i;
 
     *result = NULL;
     if (creds->nelts == 0)
@@ -497,18 +489,11 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
         if (best == NULL) {
             best = wkproxy;
             genbest = token;
-            status = webauth_factors_parse(ctx, best->initial_factors,
-                                           &factors);
-            if (status != WA_ERR_NONE)
-                return status;
+            factors = webauth_factors_parse(ctx, best->initial_factors);
             if (best->creation >= now - ctx->webkdc->login_time_limit)
-                status = webauth_factors_parse(ctx, best->initial_factors,
-                                               &sfactors);
+                sfactors = webauth_factors_parse(ctx, best->initial_factors);
             else
-                status = webauth_factors_parse(ctx, best->session_factors,
-                                               &sfactors);
-            if (status != WA_ERR_NONE)
-                return status;
+                sfactors = webauth_factors_parse(ctx, best->session_factors);
             continue;
         }
 
@@ -516,17 +501,13 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
          * We have a best token already and we have seen an additional token.
          * We may be merging in its information.  Parse out its factors.
          */
-        current = NULL;
-        status = webauth_factors_parse(ctx, wkproxy->initial_factors,
-                                       &current);
-        if (status != WA_ERR_NONE)
-            return status;
+        cfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
 
         /*
          * If there are no new factors and it can't contribute a better
          * authenticator, there's nothing of interest.  Move on.
          */
-        if (webauth_factors_subset(ctx, current, factors)
+        if (webauth_factors_subset(ctx, cfactors, factors)
             && (strcmp(best->proxy_type, "krb5") == 0
                 || strcmp(wkproxy->proxy_type, "krb5") != 0))
             continue;
@@ -548,24 +529,19 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             best->proxy_type = wkproxy->proxy_type;
         }
 
-        /* Add on its initial factors to our current ones. */
-        status = webauth_factors_parse(ctx, wkproxy->initial_factors,
-                                       &factors);
-        if (status != WA_ERR_NONE)
-            return status;
+        /* Add on its initial factors to our accumulated ones. */
+        factors = webauth_factors_union(ctx, factors, cfactors);
 
         /*
          * webkdc-proxy tokens contribute their initial factors to session
          * factors if they're still fresh.
          */
         if (wkproxy->creation >= now - ctx->webkdc->login_time_limit)
-            status = webauth_factors_parse(ctx, wkproxy->initial_factors,
-                                           &sfactors);
-        else
-            status = webauth_factors_parse(ctx, wkproxy->session_factors,
-                                           &sfactors);
-        if (status != WA_ERR_NONE)
-            return status;
+            sfactors = webauth_factors_union(ctx, sfactors, cfactors);
+        else {
+            extra = webauth_factors_parse(ctx, wkproxy->session_factors);
+            sfactors = webauth_factors_union(ctx, sfactors, extra);
+        }
 
         /* Set expiration and creation times to the oldest of the tokens. */
         if (wkproxy->expiration < best->expiration)
@@ -585,12 +561,9 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
     if (wkfactor != NULL) {
         wft = &wkfactor->token.webkdc_factor;
         if (strcmp(wft->subject, best->subject) == 0) {
-            status = webauth_factors_parse(ctx, wft->factors, &factors);
-            if (status != WA_ERR_NONE)
-                return status;
-            status = webauth_factors_parse(ctx, wft->factors, &sfactors);
-            if (status != WA_ERR_NONE)
-                return status;
+            extra = webauth_factors_parse(ctx, wft->factors);
+            factors = webauth_factors_union(ctx, factors, extra);
+            sfactors = webauth_factors_union(ctx, sfactors, extra);
         }
     }
 
@@ -635,8 +608,8 @@ get_user_info(struct webauth_context *ctx,
 {
     bool randmf, irandmf, srandmf;
     int status;
-    struct webauth_factors *ifactors = NULL, *iwkfactors = NULL;
-    struct webauth_factors *sfactors = NULL, *swkfactors = NULL;
+    struct webauth_factors *ifactors, *iwkfactors, *sfactors, *swkfactors;
+    struct webauth_factors *random;
     struct webauth_token_request *req = request->request;
 
     /*
@@ -647,20 +620,12 @@ get_user_info(struct webauth_context *ctx,
      * random multifactor if we need it for either the initial or session
      * factors.
      */
-    status = webauth_factors_parse(ctx, wkproxy->initial_factors, &iwkfactors);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = webauth_factors_parse(ctx, req->initial_factors, &ifactors);
-    if (status != WA_ERR_NONE)
-        return status;
+    iwkfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
+    ifactors = webauth_factors_parse(ctx, req->initial_factors);
     irandmf = (!webauth_factors_subset(ctx, ifactors, iwkfactors)
                && ifactors->random);
-    status = webauth_factors_parse(ctx, wkproxy->session_factors, &swkfactors);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = webauth_factors_parse(ctx, req->session_factors, &sfactors);
-    if (status != WA_ERR_NONE)
-        return status;
+    swkfactors = webauth_factors_parse(ctx, wkproxy->session_factors);
+    sfactors = webauth_factors_parse(ctx, req->session_factors);
     srandmf = (!webauth_factors_subset(ctx, sfactors, swkfactors)
                && sfactors->random);
     randmf = irandmf || srandmf;
@@ -688,31 +653,22 @@ get_user_info(struct webauth_context *ctx,
      * already satisfied by existing factors.
      */
     if ((*info)->random_multifactor) {
-        if (!iwkfactors->multifactor && !iwkfactors->random) {
-            status = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR,
-                                           &iwkfactors);
-            if (status != WA_ERR_NONE)
-                return status;
-        }
-        if (!swkfactors->multifactor && !swkfactors->random) {
-            status = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR,
-                                           &swkfactors);
-            if (status != WA_ERR_NONE)
-                return status;
-        }
+        random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
+        if (!iwkfactors->multifactor && !iwkfactors->random)
+            iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
+        if (!swkfactors->multifactor && !swkfactors->random)
+            swkfactors = webauth_factors_union(ctx, swkfactors, random);
     }
 
     /* Add additional factors if we have any and we did a login. */
     if (did_login && (*info)->additional != NULL) {
         char *additional;
+        struct webauth_factors *add;
 
         additional = apr_array_pstrcat(ctx->pool, (*info)->additional, ',');
-        status = webauth_factors_parse(ctx, additional, &iwkfactors);
-        if (status != WA_ERR_NONE)
-            return status;
-        status = webauth_factors_parse(ctx, additional, &swkfactors);
-        if (status != WA_ERR_NONE)
-            return status;
+        add = webauth_factors_parse(ctx, additional);
+        iwkfactors = webauth_factors_union(ctx, iwkfactors, add);
+        swkfactors = webauth_factors_union(ctx, swkfactors, add);
     }
 
     /* Update our factors in case we changed something. */
@@ -732,19 +688,14 @@ is_interactive_login(struct webauth_context *ctx,
                      struct webauth_token_webkdc_proxy *wkproxy)
 {
     struct webauth_factors *factors = NULL;
-    int status;
     const char *factor;
     ssize_t i;
-
-    /* FIXME: Report a warning if this fails. */
-    status = webauth_factors_parse(ctx, wkproxy->session_factors, &factors);
-    if (status != WA_ERR_NONE)
-        return false;
 
     /*
      * The login is considered interactive if the session factors include
      * password, OTP, or X.509.
      */
+    factors = webauth_factors_parse(ctx, wkproxy->session_factors);
     for (i = 0; i < factors->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(factors->factors, i, const char *);
         if (strcmp(factor, WA_FA_PASSWORD) == 0
@@ -776,38 +727,27 @@ check_multifactor(struct webauth_context *ctx,
                   struct webauth_token_webkdc_proxy *wkproxy,
                   struct webauth_user_info *info)
 {
-    int i, status;
-    struct webauth_factors *wanted = NULL, *swanted = NULL;
-    struct webauth_factors configured;
-    struct webauth_factors *have = NULL, *shave = NULL;
+    struct webauth_factors *wanted, *swanted, *have, *shave, *required;
+    struct webauth_factors *configured;
     struct webauth_token_request *req;
-    const char *factor;
+    const char *factors;
 
     req = request->request;
 
     /* Figure out what factors we want and have. */
-    status = webauth_factors_parse(ctx, req->initial_factors, &wanted);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = webauth_factors_parse(ctx, req->session_factors, &swanted);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = webauth_factors_parse(ctx, wkproxy->initial_factors, &have);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = webauth_factors_parse(ctx, wkproxy->session_factors, &shave);
-    if (status != WA_ERR_NONE)
-        return status;
+    wanted = webauth_factors_parse(ctx, req->initial_factors);
+    swanted = webauth_factors_parse(ctx, req->session_factors);
+    have = webauth_factors_parse(ctx, wkproxy->initial_factors);
+    shave = webauth_factors_parse(ctx, wkproxy->session_factors);
 
     /*
      * Check if there are factors required by user configuration.  If so, add
      * them to the initial factors that we require.
      */
     if (info != NULL && info->required != NULL && info->factors->nelts > 0) {
-        factor = apr_array_pstrcat(ctx->pool, info->required, ',');
-        status = webauth_factors_parse(ctx, factor, &wanted);
-        if (status != WA_ERR_NONE)
-            return status;
+        factors = apr_array_pstrcat(ctx->pool, info->required, ',');
+        required = webauth_factors_parse(ctx, factors);
+        wanted = webauth_factors_union(ctx, wanted, required);
     }
 
     /*
@@ -863,24 +803,18 @@ check_multifactor(struct webauth_context *ctx,
      *
      * Assume we can do password authentication even without user information.
      */
-    memset(&configured, 0, sizeof(configured));
-    if (info != NULL && info->factors != NULL && info->factors->nelts > 0) {
-        configured.factors = apr_array_copy(ctx->pool, info->factors);
-        for (i = 0; i < configured.factors->nelts; i++) {
-            factor = APR_ARRAY_IDX(configured.factors, i, const char *);
-            if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
-                configured.multifactor = true;
-        }
-    } else {
-        configured.factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
-        APR_ARRAY_PUSH(configured.factors, const char *) = WA_FA_PASSWORD;
+    if (info == NULL || info->factors == NULL || info->factors->nelts == 0)
+        configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
+    else {
+        factors = apr_array_pstrcat(ctx->pool, info->factors, ',');
+        configured = webauth_factors_parse(ctx, factors);
     }
     response->factors_wanted = wanted->factors;
-    response->factors_configured = configured.factors;
-    if (!webauth_factors_subset(ctx, wanted, &configured)) {
+    response->factors_configured = configured->factors;
+    if (!webauth_factors_subset(ctx, wanted, configured)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
-    } else if (!webauth_factors_subset(ctx, swanted, &configured)) {
+    } else if (!webauth_factors_subset(ctx, swanted, configured)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
     }

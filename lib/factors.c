@@ -21,102 +21,213 @@
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
 
+/*
+ * Stores flags for the authentication types that count towards multifactor.
+ * This is used internally to determine whether to synthesize a multifactor
+ * factor.
+ */
+struct auth_types {
+    bool human;
+    bool password;
+    bool otp;
+    bool x509;
+};
+
 
 /*
- * Given a comma-separated string of factors, parse it into a webauth_factors
- * struct.  If the value of the last argument is not NULL, add the factors to
- * the existing webauth_factors struct rather than allocating a new one.
- * Returns a status code (which currently is always WA_ERR_NONE).
+ * Given a webauth_factors struct, fill out an auth_types struct based on the
+ * factors it contains.
  */
-int
-webauth_factors_parse(struct webauth_context *ctx, const char *input,
-                      struct webauth_factors **result)
+static void
+extract_auth_types(struct webauth_factors *factors, struct auth_types *types)
+{
+    int i;
+    const char *factor;
+
+    memset(types, 0, sizeof(struct auth_types));
+    if (factors == NULL)
+        return;
+    for (i = 0; i < factors->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(factors->factors, i, const char *);
+        switch (factor[0]) {
+        case 'h': types->human    = true; break;
+        case 'o': types->otp      = true; break;
+        case 'p': types->password = true; break;
+        case 'x': types->x509     = true; break;
+        default:                          break;
+        }
+    }
+}
+
+
+/*
+ * Given a struct auth_types, return true if it represents a multifactor
+ * authentication and false otherwise.
+ */
+static bool
+is_multifactor(struct auth_types *types)
+{
+    int factors;
+
+    factors = (int) types->human + types->password + types->otp + types->x509;
+    return (factors >= 2);
+}
+
+
+/*
+ * Return a copy of a webauth_factors struct in newly-allocated pool memory.
+ * This does not deep-copy the factor strings; eventually, webauth_factors
+ * will be opaque so this won't be needed.
+ */
+static struct webauth_factors *
+factors_copy(struct webauth_context *ctx, struct webauth_factors *factors)
+{
+    struct webauth_factors *copy;
+
+    if (factors == NULL) {
+        copy = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
+        copy->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
+    } else {
+        copy = apr_pmemdup(ctx->pool, factors, sizeof(*factors));
+        copy->factors = apr_array_copy(ctx->pool, factors->factors);
+    }
+    return copy;
+}
+
+
+/*
+ * Returns true if the given webauth_factors struct contains the provided
+ * factor, and false otherwise.  As a special case, factor sets containing
+ * multifactor are always considered to contain random multifactor as well.
+ */
+static bool
+factors_contains(struct webauth_factors *factors, const char *factor)
+{
+    int i;
+    const char *candidate;
+
+    if (factors == NULL || apr_is_empty_array(factors->factors))
+        return false;
+    if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0 && factors->multifactor)
+        return true;
+    for (i = 0; i < factors->factors->nelts; i++) {
+        candidate = APR_ARRAY_IDX(factors->factors, i, const char *);
+        if (strcmp(factor, candidate) == 0)
+            return true;
+    }
+    return false;
+}
+
+
+/*
+ * Given a comma-separated string of factors, parse it into a newly-allocated
+ * webauth_factors struct and return the new struct.  The result is
+ * pool-allocated.
+ */
+struct webauth_factors *
+webauth_factors_parse(struct webauth_context *ctx, const char *input)
 {
     struct webauth_factors *factors;
     char *copy;
     char *last = NULL;
-    const char *current, *factor;
-    int i;
-    bool found;
-    bool human = false;
-    bool password = false;
-    bool otp = false;
-    bool x509 = false;
+    const char *factor;
+    struct auth_types types;
 
     /*
-     * If *result is not NULL, we're merging the new factors into the existing
-     * ones.  If it is NULL, create a new, empty factors struct.
+     * Create an empty webauth_factors struct and return it if the string is
+     * NULL or empty.
      */
-    if (*result != NULL) {
-        factors = *result;
-        for (i = 0; i < factors->factors->nelts; i++) {
-            factor = APR_ARRAY_IDX(factors->factors, i, const char *);
-            if (strncmp(factor, "h", 1) == 0)
-                human = true;
-            if (strncmp(factor, "p", 1) == 0)
-                password = true;
-            if (strncmp(factor, "o", 1) == 0)
-                otp = true;
-            if (strncmp(factor, "x", 1) == 0)
-                x509 = true;
-        }
-    } else {
-        factors = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
-        factors->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
-    }
-
-    /* If there are no input factors, no changes. */
-    if (input == NULL) {
-        *result = factors;
-        return WA_ERR_NONE;
-    }
+    factors = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
+    factors->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
+    if (input == NULL || input[0] == '\0')
+        return factors;
 
     /*
-     * Walk through each factor and add it to the array.  In the process,
-     * we also track whether we've seen two factors from different classes of
-     * authentication, which synthesizes the multifactor factor.
+     * Always duplicate the input string to isolate the newly-created
+     * webkdc_factors struct from the input.
+     */
+    copy = apr_pstrdup(ctx->pool, input);
+
+    /*
+     * Walk through each factor and add it to the array.  In the process, set
+     * the booleans for multifactor and random multifactor if we see them.
      */
     copy = apr_pstrdup(ctx->pool, input);
     for (factor = apr_strtok(copy, ",", &last); factor != NULL;
          factor = apr_strtok(NULL, ",", &last)) {
-        found = false;
-        if (strcmp(factor, "m") == 0) {
-            if (!factors->multifactor)
-                APR_ARRAY_PUSH(factors->factors, const char *) = "m";
+
+        /* Only add the factor if it's not a duplicate. */
+        if (factors_contains(factors, factor))
+            continue;
+
+        /* Add the factor and set the multifactor and random flags. */
+        APR_ARRAY_PUSH(factors->factors, const char *) = factor;
+        if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
             factors->multifactor = true;
-            continue;
-        } else if (strcmp(factor, "rm") == 0) {
-            if (!factors->random && !factors->multifactor) {
-                APR_ARRAY_PUSH(factors->factors, const char *) = "rm";
-                factors->random = true;
-            }
-            continue;
-        }
-        for (i = 0; i < factors->factors->nelts; i++) {
-            current = APR_ARRAY_IDX(factors->factors, i, const char *);
-            if (strcmp(factor, current) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            APR_ARRAY_PUSH(factors->factors, const char *) = factor;
-            if (strncmp(factor, "h", 1) == 0)
-                human = true;
-            if (strncmp(factor, "p", 1) == 0)
-                password = true;
-            if (strncmp(factor, "o", 1) == 0)
-                otp = true;
-            if (strncmp(factor, "x", 1) == 0)
-                x509 = true;
-        }
+        else if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0)
+            factors->random = true;
     }
-    if (!factors->multifactor && (human + password + otp + x509) >= 2) {
-        APR_ARRAY_PUSH(factors->factors, const char *) = "m";
-        factors->multifactor = true;
+
+    /* See if we should synthesize a multifactor factor. */
+    if (!factors->multifactor) {
+        extract_auth_types(factors, &types);
+        factors->multifactor = is_multifactor(&types);
+        if (factors->multifactor)
+            APR_ARRAY_PUSH(factors->factors, const char *) = WA_FA_MULTIFACTOR;
     }
-    *result = factors;
-    return WA_ERR_NONE;
+
+    /* Return the result. */
+    return factors;
+}
+
+
+/*
+ * Given two webauth_factors structs, create a new one representing the union
+ * of both.  Synthesize multifactor if the combined webauth_factors structs
+ * represent a multifactor authentication.  Returns the new struct.
+ */
+struct webauth_factors *
+webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
+                      struct webauth_factors *two)
+{
+    struct webauth_factors *result;
+    int i;
+    const char *factor;
+    struct auth_types types;
+
+    /* Handle trivial cases. */
+    if (one == NULL || apr_is_empty_array(one->factors))
+        return factors_copy(ctx, two);
+    else if (two == NULL || apr_is_empty_array(two->factors))
+        return factors_copy(ctx, one);
+
+    /* We have to merge. */
+    result = factors_copy(ctx, one);
+    for (i = 0; i < two->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(two->factors, i, const char *);
+
+        /* Check whether the factor already exists in the result. */
+        if (factors_contains(result, factor))
+            continue;
+
+        /* Add the new factor to the result. */
+        APR_ARRAY_PUSH(result->factors, const char *) = factor;
+        if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
+            result->multifactor = true;
+        else if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0)
+            result->random = true;
+    }
+
+    /* See if we should synthesize a multifactor factor. */
+    if (!result->multifactor) {
+        extract_auth_types(result, &types);
+        result->multifactor = is_multifactor(&types);
+        if (result->multifactor)
+            APR_ARRAY_PUSH(result->factors, const char *) = WA_FA_MULTIFACTOR;
+    }
+
+    /* Return the result. */
+    return result;
 }
 
 
@@ -129,9 +240,7 @@ char *
 webauth_factors_string(struct webauth_context *ctx,
                        struct webauth_factors *factors)
 {
-    if (factors == NULL)
-        return NULL;
-    if (factors->factors->nelts == 0)
+    if (factors == NULL || apr_is_empty_array(factors->factors))
         return NULL;
     return apr_array_pstrcat(ctx->pool, factors->factors, ',');
 }
@@ -146,34 +255,24 @@ webauth_factors_subset(struct webauth_context *ctx UNUSED,
                        struct webauth_factors *one,
                        struct webauth_factors *two)
 {
-    bool found;
-    const char *f1, *f2;
-    int i, j;
+    const char *factor;
+    int i;
 
     if (one->multifactor && !two->multifactor)
         return false;
     for (i = 0; i < one->factors->nelts; i++) {
-        f1 = APR_ARRAY_IDX(one->factors, i, const char *);
-        if (strcmp(f1, "rm") == 0 && two->multifactor)
-            continue;
-        found = false;
-        for (j = 0; j < two->factors->nelts; j++) {
-            f2 = APR_ARRAY_IDX(two->factors, j, const char *);
-            if (strcmp(f1, f2) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+        factor = APR_ARRAY_IDX(one->factors, i, const char *);
+        if (!factors_contains(two, factor))
             return false;
     }
     return true;
 }
 
+
 /*
  * Given two sets of factors (struct webauth_factor), return a new set
  * containing all factors present in the first that are not present in the
- * second.
+ * second.  This does not synthesize multifactor in the result.
  */
 struct webauth_factors *
 webauth_factors_subtract(struct webauth_context *ctx,
@@ -181,9 +280,8 @@ webauth_factors_subtract(struct webauth_context *ctx,
                          struct webauth_factors *two)
 {
     struct webauth_factors *result;
-    bool keep;
-    const char *f1, *f2;
-    int i, j;
+    const char *factor;
+    int i;
 
     /* Handle some trivial cases. */
     if (one == NULL)
@@ -203,20 +301,12 @@ webauth_factors_subtract(struct webauth_context *ctx,
      * two.  This is O(n^2), but factor lists tend to be small.
      */
     for (i = 0; i < one->factors->nelts; i++) {
-        f1 = APR_ARRAY_IDX(one->factors, i, const char *);
-        keep = true;
-        for (j = 0; j < two->factors->nelts; j++) {
-            f2 = APR_ARRAY_IDX(two->factors, j, const char *);
-            if (strcmp(f1, f2) == 0) {
-                keep = false;
-                break;
-            }
-        }
-        if (keep) {
-            APR_ARRAY_PUSH(result->factors, const char *) = f1;
-            if (strcmp(f1, WA_FA_MULTIFACTOR) == 0)
+        factor = APR_ARRAY_IDX(one->factors, i, const char *);
+        if (!factors_contains(two, factor)) {
+            APR_ARRAY_PUSH(result->factors, const char *) = factor;
+            if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
                 result->multifactor = true;
-            if (strcmp(f1, WA_FA_RANDOM_MULTIFACTOR) == 0)
+            if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0)
                 result->random = true;
         }
     }

@@ -320,15 +320,15 @@ struct webauth_token {
 BEGIN_DECLS
 
 /*
- * Given a comma-separated string of factors, parse it into a webauth_factors
- * struct.  If the value of the last argument is not NULL, add the factors to
- * the existing webauth_factors struct rather than allocating a new one.  The
- * string may be NULL, in which case the resulting factors struct will be
- * empty.  Returns a status code.
+ * Given a comma-separated string of factors, parse it into a new
+ * pool-allocated webauth_factors struct.  Synthesize multifactor if the
+ * factors represented by the string indicate a multifactor authentication.
+ * The string may be NULL, in which case the resulting factors struct will be
+ * empty.
  */
-int webauth_factors_parse(struct webauth_context *, const char *,
-                          struct webauth_factors **)
-    __attribute__((__nonnull__(1, 3)));
+struct webauth_factors *webauth_factors_parse(struct webauth_context *,
+                                              const char *)
+    __attribute__((__nonnull__(1)));
 
 /*
  * Given a webauth_factors struct, return its value as a comma-separated
@@ -355,6 +355,16 @@ int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
 struct webauth_factors *webauth_factors_subtract(struct webauth_context *,
                                                  struct webauth_factors *,
                                                  struct webauth_factors *)
+    __attribute__((__nonnull__(1)));
+
+/*
+ * Given two webauth_factors structs, create a new pool-allocated struct
+ * representing the union of both.  Synthesize multifactor if the combined
+ * webauth_factors structs represent a multifactor authentication.
+ */
+struct webauth_factors *
+webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
+                      struct webauth_factors *two)
     __attribute__((__nonnull__(1)));
 
 /*
