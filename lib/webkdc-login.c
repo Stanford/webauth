@@ -771,6 +771,11 @@ check_multifactor(struct webauth_context *ctx,
      * factors that we have.  If not, choose the error message.  If the user
      * can't satisfy the factors at all, we'll change the error later.  Be
      * careful not to override errors from the LoA check.
+     *
+     * We assume that if the user needs factors they don't have but are
+     * capable of getting, the correct next step is to force a multifactor
+     * authentication.  This may not be the correct assumption always, but it
+     * works for the most common cases.
      */
     if (webauth_factors_subset(ctx, wanted, have)) {
         if (webauth_factors_subset(ctx, swanted, shave)) {
