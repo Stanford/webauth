@@ -1,6 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
-# Test suite for miscellaneous WebAuth Perl bindings.
+# Test suite for webauth key functions
 #
 # Written by Roland Schemers
 # Rewritten by Jon Robertson <jonrober@stanford.edu>
@@ -10,8 +10,9 @@
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 35;
 
 BEGIN { use_ok ('WebAuth', 3.06, qw(:const)) }
 BEGIN { use_ok ('WebAuth::Key') }
@@ -88,3 +89,15 @@ my $wa = WebAuth->new;
 my $key = eval { $wa->key_create (WA_KEY_AES) };
 like ($@, qr{ \A Usage: }xms,
       'Usage exception for insufficient arguments to key_create');
+
+# Check that sending WebAuth::Key different objects than it expect fails.
+eval {
+    $key = WebAuth::Key::new('WebAuth::NotKey');
+};
+like ($@, qr{^subclassing of WebAuth::Key is not supported}ms,
+    'Trying to subclass WebAuth::Key fails');
+eval {
+    $key = WebAuth::Key->new('WebAuth::NotKey');
+};
+like ($@, qr{^second argument must be a WebAuth object}ms,
+    '...as does not giving it a WebAuth object');

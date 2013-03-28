@@ -83,7 +83,7 @@ my $wa = WebAuth->new;
 my $now = time;
 my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
 my $keyring = $wa->keyring_new ($key);
-require 't/data/tokens.conf' or BAIL_OUT ("cannot load t/data/tokens.conf");
+require 't/data/tokens.conf' or die "cannot load t/data/tokens.conf\n";
 
 # Loop through the good tokens, construct a matching token using the Perl
 # class, encode it, decode it, and check that the results match.

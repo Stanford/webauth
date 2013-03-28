@@ -101,7 +101,7 @@ $ENV{SCRIPT_NAME} = '/login';
 my $wa = WebAuth->new;
 $WebKDC::Config::KEYRING_PATH = contents ('t/data/test.keyring.path');
 unless (-r $WebKDC::Config::KEYRING_PATH) {
-    BAIL_OUT ("cannot read $WebKDC::Config::KEYRING_PATH");
+    die "cannot read $WebKDC::Config::KEYRING_PATH\n";
 }
 my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
 

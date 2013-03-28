@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 54;
+use Test::More tests => 56;
 
 BEGIN {
     use_ok ('WebKDC::XmlDoc');
@@ -109,3 +109,13 @@ is_deeply ($doc->root, $e, 'Resulting document matches');
 $xml = $doc->root->to_string;
 is ($xml, '<foo a3="v3">  test  foo<bar>b</bar><baz>  </baz><empty /></foo>',
     'Resulting XML serialization matches');
+
+# Test closing a specific element.
+$doc = WebKDC::XmlDoc->new;
+$doc->start ('foo', { }, '  test foo');
+$doc->start ('bar', { }, '  test bar');
+$doc->end ('bar');
+is ($doc->current->name, 'foo', 'Closing a tag by name works');
+eval { $doc->end ('baz') };
+like ($@, qr{^name mismatch in end: expecting baz, saw foo}ms,
+      '...and giving a wrong tag name croaks');

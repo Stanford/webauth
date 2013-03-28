@@ -1,9 +1,9 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
-# Tests for proper output when the pwchange page is printed.
+# Tests for output and warnings for password change page
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010
+# Copyright 2010-2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -18,7 +18,7 @@ use CGI;
 use Template;
 
 use File::Path qw (rmtree);
-use Test::More tests => 44;
+use Test::More tests => 57;
 
 mkdir ('./t/tmp');
 
@@ -96,5 +96,68 @@ is ($output[17], 'changepw ', ' and changepw was not set');
 is ($output[18], 'expired 1', ' and expired was set');
 is ($output[19], 'skip_username 1', ' and skip_username was set');
 is ($output[20], 'skip_password 1', ' and skip_password was set');
+
+# Now various attempts at making the password change page error check go off.
+# error_invalid_pwchange_fields without a username
+$ENV{REQUEST_METHOD} = 'POST';
+$query = CGI->new ({ });
+$query->param ('username', '');
+$query->param ('expired', 0);
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), 'test_pwchange without username fails');
+ok ($$page =~ /err_username 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields without a password
+$query->param ('username', 'testuser');
+$query->param ('password', '');
+$weblogin->param ('CPT', '');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), ' and test_pwchange without CPT or password fails');
+ok ($$page =~ /err_password 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields without either new password field
+$query->param ('password', 'abc');
+$weblogin->param ('CPT', 'TestCPT');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page), ' and test_pwchange without either new password field fails');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields with only first new password field
+$query->param ('new_passwd1', 'abc');
+$weblogin->param ('CPT', 'TestCPT');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
+    ' and test_pwchange with only first new password field fails');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields with only second new password field
+$query->param ('new_passwd1', '');
+$query->param ('new_passwd2', 'abc');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
+    ' and test_pwchange with only second new password field fails');
+ok ($$page =~ /err_newpassword 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields with new password fields not matching
+$query->param ('new_passwd1', 'abc');
+$query->param ('new_passwd2', 'xyz');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+ok (defined ($page),
+    ' and test_pwchange with new password fields not matching fails');
+ok ($$page =~ /err_newpassword_match 1/, ' with the correct error');
+
+# error_invalid_pwchange_fields with everything good
+$query->param ('new_passwd1', 'abc');
+$query->param ('new_passwd2', 'abc');
+$weblogin->query ($query);
+$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+is ($page, undef, ' and test_pwchange with all fields correct works');
+
 
 rmtree ('./t/tmp');

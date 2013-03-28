@@ -55,10 +55,10 @@ sub encode_time {
 # General setup.
 my $wa = WebAuth->new;
 if (!-f 't/data/keyring') {
-    BAIL_OUT ('cannot find data/keyring');
+    die "cannot find t/data/keyring\n";
 }
 my $keyring = $wa->keyring_read ('t/data/keyring');
-require 't/data/tokens.conf' or BAIL_OUT ("cannot load t/data/tokens.conf");
+require 't/data/tokens.conf' or die "cannot load t/data/tokens.conf\n";
 
 # Loop through the good tokens, load the named token, and check its attributes
 # against the expected attributes from the configuration file.

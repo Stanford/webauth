@@ -29,7 +29,9 @@
 /perl/_build/
 /perl/lib/WebAuth.c
 /perl/blib/
+/perl/cover_db
 /perl/t/data/keyring
+/perl/t/data/test.keyring.path
 /perl/t/data/test.keytab
 /perl/t/data/test.password
 /perl/t/data/test.principal

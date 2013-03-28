@@ -15,6 +15,9 @@ use warnings;
 use vars qw(@ISA @EXPORT $VERSION);
 
 use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);
+use WebKDC::Config ();
+use WebLogin;
+use Template;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
@@ -24,7 +27,7 @@ $VERSION = '2.00';
 use Exporter ();
 @ISA    = qw(Exporter);
 @EXPORT = qw(contents get_userinfo remctld_spawn remctld_stop create_keyring
-             getcreds);
+             getcreds default_weblogin init_weblogin);
 
 ##############################################################################
 # General utility functions
@@ -50,6 +53,84 @@ sub contents {
     close FILE;
     chomp $data;
     return $data;
+}
+
+# Create and give default settings to a weblogin object.
+# TODO: Remove and replace with init_weblogin in all places.
+sub default_weblogin {
+
+    # Load a version of the page templates that only prints out the vars.
+    my %pages = (confirm  => 'confirm.tmpl',
+                 pwchange => 'pwchange.tmpl',
+                 error    => 'error.tmpl',
+                );
+    $WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
+    $WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
+
+    # Set up a query with some test data.
+    $ENV{REQUEST_METHOD} = 'GET';
+    my $query = CGI->new ({});
+
+    # Set up the testing WebLogin object.
+    my $weblogin = WebLogin->new;
+    my $resp     = WebKDC::WebResponse->new;
+    my $req      = WebKDC::WebRequest->new;
+    $req->request_token('TestReqToken');
+    $req->service_token('TestServiceToken');
+    $weblogin->{response} = $resp;
+    $weblogin->{request}  = $req;
+    $weblogin->query($query);
+    $weblogin->param('pages', \%pages);
+    $weblogin->param('logging', 0);
+
+    return $weblogin;
+}
+
+# Initialize the weblogin object, as we'll have to keep touching this over
+# and again.
+sub init_weblogin {
+    my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
+
+    my $query = CGI->new ({});
+    $query->request_method ('POST');
+    $query->param ('username', $username);
+    $query->param ('password', $password);
+    $query->param ('ST', $st_base64);
+    $query->param ('RT', $rt_base64);
+
+    $WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
+    $WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
+
+    my $weblogin = WebLogin->new (QUERY  => $query,
+                                  PARAMS => { pages => $pages });
+    $weblogin->cgiapp_prerun;
+    $weblogin->param ('debug', 0);
+    $weblogin->param ('logging', 0);
+    $weblogin->param ('script_name', '/login');
+
+    # Normally set during WebKDC::request_token_request.
+    $weblogin->{response}->return_url ('https://test.example.org/');
+    $weblogin->{response}->subject ($username);
+    $weblogin->{response}->requester_subject ('webauth/test3.testrealm.org@testrealm.org');
+    $weblogin->{response}->response_token ('TestResponse');
+    $weblogin->{response}->response_token_type ('id');
+
+    # Set the password expiration time depending on the user.
+    if ($username eq 'testuser1') {
+        # Expires in-range for a warning.
+        $weblogin->{response}->password_expiration (time + 60 * 60 * 24);
+    } elsif ($username eq 'testuser2') {
+        # Expires out of range for a warning.
+        $weblogin->{response}->password_expiration (time +
+                                                    60 * 60 * 24 * 356);
+    } elsif ($username eq 'testuser3') {
+        # Do nothing here, we want non-existing pw expiration.
+    } else {
+        # Expires in-range for a warning..
+        $weblogin->{response}->password_expiration (time + 60 * 60 * 24);
+    }
+
+    return $weblogin;
 }
 
 ##############################################################################

@@ -10,7 +10,7 @@
 
 use strict;
 
-use Test::More tests => 55;
+use Test::More tests => 61;
 
 use lib ('t/lib', 'lib', 'blib/arch');
 use WebAuth qw(:const);
@@ -150,3 +150,35 @@ eval {
     is (scalar ($keyring2->entries), 1, ' and contains one key');
 };
 is ($@, '', 'No unexpected exceptions');
+
+# Check that sending WebAuth::Keyring different objects than it expect fails.
+eval {
+    my $keyring= WebAuth::Keyring::new('WebAuth::NotKeyring');
+};
+like ($@, qr{^subclassing of WebAuth::Keyring is not supported}ms,
+    'Trying to subclass WebAuth::Keyring fails');
+eval {
+    my $keyring= WebAuth::Keyring::decode('WebAuth::NotKeyring');
+};
+like ($@, qr{^subclassing of WebAuth::Keyring is not supported}ms,
+    '...as does trying to subclass the decode function');
+eval {
+    my $keyring= WebAuth::Keyring::read('WebAuth::NotKeyring');
+};
+like ($@, qr{^subclassing of WebAuth::Keyring is not supported}ms,
+    '...as does trying to subclass the read function');
+eval {
+    my $keyring= WebAuth::Keyring->new('WebAuth::NotKeyring');
+};
+like ($@, qr{^second argument must be a WebAuth object}ms,
+    'Trying to give WebAuth::Keyring a non-WebAuth context fails');
+eval {
+    my $keyring= WebAuth::Keyring->decode('WebAuth::NotKeyring');
+};
+like ($@, qr{^second argument must be a WebAuth object}ms,
+    '...as does trying to give one to the decode function');
+eval {
+    my $keyring= WebAuth::Keyring->read('WebAuth::NotKeyring');
+};
+like ($@, qr{^second argument must be a WebAuth object}ms,
+    '...as does trying to give one to the read function');
