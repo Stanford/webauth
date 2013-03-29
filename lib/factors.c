@@ -21,56 +21,43 @@
 #include <webauth/basic.h>
 #include <webauth/tokens.h>
 
-/*
- * Stores flags for the authentication types that count towards multifactor.
- * This is used internally to determine whether to synthesize a multifactor
- * factor.
- */
-struct auth_types {
-    bool human;
-    bool password;
-    bool otp;
-    bool x509;
-};
-
 
 /*
- * Given a webauth_factors struct, fill out an auth_types struct based on the
- * factors it contains.
+ * Scan a set of factors and add a synthesized multifactor factor if it
+ * includes authentications from multiple factors.
  */
 static void
-extract_auth_types(struct webauth_factors *factors, struct auth_types *types)
+maybe_synthesize_multifactor(struct webauth_factors *factors)
 {
-    int i;
+    int types, i;
     const char *factor;
+    bool human    = false;
+    bool otp      = false;
+    bool password = false;
+    bool x509     = false;
 
-    memset(types, 0, sizeof(struct auth_types));
-    if (factors == NULL)
+    /* If this set of factors already includes multifactor, do nothing. */
+    if (factors->multifactor)
         return;
+
+    /* Scan the factors and count how many classes we have. */
     for (i = 0; i < factors->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(factors->factors, i, const char *);
         switch (factor[0]) {
-        case 'h': types->human    = true; break;
-        case 'o': types->otp      = true; break;
-        case 'p': types->password = true; break;
-        case 'x': types->x509     = true; break;
-        default:                          break;
+        case 'h': human    = true; break;
+        case 'o': otp      = true; break;
+        case 'p': password = true; break;
+        case 'x': x509     = true; break;
+        default:                   break;
         }
     }
-}
+    types = (int) human + password + otp + x509;
 
-
-/*
- * Given a struct auth_types, return true if it represents a multifactor
- * authentication and false otherwise.
- */
-static bool
-is_multifactor(struct auth_types *types)
-{
-    int factors;
-
-    factors = (int) types->human + types->password + types->otp + types->x509;
-    return (factors >= 2);
+    /* If we have factors from more than one class, synthesize multifactor. */
+    if (types >= 2) {
+        factors->multifactor = true;
+        APR_ARRAY_PUSH(factors->factors, const char *) = WA_FA_MULTIFACTOR;
+    }
 }
 
 
@@ -131,7 +118,6 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input)
     char *copy;
     char *last = NULL;
     const char *factor;
-    struct auth_types types;
 
     /*
      * Create an empty webauth_factors struct and return it if the string is
@@ -169,12 +155,7 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input)
     }
 
     /* See if we should synthesize a multifactor factor. */
-    if (!factors->multifactor) {
-        extract_auth_types(factors, &types);
-        factors->multifactor = is_multifactor(&types);
-        if (factors->multifactor)
-            APR_ARRAY_PUSH(factors->factors, const char *) = WA_FA_MULTIFACTOR;
-    }
+    maybe_synthesize_multifactor(factors);
 
     /* Return the result. */
     return factors;
@@ -193,7 +174,6 @@ webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
     struct webauth_factors *result;
     int i;
     const char *factor;
-    struct auth_types types;
 
     /* Handle trivial cases. */
     if (one == NULL || apr_is_empty_array(one->factors))
@@ -219,12 +199,7 @@ webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
     }
 
     /* See if we should synthesize a multifactor factor. */
-    if (!result->multifactor) {
-        extract_auth_types(result, &types);
-        result->multifactor = is_multifactor(&types);
-        if (result->multifactor)
-            APR_ARRAY_PUSH(result->factors, const char *) = WA_FA_MULTIFACTOR;
-    }
+    maybe_synthesize_multifactor(result);
 
     /* Return the result. */
     return result;
