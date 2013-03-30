@@ -320,6 +320,14 @@ struct webauth_token {
 BEGIN_DECLS
 
 /*
+ * Returns true if the provided factors represent an interactive login and
+ * false otherwise.
+ */
+int webauth_factors_interactive(struct webauth_context *,
+                                struct webauth_factors *)
+    __attribute__((__nonnull__(1)));
+
+/*
  * Given an array of factor strings (possibly NULL), create a new
  * pool-allocated webauth_factors struct and return it.  If the array is NULL,
  * the resulting factors struct will be empty.  This function does not

@@ -677,35 +677,6 @@ get_user_info(struct webauth_context *ctx,
 
 
 /*
- * Given the (possibly merged) webkdc-proxy token, determine whether the
- * current login is interactive.  Returns true if so, false if not.  Internal
- * errors just return false.
- */
-static bool
-is_interactive_login(struct webauth_context *ctx,
-                     struct webauth_token_webkdc_proxy *wkproxy)
-{
-    struct webauth_factors *factors = NULL;
-    const char *factor;
-    ssize_t i;
-
-    /*
-     * The login is considered interactive if the session factors include
-     * password, OTP, or X.509.
-     */
-    factors = webauth_factors_parse(ctx, wkproxy->session_factors);
-    for (i = 0; i < factors->factors->nelts; i++) {
-        factor = APR_ARRAY_IDX(factors->factors, i, const char *);
-        if (strcmp(factor, WA_FA_PASSWORD) == 0
-            || strcmp(factor, WA_FA_OTP) == 0
-            || strcmp(factor, WA_FA_X509) == 0)
-            return true;
-    }
-    return false;
-}
-
-
-/*
  * Given the request from the WebAuth Application Server, the current
  * accumulated response, the current merged webkdc-proxy token, and the user
  * information (which may be NULL if there's no information service
@@ -1344,12 +1315,16 @@ webauth_webkdc_login(struct webauth_context *ctx,
      *
      * FIXME: strstr is still lame.
      */
-    if (req->options != NULL && strstr(req->options, "fa") != NULL)
-        if (!is_interactive_login(ctx, wkproxy)) {
+    if (req->options != NULL && strstr(req->options, "fa") != NULL) {
+        struct webauth_factors *factors;
+
+        factors = webauth_factors_parse(ctx, wkproxy->session_factors);
+        if (!webauth_factors_interactive(ctx, factors)) {
             (*response)->login_error = WA_PEC_LOGIN_FORCED;
             (*response)->login_message = "forced authentication, need to login";
             return WA_ERR_NONE;
         }
+    }
 
     /*
      * If the user information service or the request says that multifactor or
