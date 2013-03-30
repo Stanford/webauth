@@ -662,11 +662,9 @@ get_user_info(struct webauth_context *ctx,
 
     /* Add additional factors if we have any and we did a login. */
     if (did_login && (*info)->additional != NULL) {
-        char *additional;
         struct webauth_factors *add;
 
-        additional = apr_array_pstrcat(ctx->pool, (*info)->additional, ',');
-        add = webauth_factors_parse(ctx, additional);
+        add = webauth_factors_new(ctx, (*info)->additional);
         iwkfactors = webauth_factors_union(ctx, iwkfactors, add);
         swkfactors = webauth_factors_union(ctx, swkfactors, add);
     }
@@ -730,11 +728,9 @@ check_multifactor(struct webauth_context *ctx,
     struct webauth_factors *wanted, *swanted, *have, *shave, *required;
     struct webauth_factors *configured;
     struct webauth_token_request *req;
-    const char *factors;
-
-    req = request->request;
 
     /* Figure out what factors we want and have. */
+    req = request->request;
     wanted = webauth_factors_parse(ctx, req->initial_factors);
     swanted = webauth_factors_parse(ctx, req->session_factors);
     have = webauth_factors_parse(ctx, wkproxy->initial_factors);
@@ -744,9 +740,8 @@ check_multifactor(struct webauth_context *ctx,
      * Check if there are factors required by user configuration.  If so, add
      * them to the initial factors that we require.
      */
-    if (info != NULL && info->required != NULL && info->factors->nelts > 0) {
-        factors = apr_array_pstrcat(ctx->pool, info->required, ',');
-        required = webauth_factors_parse(ctx, factors);
+    if (info != NULL && info->required != NULL && info->required->nelts > 0) {
+        required = webauth_factors_new(ctx, info->required);
         wanted = webauth_factors_union(ctx, wanted, required);
     }
 
@@ -810,10 +805,8 @@ check_multifactor(struct webauth_context *ctx,
      */
     if (info == NULL || info->factors == NULL || info->factors->nelts == 0)
         configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
-    else {
-        factors = apr_array_pstrcat(ctx->pool, info->factors, ',');
-        configured = webauth_factors_parse(ctx, factors);
-    }
+    else
+        configured = webauth_factors_new(ctx, info->factors);
     response->factors_wanted = wanted->factors;
     response->factors_configured = configured->factors;
     if (!webauth_factors_subset(ctx, wanted, configured)) {

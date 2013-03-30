@@ -107,6 +107,38 @@ factors_contains(struct webauth_factors *factors, const char *factor)
 
 
 /*
+ * Given an array of factor strings (possibly NULL), create a new
+ * pool-allocated webauth_factors struct and return it.  This function does
+ * not synthesize multifactor.
+ */
+struct webauth_factors *
+webauth_factors_new(struct webauth_context *ctx, apr_array_header_t *factors)
+{
+    struct webauth_factors *result;
+    int i;
+    const char *factor;
+
+    /* Create the new webauth_factors struct and copy the factors. */
+    result = apr_pcalloc(ctx->pool, sizeof(struct webauth_factors));
+    if (factors != NULL)
+        result->factors = apr_array_copy(ctx->pool, factors);
+    else
+        result->factors = apr_array_make(ctx->pool, 1, sizeof(const char *));
+
+    /* Fill out the multifactor and random multifactor data. */
+    for (i = 0; i < result->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(result->factors, i, const char *);
+        if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
+            result->multifactor = true;
+        else if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0)
+            result->random = true;
+    }
+
+    return result;
+}
+
+
+/*
  * Given a comma-separated string of factors, parse it into a newly-allocated
  * webauth_factors struct and return the new struct.  The result is
  * pool-allocated.

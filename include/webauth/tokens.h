@@ -320,6 +320,16 @@ struct webauth_token {
 BEGIN_DECLS
 
 /*
+ * Given an array of factor strings (possibly NULL), create a new
+ * pool-allocated webauth_factors struct and return it.  If the array is NULL,
+ * the resulting factors struct will be empty.  This function does not
+ * synthesize multifactor.
+ */
+struct webauth_factors *webauth_factors_new(struct webauth_context *,
+                                            WA_APR_ARRAY_HEADER_T *)
+    __attribute__((__nonnull__(1)));
+
+/*
  * Given a comma-separated string of factors, parse it into a new
  * pool-allocated webauth_factors struct.  Synthesize multifactor if the
  * factors represented by the string indicate a multifactor authentication.

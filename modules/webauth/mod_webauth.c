@@ -1802,7 +1802,6 @@ static int
 gather_tokens(MWA_REQ_CTXT *rc)
 {
     int code, in_url;
-    char *initial, *session;
     struct webauth_factors *have, *want;
 
     /* check the URL. this will parse the token in WEBAUTHR if there
@@ -1848,40 +1847,40 @@ gather_tokens(MWA_REQ_CTXT *rc)
         return redirect_request_token(rc);
     }
     if (rc->dconf->initial_factors != NULL) {
-        initial = apr_array_pstrcat(rc->r->pool, rc->dconf->initial_factors,
-                                    ',');
+        want = webauth_factors_new(rc->ctx, rc->dconf->initial_factors);
         if (rc->at->initial_factors == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: initial authentication factors"
-                          " required (want %s)", initial);
+                          " required (want %s)",
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
         have = webauth_factors_parse(rc->ctx, rc->at->initial_factors);
-        want = webauth_factors_parse(rc->ctx, initial);
         if (!webauth_factors_subset(rc->ctx, want, have)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient initial"
                           " authentication factors (have %s, want %s)",
-                          rc->at->initial_factors, initial);
+                          rc->at->initial_factors,
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
     }
     if (rc->dconf->session_factors != NULL) {
-        session = apr_array_pstrcat(rc->r->pool, rc->dconf->session_factors,
-                                    ',');
+        want = webauth_factors_new(rc->ctx, rc->dconf->session_factors);
         if (rc->at->session_factors == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: session authentication factors"
-                          " required (want %s)", session);
+                          " required (want %s)",
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
         have = webauth_factors_parse(rc->ctx, rc->at->session_factors);
-        want = webauth_factors_parse(rc->ctx, session);
         if (!webauth_factors_subset(rc->ctx, want, have)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient session"
                           " authentication factors (have %s, want %s)",
-                          rc->at->session_factors, session);
+                          rc->at->session_factors,
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
     }

@@ -20,12 +20,18 @@
 int
 main(void)
 {
+    apr_pool_t *pool = NULL;
     struct webauth_context *ctx;
     struct webauth_factors *one, *two, *result;
+    apr_array_header_t *factors;
 
-    plan(98);
+    plan(105);
 
-    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
+    if (apr_initialize() != APR_SUCCESS)
+        bail("cannot initialize APR");
+    if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
+        bail("cannot create memory pool");
+    if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
     /* Check basic parsing into a new struct. */
@@ -91,6 +97,26 @@ main(void)
     is_int(1, one->random, "...but is random multifactor");
     is_string("rm", webauth_factors_string(ctx, one),
               "...and the stringification is correct");
+
+    /* Check creating a new set of factors from an array. */
+    factors = apr_array_make(pool, 3, sizeof(const char *));
+    APR_ARRAY_PUSH(factors, const char *) = "p";
+    APR_ARRAY_PUSH(factors, const char *) = "m";
+    APR_ARRAY_PUSH(factors, const char *) = "rm";
+    one = webauth_factors_new(ctx, factors);
+    is_int(3, one->factors->nelts, "Created 3 factors from array");
+    is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
+              "...first is correct");
+    is_string("m", APR_ARRAY_IDX(one->factors, 1, const char *),
+              "...second is correct");
+    is_string("rm", APR_ARRAY_IDX(one->factors, 2, const char *),
+              "...third is correct");
+    is_int(1, one->multifactor, "...and is multifactor");
+    is_int(1, one->random, "...and is random multifactor");
+
+    /* Check creating a new set of factors from an empty array. */
+    one = webauth_factors_new(ctx, NULL);
+    is_int(0, one->factors->nelts, "Created empty factors from NULL array");
 
     /* Check merging two factor sets. */
     one = webauth_factors_union(ctx, webauth_factors_parse(ctx, "p"),
