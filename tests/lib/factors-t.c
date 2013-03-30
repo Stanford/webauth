@@ -196,25 +196,25 @@ main(void)
     is_string("m", APR_ARRAY_IDX(one->factors, 2, const char *),
               "...third is synthesized multifactor");
 
-    /* Check simple subset detection. */
+    /* Check simple satisfaction detection. */
     one = webauth_factors_union(ctx, webauth_factors_parse(ctx, "p"),
                                 webauth_factors_parse(ctx, "x"));
     two = webauth_factors_parse(ctx, "p");
-    is_int(1, webauth_factors_subset(ctx, two, one),
-           "p is subset of p,x,m");
-    is_int(0, webauth_factors_subset(ctx, one, two),
-           "p,x,m is not subset of p");
-    is_int(1, webauth_factors_subset(ctx, one, one),
-           "p,x,m is subset of itself");
+    is_int(1, webauth_factors_satisfies(ctx, one, two),
+           "p,x,m satisfies p");
+    is_int(0, webauth_factors_satisfies(ctx, two, one),
+           "p does not satisfy p,x,m");
+    is_int(1, webauth_factors_satisfies(ctx, one, one),
+           "p,x,m satisfies itself");
     two = webauth_factors_union(ctx, two, webauth_factors_parse(ctx, "m,x,p"));
-    is_int(1, webauth_factors_subset(ctx, two, one),
-           "subset works out of order");
+    is_int(1, webauth_factors_satisfies(ctx, one, two),
+           "satisfies works out of order");
 
     /* Multifactor should satisfy random multifactor. */
     one = webauth_factors_parse(ctx, "rm");
     two = webauth_factors_parse(ctx, "p,o,o1,m");
-    is_int(1, webauth_factors_subset(ctx, one, two),
-           "multifactor satisfies random in subset");
+    is_int(1, webauth_factors_satisfies(ctx, two, one),
+           "multifactor satisfies random");
 
     /* Check converting a NULL factors struct to a string. */
     is_string(NULL, webauth_factors_string(ctx, NULL),

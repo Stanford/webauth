@@ -359,10 +359,11 @@ char *webauth_factors_string(struct webauth_context *,
 
 /*
  * Given two sets of factors (struct webauth_factors), return true if the
- * first set is satisfied by the second set, false otherwise.
+ * first set satisfies the second set, false otherwise.
  */
-int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
-                           struct webauth_factors *)
+int webauth_factors_satisfies(struct webauth_context *,
+                              struct webauth_factors *,
+                              struct webauth_factors *)
     __attribute__((__nonnull__));
 
 /*

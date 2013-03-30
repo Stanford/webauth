@@ -1856,7 +1856,7 @@ gather_tokens(MWA_REQ_CTXT *rc)
             return redirect_request_token(rc);
         }
         have = webauth_factors_parse(rc->ctx, rc->at->initial_factors);
-        if (!webauth_factors_subset(rc->ctx, want, have)) {
+        if (!webauth_factors_satisfies(rc->ctx, have, want)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient initial"
                           " authentication factors (have %s, want %s)",
@@ -1875,7 +1875,7 @@ gather_tokens(MWA_REQ_CTXT *rc)
             return redirect_request_token(rc);
         }
         have = webauth_factors_parse(rc->ctx, rc->at->session_factors);
-        if (!webauth_factors_subset(rc->ctx, want, have)) {
+        if (!webauth_factors_satisfies(rc->ctx, have, want)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient session"
                           " authentication factors (have %s, want %s)",

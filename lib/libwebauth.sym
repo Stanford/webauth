@@ -5,8 +5,8 @@ webauth_error_message
 webauth_factors_interactive
 webauth_factors_new
 webauth_factors_parse
+webauth_factors_satisfies
 webauth_factors_string
-webauth_factors_subset
 webauth_factors_subtract
 webauth_factors_union
 webauth_key_copy

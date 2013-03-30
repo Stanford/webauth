@@ -398,9 +398,9 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
         if (strcmp(wft->subject, best->token.webkdc_factor.subject) != 0)
             continue;
 
-        /* Ignore it if the factors are a subset. */
+        /* Ignore it if the accumulated factors satisfy these factors. */
         cfactors = webauth_factors_parse(ctx, wft->factors);
-        if (webauth_factors_subset(ctx, cfactors, factors))
+        if (webauth_factors_satisfies(ctx, factors, cfactors))
             continue;
 
         /* We're merging.  Add the factors and update times. */
@@ -507,7 +507,7 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
          * If there are no new factors and it can't contribute a better
          * authenticator, there's nothing of interest.  Move on.
          */
-        if (webauth_factors_subset(ctx, cfactors, factors)
+        if (webauth_factors_satisfies(ctx, factors, cfactors)
             && (strcmp(best->proxy_type, "krb5") == 0
                 || strcmp(wkproxy->proxy_type, "krb5") != 0))
             continue;
@@ -622,11 +622,11 @@ get_user_info(struct webauth_context *ctx,
      */
     iwkfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
     ifactors = webauth_factors_parse(ctx, req->initial_factors);
-    irandmf = (!webauth_factors_subset(ctx, ifactors, iwkfactors)
+    irandmf = (!webauth_factors_satisfies(ctx, iwkfactors, ifactors)
                && ifactors->random);
     swkfactors = webauth_factors_parse(ctx, wkproxy->session_factors);
     sfactors = webauth_factors_parse(ctx, req->session_factors);
-    srandmf = (!webauth_factors_subset(ctx, sfactors, swkfactors)
+    srandmf = (!webauth_factors_satisfies(ctx, swkfactors, sfactors)
                && sfactors->random);
     randmf = irandmf || srandmf;
 
@@ -654,10 +654,8 @@ get_user_info(struct webauth_context *ctx,
      */
     if ((*info)->random_multifactor) {
         random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
-        if (!iwkfactors->multifactor && !iwkfactors->random)
-            iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
-        if (!swkfactors->multifactor && !swkfactors->random)
-            swkfactors = webauth_factors_union(ctx, swkfactors, random);
+        iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
+        swkfactors = webauth_factors_union(ctx, swkfactors, random);
     }
 
     /* Add additional factors if we have any and we did a login. */
@@ -743,8 +741,8 @@ check_multifactor(struct webauth_context *ctx,
      * authentication.  This may not be the correct assumption always, but it
      * works for the most common cases.
      */
-    if (webauth_factors_subset(ctx, wanted, have)) {
-        if (webauth_factors_subset(ctx, swanted, shave)) {
+    if (webauth_factors_satisfies(ctx, have, wanted)) {
+        if (webauth_factors_satisfies(ctx, shave, swanted)) {
             if (response->login_error == 0)
                 return WA_ERR_NONE;
         } else if (response->login_error == 0) {
@@ -780,10 +778,10 @@ check_multifactor(struct webauth_context *ctx,
         configured = webauth_factors_new(ctx, info->factors);
     response->factors_wanted = wanted->factors;
     response->factors_configured = configured->factors;
-    if (!webauth_factors_subset(ctx, wanted, configured)) {
+    if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
-    } else if (!webauth_factors_subset(ctx, swanted, configured)) {
+    } else if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
     }

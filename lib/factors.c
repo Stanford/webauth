@@ -285,21 +285,21 @@ webauth_factors_string(struct webauth_context *ctx,
 
 /*
  * Given two sets of factors (struct webauth_factors), return true if the
- * first set is satisfied by the second set, false otherwise.
+ * first set satisfies the second set, false otherwise.
  */
 int
-webauth_factors_subset(struct webauth_context *ctx UNUSED,
-                       struct webauth_factors *one,
-                       struct webauth_factors *two)
+webauth_factors_satisfies(struct webauth_context *ctx UNUSED,
+                          struct webauth_factors *one,
+                          struct webauth_factors *two)
 {
     const char *factor;
     int i;
 
-    if (one->multifactor && !two->multifactor)
+    if (!one->multifactor && two->multifactor)
         return false;
-    for (i = 0; i < one->factors->nelts; i++) {
-        factor = APR_ARRAY_IDX(one->factors, i, const char *);
-        if (!factors_contains(two, factor))
+    for (i = 0; i < two->factors->nelts; i++) {
+        factor = APR_ARRAY_IDX(two->factors, i, const char *);
+        if (!factors_contains(one, factor))
             return false;
     }
     return true;
