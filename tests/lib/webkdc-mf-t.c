@@ -565,7 +565,13 @@ main(void)
         is_string("full", ft->subject, "...with correct subject");
         is_string("d,u", ft->factors, "...and correct factors");
         is_int(1893484802, ft->expiration, "...and expiration is correct");
-        ok(time(NULL) - ft->creation < 2, "...and creation within bounds");
+        if (time(NULL) - ft->creation < 5)
+            ok(true, "...and creation within bounds");
+        else {
+            diag("Creation %lu, time %lu", (unsigned long) ft->creation,
+                 (unsigned long) time(NULL));
+            ok(false, "...and creation within bounds");
+        }
     }
     is_string(NULL, response->user_message, "...and user message is NULL");
 
