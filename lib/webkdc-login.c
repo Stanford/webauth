@@ -781,7 +781,7 @@ check_multifactor(struct webauth_context *ctx,
     if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
-    } else if (!webauth_factors_satisfies(ctx, configured, wanted)) {
+    } else if (!webauth_factors_satisfies(ctx, configured, swanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";
     }
