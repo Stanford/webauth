@@ -18,6 +18,7 @@
 #include <modules/webauth/mod_webauth.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
+#include <webauth/factors.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 

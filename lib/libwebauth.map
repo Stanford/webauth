@@ -12,6 +12,7 @@ WEBAUTH_4_5 {
         webauth_context_init;
         webauth_context_init_apr;
         webauth_error_message;
+        webauth_factors_array;
         webauth_factors_contains;
         webauth_factors_interactive;
         webauth_factors_new;

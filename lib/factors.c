@@ -19,7 +19,19 @@
 #include <lib/internal.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
-#include <webauth/tokens.h>
+#include <webauth/factors.h>
+
+/*
+ * Stores a set of factors that we want to perform operations on.  This is a
+ * list of authentication methods (like "p", "o1", etc.) plus flags for
+ * multifactor and random multifactor.  Those flags are just optimizations
+ * (and may be worth dropping).
+ */
+struct webauth_factors {
+    int multifactor;                    /* "m" (two factors in use) */
+    int random;                         /* "rm" (random multifactor) */
+    apr_array_header_t *factors;        /* Array of char * factor codes. */
+};
 
 
 /*
@@ -103,6 +115,21 @@ factors_satisfies(struct webauth_factors *factors, const char *factor)
             return true;
     }
     return false;
+}
+
+
+/*
+ * Return all the factors as a newly pool-allocated array.  We do a deep copy
+ * just in case the factors came from a different context.
+ */
+apr_array_header_t *
+webauth_factors_array(struct webauth_context *ctx,
+                      struct webauth_factors *factors)
+{
+    if (factors == NULL || apr_is_empty_array(factors->factors))
+        return apr_array_make(ctx->pool, 1, sizeof(const char *));
+    else
+        return apr_array_copy(ctx->pool, factors->factors);
 }
 
 

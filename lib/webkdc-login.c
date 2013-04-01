@@ -24,6 +24,7 @@
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
+#include <webauth/factors.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
@@ -781,8 +782,8 @@ check_multifactor(struct webauth_context *ctx,
         configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
     else
         configured = webauth_factors_new(ctx, info->factors);
-    response->factors_wanted = wanted->factors;
-    response->factors_configured = configured->factors;
+    response->factors_wanted = webauth_factors_array(ctx, wanted);
+    response->factors_configured = webauth_factors_array(ctx, configured);
     if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";

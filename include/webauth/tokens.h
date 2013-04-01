@@ -76,19 +76,6 @@ enum webauth_error_code {
 };
 
 /*
- * Stores a set of factors that we want to perform operations on.  This is a
- * list of authentication methods (like "p", "o1", etc.) plus flags for the
- * presence of "derived" factors, such as "m" (which is present if the user
- * has used two separate factors) or "o" (which is present if the user has
- * used any of the OTP factors).
- */
-struct webauth_factors {
-    int multifactor;                    /* "m" (two factors in use) */
-    int random;                         /* "rm" (random multifactor) */
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
-};
-
-/*
  * The types of tokens specified in the protocol, used in the type field of
  * the webauth_token struct.  WA_TOKEN_UNKNOWN will never be returned in that
  * struct but is used internally for errors.  WA_TOKEN_ANY is used as the
@@ -316,83 +303,7 @@ struct webauth_token {
     } token;
 };
 
-
 BEGIN_DECLS
-
-/*
- * Returns true if the provided factors contain the named factor and false
- * otherwise.
- */
-int webauth_factors_contains(struct webauth_context *,
-                             struct webauth_factors *, const char *)
-    __attribute__((__nonnull__(1, 3)));
-
-/*
- * Returns true if the provided factors represent an interactive login and
- * false otherwise.
- */
-int webauth_factors_interactive(struct webauth_context *,
-                                struct webauth_factors *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given an array of factor strings (possibly NULL), create a new
- * pool-allocated webauth_factors struct and return it.  If the array is NULL,
- * the resulting factors struct will be empty.  This function does not
- * synthesize multifactor.
- */
-struct webauth_factors *webauth_factors_new(struct webauth_context *,
-                                            WA_APR_ARRAY_HEADER_T *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given a comma-separated string of factors, parse it into a new
- * pool-allocated webauth_factors struct.  Synthesize multifactor if the
- * factors represented by the string indicate a multifactor authentication.
- * The string may be NULL, in which case the resulting factors struct will be
- * empty.
- */
-struct webauth_factors *webauth_factors_parse(struct webauth_context *,
-                                              const char *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given a webauth_factors struct, return its value as a comma-separated
- * string suitable for inclusion in a token.  The new string is
- * pool-allocated.  If the webauth_factors struct is NULL, returns NULL.
- */
-char *webauth_factors_string(struct webauth_context *,
-                             struct webauth_factors *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given two sets of factors (struct webauth_factors), return true if the
- * first set satisfies the second set, false otherwise.
- */
-int webauth_factors_satisfies(struct webauth_context *,
-                              struct webauth_factors *,
-                              struct webauth_factors *)
-    __attribute__((__nonnull__));
-
-/*
- * Given two sets of factors (struct webauth_factors), return a new set of
- * factors formed by removing all factors from the first set that are present
- * in the second set.
- */
-struct webauth_factors *webauth_factors_subtract(struct webauth_context *,
-                                                 struct webauth_factors *,
-                                                 struct webauth_factors *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given two webauth_factors structs, create a new pool-allocated struct
- * representing the union of both.  Synthesize multifactor if the combined
- * webauth_factors structs represent a multifactor authentication.
- */
-struct webauth_factors *
-webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
-                      struct webauth_factors *two)
-    __attribute__((__nonnull__(1)));
 
 /*
  * Map a token code to the string name used for the toke type attribute, or

@@ -26,7 +26,7 @@
 #include <lib/internal.h>
 #include <webauth/basic.h>
 #include <webauth/krb5.h>
-#include <webauth/tokens.h>
+#include <webauth/factors.h>
 #include <webauth/webkdc.h>
 #include <util/macros.h>
 

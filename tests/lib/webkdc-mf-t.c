@@ -941,7 +941,6 @@ main(void)
 
     /* Try that with session multifactor. */
     req.session_factors = "rm";
-    wkproxy.token.webkdc_proxy.session_factors = "c";
     status = webauth_webkdc_login(ctx, &request, &response, ring);
     if (status != WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, status));
@@ -962,7 +961,7 @@ main(void)
         ok_block(2, 0, "...no result token: %s",
                  webauth_error_message(ctx, status));
     else {
-        is_string("p,o,o3,m", token->token.id.initial_factors,
+        is_string("p,o,o3,m,rm", token->token.id.initial_factors,
                   "...result initial factors is right");
         is_string("c,rm", token->token.id.session_factors,
                   "...result session factors is right");
