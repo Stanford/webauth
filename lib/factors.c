@@ -83,12 +83,12 @@ factors_copy(struct webauth_context *ctx, struct webauth_factors *factors)
 
 
 /*
- * Returns true if the given webauth_factors struct contains the provided
+ * Returns true if the given webauth_factors struct satisfies the provided
  * factor, and false otherwise.  As a special case, factor sets containing
- * multifactor are always considered to contain random multifactor as well.
+ * multifactor are always considered to satisfy random multifactor as well.
  */
 static bool
-factors_contains(struct webauth_factors *factors, const char *factor)
+factors_satisfies(struct webauth_factors *factors, const char *factor)
 {
     int i;
     const char *candidate;
@@ -97,6 +97,29 @@ factors_contains(struct webauth_factors *factors, const char *factor)
         return false;
     if (strcmp(factor, WA_FA_RANDOM_MULTIFACTOR) == 0 && factors->multifactor)
         return true;
+    for (i = 0; i < factors->factors->nelts; i++) {
+        candidate = APR_ARRAY_IDX(factors->factors, i, const char *);
+        if (strcmp(factor, candidate) == 0)
+            return true;
+    }
+    return false;
+}
+
+
+/*
+ * Returns true if the given webauth_factors struct contains the provided
+ * factor, and false otherwise.  This does not have special handling of random
+ * multifactor.
+ */
+int
+webauth_factors_contains(struct webauth_context *ctx UNUSED,
+                         struct webauth_factors *factors, const char *factor)
+{
+    int i;
+    const char *candidate;
+
+    if (factors == NULL || apr_is_empty_array(factors->factors))
+        return false;
     for (i = 0; i < factors->factors->nelts; i++) {
         candidate = APR_ARRAY_IDX(factors->factors, i, const char *);
         if (strcmp(factor, candidate) == 0)
@@ -200,12 +223,11 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input)
      * Walk through each factor and add it to the array.  In the process, set
      * the booleans for multifactor and random multifactor if we see them.
      */
-    copy = apr_pstrdup(ctx->pool, input);
     for (factor = apr_strtok(copy, ",", &last); factor != NULL;
          factor = apr_strtok(NULL, ",", &last)) {
 
         /* Only add the factor if it's not a duplicate. */
-        if (factors_contains(factors, factor))
+        if (webauth_factors_contains(ctx, factors, factor))
             continue;
 
         /* Add the factor and set the multifactor and random flags. */
@@ -249,7 +271,7 @@ webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
         factor = APR_ARRAY_IDX(two->factors, i, const char *);
 
         /* Check whether the factor already exists in the result. */
-        if (factors_contains(result, factor))
+        if (webauth_factors_contains(ctx, result, factor))
             continue;
 
         /* Add the new factor to the result. */
@@ -299,7 +321,7 @@ webauth_factors_satisfies(struct webauth_context *ctx UNUSED,
         return false;
     for (i = 0; i < two->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(two->factors, i, const char *);
-        if (!factors_contains(one, factor))
+        if (!factors_satisfies(one, factor))
             return false;
     }
     return true;
@@ -334,12 +356,12 @@ webauth_factors_subtract(struct webauth_context *ctx,
     result->factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
 
     /*
-     * Walk the list of factors in one and, for each, check whether it's in
-     * two.  This is O(n^2), but factor lists tend to be small.
+     * Walk the list of factors in one and, for each, check whether it's
+     * satisifed by two.  This is O(n^2), but factor lists tend to be small.
      */
     for (i = 0; i < one->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(one->factors, i, const char *);
-        if (!factors_contains(two, factor)) {
+        if (!factors_satisfies(two, factor)) {
             APR_ARRAY_PUSH(result->factors, const char *) = factor;
             if (strcmp(factor, WA_FA_MULTIFACTOR) == 0)
                 result->multifactor = true;

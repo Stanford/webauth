@@ -25,7 +25,7 @@ main(void)
     struct webauth_factors *one, *two, *result;
     apr_array_header_t *factors;
 
-    plan(112);
+    plan(122);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -43,6 +43,7 @@ main(void)
     is_int(0, one->random, "...and is not random multifactor");
     is_int(0, webauth_factors_interactive(ctx, one),
            "...and is not interactive");
+    is_int(1, webauth_factors_contains(ctx, one, "u"), "...and contains u");
     one = webauth_factors_parse(ctx, "o,o1");
     is_int(2, one->factors->nelts, "Parsed o,o1 into two factors");
     is_string("o", APR_ARRAY_IDX(one->factors, 0, const char *),
@@ -52,6 +53,9 @@ main(void)
     is_int(0, one->multifactor, "...and is not multifactor");
     is_int(0, one->random, "...and is not random multifactor");
     is_int(1, webauth_factors_interactive(ctx, one), "...and is interactive");
+    is_int(1, webauth_factors_contains(ctx, one, "o1"), "...and contains o1");
+    is_int(0, webauth_factors_contains(ctx, one, "o2"),
+           "...and does not contain o2");
     one = webauth_factors_parse(ctx, "p,m,o,o1");
     is_int(4, one->factors->nelts, "Parsed p,m,o,o1 into four factors");
     is_string("p", APR_ARRAY_IDX(one->factors, 0, const char *),
@@ -83,6 +87,8 @@ main(void)
               "...fourth is the added multifactor one");
     is_int(1, one->multifactor, "...and is multifactor");
     is_int(0, one->random, "...and is not random multifactor");
+    is_int(0, webauth_factors_contains(ctx, one, "rm"),
+           "...and does not contain random multifactor");
 
     /* Check parsing the empty string. */
     one = webauth_factors_parse(ctx, "");
@@ -93,10 +99,16 @@ main(void)
               "Resolves to NULL string");
     is_int(0, webauth_factors_interactive(ctx, one),
            "...and is not interactive");
+    is_int(0, webauth_factors_contains(ctx, one, "p"),
+           "...and does not contain the p factor");
 
     /* Check parsing a NULL factor string. */
     one = webauth_factors_parse(ctx, NULL);
     is_int(0, one->factors->nelts, "Parsing NULL results in no factors");
+
+    /* Check contains on a NULL factor struct. */
+    is_int(0, webauth_factors_contains(ctx, NULL, "p"),
+           "webauth_factors_contains doesn't crash with NULL factors");
 
     /* Check parsing of random multifactor. */
     one = webauth_factors_parse(ctx, "rm");
@@ -156,9 +168,9 @@ main(void)
      * nothing.
      */
     one = webauth_factors_union(ctx, one, webauth_factors_parse(ctx, "rm"));
-    is_int(6, one->factors->nelts, "Still six factors after merging rm");
+    is_int(7, one->factors->nelts, "Seven factors after merging rm");
     is_int(1, one->multifactor, "...and is multifactor");
-    is_int(0, one->random, "...but is not random multifactor");
+    is_int(1, one->random, "...and is random multifactor");
 
     /* Check merging with multifactor detection. */
     one = webauth_factors_union(ctx, webauth_factors_parse(ctx, "p"),
@@ -293,6 +305,16 @@ main(void)
         is_int(1, result->factors->nelts, "...and saw one factor");
         is_string("rm", APR_ARRAY_IDX(result->factors, 0, const char *),
                   "...first is correct");
+    }
+    two = webauth_factors_parse(ctx, "m");
+    result = webauth_factors_subtract(ctx, one, two);
+    ok(result != NULL, "webauth_factors_subtract multifactor from random");
+    if (result == NULL)
+        ok_block(false, 3, "...no result returned");
+    else {
+        is_int(0, result->multifactor, "...and is not multifactor");
+        is_int(0, result->random, "...and is not random multifactor");
+        is_int(0, result->factors->nelts, "...and saw no factors");
     }
 
     /* Clean up. */

@@ -606,29 +606,35 @@ get_user_info(struct webauth_context *ctx,
               struct webauth_token_webkdc_proxy *wkproxy, bool did_login,
               struct webauth_user_info **info)
 {
-    bool randmf, irandmf, srandmf;
-    int status;
     struct webauth_factors *ifactors, *iwkfactors, *sfactors, *swkfactors;
     struct webauth_factors *random;
+    bool randmf = false;
+    int status;
     struct webauth_token_request *req = request->request;
 
-    /*
-     * Determine if we're doing random multifactor.  Parse the initial
-     * factors from our webkdc-proxy token and those in the request and
-     * see if the request is not satisfied and contains random
-     * multifactor.  Then do the same for the session factors.  We do
-     * random multifactor if we need it for either the initial or session
-     * factors.
-     */
+    /* Parse all of the factors involved. */
     iwkfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
     ifactors = webauth_factors_parse(ctx, req->initial_factors);
-    irandmf = (!webauth_factors_satisfies(ctx, iwkfactors, ifactors)
-               && ifactors->random);
     swkfactors = webauth_factors_parse(ctx, wkproxy->session_factors);
     sfactors = webauth_factors_parse(ctx, req->session_factors);
-    srandmf = (!webauth_factors_satisfies(ctx, swkfactors, sfactors)
-               && sfactors->random);
-    randmf = irandmf || srandmf;
+
+    /* Create a webauth_factors struct representing random multifactor. */
+    random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
+
+    /*
+     * Determine if we're doing random multifactor.
+     *
+     * We will request random multifactor if either the initial or session
+     * requirements in the request include random multifactor and random
+     * multifactor is not satisfied by the corresponding factors in the
+     * webkdc-proxy token.
+     */
+    if (webauth_factors_contains(ctx, ifactors, WA_FA_RANDOM_MULTIFACTOR))
+        if (!webauth_factors_satisfies(ctx, iwkfactors, random))
+            randmf = true;
+    if (webauth_factors_contains(ctx, sfactors, WA_FA_RANDOM_MULTIFACTOR))
+        if (!webauth_factors_satisfies(ctx, swkfactors, random))
+            randmf = true;
 
     /* Call the user information service. */
     status = webauth_user_info(ctx, wkproxy->subject, request->remote_ip,
@@ -653,7 +659,6 @@ get_user_info(struct webauth_context *ctx,
      * already satisfied by existing factors.
      */
     if ((*info)->random_multifactor) {
-        random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
         iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
         swkfactors = webauth_factors_union(ctx, swkfactors, random);
     }

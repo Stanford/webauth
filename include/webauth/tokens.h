@@ -320,6 +320,14 @@ struct webauth_token {
 BEGIN_DECLS
 
 /*
+ * Returns true if the provided factors contain the named factor and false
+ * otherwise.
+ */
+int webauth_factors_contains(struct webauth_context *,
+                             struct webauth_factors *, const char *)
+    __attribute__((__nonnull__(1, 3)));
+
+/*
  * Returns true if the provided factors represent an interactive login and
  * false otherwise.
  */
