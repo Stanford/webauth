@@ -448,6 +448,10 @@ merge_webkdc_factor(struct webauth_context *ctx, apr_array_header_t *wkfactors,
  * 7. Initial factors also count as session factors if the contributing
  *    webkdc-proxy token is within its freshness limit.  Otherwise, session
  *    factors are used as-is.
+ *
+ * While processing the webkdc-proxy tokens, we also reject, with an error,
+ * the credential merge if there is a subject or proxy subject mismatch
+ * between the provided credentials.
  */
 static int
 merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
@@ -455,20 +459,36 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
                    struct webauth_token **result)
 {
     bool created = false;
-    struct webauth_token *token, *tmp;
-    struct webauth_token *genbest = NULL;
+    const char *subject = NULL, *proxy_subject = NULL;
+    struct webauth_token *token, *genbest = NULL;
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_proxy *best = NULL;
     struct webauth_token_webkdc_factor *wft;
-    struct webauth_factors *cfactors, *extra;
+    struct webauth_factors *extra;
     struct webauth_factors *factors = NULL, *sfactors = NULL;
     time_t now;
     int i;
 
+    /* Return a NULL webkdc-proxy token if we have no tokens. */
     *result = NULL;
     if (creds->nelts == 0)
         return WA_ERR_NONE;
+
+    /* Ensure all time calculations use a consistent basis. */
     now = time(NULL);
+
+    /*
+     * Grab the first token and use it to determine the subject and proxy
+     * subject that all remaining tokens must have.  The subject must match
+     * across all tokens.  The proxy subject must either start with "WEBKDC:"
+     * (indicated by a NULL proxy_subject) or must match.
+     */
+    token = APR_ARRAY_IDX(creds, 0, struct webauth_token *);
+    assert(token->type == WA_TOKEN_WEBKDC_PROXY);
+    wkproxy = &token->token.webkdc_proxy;
+    subject = wkproxy->subject;
+    if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0)
+        proxy_subject = wkproxy->proxy_subject;
 
     /*
      * We merge the proxy tokens in reverse order, since any proxy tokens that
@@ -478,9 +498,38 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
      */
     i = creds->nelts - 1;
     do {
+        struct webauth_token *tmp;
+        struct webauth_factors *cfactors;
+        int s;
+
         token = APR_ARRAY_IDX(creds, i, struct webauth_token *);
         assert(token->type == WA_TOKEN_WEBKDC_PROXY);
         wkproxy = &token->token.webkdc_proxy;
+
+        /* Check the subject. */
+        if (strcmp(subject, wkproxy->subject) != 0) {
+            s = WA_ERR_TOKEN_REJECTED;
+            wai_error_set(ctx, s, "subject mismatch: %s != %s", subject,
+                          wkproxy->subject);
+            return s;
+        }
+
+        /* Check the proxy subject. */
+        if (proxy_subject == NULL) {
+            if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
+                s = WA_ERR_TOKEN_REJECTED;
+                wai_error_set(ctx, s, "proxy subject mismatch: %s is not SSO",
+                              wkproxy->proxy_subject);
+                return s;
+            }
+        } else {
+            if (strcmp(proxy_subject, wkproxy->proxy_subject) != 0) {
+                s = WA_ERR_TOKEN_REJECTED;
+                wai_error_set(ctx, s, "proxy subject mismatch: %s != %s",
+                              proxy_subject, wkproxy->proxy_subject);
+                return s;
+            }
+        }
 
         /* Discard all expired tokens. */
         if (wkproxy->expiration <= now)
@@ -1181,36 +1230,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
-     * All of the supplied credentials, if any, must be for the same
-     * authenticated user (the same subject) and must have a proxy_subject
-     * that starts with "WEBKDC:".
-     */
-    if (wkproxies->nelts > 0) {
-        const char *subject = NULL;
-
-        for (i = 0; i < wkproxies->nelts; i++) {
-            cred = APR_ARRAY_IDX(wkproxies, i, struct webauth_token *);
-            assert(cred->type == WA_TOKEN_WEBKDC_PROXY);
-            wkproxy = &cred->token.webkdc_proxy;
-            if (subject == NULL)
-                subject = wkproxy->subject;
-            else if (strcmp(subject, wkproxy->subject) != 0) {
-                (*response)->login_error = WA_PEC_UNAUTHORIZED;
-                (*response)->login_message
-                    = "not authorized to use proxy token";
-                return WA_ERR_NONE;
-            }
-            if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
-                (*response)->login_error = WA_PEC_PROXY_TOKEN_INVALID;
-                (*response)->login_message
-                    = apr_psprintf(ctx->pool, "proxy subject %s not allowed",
-                                   wkproxy->proxy_subject);
-                return WA_ERR_NONE;
-            }
-        }
-    }
-
-    /*
      * We have condensed all the user authentication information at this point
      * to a set of webkdc-proxy tokens and webkdc-factor tokens (plus possibly
      * some login tokens that we can now ignore since we've processed them).
@@ -1223,23 +1242,51 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * webkdc-factor tokens.
      */
     status = merge_webkdc_factor(ctx, wkfactors, &wkfactor);
-    if (status != WA_ERR_NONE)
+    if (status != WA_ERR_NONE) {
+        wai_error_add_context(ctx, "merging webkdc-factor tokens");
         return status;
+    }
 
     /*
      * Now, merge all the webkdc-proxy tokens plus any webkdc-factor
-     * information into a single new webkdc-proxy token.
+     * information into a single new webkdc-proxy token.  If we get the error
+     * code WA_ERR_TOKEN_REJECTED back, that means someone tried to use an
+     * inconsistent mix of tokens, which should be rejected as unauthorized
+     * rather than generating an internal WebAuth error.
      */
     wkproxy = NULL;
     status = merge_webkdc_proxy(ctx, wkproxies, wkfactor, &newproxy);
     if (status != WA_ERR_NONE)
+        wai_error_add_context(ctx, "merging webkdc-proxy tokens");
+    if (status == WA_ERR_TOKEN_REJECTED) {
+        wai_log_error(ctx, WA_LOG_WARN, status);
+        (*response)->login_error = WA_PEC_UNAUTHORIZED;
+        (*response)->login_message = "not authorized to use proxy token";
+        return WA_ERR_NONE;
+    } else if (status != WA_ERR_NONE)
         return status;
 
-    /* If we have a new webkdc-proxy token, encode it in the response. */
+    /*
+     * If we have a new webkdc-proxy token, encode it in the response in case
+     * we changed or merged anything.
+     *
+     * For login purposes, the webkdc-proxy token must have a proxy subject
+     * starting with "WEBKDC:" to indicate that it is an SSO token.
+     */
     if (newproxy != NULL) {
         struct webauth_webkdc_proxy_data *data;
 
+        /* Check that the token is an SSO token. */
         wkproxy = &newproxy->token.webkdc_proxy;
+        if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
+            (*response)->login_error = WA_PEC_PROXY_TOKEN_INVALID;
+            (*response)->login_message
+                = apr_psprintf(ctx->pool, "proxy subject %s not allowed",
+                               wkproxy->proxy_subject);
+            return WA_ERR_NONE;
+        }
+
+        /* Encode it in the response. */
         size = sizeof(struct webauth_webkdc_proxy_data);
         (*response)->proxies = apr_array_make(ctx->pool, 1, size);
         data = apr_array_push((*response)->proxies);
