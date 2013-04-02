@@ -1182,60 +1182,33 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
     /*
      * All of the supplied credentials, if any, must be for the same
-     * authenticated user (the same subject) and must be usable by the same
-     * entity (the same proxy_subject).  That proxy_subject must also either
-     * match the identity of the service subject or start with WEBKDC.
+     * authenticated user (the same subject) and must have a proxy_subject
+     * that starts with "WEBKDC:".
      */
     if (wkproxies->nelts > 0) {
         const char *subject = NULL;
-        const char *proxy_subject = NULL;
 
         for (i = 0; i < wkproxies->nelts; i++) {
             cred = APR_ARRAY_IDX(wkproxies, i, struct webauth_token *);
             assert(cred->type == WA_TOKEN_WEBKDC_PROXY);
             wkproxy = &cred->token.webkdc_proxy;
-            if (subject == NULL) {
+            if (subject == NULL)
                 subject = wkproxy->subject;
-                proxy_subject = wkproxy->proxy_subject;
-                if (strncmp(proxy_subject, "WEBKDC:", 7) != 0
-                    && strcmp(proxy_subject, request->service->subject) != 0) {
-                    (*response)->login_error = WA_PEC_UNAUTHORIZED;
-                    (*response)->login_message
-                        = "not authorized to use proxy token";
-                    return WA_ERR_NONE;
-                }
-                continue;
-            }
-            if (strcmp(subject, wkproxy->subject) != 0
-                || (strcmp(proxy_subject, wkproxy->proxy_subject) != 0
-                    && strncmp(proxy_subject, "WEBKDC:", 7) != 0)) {
+            else if (strcmp(subject, wkproxy->subject) != 0) {
                 (*response)->login_error = WA_PEC_UNAUTHORIZED;
                 (*response)->login_message
                     = "not authorized to use proxy token";
                 return WA_ERR_NONE;
             }
-        }
-    }
-
-    /*
-     * If there was a login token, all webkdc-proxy tokens also supplied must
-     * be WEBKDC tokens (in other words, global single-sign-on tokens).  A WAS
-     * can't send a WAS-scoped webkdc-proxy token from a proxy token combined
-     * with a login token.
-     */
-    if (did_login)
-        for (i = 0; i < wkproxies->nelts; i++) {
-            cred = APR_ARRAY_IDX(wkproxies, i, struct webauth_token *);
-            assert(cred->type == WA_TOKEN_WEBKDC_PROXY);
-            wkproxy = &cred->token.webkdc_proxy;
             if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
                 (*response)->login_error = WA_PEC_PROXY_TOKEN_INVALID;
                 (*response)->login_message
-                    = apr_psprintf(ctx->pool, "proxy subject %s not allowed"
-                                   " with login token", wkproxy->proxy_subject);
+                    = apr_psprintf(ctx->pool, "proxy subject %s not allowed",
+                                   wkproxy->proxy_subject);
                 return WA_ERR_NONE;
             }
         }
+    }
 
     /*
      * We have condensed all the user authentication information at this point
