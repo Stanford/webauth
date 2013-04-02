@@ -158,8 +158,9 @@ modules_webauth_mod_webauth_la_LDFLAGS = -module -shared -avoid-version \
 modules_webauth_mod_webauth_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS) \
 	$(CURL_LIBS) $(KEYUTILS_LIBS)
 modules_webkdc_mod_webkdc_la_SOURCES = modules/webkdc/acl.c	\
-	modules/webkdc/config.c modules/webkdc/mod_webkdc.c	\
-	modules/webkdc/mod_webkdc.h modules/webkdc/util.c
+	modules/webkdc/config.c modules/webkdc/logging.c	\
+	modules/webkdc/mod_webkdc.c modules/webkdc/mod_webkdc.h	\
+	modules/webkdc/util.c
 modules_webkdc_mod_webkdc_la_CPPFLAGS = $(AM_CPPFLAGS) $(APACHE_CPPFLAGS)
 modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 	$(APACHE_LDFLAGS)

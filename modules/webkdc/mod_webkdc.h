@@ -210,6 +210,15 @@ void *webkdc_config_merge(apr_pool_t *, void *, void *);
 void webkdc_config_init(server_rec *, struct config *, apr_pool_t *);
 
 
+/* logging.c */
+
+/* Logging functions used as context callbacks for library messages. */
+void mwk_log_trace(struct webauth_context *ctx, void *, const char *);
+void mwk_log_info(struct webauth_context *ctx, void *, const char *);
+void mwk_log_notice(struct webauth_context *ctx, void *, const char *);
+void mwk_log_warning(struct webauth_context *ctx, void *, const char *);
+
+
 /* util.c */
 
 /*

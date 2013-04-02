@@ -2439,8 +2439,13 @@ handler_hook(request_rec *r)
     const char *req_content_type;
     struct webauth_webkdc_config config;
 
+    /* Make sure that we weren't called inappropriately. */
+    if (strcmp(r->handler, "webkdc"))
+        return DECLINED;
+
     /* Initialize our request context. */
     memset(&rc, 0, sizeof(rc));
+    rc.r = r;
     status = webauth_context_init_apr(&rc.ctx, r->pool);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
@@ -2448,8 +2453,12 @@ handler_hook(request_rec *r)
                      webauth_error_message(NULL, status));
         return DECLINED;
     }
+    webauth_log_callback(rc.ctx, WA_LOG_TRACE,  mwk_log_trace,   r);
+    webauth_log_callback(rc.ctx, WA_LOG_INFO,   mwk_log_info,    r);
+    webauth_log_callback(rc.ctx, WA_LOG_NOTICE, mwk_log_notice,  r);
+    webauth_log_callback(rc.ctx, WA_LOG_WARN,   mwk_log_warning, r);
 
-    rc.r = r;
+    /* Set up the WebKDC configuration. */
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
     config.id_acl_path      = rc.sconf->identity_acl_path;
     config.keytab_path      = rc.sconf->keytab_path;
@@ -2465,6 +2474,8 @@ handler_hook(request_rec *r)
                      webauth_error_message(rc.ctx, status));
         return DECLINED;
     }
+
+    /* Set up the user information service configuration. */
     if (rc.sconf->userinfo_config != NULL) {
         struct webauth_user_config *user = rc.sconf->userinfo_config;
 
@@ -2482,21 +2493,17 @@ handler_hook(request_rec *r)
         }
     }
 
-    if (strcmp(r->handler, "webkdc")) {
-        return DECLINED;
-    }
-
-    req_content_type = apr_table_get(r->headers_in, "content-type");
-
-    if (!req_content_type || strcmp(req_content_type, "text/xml")) {
-        return HTTP_BAD_REQUEST;
-    }
-
-    if (r->method_number != M_POST) {
+    /* Ensure the client sent POST with the right content type. */
+    if (r->method_number != M_POST)
         return HTTP_METHOD_NOT_ALLOWED;
-    }
+    req_content_type = apr_table_get(r->headers_in, "content-type");
+    if (!req_content_type || strcmp(req_content_type, "text/xml") != 0)
+        return HTTP_BAD_REQUEST;
 
+    /* Our response will also be text/xml. */
     ap_set_content_type(r, "text/xml");
+
+    /* All the real work happens in parse_request. */
     return parse_request(&rc);
 }
 

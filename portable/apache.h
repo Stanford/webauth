@@ -91,4 +91,19 @@
     extern module AP_MODULE_DECLARE_DATA foo##_module;
 #endif
 
+/*
+ * Apache 2.4 introduced granular levels of trace logging.  For older
+ * versions, collapse them all into APLOG_DEBUG.
+ */
+#ifndef APLOG_TRACE1
+# define APLOG_TRACE1 APLOG_DEBUG
+# define APLOG_TRACE2 APLOG_DEBUG
+# define APLOG_TRACE3 APLOG_DEBUG
+# define APLOG_TRACE4 APLOG_DEBUG
+# define APLOG_TRACE5 APLOG_DEBUG
+# define APLOG_TRACE6 APLOG_DEBUG
+# define APLOG_TRACE7 APLOG_DEBUG
+# define APLOG_TRACE8 APLOG_DEBUG
+#endif
+
 #endif /* !PORTABLE_APACHE_H */
