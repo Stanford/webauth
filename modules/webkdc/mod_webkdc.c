@@ -540,27 +540,6 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
     return MWK_OK;
 }
 
-static enum mwk_status
-make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
-               const void **token, size_t *length, const char *mwk_func)
-{
-    int status;
-    struct webauth_keyring *ring;
-
-    if (rc->sconf->ring == NULL)
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "no keyring", mwk_func, true);
-    ring = rc->sconf->ring;
-    status = webauth_token_encode_raw(rc->ctx, data, ring, token, length);
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
-                              "webauth_token_create", NULL);
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, false);
-    }
-    return MWK_OK;
-}
-
 
 static enum mwk_status
 make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
@@ -837,103 +816,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     return ms;
 }
 
-/*
- */
-static enum mwk_status
-create_proxy_token_from_req(MWK_REQ_CTXT *rc,
-                               const char *proxy_type,
-                               MWK_REQUESTER_CREDENTIAL *req_cred,
-                               MWK_SUBJECT_CREDENTIAL *sub_cred,
-                               MWK_RETURNED_TOKEN *rtoken)
-{
-    static const char *mwk_func = "create_proxy_token_from_req";
-    size_t wkdc_len;
-    enum mwk_status ms;
-    struct webauth_token_webkdc_proxy *sub_pt;
-    struct webauth_token pt, token;
-    const void *wkdc_token;
-
-    ms = MWK_ERROR;
-
-    /* make sure proxy_type is not NULL */
-    if (proxy_type == NULL) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "proxy type is NULL",
-                                 mwk_func, true);
-    }
-
-    /* only create proxy tokens from service creds */
-    if (strcmp(req_cred->type, "service") != 0) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "can only create proxy-tokens with "
-                                 "<requesterCredential> of type service",
-                                 mwk_func, true);
-    }
-
-    /* make sure we have a subject cred with a type='proxy' */
-    if (strcmp(sub_cred->type, "proxy") != 0) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "can only create proxy-tokens with "
-                                 "<subjectCredential> of type proxy",
-                                 mwk_func, true);
-    }
-
-    /* check access */
-    if (!mwk_has_proxy_access(rc, req_cred->subject, proxy_type)) {
-        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
-                                 "not authorized to get a proxy token",
-                                 mwk_func, true);
-    }
-
-    /* make sure we are creating a proxy-token that has
-       the same type as the proxy-token we are using to create it */
-    sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func, 1);
-    if (sub_pt == NULL)
-        return MWK_ERROR;
-
-    /* check access again */
-    if (!mwk_can_use_proxy_token(rc, req_cred->subject,
-                                 sub_pt->proxy_subject)) {
-        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
-                                 "not authorized to use proxy token",
-                                 mwk_func, true);
-    }
-
-    /* create the webkdc-proxy-token first, using existing proxy-token */
-    memset(&pt, 0, sizeof(pt));
-    pt.type = WA_TOKEN_WEBKDC_PROXY;
-    pt.token.webkdc_proxy = *sub_pt;
-    pt.token.webkdc_proxy.creation = 0;
-    ms = make_token_raw(rc, &pt, &wkdc_token, &wkdc_len, mwk_func);
-    if (!ms)
-        return MWK_ERROR;
-
-    /* now create the proxy-token */
-    memset(&token, 0, sizeof(token));
-    token.type = WA_TOKEN_PROXY;
-    token.token.proxy.subject = sub_pt->subject;
-    token.token.proxy.type = sub_pt->proxy_type;
-    token.token.proxy.webkdc_proxy = wkdc_token;
-    token.token.proxy.webkdc_proxy_len = wkdc_len;
-    token.token.proxy.expiration = sub_pt->expiration;
-    if (sub_pt->initial_factors != NULL)
-        token.token.proxy.initial_factors = sub_pt->initial_factors;
-    if (sub_pt->loa > 0)
-        token.token.proxy.loa = sub_pt->loa;
-
-    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
-    token.token.proxy.session_factors = "u";
-
-    ms = make_token_with_key(rc, req_cred->u.st.session_key,
-                             req_cred->u.st.session_key_len, &token,
-                             &rtoken->token_data, mwk_func);
-
-    rtoken->subject = sub_pt->subject;
-    rtoken->info =
-        apr_pstrcat(rc->r->pool, " type=proxy pt=", proxy_type, NULL);
-
-    return ms;
-}
 
 /*
  */
@@ -1275,23 +1157,6 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
             if (!create_id_token_from_req(rc, at, &req_cred, &sub_cred,
                                           &rtokens[num_tokens], NULL)) {
-                return MWK_ERROR;
-            }
-        } else if (strcmp(tt, "proxy") == 0) {
-            apr_xml_elem *proxy_type;
-            const char *pt;
-
-            proxy_type = get_element(rc, token, "proxyType", 1, mwk_func);
-
-            if (proxy_type == NULL)
-                return MWK_ERROR;
-
-            pt = get_elem_text(rc, proxy_type, mwk_func);
-            if (pt == NULL)
-                return MWK_ERROR;
-
-            if (!create_proxy_token_from_req(rc, pt, &req_cred, &sub_cred,
-                                             &rtokens[num_tokens])) {
                 return MWK_ERROR;
             }
         } else if (strcmp(tt, "cred") == 0) {
