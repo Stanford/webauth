@@ -57,6 +57,7 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_INVALID:           return "invalid argument to function";
     case WA_ERR_REMOTE_FAILURE:    return "a remote service call failed";
     case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
+    case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown error code %d", code);
