@@ -1,8 +1,14 @@
 /*
- * WebAuth token handling.
+ * WebAuth encryption and decryption token handling.
+ *
+ * This file contains all the low-level crypto functions for encoding tokens
+ * into their encrypted form or reversing that process.  Although these
+ * functions are intended for use with WebAuth tokens, they actually encrypt
+ * and decrypt opaque data into the encrypted format WebAuth uses, and don't
+ * care what they're encrypting.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
