@@ -155,27 +155,27 @@ my $rt_base64 = $st->encode ($client_keyring);
 # Create the weblogin object and make sure it looks as it should.
 my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok ($weblogin, 'getting Weblogin object works');
-is ($weblogin->param ('debug'), 0, ' and debug is not set');
-is ($weblogin->param ('logging'), 0, ' and logging is not set');
-ok (defined $weblogin->{request}, ' and we got a WebRequest');
-ok (defined $weblogin->{response}, ' and we got a WebResponse');
+is ($weblogin->param ('debug'), 0, '... and debug is not set');
+is ($weblogin->param ('logging'), 0, '... and logging is not set');
+ok (defined $weblogin->{request}, '... and we got a WebRequest');
+ok (defined $weblogin->{response}, '... and we got a WebResponse');
 
 # Set up the KDC request and test that things were set up correctly.
 my ($status, $error);
 $status = $weblogin->setup_kdc_request;
 ok (!$status, 'setup_kdc_request works');
-is ($weblogin->{request}->user, $user, ' and username set');
-is ($weblogin->{request}->pass, $pass, ' and password set');
+is ($weblogin->{request}->user, $user, '... and username set');
+is ($weblogin->{request}->pass, $pass, '... and password set');
 is ($weblogin->{request}->local_ip_addr, $ENV{SERVER_ADDR},
-   ' and SERVER_ADDR set');
+   '... and SERVER_ADDR set');
 is ($weblogin->{request}->local_ip_port, $ENV{SERVER_PORT},
-   ' and SERVER_PORT set');
+   '... and SERVER_PORT set');
 is ($weblogin->{request}->remote_ip_addr, $ENV{REMOTE_ADDR},
-   ' and REMOTE_ADDR set');
+   '... and REMOTE_ADDR set');
 is ($weblogin->{request}->remote_ip_port, $ENV{REMOTE_PORT},
-   ' and REMOTE_PORT set');
+   '... and REMOTE_PORT set');
 is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
-   ' and REMOTE_USER set');
+   '... and REMOTE_USER set');
 
 # FIXME: Requires us to fake cookies, which we'll do in a later pass.
 # Other authentication methods can be used, REMOTE_USER support is
@@ -212,17 +212,17 @@ $error = WebKDC::WebKDCException->new (WebKDC::WK_ERR_AUTH_REJECTED,
 ($status, $error) = (WebKDC::WK_ERR_AUTH_REJECTED, $error);
 my @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for authentication rejected error');
-is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[0], 'err_bad_method ', '... and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
-    ' and err_cookies_disabled was not set');
+    '... and err_cookies_disabled was not set');
 is ($output[2], 'err_no_request_token ',
-    ' and err_no_request_token was not set');
-is ($output[3], 'err_webkdc ', ' and err_webkdc was not set');
-is ($output[4], 'err_msg ', ' and err_msg was not set');
-is ($output[5], 'err_confirm ', ' and err_confirm was not set');
-is ($output[6], 'script_name ', ' and script_name was not set');
+    '... and err_no_request_token was not set');
+is ($output[3], 'err_webkdc ', '... and err_webkdc was not set');
+is ($output[4], 'err_msg ', '... and err_msg was not set');
+is ($output[5], 'err_confirm ', '... and err_confirm was not set');
+is ($output[6], 'script_name ', '... and script_name was not set');
 is ($output[7], 'err_html <strong>go away</strong>',
-    ' and err_html was set to the correct value');
+    '... and err_html was set to the correct value');
 
 # Test REMOTE_USER cookie creation and the remuser_factors callback.
 package WebKDC::Config;
@@ -235,23 +235,23 @@ $WebKDC::Config::REMUSER_ENABLED          = 1;
 $status = $weblogin->setup_kdc_request;
 is ($status, 0, 'setup_kdc_request with authenticate sub works');
 my %cookies = %{ $weblogin->{request}->proxy_cookies };
-is (scalar (keys %cookies), 1, '...and there is one cookie set');
+is (scalar (keys %cookies), 1, '... and there is one cookie set');
 my @types = keys %cookies;
-is ($types[0], 'remuser', '...which is a remuser cookie');
+is ($types[0], 'remuser', '... which is a remuser cookie');
 # FIXME: We can't test the session factor since there's no way to get at it.
 my $token_string = $cookies{remuser};
 my $token = WebAuth::Token->new ($wa, $token_string, $keyring);
 isa_ok ($token, 'WebAuth::Token::WebKDCProxy', 'token');
-is ($token->subject, 'remauth', '...with correct subject');
-is ($token->proxy_type, 'remuser', '...and proxy type');
-is ($token->proxy_subject, 'WEBKDC:remuser', '...and proxy subject');
-is ($token->data, 'remauth', '...and data');
-is ($token->initial_factors, 'o1', '...and initial factors');
-is ($token->loa, 1, '...and LoA');
+is ($token->subject, 'remauth', '... with correct subject');
+is ($token->proxy_type, 'remuser', '... and proxy type');
+is ($token->proxy_subject, 'WEBKDC:remuser', '... and proxy subject');
+is ($token->data, 'remauth', '... and data');
+is ($token->initial_factors, 'o1', '... and initial factors');
+is ($token->loa, 1, '... and LoA');
 ok (abs ($token->creation - time) < 2,
-    '...and creation is in the right range');
+    '... and creation is in the right range');
 ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
-    '...and expiration is in the right range');
+    '... and expiration is in the right range');
 
 # Test the user-defined authenticate callback.  We'll set a callback that will
 # generate a token with some particular parameters, call setup_kdc_request,
@@ -262,21 +262,21 @@ $weblogin->{request}->proxy_cookies ({});
 $status = $weblogin->setup_kdc_request;
 is ($status, 0, 'setup_kdc_request with authenticate sub works');
 %cookies = %{ $weblogin->{request}->proxy_cookies };
-is (scalar (keys %cookies), 1, '...and there is one cookie set');
+is (scalar (keys %cookies), 1, '... and there is one cookie set');
 @types = keys %cookies;
-is ($types[0], 'remuser', '...which is a remuser cookie');
+is ($types[0], 'remuser', '... which is a remuser cookie');
 # FIXME: We can't test the session factor since there's no way to get at it.
 $token_string = $cookies{remuser};
 $token = WebAuth::Token->new ($wa, $token_string, $keyring);
 isa_ok ($token, 'WebAuth::Token::WebKDCProxy', 'token');
-is ($token->subject, 'authtest', '...with correct subject');
-is ($token->proxy_type, 'remuser', '...and proxy type');
-is ($token->proxy_subject, 'WEBKDC:remuser', '...and proxy subject');
-is ($token->data, 'authtest', '...and data');
-is ($token->initial_factors, 'p', '...and initial factors');
-is ($token->loa, 2, '...and LoA');
+is ($token->subject, 'authtest', '... with correct subject');
+is ($token->proxy_type, 'remuser', '... and proxy type');
+is ($token->proxy_subject, 'WEBKDC:remuser', '... and proxy subject');
+is ($token->data, 'authtest', '... and data');
+is ($token->initial_factors, 'p', '... and initial factors');
+is ($token->loa, 2, '... and LoA');
 ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
-    '...and expiration is in the right range');
+    '... and expiration is in the right range');
 
 unlink ('krb5cc_test', 't/data/test.keyring');
 rmtree ('./t/tmp');

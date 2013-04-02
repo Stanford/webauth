@@ -63,20 +63,20 @@ ok (!@{$rights}, 'token_rights fails with no TOKEN_ACL file');
 $WebKDC::Config::TOKEN_ACL = 't/data/token.acl';
 $weblogin->{response}->requester_subject ('nothing');
 $rights = WebLogin::token_rights ($weblogin);
-ok (!@{$rights}, ' and when given an invalid requester_subject');
+ok (!@{$rights}, '... and when given an invalid requester_subject');
 $weblogin->{response}->requester_subject ('webauth/*@testrealm.org');
 $rights = WebLogin::token_rights ($weblogin);
-ok (!@{$rights}, ' and when given a request for a non-cred token');
+ok (!@{$rights}, '... and when given a request for a non-cred token');
 
 # And with a request for a known server.
 $weblogin->{response}->requester_subject ('webauth/test1.testrealm.org@testrealm.org');
 $rights = WebLogin::token_rights ($weblogin);
 ok ($rights, 'token_rights gets a response with a valid TOKEN_ACL');
-is (${$rights}[0]{'principal'}, 'afs', ' and principal is correct');
-is (${$rights}[0]{'realm'}, undef, ' and realm is correct');
-is (${$rights}[0]{'name'}, 'afs/testrealm.org', ' and name is correct');
-is (${$rights}[0]{'type'}, 'krb5', ' and type is correct');
-is (${$rights}[0]{'instance'}, 'testrealm.org', ' and instance is correct');
+is (${$rights}[0]{'principal'}, 'afs', '... and principal is correct');
+is (${$rights}[0]{'realm'}, undef, '... and realm is correct');
+is (${$rights}[0]{'name'}, 'afs/testrealm.org', '... and name is correct');
+is (${$rights}[0]{'type'}, 'krb5', '... and type is correct');
+is (${$rights}[0]{'instance'}, 'testrealm.org', '... and instance is correct');
 
 unlink ($WebKDC::Config::KEYRING_PATH);
 unlink ('krb5cc_test');

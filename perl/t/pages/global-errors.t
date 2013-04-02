@@ -20,7 +20,7 @@ use Template;
 use CGI;
 
 use File::Path qw (rmtree);
-use Test::More tests => 4;
+use Test::More tests => 12;
 
 # Force a defined order on output.
 $| = 1;
@@ -84,11 +84,11 @@ ok (defined ($page), ' and fails with only ST set');
 #        with the CGI module.  We'll have to do something more tricky to
 #        fake a request, and can worry about that later.  skip these tests,
 #        but leave in to use when that's fixed.
-my ($page, $retval);
+my $retval;
 SKIP: {
     skip 'error_password_no_post tests do not yet work', 3;
 
-    my $query = CGI->new ({});
+    $query = CGI->new ({});
     $query->param ('password', 'abc');
     $query->request_method ('POST');
     $weblogin->query ($query);
@@ -115,7 +115,7 @@ SKIP: {
 
     # error_if_no_cookies tests - cookie is set
     $weblogin->param ('test_cookie', 'testcookie');
-    my $query = CGI->new ({});
+    $query = CGI->new ({});
     $query->cookie (-name  => $weblogin->param ('test_cookie'),
                     -value => 1);
     $weblogin->query ($query);
@@ -126,12 +126,12 @@ SKIP: {
 # error_if_no_cookies after the page has redirected to check for cookies, but
 # without the cookie successfully set.  Not testing the code that adjusts
 # for old templates.
-my $query = CGI->new ({});
+$query = CGI->new ({});
 $query->param ('test_cookie', 1);
 $weblogin->query ($query);
 $page = WebLogin::error_if_no_cookies ($weblogin);
 ok (defined ($page), 'error_if_no_cookies fails with cookies disabled');
-like ($$page, qr/err_cookies_disabled 1/, ' with the correct error message');
+like ($$page, qr/err_cookies_disabled 1/, '... with the correct error message');
 
 # test_cookie without a cookie set, but without the param showing we've
 # already redirected to find a cookie.
@@ -142,8 +142,9 @@ SKIP: {
     $query = CGI->new ({});
     $weblogin->query ($query);
     $page = WebLogin::error_if_no_cookies ($weblogin);
-    ok (defined ($page), ' and redirects when not yet having tried to get cookie');
-    ok ($$page =~ /Status: 302 Moved/, ' with the correct error message');
+    ok (defined ($page),
+        '... and redirects when not yet having tried to get cookie');
+    ok ($$page =~ /Status: 302 Moved/, '... with the correct error message');
 }
 
 unlink ($WebKDC::Config::KEYRING_PATH);

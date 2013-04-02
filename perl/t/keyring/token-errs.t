@@ -27,4 +27,4 @@ eval {
     $token = WebAuth::Token->new('WebAuth::NotKey', 'a');
 };
 like ($@, qr{^second argument must be a WebAuth object}ms,
-    '...as does not giving it a WebAuth object');
+    '... as does not giving it a WebAuth object');

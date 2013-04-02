@@ -151,27 +151,27 @@ my $rt_base64 = $st->encode ($client_keyring);
 # Create the weblogin object and make sure it looks as it should.
 my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok ($weblogin, 'getting Weblogin object works');
-is ($weblogin->param ('debug'), 0, ' and debug is not set');
-is ($weblogin->param ('logging'), 0, ' and logging is not set');
-ok (defined $weblogin->{request}, ' and we got a WebRequest');
-ok (defined $weblogin->{response}, ' and we got a WebResponse');
+is ($weblogin->param ('debug'), 0, '... and debug is not set');
+is ($weblogin->param ('logging'), 0, '... and logging is not set');
+ok (defined $weblogin->{request}, '... and we got a WebRequest');
+ok (defined $weblogin->{response}, '... and we got a WebResponse');
 
 # Set up the KDC request and test that things were set up correctly.
 my ($status, $error);
 $status = $weblogin->setup_kdc_request;
 ok (!$status, 'setup_kdc_request works');
-is ($weblogin->{request}->user, $user, ' and username set');
-is ($weblogin->{request}->pass, $pass, ' and password set');
+is ($weblogin->{request}->user, $user, '... and username set');
+is ($weblogin->{request}->pass, $pass, '... and password set');
 is ($weblogin->{request}->local_ip_addr, $ENV{SERVER_ADDR},
-   ' and SERVER_ADDR set');
+   '... and SERVER_ADDR set');
 is ($weblogin->{request}->local_ip_port, $ENV{SERVER_PORT},
-   ' and SERVER_PORT set');
+   '... and SERVER_PORT set');
 is ($weblogin->{request}->remote_ip_addr, $ENV{REMOTE_ADDR},
-   ' and REMOTE_ADDR set');
+   '... and REMOTE_ADDR set');
 is ($weblogin->{request}->remote_ip_port, $ENV{REMOTE_PORT},
-   ' and REMOTE_PORT set');
+   '... and REMOTE_PORT set');
 is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
-   ' and REMOTE_USER set');
+   '... and REMOTE_USER set');
 
 # The user didn't already ask for REMOTE_USER.  However, we just need
 # authentication (not forced login) and we haven't already tried
@@ -182,24 +182,24 @@ $weblogin->param ('is_error', 0);
 $WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
 my @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with choice for REMOTE_USER');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser 1', ' and show_remuser was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser 1', '... and show_remuser was set');
 is ($output[14], 'remuser_url https://test.example.org/login',
-    ' and remuser_url was set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+    '... and remuser_url was set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test failed login with remuser_redirect set, and the flag that shows
 # we were called as an error handler set.
@@ -210,23 +210,23 @@ $weblogin->param ('is_error', 1);
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, as error handler');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed 1', ' and remuser_failed was set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed 1', '... and remuser_failed was set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test failed login with remuser_redirect set, and the flag that shows
 # we were called as an error handler not set.
@@ -237,24 +237,24 @@ $weblogin->param ('is_error', 0);
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, not as error handler');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser 1', ' and show_remuser was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser 1', '... and show_remuser was set');
 is ($output[14], 'remuser_url https://test.example.org/login',
-    ' and remuser_url was set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+    '... and remuser_url was set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test the same error case without remuser_redirect at all.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -263,23 +263,23 @@ $WebKDC::Config::REMUSER_REDIRECT = '';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test missing username and password.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -290,23 +290,23 @@ $WebKDC::Config::REMUSER_REDIRECT = '';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error 1', ' and error is set');
-is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
-is ($output[2], 'err_username 1', ' and err_username is set');
-is ($output[3], 'err_password 1', ' and err_password is set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], 'username ', ' and username was not set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error 1', '... and error is set');
+is ($output[1], 'err_missinginput 1', '... and err_missinginput is set');
+is ($output[2], 'err_username 1', '... and err_username is set');
+is ($output[3], 'err_password 1', '... and err_password is set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], 'username ', '... and username was not set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test missing username.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -317,23 +317,23 @@ $WebKDC::Config::REMUSER_REDIRECT = '';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error 1', ' and error is set');
-is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
-is ($output[2], 'err_username 1', ' and err_username is set');
-is ($output[3], 'err_password ', ' and err_password is not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], 'username ', ' and username was not set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error 1', '... and error is set');
+is ($output[1], 'err_missinginput 1', '... and err_missinginput is set');
+is ($output[2], 'err_username 1', '... and err_username is set');
+is ($output[3], 'err_password ', '... and err_password is not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], 'username ', '... and username was not set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test empty username.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -344,23 +344,23 @@ $WebKDC::Config::REMUSER_REDIRECT = '';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error 1', ' and error is set');
-is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
-is ($output[2], 'err_username 1', ' and err_username is set');
-is ($output[3], 'err_password ', ' and err_password is not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], 'username ', ' and username was not set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error 1', '... and error is set');
+is ($output[1], 'err_missinginput 1', '... and err_missinginput is set');
+is ($output[2], 'err_username 1', '... and err_username is set');
+is ($output[3], 'err_password ', '... and err_password is not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], 'username ', '... and username was not set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Test missing password.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -371,23 +371,23 @@ $WebKDC::Config::REMUSER_REDIRECT = '';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error 1', ' and error is set');
-is ($output[1], 'err_missinginput 1', ' and err_missinginput is set');
-is ($output[2], 'err_username ', ' and err_username is not set');
-is ($output[3], 'err_password 1', ' and err_password is set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error 1', '... and error is set');
+is ($output[1], 'err_missinginput 1', '... and err_missinginput is set');
+is ($output[2], 'err_username ', '... and err_username is not set');
+is ($output[3], 'err_password 1', '... and err_password is set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Login has failed for some reason, print the login page again.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -395,23 +395,23 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_LOGIN_FAILED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # User rejected for some reason, print the login page again.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -419,23 +419,23 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_USER_REJECTED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 
 # Logins were forced but neither wpt_cookie is set nor is the
 # remuser_cookie set.  Just show the login page normally.
@@ -445,23 +445,23 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok (@output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, neither '
     .'wpt_cookie nor remuser_cookie set');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced ', ' and err_forced was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced ', '... and err_forced was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 # Check print_login_page (forced_login = 0)
 
 # Logins were forced, and the wpt_cookie is set (we've already got a
@@ -474,23 +474,23 @@ $ENV{HTTP_COOKIE} = "$cookie";
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, wpt_cookie set');
-is ($output[0], 'error 1', ' and error was set');
-is ($output[1], 'err_missinginput ', ' and err_missinginput was not set');
-is ($output[2], 'err_username ', ' and err_username was not set');
-is ($output[3], 'err_password ', ' and err_password was not set');
-is ($output[4], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[5], 'err_forced 1', ' and err_forced was set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-ok ($output[7] =~ /RT \S+/, ' and RT was set');
-ok ($output[8] =~ /ST \S+/, ' and ST was set');
-is ($output[9], 'LC ', ' and LC was not set');
-is ($output[10], "username $user", ' and username was set');
-is ($output[11], 'login_cancel ', ' and login_cancel was not set');
-is ($output[12], 'cancel_url ', ' and cancel_url was not set');
-is ($output[13], 'show_remuser ', ' and show_remuser was not set');
-is ($output[14], 'remuser_url ', ' and remuser_url was not set');
-is ($output[15], 'remuser_failed ', ' and remuser_failed was not set');
-is ($output[16], 'script_name /login', ' and script_name was set');
+is ($output[0], 'error 1', '... and error was set');
+is ($output[1], 'err_missinginput ', '... and err_missinginput was not set');
+is ($output[2], 'err_username ', '... and err_username was not set');
+is ($output[3], 'err_password ', '... and err_password was not set');
+is ($output[4], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[5], 'err_forced 1', '... and err_forced was set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+ok ($output[7] =~ /RT \S+/, '... and RT was set');
+ok ($output[8] =~ /ST \S+/, '... and ST was set');
+is ($output[9], 'LC ', '... and LC was not set');
+is ($output[10], "username $user", '... and username was set');
+is ($output[11], 'login_cancel ', '... and login_cancel was not set');
+is ($output[12], 'cancel_url ', '... and cancel_url was not set');
+is ($output[13], 'show_remuser ', '... and show_remuser was not set');
+is ($output[14], 'remuser_url ', '... and remuser_url was not set');
+is ($output[15], 'remuser_failed ', '... and remuser_failed was not set');
+is ($output[16], 'script_name /login', '... and script_name was set');
 # Check print_login_page (forced_login = 1)
 
 # FIXME: Requires us to fake cookies, which we'll do in a later pass.

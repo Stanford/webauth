@@ -66,14 +66,14 @@ $weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
-is ($error, undef, ' with no error');
+is ($error, undef, '... with no error');
 
 # And undo it.
 $weblogin->query->param ('password', $newpassword);
 $weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
-is ($error, undef, ' with no error');
+is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+is ($error, undef, '... with no error');
 
 # Test going to change_user_password with password but not CPT (should work)
 $weblogin->param ('CPT', '');
@@ -85,14 +85,14 @@ $weblogin->query->param ('new_passwd1', $newpassword);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS,
     'changing the password with old password but no CPT works');
-is ($error, undef, ' with no error');
+is ($error, undef, '... with no error');
 
 # And undo it.
 $weblogin->query->param ('password', $newpassword);
 $weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, ' as does changing it back');
-is ($error, undef, ' with no error');
+is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+is ($error, undef, '... with no error');
 
 # Test going to change_user_password no CPT or password (should not work).
 $query = new CGI;

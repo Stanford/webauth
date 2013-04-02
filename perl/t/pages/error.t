@@ -151,27 +151,27 @@ my $rt_base64 = $st->encode ($client_keyring);
 # Create the weblogin object and make sure it looks as it should.
 my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok ($weblogin, 'getting Weblogin object works');
-is ($weblogin->param ('debug'), 0, ' and debug is not set');
-is ($weblogin->param ('logging'), 0, ' and logging is not set');
-ok (defined $weblogin->{request}, ' and we got a WebRequest');
-ok (defined $weblogin->{response}, ' and we got a WebResponse');
+is ($weblogin->param ('debug'), 0, '... and debug is not set');
+is ($weblogin->param ('logging'), 0, '... and logging is not set');
+ok (defined $weblogin->{request}, '... and we got a WebRequest');
+ok (defined $weblogin->{response}, '... and we got a WebResponse');
 
 # Set up the KDC request and test that things were set up correctly.
 my ($status, $error);
 $status = $weblogin->setup_kdc_request;
 ok (!$status, 'setup_kdc_request works');
-is ($weblogin->{request}->user, $user, ' and username set');
-is ($weblogin->{request}->pass, $pass, ' and password set');
+is ($weblogin->{request}->user, $user, '... and username set');
+is ($weblogin->{request}->pass, $pass, '... and password set');
 is ($weblogin->{request}->local_ip_addr, $ENV{SERVER_ADDR},
-   ' and SERVER_ADDR set');
+   '... and SERVER_ADDR set');
 is ($weblogin->{request}->local_ip_port, $ENV{SERVER_PORT},
-   ' and SERVER_PORT set');
+   '... and SERVER_PORT set');
 is ($weblogin->{request}->remote_ip_addr, $ENV{REMOTE_ADDR},
-   ' and REMOTE_ADDR set');
+   '... and REMOTE_ADDR set');
 is ($weblogin->{request}->remote_ip_port, $ENV{REMOTE_PORT},
-   ' and REMOTE_PORT set');
+   '... and REMOTE_PORT set');
 is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
-   ' and REMOTE_USER set');
+   '... and REMOTE_USER set');
 
 # Bad return URL (set it to be http rather than https).
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -179,17 +179,17 @@ $weblogin->{response}->return_url ('test.example.org/');
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
 my @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for bad return URL');
-is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[0], 'err_bad_method ', '... and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
-    ' and err_cookies_disabled was not set');
+    '... and err_cookies_disabled was not set');
 is ($output[2], 'err_no_request_token ',
-    ' and err_no_request_token was not set');
-is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
+    '... and err_no_request_token was not set');
+is ($output[3], 'err_webkdc 1', '... and err_webkdc was set');
 is ($output[4], 'err_msg there is most likely a configuration problem '
     .'with the server that redirected you. Please contact its '
-    .'administrator.', ' with correct error message');
-is ($output[5], 'err_confirm ', ' and err_confirm was not set');
-is ($output[6], 'script_name ', ' and script_name was not set');
+    .'administrator.', '... with correct error message');
+is ($output[5], 'err_confirm ', '... and err_confirm was not set');
+is ($output[6], 'script_name ', '... and script_name was not set');
 
 # Unrecoverable error - check the error page.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
@@ -197,15 +197,15 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 my $errmsg = 'unrecoverable error occured. Try again later.';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for unrecoverable error');
-is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[0], 'err_bad_method ', '... and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
-    ' and err_cookies_disabled was not set');
+    '... and err_cookies_disabled was not set');
 is ($output[2], 'err_no_request_token ',
-    ' and err_no_request_token was not set');
-is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
-is ($output[4], "err_msg $errmsg", ' with correct error message');
-is ($output[5], 'err_confirm ', ' and err_confirm was not set');
-is ($output[6], 'script_name ', ' and script_name was not set');
+    '... and err_no_request_token was not set');
+is ($output[3], 'err_webkdc 1', '... and err_webkdc was set');
+is ($output[4], "err_msg $errmsg", '... with correct error message');
+is ($output[5], 'err_confirm ', '... and err_confirm was not set');
+is ($output[6], 'script_name ', '... and script_name was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
 
 # Token is stale - check the error page.
@@ -214,15 +214,15 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 $errmsg = 'you took too long to login.';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for stale token error');
-is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[0], 'err_bad_method ', '... and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
-    ' and err_cookies_disabled was not set');
+    '... and err_cookies_disabled was not set');
 is ($output[2], 'err_no_request_token ',
-    ' and err_no_request_token was not set');
-is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
-is ($output[4], "err_msg $errmsg", ' with correct error message');
-is ($output[5], 'err_confirm ', ' and err_confirm was not set');
-is ($output[6], 'script_name ', ' and script_name was not set');
+    '... and err_no_request_token was not set');
+is ($output[3], 'err_webkdc 1', '... and err_webkdc was set');
+is ($output[4], "err_msg $errmsg", '... with correct error message');
+is ($output[5], 'err_confirm ', '... and err_confirm was not set');
+is ($output[6], 'script_name ', '... and script_name was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
 
 # Unrecoverable WebAuth server error - check the error page.
@@ -233,16 +233,16 @@ $errmsg = 'there is most likely a configuration problem with'
     . ' administrator.';
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'error page for unrecoverable webauth server error');
-is ($output[0], 'err_bad_method ', ' and err_bad_method was not set');
+is ($output[0], 'err_bad_method ', '... and err_bad_method was not set');
 is ($output[1], 'err_cookies_disabled ',
-    ' and err_cookies_disabled was not set');
+    '... and err_cookies_disabled was not set');
 is ($output[2], 'err_no_request_token ',
-    ' and err_no_request_token was not set');
-is ($output[3], 'err_webkdc 1', ' and err_webkdc was set');
-is ($output[4], "err_msg $errmsg", ' with correct error message');
-is ($output[5], 'err_confirm ', ' and err_confirm was not set');
-is ($output[6], 'script_name ', ' and script_name was not set');
-is ($output[7], 'err_html ', ' and err_html was not set');
+    '... and err_no_request_token was not set');
+is ($output[3], 'err_webkdc 1', '... and err_webkdc was set');
+is ($output[4], "err_msg $errmsg", '... with correct error message');
+is ($output[5], 'err_confirm ', '... and err_confirm was not set');
+is ($output[6], 'script_name ', '... and script_name was not set');
+is ($output[7], 'err_html ', '... and err_html was not set');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $error)
 
 unlink ('krb5cc_test', 't/data/test.keyring');

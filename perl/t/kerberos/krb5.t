@@ -67,7 +67,7 @@ ok ($ctx_princ, 'get_principal works');
 
 eval { ($tgt, $expiration) = $context->export_cred };
 is ($@, '', 'export_cred works');
-ok ($expiration, ' and returns an expiration time');
+ok ($expiration, '... and returns an expiration time');
 
 # If our user is in a realm other than our default realm, we can't use the
 # results of service_principal by itself, since it's qualified with the wrong
@@ -77,8 +77,8 @@ eval {
         = $context->export_cred ($wa_principal);
 };
 is ($@, '', 'krb5_export_cred works');
-ok ($ticket, ' and returns a ticket');
-ok ($expiration, ' and an expiration time');
+ok ($ticket, '... and returns a ticket');
+ok ($expiration, '... and an expiration time');
 
 # Nuke current context and import from tgt we created.
 eval {

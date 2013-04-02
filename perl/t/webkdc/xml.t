@@ -118,4 +118,4 @@ $doc->end ('bar');
 is ($doc->current->name, 'foo', 'Closing a tag by name works');
 eval { $doc->end ('baz') };
 like ($@, qr{^name mismatch in end: expecting baz, saw foo}ms,
-      '...and giving a wrong tag name croaks');
+      '... and giving a wrong tag name croaks');

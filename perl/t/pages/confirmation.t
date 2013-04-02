@@ -151,51 +151,51 @@ my $rt_base64 = $st->encode ($client_keyring);
 # Create the weblogin object and make sure it looks as it should.
 my $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ok ($weblogin, 'getting Weblogin object works');
-is ($weblogin->param ('debug'), 0, ' and debug is not set');
-is ($weblogin->param ('logging'), 0, ' and logging is not set');
-ok (defined $weblogin->{request}, ' and we got a WebRequest');
-ok (defined $weblogin->{response}, ' and we got a WebResponse');
+is ($weblogin->param ('debug'), 0, '... and debug is not set');
+is ($weblogin->param ('logging'), 0, '... and logging is not set');
+ok (defined $weblogin->{request}, '... and we got a WebRequest');
+ok (defined $weblogin->{response}, '... and we got a WebResponse');
 
 # Set up the KDC request and test that things were set up correctly.
 my ($status, $error);
 $status = $weblogin->setup_kdc_request;
 ok (!$status, 'setup_kdc_request works');
-is ($weblogin->{request}->user, $user, ' and username set');
-is ($weblogin->{request}->pass, $pass, ' and password set');
+is ($weblogin->{request}->user, $user, '... and username set');
+is ($weblogin->{request}->pass, $pass, '... and password set');
 is ($weblogin->{request}->local_ip_addr, $ENV{SERVER_ADDR},
-   ' and SERVER_ADDR set');
+   '... and SERVER_ADDR set');
 is ($weblogin->{request}->local_ip_port, $ENV{SERVER_PORT},
-   ' and SERVER_PORT set');
+   '... and SERVER_PORT set');
 is ($weblogin->{request}->remote_ip_addr, $ENV{REMOTE_ADDR},
-   ' and REMOTE_ADDR set');
+   '... and REMOTE_ADDR set');
 is ($weblogin->{request}->remote_ip_port, $ENV{REMOTE_PORT},
-   ' and REMOTE_PORT set');
+   '... and REMOTE_PORT set');
 is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
-   ' and REMOTE_USER set');
+   '... and REMOTE_USER set');
 
 # Success with user having a pending password change.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
 my @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page with pending password expiration was printed');
-is ($output[0], "username $user", ' and username was set');
+is ($output[0], "username $user", '... and username was set');
 is ($output[1],
     'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
-    ' and return_url was set');
+    '... and return_url was set');
 is ($output[2], 'pretty_return_url https://test.example.org',
-    ' and pretty_return_url was set');
-is ($output[3], 'login_cancel ', ' and login_cancel was not set');
-is ($output[4], 'cancel_url ', ' and cancel_url was not set');
-is ($output[5], 'show_remuser ', ' and show_remuser was not set');
-is ($output[6], 'remuser ', ' and remuser was not set');
-is ($output[7], 'script_name ', ' and script name was not set');
+    '... and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '... and login_cancel was not set');
+is ($output[4], 'cancel_url ', '... and cancel_url was not set');
+is ($output[5], 'show_remuser ', '... and show_remuser was not set');
+is ($output[6], 'remuser ', '... and remuser was not set');
+is ($output[7], 'script_name ', '... and script name was not set');
 
-is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-ok ($output[9] =~ /^expire_timestamp \S+/, ' and expire_timestamp was set');
-is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
-ok ($output[11] =~ /^CPT \S+/, ' and CPT was set');
-is ($output[12], 'public_computer ', ' and public_computer was not set');
-is ($output[13], 'device_expiring ', ' and device_expiring was not set');
+is ($output[8], 'warn_expire 1', '... and warn_expire was set');
+ok ($output[9] =~ /^expire_timestamp \S+/, '... and expire_timestamp was set');
+is ($output[10], 'pwchange_url /pwchange', '... and pwchange_url was set');
+ok ($output[11] =~ /^CPT \S+/, '... and CPT was set');
+is ($output[12], 'public_computer ', '... and public_computer was not set');
+is ($output[13], 'device_expiring ', '... and device_expiring was not set');
 
 # Success with no password expiration time.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -203,23 +203,23 @@ $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page was printed');
-is ($output[0], "username testuser3", ' and username was set');
+is ($output[0], "username testuser3", '... and username was set');
 is ($output[1],
     'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
-    ' and return_url was set');
+    '... and return_url was set');
 is ($output[2], 'pretty_return_url https://test.example.org',
-    ' and pretty_return_url was set');
-is ($output[3], 'login_cancel ', ' and login_cancel was not set');
-is ($output[4], 'cancel_url ', ' and cancel_url was not set');
-is ($output[5], 'show_remuser ', ' and show_remuser was not set');
-is ($output[6], 'remuser ', ' and remuser was not set');
-is ($output[7], 'script_name ', ' and script name was not set');
-is ($output[8], 'warn_expire ', ' and warn_expire was not set');
-is ($output[9], 'expire_timestamp ', ' and expire_timestamp was not set');
-is ($output[10], 'pwchange_url ', ' and pwchange_url was not set');
-is ($output[11], 'CPT ', ' and CPT was not set');
-is ($output[12], 'public_computer ', ' and public_computer was not set');
-is ($output[13], 'device_expiring ', ' and device_expiring was not set');
+    '... and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '... and login_cancel was not set');
+is ($output[4], 'cancel_url ', '... and cancel_url was not set');
+is ($output[5], 'show_remuser ', '... and show_remuser was not set');
+is ($output[6], 'remuser ', '... and remuser was not set');
+is ($output[7], 'script_name ', '... and script name was not set');
+is ($output[8], 'warn_expire ', '... and warn_expire was not set');
+is ($output[9], 'expire_timestamp ', '... and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', '... and pwchange_url was not set');
+is ($output[11], 'CPT ', '... and CPT was not set');
+is ($output[12], 'public_computer ', '... and public_computer was not set');
+is ($output[13], 'device_expiring ', '... and device_expiring was not set');
 
 # FIXME: Testing remuser requires us to fake a cookie, which we'll do in
 #        a later revision.
@@ -231,52 +231,52 @@ $ENV{REMOTE_USER} = $user;
 @output = index_wrapper ($weblogin, $status, $error);
 $WebKDC::Config::REMUSER_REDIRECT = '';
 ok (@output, 'success page with remuser redirect checkbox was printed');
-is ($output[0], "username $user", ' and username was set');
+is ($output[0], "username $user", '... and username was set');
 is ($output[1],
     'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
-    ' and return_url was set');
+    '... and return_url was set');
 is ($output[2], 'pretty_return_url https://test.example.org',
-    ' and pretty_return_url was set');
-is ($output[3], 'login_cancel ', ' and login_cancel was set');
-is ($output[4], 'cancel_url ', ' and cancel_url was set');
-is ($output[5], 'show_remuser 1', ' and show_remuser was set');
-is ($output[6], 'remuser ', ' and remuser was set');
-is ($output[7], 'script_name /login', ' and script name was set');
-is ($output[8], 'warn_expire 1', ' and warn_expire was set');
-ok ($output[9] =~ /^expire_timestamp \S+/, ' and expire_timestamp was set');
-is ($output[10], 'pwchange_url /pwchange', ' and pwchange_url was set');
-ok ($output[11] =~ /^CPT \S+/, ' and CPT was set');
-is ($output[12], 'public_computer ', ' and public_computer was not set');
-is ($output[13], 'device_expiring ', ' and device_expiring was not set');
+    '... and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '... and login_cancel was set');
+is ($output[4], 'cancel_url ', '... and cancel_url was set');
+is ($output[5], 'show_remuser 1', '... and show_remuser was set');
+is ($output[6], 'remuser ', '... and remuser was set');
+is ($output[7], 'script_name /login', '... and script name was set');
+is ($output[8], 'warn_expire 1', '... and warn_expire was set');
+ok ($output[9] =~ /^expire_timestamp \S+/, '... and expire_timestamp was set');
+is ($output[10], 'pwchange_url /pwchange', '... and pwchange_url was set');
+ok ($output[11] =~ /^CPT \S+/, '... and CPT was set');
+is ($output[12], 'public_computer ', '... and public_computer was not set');
+is ($output[13], 'device_expiring ', '... and device_expiring was not set');
 
 # Expired password.
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64, \%PAGES);
 ($status, $error) = (WebKDC::WK_ERR_CREDS_EXPIRED, '');
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page with remuser redirect checkbox was printed');
-is ($output[0], 'error ', ' and error was not set');
-is ($output[1], 'err_username ', ' and err_username was not set');
-is ($output[2], 'err_password ', ' and err_password was not set');
-is ($output[3], 'err_newpassword ', ' and err_newpassword was not set');
+is ($output[0], 'error ', '... and error was not set');
+is ($output[1], 'err_username ', '... and err_username was not set');
+is ($output[2], 'err_password ', '... and err_password was not set');
+is ($output[3], 'err_newpassword ', '... and err_newpassword was not set');
 is ($output[4], 'err_newpassword_match ',
-    ' and err_newpassword_match was not set');
-is ($output[5], 'err_loginfailed ', ' and err_loginfailed was not set');
-is ($output[6], 'err_rejected ', ' and err_rejected was not set');
-is ($output[7], 'err_pwweak ', ' and err_pwweak was not set');
-is ($output[8], 'err_pwchange ', ' and err_pwchange was not set');
-is ($output[9], 'err_msg ', ' and err_msg was not set');
-ok ($output[10] =~ /RT \S+/, ' and RT was set');
-ok ($output[11] =~ /ST \S+/, ' and ST was set');
-ok ($output[12] =~ /CPT \S+/, ' and CPT was set');
-is ($output[13], "username $user", ' and username was set');
-is ($output[14], 'password ', ' and password was not set');
-is ($output[15], 'new_passwd1 ', ' and new_passwd1 was not set');
-is ($output[16], 'new_passwd2 ', ' and new_passwd2 was not set');
-is ($output[17], 'changepw ', ' and changepw was not set');
-is ($output[18], 'expired 1', ' and expired was set');
-is ($output[19], 'skip_username 1', ' and skip_username was set');
-is ($output[20], 'skip_password 1', ' and skip_password was set');
-is ($output[21], 'script_name /pwchange', ' and script_name was set');
+    '... and err_newpassword_match was not set');
+is ($output[5], 'err_loginfailed ', '... and err_loginfailed was not set');
+is ($output[6], 'err_rejected ', '... and err_rejected was not set');
+is ($output[7], 'err_pwweak ', '... and err_pwweak was not set');
+is ($output[8], 'err_pwchange ', '... and err_pwchange was not set');
+is ($output[9], 'err_msg ', '... and err_msg was not set');
+ok ($output[10] =~ /RT \S+/, '... and RT was set');
+ok ($output[11] =~ /ST \S+/, '... and ST was set');
+ok ($output[12] =~ /CPT \S+/, '... and CPT was set');
+is ($output[13], "username $user", '... and username was set');
+is ($output[14], 'password ', '... and password was not set');
+is ($output[15], 'new_passwd1 ', '... and new_passwd1 was not set');
+is ($output[16], 'new_passwd2 ', '... and new_passwd2 was not set');
+is ($output[17], 'changepw ', '... and changepw was not set');
+is ($output[18], 'expired 1', '... and expired was set');
+is ($output[19], 'skip_username 1', '... and skip_username was set');
+is ($output[20], 'skip_password 1', '... and skip_password was set');
+is ($output[21], 'script_name /pwchange', '... and script_name was set');
 
 # Public computer setting passed along to confirmation page.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
@@ -285,23 +285,23 @@ $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64,
 $weblogin->query->param (public_computer => 1);
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page was printed for login from public computer');
-is ($output[0], "username testuser3", '...and username was set');
+is ($output[0], "username testuser3", '... and username was set');
 is ($output[1],
     'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
-    '...and return_url was set');
+    '... and return_url was set');
 is ($output[2], 'pretty_return_url https://test.example.org',
-    '...and pretty_return_url was set');
-is ($output[3], 'login_cancel ', '...and login_cancel was not set');
-is ($output[4], 'cancel_url ', '...and cancel_url was not set');
-is ($output[5], 'show_remuser ', '...and show_remuser was not set');
-is ($output[6], 'remuser ', '...and remuser was not set');
-is ($output[7], 'script_name ', '...and script name was not set');
-is ($output[8], 'warn_expire ', '...and warn_expire was not set');
-is ($output[9], 'expire_timestamp ', '...and expire_timestamp was not set');
-is ($output[10], 'pwchange_url ', '...and pwchange_url was not set');
-is ($output[11], 'CPT ', '...and CPT was not set');
-is ($output[12], 'public_computer 1', '...and public_computer was set');
-is ($output[13], 'device_expiring ', '...and device_expiring was not set');
+    '... and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '... and login_cancel was not set');
+is ($output[4], 'cancel_url ', '... and cancel_url was not set');
+is ($output[5], 'show_remuser ', '... and show_remuser was not set');
+is ($output[6], 'remuser ', '... and remuser was not set');
+is ($output[7], 'script_name ', '... and script name was not set');
+is ($output[8], 'warn_expire ', '... and warn_expire was not set');
+is ($output[9], 'expire_timestamp ', '... and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', '... and pwchange_url was not set');
+is ($output[11], 'CPT ', '... and CPT was not set');
+is ($output[12], 'public_computer 1', '... and public_computer was set');
+is ($output[13], 'device_expiring ', '... and device_expiring was not set');
 # Check print_confirm_page (public_computer = 1)
 
 # Device factor expiring setting passed along to confirmation page.
@@ -313,24 +313,24 @@ $weblogin->{response}->cookie('webauth_wft', 1, time + 30);
 ($status, $error) = (WebKDC::WK_SUCCESS, '');
 @output = index_wrapper ($weblogin, $status, $error);
 ok (@output, 'success page was printed for login from public computer');
-is ($output[0], "username testuser3", '...and username was set');
+is ($output[0], "username testuser3", '... and username was set');
 is ($output[1],
     'return_url https://test.example.org/?WEBAUTHR=TestResponse;',
-    '...and return_url was set');
+    '... and return_url was set');
 is ($output[2], 'pretty_return_url https://test.example.org',
-    '...and pretty_return_url was set');
-is ($output[3], 'login_cancel ', '...and login_cancel was not set');
-is ($output[4], 'cancel_url ', '...and cancel_url was not set');
-is ($output[5], 'show_remuser ', '...and show_remuser was not set');
-is ($output[6], 'remuser ', '...and remuser was not set');
-is ($output[7], 'script_name ', '...and script name was not set');
-is ($output[8], 'warn_expire ', '...and warn_expire was not set');
-is ($output[9], 'expire_timestamp ', '...and expire_timestamp was not set');
-is ($output[10], 'pwchange_url ', '...and pwchange_url was not set');
-is ($output[11], 'CPT ', '...and CPT was not set');
-is ($output[12], 'public_computer ', '...and public_computer was not set');
+    '... and pretty_return_url was set');
+is ($output[3], 'login_cancel ', '... and login_cancel was not set');
+is ($output[4], 'cancel_url ', '... and cancel_url was not set');
+is ($output[5], 'show_remuser ', '... and show_remuser was not set');
+is ($output[6], 'remuser ', '... and remuser was not set');
+is ($output[7], 'script_name ', '... and script name was not set');
+is ($output[8], 'warn_expire ', '... and warn_expire was not set');
+is ($output[9], 'expire_timestamp ', '... and expire_timestamp was not set');
+is ($output[10], 'pwchange_url ', '... and pwchange_url was not set');
+is ($output[11], 'CPT ', '... and CPT was not set');
+is ($output[12], 'public_computer ', '... and public_computer was not set');
 like ($output[13], qr{^device_expiring \d+$},
-      '...and device_expiring was set');
+      '... and device_expiring was set');
 $WebKDC::Config::FACTOR_WARNING = $default_factor_warning;
 # Check print_confirm_page (device_expiring = 1)
 

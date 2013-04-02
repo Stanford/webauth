@@ -92,7 +92,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
     }
 }
 is ($cookie->name, $cookie_name, 'SSO cookie was set');
-is ($cookie->expires, undef, '...with the default lifetime');
+is ($cookie->expires, undef, '... with the default lifetime');
 
 # Check clearing an SSO cookie by giving it an empty value.
 $weblogin = init_weblogin;
@@ -108,7 +108,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name, 'SSO cookie with no content was set');
 my $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 
 # Check clearing an SSO cookie by setting the public computer checkbox
 # and nothing else.  That shouldn't clear it, as it should only be cleared
@@ -127,7 +127,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name,
     'SSO cookie on public computer during normal login process was set');
-is ($cookie->expires, undef, '...with the default lifetime');
+is ($cookie->expires, undef, '... with the default lifetime');
 
 # Check clearing an SSO cookie by setting the public computer checkbox
 # and a redirect URL.  This simulates a redirect without showing the confirm
@@ -148,7 +148,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 is ($cookie->name, $cookie_name,
     'SSO cookie on public computer redirecting without confirm was set');
 $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 
 # Check clearing an SSO cookie by setting the public computer checkbox,
 # and the flag for having come from the confirm page.  This should clear the
@@ -169,7 +169,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 is ($cookie->name, $cookie_name,
     'SSO cookie on public computer on confirm page');
 $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 
 # Check whether a cookie that's set in the browser's cookie jar will be
 # correctly cleared even if the response doesn't contain any cookies.
@@ -189,4 +189,4 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name, 'Expiring browser cookie not sent by WebKDC');
 $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire immediately');
+is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');

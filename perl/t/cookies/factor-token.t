@@ -84,15 +84,15 @@ $ENV{HTTP_COOKIE} = "$cookie";
 my %cart = CGI::Cookie->fetch;
 $status = $weblogin->setup_kdc_request (%cart);
 ok (!$status, 'setup_kdc_request with factor cookie works');
-ok ($weblogin->{request}->factor_token, '...and factor_token set');
-is ($weblogin->{request}->factor_token, 'test', '...to the right value');
+ok ($weblogin->{request}->factor_token, '... and factor_token set');
+is ($weblogin->{request}->factor_token, 'test', '... to the right value');
 
 # Check again with no factor cookie.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
 $ENV{HTTP_COOKIE} = "";
 ok (!$status, 'setup_kdc_request without factor cookie works');
-is ($weblogin->{request}->factor_token, undef, '...and factor_token not set');
+is ($weblogin->{request}->factor_token, undef, '... and factor_token not set');
 
 # Check to see if we set a factor cookie when we should.  Requires digging
 # into the CGI::Application object a little.
@@ -108,7 +108,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
     }
 }
 is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
-is ($cookie->expires, $expires_text, '...with the correct expiration time');
+is ($cookie->expires, $expires_text, '... with the correct expiration time');
 
 # Check clearing the webauth cookie by giving it an empty value.
 $weblogin = init_weblogin;
@@ -124,7 +124,7 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
 my $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...with the correct expiration time');
+is ($expires, time - 60 * 60 * 24, '... with the correct expiration time');
 
 # Check clearing the webauth cookie by setting the public computer checkbox.
 $weblogin = init_weblogin;
@@ -141,4 +141,4 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, 'webauth_wft', 'Factor cookie on public computer was set');
 $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '...and set to expire now');
+is ($expires, time - 60 * 60 * 24, '... and set to expire now');
