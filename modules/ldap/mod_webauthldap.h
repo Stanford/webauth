@@ -24,9 +24,6 @@
 #include <apr_thread_mutex.h>
 #include <httpd.h>              /* server_rec, request_rec, command_rec */
 
-/* The module initialization struct, used to retrieve configuration. */
-extern module webauthldap_module;
-
 /* Command table provided by the configuration handling code. */
 extern const command_rec webauthldap_cmds[];
 

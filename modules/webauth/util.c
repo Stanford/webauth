@@ -2,7 +2,7 @@
  * Utility functions for the WebAuth Apache module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -16,6 +16,8 @@
 #include <modules/webauth/mod_webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
+
+APLOG_USE_MODULE(webauth);
 
 
 static request_rec *

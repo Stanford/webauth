@@ -2,7 +2,7 @@
  * Token ACL file handling for the Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009, 2012
+ * Copyright 2002, 2003, 2006, 2009, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -15,6 +15,9 @@
 #include <apr_hash.h>
 
 #include <modules/webkdc/mod_webkdc.h>
+
+APLOG_USE_MODULE(webkdc);
+
 
 /*
  * used to hold the result of reading the acl file

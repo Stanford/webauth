@@ -22,7 +22,7 @@
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 
-module AP_MODULE_DECLARE_DATA webauth_module;
+APLOG_USE_MODULE(webauth);
 
 
 static void

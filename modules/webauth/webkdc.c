@@ -2,7 +2,7 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -22,6 +22,8 @@
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 #include <webauth/was.h>
+
+APLOG_USE_MODULE(webauth);
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA

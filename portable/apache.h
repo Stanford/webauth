@@ -81,4 +81,14 @@
 # define ap_unixd_config unixd_config
 #endif
 
+/*
+ * This macro was added in Apache 2.4.  It declares both the per-module
+ * logging data and the module data struct.  In earlier versions, declare the
+ * data struct so that we can rely on it being declared for other purposes.
+ */
+#ifndef APLOG_USE_MODULE
+# define APLOG_USE_MODULE(foo) \
+    extern module AP_MODULE_DECLARE_DATA foo##_module;
+#endif
+
 #endif /* !PORTABLE_APACHE_H */

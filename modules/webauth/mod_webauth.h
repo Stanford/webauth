@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -21,9 +21,6 @@
 
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
-
-/* The module initialization struct, used to retrieve configuration. */
-extern module webauth_module;
 
 /* Command table provided by the configuration handling code. */
 extern const command_rec webauth_cmds[];

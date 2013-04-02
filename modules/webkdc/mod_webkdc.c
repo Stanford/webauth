@@ -25,6 +25,8 @@
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
+APLOG_USE_MODULE(webkdc);
+
 
 /*
  * if msg has any whitespace or double quotes in it, enclose
@@ -2437,6 +2439,7 @@ handler_hook(request_rec *r)
     const char *req_content_type;
     struct webauth_webkdc_config config;
 
+    /* Initialize our request context. */
     memset(&rc, 0, sizeof(rc));
     status = webauth_context_init_apr(&rc.ctx, r->pool);
     if (status != WA_ERR_NONE) {

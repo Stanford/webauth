@@ -6,7 +6,7 @@
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Based on original code by Anton Ushakov
- * Copyright 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -22,6 +22,8 @@
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
+
+APLOG_USE_MODULE(webauthldap);
 
 /*
  * For each directive, we have the directive name (CD_), a usage string (CU_),

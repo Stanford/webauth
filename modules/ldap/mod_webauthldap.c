@@ -35,7 +35,7 @@
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
 
-module AP_MODULE_DECLARE_DATA webauthldap_module;
+APLOG_USE_MODULE(webauthldap);
 
 
 /**

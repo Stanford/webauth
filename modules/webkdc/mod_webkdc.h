@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -45,8 +45,6 @@ enum mwk_status {
     MWK_ERROR = 0,
     MWK_OK = 1
 };
-
-extern module webkdc_module;
 
 /* Command table provided by the configuration handling code. */
 extern const command_rec webkdc_cmds[];
