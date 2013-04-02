@@ -571,12 +571,17 @@ merge_webkdc_proxy(struct webauth_context *ctx, apr_array_header_t *creds,
             created = true;
         }
 
-        /* Grab the krb5 authenticator if that's better than what we have. */
+        /*
+         * Grab the krb5 authenticator if that's better than what we have.  If
+         * we do this, also update the proxy subject, since it's probably more
+         * specific.
+         */
         if (strcmp(best->proxy_type, "krb5") != 0
             && strcmp(wkproxy->proxy_type, "krb5") == 0) {
             best->data = wkproxy->data;
             best->data_len = wkproxy->data_len;
             best->proxy_type = wkproxy->proxy_type;
+            best->proxy_subject = wkproxy->proxy_subject;
         }
 
         /* Add on its initial factors to our accumulated ones. */
