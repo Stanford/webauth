@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='February' year='2013' />
+    <date month='April' year='2013' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1036,36 +1036,89 @@
 
         <section anchor='xmlgettokens' title='getTokens'>
           <t>The getTokens command is used to request tokens (service, id,
-          proxy, or credential).</t>
+          proxy, or credential).  It is used in two fundamentally
+          different ways: for a WebAuth Application Server to request a
+          webkdc-service token from the WebKDC, and for a WAS to use a
+          proxy token it acquired from the user to request cred or id
+          tokens.</t>
 
           <figure>
-            <preamble>The request message is:</preamble>
+            <preamble>
+              The request message for obtaining a service token is:
+            </preamble>
             <artwork><![CDATA[
   <getTokensRequest>
-    <requesterCredential type="service|krb5">
-       <!-- for type="service" -->
-       {base64-webkdc-service-token}
-       <!-- for type="krb5" -->
+    <requesterCredential type="krb5">
        {base64-krb5-mk-req-data}
     </requesterCredential>
 
-    <!-- not present when only requesting a webkdc-service token -->
+    <tokens>
+      <token type="service" id="{id-for-response}"/>
+    </tokens>
+  </getTokensRequest>
+]]></artwork>
+          </figure>
+
+          <figure>
+            <preamble>The response message is:</preamble>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="{id-from-request}">
+        <tokenData>{base64}</tokenData>
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
+          </figure>
+
+          <t>The id attribute to the &lt;token> element in the request is
+          optional and is normally omitted, since the WAS is only
+          requesting one token.  If it is omitted in the request, it is
+          also omitted in the response.</t>
+
+          <t>If any errors occur, an &lt;errorResponse> message will be
+          returned instead.</t>
+
+          <t>The second form of this request is used by the WAS to obtain
+          additional credentials from a proxy token.  This is used when
+          the WAS may need Kerberos credentials on behalf of the user, and
+          therefore requested a proxy token instead of an id token in the
+          original authentication request to the WebKDC.  The
+          &lt;getTokensRequest> request message is used to obtain those
+          cred tokens plus an id token.</t>
+
+          <t>requesterCredentials of type "krb5" can only be used to obtain
+          a webkdc-service token.  They can't be used for obtaining any
+          other tokens, nor can a credential of type "service" be used to
+          request another webkdc-service token.  In all other cases, the
+          requesterCredentials are a webkdc-service token.</t>
+
+          <figure>
+            <preamble>
+              The request message for obtaining other tokens from a proxy
+              token is:
+            </preamble>
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service">
+       {base64-webkdc-service-token}
+    </requesterCredential>
+
     <subjectCredential type="proxy">
        <proxyToken>{base64-webkdc-proxy-token}</proxyToken>
        <!-- additional <proxyToken>...</proxyToken> here -->
     </subjectCredential>
 
-    <!-- present when requestCredential is of type="service" -->
     <requestToken>{base64-request-token}</requestToken>
 
     <tokens>
-      <token type="id|proxy|service|cred" id="{id-for-response}">
+      <token type="id|cred" id="{id-for-response}">
         <!-- for type="id" -->
         <!-- optional, default is krb5 -->
         <authenticator type="krb5|webkdc"/>
-
-        <!-- for type="proxy" -->
-        <proxyType>krb5</proxyType>
 
         <!-- for type="cred" -->
         <credentialType>krb5</credentialType>
@@ -1084,10 +1137,6 @@
     <tokens>
       <token id="{id-from-request}">
         <tokenData>{base64}</tokenData>
-
-        <!-- for type="service" -->
-        <sessionKey>{base64-session-key}</sessionKey>
-        <expires>{expiration-time}</expires>
       </token>
       <!-- additional <token>...</token> responses go here -->
     </tokens>
@@ -1095,25 +1144,16 @@
 ]]></artwork>
           </figure>
 
+          <t>Here, the credentials provided are a previously-requested
+          webkdc-service token instead of a Kerberos authenticator, and
+          the proxy token received from the user's browser is also
+          included.  In this form of the request, the WAS also includes a
+          request token, encrypted in the session key of the
+          webkdc-service token, to prove that it has possession of the
+          session key.</t>
+
           <t>If any errors occur, an &lt;errorResponse> message will be
           returned instead.</t>
-
-          <t>When the WAS is requesting a webkdc-service token and a
-          corresponding session key, it provides requesterCredentials of
-          type "krb5", does not include subjectCredential or requestToken,
-          and asks only for a single service token.  Otherwise, it
-          provides requesterCredentials of type "service", includes the
-          proxy token in subjectCredential and a request token, and asks
-          for one or more "id" or "cred" tokens.</t>
-
-          <t>requesterCredentials of type "krb5" can only be used to obtain
-          a webkdc-service token.  They can't be used for obtaining any
-          other tokens, nor can a credential of type "service" be used to
-          request another webkdc-service token.  In all other cases, the
-          requesterCredentials are a webkdc-service token.</t>
-
-          <t>subjectCredentials are required when requesting id, proxy, or
-          cred tokens.</t>
         </section>
 
         <section anchor='xmlrequesttoken' title='requestToken'>
@@ -1463,7 +1503,7 @@
         {base64-krb5-mk-req-data}
      </requesterCredential>
      <tokens>
-       <token type="service" id="0"/>
+       <token type="service"/>
      </tokens>
   </getTokensRequest>
 ]]></artwork>
@@ -1474,7 +1514,7 @@
             <artwork><![CDATA[
   <getTokensResponse>
     <tokens>
-      <token id="0">
+      <token>
         <sessionKey>{base64-session-key}</sessionKey>
         <expires>{expiration-time}</expires>
         <tokenData>{base64}</tokenData>
@@ -1966,10 +2006,12 @@
           authentication or forwarded Kerberos ticket) have a ps attribute
           value of WEBKDC:remuser.</t>
 
-          <t>When a webkdc-proxy-token is used, the WebKDC checks that the
-          subject in the webkdc-service token accompanying the request is
-          authorized to used the webkdc-proxy token granted to the ps
-          subject or that the ps subject starts with "WEBKDC:".</t>
+          <t>When a webkdc-proxy-token is used in a &lt;getTokensRequest>
+          message, the WebKDC checks that the subject in the
+          webkdc-service token accompanying the request is authorized to
+          used the webkdc-proxy token granted to the ps subject.  When
+          used in a &lt;requestTokensRequest>, the WebKDC checks that the
+          ps subject starts with "WEBKDC:".</t>
         </section>
 
         <section anchor='tokenwebkdcfactor' title='webkdc-factor Token
@@ -2571,9 +2613,12 @@
           &lt;factorTokens> element to the &lt;requestTokenResponse> API,
           and the d factor.</t>
 
-          <t hangText='3.4.1 (2013-03-13, rra)'>
-          <vspace blankLines='0'/>Include the expiration time of a factor
-          token in the &lt;requesttokenResponse&gt; response as an
+          <t hangText='3.5.0 (2013-04-02, rra)'>
+          <vspace blankLines='0'/>Clarify the two cases for a
+          &lt;getTokenRequest> and remove the ability to request proxy
+          tokens.  Clarify the proxy subject checking in the webkdc-proxy
+          token encoding description.  Include the expiration time of a
+          factor token in the &lt;requestTokenResponse&gt; response as an
           attribute on the &lt;factorToken&gt; element.  Clarify that the
           webkdc-factor expiration time reflects when it stops
           contributing factors to new authentications, not when those
