@@ -22,6 +22,21 @@
 
 
 /*
+ * A callback to test logging of warnings.  Takes a char ** and stores the
+ * message in newly-allocated memory at that address.
+ */
+static void
+log_callback(struct webauth_context *ctx UNUSED, void *data,
+             const char *message)
+{
+    char **buffer = data;
+
+    free(*buffer);
+    *buffer = bstrdup(message);
+}
+
+
+/*
  * Check a user OTP validation.  Takes the OTP code and a flag indicating
  * whether the validation will be successful or not.  Always attempts with the
  * user "full" and verifies that the standard data is returned.
@@ -82,6 +97,7 @@ main(void)
     struct webauth_login *login;
     const char url[] = "https://example.com/";
     const char restrict_url[] = "https://example.com/restrict/";
+    char *warnings = NULL;
     int status;
 
     /* Skip this test if built without remctl support. */
@@ -95,7 +111,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(180);
+    plan(184);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -398,12 +414,13 @@ main(void)
               " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
 
-    /* Try the query again with ignore_failure set. */
+    /* Try the query again with ignore_failure set and capture warnings. */
+    webauth_log_callback(ctx, WA_LOG_WARN, log_callback, &warnings);
     config.ignore_failure = true;
     status = webauth_user_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
     status = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
-    is_int(status, WA_ERR_NONE, "Metadata for delay now succeeds");
+    is_int(WA_ERR_NONE, status, "Metadata for delay now succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
@@ -414,11 +431,14 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
+    is_string("a remote service call failed"
+              " (error receiving token: timed out)", warnings,
+              "...and logged warning is correct");
 
     /* Try the query again with ignore_failure and random multifactor. */
     is_int(WA_ERR_NONE, status, "Config with timeout, ignore, random");
     status = webauth_user_info(ctx, "delay", NULL, 1, url, NULL, &info);
-    is_int(status, WA_ERR_NONE, "Metadata for delay w/random succeeds");
+    is_int(WA_ERR_NONE, status, "Metadata for delay w/random succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
@@ -429,14 +449,20 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
+    is_string("a remote service call failed"
+              " (error receiving token: timed out)", warnings,
+              "...and logged warning is correct");
 
     /* Attempt a login again, which should still fail. */
+    free(warnings);
+    warnings = NULL;
     status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
                                    &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
               webauth_error_message(ctx, status), "...with correct error");
+    is_string(NULL, warnings, "...and there are no warnings");
 
     /* Attempt a login to a restricted site.  This should return an error. */
     config.ignore_failure = false;
@@ -445,7 +471,7 @@ main(void)
     is_int(WA_ERR_NONE, status, "Config back to normal");
     status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL,
                                &info);
-    is_int(status, WA_ERR_NONE, "Metadata for restricted URL succeeds");
+    is_int(WA_ERR_NONE, status, "Metadata for restricted URL succeeds");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
     else {
@@ -458,6 +484,7 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
+    is_string(NULL, warnings, "...and there are no warnings");
 
     /* Clean up. */
     webauth_context_free(ctx);

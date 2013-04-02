@@ -624,8 +624,9 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
     if (status == WA_ERR_NONE && random_mf)
         (*info)->random_multifactor = true;
     else if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
-        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
+        wai_log_error(ctx, WA_LOG_WARN, status);
         status = WA_ERR_NONE;
+        *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     }
     return status;
 }
