@@ -374,6 +374,16 @@ int wai_token_encoding(struct webauth_context *, const struct webauth_token *,
                        const struct wai_encoding **, const void **)
     __attribute__((__nonnull__));
 
+/*
+ * Merge an array of webkdc-factor tokens into a single token.  Takes the
+ * context, the array of webkdc-factor tokens, and a place to store the newly
+ * created webkdc-factor token.  Returns a WebAuth error code.
+ */
+int wai_token_merge_webkdc_factor(struct webauth_context *,
+                                  const apr_array_header_t *,
+                                  struct webauth_token **)
+    __attribute__((__nonnull__));
+
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)
     __attribute__((__nonnull__));

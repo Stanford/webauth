@@ -13,6 +13,7 @@ lib/krb5-tgt
 lib/token-crypto
 lib/token-decode
 lib/token-encode
+lib/token-merge
 lib/userinfo
 lib/was-cache
 lib/webkdc-krb

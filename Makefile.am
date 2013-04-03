@@ -115,8 +115,8 @@ lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
 	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
 	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
 	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
-	lib/userinfo.c lib/util.c lib/was-cache.c lib/webkdc-config.c	  \
-	lib/webkdc-login.c lib/xml.c
+	lib/token-merge.c lib/userinfo.c lib/util.c lib/was-cache.c	  \
+	lib/webkdc-config.c lib/webkdc-login.c lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
@@ -313,23 +313,24 @@ check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t \
 	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		  \
 	tests/lib/krb5-cred-t tests/lib/krb5-tgt-t tests/lib/userinfo-t	  \
 	tests/lib/token-crypto-t tests/lib/token-decode-t		  \
-	tests/lib/token-encode-t tests/lib/was-cache-t			  \
-	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			  \
-	tests/lib/webkdc-mf-t tests/portable/asprintf-t			  \
-	tests/portable/mkstemp-t tests/portable/setenv-t		  \
-	tests/portable/snprintf-t tests/portable/strlcat-t		  \
-	tests/portable/strlcpy-t tests/portable/strndup-t		  \
-	tests/util/messages-t tests/util/xmalloc
+	tests/lib/token-encode-t tests/lib/token-merge-t		  \
+	tests/lib/was-cache-t tests/lib/webkdc-krb-t			  \
+	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			  \
+	tests/portable/asprintf-t tests/portable/mkstemp-t		  \
+	tests/portable/setenv-t tests/portable/snprintf-t		  \
+	tests/portable/strlcat-t tests/portable/strlcpy-t		  \
+	tests/portable/strndup-t tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(KRB5_CPPFLAGS)
+	$(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/macros.h tests/tap/messages.h tests/tap/process.c	\
 	tests/tap/process.h tests/tap/remctl.c tests/tap/remctl.h	\
-	tests/tap/string.c tests/tap/string.h
+	tests/tap/string.c tests/tap/string.h tests/tap/webauth.c	\
+	tests/tap/webauth.h
 
 # All of the test programs.
 tests_lib_apr_buffer_t_SOURCES = lib/apr-buffer.c tests/lib/apr-buffer-t.c
@@ -375,6 +376,11 @@ tests_lib_token_decode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_token_encode_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
+tests_lib_token_merge_t_SOURCES = lib/errors.c lib/token-merge.c \
+	tests/lib/token-merge-t.c
+tests_lib_token_merge_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_token_merge_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(APR_LIBS)
 tests_lib_was_cache_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la
 tests_lib_webkdc_krb_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)

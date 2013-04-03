@@ -60,6 +60,7 @@
 /tests/lib/token-crypto-t
 /tests/lib/token-decode-t
 /tests/lib/token-encode-t
+/tests/lib/token-merge-t
 /tests/lib/userinfo-t
 /tests/lib/was-cache-t
 /tests/lib/webkdc-krb-t
