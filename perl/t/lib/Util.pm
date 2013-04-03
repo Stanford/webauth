@@ -18,6 +18,7 @@ use WebAuth qw(3.00 WA_KEY_AES WA_AES_128);
 use WebKDC::Config ();
 use WebLogin;
 use Template;
+use Test::More;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
@@ -27,33 +28,13 @@ $VERSION = '2.00';
 use Exporter ();
 @ISA    = qw(Exporter);
 @EXPORT = qw(contents get_userinfo remctld_spawn remctld_stop create_keyring
-             getcreds default_weblogin init_weblogin);
+    getcreds default_weblogin init_weblogin read_outputfile
+    index_wrapper compare_fields create_test_keyring create_test_st
+    create_test_rt page_configuration);
 
 ##############################################################################
-# General utility functions
+# Data setup functions
 ##############################################################################
-
-# Returns the username and password from a file that contains them both,
-# each on one line.
-sub get_userinfo  {
-    my ($file) = @_;
-    open (FILE, '<', $file) or die "cannot open $file: $!\n";
-    my $username = <FILE>;
-    my $password = <FILE>;
-    close FILE;
-    chomp ($username, $password);
-    return ($username, $password);
-}
-
-# Returns the one-line contents of a file as a string, removing the newline.
-sub contents {
-    my ($file) = @_;
-    open (FILE, '<', $file) or die "cannot open $file: $!\n";
-    my $data = <FILE>;
-    close FILE;
-    chomp $data;
-    return $data;
-}
 
 # Create and give default settings to a weblogin object.
 # TODO: Remove and replace with init_weblogin in all places.
@@ -89,7 +70,13 @@ sub default_weblogin {
 # Initialize the weblogin object, as we'll have to keep touching this over
 # and again.
 sub init_weblogin {
-    my ($username, $password, $st_base64, $rt_base64, $pages) = @_;
+    my ($username, $password, $st_base64, $rt_base64) = @_;
+
+    # Load a version of the page templates to only print out the vars sent.
+    my %pages = (pwchange => 'pwchange.tmpl',
+                 login    => 'login.tmpl',
+                 confirm  => 'confirm.tmpl',
+                 error    => 'error.tmpl');
 
     my $query = CGI->new ({});
     $query->request_method ('POST');
@@ -102,7 +89,7 @@ sub init_weblogin {
     $WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
 
     my $weblogin = WebLogin->new (QUERY  => $query,
-                                  PARAMS => { pages => $pages });
+                                  PARAMS => { pages => \%pages });
     $weblogin->cgiapp_prerun;
     $weblogin->param ('debug', 0);
     $weblogin->param ('logging', 0);
@@ -131,6 +118,165 @@ sub init_weblogin {
     }
 
     return $weblogin;
+}
+
+# Create and return a keyring for testing.
+sub create_test_keyring {
+    my ($wa) = @_;
+
+    unlink ('t/data/test.keyring', 'krb5cc_test');
+    $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
+    create_keyring ($WebKDC::Config::KEYRING_PATH);
+    my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
+}
+
+# Create and return the ST for testing.
+sub create_test_st {
+    my ($wa, $keyring) = @_;
+    my $principal = contents ('t/data/test.principal');
+    my $random = 'b' x WebAuth::WA_AES_128;
+    my $st = WebAuth::Token::WebKDCService->new ($wa);
+    $st->subject ("krb5:$principal");
+    $st->session_key ($random);
+    $st->creation (time);
+    $st->expiration (time + 3600);
+    my $st_base64 = $st->encode ($keyring);
+    return ($st, $st_base64);
+}
+
+# Create and return the RT for testing.
+sub create_test_rt {
+    my ($wa, $st) = @_;
+
+    my $random = 'b' x WebAuth::WA_AES_128;
+    my $key = $wa->key_create (WebAuth::WA_KEY_AES, WebAuth::WA_AES_128,
+                               $random);
+    my $client_keyring = $wa->keyring_new ($key);
+    my $rt = WebAuth::Token::Request->new ($wa);
+    $rt->type ('id');
+    $rt->auth ('webkdc');
+    $rt->return_url ('https://test.example.org/');
+    $rt->creation (time);
+    my $rt_base64 = $st->encode ($client_keyring);
+    return $rt_base64;
+}
+
+# For all of the various page tests, do the initial setup of various config
+# settings.
+sub page_configuration {
+    my ($user) = @_;
+
+    # Set our method to not have password tests complain.
+    $ENV{REQUEST_METHOD} = 'POST';
+
+    # Miscellaneous config settings.
+    $WebKDC::Config::EXPIRING_PW_URL = '/pwchange';
+    $WebKDC::Config::EXPIRING_PW_WARNING = 60 * 60 * 24 * 7;
+    $WebKDC::Config::EXPIRING_PW_RESEND_PASSWORD = 0;
+    $WebKDC::Config::REMUSER_REDIRECT = 0;
+    @WebKDC::Config::REMUSER_LOCAL_REALMS = ();
+    @WebKDC::Config::REMUSER_PERMITTED_REALMS = ();
+    $WebKDC::Config::BYPASS_CONFIRM = '';
+
+    # Disable all the memcached stuff for now.
+    @WebKDC::Config::MEMCACHED_SERVERS = ();
+    # If the username is fully qualified, set a default realm.
+    if ($user =~ /\@(\S+)/) {
+        $WebKDC::Config::DEFAULT_REALM = $1;
+        @WebKDC::Config::REMUSER_PERMITTED_REALMS = ($1);
+        @WebKDC::Config::REMUSER_LOCAL_REALMS = ($1);
+    }
+
+    # Set up various ENV variables later used for logging.
+    $ENV{SERVER_ADDR} = 'localhost';
+    $ENV{SERVER_PORT} = '443';
+    $ENV{REMOTE_ADDR} = '127.0.0.1';
+    $ENV{REMOTE_PORT} = '443';
+    $ENV{REMOTE_USER} = $user;
+    $ENV{SCRIPT_NAME} = '/login';
+}
+
+##############################################################################
+# Test wrappers
+##############################################################################
+
+# Given arrayrefs to the output variables and the variables we expect, run
+# checks for each value.  Because the expected values may contain regular
+# expressions, we don't use is_deeply, but check to see if the value starts
+# with a \.
+sub compare_fields {
+    my ($output, $check, @fields) = @_;
+
+    for my $field (@fields) {
+        if ($check->{$field} =~ m{^\\}) {
+            like ($output->{$field}, qr{$check->{$field}},
+                "... and $field matches what it should be");
+        } else {
+            is ($output->{$field}, $check->{$field},
+                "... and $field matches what it should be");
+        }
+    }
+}
+
+##############################################################################
+# I/O functions
+##############################################################################
+
+# Returns the username and password from a file that contains them both,
+# each on one line.
+sub get_userinfo  {
+    my ($file) = @_;
+    open (FILE, '<', $file) or die "cannot open $file: $!\n";
+    my $username = <FILE>;
+    my $password = <FILE>;
+    close FILE;
+    chomp ($username, $password);
+    return ($username, $password);
+}
+
+# Returns the one-line contents of a file as a string, removing the newline.
+sub contents {
+    my ($file) = @_;
+    open (FILE, '<', $file) or die "cannot open $file: $!\n";
+    my $data = <FILE>;
+    close FILE;
+    chomp $data;
+    return $data;
+}
+
+# Given the name of an output file matching the state of a template we want
+# to check against, read in that file and parse it into a hash of values that
+# we can use to validate against for tests.  Return that hash.
+sub read_outputfile {
+    my ($fname) = @_;
+    my %check;
+
+    open (my $check_fh, '<', $fname) or die "could not open test file: $!\n";
+    while (my $line = <$check_fh>) {
+        chomp $line;
+        my ($field, $value) = split (m{\s+}, $line);
+        if (!defined $value) {
+            $value = '' ;
+        }
+        $check{$field} = $value;
+    }
+    close $check_fh or die "could not close test file: $!\n";
+
+    return %check;
+}
+
+# Wrapper around WebLogin::index to grab the page output into a string and
+# return that output.  To make all the index runmode tests look cleaner.
+sub index_wrapper {
+    my ($weblogin) = @_;
+    my %output;
+
+    my $page = $weblogin->index;
+    for my $line (split (/[\r\n]+/, $$page)) {
+        my ($key, $value) = split (m{\s+}, $line);
+        $output{$key} = $value;
+    }
+    return %output;
 }
 
 ##############################################################################

@@ -1,0 +1,14 @@
+username thoron
+return_url https://test.example.org/?WEBAUTHR=TestResponse;
+pretty_return_url https://test.example.org
+login_cancel
+cancel_url
+show_remuser
+remuser
+script_name
+warn_expire 1
+expire_timestamp \S+
+pwchange_url /pwchange
+CPT \S+
+public_computer
+device_expiring

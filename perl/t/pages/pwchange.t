@@ -16,86 +16,57 @@ use lib ('t/lib', 'lib', 'blib/arch');
 use WebLogin;
 use CGI;
 use Template;
+use Util qw (init_weblogin read_outputfile index_wrapper);
 
 use File::Path qw (rmtree);
-use Test::More tests => 57;
+use Test::More tests => 17;
+
+#############################################################################
+# Support functions
+#############################################################################
+
+# Wrapper around WebLogin::index to grab the page output into a string and
+# return that output.  To make all the index runmode tests look cleaner.
+sub page_wrapper {
+    my ($weblogin, $rt, $st) = @_;
+    my %output;
+
+    my $page = $weblogin->print_pwchange_page ($rt, $st);
+    for my $line (split (/[\r\n]+/, $$page)) {
+        my ($key, $value) = split (m{\s+}, $line);
+        $output{$key} = $value;
+    }
+    return %output;
+}
+
+#############################################################################
+# Environment setup
+#############################################################################
 
 mkdir ('./t/tmp');
 
-# Load a version of the page templates that just prints out the vars sent.
-my %PAGES = (pwchange => 'pwchange.tmpl');
-$WebKDC::Config::TEMPLATE_PATH         = 't/data/templates';
-$WebKDC::Config::TEMPLATE_COMPILE_PATH = 't/tmp/ttc';
-
-# Set up a query with some test data.
-my $query = CGI->new;
-$query->param ('username', 'testuser');
-$query->param ('expired', 1);
-
-# Fake a weblogin object.
-my $weblogin = {};
-bless $weblogin, 'WebLogin';
-$weblogin->query ($query);
-$weblogin->param ('pages', \%PAGES);
+my $query;
+my $user = 'testuser';
+my $weblogin = init_weblogin ($user, '', 'TestST', 'TestRT');
+$weblogin->query->param ('expired', 1);
 $weblogin->param ('test_cookie', $WebLogin::TEST_COOKIE);
-$weblogin->tt_include_path (['t/data/templates']);
 
-# Move stdout to a string so we can check the page output.
-my $page = WebLogin::print_pwchange_page ($weblogin, 'TestRT', 'TestST');
-my @output = split (/[\r\n]+/, $$page);
+#############################################################################
+# Testing
+#############################################################################
 
-# Check to make sure the page printed as we expected.
-ok ($page, 'pwchange page was printed');
-is ($output[0], 'error ', '... and error was not set');
-is ($output[1], 'err_username ', '... and err_username was not set');
-is ($output[2], 'err_password ', '... and err_password was not set');
-is ($output[3], 'err_newpassword ', '... and err_newpassword was not set');
-is ($output[4], 'err_newpassword_match ',
-    '... and err_newpassword_match was not set');
-is ($output[5], 'err_loginfailed ', '... and err_loginfailed was not set');
-is ($output[6], 'err_rejected ', '... and err_rejected was not set');
-is ($output[7], 'err_pwweak ', '... and err_pwweak was not set');
-is ($output[8], 'err_pwchange ', '... and err_pwchange was not set');
-is ($output[9], 'err_msg ', '... and err_msg was not set');
-is ($output[10], 'RT TestRT', '... and RT was set');
-is ($output[11], 'ST TestST', '... and ST was set');
-is ($output[12], 'CPT ', '... and CPT was not set');
-is ($output[13], 'username testuser', '... and username was set');
-is ($output[14], 'password ', '... and password was not set');
-is ($output[15], 'new_passwd1 ', '... and new_passwd1 was not set');
-is ($output[16], 'new_passwd2 ', '... and new_passwd2 was not set');
-is ($output[17], 'changepw ', '... and changepw was not set');
-is ($output[18], 'expired 1', '... and expired was set');
-is ($output[19], 'skip_username ', '... and skip_username was not set');
-is ($output[20], 'skip_password ', '... and skip_password was not set');
+# Test the basic pwchange page.
+my %output = page_wrapper ($weblogin, 'TestRT', 'TestST');
+my %check = read_outputfile ('t/data/pages/pwchange.bare');
+ok (%output, 'pwchange was printed');
+is_deeply (\%output, \%check, '... and the output matches what is expected');
 
 # Once more, testing CPT suppressing the username and password.
 $weblogin->param ('CPT', 'TestCPT');
-$page = WebLogin::print_pwchange_page ($weblogin, 'TestRT2', 'TestST2');
-@output = split (/[\r\n]+/, $$page);
-ok ($page, 'pwchange page was printed with CPT');
-is ($output[0], 'error ', '... and error was not set');
-is ($output[1], 'err_username ', '... and err_username was not set');
-is ($output[2], 'err_password ', '... and err_password was not set');
-is ($output[3], 'err_newpassword ', '... and err_newpassword was not set');
-is ($output[4], 'err_newpassword_match ',
-    '... and err_newpassword_match was not set');
-is ($output[5], 'err_loginfailed ', '... and err_loginfailed was not set');
-is ($output[6], 'err_rejected ', '... and err_rejected was not set');
-is ($output[7], 'err_pwweak ', '... and err_pwweak was not set');
-is ($output[8], 'err_pwchange ', '... and err_pwchange was not set');
-is ($output[9], 'err_msg ', '... and err_msg was not set');
-is ($output[10], 'RT TestRT2', '... and RT was set');
-is ($output[11], 'ST TestST2', '... and ST was set');
-is ($output[12], 'CPT TestCPT', '... and CPT was set');
-is ($output[13], 'username testuser', '... and username was set');
-is ($output[14], 'password ', '... and password was not set');
-is ($output[15], 'new_passwd1 ', '... and new_passwd1 was not set');
-is ($output[16], 'new_passwd2 ', '... and new_passwd2 was not set');
-is ($output[17], 'changepw ', '... and changepw was not set');
-is ($output[18], 'expired 1', '... and expired was set');
-is ($output[19], 'skip_username 1', '... and skip_username was set');
-is ($output[20], 'skip_password 1', '... and skip_password was set');
+%output = page_wrapper ($weblogin, 'TestRT2', 'TestST2');
+%check = read_outputfile ('t/data/pages/pwchange.cpt');
+ok (%output, 'pwchange page was printed with CPT');
+is_deeply (\%output, \%check, '... and the output matches what is expected');
 
 # Now various attempts at making the password change page error check go off.
 # error_invalid_pwchange_fields without a username
@@ -104,7 +75,7 @@ $query = CGI->new ({ });
 $query->param ('username', '');
 $query->param ('expired', 0);
 $weblogin->query ($query);
-$page = WebLogin::error_invalid_pwchange_fields ($weblogin);
+my $page = WebLogin::error_invalid_pwchange_fields ($weblogin);
 ok (defined ($page), 'test_pwchange without username fails');
 ok ($$page =~ /err_username 1/, '... with the correct error');
 
