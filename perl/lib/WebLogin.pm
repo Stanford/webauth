@@ -313,6 +313,7 @@ sub print_headers {
     my $remuser_name = $self->param ('remuser_cookie');
     my $remuser_lifetime = $self->param ('remuser_lifetime');
     my $secure = (defined ($ENV{HTTPS}) && $ENV{HTTPS} eq 'on') ? 1 : 0;
+    my $factor_token = 0;
     my @ca;
     while (my ($name, $attrs) = each %cookies) {
         next if $name eq 'webauth_wpt_remuser';
@@ -324,10 +325,14 @@ sub print_headers {
         if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
               && $value eq '') {
             $cookie = $self->expire_cookie ($name, $secure);
+            if ($name eq 'webauth_wft') {
+                $factor_token = 1;
+            }
 
         # Also expire the factor token on any public computer.
         } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
             $cookie = $self->expire_cookie ($name, $secure);
+            $factor_token = 1;
 
         # Expire the SSO cookies on any final redirect to WAS, on a public
         # computer.
@@ -359,6 +364,7 @@ sub print_headers {
                 my $lifetime = strftime ("%a, %d-%b-%Y %T GMT", @expires);
                 $cookie->expires ($lifetime);
             }
+            $factor_token = 1;
 
         # Pass along all other WebAuth cookies.
         } elsif ($name =~ /^webauth_/) {
@@ -367,6 +373,13 @@ sub print_headers {
                                   -secure   => $secure,
                                   -httponly => 1);
         }
+        push (@ca, $cookie);
+    }
+
+    # If we haven't been given a webauth factor token cookie explicitly, then
+    # we want to expire any that exist.
+    if (!$factor_token && $self->{request}->factor_token) {
+        my $cookie = $self->expire_cookie ('webauth_wft', $secure);
         push (@ca, $cookie);
     }
 

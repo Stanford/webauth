@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 14;
 
 # Ensure we don't pick up the system webkdc.conf.
 BEGIN { $ENV{WEBKDC_CONFIG} = '/nonexistent' }
@@ -142,3 +142,35 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 is ($cookie->name, 'webauth_wft', 'Factor cookie on public computer was set');
 $expires = str2time ($cookie->expires);
 is ($expires, time - 60 * 60 * 24, '... and set to expire now');
+
+# Check clearing the webauth cookie by not explicitly passing it.
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+%args = (cookies => $weblogin->{response}->cookies);
+$weblogin->{request}->factor_token ('foo');
+$weblogin->print_headers (\%args);
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq 'webauth_wft') {
+        $cookie = $c;
+    }
+}
+is ($cookie->name, 'webauth_wft',
+    'Factor cookie expired when not explicitly passed');
+$expires = str2time ($cookie->expires);
+is ($expires, time - 60 * 60 * 24, '... and set to expire now');
+
+# Check clearing the webauth cookie by not explicitly passing it when there
+# was no token from the client..
+$weblogin = init_weblogin;
+$status = $weblogin->setup_kdc_request;
+%args = (cookies => $weblogin->{response}->cookies);
+$weblogin->print_headers (\%args);
+$cookie = undef;
+for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
+    if ($c->name eq 'webauth_wft') {
+        $cookie = $c;
+    }
+}
+is ($cookie, undef, 'Factor cookie not expired when not explicitly passed '
+    .'and none existed before');
