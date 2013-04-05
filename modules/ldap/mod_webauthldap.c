@@ -711,8 +711,8 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
             }
             if (lc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
-                             "webauthldap(%s): search returned %d entries",
-                             lc->r->user, lc->numEntries);
+                             "webauthldap(%s): search returned %lu entries",
+                             lc->r->user, (unsigned long) lc->numEntries);
         }
         ldap_msgfree(res);
     }
