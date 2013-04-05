@@ -7,7 +7,7 @@
  * service token caches and keyrings.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -245,12 +245,14 @@ decode_number(struct webauth_context *ctx, struct value *value,
 {
     char *end;
     uint32_t data;
+    unsigned long n;
 
     if (ascii) {
         errno = 0;
-        *output = strtoul(value->data, &end, 10);
-        if (*end != '\0' || (*output == ULONG_MAX && errno != 0))
+        n = strtoul(value->data, &end, 10);
+        if (*end != '\0' || (n == ULONG_MAX && errno != 0))
             goto corrupt;
+        *output = n;
     } else {
         if (value->length != sizeof(uint32_t))
             goto corrupt;
