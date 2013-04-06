@@ -1561,7 +1561,7 @@ fixups_hook(request_rec *r)
                 "webauthldap: looking up operational attributes");
 
         lc->attrs = apr_pcalloc(lc->r->pool, (sizeof(char*) * 2));
-        lc->attrs[0] = LDAP_ALL_OPERATIONAL_ATTRIBUTES;
+        lc->attrs[0] = (char *) LDAP_ALL_OPERATIONAL_ATTRIBUTES;
         lc->attrs[1] = NULL;
 
         if (webauthldap_dosearch(lc) != 0) {
