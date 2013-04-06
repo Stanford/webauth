@@ -89,6 +89,7 @@ struct server_config {
 struct dir_config {
     apr_array_header_t *attribs;        /* Array of const char * */
     apr_array_header_t *privgroups;     /* Array of const char * */
+	apr_array_header_t *oper_attribs;	/* Array of const char * */
 };
 
 /* Used for passing things around */
@@ -108,6 +109,7 @@ typedef struct {
 
     LDAP *ld;
     char **attrs;            /* attributes to retrieve from LDAP, (null = all)
+							  * (+ = operational)
                               */
     char *filter;
     int port;

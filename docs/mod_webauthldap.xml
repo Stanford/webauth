@@ -202,7 +202,8 @@ override this behavior, see
 <a href="#webauthldapseparator">WebAuthLdapSeparator</a>.</p>
 
 <p>The attributes can be any attribute found in your LDAP server that
-the server using this module has access to read.</p>
+the server using this module has access to read, except for operational
+attributes, like entryUUID.</p>
 
 <example><title>Example</title>
 &lt;Location /private/&gt;<br />
@@ -216,6 +217,34 @@ WebAuthLdapAttribute suUnivid<br />
 </usage>
 </directivesynopsis>
 
+<directivesynopsis>
+<name>WebAuthLdapOperationalAttribute</name>
+<description>LDAP operational attribute to place in the environment</description>
+<syntax>WebAuthLdapOperationalAttribute<em>oper_attribute</em>  [<em>oper_attribute</em>] ...</syntax>
+<default>none</default>
+<contextlist>
+<context>directory</context>
+<context>.htaccess</context>
+</contextlist>
+
+<usage>
+<p>All attributes defined by this directive will be looked up additionally
+and their values will be inserted into the environment. This directive can
+also be used multiple times.</p>
+
+<p>Like<a href="#webauthldapattribute">WebAuthLdapAttribute</a>, the name
+of the enviornment variable is formed by prepending WEBAUTH_LDAP_ to the
+uppercased name. Multivalued attributes work exactly the same as well.</p>
+
+<example><title>Example</title></example>
+&lt;Location /private/&gt;<br />
+AuthType WebAuth<br />
+Require privgroup stanford:staff<br />
+WebAuthLdapOperationalAttribute entryUUID<br />
+&lt;/Location&gt;<br/>
+</example>
+</usage>
+</directivesynopsis>
 
 <directivesynopsis>
 <name>WebAuthLdapAuthorizationAttribute</name>
