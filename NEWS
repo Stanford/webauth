@@ -21,6 +21,11 @@ WebAuth 4.4.3 (unreleased)
     environment, but the maximum environment size is quite large on most
     modern operating systems.
 
+    mod_webauthldap supports a new WebAuthLdapOperationalAttribute
+    directive that is the same as WebAuthLdapAttribute but searches the
+    directory for operational attributes and adds them to the environment.
+    Patch from William Orr.
+
     Fix syntax error in the replay condition in the default WebLogin error
     template.
 
