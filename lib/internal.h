@@ -385,6 +385,20 @@ int wai_token_merge_webkdc_factor(struct webauth_context *,
     __attribute__((__nonnull__));
 
 /*
+ * Merge an array of webkdc-proxy tokens into a single token, and add
+ * supplemental factors from a webkdc-factor token.  Takes the context, the
+ * array of webkdc-proxy tokens, the webkdc-factor token, the maximum age in
+ * seconds for tokens to contribute to the session factors, and a place to
+ * store the newly created webkdc-proxy token.  Returns a WebAuth error code.
+ */
+int wai_token_merge_webkdc_proxy(struct webauth_context *,
+                                 apr_array_header_t *,
+                                 struct webauth_token *wkfactor,
+                                 unsigned long session_limit,
+                                 struct webauth_token **)
+    __attribute__((__nonnull__(1, 2, 5)));
+
+/*
  * Merge factors from a webkdc-factor token into a webkdc-proxy token,
  * returning the result in the last argument.  The webkdc-proxy token is given
  * first and the webkdc-factor token is given second.  Returns a WebAuth error

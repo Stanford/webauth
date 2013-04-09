@@ -20,6 +20,7 @@
 
 /* The empty webkdc-factor token, used in specifying the tests. */
 #define EMPTY_TOKEN_WKFACTOR { NULL, NULL, 0, 0 }
+#define EMPTY_TOKEN_WKPROXY  { NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 0, NULL }
 
 /*
  * The webkdc-factor test cases.
@@ -137,6 +138,172 @@ static const struct test_case_wkfactor {
 };
 
 /*
+ * The webkdc-proxy test cases.
+ *
+ * Use the same trick of an input array as with the webkdc-factor token tests.
+ * Remember when building the expected results of test cases that webkdc-proxy
+ * tokens merge from the last to the first, so the earlier one of a redundant
+ * pair of tokens will be ignored.
+ */
+static const struct test_case_wkproxy {
+    const char *name;
+    struct webauth_token_webkdc_proxy input[3];
+    struct webauth_token_webkdc_proxy output;
+    const char *message;
+} tests_wkproxy[] = {
+
+    /* The identity merge. */
+    {
+        "one webkdc-proxy token",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1365545626, 1896163200, "c"
+            },
+            EMPTY_TOKEN_WKPROXY,
+            EMPTY_TOKEN_WKPROXY
+        },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        },
+        NULL
+    },
+
+    /* Ignore expired tokens on merge. */
+    {
+        "expired webkdc-proxy token",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1365545626, 1896163200, "c"
+            },
+            {
+                "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+                "krb5", 4, "p", 1, 1365545626, 1365548450, "c"
+            },
+            EMPTY_TOKEN_WKPROXY
+        },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        },
+        NULL
+    },
+
+    /* If all tokens are expired, we should get back NULL. */
+    {
+        "all expired webkdc-proxy tokens",
+        {
+            {
+                "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+                "krb5", 4, "p", 1, 1365545626, 1365548450, "c"
+            },
+            EMPTY_TOKEN_WKPROXY,
+            EMPTY_TOKEN_WKPROXY
+        },
+        EMPTY_TOKEN_WKPROXY,
+        NULL
+    },
+
+    /*
+     * Merge a bunch of different tokens with different factors and times.
+     * The result should combine all the factors, include the proxy data, have
+     * the oldest creation time and expiration time, and have the maximum LoA
+     * of the various tokens.
+     */
+    {
+        "multiple webkdc-proxy tokens",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1365545626, 1896163200, "c"
+            },
+            {
+                "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+                "krb5", 4, "p", 3, 1325404800, 1925020800, "c"
+            },
+            {
+                "testuser", "remuser", "WEBKDC:remuser", NULL, 0, "x,x1", 2,
+                1262332800, 1895163200, "k"
+            },
+        },
+        {
+            "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+            "krb5", 4, "x,x1,p,m,o,o1", 3, 1262332800, 1895163200, "k,c"
+        },
+        NULL
+    },
+
+    /* Tokens from a different user should result in a fatal error. */
+    {
+        "webkdc-proxy tokens with mismatched users",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1365545626, 1896163200, "c"
+            },
+            {
+                "test", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1365545626, 1896163200, "c"
+            },
+            EMPTY_TOKEN_WKPROXY
+        },
+        EMPTY_TOKEN_WKPROXY,
+        "token used in invalid context (subject mismatch: testuser != test)"
+    },
+
+    /*
+     * Tokens that don't add anything to the factors should also be ignored
+     * and therefore won't change the times.
+     */
+    {
+        "duplicate webkdc-proxy tokens",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1262332800, 1956556800, "c"
+            },
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1357027200, 1969686000, "c"
+            },
+            EMPTY_TOKEN_WKPROXY
+        },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1357027200, 1969686000, "c"
+        },
+        NULL
+    },
+
+    /* 
+     * Run the same test but with a separate factor to confirm that the token
+     * is merged in that situation.
+     */
+    {
+        "webkdc-proxy tokens with different factors",
+        {
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o2", 1,
+                1262332800, 1956556800, "c"
+            },
+            {
+                "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+                1357027200, 1969686000, "c"
+            },
+            EMPTY_TOKEN_WKPROXY
+        },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1,o2", 1,
+            1262332800, 1956556800, "c"
+        },
+        NULL
+    },
+};
+
+
+/*
  * The webkdc-proxy and webkdc-factor merge test cases.
  *
  * Here, we're updating a webkdc-proxy token (given first) with additional
@@ -226,7 +393,7 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(86);
+    plan(151);
 
     /*
      * Step through each webkdc-factor merge test in turn, build an array of
@@ -236,7 +403,7 @@ main(void)
     for (i = 0; i < ARRAY_SIZE(tests_wkfactor); i++) {
         test = tests_wkfactor[i].name;
         tokens = apr_array_make(pool, 3, size);
-        for (j = 0; j < ARRAY_SIZE(tests_wkfactor); j++) {
+        for (j = 0; j < ARRAY_SIZE(tests_wkfactor[i].input); j++) {
             if (tests_wkfactor[i].input[j].subject == NULL)
                 break;
             token = apr_pcalloc(pool, sizeof(struct webauth_token));
@@ -253,6 +420,38 @@ main(void)
                    "... and returns a webkdc-factor token");
             is_token_webkdc_factor(&tests_wkfactor[i].output,
                                    &result->token.webkdc_factor, "...");
+        }
+    }
+
+    /* Likewise for the webkdc-proxy merge tests. */
+    for (i = 0; i < ARRAY_SIZE(tests_wkproxy); i++) {
+        test = tests_wkproxy[i].name;
+        tokens = apr_array_make(pool, 3, size);
+        for (j = 0; j < ARRAY_SIZE(tests_wkproxy[i].input); j++) {
+            if (tests_wkproxy[i].input[j].subject == NULL)
+                break;
+            token = apr_pcalloc(pool, sizeof(struct webauth_token));
+            token->type = WA_TOKEN_WEBKDC_PROXY;
+            token->token.webkdc_proxy = tests_wkproxy[i].input[j];
+            APR_ARRAY_PUSH(tokens, const struct webauth_token *) = token;
+        }
+        s = wai_token_merge_webkdc_proxy(ctx, tokens, NULL, 0, &result);
+        if (tests_wkproxy[i].message == NULL) {
+            if (s != WA_ERR_NONE)
+                diag("%s", webauth_error_message(ctx, s));
+            is_int(WA_ERR_NONE, s, "Merging %s successful", test);
+        } else {
+            ok(s != WA_ERR_NONE, "Merging %s failed as expected", test);
+            is_string(tests_wkproxy[i].message,
+                      webauth_error_message(ctx, s), "... with correct error");
+        }
+        if (tests_wkproxy[i].output.subject == NULL)
+            ok(result == NULL, "... result is NULL as expected");
+        else {
+            is_int(WA_TOKEN_WEBKDC_PROXY, result == NULL ? 0 : result->type,
+                   "... and returns a webkdc-proxy token");
+            is_token_webkdc_proxy(&tests_wkproxy[i].output,
+                                  &result->token.webkdc_proxy, "...");
         }
     }
 

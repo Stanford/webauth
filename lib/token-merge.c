@@ -21,6 +21,7 @@
 #include <webauth/basic.h>
 #include <webauth/factors.h>
 #include <webauth/tokens.h>
+#include <webauth/webkdc.h>
 
 
 /*
@@ -130,6 +131,215 @@ wai_token_merge_webkdc_factor(struct webauth_context *ctx,
 
     /* All done.  Return best. */
     *result = best;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Merge an array of webkdc-proxy tokens into a single token, which we'll then
+ * use for subsequent operations.  Add the supplemental factors from a
+ * webkdc-factor token, which may be NULL or empty, to the result.  Takes the
+ * context, the array of credentials, the webkdc-factor token, and a place to
+ * store the newly created webkdc-proxy token.
+ *
+ * We use the following logic to merge webkdc-proxy tokens:
+ *
+ * 1. Expired tokens are discarded.
+ * 2. Tokens whose initial factors are a subset of the accumulated factors
+ *    and which do not add krb5 capability are discarded.
+ * 3. The krb5 data is added if not already present, and the expiration is
+ *    set to the token with the krb5 data and the proxy type changed to krb5.
+ * 4. Initial factors are merged between all webkdc-proxy tokens, with the
+ *    expiration set to the nearest expiration of all contributing tokens.
+ * 5. Creation time is set to the oldest time of the tokens if we pull from
+ *    multiple tokens.  This has to be oldest, not newest or the current time,
+ *    to correctly handle when to lift initial factors into session factors.
+ * 6. Session factors are merged from a webkdc-proxy token if and only if the
+ *    webkdc-proxy token contributes in some way to the result.
+ * 7. Initial factors also count as session factors if the contributing
+ *    webkdc-proxy token is within its freshness limit as specified in seconds
+ *    in the session_limit parameter.  Otherwise, session factors are used
+ *    as-is.
+ *
+ * While processing the webkdc-proxy tokens, we also reject, with an error,
+ * the credential merge if there is a subject or proxy subject mismatch
+ * between the provided credentials.
+ */
+int
+wai_token_merge_webkdc_proxy(struct webauth_context *ctx,
+                             apr_array_header_t *creds,
+                             struct webauth_token *wkfactor,
+                             unsigned long session_limit,
+                             struct webauth_token **result)
+{
+    bool created = false;
+    const char *subject = NULL, *proxy_subject = NULL;
+    struct webauth_token *token, *genbest = NULL;
+    struct webauth_token_webkdc_proxy *wkproxy;
+    struct webauth_token_webkdc_proxy *best = NULL;
+    struct webauth_factors *extra;
+    struct webauth_factors *factors = NULL, *sfactors = NULL;
+    time_t now;
+    int i, s;
+
+    /* Return a NULL webkdc-proxy token if we have no tokens. */
+    *result = NULL;
+    if (creds->nelts == 0)
+        return WA_ERR_NONE;
+
+    /* Ensure all time calculations use a consistent basis. */
+    now = time(NULL);
+
+    /*
+     * Grab the first token and use it to determine the subject and proxy
+     * subject that all remaining tokens must have.  The subject must match
+     * across all tokens.  The proxy subject must either start with "WEBKDC:"
+     * (indicated by a NULL proxy_subject) or must match.
+     */
+    token = APR_ARRAY_IDX(creds, 0, struct webauth_token *);
+    if (token->type != WA_TOKEN_WEBKDC_PROXY)
+        return token_type_error(ctx, token->type, "webkdc-proxy");
+    wkproxy = &token->token.webkdc_proxy;
+    subject = wkproxy->subject;
+    if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0)
+        proxy_subject = wkproxy->proxy_subject;
+
+    /*
+     * We merge the proxy tokens in reverse order, since any proxy tokens that
+     * we created via fresh login tokens should take precedence over anything
+     * that we had from older cookies.  We added those to the end of the
+     * array.
+     */
+    i = creds->nelts - 1;
+    do {
+        struct webauth_token *tmp;
+        struct webauth_factors *cfactors;
+
+        token = APR_ARRAY_IDX(creds, i, struct webauth_token *);
+        if (token->type != WA_TOKEN_WEBKDC_PROXY)
+            return token_type_error(ctx, token->type, "webkdc-proxy");
+        wkproxy = &token->token.webkdc_proxy;
+
+        /* Check the subject. */
+        if (strcmp(subject, wkproxy->subject) != 0) {
+            s = WA_ERR_TOKEN_REJECTED;
+            wai_error_set(ctx, s, "subject mismatch: %s != %s", subject,
+                          wkproxy->subject);
+            return s;
+        }
+
+        /* Check the proxy subject. */
+        if (proxy_subject == NULL) {
+            if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
+                s = WA_ERR_TOKEN_REJECTED;
+                wai_error_set(ctx, s, "proxy subject mismatch: %s is not SSO",
+                              wkproxy->proxy_subject);
+                return s;
+            }
+        } else {
+            if (strcmp(proxy_subject, wkproxy->proxy_subject) != 0) {
+                s = WA_ERR_TOKEN_REJECTED;
+                wai_error_set(ctx, s, "proxy subject mismatch: %s != %s",
+                              proxy_subject, wkproxy->proxy_subject);
+                return s;
+            }
+        }
+
+        /* Discard all expired tokens. */
+        if (wkproxy->expiration <= now)
+            continue;
+
+        /* best will be NULL if this is the first valid token we see. */
+        if (best == NULL) {
+            genbest = apr_pmemdup(ctx->pool, token, sizeof(*genbest));
+            best = &genbest->token.webkdc_proxy;
+            factors = webauth_factors_parse(ctx, best->initial_factors);
+            if ((unsigned long) best->creation >= now - session_limit)
+                sfactors = webauth_factors_parse(ctx, best->initial_factors);
+            else
+                sfactors = webauth_factors_parse(ctx, best->session_factors);
+            continue;
+        }
+
+        /*
+         * We have a best token already and we have seen an additional token.
+         * We may be merging in its information.  Parse out its factors.
+         */
+        cfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
+
+        /*
+         * If there are no new factors and it can't contribute a better
+         * authenticator, there's nothing of interest.  Move on.
+         */
+        if (webauth_factors_satisfies(ctx, factors, cfactors)
+            && (strcmp(best->proxy_type, "krb5") == 0
+                || strcmp(wkproxy->proxy_type, "krb5") != 0))
+            continue;
+
+        /* We're going to merge tokens.  Create a new one if we haven't. */
+        if (!created) {
+            tmp = apr_palloc(ctx->pool, sizeof(struct webauth_token));
+            *tmp = *genbest;
+            genbest = tmp;
+            best = &tmp->token.webkdc_proxy;
+            created = true;
+        }
+
+        /*
+         * Grab the krb5 authenticator if that's better than what we have.  If
+         * we do this, also update the proxy subject, since it's probably more
+         * specific.
+         */
+        if (strcmp(best->proxy_type, "krb5") != 0
+            && strcmp(wkproxy->proxy_type, "krb5") == 0) {
+            best->data = wkproxy->data;
+            best->data_len = wkproxy->data_len;
+            best->proxy_type = wkproxy->proxy_type;
+            best->proxy_subject = wkproxy->proxy_subject;
+        }
+
+        /* Add on its initial factors to our accumulated ones. */
+        factors = webauth_factors_union(ctx, factors, cfactors);
+
+        /*
+         * webkdc-proxy tokens contribute their initial factors to session
+         * factors if they're still fresh.
+         */
+        if ((unsigned long) wkproxy->creation >= now - session_limit)
+            sfactors = webauth_factors_union(ctx, sfactors, cfactors);
+        else {
+            extra = webauth_factors_parse(ctx, wkproxy->session_factors);
+            sfactors = webauth_factors_union(ctx, sfactors, extra);
+        }
+
+        /* Set expiration and creation times to the oldest of the tokens. */
+        if (wkproxy->expiration < best->expiration)
+            best->expiration = wkproxy->expiration;
+        if (wkproxy->creation < best->creation)
+            best->creation = wkproxy->creation;
+
+        /* Set LoA to the highest of the tokens. */
+        if (wkproxy->loa > best->loa)
+            best->loa = wkproxy->loa;
+    } while (i-- > 0);
+
+    /* If genbest is NULL, all tokens were expired. */
+    if (genbest == NULL)
+        return WA_ERR_NONE;
+
+    /* Set the result webkdc-proxy factors to our assembled ones. */
+    best->initial_factors = webauth_factors_string(ctx, factors);
+    best->session_factors = webauth_factors_string(ctx, sfactors);
+
+    /*
+     * If the webkdc-factor token matches our subject, add its factors to both
+     * the initial and session factors.
+     */
+    s = wai_token_merge_webkdc_proxy_factor(ctx, genbest, wkfactor, result);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* All done.  *result contains the newly-generated token. */
     return WA_ERR_NONE;
 }
 
