@@ -384,6 +384,18 @@ int wai_token_merge_webkdc_factor(struct webauth_context *,
                                   struct webauth_token **)
     __attribute__((__nonnull__));
 
+/*
+ * Merge factors from a webkdc-factor token into a webkdc-proxy token,
+ * returning the result in the last argument.  The webkdc-proxy token is given
+ * first and the webkdc-factor token is given second.  Returns a WebAuth error
+ * code.
+ */
+int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
+                                        struct webauth_token *wkproxy,
+                                        struct webauth_token *wkfactor,
+                                        struct webauth_token **)
+    __attribute__((__nonnull__(1, 2, 4)));
+
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)
     __attribute__((__nonnull__));

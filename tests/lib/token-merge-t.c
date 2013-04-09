@@ -19,10 +19,10 @@
 #include <webauth/tokens.h>
 
 /* The empty webkdc-factor token, used in specifying the tests. */
-#define EMPTY_TOKEN { NULL, NULL, 0, 0 }
+#define EMPTY_TOKEN_WKFACTOR { NULL, NULL, 0, 0 }
 
 /*
- * The test cases.
+ * The webkdc-factor test cases.
  *
  * We are really testing merging of an arbitrary number of webkdc-factor
  * tokens into one, but setting up dynamically-sized arrays is a hassle.
@@ -34,20 +34,20 @@
  * webkdc-factor tokens merge from the last to the first, so the earlier
  * one of a redundant pair of tokens will be ignored.
  */
-static const struct test_case {
+static const struct test_case_wkfactor {
     const char *name;
     struct webauth_token_webkdc_factor input[3];
     struct webauth_token_webkdc_factor output;
     const char *message;
-} test_cases[] = {
+} tests_wkfactor[] = {
 
     /* The identity merge. */
     {
         "one webkdc-factor token",
         {
             { "testuser", "d", 1364943745, 1893484800 },
-            EMPTY_TOKEN,
-            EMPTY_TOKEN
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_WKFACTOR
         },
         { "testuser", "d", 1364943745, 1893484800 },
         NULL
@@ -59,7 +59,7 @@ static const struct test_case {
         {
             { "testuser", "d",  1364943745, 1893484800 },
             { "testuser", "o1", 1262332800, 1293868800 },
-            EMPTY_TOKEN
+            EMPTY_TOKEN_WKFACTOR
         },
         { "testuser", "d", 1364943745, 1893484800 },
         NULL
@@ -70,10 +70,10 @@ static const struct test_case {
         "all expired webkdc-factor tokens",
         {
             { "testuser", "o1", 1, 1 },
-            EMPTY_TOKEN,
-            EMPTY_TOKEN
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_WKFACTOR
         },
-        EMPTY_TOKEN,
+        EMPTY_TOKEN_WKFACTOR,
         NULL
     },
 
@@ -114,7 +114,7 @@ static const struct test_case {
         {
             { "testuser", "d", 1262332800, 1956556800 },
             { "testuser", "d", 1357027200, 1969686000 },
-            EMPTY_TOKEN
+            EMPTY_TOKEN_WKFACTOR
         },
         { "testuser", "d", 1357027200, 1969686000 },
         NULL
@@ -129,11 +129,82 @@ static const struct test_case {
         {
             { "testuser", "o", 1262332800, 1956556800 },
             { "testuser", "d", 1357027200, 1969686000 },
-            EMPTY_TOKEN
+            EMPTY_TOKEN_WKFACTOR
         },
         { "testuser", "d,o", 1262332800, 1956556800 },
         NULL
     },
+};
+
+/*
+ * The webkdc-proxy and webkdc-factor merge test cases.
+ *
+ * Here, we're updating a webkdc-proxy token (given first) with additional
+ * factor information from a webkdc-factor token (given second), which should
+ * result in a new webkdc-proxy token with the updated factors.
+ */
+static const struct test_case_wkproxy_wkfactor {
+    const char *name;
+    struct webauth_token_webkdc_proxy wkproxy;
+    struct webauth_token_webkdc_factor wkfactor;
+    struct webauth_token_webkdc_proxy output;
+} tests_wkproxy_wkfactor[] = {
+
+    /* Simple merge. */
+    {
+        "simple webkdc-proxy and webkdc-factor",
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        },
+        { "testuser", "d,p", 1365545626, 1893484800 },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1,d,p,m", 1,
+            1365545626, 1896163200, "c,d,p"
+        }
+    },
+
+    /* Merge of NULL token. */
+    {
+        "NULL webkdc-factor token with webkdc-proxy",
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        },
+        EMPTY_TOKEN_WKFACTOR,
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        }
+    },
+
+    /* Merge of a token for a different user. */
+    {
+        "webkdc-proxy and webkdc-factor with mismatched users",
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        },
+        { "test", "d,p", 1365545626, 1893484800 },
+        {
+            "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
+            1365545626, 1896163200, "c"
+        }
+    },
+
+    /* Merge of a token with no new factors. */
+    {
+        "webkdc-proxy and webkdc-factor with no new factors",
+        {
+            "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+            "krb5;authent;data", 17, "p,d", 1, 1365545626, 1896163200, "p,d"
+        },
+        { "test", "d,p", 1365545626, 1893484800 },
+        {
+            "testuser", "krb5", "WEBKDC:service/webkdc@EXAMPLE.ORG",
+            "krb5;authent;data", 17, "p,d", 1, 1365545626, 1896163200, "p,d"
+        }
+    }
 };
 
 
@@ -144,7 +215,7 @@ main(void)
     struct webauth_context *ctx;
     size_t i, j, s, size;
     apr_array_header_t *tokens;
-    struct webauth_token *token;
+    struct webauth_token *token, *wkp, *wkf;
     struct webauth_token *result;
     const char *test;
 
@@ -155,34 +226,55 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(38);
+    plan(86);
 
     /*
-     * Step through each test in turn, build an array of the tokens, merge the
-     * tokens, and check the result.
+     * Step through each webkdc-factor merge test in turn, build an array of
+     * the tokens, merge the tokens, and check the result.
      */
     size = sizeof(const struct webauth_token *);
-    for (i = 0; i < ARRAY_SIZE(test_cases); i++) {
-        test = test_cases[i].name;
+    for (i = 0; i < ARRAY_SIZE(tests_wkfactor); i++) {
+        test = tests_wkfactor[i].name;
         tokens = apr_array_make(pool, 3, size);
-        for (j = 0; j < ARRAY_SIZE(test_cases); j++) {
-            if (test_cases[i].input[j].subject == NULL)
+        for (j = 0; j < ARRAY_SIZE(tests_wkfactor); j++) {
+            if (tests_wkfactor[i].input[j].subject == NULL)
                 break;
             token = apr_pcalloc(pool, sizeof(struct webauth_token));
             token->type = WA_TOKEN_WEBKDC_FACTOR;
-            token->token.webkdc_factor = test_cases[i].input[j];
+            token->token.webkdc_factor = tests_wkfactor[i].input[j];
             APR_ARRAY_PUSH(tokens, const struct webauth_token *) = token;
         }
         s = wai_token_merge_webkdc_factor(ctx, tokens, &result);
         is_int(WA_ERR_NONE, s, "Merging %s successful", test);
-        if (test_cases[i].output.subject == NULL)
+        if (tests_wkfactor[i].output.subject == NULL)
             ok(result == NULL, "... result is NULL as expected");
         else {
             is_int(WA_TOKEN_WEBKDC_FACTOR, result == NULL ? 0 : result->type,
                    "... and returns a webkdc-factor token");
-            is_token_webkdc_factor(&test_cases[i].output,
+            is_token_webkdc_factor(&tests_wkfactor[i].output,
                                    &result->token.webkdc_factor, "...");
         }
+    }
+
+    /* Likewise for merging webkdc-proxy and webkdc-factor tokens. */
+    for (i = 0; i < ARRAY_SIZE(tests_wkproxy_wkfactor); i++) {
+        test = tests_wkproxy_wkfactor[i].name;
+        wkp = apr_pcalloc(pool, sizeof(struct webauth_token));
+        wkp->type = WA_TOKEN_WEBKDC_PROXY;
+        wkp->token.webkdc_proxy = tests_wkproxy_wkfactor[i].wkproxy;
+        if (tests_wkproxy_wkfactor[i].wkfactor.subject == NULL)
+            wkf = NULL;
+        else {
+            wkf = apr_pcalloc(pool, sizeof(struct webauth_token));
+            wkf->type = WA_TOKEN_WEBKDC_FACTOR;
+            wkf->token.webkdc_factor = tests_wkproxy_wkfactor[i].wkfactor;
+        }
+        s = wai_token_merge_webkdc_proxy_factor(ctx, wkp, wkf, &result);
+        is_int(WA_ERR_NONE, s, "Merging %s successful", test);
+        is_int(WA_TOKEN_WEBKDC_PROXY, result->type,
+               "... and returns a webkdc-proxy token");
+        is_token_webkdc_proxy(&tests_wkproxy_wkfactor[i].output,
+                              &result->token.webkdc_proxy, "...");
     }
 
     /* Clean up. */

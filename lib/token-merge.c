@@ -132,3 +132,50 @@ wai_token_merge_webkdc_factor(struct webauth_context *ctx,
     *result = best;
     return WA_ERR_NONE;
 }
+
+
+/*
+ * Merge supplemental factors from a webkdc-factor token into a webkdc-proxy
+ * token if and only if the subjects match.  The webkdc-factor token may be
+ * NULL.  Takes the input tokens and a location to store the new token.
+ */
+int
+wai_token_merge_webkdc_proxy_factor(struct webauth_context *ctx,
+                                    struct webauth_token *proxy,
+                                    struct webauth_token *factor,
+                                    struct webauth_token **result)
+{
+    struct webauth_token_webkdc_proxy *wkproxy;
+    struct webauth_token_webkdc_factor *wft;
+    struct webauth_factors *extra, *factors, *sfactors;
+
+    /* Ensure the tokens passed in are the right type. */
+    if (proxy->type != WA_TOKEN_WEBKDC_PROXY)
+        return token_type_error(ctx, proxy->type, "webkdc-proxy");
+    if (factor != NULL && factor->type != WA_TOKEN_WEBKDC_FACTOR)
+        return token_type_error(ctx, factor->type, "webkdc-factor");
+
+    /* Always start with a copy of the webkdc-proxy token. */
+    *result = apr_pmemdup(ctx->pool, proxy, sizeof(struct webauth_token));
+
+    /* If there is no factor token, just return the copy. */
+    if (factor == NULL)
+        return WA_ERR_NONE;
+
+    /* Otherwise, check if the subjects match.  If not, return the copy. */
+    wkproxy = &proxy->token.webkdc_proxy;
+    wft = &factor->token.webkdc_factor;
+    if (strcmp(wft->subject, wkproxy->subject) != 0)
+        return WA_ERR_NONE;
+
+    /* Subjects match.  Merge factors and update the result. */
+    extra = webauth_factors_parse(ctx, wft->factors);
+    factors = webauth_factors_parse(ctx, wkproxy->initial_factors);
+    sfactors = webauth_factors_parse(ctx, wkproxy->session_factors);
+    factors = webauth_factors_union(ctx, factors, extra);
+    sfactors = webauth_factors_union(ctx, sfactors, extra);
+    wkproxy = &(*result)->token.webkdc_proxy;
+    wkproxy->initial_factors = webauth_factors_string(ctx, factors);
+    wkproxy->session_factors = webauth_factors_string(ctx, sfactors);
+    return WA_ERR_NONE;
+}

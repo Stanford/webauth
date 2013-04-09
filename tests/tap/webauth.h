@@ -18,13 +18,18 @@
 #include <tests/tap/macros.h>
 
 struct webauth_token_webkdc_factor;
+struct webauth_token_webkdc_proxy;
 
 BEGIN_DECLS
 
-/* Compare two webkdc-factor tokens. */
+/* Compare two tokens of various types. */
 void is_token_webkdc_factor(const struct webauth_token_webkdc_factor *wanted,
                             const struct webauth_token_webkdc_factor *seen,
                             const char *format, ...)
+    __attribute__((__format__(printf, 3, 4)));
+void is_token_webkdc_proxy(const struct webauth_token_webkdc_proxy *wanted,
+                           const struct webauth_token_webkdc_proxy *seen,
+                           const char *format, ...)
     __attribute__((__format__(printf, 3, 4)));
 
 END_DECLS
