@@ -241,16 +241,28 @@ User Information Service
           <factor>o3</factor>
         </factors>
 
-        <!-- List of additional factors to add to successful logins. -->
+        <!-- Optional. List of additional factors to add to successful
+             logins. -->
         <additional-factors>
           <factor>h</factor>
         </additional-factors>
 
-        <!-- Present if specific factors should be required regardless
-             of whether they were requested by the destination site. -->
+        <!-- Optional.  Present if specific factors should be required
+             regardless of whether they were requested by the destination
+             site. -->
         <required-factors>
           <factor>o3</factor>
         </required-factors>
+
+        <!-- Optional.  Present if any persistent factors with a creation
+             date prior to the timestamp should be invalidated.  If the
+             WebKDC invalidates any factor information based on this
+             cutoff, it should then retry the userinfo call with a
+             modified factors parameter reflecting that change.  {time} is
+             seconds since epoch. -->
+        <persistent-factors>
+          <invalid-before>{time}</invalid-before>
+        </persistent-factors>
 
         <!-- Optional.  If present, contains possibly suspicious recent
              logins that the user should be notified of.  name and
@@ -262,8 +274,9 @@ User Information Service
           <host name="{host}" timestamp="{time}">{ip}</host>
         </login-history>
 
-        <!-- If present, indicates that the user will not be able to
-             assert a level of assurance higher than this number. -->
+        <!-- Optional.  If present, indicates that the user will not be
+             able to assert a level of assurance higher than this
+             number. -->
         <max-loa>{max-loa-value}</max-loa>
 
         <!-- Optional.  Contains the expiration time of the user's
@@ -394,6 +407,7 @@ OTP Validation
           <factor>o3</factor>
         </factors>
         <persistent-factors>
+          <invalid-before>{time}</invalid-before>
           <expiration>{expiration}</expiration>
           <factor>d</factor>
         <persistent-factors>
@@ -423,7 +437,10 @@ OTP Validation
   factors; setting persistent session authentication factors is not
   currently supported.)  Here similarly the {expiration} value indicates
   the time (in seconds since UNIX epoch) when the persistent factors
-  should expire.
+  should expire.  The <invalid-before> element is optional; if present, it
+  indicates that the WebKDC should also discard all webkdc-factor tokens
+  with a creation date prior to the time given (in seconds since UNIX
+  epoch).
 
   If level of assurance is being used, the optional <loa> attribute should
   return the level of assurance this authentication indicates.  This
