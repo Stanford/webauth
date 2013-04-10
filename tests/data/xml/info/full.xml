@@ -11,6 +11,9 @@
     <factor>o</factor>
     <factor>o3</factor>
   </required-factors>
+  <persistent-factors>
+    <invalid-before>1365630519</invalid-before>
+  </persistent-factors>
   <login-history>
     <host name="example.com" timestamp="1335373919">127.0.0.2</host>
     <host name="www.example.com">127.0.0.3</host>

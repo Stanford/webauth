@@ -183,6 +183,7 @@ struct webauth_user_info {
     WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
     WA_APR_ARRAY_HEADER_T *additional;  /* Array of char * factor codes. */
     WA_APR_ARRAY_HEADER_T *required;    /* Array of char * factor codes. */
+    time_t invalid_before;              /* Cutoff for persistent validity. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
@@ -203,6 +204,7 @@ struct webauth_user_validate {
     time_t factors_expiration;          /* Expiration time of factors. */
     WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factor codes. */
     time_t persistent_expiration;       /* Expiration time of persistent. */
+    time_t invalid_before;              /* Cutoff for persistent validity. */
     unsigned long loa;                  /* Level of assurance. */
     const char *user_message;           /* Message to pass along to a user. */
 };
