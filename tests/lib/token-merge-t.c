@@ -435,7 +435,7 @@ main(void)
             token->token.webkdc_proxy = tests_wkproxy[i].input[j];
             APR_ARRAY_PUSH(tokens, const struct webauth_token *) = token;
         }
-        s = wai_token_merge_webkdc_proxy(ctx, tokens, NULL, 0, &result);
+        s = wai_token_merge_webkdc_proxy(ctx, tokens, 0, &result);
         if (tests_wkproxy[i].message == NULL) {
             if (s != WA_ERR_NONE)
                 diag("%s", webauth_error_message(ctx, s));

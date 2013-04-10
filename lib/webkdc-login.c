@@ -946,14 +946,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
-     * Now, merge all the webkdc-proxy tokens plus any webkdc-factor
-     * information into a single new webkdc-proxy token.  If we get the error
-     * code WA_ERR_TOKEN_REJECTED back, that means someone tried to use an
-     * inconsistent mix of tokens, which should be rejected as unauthorized
-     * rather than generating an internal WebAuth error.
+     * Now, merge all the webkdc-proxy tokens into a single new webkdc-proxy
+     * token.  If we get the error code WA_ERR_TOKEN_REJECTED back, that means
+     * someone tried to use an inconsistent mix of tokens, which should be
+     * rejected as unauthorized rather than generating an internal WebAuth
+     * error.
      */
     wkproxy = NULL;
-    status = wai_token_merge_webkdc_proxy(ctx, wkproxies, wkfactor,
+    status = wai_token_merge_webkdc_proxy(ctx, wkproxies,
                                           ctx->webkdc->login_time_limit,
                                           &newproxy);
     if (status != WA_ERR_NONE)
@@ -975,6 +975,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
      */
     if (newproxy != NULL) {
         struct webauth_webkdc_proxy_data *data;
+
+        /* Merge in the webkdc-factor token, if any. */
+        status = wai_token_merge_webkdc_proxy_factor(ctx, newproxy, wkfactor,
+                                                     &newproxy);
+        if (status != WA_ERR_NONE)
+            return status;
 
         /* Check that the token is an SSO token. */
         wkproxy = &newproxy->token.webkdc_proxy;
