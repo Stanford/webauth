@@ -390,21 +390,21 @@ combine_webkdc_factors(struct webauth_context *ctx,
 
 
 /*
- * Given a list of webkdc-factor tokens and an invalid-before time, mark as
- * expired every webkdc-factor token whose creation date lies before the
- * invalid-before time.  Modifies the array and webkdc-factor tokens in
- * place.  Returns true if any were invalidated, false otherwise.
+ * Given a list of webkdc-factor tokens and a valid threshold time, mark as
+ * expired every webkdc-factor token whose creation date lies before the valid
+ * threshold time.  Modifies the array and webkdc-factor tokens in place.
+ * Returns true if any were invalidated, false otherwise.
  */
 static bool
 maybe_invalidate_webkdc_factors(apr_array_header_t *wkfactors,
-                                time_t invalid_before)
+                                time_t valid_threshold)
 {
     bool invalidated = false;
     time_t now;
     int i;
 
-    /* Nothing to do if no tokens or invalid_before time. */
-    if (invalid_before == 0)
+    /* Nothing to do if no tokens or valid_threshold time. */
+    if (valid_threshold == 0)
         return false;
     if (apr_is_empty_array(wkfactors))
         return false;
@@ -427,7 +427,7 @@ maybe_invalidate_webkdc_factors(apr_array_header_t *wkfactors,
         wkf = &token->token.webkdc_factor;
 
         /* Expire the token if the creation time is too early. */
-        if (wkf->creation < invalid_before) {
+        if (wkf->creation < valid_threshold) {
             wkf->expiration = now - 1;
             invalidated = true;
         }
@@ -531,7 +531,7 @@ add_user_info(struct webauth_context *ctx,
      * redo the user information service call, since we may now have different
      * authentication factors.
      */
-    if (maybe_invalidate_webkdc_factors(wkfactors, (*info)->invalid_before)) {
+    if (maybe_invalidate_webkdc_factors(wkfactors, (*info)->valid_threshold)) {
         s = get_user_info(ctx, request, wkproxy, wkfactors, info);
         if (s != WA_ERR_NONE)
             return s;

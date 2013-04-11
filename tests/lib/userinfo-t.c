@@ -79,7 +79,7 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
         }
         is_int(1893484802, validate->persistent_expiration,
                "...persistent expiration");
-        is_int(1365630519, validate->invalid_before, "...invalid before");
+        is_int(1365630519, validate->valid_threshold, "...valid threshold");
         is_int(3, validate->loa, "...LoA is correct");
         is_string("<em>OTP3</em> down.  &lt;_&lt;;",
                   validate->user_message, "...user message");
@@ -169,8 +169,8 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(3, info->max_loa, "...max LoA");
         is_int(1310675733, info->password_expires, "...password expires");
-        is_int(1365630519, info->invalid_before,
-               "...invalid before is correct");
+        is_int(1365630519, info->valid_threshold,
+               "...valid threshold is correct");
         ok(info->factors != NULL, "...factors is not NULL");
         if (info->factors == NULL)
             ok_block(5, 0, "...factors is not NULL");
@@ -230,7 +230,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
@@ -248,7 +248,7 @@ main(void)
         is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
@@ -266,7 +266,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         if (info->factors == NULL)
             ok_block(5, 0, "...factors is not NULL");
         else {
@@ -302,7 +302,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         if (info->factors == NULL)
             ok_block(5, 0, "...factors is not NULL");
         else {
@@ -332,7 +332,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         if (info->factors == NULL)
             ok_block(4, 0, "...factors is not NULL");
         else {
@@ -366,7 +366,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         if (info->factors == NULL)
             ok_block(5, 0, "...factors is not NULL");
         else {
@@ -436,7 +436,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
@@ -455,7 +455,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
@@ -491,7 +491,7 @@ main(void)
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
-        is_int(0, info->invalid_before, "...invalid before");
+        is_int(0, info->valid_threshold, "...valid threshold");
         ok(info->factors == NULL, "...factors is NULL");
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");

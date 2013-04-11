@@ -261,7 +261,7 @@ User Information Service
              modified factors parameter reflecting that change.  {time} is
              seconds since epoch. -->
         <persistent-factors>
-          <invalid-before>{time}</invalid-before>
+          <valid-threshold>{time}</valid-threshold>
         </persistent-factors>
 
         <!-- Optional.  If present, contains possibly suspicious recent
@@ -407,7 +407,7 @@ OTP Validation
           <factor>o3</factor>
         </factors>
         <persistent-factors>
-          <invalid-before>{time}</invalid-before>
+          <valid-threshold>{time}</valid-threshold>
           <expiration>{expiration}</expiration>
           <factor>d</factor>
         <persistent-factors>

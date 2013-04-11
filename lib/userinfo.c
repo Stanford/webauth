@@ -126,13 +126,13 @@ convert_number(struct webauth_context *ctx, const char *string,
  * Parse the factors or persistent-factors sections of a userinfo XML
  * document.  Stores the results in the provided factors APR array.  If
  * expiration is non-NULL, accept and parse a user expiration time into that
- * time_t pointer.  If invalid_before is non-NULL, accept and parse a cutoff
+ * time_t pointer.  If valid_threshold is non-NULL, accept and parse a cutoff
  * time into that time_t pointer.  Returns a status code.
  */
 static int UNUSED
 parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
               apr_array_header_t **factors, time_t *expiration,
-              time_t *invalid_before)
+              time_t *valid_threshold)
 {
     apr_xml_elem *child;
     const char **type, *content;
@@ -157,13 +157,13 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
             }
             if (status != WA_ERR_NONE)
                 return status;
-        } else if (strcmp(child->name, "invalid-before") == 0) {
-            if (invalid_before == NULL)
+        } else if (strcmp(child->name, "valid-threshold") == 0) {
+            if (valid_threshold == NULL)
                 continue;
             status = wai_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE) {
                 status = convert_number(ctx, content, &value);
-                *invalid_before = value;
+                *valid_threshold = value;
             }
             if (status != WA_ERR_NONE)
                 return status;
@@ -255,7 +255,7 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
         else if (strcmp(child->name, "required-factors") == 0)
             s = parse_factors(ctx, child, &info->required, NULL, NULL);
         else if (strcmp(child->name, "persistent-factors") == 0)
-            s = parse_factors(ctx, child, &junk, NULL, &info->invalid_before);
+            s = parse_factors(ctx, child, &junk, NULL, &info->valid_threshold);
         else if (strcmp(child->name, "login-history") == 0)
             s = parse_history(ctx, child, &info->logins);
         else if (strcmp(child->name, "max-loa") == 0) {
@@ -321,7 +321,7 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
         else if (strcmp(child->name, "persistent-factors") == 0)
             status = parse_factors(ctx, child, &validate->persistent,
                                    &validate->persistent_expiration,
-                                   &validate->invalid_before);
+                                   &validate->valid_threshold);
         else if (strcmp(child->name, "loa") == 0) {
             status = wai_xml_content(ctx, child, &content);
             if (status == WA_ERR_NONE)
