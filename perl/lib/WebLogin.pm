@@ -2210,6 +2210,322 @@ and F<pwchange.cgi> scripts that come with WebAuth and comprise, with this
 module, the WebLogin service.  It is not currently designed to be used by
 any other scripts and does not currently have a documented API.
 
+=head1 FUNCTIONS
+
+=over 4
+
+=item setup
+
+Overridden CGI::Application setup function.  This is used for all
+initialization of data needed for our WebLogin object.  It sets various
+defaults, sets up our Template Toolkit options, creates memcached
+caches, and other needed setup items to prepare.
+
+=item cgiapp_prerun
+
+Overridden CGI::Application function that is called before the
+processing of each individual query.  This does further setup that's
+meant to be query-specific, since we're potentially being wrapped up in
+FastCGI or other methods that will cache the WebLogin object.
+
+This includes clearing any parameters or template parameters from
+previous runs, creating fresh objects for handling current query and
+responses, and storing other query-specific data.
+
+=item krb5_escape (PRINCIPAL)
+
+Escape special characters in a principal nam to match the escaping done
+by krb5_unparse_name.  Returns the escaped principal name.
+
+=item fix_token (TOKEN)
+
+Encode a token for URL usage.
+
+=item expire_cookie (NAME, SECURE)
+
+Create and return a CGI::Cookie object that will expire an existing
+cookie.  The cookie has the given NAME set, and includes the given flag
+as to whether or not it uses SSL.
+
+=item template_params (SETTINGS_REF)
+
+Interface used to wrap up and save various parameters that we are
+storing to later be used in the template files.  Takes a hashref to
+settings we wish to add/override, and returns the ending hashref of all
+current parameters.
+
+=item get_pagename (PAGETYPE)
+
+Takes the type of page we want, then returns the filename of the
+template that is used to display that page type.
+
+=item print_headers (ARGS_REF)
+
+Sets the headers for a page.  This handles setting or removing any
+cookies, then setting the headers.  If a return url was set, add a
+redirect to that URL into the headers.
+
+=item pretty_return_uri (URI)
+
+Takes a URI object and uses it to create a 'pretty' return URI, one
+that's more readable by users for display on the configuration page.
+Returns a string containing that URI.
+
+=item parse_uri
+
+Parses the return URL from the web response and either sets the pretty
+URI (via petty_return_uri) or flags an error to the template if there
+was something wrong with the URL.
+
+=item token_rights
+
+Parses the token.acl file, using that to return an arrayref of the
+credentials that the requesting WAS is permitted to obtain.  This is
+used in cases where a specific WAS might have access to request
+delegated credentials.
+
+=item get_login_cancel_url
+
+Checks to see if there is a login canceled token, and if so, sets
+template parameters to offer a login canceled URL with that token.
+
+=item print_login_page
+
+View for the user login page.  This is the view that allows a user to
+attempt to login, offering fields for username and password, possibly a
+remuser URL, and any errors from previous failed logins.
+
+=item print_error_page
+
+View for the generic error page.  This will pass along any previously
+set error types for the template, and make sure that the error page
+itself isn't cached.
+
+=item print_error_fatal
+
+View for a fatal error.  This is something normally only used on an
+error to print out a template, meant as an emergency fallback to
+display something when things are very messed up.
+
+=item print_confirm_page
+
+View for the confirmation page post-login.  This potentially includes a
+password expiration warning, a warning for expiring device factor
+cookies, and a notice for delegated credentials.  If none of those are
+set, then we may (on WebKDC::Config settings) bypass the confirmation
+page entirely and just send a redirect to the login destination.
+
+=item redisplay_confirm_page
+
+View to redisplay the confirmation page after a change in the
+REMOTE_USER cookie.  This is a much more simple version of
+print_confirm_page, as it doesn't have to do most of the checking for
+warnings and whether or not to bypass the page.
+
+=item print_pwchange_page
+
+View to print out the password change page.  Pass along any needed user
+information, such as their login information and any change password
+token.
+
+=item print_pwchange_confirm_page
+
+View to print out a confirmation after a successful password change.
+This is only accessed when the user is going to the password change
+page via the URL just for that, rather than as a part of the normal
+login flow.
+
+=item print_multifactor_page
+
+View to print out a page prompting the user to enter their multifactor
+one-time password.  We pass along user information, the factors
+needed for login, and the factors the user has.
+
+=item print_remuser_redirect
+
+Redirect a user to the REMOTE_USER enabled login URL.  This passes the
+request token and service token on to the URL, then returns it as a
+redirect page for CGI::Application to print.
+
+=item add_generic_proxy_token (ARGS_REFERENCE)
+
+Create and add a generic token to the set of tokens passed to the
+WebKDC via the web request.  Read the ARGS_REFERENCE for any
+non-default arguments we wish to create the proxy token with, then
+create a new WebAuth::Token::WebKDCProxy object.  Encode it with the
+keyring and add it to the proxy cookies on the web request.
+
+=item add_kerberos_proxy_token
+
+Create a proxy token using forwarded Kerberos credentials and pass into
+the web request.
+
+=item add_remuser_token
+
+Create a proxy token with the REMOTE_USER identity and pass into the
+web request.  This does validation against the REMOTE_USER setting,
+then passes along to add_generic_proxy_token if it passes our
+requirements.
+
+=item add_changepw_token
+
+Create a kadmin/changepw token using the username and password of a
+user after successful login.  This will create a ticket, put it into a
+WebAuth::Token::Cred object, and use the keyring to encode it.  The
+token is passed back as the CPT parameter on the WebLogin object.
+Returns 1 on success.
+
+=item change_user_password
+
+Attempt to change a user's password using a previously created change
+password token.  Validate that the token is correct for the given user,
+then attempt to change the user's password, returning a status and any
+exception objects that may have been created during failures.
+
+=item error_if_no_cookies
+
+Tests to make sure that cookies are enabled in the user's browser.  If
+a test cookie is not set, we reload the page with an attempt to set
+that cookie and a flag showing that we're making the attempt.  If we
+find the flag set and no cookie, then the user does not have cookies
+set, and we display an error page.
+
+=item error_password_no_post
+
+Tests to make sure that if a password was sent, the request method was
+POST.  This is done in order to avoid the password potentially showing
+up in referer strings sent to a remote site.  If the method was not
+POST, we display an error page.
+
+=item error_no_request_token
+
+Tests to make sure that we have a request token and service token
+defined in the submitted CGI query.  If not, we will display an error
+page.
+
+=item error_invalid_pwchange_fields
+
+Tests the requirements for a password change request page to be
+successfully entered.  This does not actually try to change the
+password or check that it is successful, but only checks to make sure
+that the user has entered all of the needed data.  If not, we will
+display the password change page again, with error flags for the
+missing or incorrect fields.
+
+=item is_replay (RT)
+
+Checks against memcached to see if the given request token has been
+recently used, in order to detect a replay attack.  Returns 1 if the
+request token was found.
+
+=item is_rate_limited (USERNAME)
+
+Checks against memcached to see if the given user has exceeded a
+certain number of failed logins.  Returns 1 if the user has exceeded
+the number (set in WebKDC::Config).
+
+=item register_auth (RT, USERNAME)
+
+Registers a successful authentication for the given user against
+memcached, with the request token for the authentication.  This is used
+to detect replay attacks.
+
+=item register_auth_fail (USERNAME)
+
+Registers a failed authentication for the given user againct memcached.
+This is used for rate limiting users on failed logins.
+
+=item setup_kdc_request (COOKIES)
+
+Takes the WebKDC::WebRequest object already created, and fills that
+object with data from the user/browser.  This includes current cookies
+passed to us, and also any relevant data sent via the CGI query.  The
+latter can include username and password, for two examples.
+
+Returns the status from the request.  This is usually WK_SUCCESS as we
+are not actually contacting the WebKDC at this point, but can be error
+statuses in cases such as the user not filling in their username, or
+if replay or rate limited checks were triggered.
+
+=item handle_login_error (STATUS, ERROR)
+
+This is a catch-all handler for any error during the normal user login
+process.  This uses the given error status to decide what needs to be
+done to handle this error case, often simply printing out a screen to
+request additional information or the user to re-enter correct
+information.  In some cases, this will have to throw up an
+unrecoverable error page that the user can do nothing with.
+
+=item index
+
+The default runmode, handling the basic attempt to log in, whether via
+plain username and password, SPNEGO, or other method.
+
+This is called if no other runmode is set by the main login URL, or on
+any regular failure to successfully log in (such as invalid password).
+
+=item logout
+
+Runmode to handle a request by the user to log out, blowing away all
+proxy cookies.
+
+This is only called via the logout URL.
+
+=item pwchange
+
+Runmode to handle an attempt by the user to change their current
+password.  This handles the attempt to change the user password, either
+passing the user on to the confirmation page or bringing the user back
+to this page on a problem with changing the password.
+
+This is called by either the user clicking a link from the confirm page
+warning that their password is soon to expire, or by the user being
+forced to here after logging in with an expired password.
+
+=item pwchange_display
+
+Runmode to handle a direct access to the password change display
+screen.
+
+This is called only by the user visiting the password change URL from
+outside the normal program flow.
+
+=item multifactor
+
+Runmode to handle an attempted multifactor login.  The username and
+one-time password are passed to the WebKDC in order to validate whether
+or not there was a succesful login, and the user is then sent to either
+the confirm page on success, or the multifactor page again on failure.
+
+This is called from the multifactor entry screen, when the user submits
+their one-time password.
+
+=item multifactor_sendauth
+
+Runmode to handle the request from a user to send a multifactor
+authentication token somewhere via a remctl command.  The command
+itself is configured in WebKDC::Config.  The normal case would be
+sending out a OTP over SMS to a user.
+
+This is called from the multifactor entry screen, in the case of a user
+having a multifactor method that requires the user be sent a token.
+
+=item edit_authz_identity
+
+Runmode to handle the request from a user to change their authorization
+identity.
+
+This is called from the config screen.
+
+=item edit_remoteuser
+
+Runmode to handle the request from a user to change their REMOTE_USER
+setting.
+
+This is called from the config screen.
+
+=back
+
 =head1 AUTHORS
 
 Roland Schemers, Russ Allbery <rra@stanford.edu>, and Jon Robertson

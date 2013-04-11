@@ -475,6 +475,41 @@ The status will be WK_SUCCESS on success and some other WK_ERR_* status
 code on failure.  See L<WebKDC::WebKDCException> for the other status
 codes.
 
+=item throw (ERROR_CODE, ERROR_MSG, PEC, DATA)
+
+Throw a WebKDCException with the given error code and message.  This can
+also take an optional protocol error code and data.
+
+=item request_token_request (REQUEST, RESPONSE)
+
+Makes a requestTokenRequest call to the WebKDC, using data from the given
+WebKDC::WebRequest object.  This will create the XML to communicate with
+the WebKDC, pass it along, then parse the response.
+
+There is no return value.  Instead, data is parsed from the WebKDC's
+response and placed into the WebKDC::WebResponse object passed to the
+function.  On an error, we throw an exception with a specific error code.
+
+=item proxy_token_request (REQUEST, TGT)
+
+Makes a webkdcProxyTokenRequest call to the WebKDC, using the given
+WebKDC::WebRequest and TGT passed.  This will create the XML to
+communicate with the WebKDC, pass it along, then parse the response.
+
+The return value is a list of the returned proxy token and subject.  On
+any failure, we throw an exception with a specific error code.
+
+=item get_keyring (WA)
+
+Returns a keyring object from the configured WebLogin keyring path.
+
+=item get_child_value (ELEMENT, NAME, OPT)
+
+Gets and returns the content of a child for the given element.  NAME is
+the name of the child to search for.  If there is no child of that name,
+throw an exception of type WK_ERR_UNRECOVERABLE_ERROR.  If OPT is set
+and there was no child of the given name, instead just return undef.
+
 =back
 
 =head1 AUTHOR

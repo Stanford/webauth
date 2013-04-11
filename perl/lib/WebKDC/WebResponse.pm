@@ -262,6 +262,11 @@ Returns or sets the authenticated user identity.
 Returns or sets the password expiration time for the authenticating user,
 in seconds since UNIX epoch.
 
+=item user_message ([TEXT])
+
+Text passed back from the user information service as a message to
+display to the user as explanatory text.
+
 =back
 
 =head1 AUTHOR

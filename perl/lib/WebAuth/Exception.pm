@@ -160,9 +160,17 @@ Returns a verbose error message, which consists of all information
 available in the exception, including the status code, error message, line
 number and file, and any detail message in the exception.
 
-The result of this method is also used as the string value of the
-exception if the exception object is interpolated into a string or
-compared to a string.
+=item to_string ()
+
+This method is called if the exception is interpolated into a string.
+It is a wrapper around the verbose_message method.
+
+=item spaceship ([STRING], [SWAP])
+
+This method is called if the exception object is compared to a string
+via cmp.  It will compare the given string to the verbose error message
+and return the result.  If SWAP is set, it will reverse the order to
+compare the given string to the verbose error.
 
 =back
 
