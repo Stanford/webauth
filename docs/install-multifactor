@@ -393,9 +393,9 @@ OTP Validation
       WebKDC doesn't know what type of OTP the user is trying to use.
 
   If the remctl command exits with a non-zero status, this will be taken
-  as a fatal error and the user's authentication will be aborted.  (This
-  should not be used for an invalid OTP; see below.)  The error can be
-  reported on standard error.  If it exits with a zero status, it must
+  as a fatal internal error and the user's authentication will be aborted.
+  (This should not be used for an invalid OTP; see below.)  The error can
+  be reported on standard error.  If it exits with a zero status, it must
   provide an XML document on standard output with something like the
   following contents:
 
@@ -420,8 +420,10 @@ OTP Validation
 
   The correctness of the OTP is given by the <success> attribute, which
   should have a value of "yes" if the OTP was correct and "no" if it was
-  not.  If correct, the <factors> attribute should be included, listing
-  all of the authentication factors that this successful authentication
+  not (or if the OTP login was rejected for some other reason; see below).
+
+  If correct, the <factors> attribute should be included, listing all of
+  the authentication factors that this successful authentication
   represents.  Normally, this will include "o" (some OTP) along with a
   specific numbered OTP factor if there are multiple types of OTP
   available.  {expiration} indicates when (in seconds since UNIX epoch)
@@ -452,6 +454,17 @@ OTP Validation
   the user with any additional information about specific actions they
   should take as a result of this OTP validation attempt, or an
   an informational message about the state of this validation.
+
+  On failure, behavior depends on whether <user-message> is present.  If
+  it is not present, <success>no</success> indicates that the OTP code was
+  not correct.  This will be logged as a failed authentication and the
+  user will be prompted to re-enter the code.  If <user-message> is
+  present, this instead indicates that the validation service rejected the
+  authentication for some reason either more complex or requiring more
+  explanation than simply "the OTP code was wrong."  The user will still
+  be prompted to enter an OTP code, but the contents of <user-message>
+  will be made availed to the WebLogin template for display to the user.
+  This will be logged as a rejected authentication.
 
 WebLogin Templates
 
