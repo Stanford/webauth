@@ -82,7 +82,7 @@ main(void)
     /* Start remctld. */
     remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
 
-    plan(255);
+    plan(275);
 
     /* Provide basic configuration to the WebKDC code. */
     status = webauth_webkdc_config(ctx, &config);
@@ -606,9 +606,9 @@ main(void)
                   "...result subject is right");
         is_string("webkdc", token->token.id.auth,
                   "...result auth type is right");
-        is_string("o,o3,p,m,k,d,u", token->token.proxy.initial_factors,
+        is_string("o,o3,p,m,d,u,k", token->token.proxy.initial_factors,
                   "...result initial factors is right");
-        is_string("o,o3,p,m,k,d,u", token->token.proxy.session_factors,
+        is_string("o,o3,p,m,d,u,k", token->token.proxy.session_factors,
                   "...result session factors is right");
         is_int(3, token->token.id.loa, "...result LoA is right");
         is_int(now + 60 * 60, token->token.id.expiration,
@@ -630,6 +630,69 @@ main(void)
         is_string("k,d,u", ft->factors, "...and correct factors");
         is_int(now + 60 * 60, ft->expiration, "...and expiration is correct");
         is_int(now - 10 * 60, ft->creation, "...and creation is correct");
+    }
+
+    /*
+     * If the webkdc-factor token is older than the invalid-before cutoff,
+     * we will ignore it and not add the additional factor, including the new
+     * webkdc-factor information that we get from OTP.
+     */
+    wkfactor.token.webkdc_factor.creation = 1365630518;
+    wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
+    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkfactor;
+    status = webauth_webkdc_login(ctx, &request, &response, ring);
+    is_int(WA_ERR_NONE, status,
+           "Multifactor with proxy, old factor, and OTP returns success");
+    is_int(0, response->login_error, "...with no error");
+    is_string(NULL, response->login_message, "...and no error message");
+    ok(response->result != NULL, "...there is a result token");
+    is_string("id", response->result_type, "...which is an id token");
+    if (response->result == NULL) {
+        ok(false, "...no result token");
+        token = NULL;
+    } else {
+        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
+                                      session, &token);
+        is_int(WA_ERR_NONE, status, "...result token decodes properly");
+    }
+    if (token == NULL || status != WA_ERR_NONE)
+        ok_block(6, 0, "...no result token: %s",
+                 webauth_error_message(ctx, status));
+    else {
+        is_string("full", token->token.id.subject,
+                  "...result subject is right");
+        is_string("webkdc", token->token.id.auth,
+                  "...result auth type is right");
+        is_string("o,o3,p,m,d,u", token->token.proxy.initial_factors,
+                  "...result initial factors is right");
+        is_string("o,o3,p,m,d,u", token->token.proxy.session_factors,
+                  "...result session factors is right");
+        is_int(3, token->token.id.loa, "...result LoA is right");
+        is_int(now + 60 * 60, token->token.id.expiration,
+               "...and expiration matches the shorter expiration");
+    }
+    ok(response->factor_tokens != NULL, "...and we have factor tokens");
+    if (response->factor_tokens == NULL)
+        ok_block(7, 0, "...no factor tokens");
+    else {
+        is_int(1, response->factor_tokens->nelts, "...one factor token");
+        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
+                            struct webauth_webkdc_factor_data);
+        is_int(1893484802, fd->expiration, "...with expiration");
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
+                                      fd->token, ring, &token);
+        is_int(WA_ERR_NONE, status, "...which decodes properly");
+        ft = &token->token.webkdc_factor;
+        is_string("full", ft->subject, "...with correct subject");
+        is_string("d,u", ft->factors, "...and correct factors");
+        is_int(1893484802, ft->expiration, "...and expiration is correct");
+        if (time(NULL) - ft->creation < 5)
+            ok(true, "...and creation within bounds");
+        else {
+            diag("Creation %lu, time %lu", (unsigned long) ft->creation,
+                 (unsigned long) time(NULL));
+            ok(false, "...and creation within bounds");
+        }
     }
 
     /*

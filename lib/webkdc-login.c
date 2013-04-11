@@ -337,11 +337,15 @@ cleanup:
 
 
 /*
- * Given the request, the response, our webkdc-proxy token, a flag saying
- * whether we did a login, and a struct to fill in with the user information,
- * determine if we're doing random multifactor and then call the user
- * information service.  Add the data from the user information service and
- * add the random multifactor factor if we did a random multifactor probe.
+ * Given the request, the response, our webkdc-proxy token, any webkdc-factor
+ * token, a flag saying whether we did a login, and a struct to fill in with
+ * the user information, merge the webkdc-factor factors and determine if
+ * we're doing random multifactor, and then call the user information service.
+ * If the user information service says to invalidate our webkdc-factor token,
+ * revert the merge and try again.
+ *
+ * Add the data from the user information service and add the random
+ * multifactor factor if we did a random multifactor probe.
  *
  * For variables in this function, an initial "i" indicates they're for the
  * initial factors and an initial "s" indicates that they're for the session
@@ -351,23 +355,62 @@ static int
 get_user_info(struct webauth_context *ctx,
               struct webauth_webkdc_login_request *request,
               struct webauth_webkdc_login_response **response,
-              struct webauth_token_webkdc_proxy *wkproxy, bool did_login,
-              struct webauth_user_info **info)
+              struct webauth_token *wkproxy,
+              apr_array_header_t *wkfactors,
+              bool did_login, struct webauth_user_info **info)
 {
+    struct webauth_token_webkdc_proxy *wkp;
+    struct webauth_token_webkdc_factor *wkf = NULL;
     struct webauth_factors *ifactors, *iwkfactors, *sfactors, *swkfactors;
     struct webauth_factors *random;
+    char *factors;
     bool randmf = false;
-    int status;
+    bool invalidated;
+    int i, status;
+    time_t now;
     struct webauth_token_request *req = request->request;
 
-    /* Parse all of the factors involved. */
-    iwkfactors = webauth_factors_parse(ctx, wkproxy->initial_factors);
+    /* Parse the request factors. */
     ifactors = webauth_factors_parse(ctx, req->initial_factors);
-    swkfactors = webauth_factors_parse(ctx, wkproxy->session_factors);
     sfactors = webauth_factors_parse(ctx, req->session_factors);
 
     /* Create a webauth_factors struct representing random multifactor. */
     random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
+
+    /* Parse the factors from the webkdc-proxy token. */
+redo:
+    wkp = &wkproxy->token.webkdc_proxy;
+    iwkfactors = webauth_factors_parse(ctx, wkp->initial_factors);
+    swkfactors = webauth_factors_parse(ctx, wkp->session_factors);
+
+    /*
+     * Walk through all of the factor tokens and add the factors from any
+     * unexpired tokens that match the subject of the webkdc-proxy token.
+     */
+    now = time(NULL);
+    if (!apr_is_empty_array(wkfactors)) {
+        for (i = 0; i < wkfactors->nelts; i++) {
+            struct webauth_token *token;
+            struct webauth_factors *extra;
+
+            /* Extract and set a pointer to the next webkdc-factor token. */
+            token = APR_ARRAY_IDX(wkfactors, i, struct webauth_token *);
+            if (token->type != WA_TOKEN_WEBKDC_FACTOR)
+                continue;
+            wkf = &token->token.webkdc_factor;
+
+            /* Discard all expired and non-matching tokens. */
+            if (wkf->expiration <= now)
+                continue;
+            if (strcmp(wkf->subject, wkp->subject) != 0)
+                continue;
+
+            /* Merge in the factor information. */
+            extra = webauth_factors_parse(ctx, wkf->factors);
+            iwkfactors = webauth_factors_union(ctx, iwkfactors, extra);
+            swkfactors = webauth_factors_union(ctx, swkfactors, extra);
+        }
+    }
 
     /*
      * Determine if we're doing random multifactor.
@@ -375,7 +418,7 @@ get_user_info(struct webauth_context *ctx,
      * We will request random multifactor if either the initial or session
      * requirements in the request include random multifactor and random
      * multifactor is not satisfied by the corresponding factors in the
-     * webkdc-proxy token.
+     * webkdc-proxy token combined with the webkdc-factor tokens.
      */
     if (webauth_factors_contains(ctx, ifactors, WA_FA_RANDOM_MULTIFACTOR))
         if (!webauth_factors_satisfies(ctx, iwkfactors, random))
@@ -385,11 +428,44 @@ get_user_info(struct webauth_context *ctx,
             randmf = true;
 
     /* Call the user information service. */
-    status = webauth_user_info(ctx, wkproxy->subject, request->remote_ip,
-                               randmf, req->return_url,
-                               wkproxy->initial_factors, info);
+    factors = webauth_factors_string(ctx, iwkfactors);
+    status = webauth_user_info(ctx, wkp->subject, request->remote_ip, randmf,
+                               req->return_url, factors, info);
     if (status != WA_ERR_NONE)
         return status;
+
+    /*
+     * If the user information service provides an invalid_before time, walk
+     * through the provided webkdc-factor tokens and expire the ones that were
+     * created before that time.  Set invalidated to true if we invalidated
+     * any factors.
+     */
+    invalidated = false;
+    if ((*info)->invalid_before > 0 && !apr_is_empty_array(wkfactors)) {
+        for (i = 0; i < wkfactors->nelts; i++) {
+            struct webauth_token *token;
+
+            /* Extract and set a pointer to the next webkdc-factor token. */
+            token = APR_ARRAY_IDX(wkfactors, i, struct webauth_token *);
+            if (token->type != WA_TOKEN_WEBKDC_FACTOR)
+                continue;
+            wkf = &token->token.webkdc_factor;
+
+            /* Discard all expired and non-matching tokens. */
+            if (wkf->expiration <= now)
+                continue;
+            if (strcmp(wkf->subject, wkp->subject) != 0)
+                continue;
+
+            /* Expire the token if the creation time is too early. */
+            if (wkf->creation < (*info)->invalid_before) {
+                wkf->expiration = now - 1;
+                invalidated = true;
+            }
+        }
+    }
+    if (invalidated)
+        goto redo;
 
     /* Add results from the user information service to the response. */
     if (did_login)
@@ -398,8 +474,8 @@ get_user_info(struct webauth_context *ctx,
     (*response)->user_message = (*info)->user_message;
 
     /* Cap the user's LoA at the maximum allowed by the service. */
-    if (wkproxy->loa > (*info)->max_loa)
-        wkproxy->loa = (*info)->max_loa;
+    if (wkp->loa > (*info)->max_loa)
+        wkp->loa = (*info)->max_loa;
 
     /*
      * Add the random multifactor factor to the factors of our webkdc-proxy
@@ -421,8 +497,8 @@ get_user_info(struct webauth_context *ctx,
     }
 
     /* Update our factors in case we changed something. */
-    wkproxy->initial_factors = webauth_factors_string(ctx, iwkfactors);
-    wkproxy->session_factors = webauth_factors_string(ctx, swkfactors);
+    wkp->initial_factors = webauth_factors_string(ctx, iwkfactors);
+    wkp->session_factors = webauth_factors_string(ctx, swkfactors);
     return WA_ERR_NONE;
 }
 
@@ -939,12 +1015,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * we'll return to the user, or leave it as NULL if there are no
      * webkdc-factor tokens.
      */
-    status = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
-    if (status != WA_ERR_NONE) {
-        wai_error_add_context(ctx, "merging webkdc-factor tokens");
-        return status;
-    }
-
     /*
      * Now, merge all the webkdc-proxy tokens into a single new webkdc-proxy
      * token.  If we get the error code WA_ERR_TOKEN_REJECTED back, that means
@@ -974,15 +1044,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * starting with "WEBKDC:" to indicate that it is an SSO token.
      */
     if (newproxy != NULL) {
-        struct webauth_webkdc_proxy_data *data;
-
-        /* Merge in the webkdc-factor token, if any. */
-        status = wai_token_merge_webkdc_proxy_factor(ctx, newproxy, wkfactor,
-                                                     &newproxy);
-        if (status != WA_ERR_NONE)
-            return status;
-
-        /* Check that the token is an SSO token. */
         wkproxy = &newproxy->token.webkdc_proxy;
         if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
             (*response)->login_error = WA_PEC_PROXY_TOKEN_INVALID;
@@ -991,15 +1052,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                wkproxy->proxy_subject);
             return WA_ERR_NONE;
         }
-
-        /* Encode it in the response. */
-        size = sizeof(struct webauth_webkdc_proxy_data);
-        (*response)->proxies = apr_array_make(ctx->pool, 1, size);
-        data = apr_array_push((*response)->proxies);
-        data->type = wkproxy->proxy_type;
-        status = webauth_token_encode(ctx, newproxy, ring, &data->token);
-        if (status != WA_ERR_NONE)
-            return status;
     }
 
     /*
@@ -1010,12 +1062,15 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * that information if possible.  If we did a login, we should return
      * login history if we have any.  Here is also where we tell the user
      * information service to do random multifactor if needed.
+     *
+     * If we don't have configuration about a user information service, we
+     * trust all the webkdc-factor tokens unconditionally.
      */
     if (wkproxy != NULL)
         (*response)->subject = wkproxy->subject;
     if (ctx->user != NULL && wkproxy != NULL) {
-        status = get_user_info(ctx, request, response, wkproxy, did_login,
-                               &info);
+        status = get_user_info(ctx, request, response, newproxy, wkfactors,
+                               did_login, &info);
         if (status != WA_ERR_NONE)
             return status;
         if (info->error != NULL) {
@@ -1025,6 +1080,46 @@ webauth_webkdc_login(struct webauth_context *ctx,
             (*response)->user_message = info->error;
             return WA_ERR_NONE;
         }
+
+        /*
+         * Merge the webkdc-factor tokens into a single token.  We do this
+         * after the user information service call, which may have invalidated
+         * some of the tokens.
+         */
+        status = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "merging webkdc-factor tokens");
+            return status;
+        }
+    } else if (ctx->user == NULL && wkproxy != NULL) {
+        struct webauth_token *oldproxy = newproxy;
+
+        status = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "merging webkdc-factor tokens");
+            return status;
+        }
+        status = wai_token_merge_webkdc_proxy_factor(ctx, oldproxy, wkfactor,
+                                                     &newproxy);
+        wkproxy = &newproxy->token.webkdc_proxy;
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "merging webkdc-proxy and"
+                                  " webkdc-factor tokens");
+            return status;
+        }
+    }
+
+    /* Encode the webkdc-proxy token in the response. */
+    if (newproxy != NULL) {
+        struct webauth_webkdc_proxy_data *data;
+
+        size = sizeof(struct webauth_webkdc_proxy_data);
+        (*response)->proxies = apr_array_make(ctx->pool, 1, size);
+        data = apr_array_push((*response)->proxies);
+        data->type = wkproxy->proxy_type;
+        status = webauth_token_encode(ctx, newproxy, ring, &data->token);
+        if (status != WA_ERR_NONE)
+            return status;
     }
 
     /*
