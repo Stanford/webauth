@@ -10,7 +10,7 @@
 
 use strict;
 
-use Test::More tests => 10;
+use Test::More tests => 13;
 
 BEGIN {
     use_ok ('WebAuth', '3.02', qw/WA_ERR_INVALID/);
@@ -32,3 +32,12 @@ like ($exception->verbose_message, qr/^webauth_key_create: \Q$message\E at /,
 like ("$@", qr/^webauth_key_create: \Q$message\E at /, 'Stringification');
 my $string = "$@";
 is ($@ cmp $string, 0, 'cmp');
+
+is ($@ cmp 'Test', 1, 'cmp inequal');
+is ('Test' cmp $@, -1, 'cmp inequal swapped');
+
+# Test an exception with undefined detail and line.
+$exception->{detail} = undef;
+$exception->{line}   = undef;
+is ($exception->verbose_message, $message,
+    'Verbose message with no detail or line');
