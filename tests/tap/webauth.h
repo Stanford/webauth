@@ -34,12 +34,36 @@ struct webauth_keyring;
 #define EMPTY_LOGIN { NULL, NULL, 0 }
 
 /*
- * Data for a test service token.  We want to generate the key on the fly, so
- * to build a test case we use the following data instead of the full
- * webkdc-service token data and then build the rest when running the test.
- *
- * If expiration < 1000, it is taken as a positive offset from the current
- * time.
+ * All of the following structs for test token data are paralle to the regular
+ * webauth_token_* definitions except that they may omit some data that must
+ * be constructed at runtime and have special handling for creation and
+ * expiration.  For the latter two fields, if the value is < 1000, it is taken
+ * as a *negative* offset from now for creation and a *positive* offset from
+ * now for expiration.
+ */
+
+/*
+ * Data for a webkdc-proxy token.  Proxy data may be generated on the fly if
+ * the proxy_type is krb5.
+ */
+struct wat_token_webkdc_proxy {
+    const char *subject;
+    const char *proxy_type;
+    const char *proxy_subject;
+    const void *data;
+    size_t data_len;
+    const char *initial_factors;
+    unsigned long loa;
+    time_t creation;
+    time_t expiration;
+
+    /* Not included in the wire representation. */
+    const char *session_factors;
+};
+
+/*
+ * Data for a test service token.  Omit the session key, which we generate on
+ * the fly while constructing the test.
  */
 struct wat_token_webkdc_service {
     const char *subject;
@@ -58,7 +82,7 @@ struct wat_login_request {
 
     /* Authentication tokens. */
     struct webauth_token_login logins[3];
-    struct webauth_token_webkdc_proxy wkproxies[3];
+    struct wat_token_webkdc_proxy wkproxies[3];
     struct webauth_token_webkdc_factor wkfactors[3];
 
     /* Requested authorization subject. */
@@ -92,7 +116,7 @@ struct wat_login_response {
     const char *factors_configured;
 
     /* Single sign-on tokens and user identity. */
-    struct webauth_token_webkdc_proxy proxies[3];
+    struct wat_token_webkdc_proxy proxies[3];
     struct webauth_token_webkdc_factor factor_token;
 
     /* Only one of result_id or result_proxy will be set. */

@@ -230,16 +230,80 @@ is_token_webkdc_proxy(const struct webauth_token_webkdc_proxy *wanted,
 
 
 /*
+ * Internal helper function to build a webkdc-proxy token from a
+ * wat_token_webkdc_proxy structure.  Takes the WebAuth context, the
+ * template, and the time basis, and returns a newly-allocated token.
+ */
+static struct webauth_token *
+build_token_webkdc_proxy(struct webauth_context *ctx,
+                         const struct wat_token_webkdc_proxy *template,
+                         time_t now)
+{
+    struct webauth_token *token;
+    struct webauth_token_webkdc_proxy *wkproxy;
+
+    token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    token->type = WA_TOKEN_WEBKDC_PROXY;
+    wkproxy = &token->token.webkdc_proxy;
+    wkproxy->subject         = template->subject;
+    wkproxy->proxy_type      = template->proxy_type;
+    wkproxy->proxy_subject   = template->proxy_subject;
+    wkproxy->data            = template->data;
+    wkproxy->data_len        = template->data_len;
+    wkproxy->initial_factors = template->initial_factors;
+    wkproxy->loa             = template->loa;
+    wkproxy->creation        = template->creation;
+    wkproxy->expiration      = template->expiration;
+    wkproxy->session_factors = template->session_factors;
+    if (wkproxy->creation < 1000 && wkproxy->creation > 0)
+        wkproxy->creation = now - wkproxy->creation;
+    if (wkproxy->expiration < 1000)
+        wkproxy->expiration += now;
+    return token;
+}
+
+
+/*
+ * Internal helper function to build a webkdc-service token from a
+ * wat_token_webkdc_service structure.  Takes the WebAuth context, the
+ * template, the key to use as the session key, and the time basis, and
+ * returns a newly-allocated token.
+ */
+static struct webauth_token *
+build_token_webkdc_service(struct webauth_context *ctx,
+                           const struct wat_token_webkdc_service *template,
+                           const struct webauth_key *key, time_t now)
+{
+    struct webauth_token *token;
+    struct webauth_token_webkdc_service *wkservice;
+
+    token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    token->type = WA_TOKEN_WEBKDC_SERVICE;
+    wkservice = &token->token.webkdc_service;
+    wkservice->session_key     = key->data;
+    wkservice->session_key_len = key->length;
+    wkservice->subject         = template->subject;
+    wkservice->creation        = template->creation;
+    wkservice->expiration      = template->expiration;
+    if (wkservice->creation < 1000 && wkservice->creation > 0)
+        wkservice->creation = now - wkservice->creation;
+    if (wkservice->expiration < 1000)
+        wkservice->expiration += now;
+    return token;
+}
+
+
+/*
  * Validate a WebKDC login response against a struct wat_login_test.  Takes a
- * WebAuth context, the test, the response, and the WebKDC and session
- * keyrings.
+ * WebAuth context, the test, the response, the WebKDC and session keyrings,
+ * and the time basis.
  */
 static void
 check_login_response(struct webauth_context *ctx,
                      const struct wat_login_test *test,
                      const struct webauth_webkdc_login_response *response,
                      const struct webauth_keyring *ring,
-                     const struct webauth_keyring *session)
+                     const struct webauth_keyring *session, time_t now)
 {
     const char *factors, *options;
     struct webauth_token *token;
@@ -295,6 +359,7 @@ check_login_response(struct webauth_context *ctx,
      */
     for (i = 0; i < ARRAY_SIZE(test->response.proxies); i++) {
         struct webauth_webkdc_proxy_data *pd;
+        struct webauth_token *wanted;
 
         if (test->response.proxies[i].subject == NULL)
             break;
@@ -307,7 +372,8 @@ check_login_response(struct webauth_context *ctx,
         type = WA_TOKEN_WEBKDC_PROXY;
         s = webauth_token_decode(ctx, type, pd->token, ring, &token);
         is_int(WA_ERR_NONE, s, "... webkdc-proxy %d decodes", i);
-        is_token_webkdc_proxy(&test->response.proxies[i],
+        wanted = build_token_webkdc_proxy(ctx, &test->response.proxies[i], now);
+        is_token_webkdc_proxy(&wanted->token.webkdc_proxy,
                               &token->token.webkdc_proxy,
                               "... webkdc-proxy %d", i);
     }
@@ -486,9 +552,8 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
                const struct webauth_keyring *ring)
 {
     struct webauth_keyring *session;
-    struct webauth_key *session_key;
+    struct webauth_key *key;
     struct webauth_token *token;
-    struct webauth_token_webkdc_service service;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
     const char *message;
@@ -503,21 +568,12 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
      * Create a template webkdc-service token with a unique key.  We will
      * modify this for each test case.
      */
-    memset(&service, 0, sizeof(service));
-    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &session_key);
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (s != WA_ERR_NONE)
         bail("cannot create key: %s", webauth_error_message(ctx, s));
-    session = webauth_keyring_from_key(ctx, session_key);
-    service.session_key = session_key->data;
-    service.session_key_len = session_key->length;
-    service.subject = test->request.service.subject;
-    service.creation = test->request.service.creation;
-    if (service.creation < 1000 && service.creation > 0)
-        service.creation += now;
-    service.expiration = test->request.service.expiration;
-    if (service.expiration < 1000)
-        service.expiration += now;
-    request.service = &service;
+    session = webauth_keyring_from_key(ctx, key);
+    token = build_token_webkdc_service(ctx, &test->request.service, key, now);
+    request.service = &token->token.webkdc_service;
 
     /* Create an array for credentials. */
     size = sizeof(struct webauth_token *);
@@ -537,9 +593,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     for (i = 0; i < ARRAY_SIZE(test->request.wkproxies); i++) {
         if (test->request.wkproxies[i].subject == NULL)
             break;
-        token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
-        token->type = WA_TOKEN_WEBKDC_PROXY;
-        token->token.webkdc_proxy = test->request.wkproxies[i];
+        token = build_token_webkdc_proxy(ctx, &test->request.wkproxies[i], now);
         APR_ARRAY_PUSH(request.creds, struct webauth_token *) = token;
     }
 
@@ -581,5 +635,5 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     }
 
     /* Check the response. */
-    check_login_response(ctx, test, response, ring, session);
+    check_login_response(ctx, test, response, ring, session, now);
 }
