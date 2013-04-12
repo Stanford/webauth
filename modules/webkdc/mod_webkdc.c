@@ -958,7 +958,7 @@ static enum mwk_status
 parse_request_token(MWK_REQ_CTXT *rc,
                     char *token,
                     struct webauth_token_webkdc_service *st,
-                    struct webauth_token_request **rt)
+                    const struct webauth_token_request **rt)
 {
     int status;
     struct webauth_token *data;
@@ -1013,7 +1013,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_getTokensRequest";
     const char *mid = NULL;
     char *request_token;
-    struct webauth_token_request *req_token;
+    const struct webauth_token_request *req_token;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;

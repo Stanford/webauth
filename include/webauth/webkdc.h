@@ -85,7 +85,7 @@ struct webauth_webkdc_login_request {
     struct webauth_token_webkdc_service *service;
     WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
     const char *authz_subject;          /* Requested authorization identity. */
-    struct webauth_token_request *request;
+    const struct webauth_token_request *request;
     const char *remote_user;
     const char *local_ip;
     const char *local_port;
@@ -289,9 +289,9 @@ int webauth_webkdc_config(struct webauth_context *,
  * to generate an error response.
  */
 int webauth_webkdc_login(struct webauth_context *,
-                         struct webauth_webkdc_login_request *,
+                         const struct webauth_webkdc_login_request *,
                          struct webauth_webkdc_login_response **,
-                         struct webauth_keyring *)
+                         const struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 END_DECLS

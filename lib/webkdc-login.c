@@ -510,7 +510,7 @@ get_user_info(struct webauth_context *ctx,
  */
 static int
 add_user_info(struct webauth_context *ctx,
-              struct webauth_webkdc_login_request *request,
+              const struct webauth_webkdc_login_request *request,
               struct webauth_webkdc_login_response **response,
               struct webauth_token *wkproxy,
               apr_array_header_t *wkfactors,
@@ -600,14 +600,14 @@ add_user_info(struct webauth_context *ctx,
  */
 static int
 check_multifactor(struct webauth_context *ctx,
-                  struct webauth_webkdc_login_request *request,
+                  const struct webauth_webkdc_login_request *request,
                   struct webauth_webkdc_login_response *response,
                   struct webauth_token_webkdc_proxy *wkproxy,
                   struct webauth_user_info *info)
 {
     struct webauth_factors *wanted, *swanted, *have, *shave, *required;
     struct webauth_factors *configured;
-    struct webauth_token_request *req;
+    const struct webauth_token_request *req;
 
     /* Figure out what factors we want and have. */
     req = request->request;
@@ -855,7 +855,7 @@ done:
  */
 static int
 create_id_token(struct webauth_context *ctx,
-                struct webauth_webkdc_login_request *request,
+                const struct webauth_webkdc_login_request *request,
                 struct webauth_token_webkdc_proxy *wkproxy,
                 struct webauth_webkdc_login_response *response,
                 const struct webauth_keyring *ring)
@@ -865,7 +865,7 @@ create_id_token(struct webauth_context *ctx,
     size_t krb5_auth_len;
     struct webauth_token token;
     struct webauth_token_id *id;
-    struct webauth_token_request *req;
+    const struct webauth_token_request *req;
 
     req = request->request;
     memset(&token, 0, sizeof(token));
@@ -911,16 +911,16 @@ create_id_token(struct webauth_context *ctx,
  */
 static int
 create_proxy_token(struct webauth_context *ctx,
-                   struct webauth_webkdc_login_request *request,
+                   const struct webauth_webkdc_login_request *request,
                    struct webauth_token_webkdc_proxy *wkproxy,
                    struct webauth_webkdc_login_response *response,
-                   struct webauth_keyring *session,
-                   struct webauth_keyring *ring)
+                   const struct webauth_keyring *session,
+                   const struct webauth_keyring *ring)
 {
     int status;
     struct webauth_token token, subtoken;
     struct webauth_token_proxy *proxy;
-    struct webauth_token_request *req;
+    const struct webauth_token_request *req;
 
     /* Create the easy portions of the proxy token. */
     req = request->request;
@@ -967,16 +967,16 @@ create_proxy_token(struct webauth_context *ctx,
  */
 int
 webauth_webkdc_login(struct webauth_context *ctx,
-                     struct webauth_webkdc_login_request *request,
+                     const struct webauth_webkdc_login_request *request,
                      struct webauth_webkdc_login_response **response,
-                     struct webauth_keyring *ring)
+                     const struct webauth_keyring *ring)
 {
     apr_array_header_t *wkproxies = NULL;
     apr_array_header_t *wkfactors = NULL;
     struct webauth_token *cred, *newproxy, *token;
     struct webauth_token cancel;
     struct webauth_token *wkfactor = NULL;
-    struct webauth_token_request *req;
+    const struct webauth_token_request *req;
     struct webauth_token_webkdc_proxy *wkproxy = NULL;
     int i, status;
     struct webauth_user_info *info = NULL;
