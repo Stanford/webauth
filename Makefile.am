@@ -324,7 +324,7 @@ tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -DPATH_REMCTLD='"$(PATH_REMCTLD)"' \
-	$(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+	$(KRB5_CPPFLAGS) $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
 	tests/tap/macros.h tests/tap/messages.h tests/tap/process.c	\
