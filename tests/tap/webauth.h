@@ -43,6 +43,23 @@ struct webauth_keyring;
  */
 
 /*
+ * Data for an id token.  Authentication data may be generated on the fly if
+ * the auth type is krb5.
+ */
+struct wat_token_id {
+    const char *subject;
+    const char *authz_subject;
+    const char *auth;
+    const void *auth_data;
+    size_t auth_data_len;
+    const char *initial_factors;
+    const char *session_factors;
+    unsigned long loa;
+    time_t creation;
+    time_t expiration;
+};
+
+/*
  * Data for a webkdc-proxy token.  Proxy data may be generated on the fly if
  * the proxy_type is krb5.
  */
@@ -120,7 +137,7 @@ struct wat_login_response {
     struct webauth_token_webkdc_factor factor_token;
 
     /* Only one of result_id or result_proxy will be set. */
-    struct webauth_token_id result_id;
+    struct wat_token_id result_id;
     struct webauth_token_proxy result_proxy;
 
     /* User information service information from logins. */

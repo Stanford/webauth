@@ -230,6 +230,39 @@ is_token_webkdc_proxy(const struct webauth_token_webkdc_proxy *wanted,
 
 
 /*
+ * Internal helper function to build an id token from a wat_token_id
+ * structure.  Takes the WebAuth context, the template, and the time basis,
+ * and returns a newly-allocated token.
+ */
+static struct webauth_token *
+build_token_id(struct webauth_context *ctx,
+               const struct wat_token_id *template, time_t now)
+{
+    struct webauth_token *token;
+    struct webauth_token_id *id;
+
+    token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    token->type = WA_TOKEN_ID;
+    id = &token->token.id;
+    id->subject         = template->subject;
+    id->authz_subject   = template->authz_subject;
+    id->auth            = template->auth;
+    id->auth_data       = template->auth_data;
+    id->auth_data_len   = template->auth_data_len;
+    id->initial_factors = template->initial_factors;
+    id->session_factors = template->session_factors;
+    id->loa             = template->loa;
+    id->creation        = template->creation;
+    id->expiration      = template->expiration;
+    if (id->creation < 1000 && id->creation > 0)
+        id->creation = now - id->creation;
+    if (id->expiration < 1000)
+        id->expiration += now;
+    return token;
+}
+
+
+/*
  * Internal helper function to build a webkdc-proxy token from a
  * wat_token_webkdc_proxy structure.  Takes the WebAuth context, the
  * template, and the time basis, and returns a newly-allocated token.
@@ -306,7 +339,7 @@ check_login_response(struct webauth_context *ctx,
                      const struct webauth_keyring *session, time_t now)
 {
     const char *factors, *options;
-    struct webauth_token *token;
+    struct webauth_token *token, *wanted;
     enum webauth_token_type type;
     size_t i;
     int s;
@@ -359,7 +392,6 @@ check_login_response(struct webauth_context *ctx,
      */
     for (i = 0; i < ARRAY_SIZE(test->response.proxies); i++) {
         struct webauth_webkdc_proxy_data *pd;
-        struct webauth_token *wanted;
 
         if (test->response.proxies[i].subject == NULL)
             break;
@@ -457,10 +489,10 @@ check_login_response(struct webauth_context *ctx,
     if (type != WA_TOKEN_UNKNOWN && response->result != NULL) {
         s = webauth_token_decode(ctx, type, response->result, session, &token);
         is_int(WA_ERR_NONE, s, "... result token decodes");
-        if (type == WA_TOKEN_ID)
-            is_token_id(&test->response.result_id, &token->token.id,
-                        "... result");
-        else if (type == WA_TOKEN_PROXY)
+        if (type == WA_TOKEN_ID) {
+            wanted = build_token_id(ctx, &test->response.result_id, now);
+            is_token_id(&wanted->token.id, &token->token.id, "... result");
+        } else if (type == WA_TOKEN_PROXY)
             is_token_proxy(&test->response.result_proxy, &token->token.proxy,
                            "... result");
     }
