@@ -596,6 +596,9 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     /* Use a common time basis for everything that follows. */
     now = time(NULL);
 
+    /* Start with a blank request. */
+    memset(&request, 0, sizeof(request));
+
     /*
      * Create a template webkdc-service token with a unique key.  We will
      * modify this for each test case.
@@ -644,11 +647,6 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
 
     /* Copy the remaining data. */
     request.authz_subject = test->request.authz_subject;
-    request.remote_user   = test->request.remote_user;
-    request.local_ip      = test->request.local_ip;
-    request.local_port    = test->request.local_port;
-    request.remote_ip     = test->request.remote_ip;
-    request.remote_port   = test->request.remote_port;
 
     /* Make the actual call. */
     s = webauth_webkdc_login(ctx, &request, &response, ring);

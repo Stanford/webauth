@@ -36,9 +36,6 @@ struct webauth_keyring;
 /* Helper macro for a successful login with no message in WebKDC login data. */
 #define LOGIN_SUCCESS 0, NULL, NULL
 
-/* Helper macro for no local and remote IP data in WebKDC login requests. */
-#define NO_CONNECTION_DATA NULL, NULL, NULL, NULL, NULL
-
 /* Helper macro for no factor information in WebKDC login data. */
 #define NO_FACTOR_DATA NULL, NULL
 
@@ -130,13 +127,6 @@ struct wat_login_request {
 
     /* Authentication request from the WAS. */
     struct webauth_token_request request;
-
-    /* Login client information. */
-    const char *remote_user;
-    const char *local_ip;
-    const char *local_port;
-    const char *remote_ip;
-    const char *remote_port;
 };
 
 /*

@@ -42,8 +42,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
@@ -74,8 +73,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
@@ -113,8 +111,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "id", "webkdc", NULL, "data", 4, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
@@ -164,8 +161,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
@@ -211,8 +207,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             WA_PEC_LOGIN_FORCED,
@@ -257,8 +252,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 "proxy", NULL, "krb5", NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
@@ -307,8 +301,7 @@ static const struct wat_login_test tests_time_limit[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
@@ -358,8 +351,7 @@ static const struct wat_login_test tests_id_acl[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
@@ -405,8 +397,7 @@ static const struct wat_login_test tests_id_acl[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
@@ -452,8 +443,7 @@ static const struct wat_login_test tests_id_acl[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             WA_PEC_UNAUTHORIZED,
@@ -498,8 +488,7 @@ static const struct wat_login_test tests_id_acl[] = {
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
-            },
-            NO_CONNECTION_DATA
+            }
         },
         {
             LOGIN_SUCCESS,
