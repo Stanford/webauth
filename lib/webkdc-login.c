@@ -396,7 +396,8 @@ combine_webkdc_factors(struct webauth_context *ctx,
  * Returns true if any were invalidated, false otherwise.
  */
 static bool
-maybe_invalidate_webkdc_factors(apr_array_header_t *wkfactors,
+maybe_invalidate_webkdc_factors(struct webauth_context *ctx,
+                                apr_array_header_t *wkfactors,
                                 time_t valid_threshold)
 {
     bool invalidated = false;
@@ -428,6 +429,10 @@ maybe_invalidate_webkdc_factors(apr_array_header_t *wkfactors,
 
         /* Expire the token if the creation time is too early. */
         if (wkf->creation < valid_threshold) {
+            wai_log_notice(ctx, "invalidating webkdc-factor token for %s"
+                           " (creation %lu < %lu)", wkf->subject,
+                           (unsigned long) wkf->creation,
+                           (unsigned long) valid_threshold);
             wkf->expiration = now - 1;
             invalidated = true;
         }
@@ -517,6 +522,7 @@ add_user_info(struct webauth_context *ctx,
               bool did_login, struct webauth_user_info **info)
 {
     struct webauth_factors *iwkfactors, *swkfactors, *extra;
+    time_t valid_threshold;
     int s;
     struct webauth_token_webkdc_proxy *wkp = &wkproxy->token.webkdc_proxy;
 
@@ -531,7 +537,8 @@ add_user_info(struct webauth_context *ctx,
      * redo the user information service call, since we may now have different
      * authentication factors.
      */
-    if (maybe_invalidate_webkdc_factors(wkfactors, (*info)->valid_threshold)) {
+    valid_threshold = (*info)->valid_threshold;
+    if (maybe_invalidate_webkdc_factors(ctx, wkfactors, valid_threshold)) {
         s = get_user_info(ctx, request, wkproxy, wkfactors, info);
         if (s != WA_ERR_NONE)
             return s;
