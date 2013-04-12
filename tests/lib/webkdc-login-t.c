@@ -553,7 +553,7 @@ main(void)
 
     /* Run the first set of tests. */
     for (i = 0; i < ARRAY_SIZE(tests_login); i++)
-        run_login_test(ctx, &tests_login[i], ring);
+        run_login_test(ctx, &tests_login[i], ring, NULL);
 
     /*
      * Set a login time limit of 15 minutes.  Since the webkdc-proxy tokens
@@ -567,7 +567,7 @@ main(void)
 
     /* Run the batch of tests requiring the login timeout setting. */
     for (i = 0; i < ARRAY_SIZE(tests_time_limit); i++)
-        run_login_test(ctx, &tests_time_limit[i], ring);
+        run_login_test(ctx, &tests_time_limit[i], ring, NULL);
 
     /* Set up an identity ACL (and clear the login time limit). */
     config.id_acl_path = test_file_path("data/id.acl");
@@ -579,7 +579,7 @@ main(void)
 
     /* Run the batch of tests requiring an identity ACL. */
     for (i = 0; i < ARRAY_SIZE(tests_id_acl); i++)
-        run_login_test(ctx, &tests_id_acl[i], ring);
+        run_login_test(ctx, &tests_id_acl[i], ring, NULL);
 
     /* Clean up. */
     apr_terminate();
