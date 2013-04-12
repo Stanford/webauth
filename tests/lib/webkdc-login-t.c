@@ -253,7 +253,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
-                    "x,x1", 3, 1365725079, 1938063600, NULL
+                    "x,x1", 3, 10, 60, NULL
                 },
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
@@ -278,7 +278,7 @@ static const struct wat_login_test tests_login[] = {
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
-                    "x,x1", 3, 1365725079, 1938063600, NULL
+                    "x,x1", 3, 10, 60, NULL
                 },
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
@@ -345,6 +345,67 @@ static const struct wat_login_test tests_login[] = {
             { NULL, NULL, NULL }
         },
     }
+};
+
+/* Test cases to run with a login timeout of 15 minutes. */
+static const struct wat_login_test tests_time_limit[] = {
+
+    /* Forced login should succeed with a fresh webkdc-proxy token. */
+    {
+        "Forced login within login timeout",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            {
+                EMPTY_TOKEN_WKFACTOR,
+                EMPTY_TOKEN_WKFACTOR,
+                EMPTY_TOKEN_WKFACTOR
+            },
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
+                NULL, NULL, 0, NULL, 0
+            },
+            NULL, NULL, NULL, NULL, NULL
+        },
+        {
+            0,
+            NULL,
+            NULL,
+            NULL, NULL,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "testuser", NULL, "webkdc", NULL, 0, "x,x1", "x,x1", 3,
+                0, 60
+            },
+            EMPTY_TOKEN_PROXY,
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            0,
+            { NULL, NULL, NULL }
+        },
+    },
 };
 
 /* Test cases to run with an identity file. */
@@ -582,18 +643,11 @@ main(void)
 {
     apr_pool_t *pool = NULL;
     struct webauth_context *ctx;
-    struct webauth_key *session_key;
-    struct webauth_keyring *ring, *session;
-    struct webauth_token *token, wkproxy;
-    struct webauth_token_request req;
-    struct webauth_token_webkdc_service service;
+    struct webauth_keyring *ring;
     struct webauth_webkdc_config config;
-    struct webauth_webkdc_login_request request;
-    struct webauth_webkdc_login_response *response;
     size_t i;
     int status;
     char *keyring;
-    time_t now;
 
     /* Use lazy planning so that test counts can vary on some errors. */
     plan_lazy();
@@ -627,8 +681,23 @@ main(void)
     for (i = 0; i < ARRAY_SIZE(tests_login); i++)
         run_login_test(ctx, &tests_login[i], ring);
 
-    /* Set up an identity ACL. */
+    /*
+     * Set a login time limit of 15 minutes.  Since the webkdc-proxy tokens
+     * are dated 10 minutes ago, this will make them considered fresh.
+     */
+    config.login_time_limit = 15 * 60;
+    status = webauth_webkdc_config(ctx, &config);
+    if (status != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, status));
+    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
+
+    /* Run the batch of tests requiring the login timeout setting. */
+    for (i = 0; i < ARRAY_SIZE(tests_time_limit); i++)
+        run_login_test(ctx, &tests_time_limit[i], ring);
+
+    /* Set up an identity ACL (and clear the login time limit). */
     config.id_acl_path = test_file_path("data/id.acl");
+    config.login_time_limit = 0;
     status = webauth_webkdc_config(ctx, &config);
     if (status != WA_ERR_NONE)
         diag("configuration failed: %s", webauth_error_message(ctx, status));
@@ -637,76 +706,6 @@ main(void)
     /* Run the batch of tests requiring an identity ACL. */
     for (i = 0; i < ARRAY_SIZE(tests_id_acl); i++)
         run_login_test(ctx, &tests_id_acl[i], ring);
-
-    /* Flesh out the absolute minimum required in the request. */
-    now = time(NULL);
-    memset(&request, 0, sizeof(request));
-    memset(&service, 0, sizeof(service));
-    service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
-                                &session_key);
-    if (status != WA_ERR_NONE)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
-    session = webauth_keyring_from_key(ctx, session_key);
-    service.session_key = session_key->data;
-    service.session_key_len = session_key->length;
-    service.creation = now;
-    service.expiration = now + 60;
-    request.service = &service;
-    memset(&req, 0, sizeof(req));
-    req.type = "id";
-    req.auth = "webkdc";
-    req.return_url = "https://example.com/";
-    req.options = "fa";
-    req.creation = now;
-    request.request = &req;
-    request.creds = apr_array_make(pool, 1, sizeof(struct token *));
-
-    /*
-     * Retry forced authentication with a 15 minute login timeout.  The
-     * webkdc-proxy token is dated 10 minutes ago, so this should succeed.
-     */
-    config.login_time_limit = 15 * 60;
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
-    memset(&wkproxy, 0, sizeof(wkproxy));
-    wkproxy.type = WA_TOKEN_WEBKDC_PROXY;
-    wkproxy.token.webkdc_proxy.subject = "testuser";
-    wkproxy.token.webkdc_proxy.proxy_type = "remuser";
-    wkproxy.token.webkdc_proxy.proxy_subject = "WEBKDC:remuser";
-    wkproxy.token.webkdc_proxy.data = "testuser";
-    wkproxy.token.webkdc_proxy.data_len = strlen("testuser");
-    wkproxy.token.webkdc_proxy.initial_factors = "x,x1";
-    wkproxy.token.webkdc_proxy.loa = 3;
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status,
-           "Auth w/forced login and long timeout returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok(0, "...no result token: %s",
-           webauth_error_message(ctx, status));
-    else
-        is_string("testuser", token->token.id.subject,
-                  "...result subject is right");
-    is_string("x,x1", response->initial_factors, "...initial factors");
-    is_string("x,x1", response->session_factors, "...session factors");
 
     /* Clean up. */
     apr_terminate();
