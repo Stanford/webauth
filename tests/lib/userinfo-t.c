@@ -48,7 +48,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     int status;
 
     status = webauth_user_validate(ctx, "full", "127.0.0.1", code, "o1",
-                                   &validate);
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
@@ -83,6 +84,8 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
         is_int(3, validate->loa, "...LoA is correct");
         is_string("<em>OTP3</em> down.  &lt;_&lt;;",
                   validate->user_message, "...user message");
+        is_string("RESET_PIN",
+                  validate->login_state, "...login state");
     }
 }
 
@@ -112,7 +115,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(196);
+    plan(217);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -217,7 +220,7 @@ main(void)
                       "...second hostname is correct");
             is_int(0, login->timestamp, "...second timestamp is correct");
         }
-        is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* Do a query for a minimal user. */
@@ -236,6 +239,7 @@ main(void)
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* The same query, but with random multifactor. */
@@ -253,7 +257,7 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
-        is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* Query information for factor, without any authentication factors. */
@@ -290,6 +294,7 @@ main(void)
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* Query information for a user with a device factor. */
@@ -320,6 +325,7 @@ main(void)
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* Query information for a user with additional factors. */
@@ -354,6 +360,7 @@ main(void)
         }
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
+        is_string(NULL, info->login_state, "...login state is NULL");
     }
 
     /* Query information for a user with a user message. */
@@ -392,6 +399,42 @@ main(void)
                   "...user message is correct");
     }
 
+    /* Query information for a user with a login state. */
+    status = webauth_user_info(ctx, "loginstate", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, status, "Metadata for message succeeded");
+    ok(info != NULL, "...factor is not NULL");
+    if (info == NULL)
+        ok_block(12, 0, "Metadata failed");
+    else {
+        is_int(0, info->random_multifactor, "...random multifactor");
+        is_int(0, info->max_loa, "...max LoA");
+        is_int(0, info->password_expires, "...password expires");
+        is_int(0, info->valid_threshold, "...valid threshold");
+        if (info->factors == NULL)
+            ok_block(5, 0, "...factors is not NULL");
+        else {
+            is_int(4, info->factors->nelts, "...four factors");
+            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
+                      "...first is correct");
+            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
+                      "...second is correct");
+            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
+                      "...third is correct");
+            is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
+                      "...fourth is correct");
+        }
+        ok(info->required != NULL, "...required is not NULL");
+        if (info->required == NULL)
+            ok_block(2, 0, "...required is not NULL");
+        else {
+            is_int(1, info->required->nelts, "...one required");
+            is_string("o3", APR_ARRAY_IDX(info->required, 0, char *),
+                      "...and it is correct");
+        }
+        is_string("BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDVdBUk5fTE9DQVRJT04AAAAFc3RhdGU=", info->login_state,
+                  "...login state is correct");
+    }
+
     /* Attempt a login for the full user using the wrong code. */
     test_validate(ctx, "654321", false);
 
@@ -400,7 +443,8 @@ main(void)
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
     status = webauth_user_validate(ctx, "mini", NULL, "123456", "o1",
-                                   &validate);
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
               webauth_error_message(ctx, status), "...with correct error");
@@ -417,7 +461,8 @@ main(void)
 
     /* Attempt a login for a user that should time out. */
     status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   &validate);
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
@@ -468,7 +513,8 @@ main(void)
     free(warnings);
     warnings = NULL;
     status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   &validate);
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",

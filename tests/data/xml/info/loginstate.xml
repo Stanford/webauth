@@ -1,0 +1,12 @@
+<authdata user="loginstate">
+  <factors>
+    <factor>p</factor>
+    <factor>m</factor>
+    <factor>o</factor>
+    <factor>o3</factor>
+  </factors>
+  <required-factors>
+    <factor>o3</factor>
+  </required-factors>
+  <login-state><![CDATA[BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDVdBUk5fTE9DQVRJT04AAAAFc3RhdGU=]]></login-state>
+</authdata>
