@@ -1193,6 +1193,9 @@
     <!-- requested authorization identity (optional) -->
     <authzSubject>...</authzSubject>
 
+    <!-- opaque state object for customization (optional) -->
+    <loginState>...</loginState>
+
     <!-- request info from front-end, for logging purposes -->
     <requestInfo>
       <remoteUser>xxxx</remoteUser>
@@ -1259,6 +1262,9 @@
 
     <!-- authorization identity if requested and permitted -->
     <authzSubject>...</authzSubject>
+
+    <!-- opaque state object for customization (optional) -->
+    <loginState>...</loginState>
 
     <!-- permitted authorization identities if this user may assert
          an authorization identity to this destination -->

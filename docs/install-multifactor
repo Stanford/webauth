@@ -287,6 +287,12 @@ User Information Service
         <!-- Optional.  May contain a message for the user to display on
              the first load of the multifactor authentication page.
         <user-message>{message-for-user}</user-message>
+        <!-- Optional.  May contain a string-serialized object that
+             will be returned on a subsequent request to the
+             validate service.  May be deserilized in WebLogin and
+             used to change WebLogin behavior, for example - display
+             a custom message to the user. -->
+        <login-state>{custom-state-object}</login-state>
       </authdata>
 
   {username} should match the user for which the information is being
@@ -345,6 +351,14 @@ User Information Service
   enforcement, or any other messaging specific to this step of the
   authenication process.  It can be displayed on the first load of
   WebLogin's OTP submission page.
+  The optional <login-state> element may contain a simple value or a string
+  serialized object that can be used to retain state for a subsequent call
+  to the validate service.  The object may be deserialized in WebLogin by
+  assigning a deserialization function to the WebLogin config variable
+  LOGIN_STATE_UNSERIALIZE.  An example function can be found within the
+  weblogin-config documentation.  Whether deserialized or not, the resulting
+  object can be accessed within the WebLogin templates by the name
+  "login_state".
 
   Alternately, the user information service may reject this
   authentication.  In this case, it should return the much simpler
@@ -392,6 +406,10 @@ OTP Validation
       The OTP type to validate.  This parameter may be omitted if the
       WebKDC doesn't know what type of OTP the user is trying to use.
 
+  login-state
+      The state object returned from a previous call to the userinfo
+      or validate service.  It may be absent if no login-state exists.
+
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal internal error and the user's authentication will be aborted.
   (This should not be used for an invalid OTP; see below.)  The error can
@@ -413,6 +431,7 @@ OTP Validation
         <persistent-factors>
         <loa>{loa-value}</loa>
         <user-message>{message-for-user}</user-message>
+        <login-state>{custom-state-object}</login-state>
       </authdata>
 
   {username} should match the user for which the information is being
@@ -454,6 +473,16 @@ OTP Validation
   the user with any additional information about specific actions they
   should take as a result of this OTP validation attempt, or an
   an informational message about the state of this validation.
+  As explained above for the userinfo service, the optional <login-state>
+  element may contain a simple value or a string serialized object that can
+  be used to retain state for a subsequent call to the validate service.
+  The object's deserialization process and function are identical to the
+  userinfo case, however this object is most useful for repeated subsequent
+  calls to the validate service.  This allows the validate service to
+  maintain state for a series of user interactions, where stateful
+  interaction is required to implement a number of token-specific features,
+  for example - the reset of a PIN code, or the initialization of a hardware
+  token.
 
   On failure, behavior depends on whether <user-message> is present.  If
   it is not present, <success>no</success> indicates that the OTP code was

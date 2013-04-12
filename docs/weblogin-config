@@ -284,6 +284,32 @@ Configuration
       Default: "../conf/webkdc/keyring" (which works for the default
       installation paths inside the Apache configuration directory).
 
+  $LOGIN_STATE_UNSERIALIZE
+
+      If using the multifactor callout services "userinfo" and "validate",
+      this can be assigned a function reference to unserialize the
+      login-state value returned from those calls.  This function should
+      be customized to match the serialization implemented within the
+      "userinfo" and "validate" handlers.  Once unserialized, the object
+      can be used within the WebLogin templates.
+
+      An example deserialization function is provided that returns a
+      native perl object serialized by Storable::nfreeze, and encoded with
+      base64:
+
+      $LOGIN_STATE_UNSERIALIZE = sub {
+          use Storable qw( thaw );
+          use MIME::Base64 qw( decode_base64 );
+          my ($login_state) = @_;
+          if ( ! eval {
+               $login_state = Storable::thaw(decode_base64($login_state));
+               } )
+          { warn ("Unable to deserialize object. ", $@); }
+          return $login_state;
+      };
+
+      Default: not set.
+
   $LOGIN_URL
 
       The URL used to log in to the site.  This is used only with the
