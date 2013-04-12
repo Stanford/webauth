@@ -51,6 +51,115 @@ is_token_creation(time_t wanted, time_t seen, const char *format, ...)
 
 
 /*
+ * Compare two error tokens.
+ */
+void
+is_token_error(const struct webauth_token_error *wanted,
+               const struct webauth_token_error *seen,
+               const char *format, ...)
+{
+    va_list args;
+    char *message;
+
+    va_start(args, format);
+    bvasprintf(&message, format, args);
+    va_end(args);
+    if (seen == NULL) {
+        ok_block(3, false, "%s is NULL", message);
+        return;
+    }
+    is_int(wanted->code, seen->code, "%s code", message);
+    is_string(wanted->message, seen->message, "%s subject", message);
+    is_token_creation(wanted->creation, seen->creation, "%s creation",
+                      message);
+    free(message);
+}
+
+
+/*
+ * Compare two id tokens.
+ */
+void
+is_token_id(const struct webauth_token_id *wanted,
+            const struct webauth_token_id *seen,
+            const char *format, ...)
+{
+    va_list args;
+    char *message;
+
+    va_start(args, format);
+    bvasprintf(&message, format, args);
+    va_end(args);
+    if (seen == NULL) {
+        ok_block(10, false, "%s is NULL", message);
+        return;
+    }
+    is_string(wanted->subject, seen->subject, "%s subject", message);
+    is_string(wanted->authz_subject, seen->authz_subject, "%s authz subject",
+              message);
+    is_string(wanted->auth, seen->auth, "%s auth type", message);
+    if (wanted->auth_data == NULL || seen->auth_data == NULL)
+        ok(wanted->auth_data == seen->auth_data, "%s auth data", message);
+    else
+        ok(memcmp(wanted->auth_data, seen->auth_data,
+                  wanted->auth_data_len) == 0, "%s auth data", message);
+    is_int(wanted->auth_data_len, seen->auth_data_len, "%s auth data length",
+           message);
+    is_string(wanted->initial_factors, seen->initial_factors,
+              "%s initial factors", message);
+    is_string(wanted->session_factors, seen->session_factors,
+              "%s session factors", message);
+    is_int(wanted->loa, seen->loa, "%s level of assurance", message);
+    is_token_creation(wanted->creation, seen->creation, "%s creation",
+                      message);
+    is_int(wanted->expiration, seen->expiration, "%s expiration", message);
+    free(message);
+}
+
+
+/*
+ * Compare two proxy tokens.
+ */
+void
+is_token_proxy(const struct webauth_token_proxy *wanted,
+               const struct webauth_token_proxy *seen,
+               const char *format, ...)
+{
+    va_list args;
+    char *message;
+
+    va_start(args, format);
+    bvasprintf(&message, format, args);
+    va_end(args);
+    if (seen == NULL) {
+        ok_block(10, false, "%s is NULL", message);
+        return;
+    }
+    is_string(wanted->subject, seen->subject, "%s subject", message);
+    is_string(wanted->authz_subject, seen->authz_subject, "%s authz subject",
+              message);
+    is_string(wanted->type, seen->type, "%s proxy type", message);
+    if (wanted->webkdc_proxy == NULL || seen->webkdc_proxy == NULL)
+        ok(wanted->webkdc_proxy == seen->webkdc_proxy, "%s webkdc proxy",
+           message);
+    else
+        ok(memcmp(wanted->webkdc_proxy, seen->webkdc_proxy,
+                  wanted->webkdc_proxy_len) == 0, "%s webkdc proxy", message);
+    is_int(wanted->webkdc_proxy_len, seen->webkdc_proxy_len,
+           "%s webkdc proxy length", message);
+    is_string(wanted->initial_factors, seen->initial_factors,
+              "%s initial factors", message);
+    is_string(wanted->session_factors, seen->session_factors,
+              "%s session factors", message);
+    is_int(wanted->loa, seen->loa, "%s level of assurance", message);
+    is_token_creation(wanted->creation, seen->creation, "%s creation",
+                      message);
+    is_int(wanted->expiration, seen->expiration, "%s expiration", message);
+    free(message);
+}
+
+
+/*
  * Compare two webkdc-factor tokens.
  */
 void

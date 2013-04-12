@@ -17,12 +17,27 @@
 #include <config.h>
 #include <tests/tap/macros.h>
 
+struct webauth_token_error;
+struct webauth_token_id;
+struct webauth_token_proxy;
 struct webauth_token_webkdc_factor;
 struct webauth_token_webkdc_proxy;
 
 BEGIN_DECLS
 
 /* Compare two tokens of various types. */
+void is_token_error(const struct webauth_token_error *wanted,
+                    const struct webauth_token_error *seen,
+                    const char *format, ...)
+    __attribute__((__format__(printf, 3, 4)));
+void is_token_id(const struct webauth_token_id *wanted,
+                 const struct webauth_token_id *seen,
+                 const char *format, ...)
+    __attribute__((__format__(printf, 3, 4)));
+void is_token_proxy(const struct webauth_token_proxy *wanted,
+                    const struct webauth_token_proxy *seen,
+                    const char *format, ...)
+    __attribute__((__format__(printf, 3, 4)));
 void is_token_webkdc_factor(const struct webauth_token_webkdc_factor *wanted,
                             const struct webauth_token_webkdc_factor *seen,
                             const char *format, ...)
