@@ -28,7 +28,6 @@
 #include <webauth/webkdc.h>
 
 /* Empty tokens, used in building tests. */
-#define EMPTY_TOKEN_ERROR    { 0, NULL, 0 }
 #define EMPTY_TOKEN_ID       { NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, 0 }
 #define EMPTY_TOKEN_LOGIN    { NULL, NULL, NULL, NULL, 0 }
 #define EMPTY_TOKEN_PROXY    { NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, 0 }
@@ -88,7 +87,7 @@ struct test_case_login {
         const char *factors_configured;
 
         struct webauth_token_webkdc_proxy proxies[3];
-        struct webauth_token_webkdc_factor factor_tokens[3];
+        struct webauth_token_webkdc_factor factor_token;
         const char *return_url;
         const char *requester;
         const char *subject;
@@ -102,7 +101,6 @@ struct test_case_login {
         const char *initial_factors;
         const char *session_factors;
         unsigned long loa;
-        struct webauth_token_error login_cancel;
         const char *app_state;
         size_t app_state_len;
         struct webauth_login logins[5];
@@ -153,11 +151,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             NULL,
@@ -166,7 +160,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             NULL,
             NULL, NULL, 0,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -219,11 +212,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             NULL,
@@ -232,7 +221,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             NULL,
             NULL, NULL, 0,
-            { WA_PEC_LOGIN_CANCELED, "user canceled login", 0 },
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -291,11 +279,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -307,7 +291,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             "id",
             "x,x1", NULL, 3,
-            { WA_PEC_LOGIN_CANCELED, "user canceled login", 0 },
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -366,11 +349,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                { "testuser", "d", 0, 1906527600 },
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            { "testuser", "d", 0, 1906527600 },
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -382,7 +361,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             "id",
             "x,x1,d", "d", 3,
-            { WA_PEC_LOGIN_CANCELED, "user canceled login", 0 },
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -441,11 +419,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -454,7 +428,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             NULL,
             NULL, NULL, 0,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -513,11 +486,7 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -526,7 +495,6 @@ static const struct test_case_login tests_login[] = {
             EMPTY_TOKEN_PROXY,
             NULL,
             NULL, NULL, 0,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -589,11 +557,7 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -605,7 +569,6 @@ static const struct test_case_login tests_id_acl[] = {
             EMPTY_TOKEN_PROXY,
             "id",
             "x,x1", NULL, 3,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -664,11 +627,7 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -680,7 +639,6 @@ static const struct test_case_login tests_id_acl[] = {
             EMPTY_TOKEN_PROXY,
             "id",
             "x,x1", NULL, 3,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -739,11 +697,7 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -752,7 +706,6 @@ static const struct test_case_login tests_id_acl[] = {
             EMPTY_TOKEN_PROXY,
             NULL,
             NULL, NULL, 0,
-            { WA_PEC_LOGIN_CANCELED, "user canceled login", 0 },
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -811,11 +764,7 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            EMPTY_TOKEN_WKFACTOR,
             "https://example.com/",
             "krb5:webauth/example.com@EXAMPLE.COM",
             "testuser",
@@ -827,7 +776,6 @@ static const struct test_case_login tests_id_acl[] = {
             EMPTY_TOKEN_PROXY,
             "id",
             "x,x1", NULL, 3,
-            EMPTY_TOKEN_ERROR,
             NULL, 0,
             {
                 EMPTY_LOGIN,
@@ -859,10 +807,15 @@ check_login_response(struct webauth_context *ctx,
                      const struct webauth_keyring *ring,
                      const struct webauth_keyring *session)
 {
-    char *factors;
+    const char *factors, *options;
     int i, s;
     struct webauth_token *token;
     enum webauth_token_type type;
+
+    /* The contents of the login canceled token. */
+    const struct webauth_token_error cancel_token = {
+        WA_PEC_LOGIN_CANCELED, "user canceled login", 0
+    };
 
     /* Check the login error code and message. */
     is_int(test->response.login_error, response->login_error,
@@ -931,34 +884,31 @@ check_login_response(struct webauth_context *ctx,
         is_int(i, response->proxies->nelts,
                "... correct number of webkdc-proxy tokens");
 
-    /* Check returned webkdc-factor tokens. */
-    for (i = 0; i < (int) ARRAY_SIZE(test->response.factor_tokens); i++) {
+    /*
+     * Check returned webkdc-factor tokens.  While we return a list for
+     * forward-compatibility, the WebKDC will currently only ever return a
+     * single token.
+     */
+    if (test->response.factor_token.subject == NULL)
+        ok(response->factor_tokens == NULL, "... has no webkdc-factor tokens");
+    else if (response->factor_tokens == NULL)
+        ok(false, "... webkdc-factor token");
+    else {
         struct webauth_webkdc_factor_data *fd;
 
-        if (test->response.factor_tokens[i].subject == NULL)
-            break;
-        if (response->factor_tokens == NULL)
-            continue;
-        if (response->factor_tokens->nelts <= i)
-            continue;
-        fd = &APR_ARRAY_IDX(response->factor_tokens, i,
+        is_int(1, response->factor_tokens->nelts,
+               "... one webkdc-factor token");
+        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
                             struct webauth_webkdc_factor_data);
-        is_int(test->response.factor_tokens[i].expiration, fd->expiration,
-               "... expiration of webkdc-factor token %d", i);
+        is_int(test->response.factor_token.expiration, fd->expiration,
+               "... expiration of webkdc-factor token");
         type = WA_TOKEN_WEBKDC_FACTOR;
         s = webauth_token_decode(ctx, type, fd->token, ring, &token);
         is_int(WA_ERR_NONE, s, "... webkdc-factor %d decodes", i);
-        is_token_webkdc_factor(&test->response.factor_tokens[i],
+        is_token_webkdc_factor(&test->response.factor_token,
                                &token->token.webkdc_factor,
-                               "... webkdc-factor %d", i);
+                               "... webkdc-factor");
     }
-    if (i == 0)
-        ok(response->factor_tokens == NULL, "... has no webkdc-factor tokens");
-    else if (response->factor_tokens == NULL)
-        is_int(i, 0, "... correct number of webkdc-factor tokens");
-    else
-        is_int(i, response->factor_tokens->nelts,
-               "... correct number of webkdc-factor tokens");
 
     /* Check the result token. */
     is_string(test->response.result_type, response->result_type,
@@ -982,7 +932,8 @@ check_login_response(struct webauth_context *ctx,
     }
 
     /* Check the login cancel token. */
-    if (test->response.login_cancel.message == NULL)
+    options = test->request.request.options;
+    if (options == NULL || strstr(options, "lc") == NULL)
         ok(response->login_cancel == NULL, "... no login cancel token");
     else if (response->login_cancel == NULL)
         ok(false, "... login cancel token");
@@ -993,7 +944,7 @@ check_login_response(struct webauth_context *ctx,
         cancel = response->login_cancel;
         s = webauth_token_decode(ctx, type, cancel, session, &token);
         is_int(WA_ERR_NONE, s, "... login cancel token decodes");
-        is_token_error(&test->response.login_cancel, &token->token.error,
+        is_token_error(&cancel_token, &token->token.error,
                        "... login cancel token");
     }
 
@@ -1198,8 +1149,10 @@ main(void)
     struct webauth_token_request req;
     struct webauth_token_webkdc_service service;
 
-    plan(404);
+    /* Use lazy planning so that test counts can vary on some errors. */
+    plan_lazy();
 
+    /* Initialize APR and WebAuth. */
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
