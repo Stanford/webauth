@@ -64,6 +64,8 @@ struct test_token_webkdc_service {
  */
 struct test_case_login {
     const char *name;
+    int status;
+    const char *error;
     struct {
         struct test_token_webkdc_service service;
         struct webauth_token_login logins[3];
@@ -86,29 +88,21 @@ struct test_case_login {
         const char *factors_wanted;
         const char *factors_configured;
 
+        /* Single sign-on tokens and user identity. */
         struct webauth_token_webkdc_proxy proxies[3];
         struct webauth_token_webkdc_factor factor_token;
-        const char *return_url;
-        const char *requester;
-        const char *subject;
-        const char *authz_subject;
 
         /* Only one of result_id or result_proxy will be set. */
         struct webauth_token_id result_id;
         struct webauth_token_proxy result_proxy;
-        const char *result_type;
 
-        const char *initial_factors;
-        const char *session_factors;
-        unsigned long loa;
-        const char *app_state;
-        size_t app_state_len;
-        struct webauth_login logins[5];
+        /* User information service information from logins. */
+        struct webauth_login logins[3];
         time_t password_expires;
-        const char *permitted_authz[5];
+
+        /* Permitted authorization identities. */
+        const char *permitted_authz[3];
     } response;
-    int status;
-    const char *error;
 };
 
 /* Test cases to run without an identity file. */
@@ -117,6 +111,8 @@ static const struct test_case_login tests_login[] = {
     /* Attempt login with no authentication. */
     {
         "No authentication",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -152,32 +148,19 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            NULL,
-            NULL,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            NULL,
-            NULL, NULL, 0,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     },
 
     /* The same, but with a login cancel token. */
     {
         "No authentication and login cancel",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -213,32 +196,19 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            NULL,
-            NULL,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            NULL,
-            NULL, NULL, 0,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     },
 
     /* Pass in a webkdc-proxy token and obtain an id token. */
     {
         "webkdc-proxy authentication",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -261,7 +231,7 @@ static const struct test_case_login tests_login[] = {
             },
             NULL,
             {
-                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
             },
             NULL, NULL, NULL, NULL, NULL
@@ -280,35 +250,22 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             {
                 "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            "id",
-            "x,x1", NULL, 3,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     },
 
     /* The same, but also add a webkdc-factor token. */
     {
         "webkdc-proxy and webkdc-factor authentication",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -350,35 +307,22 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             { "testuser", "d", 0, 1906527600 },
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             {
                 "testuser", NULL, "webkdc", NULL, 0, "x,x1,d", "d", 3,
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            "id",
-            "x,x1,d", "d", 3,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     },
 
     /* Forced login with a proxy token should fail. */
     {
         "Forced login with webkdc-proxy token",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -420,32 +364,19 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            NULL,
-            NULL, NULL, 0,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     },
 
     /* A proxy token request with a webkdc-proxy token should fail. */
     {
         "Proxy token request with webkdc-proxy token",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -487,27 +418,12 @@ static const struct test_case_login tests_login[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            NULL,
-            NULL, NULL, 0,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { NULL, NULL, NULL, NULL, NULL }
+            { NULL, NULL, NULL }
         },
-        0,
-        NULL
     }
 };
 
@@ -517,6 +433,8 @@ static const struct test_case_login tests_id_acl[] = {
     /* Don't attempt to assert an identity. */
     {
         "Proxy authentication with identity ACL",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -558,35 +476,22 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             {
                 "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            "id",
-            "x,x1", NULL, 3,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { "otheruser", "bar", NULL, NULL, NULL }
+            { "otheruser", "bar", NULL }
         },
-        0,
-        NULL
     },
 
     /* Now assert an authorization identity. */
     {
         "Proxy authentication with authorization identity",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -628,35 +533,22 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            "otheruser",
             {
                 "testuser", "otheruser", "webkdc", NULL, 0, "x,x1", NULL, 3,
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            "id",
-            "x,x1", NULL, 3,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { "otheruser", "bar", NULL, NULL, NULL }
+            { "otheruser", "bar", NULL }
         },
-        0,
-        NULL
     },
 
     /* Assert an identity we're not allowed to assert. */
     {
         "Unauthorized authorization identity",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -698,32 +590,19 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            NULL,
-            NULL, NULL, 0,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { "otheruser", "bar", NULL, NULL, NULL }
+            { "otheruser", "bar", NULL }
         },
-        0,
-        NULL
     },
 
     /* Assert the same identity as the subject. */
     {
         "Authorization identity matching subject",
+        0,
+        NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -765,30 +644,15 @@ static const struct test_case_login tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            "https://example.com/",
-            "krb5:webauth/example.com@EXAMPLE.COM",
-            "testuser",
-            NULL,
             {
                 "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            "id",
-            "x,x1", NULL, 3,
-            NULL, 0,
-            {
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN,
-                EMPTY_LOGIN
-            },
+            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
             0,
-            { "otheruser", "bar", NULL, NULL, NULL }
+            { "otheruser", "bar", NULL }
         },
-        0,
-        NULL
     }
 };
 
@@ -808,9 +672,10 @@ check_login_response(struct webauth_context *ctx,
                      const struct webauth_keyring *session)
 {
     const char *factors, *options;
-    int i, s;
     struct webauth_token *token;
     enum webauth_token_type type;
+    size_t i;
+    int s;
 
     /* The contents of the login canceled token. */
     const struct webauth_token_error cancel_token = {
@@ -826,19 +691,14 @@ check_login_response(struct webauth_context *ctx,
     /* Check various simple response parameters. */
     is_string(test->response.user_message, response->user_message,
               "... user message");
-    is_string(test->response.return_url, response->return_url,
-              "... return URL");
-    is_string(test->response.requester, response->requester, "... requester");
-    is_string(test->response.subject, response->subject, "... subject");
-    is_string(test->response.authz_subject, response->authz_subject,
-              "... authorization subject");
-    is_string(test->response.initial_factors, response->initial_factors,
-              "... initial factors");
-    is_string(test->response.session_factors, response->session_factors,
-              "... session factors");
-    is_int(test->response.loa, response->loa, "... level of assurance");
     is_int(test->response.password_expires, response->password_expires,
            "... password expires");
+
+    /* Check response parameters derived directly from the request. */
+    is_string(test->request.request.return_url, response->return_url,
+              "... return URL");
+    is_string(test->request.service.subject, response->requester,
+              "... requester");
 
     /* Check wanted and configured factors. */
     if (response->factors_wanted == NULL)
@@ -857,13 +717,17 @@ check_login_response(struct webauth_context *ctx,
                   "... configured factors");
     }
 
-    /* Check returned webkdc-proxy tokens. */
-    for (i = 0; i < (int) ARRAY_SIZE(test->response.proxies); i++) {
+    /*
+     * Check returned webkdc-proxy tokens.  If and only if there is at least
+     * one webkdc-proxy token, we will know and return the authenticated
+     * identity in the subject field, so check that here as well.
+     */
+    for (i = 0; i < ARRAY_SIZE(test->response.proxies); i++) {
         struct webauth_webkdc_proxy_data *pd;
 
         if (test->response.proxies[i].subject == NULL)
             break;
-        if (response->proxies == NULL || response->proxies->nelts <= i)
+        if (response->proxies == NULL || response->proxies->nelts <= (int) i)
             continue;
         pd = &APR_ARRAY_IDX(response->proxies, i,
                             struct webauth_webkdc_proxy_data);
@@ -876,18 +740,24 @@ check_login_response(struct webauth_context *ctx,
                               &token->token.webkdc_proxy,
                               "... webkdc-proxy %d", i);
     }
-    if (i == 0)
+    if (i == 0) {
         ok(response->proxies == NULL, "... has no webkdc-proxy tokens");
-    else if (response->proxies == NULL)
+        is_string(NULL, response->subject, "... subject");
+    } else if (response->proxies == NULL) {
         is_int(i, 0, "... correct number of webkdc-proxy tokens");
-    else
+        is_string(test->response.proxies[0].subject, response->subject,
+                  "... subject");
+    } else {
         is_int(i, response->proxies->nelts,
                "... correct number of webkdc-proxy tokens");
+        is_string(test->response.proxies[0].subject, response->subject,
+                  "... subject");
+    }
 
     /*
      * Check returned webkdc-factor tokens.  While we return a list for
      * forward-compatibility, the WebKDC will currently only ever return a
-     * single token.
+     * single token, which is reflected in the structure of the test data.
      */
     if (test->response.factor_token.subject == NULL)
         ok(response->factor_tokens == NULL, "... has no webkdc-factor tokens");
@@ -910,15 +780,44 @@ check_login_response(struct webauth_context *ctx,
                                "... webkdc-factor");
     }
 
-    /* Check the result token. */
-    is_string(test->response.result_type, response->result_type,
-              "... result type");
-    if (test->response.result_type == NULL)
+    /*
+     * Check the result token.  We determine which result type we're expecting
+     * based on whether result_id or result_proxy has a non-NULL subject.  We
+     * also check various other information in the response that's based on
+     * the result token.
+     */
+    if (test->response.result_id.subject != NULL) {
+        is_string("id", response->result_type, "... result type");
+        is_string(test->response.result_id.authz_subject,
+                  response->authz_subject, "... authorization subject");
+        is_string(test->response.result_id.initial_factors,
+                  response->initial_factors, "... initial factors");
+        is_string(test->response.result_id.session_factors,
+                  response->session_factors, "... session factors");
+        is_int(test->response.result_id.loa, response->loa,
+               "... level of assurance");
+        type = WA_TOKEN_ID;
+    } else if (test->response.result_proxy.subject != NULL) {
+        is_string("proxy", response->result_type, "... result type");
+        is_string(test->response.result_proxy.authz_subject,
+                  response->authz_subject, "... authorization subject");
+        is_string(test->response.result_proxy.initial_factors,
+                  response->initial_factors, "... initial factors");
+        is_string(test->response.result_proxy.session_factors,
+                  response->session_factors, "... session factors");
+        is_int(test->response.result_proxy.loa, response->loa,
+               "... level of assurance");
+        type = WA_TOKEN_PROXY;
+    } else {
+        is_string(NULL, response->result_type, "... result type");
         ok(response->result == NULL, "... no result token");
-    else if (response->result == NULL)
-        ok(false, "... result token");
-    else {
-        type = webauth_token_type_code(test->response.result_type);
+        is_string(NULL, response->authz_subject, "... authorization subject");
+        is_string(NULL, response->initial_factors, "... initial factors");
+        is_string(NULL, response->session_factors, "... session factors");
+        is_int(0, response->loa, "... level of assurance");
+        type = WA_TOKEN_UNKNOWN;
+    }
+    if (type != WA_TOKEN_UNKNOWN && response->result != NULL) {
         s = webauth_token_decode(ctx, type, response->result, session, &token);
         is_int(WA_ERR_NONE, s, "... result token decodes");
         if (type == WA_TOKEN_ID)
@@ -927,8 +826,6 @@ check_login_response(struct webauth_context *ctx,
         else if (type == WA_TOKEN_PROXY)
             is_token_proxy(&test->response.result_proxy, &token->token.proxy,
                            "... result");
-        else
-            bail("unknown result token type %s", test->response.result_type);
     }
 
     /* Check the login cancel token. */
@@ -949,26 +846,24 @@ check_login_response(struct webauth_context *ctx,
     }
 
     /* Check the application state. */
-    if (test->response.app_state == NULL)
+    if (test->request.request.state == NULL) {
         ok(response->app_state == NULL, "... no application state");
-    else {
-        is_int(test->response.app_state_len, response->app_state_len,
+        is_int(0, response->app_state_len, "... application state length");
+    } else {
+        ok(memcmp(test->request.request.state, response->app_state,
+                  test->request.request.state_len) == 0,
+           "... application state data");
+        is_int(test->request.request.state_len, response->app_state_len,
                "... application state length");
-        if (response->app_state == NULL)
-            ok(false, "... application state data");
-        else
-            ok(memcmp(test->response.app_state, response->app_state,
-                      test->response.app_state_len) == 0,
-               "... application state data");
     }
 
     /* Check the login data. */
-    for (i = 0; i < (int) ARRAY_SIZE(test->response.logins); i++) {
+    for (i = 0; i < ARRAY_SIZE(test->response.logins); i++) {
         struct webauth_login *login;
 
         if (test->response.logins[i].ip == NULL)
             break;
-        if (response->logins == NULL || response->logins->nelts <= i)
+        if (response->logins == NULL || response->logins->nelts <= (int) i)
             continue;
         login = &APR_ARRAY_IDX(response->logins, i, struct webauth_login);
         is_string(test->response.logins[i].ip, login->ip,
@@ -987,14 +882,14 @@ check_login_response(struct webauth_context *ctx,
                "... correct number of login records");
 
     /* Check the permitted authorization identities. */
-    for (i = 0; i < (int) ARRAY_SIZE(test->response.permitted_authz); i++) {
+    for (i = 0; i < ARRAY_SIZE(test->response.permitted_authz); i++) {
         const char *authz;
 
         if (test->response.permitted_authz[i] == NULL)
             break;
         if (response->permitted_authz == NULL)
             continue;
-        if (response->permitted_authz->nelts <= i)
+        if (response->permitted_authz->nelts <= (int) i)
             continue;
         authz = APR_ARRAY_IDX(response->permitted_authz, i, const char *);
         is_string(test->response.permitted_authz[i], authz,
