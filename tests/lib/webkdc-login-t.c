@@ -35,44 +35,28 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
-            {
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY
-            },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_LOGIN,
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
             "need a proxy token",
             NULL,
-            NULL, NULL,
-            {
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY
-            },
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 
@@ -83,44 +67,28 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
-            {
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY
-            },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_LOGIN,
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
             "need a proxy token",
             NULL,
-            NULL, NULL,
-            {
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY,
-                EMPTY_TOKEN_WKPROXY
-            },
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 
@@ -131,11 +99,7 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -144,23 +108,17 @@ static const struct wat_login_test tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, "data", 4, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -175,9 +133,9 @@ static const struct wat_login_test tests_login[] = {
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 
@@ -188,11 +146,7 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -211,13 +165,11 @@ static const struct wat_login_test tests_login[] = {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -232,9 +184,9 @@ static const struct wat_login_test tests_login[] = {
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 
@@ -245,11 +197,7 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -258,23 +206,19 @@ static const struct wat_login_test tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
             WA_PEC_LOGIN_FORCED,
             "forced authentication, need to login",
             NULL,
-            NULL, NULL,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -286,9 +230,9 @@ static const struct wat_login_test tests_login[] = {
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 
@@ -299,11 +243,7 @@ static const struct wat_login_test tests_login[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -312,23 +252,19 @@ static const struct wat_login_test tests_login[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "proxy", NULL, "krb5", NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
             WA_PEC_PROXY_TOKEN_REQUIRED,
             "need a proxy token",
             NULL,
-            NULL, NULL,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -340,9 +276,9 @@ static const struct wat_login_test tests_login[] = {
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     }
 };
@@ -357,11 +293,7 @@ static const struct wat_login_test tests_time_limit[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -370,23 +302,17 @@ static const struct wat_login_test tests_time_limit[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -401,9 +327,9 @@ static const struct wat_login_test tests_time_limit[] = {
                 0, 60
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
-            { NULL, NULL, NULL }
+            NO_AUTHZ_IDS
         },
     },
 };
@@ -418,11 +344,7 @@ static const struct wat_login_test tests_id_acl[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -431,23 +353,17 @@ static const struct wat_login_test tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -462,7 +378,7 @@ static const struct wat_login_test tests_id_acl[] = {
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
             { "otheruser", "bar", NULL }
         },
@@ -475,11 +391,7 @@ static const struct wat_login_test tests_id_acl[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -488,23 +400,17 @@ static const struct wat_login_test tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             "otheruser",
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -519,7 +425,7 @@ static const struct wat_login_test tests_id_acl[] = {
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
             { "otheruser", "bar", NULL }
         },
@@ -532,11 +438,7 @@ static const struct wat_login_test tests_id_acl[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -545,23 +447,19 @@ static const struct wat_login_test tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             "foo",
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
             WA_PEC_UNAUTHORIZED,
             "not authorized to assert that identity",
             NULL,
-            NULL, NULL,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -573,7 +471,7 @@ static const struct wat_login_test tests_id_acl[] = {
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
             { "otheruser", "bar", NULL }
         },
@@ -586,11 +484,7 @@ static const struct wat_login_test tests_id_acl[] = {
         NULL,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
-            {
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN,
-                EMPTY_TOKEN_LOGIN
-            },
+            NO_TOKENS_LOGIN,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -599,23 +493,17 @@ static const struct wat_login_test tests_id_acl[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            {
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR,
-                EMPTY_TOKEN_WKFACTOR
-            },
+            NO_TOKENS_WKFACTOR,
             "testuser",
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             },
-            NULL, NULL, NULL, NULL, NULL
+            NO_CONNECTION_DATA
         },
         {
-            0,
-            NULL,
-            NULL,
-            NULL, NULL,
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -630,7 +518,7 @@ static const struct wat_login_test tests_id_acl[] = {
                 0, 1938063600
             },
             EMPTY_TOKEN_PROXY,
-            { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN },
+            NO_LOGINS,
             0,
             { "otheruser", "bar", NULL }
         },

@@ -33,6 +33,29 @@ struct webauth_keyring;
 /* Empty webauth_login struct, used in building test data. */
 #define EMPTY_LOGIN { NULL, NULL, 0 }
 
+/* Helper macro for a successful login with no message in WebKDC login data. */
+#define LOGIN_SUCCESS 0, NULL, NULL
+
+/* Helper macro for no local and remote IP data in WebKDC login requests. */
+#define NO_CONNECTION_DATA NULL, NULL, NULL, NULL, NULL
+
+/* Helper macro for no factor information in WebKDC login data. */
+#define NO_FACTOR_DATA NULL, NULL
+
+/* Helper macro for no authorization identities in WebKDC login data. */
+#define NO_AUTHZ_IDS { NULL, NULL, NULL }
+
+/* Helper macros for empty token sets in WebKDC login data. */
+#define NO_TOKENS_LOGIN \
+    { EMPTY_TOKEN_LOGIN, EMPTY_TOKEN_LOGIN, EMPTY_TOKEN_LOGIN }
+#define NO_TOKENS_WKFACTOR \
+    { EMPTY_TOKEN_WKFACTOR, EMPTY_TOKEN_WKFACTOR, EMPTY_TOKEN_WKFACTOR }
+#define NO_TOKENS_WKPROXY \
+    { EMPTY_TOKEN_WKPROXY, EMPTY_TOKEN_WKPROXY, EMPTY_TOKEN_WKPROXY }
+
+/* Helper macro for an empty login history in WebKDC login data. */
+#define NO_LOGINS { EMPTY_LOGIN, EMPTY_LOGIN, EMPTY_LOGIN }
+
 /*
  * All of the following structs for test token data are paralle to the regular
  * webauth_token_* definitions except that they may omit some data that must
